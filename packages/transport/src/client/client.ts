@@ -1,23 +1,18 @@
-import { EndpointBackend, OnDispose, ClientEndpointContext, Client, RequestOptions, Message, TransportEvent, TransportRequest, Pattern, TransportStrategy, Transformer } from '@tsdi/core';
+import { OnDispose, ClientEndpointContext, Client, RequestOptions, TransportRequest, Pattern, TransportStrategy, ConnectionManager, Sender } from '@tsdi/core';
 import { Abstract, EMPTY } from '@tsdi/ioc';
-import { map, Observable, Observer, of } from 'rxjs';
-import { TransportBackend } from './backend';
-import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, CLIENT_TRANSPORT_INTERCEPTORS, TransportClientOpts } from './options';
+import { map, Observable, of } from 'rxjs';
+import { ClientEndpointBackend, TransportBackend } from './backend';
+import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { Connection } from '../connection';
 
-@Abstract()
-export abstract class ClientTransformer extends Transformer {
-    abstract onConnection(opts: TransportClientOpts): Observable<Connection>;
-}
-
 
 
 const tsptDeftOpts = {
+    backendToken: ClientEndpointBackend,
     backend: TransportBackend,
     transport: {
-        interceptorsToken: CLIENT_TRANSPORT_INTERCEPTORS,
         strategy: TransportStrategy
     },
     interceptors: [
@@ -31,7 +26,6 @@ const tsptDeftOpts = {
 /**
  * Transport Client.
  */
-
 @Abstract()
 export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
 
@@ -82,7 +76,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             return of(this._connection);
         }
         const opts = this.getOptions();
-        return this.context.get(ClientTransformer).onConnection(opts) //this.buildConnection(opts)
+        return this.context.get(ConnectionManager).connect(this.createDuplex(opts), opts.connectionOpts)
             .pipe(
                 map(conn => {
                     this._connection = conn;
@@ -90,6 +84,8 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
                 })
             );
     }
+
+    protected abstract createDuplex(opts: TOpts): any;
 
     // protected buildConnection(opts: TOpts): Observable<Connection> {
     //     const logger = this.logger;
@@ -122,12 +118,6 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     //         }
     //     });
     // }
-
-    // abstract createConnection(opts: TOpts): Connection;
-
-    protected getBackend(): EndpointBackend<Message, TransportEvent> {
-        return this.context.get(this.getOptions().backend!);
-    }
 
 }
 

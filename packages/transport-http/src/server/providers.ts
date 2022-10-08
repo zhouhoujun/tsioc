@@ -1,7 +1,7 @@
-import { RespondAdapter } from '@tsdi/transport';
-import { HttpRespondAdapter } from './respond';
+import { RespondInterceptor } from '@tsdi/transport';
+import { HttpRespondInterceptor } from './respond';
 
 
 export const HTTP_SERVR_PROVIDERS = [
-    { provide: RespondAdapter, useClass: HttpRespondAdapter }
+    { provide: RespondInterceptor, useClass: HttpRespondInterceptor }
 ]

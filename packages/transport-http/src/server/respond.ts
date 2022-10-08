@@ -1,12 +1,12 @@
 import { mths } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { hdr, isBuffer, isStream, RespondAdapter, pipeStream } from '@tsdi/transport';
+import { hdr, isBuffer, isStream, RespondInterceptor, pipeStream } from '@tsdi/transport';
 import { HttpContext, HttpServResponse } from './context';
 
 @Injectable({ static: true })
-export class HttpRespondAdapter implements RespondAdapter {
+export class HttpRespondInterceptor extends RespondInterceptor {
 
-    async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
+    protected override async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
         if (ctx.destroyed) return;
 
         if (!ctx.writable) return;

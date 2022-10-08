@@ -1,4 +1,4 @@
-import { Abstract, isFunction, Type } from '@tsdi/ioc';
+import { Abstract, ClassType, isFunction, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 
@@ -6,24 +6,24 @@ import { EndpointContext } from './context';
 /**
  * Endpoint is the fundamental building block of servers and clients.
  */
-export interface Endpoint<TRequest = any, TResponse = any> {
+export interface Endpoint<TInput = any, TOutput = any> {
     /**
      * transport endpoint handle.
-     * @param req request input.
+     * @param input request input.
      * @param context request context.
      */
-    handle(req: TRequest, context: EndpointContext): Observable<TResponse>;
+    handle(input: TInput, context: EndpointContext): Observable<TOutput>;
 }
 
 /**
  * Endpoint funcation.
  */
-export type EndpointFn<TRequest, TResponse> = (req: TRequest, context: EndpointContext) => Observable<TResponse>;
+export type EndpointFn<TInput, TOutput> = (input: TInput, context: EndpointContext) => Observable<TOutput>;
 
 /**
  * endpoint like.
  */
-export type EndpointLike<TRequest, TResponse> = Endpoint<TRequest, TResponse> | EndpointFn<TRequest, TResponse>;
+export type EndpointLike<TInput, TOutput> = Endpoint<TInput, TOutput> | EndpointFn<TInput, TOutput>;
 
 /**
  * A final {@link Endpoint} which will dispatch the request via browser HTTP APIs to a backend.
@@ -34,54 +34,54 @@ export type EndpointLike<TRequest, TResponse> = Endpoint<TRequest, TResponse> | 
  * through the interceptor chain.
  */
 @Abstract()
-export abstract class EndpointBackend<TRequest = any, TResponse = any> implements Endpoint<TRequest, TResponse> {
+export abstract class EndpointBackend<TInput = any, TOutput = any> implements Endpoint<TInput, TOutput> {
     /**
      * transport endpoint handle.
-     * @param req request input.
+     * @param input request input.
      * @param context request context.
      */
-    abstract handle(req: TRequest, context: EndpointContext): Observable<TResponse>;
+    abstract handle(input: TInput, context: EndpointContext): Observable<TOutput>;
 }
 
 /**
  * Interceptor is a chainable behavior modifier for `endpoints`.
  */
-export interface Interceptor<TRequest = any, TResponse = any> {
+export interface Interceptor<TInput = any, TOutput = any> {
     /**
      * the method to implemet interceptor.
-     * @param req  request input.
+     * @param input  request input.
      * @param next The next interceptor in the chain, or the backend
      * if no interceptors remain in the chain.
      * @param context request context.
      * @returns An observable of the event stream.
      */
-    intercept(req: TRequest, next: Endpoint<TRequest, TResponse>, context: EndpointContext): Observable<TResponse>;
+    intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext): Observable<TOutput>;
 }
 
 /**
  * interceptor function.
  */
-export type InterceptorFn<TRequest, TResponse> = (req: TRequest, next: Endpoint<TRequest, TResponse>, context: EndpointContext) => Observable<TResponse>;
+export type InterceptorFn<TInput, TOutput> = (input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext) => Observable<TOutput>;
 
 /**
  * interceptor like.
  */
-export type InterceptorLike<TRequest = any, TResponse = any> = Interceptor<TRequest, TResponse> | InterceptorFn<TRequest, TResponse>;
+export type InterceptorLike<TInput = any, TOutput = any> = Interceptor<TInput, TOutput> | InterceptorFn<TInput, TOutput>;
 
 /**
  * interceptor function.
  */
-export type InterceptorType<TRequest = any, TResponse = any> = Type<Interceptor<TRequest, TResponse>> | InterceptorLike<TRequest, TResponse>;
+export type InterceptorType<TInput = any, TOutput = any> = ClassType<Interceptor<TInput, TOutput>> | InterceptorLike<TInput, TOutput>;
 
 
 /**
  * Interceptor Endpoint.
  */
-export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
-    constructor(private next: Endpoint<TRequest, TResponse>, private interceptor: Interceptor<TRequest, TResponse>) { }
+export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TOutput> {
+    constructor(private next: Endpoint<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) { }
 
-    handle(req: TRequest, context: EndpointContext): Observable<TResponse> {
-        return this.interceptor.intercept(req, this.next, context)
+    handle(input: TInput, context: EndpointContext): Observable<TOutput> {
+        return this.interceptor.intercept(input, this.next, context)
     }
 }
 
@@ -90,22 +90,22 @@ export class InterceptorEndpoint<TRequest, TResponse> implements Endpoint<TReque
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest, TResponse> {
+export class InterceptorChain<TInput, TOutput> implements Endpoint<TInput, TOutput> {
 
-    private chain!: Endpoint<TRequest, TResponse>;
-    private backend: EndpointBackend<TRequest, TResponse>;
-    private interceptors: Interceptor<TRequest, TResponse>[];
-    constructor(backend: EndpointLike<TRequest, TResponse>, interceptors: InterceptorLike<TRequest, TResponse>[]) {
+    private chain!: Endpoint<TInput, TOutput>;
+    private backend: EndpointBackend<TInput, TOutput>;
+    private interceptors: Interceptor<TInput, TOutput>[];
+    constructor(backend: EndpointLike<TInput, TOutput>, interceptors: InterceptorLike<TInput, TOutput>[]) {
         this.backend = endpointify(backend);
         this.interceptors = interceptors.map(i => interceptorify(i))
     }
 
-    handle(req: TRequest, context: EndpointContext): Observable<TResponse> {
+    handle(input: TInput, context: EndpointContext): Observable<TOutput> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
                 (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend)
         }
-        return this.chain.handle(req, context)
+        return this.chain.handle(input, context)
     }
 }
 
@@ -114,7 +114,7 @@ export class InterceptorChain<TRequest, TResponse> implements Endpoint<TRequest,
  * @param handle 
  * @returns 
  */
-export function createEndpoint<TRequest, TResponse>(handle: EndpointFn<TRequest, TResponse>): Endpoint<TRequest, TResponse> {
+export function createEndpoint<TInput, TOutput>(handle: EndpointFn<TInput, TOutput>): Endpoint<TInput, TOutput> {
     return { handle };
 }
 
@@ -123,7 +123,7 @@ export function createEndpoint<TRequest, TResponse>(handle: EndpointFn<TRequest,
  * @param e type of {@link EndpointLike}
  * @returns 
  */
-export function endpointify<TRequest, TResponse>(e: EndpointLike<TRequest, TResponse>): Endpoint<TRequest, TResponse> {
+export function endpointify<TInput, TOutput>(e: EndpointLike<TInput, TOutput>): Endpoint<TInput, TOutput> {
     return isFunction(e) ? createEndpoint(e) : e;
 }
 
@@ -132,7 +132,7 @@ export function endpointify<TRequest, TResponse>(e: EndpointLike<TRequest, TResp
  * @param intercept 
  * @returns 
  */
-export function createInterceptor<TRequest, TResponse>(intercept: InterceptorFn<TRequest, TResponse>): Interceptor<TRequest, TResponse> {
+export function createInterceptor<TInput, TOutput>(intercept: InterceptorFn<TInput, TOutput>): Interceptor<TInput, TOutput> {
     return { intercept };
 }
 
@@ -141,7 +141,7 @@ export function createInterceptor<TRequest, TResponse>(intercept: InterceptorFn<
  * @param i type of {@link InterceptorLike}
  * @returns 
  */
-export function interceptorify<TRequest, TResponse>(i: InterceptorLike<TRequest, TResponse>): Interceptor<TRequest, TResponse> {
+export function interceptorify<TInput, TOutput>(i: InterceptorLike<TInput, TOutput>): Interceptor<TInput, TOutput> {
     return isFunction(i) ? createInterceptor(i) : i;
 }
 

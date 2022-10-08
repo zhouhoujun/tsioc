@@ -9,7 +9,7 @@ import { TransportModule } from '@tsdi/transport';
 import { HttpBackend2 } from './client/backend';
 import { HttpExecptionFilter, HttpFinalizeFilter } from './server/finalize-filter';
 import { HttpTransportStatus, HttpTransportStrategy } from './transport';
-import { HttpRespondAdapter } from './server/respond';
+import { HttpRespondInterceptor } from './server/respond';
 import { HttpHandlerBinding } from './server/binding';
 
 /**
@@ -29,7 +29,7 @@ import { HttpHandlerBinding } from './server/binding';
         HttpFinalizeFilter,
         HttpExecptionFilter,
         HttpBackend2,
-        HttpRespondAdapter,
+        HttpRespondInterceptor,
         HttpHandlerBinding,
         HttpServer,
         Http

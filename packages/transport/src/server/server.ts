@@ -1,25 +1,17 @@
-import { Endpoint, Incoming, ListenOpts, ModuleRef, Outgoing, Router, Server, TransportStrategy, Transformer } from '@tsdi/core';
-import { Abstract, Destroyable, Execption, isBoolean, isFunction, lang } from '@tsdi/ioc';
+import { ConnectionManager, Incoming, ListenOpts, ModuleRef, Outgoing, Receiver, Router, Server, TransportStrategy } from '@tsdi/core';
+import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { mergeMap, Observable } from 'rxjs';
-import { Duplex } from 'stream';
-import { CatchInterceptor, LogInterceptor, RespondInterceptor } from '../interceptors';
-import { TransportContext, SERVER_EXECPTION_FILTERS, SERVER_MIDDLEWARES } from './context';
+import { mergeMap } from 'rxjs';
+import { CatchInterceptor, LogInterceptor } from '../interceptors';
+import { TransportContext, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './finalize-filter';
-import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_TRANSPORT_INTERCEPTORS } from './options';
+import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { Connection, ConnectionOpts } from '../connection';
+import { RespondInterceptor } from './respond';
 
-
-
-@Abstract()
-export abstract class ServerTransformer extends Transformer {
-    abstract onConnection(server: any, opts?: ConnectionOpts): Observable<Connection>;
-    abstract onRequest(conn: Connection, endpoint: Endpoint): Observable<any>
-}
 
 
 
@@ -29,7 +21,6 @@ const defOpts = {
     execptionsToken: SERVER_EXECPTION_FILTERS,
     middlewaresToken: SERVER_MIDDLEWARES,
     transport: {
-        interceptorsToken: SERVER_TRANSPORT_INTERCEPTORS,
         strategy: TransportStrategy
     },
     content: {
@@ -81,9 +72,9 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const opts = this.getOptions();
             const server = this._server = this.createServer(opts);
             const logger = this.logger;
-            const transformer = this.context.get(ServerTransformer);
-            const sub = transformer.onConnection(server, opts.connectionOpts)
-                .pipe(mergeMap(conn => transformer.onRequest(conn, this.endpoint)))
+            const connMgr = this.context.get(ConnectionManager);
+            const sub = connMgr.connect(server, opts.connectionOpts)
+                .pipe(mergeMap(conn => this.context.get(Receiver).receive(conn, this.endpoint)))
                 .subscribe({
                     error: (err) => {
                         logger.error(err);
@@ -99,8 +90,10 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         }
     }
 
-
-
+    /**
+     * create server.
+     * @param opts 
+     */
     protected abstract createServer(opts: TOpts): T;
     /**
      * listen

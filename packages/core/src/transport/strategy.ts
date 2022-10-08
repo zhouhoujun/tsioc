@@ -1,32 +1,56 @@
-import { Abstract, Token, TypeOf } from '@tsdi/ioc';
+import { Abstract, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
+import { Endpoint } from './endpoint';
 import { Incoming } from './packet';
 import { TransportStatus } from './status';
 import { TransportEndpoint, TransportOpts } from './transport';
 
 
+@Abstract()
+export abstract class ConnectionManager<TDuplex = any, TOpts = any, TConn = any> {
+    abstract connect(duplex: TDuplex, opts: TOpts): Observable<TConn>;
+}
 
 @Abstract()
-export abstract class Transformer<TInput = any, TOutput = any> extends TransportEndpoint<TInput, TOutput> {
+export abstract class Sender<TInput = any, TOutput = any, TConn = any> extends TransportEndpoint<TInput, TOutput> {
     /**
      * transform, send data to remoting.
      * @param input 
      * @param context 
      * @returns 
      */
-    send(input: TInput, context: EndpointContext): Observable<TOutput> {
-        return this.endpoint.handle(input, context);
-    }
-
-    abstract receive(): Observable<TOutput>;
+    abstract send(conn: TConn, input: TInput, context: EndpointContext): Observable<TOutput>;
 }
 
+@Abstract()
+export abstract class Receiver<TInput = any, TOutput = any, TConn = any> extends TransportEndpoint<TInput, TOutput> {
+    /**
+     * transform, receive data from remoting.
+     * @param conn connection
+     * @param endpoint as backend endpoint form receive.
+     */
+    abstract receive(conn: TConn, endpoint: Endpoint): Observable<TOutput>;
+}
 
 @Abstract()
-export abstract class TransportStrategyOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
+export abstract class SenderOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
     [K: string]: any;
+    abstract sender?: TypeOf<Sender>;
+}
+
+@Abstract()
+export abstract class ReceiverOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
+    [K: string]: any;
+    abstract receiver?: TypeOf<Receiver>;
+}
+
+@Abstract()
+export abstract class TransportStrategyOpts {
     abstract get strategy(): TypeOf<TransportStrategy>;
+    abstract connectionManager?: TypeOf<ConnectionManager>;
+    abstract senderOpts?: SenderOpts;
+    abstract receiverOpts?: ReceiverOpts;
 }
 
 
@@ -44,10 +68,6 @@ export abstract class TransportStrategy {
      * transport status.
      */
     abstract get status(): TransportStatus;
-    /**
-     * transformor.
-     */
-    abstract get transformer(): Transformer;
 
     /**
      * the url is absolute url or not.

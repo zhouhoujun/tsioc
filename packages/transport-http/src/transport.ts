@@ -1,6 +1,6 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ListenOpts, mths, Transformer, RedirectTransportStatus, TransportStrategy } from '@tsdi/core';
-import { Inject, Injectable, isNumber, isString } from '@tsdi/ioc';
+import { ListenOpts, mths, RedirectTransportStatus, TransportStrategy } from '@tsdi/core';
+import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -96,9 +96,6 @@ export class HttpTransportStatus extends RedirectTransportStatus {
 
 @Injectable({ static: true })
 export class HttpTransportStrategy extends TransportStrategy {
-    get transformer(): Transformer<any, any> {
-        throw new Error('Method not implemented.');
-    }
 
     private _protocol = 'http';   
 

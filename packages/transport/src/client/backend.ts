@@ -2,27 +2,35 @@
 import {
     EndpointBackend, isArrayBuffer, isBlob, isFormData, ResHeaders, ResponseJsonParseError,
     TransportErrorResponse, TransportEvent, TransportResponse, ClientContext,
-    UnsupportedMediaTypeExecption, TransportRequest
+    UnsupportedMediaTypeExecption, TransportRequest, Sender
 } from '@tsdi/core';
-import { Injectable, _tyundef } from '@tsdi/ioc';
+import { Abstract, Injectable, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
 import { Observable, mergeMap } from 'rxjs';
 import * as zlib from 'zlib';
 import { hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, pmPipeline, toBuffer } from '../utils';
+import { Connection } from '../connection';
 
+
+@Abstract()
+export abstract class ClientEndpointBackend<TInput = any, TOutput = any> implements EndpointBackend<TInput, TOutput> {
+    abstract handle(input: TInput, ctx: ClientContext): Observable<TOutput>
+}
 
 
 /**
- * transport restful endpoint backend.
+ * transport endpoint backend.
  */
 @Injectable()
-export class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
+export class TransportBackend implements ClientEndpointBackend<TransportRequest, TransportEvent> {
 
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
         const url = req.url;
-        return ctx.transport.transformer.send(req, ctx)
+        const conn = ctx.get(Connection);
+        const sender = ctx.get(Sender);
+        return sender.send(conn, req, ctx)
             .pipe(
                 mergeMap(async body => {
                     let type = ctx.responseType;

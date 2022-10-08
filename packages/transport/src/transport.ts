@@ -6,10 +6,10 @@ import { BodyContentInterceptor } from './client/body';
 import { TransportServerOpts } from './server/options';
 import { TransportServer } from './server/server';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
-import { CatchInterceptor, DefaultStatusFormater, LogInterceptor, RespondInterceptor } from './interceptors';
+import { CatchInterceptor, DefaultStatusFormater, LogInterceptor } from './interceptors';
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
 import { TransportExecptionFilter, TransportFinalizeFilter } from './server/finalize-filter';
-import { TransportRespondAdapter } from './server/respond';
+import { DefaultRespondInterceptor } from './server/respond';
 
 
 @Module({
@@ -22,7 +22,6 @@ import { TransportRespondAdapter } from './server/respond';
         CatchInterceptor,
         DefaultStatusFormater,
         LogInterceptor,
-        RespondInterceptor,
 
         TransportBackend,
         BodyContentInterceptor,
@@ -36,7 +35,7 @@ import { TransportRespondAdapter } from './server/respond';
         EncodeJsonMiddleware,
         SessionMiddleware,
 
-        TransportRespondAdapter,
+        DefaultRespondInterceptor,
         TransportFinalizeFilter,
         TransportExecptionFilter,
         

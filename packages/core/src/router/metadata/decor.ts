@@ -1,6 +1,6 @@
 import {
-    isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ActionTypes, ReflectiveResolver, isClass, isBoolean, Execption
+    isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes,
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveResolver, Execption, isClassType
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { InterceptorType } from '../../transport/endpoint';
@@ -116,7 +116,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 router.use({
                     path,
                     protocol,
-                    interceptors: interceptors?.map(i => isClass(i) ? factory.resolve(i) : i),
+                    interceptors: interceptors?.map(i => isClassType(i) ? factory.resolve(i) : i),
                     middleware: factory.resolve() as Middleware
                 });
             }

@@ -1,17 +1,39 @@
-import { mths, Outgoing, TransportExecption } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
+import { Endpoint, EndpointBackend, EndpointContext, Interceptor, mths, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
-import { RespondAdapter } from '../interceptors/respond';
 import { TransportContext } from './context';
 import { hdr } from '../consts';
 import { isBuffer, isStream, pipeStream } from '../utils';
+import { mergeMap, Observable } from 'rxjs';
+
+
+@Abstract()
+export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpointContext = ServerEndpointContext> implements EndpointBackend<IInput, TOutput> {
+    abstract handle(input: IInput, context: EndpointContext): Observable<TOutput>;
+}
+
+
+@Abstract()
+export abstract class RespondInterceptor<IInput = any, TOutput = any> implements Interceptor<IInput, TOutput> {
+
+    constructor() { }
+
+    intercept(req: IInput, next: Endpoint<IInput, TOutput>, ctx: EndpointContext): Observable<TOutput> {
+        return next.handle(req, ctx)
+            .pipe(
+                mergeMap(res => this.respond(res, ctx))
+            )
+    }
+
+    protected abstract respond(res: TOutput, ctx: EndpointContext): Promise<any>;
+}
 
 
 
 @Injectable({ static: true })
-export class TransportRespondAdapter extends RespondAdapter {
+export class DefaultRespondInterceptor extends RespondInterceptor {
 
-    async respond(res: Outgoing, ctx: TransportContext): Promise<any> {
+    protected override async respond(res: Outgoing, ctx: TransportContext): Promise<any> {
 
         if (!ctx.writable) return;
 
@@ -56,7 +78,7 @@ export class TransportRespondAdapter extends RespondAdapter {
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
-            if(!(res instanceof Writable)) throw new TransportExecption('response is not writable, no support strem.');
+            if (!(res instanceof Writable)) throw new TransportExecption('response is not writable, no support strem.');
             await pipeStream(body, res);
         }
 

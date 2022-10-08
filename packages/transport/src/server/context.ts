@@ -1,4 +1,4 @@
-import { ExecptionFilter, MiddlewareLike, HeadersContext, AssetContext, ServerEndpointContext, ServerContext, Incoming, Outgoing } from '@tsdi/core';
+import { MiddlewareLike, HeadersContext, AssetContext, ServerEndpointContext, ServerContext, Incoming, Outgoing } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 
@@ -45,10 +45,6 @@ export class TransportContext<TRequest extends Incoming = Incoming, TResponse ex
 }
 
 /**
- * Transport server Middlewares.
+ * Transport middlewares token of server.
  */
 export const SERVER_MIDDLEWARES = tokenId<MiddlewareLike<TransportContext>[]>('SERVER_MIDDLEWARES');
-/**
- * Transport server execption filters.
- */
-export const SERVER_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('SERVER_EXECPTION_FILTERS');

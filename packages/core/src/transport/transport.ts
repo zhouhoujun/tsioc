@@ -27,6 +27,14 @@ export abstract class TransportOpts<TInput, TOutput> {
      */
     abstract interceptorsToken?: Token<InterceptorLike<TInput, TOutput>[]>;
     /**
+     * backend.
+     */
+    abstract backend?: TypeOf<EndpointBackend<TInput, TOutput>>;
+    /**
+     * backend token.
+     */
+    abstract backendToken?: Token<EndpointBackend<TInput, TOutput>>;
+    /**
      * execption filters of server.
      */
     abstract execptions?: TypeOf<ExecptionFilter>[];
@@ -65,6 +73,7 @@ export abstract class TransportEndpoint<
     private _chain?: Endpoint<TInput, TOutput>;
     private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
     private _filterToken!: Token<ExecptionFilter[]>;
+    private _bToken!: Token<EndpointBackend<TInput, TOutput>>;
     private _filter?: ExecptionFilter;
     private _opts: Opts;
 
@@ -144,7 +153,10 @@ export abstract class TransportEndpoint<
     /**
      *  get backend endpoint. 
      */
-    protected abstract getBackend(): EndpointBackend<TInput, TOutput>;
+    protected getBackend(): EndpointBackend<TInput, TOutput> {
+        return this.context.get(this._bToken);
+    }
+
     /**
      * initialize options.
      * @param options 
@@ -179,6 +191,11 @@ export abstract class TransportEndpoint<
             this.multiReg(eToken, options.execptions);
         }
 
+        const bToken = this._bToken = options.backendToken ?? EndpointBackend;
+        if (options.backend) {
+            this.regTypeof(bToken, options.backend);
+        }
+
     }
 
     protected multiReg<T>(provide: Token, types: (Type<T> | T)[]): void {
@@ -198,6 +215,15 @@ export abstract class TransportEndpoint<
             this.context.injector.inject(pdr)
         } else {
             this.context.injector.inject({ provide, useValue: target, multi: true, multiOrder })
+        }
+    }
+
+    protected regTypeof<T>(provide: Token<T>, target: TypeOf<T>): void {
+        if (isClassType(target)) {
+            const pdr = isClass(target) ? { provide, useClass: target } : { provide, useExisting: target }
+            this.context.injector.inject(pdr)
+        } else {
+            this.context.injector.inject({ provide, useValue: target })
         }
     }
 

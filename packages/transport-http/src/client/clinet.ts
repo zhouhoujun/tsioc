@@ -16,6 +16,7 @@ import { HttpTransportStrategy } from '../transport';
 
 
 const defOpts = {
+    backendToken: HttpBackend,
     transport: {
         strategy: HttpTransportStrategy
     },
@@ -69,13 +70,6 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
 
     protected getInterceptorsToken(): Token<InterceptorLike<HttpRequest<any>, HttpEvent<any>>[]> {
         return HTTP_INTERCEPTORS;
-    }
-
-    protected getBackend(): EndpointBackend<HttpRequest, HttpEvent> {
-        if (!this._backend) {
-            this._backend = this.context.get(HttpBackend);
-        }
-        return this._backend
     }
 
     protected override async connect(): Promise<void> {
