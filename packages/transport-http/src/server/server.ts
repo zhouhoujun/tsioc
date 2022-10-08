@@ -77,10 +77,6 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
         return this._server
     }
 
-    get proxy() {
-        return this.getOptions().proxy === true
-    }
-
     get proxyIpHeader() {
         return this.getOptions().proxyIpHeader
     }
@@ -96,18 +92,8 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
         if (options?.listenOpts) {
             options.listenOpts = { ...httpOpts.listenOpts, ...options.listenOpts }
         }
-        const providers = options && options.providers ? [...HTTP_SERVR_PROVIDERS, ...options.providers] : HTTP_SERVR_PROVIDERS;
+        const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
         const opts = { ...httpOpts, ...options, providers } as HttpServerOpts;
-
-        if (opts.middlewares) {
-            opts.middlewares = opts.middlewares.filter(m => {
-                if (!opts.cors && m === CorsMiddleware) return false;
-                if (!opts.session && m === SessionMiddleware) return false;
-                if (!opts.csrf && m === CsrfMiddleware) return false;
-                if (!opts.content && m === ContentMiddleware) return false;
-                return true
-            });
-        }
         return opts;
     }
 
@@ -125,6 +111,10 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
         super.initContext(options);
     }
 
+    protected defaultProviders() {
+        return HTTP_SERVR_PROVIDERS;
+    }
+
     async start(): Promise<void> {
         const opts = this.getOptions();
         const injector = this.context.injector;
@@ -134,6 +124,10 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
             this.context.setValue(CONTENT_DISPOSITION, func)
         }
 
+
+        if(opts.controllers) {
+            await injector.load(opts.controllers);
+        }
 
         const option = opts.options ?? EMPTY_OBJ;
         const isSecure = opts.protocol !== 'http' && !!option.cert;

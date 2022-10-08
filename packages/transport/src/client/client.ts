@@ -63,7 +63,6 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
-        context.setValue(Connection, this.connection);
         return url instanceof TransportRequest ? url : this.createRequest(url, options);
     }
 
@@ -76,9 +75,11 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             return of(this._connection);
         }
         const opts = this.getOptions();
-        return this.context.get(ConnectionManager).connect(this.createDuplex(opts), opts.connectionOpts)
+        const duplex = this.createDuplex(opts);
+        return this.context.get(ConnectionManager).connect(duplex, opts.connectionOpts)
             .pipe(
                 map(conn => {
+                    this.context.setValue(Connection, conn);
                     this._connection = conn;
                     return conn;
                 })

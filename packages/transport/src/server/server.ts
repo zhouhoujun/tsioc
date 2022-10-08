@@ -59,10 +59,6 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         super(options)
     }
 
-    get proxy(): boolean {
-        return this.getOptions().proxy === true;
-    }
-
     get server(): T | null {
         return this._server;
     }
@@ -226,16 +222,17 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         const defOpts = this.getDefaultOptions();
         const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
         const connectionOpts = { objectMode: true, ...defOpts.connectionOpts, ...options?.connectionOpts };
-        const providers = options && options.providers ? [...TRANSPORT_SERVR_PROVIDERS, ...options.providers] : TRANSPORT_SERVR_PROVIDERS;
+        const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
         const opts = { ...defOpts, ...options, listenOpts, connectionOpts, providers };
-        if (opts.middlewares) {
-            opts.middlewares = opts.middlewares.filter(m => {
-                if (!opts.session && m === SessionMiddleware) return false;
-                if (!opts.content && m === ContentMiddleware) return false;
-                return true
-            });
-        }
         return opts;
+    }
+
+    protected defaultProviders() {
+        return TRANSPORT_SERVR_PROVIDERS;
+    }
+
+    protected middlewareFilter() {
+
     }
 
     protected override initContext(options: TOpts): void {

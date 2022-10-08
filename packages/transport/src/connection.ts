@@ -91,8 +91,8 @@ export abstract class Packetor {
     abstract generator(output: Writable, opts: ConnectionOpts): PacketGenerator;
 }
 
-@Abstract()
-export abstract class Connection extends Duplexify implements Closeable {
+
+export class Connection extends Duplexify implements Closeable {
     private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;
@@ -167,10 +167,6 @@ export abstract class Connection extends Duplexify implements Closeable {
         (this.stream as any).setKeepAlive?.(enable, initialDelay);
         return this;
     }
-    /**
-     * get packet next id.
-     */
-    abstract getNextStreamId(id?: number): number;
 
     setOptions(packet: any, opts: ConnectionOpts) {
         const copts = this.opts = { ...packet, opts };

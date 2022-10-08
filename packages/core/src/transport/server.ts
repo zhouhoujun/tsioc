@@ -6,7 +6,7 @@ import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
 import { Incoming, Outgoing } from './packet';
-import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
+import { ConnectionManager, Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 /**
@@ -28,6 +28,8 @@ export abstract class ServerOpts<TRequest extends Incoming = any, TResponse exte
     abstract middlewaresToken?: Token<MiddlewareLike[]>;
 
     abstract listenOpts?: any;
+
+    abstract proxy?: boolean;
 }
 
 /**
@@ -45,7 +47,9 @@ export abstract class Server<
 
     private _midlsToken!: Token<MiddlewareLike[]>;
 
-    abstract get proxy(): boolean;
+    get proxy(): boolean {
+        return this.getOptions().proxy === true;
+    }
 
     /**
      * start server.
@@ -81,7 +85,7 @@ export abstract class Server<
         super.initContext(options);
         if (options.transport) {
             this.context.setValue(TransportStrategyOpts, options.transport);
-            const { strategy, senderOpts, receiverOpts } = options.transport;
+            const { strategy, connectionManager, senderOpts, receiverOpts } = options.transport;
             if (!strategy) {
                 throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
             }
@@ -93,6 +97,9 @@ export abstract class Server<
                 if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
                 if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
             }
+            if (connectionManager) {
+                this.regTypeof(ConnectionManager, connectionManager);
+            }
             this.regTypeof(TransportStrategy, strategy);
         }
 
@@ -102,7 +109,9 @@ export abstract class Server<
         }
 
         if (options.middlewares && options.middlewares.length) {
-            this.multiReg(mToken, options.middlewares);
+            const filter = this.context.get(MiddlewareFilter);
+            const middlewares = filter? filter.filter(options.middlewares, options): options.middlewares;
+            this.multiReg(mToken, middlewares);
         }
     }
 
@@ -129,4 +138,9 @@ export abstract class Server<
         await this.context.destroy();
     }
 
+}
+
+@Abstract()
+export abstract class MiddlewareFilter {
+    abstract filter(middlewares: MiddlewareType[], opts: Record<string, any>): MiddlewareType[];
 }

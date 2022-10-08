@@ -11,7 +11,7 @@ import { MimeSource } from '../mime';
  */
 @Abstract()
 export abstract class TransportServerOpts extends ServerOpts<Incoming, Outgoing> {
-    abstract proxy?: boolean;
+    
     /**
      * options of protocol.
      */

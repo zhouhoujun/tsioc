@@ -123,7 +123,7 @@ export class MockBootLoadTest {
             repositories: ['./repositories/**/*.ts']
         })
     ],
-    providers: [
+    declarations: [
         UserController,
         RoleController
     ],
@@ -152,7 +152,7 @@ export class MockTransBootTest {
             repositories: ['./repositories/**/*.ts']
         })
     ],
-    providers: [
+    declarations: [
         UserController,
         RoleController
     ],

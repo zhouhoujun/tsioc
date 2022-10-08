@@ -10,7 +10,7 @@ import { HttpServRequest, HttpServResponse } from './context';
 /**
  * http options.
  */
- export interface HttpOpts extends ServerOpts<HttpServRequest, HttpServResponse> {
+export interface HttpOpts extends ServerOpts<HttpServRequest, HttpServResponse> {
     majorVersion?: number;
     cors?: boolean | CorsOptions;
     proxy?: boolean;
@@ -28,6 +28,7 @@ import { HttpServRequest, HttpServResponse } from './context';
     mimeDb?: Record<string, MimeSource>;
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
+    controllers?: string[] | Type[];
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
     /**

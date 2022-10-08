@@ -2,7 +2,7 @@ import { Incoming, ListenOpts, TransportStatus, TransportStrategy } from '@tsdi/
 import { Injectable } from '@tsdi/ioc';
 import {
     Connection, ConnectionOpts, ev, PacketGenerator, SteamOptions, StreamGenerator,
-    PacketParser, StreamParser, TransportStream
+    PacketParser, StreamParser, TransportStream, Packetor
 } from '@tsdi/transport';
 import { TransformCallback, Writable } from 'stream';
 import {
@@ -181,30 +181,24 @@ export class MqttTransportStrategy extends TransportStrategy {
     match(protocol: string): boolean {
         throw new Error('Method not implemented.');
     }
+}
 
-
+@Injectable()
+export class MqttPacketor implements Packetor {
     generator(output: Writable, opts: ConnectionOpts): PacketGenerator {
         return new MqttPacketGenerator(output, opts);
     }
 
-    parser(connection: Connection, opts: ConnectionOpts): PacketParser {
-        return new MqttPacketParser(connection, opts);
+    parser(opts: ConnectionOpts): PacketParser {
+        return new MqttPacketParser(opts);
     }
-
-    streamParser(stream: TransportStream, opts: SteamOptions): StreamParser {
-        throw new Error('Method not implemented.');
-    }
-    streamGenerator(output: Writable, packetId: number, opts: SteamOptions): StreamGenerator {
-        throw new Error('Method not implemented.');
-    }
-
 
 }
 
 export class MqttPacketParser extends PacketParser {
 
     private parser!: Parser;
-    constructor(private connection: Connection, opts: ConnectionOpts) {
+    constructor(opts: ConnectionOpts) {
         super(opts);
         this.setOptions(opts);
     }
