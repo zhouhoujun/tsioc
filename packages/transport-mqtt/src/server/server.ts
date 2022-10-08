@@ -1,6 +1,6 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, ConnectionOpts, ServerConnection, StreamTransportStrategy } from '@tsdi/transport';
+import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -75,6 +75,7 @@ const defaults = {
 @Injectable()
 export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Server, MqttServerOpts> {
 
+
     constructor(options: MqttServerOpts) {
         super(options);
     }
@@ -83,8 +84,7 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
         return defaults
     }
 
-
-    protected buildServer(opts: MqttServerOpts): net.Server | tls.Server | ws.Server<ws.WebSocket> {
+    protected createServer(opts: MqttServerOpts): net.Server | tls.Server | ws.Server<ws.WebSocket> {
         const servOpts = opts.serverOpts;
         switch (servOpts.protocol) {
             case 'mqtt':
@@ -113,13 +113,13 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
         }
     }
 
-    protected override parseToDuplex(conn: ws.WebSocket, ...args: any[]): Duplex {
-        return ws.createWebSocketStream(conn, { objectMode: true });
-    }
+    // protected override parseToDuplex(conn: ws.WebSocket, ...args: any[]): Duplex {
+    //     return ws.createWebSocketStream(conn, { objectMode: true });
+    // }
 
-    protected override createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): ServerConnection {
-        return new MqttConnection(duplex, transport, opts);
-    }
+    // protected override createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): ServerConnection {
+    //     return new MqttConnection(duplex, transport, opts);
+    // }
 
     protected listen(server: net.Server | tls.Server | ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();

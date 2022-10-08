@@ -1,8 +1,8 @@
-import { IncomingMsg, ListenOpts } from '@tsdi/core';
+import { Incoming, ListenOpts, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import {
     Connection, ConnectionOpts, ev, PacketGenerator, SteamOptions, StreamGenerator,
-    PacketParser, StreamParser, StreamTransportStrategy, TransportStream
+    PacketParser, StreamParser, TransportStream
 } from '@tsdi/transport';
 import { TransformCallback, Writable } from 'stream';
 import {
@@ -96,7 +96,12 @@ export declare type PacketOptions = ConnectOptions |
 
 
 @Injectable()
-export class MqttTransportStrategy extends StreamTransportStrategy {
+export class MqttTransportStrategy extends TransportStrategy {
+
+    constructor(readonly status: TransportStatus) {
+        super()
+    }
+
     valid(header: string): boolean {
         throw new Error('Method not implemented.');
     }
@@ -164,13 +169,13 @@ export class MqttTransportStrategy extends StreamTransportStrategy {
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }
-    isUpdate(incoming: IncomingMsg): boolean {
+    isUpdate(incoming: Incoming): boolean {
         throw new Error('Method not implemented.');
     }
-    isSecure(incoming: IncomingMsg): boolean {
+    isSecure(incoming: Incoming): boolean {
         throw new Error('Method not implemented.');
     }
-    parseURL(incoming: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
+    parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
         throw new Error('Method not implemented.');
     }
     match(protocol: string): boolean {
