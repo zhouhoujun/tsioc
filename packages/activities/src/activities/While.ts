@@ -1,40 +1,60 @@
-import { Input } from '@tsdi/components';
-import { Task } from '../metadata/decor';
-import { IActivityContext } from '../core/IActivityContext';
-import { ControlActivity } from '../core/ControlActivity';
-import { ConditionActivity } from './ConditionActivity';
-import { ActivityType } from '../core/ActivityMetadata';
-import { AsyncHandler } from '@tsdi/ioc';
-import { WorkflowContext } from '../core/WorkflowContext';
+import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
+
+
 
 /**
  * while control activity.
  *
  * @export
  * @class WhileActivity
- * @extends {ControlActivity}
+ * @extends {ContentActivity}
  */
-@Task('while')
-export class WhileActivity extends ControlActivity {
+@Component('while,[while]')
+export class WhileActivity<T> {
 
-    @Input() condition: ConditionActivity;
+    private _context: DirWhileContext<T> = new DirWhileContext<T>();
+    private _thenTemplateRef: TemplateRef<DirWhileContext<T>> | null = null;
+    private _thenViewRef: EmbeddedViewRef<DirWhileContext<T>> | null = null;
+    constructor(private _viewContainer: ViewContainerRef, templateRef: TemplateRef<DirWhileContext<T>>) {
+        this._thenTemplateRef = templateRef;
+    }
 
-    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
+    @Input()
+    set while(condition: T) {
+        this._context.$implicit = this._context.dirDowhile = condition;
+        this._updateView();
+    }
 
-    private action: AsyncHandler<WorkflowContext> | AsyncHandler<WorkflowContext>[];
+    /**
+     * A template to show if the condition expression evaluates to true.
+     */
+    @Input()
+    set whileThen(templateRef: TemplateRef<DirWhileContext<T>> | null) {
+        assertTemplate('whileConent', templateRef);
+        this._thenTemplateRef = templateRef;
+        this._thenViewRef = null;  // clear previous view if any.
+        this._updateView();
+    }
 
-    async execute(ctx: IActivityContext): Promise<void> {
-        let condition = await this.condition?.execute(ctx);
-        if (condition) {
-            if (!this.action) {
-                this.action = ctx.getExector().parseAction(this.body);
-            }
-            await ctx.getExector().execAction(this.action, async () => {
-                condition = await this.condition?.execute(ctx);
-                if (condition) {
-                    await this.execute(ctx);
+    private _updateView() {
+        if (this._context.$implicit) {
+            if (!this._thenViewRef) {
+                this._viewContainer.clear();
+                if (this._thenTemplateRef) {
+                    this._thenViewRef =
+                        this._viewContainer.createEmbeddedView(this._thenTemplateRef, this._context);
                 }
-            });
+            }
         }
     }
+
+}
+
+
+/**
+ * while context
+ */
+export class DirWhileContext<T> {
+    public $implicit: T = null!;
+    public dirDowhile: T = null!;
 }

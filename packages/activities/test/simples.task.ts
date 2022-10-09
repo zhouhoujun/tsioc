@@ -1,10 +1,9 @@
-import { Task, Activity, ActivityContext, Activities } from '../src';
-import { IContainer, ContainerToken } from '@tsdi/ioc';
+import { Activity, ActivityContext, Activities } from '../src';
 import { Inject, isString, isFunction, Token } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { Input } from '@tsdi/components';
+import { Component, Directive, Input } from '@tsdi/components';
 
-@Task('stest')
+@Directive('stest')
 export class SimpleTask extends Activity<string> {
     async execute(ctx: ActivityContext): Promise<string> {
         // console.log('before simple task:', this.name);
@@ -17,24 +16,27 @@ export class SimpleTask extends Activity<string> {
 
 }
 
-@Task('loaddata')
-export class LoadData extends Activity<any> {
-    @Input() service: Token;
-    @Input() action: string;
-    @Input() getParams: string | ((ctx: ActivityContext) => any[]);
-    @Input() params: any[];
+@Directive('loaddata')
+export class LoadData  {
+    @Input() service?: Token;
+    @Input() action?: string;
+    @Input() getParams?: string | ((ctx: ActivityContext) => any[]);
+    @Input() params?: any[];
+
     async execute(ctx: ActivityContext): Promise<any> {
-        let service = ctx.getContextValue(this.service);
-        if (service && service[this.action]) {
+        const service = ctx.get(this.service!);
+        if (service && service[this.action!]) {
 
             let params: any[];
             if (this.params && this.params.length) {
                 params = this.params;
             } else if (this.getParams) {
-                let getFunc = isString(this.getParams) ? ctx.getExector().eval(this.getParams) : this.getParams;
+                const getFunc = isString(this.getParams) ? ctx.getExector().eval(this.getParams) : this.getParams;
                 params = isFunction(getFunc) ? getFunc(ctx) : [];
+            } else {
+                params = [];
             }
-            return await service[this.action](...params);
+            return await service[this.action!](...params);
         }
     }
 }

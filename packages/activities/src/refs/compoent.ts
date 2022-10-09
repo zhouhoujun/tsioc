@@ -1,0 +1,42 @@
+import { Abstract } from '@tsdi/ioc';
+import { ComponentRef, ComponentState } from '@tsdi/components';
+import { RunState } from './state';
+
+
+
+@Abstract()
+export abstract class ComponentActivityRef<T = any> extends ComponentRef<T> {
+    abstract get result(): any;
+
+    abstract state: RunState;
+
+    /**
+     * runable interface.
+     * @param context 
+     * @returns 
+     */
+    run() {
+        const state = this.context.get(ComponentState);
+        if (state.componentTypes.indexOf(this.type) < 0) {
+            state.componentTypes.push(this.type);
+        }
+        state.components.push(this);
+        this.execute();
+    }
+
+    /**
+     * execute activity.
+     */
+    abstract execute(): Promise<T>;
+
+    /**
+     * render the activity component.
+     */
+    abstract render(): void;
+
+    abstract stop(): Promise<void>;
+
+    abstract pause(): Promise<void>;
+}
+
+

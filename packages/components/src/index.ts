@@ -1,4 +1,5 @@
 export * from './type';
+export * from './state';
 export * from './EventEmitter';
 export * from './renderer';
 

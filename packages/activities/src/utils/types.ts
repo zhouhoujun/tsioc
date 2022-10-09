@@ -1,4 +1,4 @@
-import { IContainer } from '@tsdi/ioc';
+import { InvocationContext } from '@tsdi/ioc';
 
 
 /**
@@ -9,7 +9,7 @@ export type Src = string | string[];
 /**
  * task source.
  */
-export type TaskSrc = Src | ((container?: IContainer) => Src);
+export type TaskSrc = Src | ((ctx?: InvocationContext) => Src);
 
 /**
  * node callback

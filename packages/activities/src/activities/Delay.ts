@@ -50,7 +50,7 @@ export class DelayActivity<T> {
 }
 
 /**
- * if context
+ * delay context
  */
 export class DirDelayContext<T> {
     public $implicit: T = null!;

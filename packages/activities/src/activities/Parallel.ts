@@ -1,10 +1,4 @@
-import { Input } from '@tsdi/components';
-import { Task } from '../metadata/decor';
-import { ActivityType } from '../core/ActivityMetadata';
-import { IActivityContext } from '../core/IActivityContext';
-import { ParallelExecutor } from '../core/ParallelExecutor';
-import { ControlActivity } from '../core/ControlActivity';
-
+import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
 
 /**
  * parallel activity.
@@ -13,23 +7,44 @@ import { ControlActivity } from '../core/ControlActivity';
  * @class ParallelActivity
  * @extends {ControlActivity}
  */
-@Task('parallel')
-export class ParallelActivity<T> extends ControlActivity<T[]> {
+@Component('parallel')
+export class ParallelActivity<T> {
 
-    @Input() activities: ActivityType[];
+    private _context: DirParallelContext<T> = new DirParallelContext<T>();
+
+    private _thenTemplateRef: TemplateRef<DirParallelContext<T>> | null = null;
+    private _thenViewRef: EmbeddedViewRef<DirParallelContext<T>> | null = null;
+
+    constructor(private _viewContainer: ViewContainerRef, templateRef: TemplateRef<DirParallelContext<T>>) {
+        this._thenTemplateRef = templateRef;
+    }
 
     /**
-     * execute parallel.
-     *
-     * @protected
-     * @returns {Promise<void>}
-     * @memberof ParallelActivity
+     * A template to show if the condition expression evaluates to true.
      */
-    async execute(ctx: IActivityContext): Promise<T[]> {
-        if (ctx.injector.hasRegister(ParallelExecutor)) {
-            return await ctx.injector.getInstance(ParallelExecutor).run<ActivityType>(act => ctx.getExector().runWorkflow(act).then(c => c.result), this.activities)
-        } else {
-            return await Promise.all(this.activities.map(act => ctx.getExector().runWorkflow(act).then(c => c.result)));
-        }
+    @Input()
+    set content(templateRef: TemplateRef<DirParallelContext<T>> | null) {
+        assertTemplate('sequence conent', templateRef);
+        this._thenTemplateRef = templateRef;
+        this._thenViewRef = null;  // clear previous view if any.
+        this._updateView();
     }
+
+    private _updateView() {
+        if (!this._thenViewRef) {
+            this._viewContainer.clear();
+            if (this._thenTemplateRef) {
+                this._thenViewRef =
+                    this._viewContainer.createEmbeddedView(this._thenTemplateRef, this._context);
+            }
+        }
+
+    }
+}
+
+/**
+ *  parallel context
+ */
+export class DirParallelContext<T> {
+    public $implicit: T = null!;
 }

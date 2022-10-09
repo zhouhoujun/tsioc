@@ -1,10 +1,5 @@
 import { Token, ProviderType } from '@tsdi/ioc';
-import { Input } from '@tsdi/components';
-import { Task } from '../metadata/decor';
-import { Expression } from '../core/ActivityMetadata';
-import { IActivityContext } from '../core/IActivityContext';
-import { Activity } from '../core/Activity';
-
+import { Component, Input } from '@tsdi/components';
 
 /**
  * while control activity.
@@ -13,21 +8,9 @@ import { Activity } from '../core/Activity';
  * @class InvokeActivity
  * @extends {ControlActivity}
  */
-@Task('invoke')
-export class InvokeActivity<T = any> extends Activity<T> {
-
-    @Input() target: Expression<Token>;
-
-    @Input() method: Expression<string>;
-
-    @Input() args: Expression<ProviderType[]>;
-
-    async execute(ctx: IActivityContext): Promise<T> {
-        let target = await ctx.resolveExpression(this.target);
-        let method = await ctx.resolveExpression(this.method);
-        let args = await ctx.resolveExpression(this.args);
-        if (target && method) {
-            return ctx.injector.invoke(target, method, ...(args || []));
-        }
-    }
+@Component('invoke')
+export class InvokeActivity {
+    @Input() target?: Token;
+    @Input() method?: string;
+    @Input() args?: ProviderType[];
 }

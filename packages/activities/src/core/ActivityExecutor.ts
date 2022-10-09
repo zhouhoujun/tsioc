@@ -6,7 +6,7 @@ import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvityRef, ActivityElementRef, IActivityElementRef, ActivityRef } from './WorkflowContext';
 import { ActivityContext } from './ActivityContext';
-import { Activity } from './Activity';
+import { Activity } from '../Activity';
 import { IWorkflowContext } from './IWorkflowContext';
 import { CTX_RUN_PARENT } from './IActivityContext';
 

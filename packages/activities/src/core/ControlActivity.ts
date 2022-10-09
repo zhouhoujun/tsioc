@@ -1,4 +1,4 @@
-import { Activity } from './Activity';
+import { Activity } from '../Activity';
 
 
 /**

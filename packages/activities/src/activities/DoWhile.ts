@@ -1,11 +1,4 @@
-import { AsyncHandler } from '@tsdi/ioc';
-import { Input } from '@tsdi/components';
-import { Task } from '../metadata/decor';
-import { ControlActivity } from '../core/ControlActivity';
-import { IActivityContext } from '../core/IActivityContext';
-import { ConditionActivity } from './ConditionActivity';
-import { IWorkflowContext } from '../core/IWorkflowContext';
-import { ActivityType } from '../core/ActivityMetadata';
+import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
 
 
 
@@ -16,24 +9,52 @@ import { ActivityType } from '../core/ActivityMetadata';
  * @class DoWhileActivity
  * @extends {ContentActivity}
  */
-@Task('dowhile')
-export class DoWhileActivity extends ControlActivity {
+@Component('dowhile,[dowhile]')
+export class DoWhileActivity<T> {
 
-    @Input() condition: ConditionActivity;
-
-    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
-
-    private action: AsyncHandler<IWorkflowContext> | AsyncHandler<IWorkflowContext>[];
-
-    async execute(ctx: IActivityContext): Promise<void> {
-        if (!this.action) {
-            this.action = ctx.getExector().parseAction(this.body);
-        }
-        await ctx.getExector().execAction(this.action, async () => {
-            let condition = await this.condition?.execute(ctx);
-            if (condition) {
-                await this.execute(ctx);
-            }
-        });
+    private _context: DirDowhileContext<T> = new DirDowhileContext<T>();
+    private _thenTemplateRef: TemplateRef<DirDowhileContext<T>> | null = null;
+    private _thenViewRef: EmbeddedViewRef<DirDowhileContext<T>> | null = null;
+    constructor(private _viewContainer: ViewContainerRef, templateRef: TemplateRef<DirDowhileContext<T>>) {
+        this._thenTemplateRef = templateRef;
     }
+
+    @Input()
+    set dowhile(condition: T) {
+        this._context.$implicit = this._context.dirDowhile = condition;
+        this._updateView();
+    }
+
+    /**
+     * A template to show if the condition expression evaluates to true.
+     */
+    @Input()
+    set dowhileThen(templateRef: TemplateRef<DirDowhileContext<T>> | null) {
+        assertTemplate('dowhileConent', templateRef);
+        this._thenTemplateRef = templateRef;
+        this._thenViewRef = null;  // clear previous view if any.
+        this._updateView();
+    }
+
+    private _updateView() {
+        if (this._context.$implicit) {
+            if (!this._thenViewRef) {
+                this._viewContainer.clear();
+                if (this._thenTemplateRef) {
+                    this._thenViewRef =
+                        this._viewContainer.createEmbeddedView(this._thenTemplateRef, this._context);
+                }
+            }
+        }
+    }
+
+}
+
+
+/**
+ * Do while context
+ */
+ export class DirDowhileContext<T> {
+    public $implicit: T = null!;
+    public dirDowhile: T = null!;
 }

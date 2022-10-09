@@ -1,5 +1,4 @@
 import { AopModule } from '@tsdi/aop';
-import { LogModule } from '@tsdi/logs';
 import { Module } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { RunAspect } from './aop/RunAspect';

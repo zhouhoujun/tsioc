@@ -1,6 +1,5 @@
 import { Type, Token, ProviderType, tokenId } from '@tsdi/ioc';
-import { Activity } from './Activity';
-import { Template } from '@tsdi/boot';
+import { Activity } from '../Activity';
 
 
 
