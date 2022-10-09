@@ -1,5 +1,6 @@
 import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
-import { RunState, WorkflowContext, ActivityRef } from '../core/WorkflowContext';
+import { ActivityRef } from '../refs/compoent';
+import { RunState } from '../refs/state';
 
 
 /**
@@ -21,12 +22,9 @@ export class RunAspect {
     @AfterReturning('execution(*.run)')
     afterRun(joinPoint: Joinpoint) {
 
-        let ctx = joinPoint.args[0] as WorkflowContext;
-        let startup = ctx.getStartup();
-        if (!startup) {
-            return;
-        }
-        switch (startup.state) {
+        const actRef = joinPoint.target as ActivityRef;
+
+        switch (actRef.state) {
             case RunState.pause:
                 throw new Error('workflow paused!');
             case RunState.stop:

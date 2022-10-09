@@ -1,5 +1,5 @@
 import { Type, Injectable, lang } from '@tsdi/ioc';
-import { ApplicationContext, BootstrapOption, getModuleType, RunnableFactory, Startup, UuidGenerator } from '@tsdi/core';
+import { ApplicationContext, BootstrapOption, getModuleType, RunnableFactory, Startup } from '@tsdi/core';
 import { ActivityRef } from './refs/compoent';
 import { ActivityOption } from './refs/activity';
 
@@ -28,32 +28,6 @@ export class Workflow implements Startup {
         }
     }
 
-
-    // /**
-    //  * run sequence.
-    //  *
-    //  * @static
-    //  * @template T
-    //  * @param {Type} type
-    //  * @returns {Promise<T>}
-    //  * @memberof Workflow
-    //  */
-    // async sequence<T>(type: Type<T>): Promise<T>;
-    // /**
-    //  * run sequence.
-    //  *
-    //  * @static
-    //  * @template T
-    //  * @param {...ActivityType<T>[]} activities
-    //  * @returns {Promise<T>}
-    //  * @memberof Workflow
-    //  */
-    // async sequence<T>(...activities: TypeOf<T>[]): Promise<ActivityRef<T>>;
-    // async sequence(...activities: any[]): Promise<ActivityRef> {
-    //     const option = activities.length > 1 ? { template: activities, providers: [], module: SequenceActivity, staticSeq: true } : activities[0];
-    //     return await this.run(option);
-    // }
-
     /**
      * run activity.
      *
@@ -67,11 +41,6 @@ export class Workflow implements Startup {
         return this.context.bootstrap(target, option);
     }
 
-
-
-    protected createUUID() {
-        return this.context.get(UuidGenerator).generate();
-    }
 }
 
 
