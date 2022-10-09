@@ -1,4 +1,3 @@
-export * from './Workflow';
 export * from './ActivityModule';
 
 export * from './utils/types';

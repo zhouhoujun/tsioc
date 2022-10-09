@@ -1,20 +1,46 @@
-import { Abstract } from '@tsdi/ioc';
-import { ElementRef } from '@tsdi/components';
-import { RunState } from './state';
+import { Abstract, Modules, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 
 
-
+/**
+ * activity option.
+ *
+ * @export
+ * @interface ActivityOption
+ * @extends {BootOption}
+ */
 @Abstract()
-export abstract class ActivityRef<T = any> extends ElementRef<T> {
-    abstract get result(): any;
+export abstract class ActivityOption {
+    /**
+     * name.
+     */
+    name?: string;
+    /**
+    * imports dependens modules
+    *
+    * @type {Modules[]}
+    */
+    imports?: (Modules | ModuleWithProviders)[];
+    /**
+     * activity declarations 
+     */
+    declarations?: Modules[];
+    /**
+     * providers for the module
+     */
+    providers?: ProviderType[];
+    /**
+     * activities component template scope.
+     *
+     * @type {ActivityTemplate}
+     * @memberof ActivityConfigure
+     */
+    template?: string | any[];
 
-    abstract state: RunState;
+    /**
+     * bootstrap.
+     *
+     * @type {Type<T>}
+     */
+    bootstrap?: Modules;
 
-    abstract run(data?: any): Promise<void>;
-
-    abstract stop(): Promise<void>;
-
-    abstract pause(): Promise<void>;
 }
-
-

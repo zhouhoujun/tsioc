@@ -5,7 +5,7 @@ import { RunState } from './state';
 
 
 @Abstract()
-export abstract class ComponentActivityRef<T = any> extends ComponentRef<T> {
+export abstract class ActivityRef<T = any> extends ComponentRef<T> {
     abstract get result(): any;
 
     abstract state: RunState;

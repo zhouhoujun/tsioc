@@ -1,8 +1,10 @@
 import { AopModule } from '@tsdi/aop';
 import { Module } from '@tsdi/core';
+import { ModuleWithProviders } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { RunAspect } from './aop/RunAspect';
-import { ActivityExecutor } from './core/ActivityExecutor';
+import { Workflow } from './Workflow';
+import { ActivityOption } from './refs/activity';
 
 
 
@@ -17,14 +19,20 @@ import { ActivityExecutor } from './core/ActivityExecutor';
         AopModule,
         ComponentsModule
     ],
-    declarations:[
-        
-    ],
     providers: [
-        ActivityExecutor,
+        Workflow,
         RunAspect
     ]
 })
 export class ActivityModule {
+
+    static withOptions(option: ActivityOption): ModuleWithProviders {
+        return {
+            module: ActivityModule,
+            providers: [
+                { provide: ActivityOption, useValue: option }
+            ]
+        }
+    }
 
 }

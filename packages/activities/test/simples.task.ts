@@ -1,126 +1,169 @@
-import { Activity, ActivityContext, Activities } from '../src';
-import { Inject, isString, isFunction, Token } from '@tsdi/ioc';
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { Component, Directive, Input } from '@tsdi/components';
+import { Inject, isString, isFunction, Token, InvocationContext } from '@tsdi/ioc';
+import { AfterViewInit, Component, Directive, EventEmitter, Input, OnInit, Output } from '@tsdi/components';
 
-@Directive('stest')
-export class SimpleTask extends Activity<string> {
-    async execute(ctx: ActivityContext): Promise<string> {
-        // console.log('before simple task:', this.name);
-        return await Promise.resolve('simple task')
-            .then(val => {
-                console.log('return simple task:', val);
-                return val;
-            });
+@Component({
+    selector: 'stest',
+    template: `
+        <assign [value]="text"></assign>
+    `}
+)
+export class SimpleTask implements OnInit, AfterViewInit {
+
+    @Input() text!: string;
+
+    @Output() textChange = new EventEmitter<string>();
+
+    onInit(): void {
+        this.text = 'simple task';
+        this.textChange.emit(this.text);
+    }
+    onAfterViewInit(): void {
+        console.log('return simple task:', this.text);
     }
 
 }
 
-@Directive('loaddata')
-export class LoadData  {
+@Directive('[loaddata]')
+export class LoadData implements OnInit {
     @Input() service?: Token;
     @Input() action?: string;
-    @Input() getParams?: string | ((ctx: ActivityContext) => any[]);
     @Input() params?: any[];
 
-    async execute(ctx: ActivityContext): Promise<any> {
+    @Output() loaddata = new EventEmitter<any>();
+
+    constructor(private ctx: InvocationContext) {
+
+    }
+
+    onInit(): void {
+        this.invokeService();
+    }
+
+    async invokeService(): Promise<any> {
+        const ctx = this.ctx;
         const service = ctx.get(this.service!);
         if (service && service[this.action!]) {
 
             let params: any[];
-            if (this.params && this.params.length) {
+            if (this.params) {
                 params = this.params;
-            } else if (this.getParams) {
-                const getFunc = isString(this.getParams) ? ctx.getExector().eval(this.getParams) : this.getParams;
-                params = isFunction(getFunc) ? getFunc(ctx) : [];
             } else {
                 params = [];
             }
-            return await service[this.action!](...params);
+            const data = await service[this.action!](...params);
+            this.loaddata.emit(data);
         }
     }
 }
 
-@Task('setdata')
-export class SetData extends Activity<void> {
-    @Input() func: string | Function;
-    async execute(ctx: ActivityContext): Promise<void> {
-        let func = isString(this.func) ? ctx.getExector().eval(this.func) : this.func;
-        if (isFunction(func)) {
-            func(ctx);
-        }
-    }
-}
 
-@Task('comowork')
-export class WorkTask extends Activity<string> {
-    async execute(ctx: ActivityContext): Promise<string> {
-        // console.log('before simple task:', this.name);
-        return await Promise.resolve('component task')
-            .then(val => {
-                console.log('return component work task:', val);
-                return val;
-            });
+@Component({
+    selector: 'comowork',
+    template: `
+    `
+})
+export class WorkTask implements AfterViewInit {
+    public text!: string;
+
+    @Output() textChange = new EventEmitter<string>();
+
+    onInit(): void {
+        this.text = 'component task';
+        this.textChange.emit(this.text);
+    }
+
+    onAfterViewInit(): void {
+        console.log('return component work task:', this.text);
     }
 
 }
 
-@Task({
-    deps: [
-        WorkTask
-    ],
+@Component({
     selector: 'comptest',
-    template: [
-        { activity: Activities.if, condition: (ctx) => !!ctx.workflow.args[0], body: [] },
-        {
-            activity: Activities.else,
-            body: [
-                // WorkTask
-                {
-                    activity: Activities.switch,
-                    switch: (ctx) => ctx.workflow.args.length,
-                    cases: [
-                        { case: 0, body: [] }
-                    ]
-                },
-                {
-                    activity: 'comowork'
-                },
-                // {
-                //     activity: 'setdata',
-                //     func: `ctx => ctx.getConext('xxxxx').setResult(ctx.result)`
-                // }
-            ]
-        },
-        // {
-        //     activity: 'comowork'
-        // }
-    ]
+    template: `
+        <activity *if="arg; else elseBlock">
+            
+        <activity>
+        <template #elseBlock>
+            <activity [switch]="args?.length">
+                <assign *case="0" [value]="a"></assign>
+            <activity>
+            <comowork (textChange)="textChange($event)"></comowork>
+        <template>
+    `
+    // template: [
+    //     { activity: Activities.if, condition: (ctx) => !!ctx.workflow.args[0], body: [] },
+    //     {
+    //         activity: Activities.else,
+    //         body: [
+    //             // WorkTask
+    //             {
+    //                 activity: Activities.switch,
+    //                 switch: (ctx) => ctx.workflow.args.length,
+    //                 cases: [
+    //                     { case: 0, body: [] }
+    //                 ]
+    //             },
+    //             {
+    //                 activity: 'comowork'
+    //             },
+    //             // {
+    //             //     activity: 'setdata',
+    //             //     func: `ctx => ctx.getConext('xxxxx').setResult(ctx.result)`
+    //             // }
+    //         ]
+    //     },
+    //     // {
+    //     //     activity: 'comowork'
+    //     // }
+    // ]
 })
-export class SimpleCTask {
+export class SimpleCTask implements OnInit {
+
+    public arg: any;
+
+    public text!: string;
+
+
+    @Output() valueChange = new EventEmitter<string>();
+
+    textChange(value: string) {
+        this.text = value;
+        this.valueChange.emit(value);
+
+    }
+
+    onInit(): void {
+        throw new Error('Method not implemented.');
+    }
+
 
 }
 
 
-@Task({
-    name: 'test-module',
-    deps: [
-        ServerActivitiesModule
-    ],
-    template: [
-        {
-            name: 'test---task---3',
-            activity: Activities.if,
-            condition: ctx => true,
-            body: [SimpleTask]
-        },
-        SimpleCTask
-    ]
+@Component({
+    selector: 'test-module',
+    template: `
+        <stest *if="condition" (textChange)="text = $event"></stest>
+        <comptest *if="!condition" (valueChange)="text = $event"></comptest>
+    `
+    // template: [
+    //     {
+    //         name: 'test---task---3',
+    //         activity: 'if',
+    //         condition: () => true,
+    //         body: [SimpleTask]
+    //     },
+    //     SimpleCTask
+    // ]
 })
-export class TaskModuleTest {
-    constructor(@Inject(ContainerToken) container: IContainer) {
-
+export class TaskModuleTest implements OnInit {
+    onInit(): void {
+        this.condition = true;
     }
+    public text!: string;
+
+    condition?: boolean;
 
 }
 
