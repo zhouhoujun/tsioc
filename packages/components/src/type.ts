@@ -80,12 +80,6 @@ export interface DirectiveDef<T = any> {
     readonly inputs: { [P in keyof T]: string };
 
     /**
-     * @deprecated This is only here because `NgOnChanges` incorrectly uses declared name instead of
-     * public or minified name.
-     */
-    readonly declaredInputs: { [P in keyof T]: string };
-
-    /**
      * A dictionary mapping the outputs' minified property names to their public API names, which
      * are their aliases if any, or their original unminified property names
      * (as in `@Output('alias') propertyName: any;`).

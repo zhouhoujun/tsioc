@@ -13,7 +13,6 @@ import { ModuleLoader } from './module.loader';
 import { LifecycleHooks } from './lifecycle';
 import { Execption } from './execption';
 
-
 /**
  * injector.
  * implements {@link Destroyable}
@@ -240,7 +239,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract unregister<T>(token: Token<T>): this;
     /**
      * invoke method.
-     *
      * @template T
      * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -271,7 +269,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
     /**
      * invoke method.
-     *
+     * 
      * @template T
      * @param {(T | Type<T> | TypeReflect<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.

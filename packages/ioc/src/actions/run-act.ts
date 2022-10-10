@@ -9,6 +9,7 @@ import { ctorName, Decors } from '../metadata/type';
 import { Parameter } from '../resolver';
 import { ArgumentExecption, Execption } from '../execption';
 import { createContext, InvocationContext } from '../context';
+import { ReflectiveResolver } from '../reflective';
 
 
 /**
@@ -22,7 +23,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     const uctx = ctx.context;
     const providers = ctx.reflect.class.providers;
     let newCtx: InvocationContext | undefined;
-    if (!uctx || (uctx.targetType && uctx.targetType !==ctx.type)) {
+    if (!uctx || (uctx.targetType && uctx.targetType !== ctx.type)) {
         newCtx = createContext(ctx.injector, {
             targetType: ctx.type,
             parent: uctx,
@@ -165,10 +166,12 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    if (ctx.reflect.class.runnables.length) {
-        const { injector: injector, type, instance, context } = ctx;
-        ctx.reflect.class.runnables.filter(c => c.auto && c.decorType === Decors.method).forEach(aut => {
-            injector.invoke(instance || type, aut.method, context)
+    const autos = ctx.reflect.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
+    if (autos.length) {
+        const { injector, reflect, instance, context } = ctx;
+        const factory = injector.get(ReflectiveResolver).resolve(reflect, injector, context);
+        autos.forEach(aut => {
+            factory.invoke(aut.method, context, instance)
         })
     }
 

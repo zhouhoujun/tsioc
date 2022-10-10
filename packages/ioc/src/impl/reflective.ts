@@ -137,7 +137,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
      * destroy this.
      */
     destroy(): void | Promise<void> {
-        if(this.destroyed) return;
+        if (this.destroyed) return;
         this._type = null!;
         this._tagPdrs = null!;
         (this as any).injector = null!;

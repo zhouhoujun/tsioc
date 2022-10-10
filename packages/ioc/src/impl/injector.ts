@@ -415,7 +415,6 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeReflect<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
@@ -439,10 +438,6 @@ export class DefaultInjector extends Injector {
             }
         } else {
             providers = args
-        }
-
-        if (target instanceof ReflectiveRef) {
-            return target.invoke(propertyKey, context ?? { ...option, providers })
         }
 
         let targetClass: Type, instance: any;
