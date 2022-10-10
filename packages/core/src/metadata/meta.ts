@@ -1,4 +1,4 @@
-import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Token, Type, TypeMetadata, TypeReflect } from '@tsdi/ioc';
+import { PatternMetadata, ProviderMetadata, ProvidersMetadata, Token, Type, TypeMetadata, TypeDef } from '@tsdi/ioc';
 import { ConfigureService } from '../service';
 
 /**
@@ -40,9 +40,9 @@ export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
 }
 
 /**
- * scan reflect.
+ * scan def.
  */
-export interface ScanReflect extends TypeReflect {
+export interface ScanDef extends TypeDef {
     order?: number;
 }
 

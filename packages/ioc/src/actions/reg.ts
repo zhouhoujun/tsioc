@@ -13,11 +13,11 @@ export abstract class IocRegScope<T extends RegContext = RegContext> extends Ioc
 
 
 export const InitReflectAction = function (ctx: RegContext, next?: () => void): void {
-    if(!ctx.reflect){
-        ctx.reflect = get(ctx.type, true)
+    if(!ctx.def){
+        ctx.def = get(ctx.type, true)
     }
-    if (ctx.reflect.singleton) {
-        ctx.singleton = ctx.reflect.singleton
+    if (ctx.def.singleton) {
+        ctx.singleton = ctx.def.singleton
     }
 
     if (next) {

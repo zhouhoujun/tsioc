@@ -35,10 +35,10 @@ export interface Suite {
  */
 export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: ActionTypes.annoation,
-    reflect: {
+    def: {
         class: (ctx, next) => {
-            (ctx.reflect as SuiteReflect).suite = true;
-            ctx.reflect.annotation = ctx.metadata;
+            (ctx.def as SuiteReflect).suite = true;
+            ctx.def.annotation = ctx.metadata;
             return next()
         }
     },

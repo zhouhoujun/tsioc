@@ -8,7 +8,7 @@ import { Injector, isInjector } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { get } from '../metadata/refl';
-import { isTypeReflect } from '../metadata/type';
+import { isTypeDef } from '../metadata/type';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
 
@@ -322,7 +322,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `"${obj}"`
     } else if (isClassType(obj)) {
         return 'Type<' + getClassName(obj) + '>'
-    } else if (isTypeReflect(obj)) {
+    } else if (isTypeDef(obj)) {
         return `[${obj.class.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
         const str: string[] = [];

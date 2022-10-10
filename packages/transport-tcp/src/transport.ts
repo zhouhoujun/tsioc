@@ -1,8 +1,8 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
+import { Incoming, ListenOpts, mths, Packet, TransportStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
-    ConnectionOpts, hdr, isBuffer, StreamTransportStrategy, ServerRequest, PacketParser,
+    ConnectionOpts, hdr, isBuffer, ServerRequest, PacketParser,
     PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection
 } from '@tsdi/transport';
 import { Buffer } from 'buffer';
@@ -10,7 +10,7 @@ import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 
 @Injectable()
-export class DelimiterTransportStrategy extends StreamTransportStrategy {
+export class DelimiterTransportStrategy extends TransportStrategy {
     private _protocol = 'tcp';
 
     parseStatus(status?: string | number | undefined): number {

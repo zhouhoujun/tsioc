@@ -1,7 +1,7 @@
 import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, ReflectiveResolver } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { Advisor } from '../Advisor';
-import { AopReflect } from './ref';
+import { AopDef } from './ref';
 
 
 /**
@@ -40,9 +40,9 @@ export interface Aspect {
  */
 export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     actionType: ActionTypes.annoation,
-    reflect: {
+    def: {
         class: (ctx, next) => {
-            (ctx.reflect as AopReflect).aspect = ctx.metadata;
+            (ctx.def as AopDef).aspect = ctx.metadata;
             return next()
         }
     },
@@ -92,9 +92,9 @@ export interface NonePointcut {
  * @NonePointcut()
  */
 export const NonePointcut: NonePointcut = createDecorator<ClassMetadata>('NonePointcut', {
-    reflect: {
+    def: {
         class: (ctx, next) => {
-            (ctx.reflect as AopReflect).nonePointcut = true;
+            (ctx.def as AopDef).nonePointcut = true;
             return next()
         }
     }
@@ -194,12 +194,12 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             }
         },
         ...options,
-        reflect: {
+        def: {
             method: (ctx, next) => {
-                if (!(ctx.reflect as AopReflect).advices) {
-                    (ctx.reflect as AopReflect).advices = []
+                if (!(ctx.def as AopDef).advices) {
+                    (ctx.def as AopDef).advices = []
                 }
-                (ctx.reflect as AopReflect).advices.push({ ...ctx.metadata, name: ctx.propertyKey });
+                (ctx.def as AopDef).advices.push({ ...ctx.metadata, name: ctx.propertyKey });
                 return next()
             }
         },

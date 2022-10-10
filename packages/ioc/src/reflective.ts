@@ -1,7 +1,7 @@
 import { ClassType, Type } from './types';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
-import { TypeReflect } from './metadata/type';
+import { TypeDef } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from './context';
@@ -27,9 +27,9 @@ import { OperationInvoker } from './operation';
       */
      abstract resolve<R>(token: Token<R>): R;
      /**
-      * target reflect.
+      * target def.
       */
-     abstract get reflect(): TypeReflect<T>;
+     abstract get def(): TypeDef<T>;
      /**
       * target type.
       */
@@ -108,12 +108,12 @@ import { OperationInvoker } from './operation';
  export abstract class ReflectiveResolver {
      /**
       * resolve operation factory of target type
-      * @param type target type or target type reflect.
+      * @param type target type or target type def.
       * @param injector injector.
       * @param option target type invoke option {@link InvokeArguments}
       * @returns instance of {@link ReflectiveRef}
       */
-     abstract resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
+     abstract resolve<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
  }
  
  

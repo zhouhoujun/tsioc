@@ -1,4 +1,4 @@
-import { Type } from '@tsdi/ioc';
+import { Type, TypeDef } from '@tsdi/ioc';
 import { View } from './vdom/interfaces/view';
 import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/interfaces/node';
 
@@ -64,6 +64,31 @@ export type FactoryFn<T> = {
     (t?: undefined): T;
 };
 
+
+/**
+ * annotation type.
+ */
+ export type AnnotationTypes = 'component' | 'directive';
+
+ /**
+  * AnnotationDef
+  */
+ export interface AnnotationDef<T = any> extends TypeDef<T> {
+     /**
+      * class type.
+      */
+     readonly type: Type<T>;
+     /**
+      * the type of annoation.
+      */
+     annoType?: AnnotationTypes;
+     /**
+      * annoation decorator.
+      */
+     annoDecor?: string;
+ }
+
+
 /**
  * Runtime link information for Directives.
  *
@@ -71,7 +96,7 @@ export type FactoryFn<T> = {
  * directives into templates.
  * 
  */
-export interface DirectiveDef<T = any> {
+export interface DirectiveDef<T = any> extends AnnotationDef<T> {
     /**
      * A dictionary mapping the inputs' minified property names to their public API names, which
      * are their aliases if any, or their original unminified property names

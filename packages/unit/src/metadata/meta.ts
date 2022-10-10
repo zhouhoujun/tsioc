@@ -1,6 +1,6 @@
-import { ClassMetadata, TypeReflect } from '@tsdi/ioc';
+import { ClassMetadata, TypeDef } from '@tsdi/ioc';
 
-export interface SuiteReflect extends TypeReflect {
+export interface SuiteReflect extends TypeDef {
     suite?: boolean;
 }
 

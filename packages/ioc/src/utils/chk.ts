@@ -1,4 +1,4 @@
-import { TypeReflect } from '../metadata/type';
+import { TypeDef } from '../metadata/type';
 import { AbstractType, AnnotationType, ClassType, Type } from '../types';
 import { clsNameExp } from './exps';
 import { getClassAnnotation } from './util';
@@ -304,7 +304,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
 
-    const ann: TypeReflect = getClassAnnotation(target);
+    const ann: TypeDef = getClassAnnotation(target);
     if (ann) {
         if (isBoolean(abstract) && ann.type === target) return abstract ? ann.class.abstract === true : !ann.class.abstract;
         return true

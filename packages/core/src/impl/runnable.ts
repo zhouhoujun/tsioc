@@ -1,4 +1,4 @@
-import { Type, refl, TypeReflect, isFunction, Injector, lang, DefaultReflectiveRef, InvokeArguments } from '@tsdi/ioc';
+import { Type, refl, TypeDef, isFunction, Injector, lang, DefaultReflectiveRef, InvokeArguments } from '@tsdi/ioc';
 import { BootstrapOption, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
 import { ApplicationRunners } from '../runners';
@@ -9,8 +9,8 @@ import { ApplicationRunners } from '../runners';
 export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements RunnableRef<T> {
 
     private _instance: T | undefined;
-    constructor(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, private defaultInvoke = 'run') {
-        super(reflect, injector, options);
+    constructor(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, private defaultInvoke = 'run') {
+        super(def, injector, options);
         this.context.setValue(RunnableRef, this);
     }
 
@@ -22,7 +22,7 @@ export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements Ru
     }
 
     run() {
-        const runnables = this.reflect.class.runnables.filter(r => !r.auto);
+        const runnables = this.def.class.runnables.filter(r => !r.auto);
         if (runnables.length === 1) {
             const runable = runnables[0];
             return this.invoke(runable.method, runable.args, this.instance)
@@ -46,21 +46,21 @@ export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements Ru
  */
 export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
-    constructor(readonly reflect: TypeReflect<T>, private moduleRef?: ModuleRef) {
+    constructor(readonly def: TypeDef<T>, private moduleRef?: ModuleRef) {
         super()
     }
 
     override create(injector: Injector, option?: BootstrapOption) {
 
-        const runnableRef = this.createInstance(this.reflect, injector ?? this.moduleRef, option, option?.defaultInvoke);
+        const runnableRef = this.createInstance(this.def, injector ?? this.moduleRef, option, option?.defaultInvoke);
 
         const runners = injector.get(ApplicationRunners);
         runners.attach(runnableRef);
         return runnableRef
     }
 
-    protected createInstance(reflect: TypeReflect<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new DefaultRunnableRef(reflect, injector, options, invokeMethod)
+    protected createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
+        return new DefaultRunnableRef(def, injector, options, invokeMethod)
     }
 
 }
@@ -74,7 +74,7 @@ export class DefaultRunnableFactoryResolver extends RunnableFactoryResolver {
         super()
     }
 
-    override resolve<T>(type: Type<T> | TypeReflect<T>) {
+    override resolve<T>(type: Type<T> | TypeDef<T>) {
         return new DefaultRunnableFactory(isFunction(type) ? refl.get(type) : type, this.moduleRef)
     }
 }

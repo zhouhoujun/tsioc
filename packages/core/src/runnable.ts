@@ -1,4 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeReflect, Injector, InvokeOption, ReflectiveRef } from '@tsdi/ioc';
+import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeOption, ReflectiveRef } from '@tsdi/ioc';
 
 /**
  * runnable
@@ -52,9 +52,9 @@ export interface BootstrapOption extends InvokeOption {
 @Abstract()
 export abstract class RunnableFactory<T> {
     /**
-     * runnbale reflect.
+     * runnbale def.
      */
-    abstract get reflect(): TypeReflect<T>;
+    abstract get def(): TypeDef<T>;
     /**
      * create new instance of {@link RunnableRef} via this type.
      * @param injector injector.
@@ -73,7 +73,7 @@ export abstract class RunnableFactoryResolver {
      * resolve runnable factory of type.
      * @param type class type.
      */
-    abstract resolve<T>(type: Type<T> | TypeReflect<T>): RunnableFactory<T>;
+    abstract resolve<T>(type: Type<T> | TypeDef<T>): RunnableFactory<T>;
 }
 
 /**

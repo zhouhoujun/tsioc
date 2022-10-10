@@ -1,5 +1,5 @@
 import { ClassType, Type } from '../types';
-import { TypeReflect } from '../metadata/type';
+import { TypeDef } from '../metadata/type';
 import { isFunction } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
@@ -17,9 +17,9 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
     readonly context: InvocationContext;
-    constructor(readonly reflect: TypeReflect<T>, readonly injector: Injector, options?: InvokeArguments) {
+    constructor(readonly def: TypeDef<T>, readonly injector: Injector, options?: InvokeArguments) {
         super()
-        this._type = reflect.type as Type<T>;
+        this._type = def.type as Type<T>;
         this.context = this.createContext(injector, options);
         this.context.setValue(ReflectiveRef, this);
         this.context.onDestroy(this)
@@ -37,12 +37,12 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.reflect.class.invoke(key, context, instance ?? this.resolve(), destroy)
+        return this.def.class.invoke(key, context, instance ?? this.resolve(), destroy)
     }
 
     resolveArguments(method: MethodType<T>, option?: InvokeOption | InvocationContext) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        const args = this.reflect.class.resolveArguments(key, context);
+        const args = this.def.class.resolveArguments(key, context);
         if (destroy) {
             if (isFunction(destroy)) {
                 destroy()
@@ -54,7 +54,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 
     protected createMethodContext(method: MethodType<T>, option?: InvokeOption | InvocationContext): [InvocationContext, string, boolean | Function | undefined] {
-        const key = isFunction(method) ? this.reflect.class.getPropertyName(method(this.reflect.class.getPropertyDescriptors() as any)) : method;
+        const key = isFunction(method) ? this.def.class.getPropertyName(method(this.def.class.getPropertyDescriptors() as any)) : method;
         let context: InvocationContext;
         let destroy: boolean | Function | undefined;
         if (option instanceof InvocationContext) {
@@ -82,7 +82,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 
     createInvoker(method: string, instance?: T): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.reflect, method, instance)
+        return new ReflectiveOperationInvoker(this.def, method, instance)
     }
 
     createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
@@ -100,27 +100,27 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         }
 
         if (!this._tagPdrs) {
-            this._tagPdrs = injector.platform().getTypeProvider(this.reflect)
+            this._tagPdrs = injector.platform().getTypeProvider(this.def)
         }
         let providers = option?.providers;
         let resolvers = option?.resolvers;
         if (!root) {
             providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
-            resolvers = resolvers ? this.reflect.class.resolvers.concat(resolvers) : this.reflect.class.resolvers
+            resolvers = resolvers ? this.def.class.resolvers.concat(resolvers) : this.def.class.resolvers
         }
         const method = option?.methodName;
         if (method) {
-            const mthpdrs = this.reflect.class.getMethodProviders(method);
+            const mthpdrs = this.def.class.getMethodProviders(method);
             providers = (providers && mthpdrs) ? providers.concat(mthpdrs) : (providers ?? mthpdrs);
 
-            const mthrsv = this.reflect.class.getMethodResolvers(method);
+            const mthrsv = this.def.class.getMethodResolvers(method);
             resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv)
         }
 
         return createContext(injector, {
             ...option,
             parent: root ?? option?.parent,
-            targetType: this.reflect.type,
+            targetType: this.def.type,
             providers,
             resolvers
         })
@@ -141,7 +141,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._type = null!;
         this._tagPdrs = null!;
         (this as any).injector = null!;
-        (this as any).reflect = null!;
+        (this as any).def = null!;
         this._destroyed = true;
         return this.context.destroy()
     }
@@ -158,7 +158,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 }
 
 export class DefaultReflectiveResolver extends ReflectiveResolver {
-    resolve<T>(type: ClassType<T> | TypeReflect<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
+    resolve<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
         return new DefaultReflectiveRef(isFunction(type) ? get(type) : type, injector, option)
     }
 }

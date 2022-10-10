@@ -125,13 +125,13 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
  */
 export interface DecorContext extends DecorDefine {
     target: any;
-    reflect: TypeReflect;
+    def: TypeDef;
 }
 
 /**
- * type reflect metadata.
+ * type def metadata.
  */
-export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadata, Annotation {
+export interface TypeDef<T = any> extends ProvidedInMetadata, PatternMetadata, Annotation {
     /**
      * class reflective.
      */
@@ -145,19 +145,19 @@ export interface TypeReflect<T = any> extends ProvidedInMetadata, PatternMetadat
 
 
 /**
- * is type reflect.
+ * is type def or not.
  * @param target 
  * @returns 
  */
-export function isTypeReflect(target: any): target is TypeReflect {
+export function isTypeDef(target: any): target is TypeDef {
     return target && isFunction(target.type) && target.type === target.class?.type
 }
 
 
 /**
- * module reflect.
+ * module def metadata.
  */
-export interface ModuleReflect<T = any> extends TypeReflect<T> {
+export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
      * is module or not.
      */
@@ -286,7 +286,6 @@ export class Reflective<T = any> {
 
     /**
      * Invoke the underlying operation using the given {@code context}.
-     * @param typeRef target type reflect.
      * @param method invoke the method named with.
      * @param context the context to use to invoke the operation
      * @param destroy destroy the context after invoked.
@@ -327,8 +326,8 @@ export class Reflective<T = any> {
     }
 
     /**
-     * resolve args.     
-     * @param typeRef target type reflect.
+     * resolve args.
+     * 
      * @param method invoke the method named with.
      * @param context invocation context.
      */

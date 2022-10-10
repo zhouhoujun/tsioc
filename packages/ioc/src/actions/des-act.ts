@@ -29,7 +29,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements Acti
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton === true, ctx.reflect.static);
+    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.def.singleton === true, ctx.def.static);
     next()
 };
 
@@ -81,7 +81,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 }
 
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.classDecors.forEach(d => {
+    ctx.def.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getDesignHandle(Decors.beforeAnnoation), ctx)
     });
@@ -91,7 +91,7 @@ export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => v
 
 
 export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.classDecors.forEach(d => {
+    ctx.def.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getDesignHandle(Decors.CLASS), ctx)
     });
@@ -108,7 +108,7 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements Actio
 }
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.propDecors.forEach(d => {
+    ctx.def.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getDesignHandle(Decors.property), ctx)
     });
@@ -128,13 +128,13 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     const { injector: injector, type, provide: regpdr, regProvides } = ctx;
     if (regpdr && regpdr !== type) {
-        ctx.reflect.class.provides.forEach(provide => {
+        ctx.def.class.provides.forEach(provide => {
             if (provide != regpdr && regProvides !== false) {
                 injector.inject({ provide, useExisting: regpdr })
             }
         })
     } else {
-        ctx.reflect.class.provides.forEach(provide => {
+        ctx.def.class.provides.forEach(provide => {
             regProvides !== false && injector.inject({ provide, useClass: type })
         })
     }
@@ -151,7 +151,7 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements Action
 }
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.methodDecors.forEach(d => {
+    ctx.def.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getDesignHandle(Decors.method), ctx)
     });
@@ -168,7 +168,7 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    const runs = ctx.reflect.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
+    const runs = ctx.def.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
     if (runs.length < 1) {
         return next()
     }
@@ -176,7 +176,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     const injector = ctx.injector;
     const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
-    const factory = injector.get(ReflectiveResolver).resolve(ctx.reflect, injector);
+    const factory = injector.get(ReflectiveResolver).resolve(ctx.def, injector);
     runs.forEach(meta => {
         factory.invoke(meta.method, undefined, instance);
     });
@@ -191,7 +191,7 @@ export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup
 }
 
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.classDecors.forEach(d => {
+    ctx.def.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getDesignHandle(Decors.annoation), ctx)
     });
@@ -200,7 +200,7 @@ export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
 }
 
 export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.classDecors.forEach(d => {
+    ctx.def.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getDesignHandle(Decors.afterAnnoation), ctx)
     });

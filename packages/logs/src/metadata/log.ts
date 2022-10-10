@@ -186,7 +186,7 @@ export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
         if (ctx.decorType === Decors.parameter || ctx.decorType === Decors.property) {
             const metadata = ctx.metadata as LogMetadata;
             if (!metadata.logname) {
-                metadata.target = ctx.reflect.type;
+                metadata.target = ctx.def.type;
                 metadata.resolver = loggerResolver
             }
             metadata.propertyKey = ctx.propertyKey

@@ -1,7 +1,7 @@
 
 import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
-    Platform, ModuleReflect, processInjectorType, Token, Type, lang,
+    Platform, ModuleDef, processInjectorType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, ReflectiveResolver,
     DefaultReflectiveResolver, isPlainObject, isArray, EMPTY_OBJ, isClass
 } from '@tsdi/ioc';
@@ -22,7 +22,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _instance!: T;
     private _defs = new Set<Type>();
     private _type: Type;
-    private _typeRefl: ModuleReflect;
+    private _typeRefl: ModuleDef;
 
 
     reflectiveResolver = new DefaultReflectiveResolver();
@@ -30,7 +30,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     lifecycle!: ModuleLifecycleHooks;
 
-    constructor(moduleType: ModuleReflect, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
+    constructor(moduleType: ModuleDef, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
         this.isStatic = option.isStatic;
@@ -109,7 +109,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return types
     }
 
-    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleReflect) {
+    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleDef) {
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
@@ -231,8 +231,8 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
 export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 
     private _moduleType: Type;
-    private _moduleRefl: ModuleReflect;
-    constructor(moduleType: Type<T> | ModuleReflect<T>) {
+    private _moduleRefl: ModuleDef;
+    constructor(moduleType: Type<T> | ModuleDef<T>) {
         super();
         if (isFunction(moduleType)) {
             this._moduleType = moduleType;
@@ -257,7 +257,7 @@ export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 }
 
 export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
-    resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T> {
+    resolve<T>(type: Type<T> | ModuleDef<T>): ModuleFactory<T> {
         return new DefaultModuleFactory(type)
     }
 }

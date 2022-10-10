@@ -8,7 +8,7 @@ import { Middleware, MiddlewareFn } from '../../transport/middleware';
 import { mths, Protocols, RequestMethod } from '../../transport/packet';
 import { CanActivate } from '../guard';
 import { joinprefix, normalize, RouteFactoryResolver } from '../route';
-import { MappingReflect, ProtocolRouteMappingMetadata, Router } from '../router';
+import { MappingDef, ProtocolRouteMappingMetadata, Router } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
 
 
@@ -87,16 +87,16 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (parent?: Type<Router> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
-    reflect: {
+    def: {
         class: (ctx, next) => {
-            ctx.reflect.annotation = ctx.metadata;
+            ctx.def.annotation = ctx.metadata;
             return next();
         }
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const reflect = ctx.reflect;
-            const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
+            const def = ctx.def;
+            const metadata = def.class.getMetadata<HandleMetadata>(ctx.currDecor);
             const { route, prefix, version, parent, protocol, interceptors } = metadata;
             const injector = ctx.injector;
 
@@ -110,7 +110,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 if (!(router instanceof Router)) {
                     throw new Execption(lang.getClassName(router) + 'is not message router!');
                 }
-                const factory = injector.get(ReflectiveResolver).resolve(reflect, injector);
+                const factory = injector.get(ReflectiveResolver).resolve(def, injector);
                 factory.onDestroy(() => router.unuse(path));
 
                 router.use({
@@ -258,16 +258,16 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 return { ...arg2 as T, route };
             }
         },
-        reflect: controllerOnly ? undefined : {
+        def: controllerOnly ? undefined : {
             class: (ctx, next) => {
-                ctx.reflect.annotation = ctx.metadata;
+                ctx.def.annotation = ctx.metadata;
                 return next();
             }
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const reflect = ctx.reflect as MappingReflect;
-                const { parent } = reflect.annotation;
+                const def = ctx.def as MappingDef;
+                const { parent } = def.annotation;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
@@ -278,7 +278,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
 
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
-                const routeRef = injector.get(RouteFactoryResolver).resolve(reflect).create(injector);
+                const routeRef = injector.get(RouteFactoryResolver).resolve(def).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));
                 router.use(routeRef);

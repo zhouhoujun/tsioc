@@ -40,7 +40,6 @@ export * from './refs/view';
 export * from './util/array';
 export * from './util/stringify';
 
-export * from './reflect';
 export * from './lifecycle';
 export * from './components';
 

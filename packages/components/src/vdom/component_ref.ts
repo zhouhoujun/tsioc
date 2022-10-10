@@ -1,6 +1,5 @@
 import { Injector, refl, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
-import { ComponentReflect } from '../reflect';
 import { ComponentRef } from '../refs/component';
 import { ElementRef } from '../refs/element';
 import { INJECTOR, LView } from './interfaces/view';
@@ -15,7 +14,7 @@ export class VComponentRef<T> extends ComponentRef<T> {
   changeDetectorRef: ChangeDetectorRef;
 
   constructor(
-    public type: Type<T>,
+    public def: ComponentRef<T>,
     public instance: T,
     public location: ElementRef,
     private _rootLView: LView,

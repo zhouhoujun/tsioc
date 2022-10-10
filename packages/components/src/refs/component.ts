@@ -1,10 +1,9 @@
-import { Abstract, DefaultReflectiveRef, Injector, ReflectiveRef, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, DefaultReflectiveRef, Injector, ReflectiveRef, Type, TypeDef } from '@tsdi/ioc';
 import { RunnableFactory, BootstrapOption, RunnableFactoryResolver } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
-import { ComponentReflect } from '../reflect';
-
+import { ComponentDef } from '../type';
 /**
  * Represents a component created by a `ComponentFactory`.
  * Provides access to the component instance and related objects,
@@ -19,9 +18,9 @@ export abstract class ComponentRef<C = any> extends ReflectiveRef<C> {
      */
     abstract get type(): Type<C>;
     /**
-    * get target reflect.
+    * get target def.
     */
-    abstract get reflect(): ComponentReflect<C>;
+    abstract get def(): ComponentDef<C>;
     /**
      * The host or anchor element for this component instance.
      */
@@ -67,9 +66,9 @@ export abstract class ComponentRef<C = any> extends ReflectiveRef<C> {
 @Abstract()
 export abstract class ComponentFactory<T> {
     /**
-     * component reflect.
+     * component def.
      */
-    abstract get reflect(): TypeReflect<T>;
+    abstract get def(): TypeDef<T>;
     /**
      * create compontent ref.
      * @param type

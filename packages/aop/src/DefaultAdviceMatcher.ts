@@ -4,7 +4,7 @@ import { AdviceMatcher } from './AdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';
 import { MatchPointcut } from './joinpoints/MatchPointcut';
-import { AopReflect } from './metadata/ref';
+import { AopDef } from './metadata/ref';
 
 /**
  * match express.
@@ -23,7 +23,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     constructor(private platform: Platform) { }
 
-    match(aspref: AopReflect, tagref: AopReflect, adviceMetas?: AdviceMetadata[]): MatchPointcut[] {
+    match(aspref: AopDef, tagref: AopDef, adviceMetas?: AdviceMetadata[]): MatchPointcut[] {
         const aspectMeta = aspref.aspect;
         if (aspectMeta) {
             if (aspectMeta.without) {
@@ -101,7 +101,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return false
     }
 
-    filterPointcut(relfect: AopReflect, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
+    filterPointcut(relfect: AopDef, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
         if (!metadata.pointcut) {
             return []
         }
@@ -117,12 +117,12 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         })
     }
 
-    protected matchTypeFactory(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress {
+    protected matchTypeFactory(relfect: AopDef, metadata: AdviceMetadata): MatchExpress {
         const checks = this.genChecks(relfect, metadata);
         return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
     }
 
-    protected genChecks(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress[] {
+    protected genChecks(relfect: AopDef, metadata: AdviceMetadata): MatchExpress[] {
         const checks: MatchExpress[] = [];
         if (metadata.within) {
             checks.push(() => {
@@ -172,14 +172,14 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
     }
 
-    protected expressToFunc(reflect: AopReflect, strExp: string): MatchExpress {
+    protected expressToFunc(def: AopDef, strExp: string): MatchExpress {
 
         if (annContentExp.test(strExp)) {
-            return this.toAnnExpress(reflect, strExp.substring(12, strExp.length - 1))
+            return this.toAnnExpress(def, strExp.substring(12, strExp.length - 1))
         }
 
         if (execContentExp.test(strExp)) {
-            return this.toExecExpress(reflect, strExp.substring(10, strExp.length - 1))
+            return this.toExecExpress(def, strExp.substring(10, strExp.length - 1))
         }
 
         if (withInChkExp.test(strExp)) {
@@ -190,20 +190,20 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (targetChkExp.test(strExp)) {
             const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const platform = this.platform;
-            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(reflect.type).getTokenProvider(torken) === targetType : false
+            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(def.type).getTokenProvider(torken) === targetType : false
         }
 
         return fasleFn
     }
 
-    protected toAnnExpress(reflect: AopReflect, exp: string): MatchExpress {
+    protected toAnnExpress(def: AopDef, exp: string): MatchExpress {
         const annotation = aExp.test(exp) ? exp : ('@' + exp);
-        return (name?: string, fullName?: string) => reflect.class.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
+        return (name?: string, fullName?: string) => def.class.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
-    protected toExecExpress(reflect: AopReflect, exp: string): MatchExpress {
+    protected toExecExpress(def: AopDef, exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name?: string, fullName?: string) => !!name && !reflect.aspect
+            return (name?: string, fullName?: string) => !!name && !def.aspect
         }
 
         if (mthNameExp.test(exp)) {
@@ -223,10 +223,10 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return fasleFn
     }
 
-    protected tranlateExpress(reflect: AopReflect, strExp: string): MatchExpress {
-        if (!boolOper.test(strExp)) return this.expressToFunc(reflect, strExp);
+    protected tranlateExpress(def: AopDef, strExp: string): MatchExpress {
+        if (!boolOper.test(strExp)) return this.expressToFunc(def, strExp);
         const exp = new BoolExpression(strExp, isBoolToken);
-        const fns = exp.tokens.map(t => this.expressToFunc(reflect, t));
+        const fns = exp.tokens.map(t => this.expressToFunc(def, t));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
         return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => {

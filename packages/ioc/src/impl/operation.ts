@@ -1,5 +1,5 @@
 import { ClassType } from '../types';
-import { TypeReflect } from '../metadata/type';
+import { TypeDef } from '../metadata/type';
 import { InvocationContext } from '../context';
 import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
@@ -14,7 +14,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
 
     private _returnType!: ClassType;
     constructor(
-        private typeRef: TypeReflect,
+        private typeRef: TypeDef,
         private method: string,
         private instance?: any) {
     }

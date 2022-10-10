@@ -643,7 +643,7 @@ export const ProviderIn: ProviderIn = createDecorator<ProviderInMetadata>('Provi
     props: (target: ClassType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx, next) => {
-            const meta = ctx.reflect.class.getMetadata<ProviderInMetadata>(ctx.currDecor!);
+            const meta = ctx.def.class.getMetadata<ProviderInMetadata>(ctx.currDecor!);
             const type = ctx.type;
             ctx.injector.platform().setTypeProvider(meta.target, [{ provide: meta.provide || type, useClass: type }])
             return next()

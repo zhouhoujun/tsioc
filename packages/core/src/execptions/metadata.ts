@@ -58,10 +58,10 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHand
     props: (execption?: Type<Error>, options?: { order?: number }) => ({ execption, ...options }),
     design: {
         method: (ctx, next) => {
-            const reflect = ctx.reflect;
-            const decors = reflect.class.getDecorDefines<ExecptionHandlerMetadata>(ctx.currDecor, Decors.method);
+            const def = ctx.def;
+            const decors = def.class.getDecorDefines<ExecptionHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveResolver).resolve(reflect, injector);
+            const factory = injector.get(ReflectiveResolver).resolve(def, injector);
             decors.forEach(decor => {
                 const { execption, order, response } = decor.metadata;
                 const invoker = factory.createInvoker(decor.propertyKey);

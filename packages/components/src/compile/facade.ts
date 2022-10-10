@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ComponentReflect, DirectiveReflect } from '../reflect';
+import { ComponentDef, DirectiveDef } from '../type';
 
 
 /**
@@ -29,10 +29,10 @@ export abstract class CompilerFacade {
      * compile component.
      * @param meta
      */
-    abstract compileComponent(meta: ComponentReflect): any;
+    abstract compileComponent(meta: ComponentDef): any;
     /**
      * compile directive.
      * @param meta
      */
-    abstract compileDirective(meta: DirectiveReflect): any;
+    abstract compileDirective(meta: DirectiveDef): any;
 }

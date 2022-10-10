@@ -1,6 +1,6 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
-    InvokeOption, OnDestroy, tokenId, Type, TypeReflect
+    InvokeOption, OnDestroy, tokenId, Type, TypeDef
 } from '@tsdi/ioc';
 import { ServerEndpointContext } from '../transport/context';
 import { InterceptorLike } from '../transport/endpoint';
@@ -98,9 +98,9 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
      */
     abstract get protocol(): Protocols | undefined;
     /**
-     * controller type reflect.
+     * controller type def.
      */
-    abstract get reflect(): TypeReflect<T>;
+    abstract get def(): TypeDef<T>;
     /**
      * controller injector. the controller registered in.
      */
@@ -155,9 +155,9 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
 @Abstract()
 export abstract class RouteFactory<T = any> {
     /**
-     * route reflect.
+     * route def.
      */
-    abstract get reflect(): TypeReflect<T>;
+    abstract get def(): TypeDef<T>;
     /**
      * create {@link RouteRef}
      * @param injector injector.
@@ -181,7 +181,7 @@ export abstract class RouteFactoryResolver {
      * @param type route class type.
      * @returns instance of {@link RouteFactory}.
      */
-    abstract resolve<T>(type: Type<T> | TypeReflect<T>): RouteFactory<T>;
+    abstract resolve<T>(type: Type<T> | TypeDef<T>): RouteFactory<T>;
 }
 
 const staExp = /^\//;

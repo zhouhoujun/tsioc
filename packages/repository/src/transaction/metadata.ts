@@ -16,10 +16,10 @@ import { TransactionResolver } from './resolver';
 
 export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
     actionType: ActionTypes.methodProviders,
-    reflect: {
+    def: {
         method: [
             (ctx, next) => {
-                ctx.reflect.class.setMethodResolvers(ctx.propertyKey, [TransactionResolver]);
+                ctx.def.class.setMethodResolvers(ctx.propertyKey, [TransactionResolver]);
                 next()
             }
         ]

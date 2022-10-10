@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeDef } from '@tsdi/ioc';
 import { Protocols, RequestMethod } from '../transport/packet';
 import { CanActivate } from './guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -291,9 +291,9 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
 }
 
 /**
- * mapping type reflect.
+ * mapping type def.
  */
-export interface MappingReflect<T = any> extends TypeReflect<T> {
+export interface MappingDef<T = any> extends TypeDef<T> {
     /**
      * protocol type.
      */

@@ -1,4 +1,4 @@
-import { Abstract, Injector, ModuleReflect, ProviderType, Type } from '@tsdi/ioc';
+import { Abstract, Injector, ModuleDef, ProviderType, Type } from '@tsdi/ioc';
 import { ModuleRef, ModuleType } from './module.ref';
 
 
@@ -56,7 +56,7 @@ export abstract class ModuleFactoryResolver {
     static ƿNPT = true;
     /**
      * resolve instance of {@link ModuleFactory}.
-     * @param type module type or module reflect.
+     * @param type module type or module def.
      */
-    abstract resolve<T>(type: Type<T> | ModuleReflect<T>): ModuleFactory<T>;
+    abstract resolve<T>(type: Type<T> | ModuleDef<T>): ModuleFactory<T>;
 }
