@@ -12,7 +12,7 @@ import { ComponentDef } from '../type';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> extends ReflectiveRef<C> {
+export abstract class ComponentRef<C = any> {
     /**
      * component type.
      */

@@ -140,7 +140,6 @@ export interface TypeDef<T = any> extends ProvidedInMetadata, PatternMetadata, A
      * annotation metadata.
      */
     annotation?: any;
-
 }
 
 

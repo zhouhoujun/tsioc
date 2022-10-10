@@ -55,7 +55,7 @@
 // }
 
 // export function getDirectiveDef<T>(type: Type): DirectiveDef<T> {
-//     return refl.get<DirectiveDef>(type) ?? null!;
+//     return refl.get<DirectiveDef>(type)?.def ?? null!;
 // }
 
 // /**

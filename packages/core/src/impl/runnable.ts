@@ -1,4 +1,4 @@
-import { Type, refl, TypeDef, isFunction, Injector, lang, DefaultReflectiveRef, InvokeArguments } from '@tsdi/ioc';
+import { Type, refl, TypeDef, isFunction, Injector, lang, DefaultReflectiveRef, InvokeArguments, DestroyCallback, InvocationContext, InvocationOption, InvokeOption, MethodType, OperationInvoker, Token } from '@tsdi/ioc';
 import { BootstrapOption, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
 import { ApplicationRunners } from '../runners';
@@ -6,11 +6,13 @@ import { ApplicationRunners } from '../runners';
 /**
  * runnableRef implement
  */
-export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements RunnableRef<T> {
+export class DefaultRunnableRef<T> extends RunnableRef<T> {
 
     private _instance: T | undefined;
+    private _impl: DefaultReflectiveRef<T>;
     constructor(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, private defaultInvoke = 'run') {
-        super(def, injector, options);
+        super();
+        this._impl = new DefaultReflectiveRef(def, injector, options);
         this.context.setValue(RunnableRef, this);
     }
 
@@ -36,7 +38,51 @@ export class DefaultRunnableRef<T> extends DefaultReflectiveRef<T> implements Ru
     override destroy(): void | Promise<void> {
         if (this.destroyed) return;
         this._instance = null!
-        return super.destroy();
+        return this._impl.destroy();
+    }
+
+
+    get destroyed(): boolean {
+        return this._impl.destroyed;
+    }
+    get injector(): Injector {
+        return this._impl.injector;
+    }
+    resolve(): T;
+    resolve<R>(token: Token<R>): R;
+    resolve(token?: any): any {
+        return this._impl.resolve(token);
+    }
+    get def(): TypeDef<T> {
+        return this._impl.def;
+    }
+    get type(): Type<T> {
+        return this._impl.type;
+    }
+    get context(): InvocationContext<any> {
+        return this._impl.context;
+    }
+
+    invoke(method: MethodType<T>, option?: InvokeOption, instance?: T): any;
+    invoke(method: MethodType<T>, context?: InvocationContext, instance?: T): any;
+    invoke(method: MethodType<T>, context?: InvokeOption | InvocationContext, instance?: T): any {
+        return this._impl.invoke(method, context, instance);
+    }
+
+    resolveArguments(method: MethodType<T>, context?: InvocationContext<any> | undefined): any[] {
+        return this._impl.resolveArguments(method, context);
+    }
+    createInvoker(method: string, instance?: T | undefined): OperationInvoker<any> {
+        return this._impl.createInvoker(method, instance);
+    }
+    createContext(option?: InvocationOption | undefined): InvocationContext<any>;
+    createContext(injector: Injector, option?: InvocationOption | undefined): InvocationContext<any>;
+    createContext(parant: InvocationContext<any>, option?: InvocationOption | undefined): InvocationContext<any>;
+    createContext(parant?: any, option?: any): InvocationContext<any> {
+        return this._impl.createContext(parant, option);
+    }
+    onDestroy(callback?: DestroyCallback | undefined): void | Promise<void> {
+        return this._impl.onDestroy(callback);
     }
 
 }

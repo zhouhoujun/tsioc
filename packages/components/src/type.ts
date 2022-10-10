@@ -68,25 +68,25 @@ export type FactoryFn<T> = {
 /**
  * annotation type.
  */
- export type AnnotationTypes = 'component' | 'directive';
+export type AnnotationTypes = 'component' | 'directive';
 
- /**
-  * AnnotationDef
-  */
- export interface AnnotationDef<T = any> extends TypeDef<T> {
-     /**
-      * class type.
-      */
-     readonly type: Type<T>;
-     /**
-      * the type of annoation.
-      */
-     annoType?: AnnotationTypes;
-     /**
-      * annoation decorator.
-      */
-     annoDecor?: string;
- }
+/**
+ * AnnotationDef
+ */
+export interface AnnotationDef<T = any> extends TypeDef<T> {
+    /**
+     * class type.
+     */
+    readonly type: Type<T>;
+    /**
+     * the type of annoation.
+     */
+    annoType?: AnnotationTypes;
+    /**
+     * annoation decorator.
+     */
+    annoDecor?: string;
+}
 
 
 /**

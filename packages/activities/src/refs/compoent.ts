@@ -16,7 +16,7 @@ export abstract class ActivityRef<T = any> extends ComponentRef<T> {
      * @returns 
      */
     run() {
-        const state = this.context.get(ComponentState);
+        const state = this.injector.get(ComponentState);
         if (state.componentTypes.indexOf(this.type) < 0) {
             state.componentTypes.push(this.type);
         }
