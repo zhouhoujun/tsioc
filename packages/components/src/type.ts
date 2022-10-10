@@ -1,6 +1,6 @@
 import { Type } from '@tsdi/ioc';
 import { View } from './vdom/interfaces/view';
-import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/interfaces/vnode';
+import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/interfaces/node';
 
 /**
  * Flags passed into template functions to determine which blocks (i.e. creation, update)

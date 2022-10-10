@@ -1,4 +1,4 @@
-import { IComment, IElement, IText } from '../interfaces/node';
+import { IComment, IElement, IText } from '../interfaces/dom';
 
 /**
  * custom renderer

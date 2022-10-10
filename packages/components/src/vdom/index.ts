@@ -8,10 +8,10 @@
 
 
 export * from './interfaces/container';
-export * from './interfaces/node';
+export * from './interfaces/dom';
 export * from './interfaces/query';
 export * from './interfaces/view';
-export * from './interfaces/vnode';
+export * from './interfaces/node';
 
 export * from './renders/view';
 export * from './chk';

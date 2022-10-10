@@ -9,6 +9,7 @@ export * from './injector';
 export * from './context';
 export * from './resolver';
 export * from './operation';
+export * from './reflective';
 
 // module
 export * from './module.loader';

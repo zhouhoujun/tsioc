@@ -1,4 +1,4 @@
-import { assertTemplate, Component, EmbeddedViewRef, EventEmitter, Input, Output, TemplateRef, ViewContainerRef } from '@tsdi/components';
+import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
 
 
 /**

@@ -1,7 +1,7 @@
 import { Token, Type } from '@tsdi/ioc';
 import { QueryList } from '../../refs/query';
 import { View } from './view';
-import { VNode } from './vnode';
+import { TNode } from './node';
 
 /**
  * An object representing query metadata extracted from query annotations.
@@ -63,14 +63,14 @@ export interface TQuery {
      * @param view
      * @param node
      */
-    elementStart(view: View, node: VNode): void;
+    elementStart(view: View, node: TNode): void;
 
     /**
      * A method called when processing the elementEnd instruction - this is mostly useful to determine
      * if a given content query should match any nodes past this point.
      * @param node
      */
-    elementEnd(node: VNode): void;
+    elementEnd(node: TNode): void;
 
     /**
      * A method called when processing the template instruction. This is where a
@@ -78,7 +78,7 @@ export interface TQuery {
      * @param view
      * @param node
      */
-    template(view: View, node: VNode): void;
+    template(view: View, node: TNode): void;
 
     /**
      * A query-related method called when an embedded VView is created based on the content of a
@@ -87,7 +87,7 @@ export interface TQuery {
      * @param node
      * @param childQueryIndex
      */
-    embeddedView(node: VNode, childQueryIndex: number): TQuery | null;
+    embeddedView(node: TNode, childQueryIndex: number): TQuery | null;
 }
 
 
@@ -119,14 +119,14 @@ export interface TQueries {
      * @param view
      * @param node
      */
-    elementStart(view: View, node: VNode): void;
+    elementStart(view: View, node: TNode): void;
 
     /**
      * A proxy method that iterates over all the TQueries in a given VView and calls the corresponding
      * `elementEnd` on each and every TQuery.
      * @param node
      */
-    elementEnd(node: VNode): void;
+    elementEnd(node: TNode): void;
 
     /**
      * A proxy method that iterates over all the TQueries in a given VView and calls the corresponding
@@ -134,14 +134,14 @@ export interface TQueries {
      * @param VView
      * @param tNode
      */
-    template(view: View, node: VNode): void;
+    template(view: View, node: TNode): void;
 
     /**
      * A proxy method that iterates over all the TQueries in a given VView and calls the corresponding
      * `embeddedVView` on each and every TQuery.
      * @param node
      */
-    embeddedView(node: VNode): TQueries;
+    embeddedView(node: TNode): TQueries;
 }
 
 

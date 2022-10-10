@@ -1,9 +1,9 @@
 import { Injector, Token, Type } from '@tsdi/ioc';
 import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, PipeDef, PipeDefList, ViewQueriesFunction } from '../../type';
 import { LContainer } from './container';
-import { IComment, IElement } from './node';
+import { IComment, IElement } from './dom';
 import { LQueries, TQueries } from './query';
-import { VConstants, VNode } from './vnode';
+import { VConstants, TNode } from './node';
 
 
 export const HOST = 0;
@@ -48,7 +48,7 @@ export interface LView extends Array<any> {
     /**
      * Store the `VNode` of the location where the current `LView` is inserted into.
      */
-    [V_HOST]?: VNode;
+    [V_HOST]?: TNode;
 
     readonly [VIEW]: View;
 
@@ -208,14 +208,14 @@ export interface View {
      */
     viewQuery?: ViewQueriesFunction<{}>;
 
-    declNode?: VNode;
+    declNode?: TNode;
 
     data?: VData;
 
     /**
      * A reference to the first child node located in the view.
      */
-    firstChild: VNode | null;
+    firstChild: TNode | null;
 
     /**
      * Full registry of directives and components that may be found in this view.
@@ -506,5 +506,5 @@ export type DestroyHookData = (HookEntry | HookData)[];
  * 
  */
 export type VData =
-    (VNode | PipeDef | DirectiveDef | ComponentDef | number |
+    (TNode | PipeDef | DirectiveDef | ComponentDef | number |
         Type | Token | null | string)[];

@@ -1,11 +1,15 @@
-import { Abstract, StaticInjector } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
 
 
 /**
  * compiler identifiers providers.
  */
-export class Identifiers extends StaticInjector { }
+
+@Abstract()
+export abstract class Identifiers {
+    [k: string]: Function;
+}
 
 /**
  * compiler facade.

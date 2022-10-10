@@ -1,7 +1,7 @@
 import { LContext } from './interfaces/context';
-import { IElement, INode } from './interfaces/node';
+import { IElement, INode } from './interfaces/dom';
 import { LView } from './interfaces/view';
-import { VNode, VNodeFlags, VNodeType, VProjectionNode } from './interfaces/vnode';
+import { TNode, TNodeFlags, TNodeType, TProjectionNode } from './interfaces/node';
 import { unwrapNode } from './native_nodes';
 import { Renderer } from './renders/renderer';
 
@@ -28,7 +28,7 @@ const enum WalkTNodeTreeAction {
  * nodes on the LView or projection boundary.
  */
 function applyNodes(
-    renderer: Renderer, action: WalkTNodeTreeAction, vNode?: VNode, lView?: LView,
+    renderer: Renderer, action: WalkTNodeTreeAction, vNode?: TNode, lView?: LView,
     parentRElement?: IElement, beforeNode?: INode, isProjection = false) {
     while (vNode != null) {
         const rawSlotValue = lView[vNode.index];
@@ -36,16 +36,16 @@ function applyNodes(
         if (isProjection) {
             if (action === WalkTNodeTreeAction.Create) {
                 rawSlotValue && attachPatchData(unwrapNode(rawSlotValue), lView);
-                vNode.flags |= VNodeFlags.isProjected;
+                vNode.flags |= TNodeFlags.isProjected;
             }
         }
-        if ((vNode.flags & VNodeFlags.isDetached) !== VNodeFlags.isDetached) {
-            if (tNodeType & VNodeType.ElementContainer) {
+        if ((vNode.flags & TNodeFlags.isDetached) !== TNodeFlags.isDetached) {
+            if (tNodeType & TNodeType.ElementContainer) {
                 applyNodes(renderer, action, vNode.child, lView, parentRElement, beforeNode, false);
                 applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
-            } else if (tNodeType & VNodeType.Projection) {
+            } else if (tNodeType & TNodeType.Projection) {
                 applyProjectionRecursive(
-                    renderer, action, lView, vNode as VProjectionNode, parentRElement, beforeNode);
+                    renderer, action, lView, vNode as TProjectionNode, parentRElement, beforeNode);
             } else {
                 applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
             }

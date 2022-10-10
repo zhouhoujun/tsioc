@@ -1,6 +1,6 @@
-import { IComment, IElement } from './node';
+import { IComment, IElement } from './dom';
 import { HOST, LView, NEXT, PARENT, V_HOST } from './view';
-import { VNode } from './vnode';
+import { TNode } from './node';
 
 
 
@@ -67,7 +67,7 @@ export interface LContainer extends Array<any> {
     /**
      * Pointer to the `VNode` which represents the host of the container.
      */
-    [V_HOST]?: VNode;
+    [V_HOST]?: TNode;
     /**
      * Access to the parent view is necessary so we can propagate back
      * up from inside a container to parent

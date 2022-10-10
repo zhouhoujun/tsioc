@@ -1,6 +1,5 @@
 
-import { assertTemplate, Component, Directive, DoCheck, EmbeddedViewRef, Host, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
-import { any } from 'expect';
+import { Directive, DoCheck, Host, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
 
 
 /**

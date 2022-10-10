@@ -1,6 +1,6 @@
 import { isArray } from '@tsdi/ioc';
 import { LContainer, TYPE } from './interfaces/container';
-import { INode } from './interfaces/node';
+import { INode } from './interfaces/dom';
 import { LView } from './interfaces/view';
 
 /**

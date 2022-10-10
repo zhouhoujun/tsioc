@@ -1,10 +1,9 @@
-import { Abstract, Injector, Type } from '@tsdi/ioc';
-import { RunnableFactory, BootstrapOption, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
+import { Abstract, DefaultReflectiveRef, Injector, ReflectiveRef, Type, TypeReflect } from '@tsdi/ioc';
+import { RunnableFactory, BootstrapOption, RunnableFactoryResolver } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 import { ComponentReflect } from '../reflect';
-import { ComponentState } from '../state';
 
 /**
  * Represents a component created by a `ComponentFactory`.
@@ -14,7 +13,7 @@ import { ComponentState } from '../state';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> extends RunnableRef<C> {
+export abstract class ComponentRef<C = any> extends ReflectiveRef<C> {
     /**
      * component type.
      */
@@ -49,25 +48,6 @@ export abstract class ComponentRef<C = any> extends RunnableRef<C> {
      */
     abstract get changeDetectorRef(): ChangeDetectorRef;
 
-    /**
-     * runable interface.
-     * @param context 
-     * @returns 
-     */
-    run() {
-        const state = this.context.get(ComponentState);
-        if (state.componentTypes.indexOf(this.type) < 0) {
-            state.componentTypes.push(this.type);
-        }
-        state.components.push(this);
-        this.render();
-    }
-
-    /**
-     * render the component.
-     */
-    abstract render(): void;
-
     abstract get destroyed(): boolean;
     /**
     * destroy this.
@@ -85,7 +65,11 @@ export abstract class ComponentRef<C = any> extends RunnableRef<C> {
  * component factory.
  */
 @Abstract()
-export abstract class ComponentFactory<T> extends RunnableFactory<T> {
+export abstract class ComponentFactory<T> {
+    /**
+     * component reflect.
+     */
+    abstract get reflect(): TypeReflect<T>;
     /**
      * create compontent ref.
      * @param type
@@ -98,7 +82,7 @@ export abstract class ComponentFactory<T> extends RunnableFactory<T> {
  * component factory resolver.
  */
 @Abstract()
-export abstract class ComponentFactoryResolver extends RunnableFactoryResolver {
+export abstract class ComponentFactoryResolver {
 
     /**
      * resolve component factory.

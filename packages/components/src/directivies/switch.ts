@@ -78,7 +78,7 @@ export class SwitchView {
  *
  * The following example shows how cases can be nested:
  * ```
- * <container-element [switch]="switch_expression">
+ *     <container-element [switch]="switch_expression">
  *       <some-element *switchCase="match_expression_1">...</some-element>
  *       <some-element *switchCase="match_expression_2">...</some-element>
  *       <some-other-element *switchCase="match_expression_3">...</some-other-element>

@@ -1,4 +1,4 @@
-import { INode } from './node';
+import { INode } from './dom';
 import { LView } from './view';
 
 /**

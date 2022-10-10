@@ -1,6 +1,6 @@
 import { isLContainer } from './chk';
-import { INode } from './interfaces/node';
-import { VElementNode, VNode, VNodeType } from './interfaces/vnode';
+import { INode } from './interfaces/dom';
+import { TElementNode, TNode, TNodeType } from './interfaces/node';
 import { CONTAINER_HEADER_OFFSET, LContainer } from './interfaces/container';
 import { DECLARATION_COMPONENT_VIEW, HOST, LView, PARENT, VIEW, View, V_HOST } from './interfaces/view';
 
@@ -11,7 +11,7 @@ export function unwrapNode(value: INode | LView | LContainer): INode {
     return value as INode;
 }
 
-export function collectNativeNodes(view: View, lView: LView, node: VNode | null, result: any[], isProjection = false): any[] {
+export function collectNativeNodes(view: View, lView: LView, node: TNode | null, result: any[], isProjection = false): any[] {
     while (node !== null) {
         const lNode = lView[node.index];
         if (lNode !== null) {
@@ -33,11 +33,11 @@ export function collectNativeNodes(view: View, lView: LView, node: VNode | null,
         }
 
         const tNodeType = node.type;
-        if (tNodeType & VNodeType.ElementContainer) {
+        if (tNodeType & TNodeType.ElementContainer) {
             collectNativeNodes(view, lView, node.child, result);
-        } else if (tNodeType & VNodeType.Projection) {
+        } else if (tNodeType & TNodeType.Projection) {
             const componentView = lView[DECLARATION_COMPONENT_VIEW];
-            const componentHost = componentView[V_HOST] as VElementNode;
+            const componentHost = componentView[V_HOST] as TElementNode;
             const slotIdx = node.projection as number;
 
             const nodesInSlot = componentHost.projection[slotIdx];
