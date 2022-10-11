@@ -1,8 +1,8 @@
 // CommonJS / Node have global context exposed as "global" variable.
 // We don't want to include the whole node.d.ts this this compilation unit so we'll just fake
 // the global "global" var for now.
-declare var global: any;
-declare var WorkerGlobalScope: any;
+declare let global: any;
+declare let WorkerGlobalScope: any;
 
 const __window = typeof window !== 'undefined' && window;
 const __self = typeof self !== 'undefined' && typeof WorkerGlobalScope !== 'undefined' &&

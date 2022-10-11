@@ -1,13 +1,13 @@
 import { Observable } from 'rxjs';
 import { EventEmitter } from '../EventEmitter';
-import { flatten } from '../util/array';
+import { arrayEquals, flatten } from '../util/array';
 
 /**
  * symbol iterator.
  * @param this query list.
  */
 function symbolIterator<T>(this: QueryList<T>): Iterator<T> {
-  return ((this as any as {_results: Array<T>})._results as any)[Symbol.iterator]();
+  return ((this as any as { _results: Array<T> })._results as any)[Symbol.iterator]();
 }
 
 /**
@@ -39,13 +39,14 @@ function symbolIterator<T>(this: QueryList<T>): Iterator<T> {
 export class QueryList<T> implements Iterable<T> {
   public readonly dirty = true;
   private _results: Array<T> = [];
-  public readonly changes: Observable<any> = new EventEmitter();
+  private _changesDetected = false;
+  private _changes: EventEmitter<QueryList<T>> | null = null;
 
   readonly length: number = 0;
   readonly first!: T;
   readonly last!: T;
 
-  constructor() {
+  constructor(private _emitDistinctChangesOnly: boolean = false) {
     // This function should be declared on the prototype, but doing so there will cause the class
     // declaration to have side-effects and become not tree-shakable. For this reason we do it in
     // the constructor.
@@ -53,6 +54,21 @@ export class QueryList<T> implements Iterable<T> {
     const symbol = Symbol.iterator;
     const proto = QueryList.prototype as any;
     if (!proto[symbol]) proto[symbol] = symbolIterator;
+  }
+
+
+  /**
+   * Returns `Observable` of `QueryList` notifying the subscriber of changes.
+   */
+  get changes(): Observable<any> {
+    return this._changes || (this._changes = new EventEmitter());
+  }
+
+  /**
+   * Returns the QueryList entry at `index`.
+   */
+  get(index: number): T | undefined {
+    return this._results[index];
   }
 
   /**
@@ -75,7 +91,7 @@ export class QueryList<T> implements Iterable<T> {
    * See
    * [Array.find](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find)
    */
-  find(fn: (item: T, index: number, array: T[]) => boolean): T|undefined {
+  find(fn: (item: T, index: number, array: T[]) => boolean): T | undefined {
     return this._results.find(fn);
   }
 
@@ -120,25 +136,37 @@ export class QueryList<T> implements Iterable<T> {
    * occurs.
    *
    * @param resultsTree The query results to store
+   * @param identityAccessor Optional function for extracting stable object identity from a value
+   *    in the array. This function is executed for each element of the query result list while
+   *    comparing current query list with the new one (provided as a first argument of the `reset`
+   *    function) to detect if the lists are different. If the function is not provided, elements
+   *    are compared as is (without any pre-processing).
    */
-  reset(resultsTree: Array<T|any[]>): void {
-    this._results = flatten(resultsTree);
-    (this as {dirty: boolean}).dirty = false;
-    (this as {length: number}).length = this._results.length;
-    (this as {last: T}).last = this._results[this.length - 1];
-    (this as {first: T}).first = this._results[0];
+  reset(resultsTree: Array<T | any[]>, identityAccessor?: (value: T) => unknown): void {
+    // Cast to `QueryListInternal` so that we can mutate fields which are readonly for the usage of
+    // QueryList (but not for QueryList itself.)
+    const self = this as QueryListInternal<T>;
+    (self as { dirty: boolean }).dirty = false;
+    const newResultFlat = flatten(resultsTree);
+    this._changesDetected = !arrayEquals(self._results, newResultFlat, identityAccessor);
+    if (this._changesDetected) {
+      self._results = newResultFlat;
+      self.length = newResultFlat.length;
+      self.last = newResultFlat[this.length - 1];
+      self.first = newResultFlat[0];
+    }
   }
 
   /**
    * Triggers a change event by emitting on the `changes` {@link EventEmitter}.
    */
   notifyOnChanges(): void {
-    (this.changes as EventEmitter<any>).emit(this);
+    if (this._changes && (this._changesDetected || !this._emitDistinctChangesOnly)) this._changes.emit(this);
   }
 
   /** internal */
   setDirty() {
-    (this as {dirty: boolean}).dirty = true;
+    (this as { dirty: boolean }).dirty = true;
   }
 
   /** internal */
@@ -149,7 +177,19 @@ export class QueryList<T> implements Iterable<T> {
 
 
   [Symbol.iterator](): Iterator<T, any, undefined> {
-    return  (this._results as any)[Symbol.iterator]();
+    return (this._results as any)[Symbol.iterator]();
   }
 
+}
+
+
+/**
+ * Internal set of APIs used by the framework. (not to be made public)
+ */
+interface QueryListInternal<T> extends QueryList<T> {
+  reset(a: any[]): void;
+  notifyOnChanges(): void;
+  length: number;
+  last: T;
+  first: T;
 }

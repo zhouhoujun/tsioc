@@ -7,7 +7,8 @@
  */
 
 //  import {Component} from './core';
- import * as o from './output/ast';
+ import { hasOwn } from '@tsdi/ioc';
+import * as o from './output/ast';
  
  /**
   * Provides access to reflection data about symbols that the compiler needs.
@@ -41,7 +42,7 @@ export class JitReflector implements CompileReflector {
       throw new Error(`Cannot resolve external reference to ${
           ref.moduleName}, only references to @tsdi/components are supported.`);
     }
-    if (!this.context.hasOwnProperty(ref.name!)) {
+    if (!hasOwn(this.context, ref.name!)) {
       throw new Error(`No value provided for @tsdi/components symbol '${ref.name!}'.`);
     }
     return this.context[ref.name!];

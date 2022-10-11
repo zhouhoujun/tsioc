@@ -13,7 +13,7 @@ declare let devMode: boolean;
 /**
  * viewRef implement.
  */
-export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalViewRef {
+export class ViewRefImpl<T = any> extends EmbeddedViewRef<T> implements InternalViewRef {
     private _appRef: ViewRefTracker | null = null;
     private _attachedToViewContainer = false;
 
@@ -65,7 +65,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
         } else if (this._attachedToViewContainer) {
             const parent = this._lView[PARENT];
             if (isLContainer(parent)) {
-                const viewRefs = parent[VIEW_REFS] as ViewRef[] | null;
+                const viewRefs = parent[VIEW_REFS] as ViewRefImpl[] | null;
                 const index = viewRefs ? viewRefs.indexOf(this) : -1;
                 if (index > -1) {
                     detachView(parent, index);
@@ -299,7 +299,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
 /**
  * Root view Ref.
  */
-export class RootViewRef<T> extends ViewRef<T> {
+export class RootViewRef<T> extends ViewRefImpl<T> {
     constructor(public _view: LView) {
         super(_view);
     }

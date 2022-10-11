@@ -8,9 +8,39 @@ import { TNode } from './node';
  */
 export interface TQueryMetadata {
     predicate: Type<any> | Token | string[];
-    descendants: boolean;
     read: any;
-    isStatic: boolean;
+    flags: QueryFlags;
+}
+
+/**
+ * A set of flags to be used with Queries.
+ *
+ * NOTE: Ensure changes here are reflected in `packages/compiler/src/render3/view/compiler.ts`
+ */
+export const enum QueryFlags {
+    /**
+     * No flags
+     */
+    none = 0b0000,
+
+    /**
+     * Whether or not the query should descend into children.
+     */
+    descendants = 0b0001,
+
+    /**
+     * The query can be computed statically and hence can be assigned eagerly.
+     *
+     * NOTE: Backwards compatibility with ViewEngine.
+     */
+    isStatic = 0b0010,
+
+    /**
+     * If the `QueryList` should fire change event only if actual change to query was computed (vs old
+     * behavior where the change was fired whenever the query was recomputed, even if the recomputed
+     * query resulted in the same list.)
+     */
+    emitDistinctChangesOnly = 0b0100,
 }
 
 /**
@@ -48,7 +78,7 @@ export interface TQuery {
      * ng-template and ElementRef for other elements);
      * - a positive number - index of an injectable to be read from the element injector.
      */
-    matches?: number[];
+    matches: number[] | null;
 
     /**
      * A flag indicating if a given query crosses an <ng-template> element. This flag exists for
@@ -81,13 +111,13 @@ export interface TQuery {
     template(view: TView, node: TNode): void;
 
     /**
-     * A query-related method called when an embedded VView is created based on the content of a
+     * A query-related method called when an embedded TView is created based on the content of a
      * <ng-template> element. We call this method to determine if a given query should be propagated
      * to the embedded view and if so - return a cloned TQuery for this embedded view.
-     * @param node
+     * @param tNode
      * @param childQueryIndex
      */
-    embeddedView(node: TNode, childQueryIndex: number): TQuery | null;
+    embeddedTView(tNode: TNode, childQueryIndex: number): TQuery | null;
 }
 
 
@@ -137,11 +167,11 @@ export interface TQueries {
     template(view: TView, node: TNode): void;
 
     /**
-     * A proxy method that iterates over all the TQueries in a given VView and calls the corresponding
-     * `embeddedVView` on each and every TQuery.
-     * @param node
+     * A proxy method that iterates over all the TQueries in a given TView and calls the corresponding
+     * `embeddedTView` on each and every TQuery.
+     * @param tNode
      */
-    embeddedView(node: TNode): TQueries;
+    embeddedTView(tNode: TNode): TQueries | null;
 }
 
 
@@ -157,7 +187,7 @@ export interface LQuery<T> {
      * Materialized query matches for a given view only (!). Results are initialized lazily so the
      * array of matches is set to `null` initially.
      */
-    matches?: (T | null)[];
+    matches: (T | null)[] | null;
 
     /**
      * A QueryList where materialized query results should be reported.
@@ -190,7 +220,7 @@ export interface LQueries {
      * for a new embedded view is instantiated (cloned) from the declaration view.
      * @param view
      */
-    createEmbeddedView(view: TView): LQueries;
+    createEmbeddedView(view: TView): LQueries | null;
 
     /**
      * A method called when an embedded view is inserted into a container. As a result all impacted

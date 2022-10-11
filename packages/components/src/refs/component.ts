@@ -1,9 +1,11 @@
-import { Abstract, DefaultReflectiveRef, Injector, ReflectiveRef, Type, TypeDef } from '@tsdi/ioc';
-import { RunnableFactory, BootstrapOption, RunnableFactoryResolver } from '@tsdi/core';
+import { Abstract, Injector, Type, TypeDef } from '@tsdi/ioc';
+import { BootstrapOption } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 import { ComponentDef } from '../type';
+
+
 /**
  * Represents a component created by a `ComponentFactory`.
  * Provides access to the component instance and related objects,

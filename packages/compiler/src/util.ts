@@ -190,7 +190,7 @@ export interface LexerRange {
 export type Byte = number;
 
 export function utf8Encode(str: string): Byte[] {
-  let encoded: Byte[] = [];
+  const encoded: Byte[] = [];
   for (let index = 0; index < str.length; index++) {
     let codePoint = str.charCodeAt(index);
 

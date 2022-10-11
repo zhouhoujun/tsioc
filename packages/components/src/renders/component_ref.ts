@@ -1,21 +1,21 @@
-import { Injector, refl, Type } from '@tsdi/ioc';
+import { Injector, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentRef } from '../refs/component';
 import { ElementRef } from '../refs/element';
 import { INJECTOR, LView } from '../interfaces/view';
 import { TContainerNode, TElementContainerNode, TElementNode } from '../interfaces/node';
-import { RootViewRef, ViewRef } from './view_ref';
+import { RootViewRef, ViewRefImpl } from './view_ref';
 import { ComponentDef } from '../type';
 
 /**
  * component ref.
  */
-export class VComponentRef<T> extends ComponentRef<T> {
+export class ComponentRefImpl<T> extends ComponentRef<T> {
   private _injector?: Injector;
   private _type: Type<T>;
   private _destroyed = false;
 
-  hostView: ViewRef<T>;
+  hostView: ViewRefImpl<T>;
   changeDetectorRef: ChangeDetectorRef;
   constructor(
     public def: ComponentDef<T>,

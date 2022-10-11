@@ -160,7 +160,7 @@
      return fixup;
    }
  
-   getDefinition(type: any, kind: DefinitionKind, ctx: OutputContext, forceShared: boolean = false):
+   getDefinition(type: any, kind: DefinitionKind, ctx: OutputContext, forceShared = false):
        o.Expression {
      const definitions = this.definitionsOf(kind);
      let fixup = definitions.get(type);

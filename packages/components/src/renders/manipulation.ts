@@ -126,7 +126,7 @@ export function createElementNode(
  * @param tView The `TView' of the `LView` from which elements should be added or removed
  * @param lView The view from which elements should be added or removed
  */
-export function removeViewFromContainer(tView: LView, lView: LView): void {
+export function removeViewFromContainer(tView: TView, lView: LView): void {
     const renderer = lView[RENDERER];
     applyView(tView, lView, renderer, WalkTNodeTreeAction.Detach, null, null);
     lView[HOST] = null;
