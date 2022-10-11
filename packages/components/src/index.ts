@@ -1,7 +1,6 @@
 export * from './type';
 export * from './state';
 export * from './EventEmitter';
-export * from './renderer';
 
 // metadata
 export * from './metadata/meta';
@@ -21,9 +20,6 @@ export * from './directivies/if';
 export * from './directivies/outlet';
 export * from './directivies/plural';
 export * from './directivies/switch';
-
-// i18n
-export * from './i18n/tokens';
 
 // pipes
 export * from './pipes/async';
@@ -50,6 +46,3 @@ export * from './util/stringify';
 
 export * from './lifecycle';
 export * from './components';
-
-
-export * as vdom from './vdom';

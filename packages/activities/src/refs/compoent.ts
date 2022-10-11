@@ -1,4 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
+import { Runner } from '@tsdi/core';
 import { ComponentRef, ComponentState } from '@tsdi/components';
 import { RunState } from './state';
 
@@ -15,6 +16,7 @@ export abstract class ActivityRef<T = any> extends ComponentRef<T> {
      * @param context 
      * @returns 
      */
+    @Runner()
     run() {
         const state = this.injector.get(ComponentState);
         if (state.componentTypes.indexOf(this.type) < 0) {

@@ -1,5 +1,6 @@
 import { LView } from '../interfaces/view';
 
+declare let devMode: any;
 
 /** Updates binding and returns the value. */
 export function updateBinding(lView: LView, bindingIndex: number, value: any): any {
@@ -9,8 +10,8 @@ export function updateBinding(lView: LView, bindingIndex: number, value: any): a
 
 /** Gets the current binding value. */
 export function getBinding(lView: LView, bindingIndex: number): any {
-    // ngDevMode && assertIndexInRange(lView, bindingIndex);
-    // ngDevMode &&
+    // devMode && assertIndexInRange(lView, bindingIndex);
+    // devMode &&
     //     assertNotSame(lView[bindingIndex], NO_CHANGE, 'Stored value should never be NO_CHANGE.');
     return lView[bindingIndex];
 }
@@ -29,15 +30,15 @@ export function getBinding(lView: LView, bindingIndex: number): any {
  *          `CheckNoChangesMode`)
  */
 export function bindingUpdated(lView: LView, bindingIndex: number, value: any): boolean {
-    // ngDevMode && assertNotSame(value, NO_CHANGE, 'Incoming value should never be NO_CHANGE.');
-    // ngDevMode &&
+    // devMode && assertNotSame(value, NO_CHANGE, 'Incoming value should never be NO_CHANGE.');
+    // devMode &&
     //     assertLessThan(bindingIndex, lView.length, `Slot should have been initialized to NO_CHANGE`);
     const oldValue = lView[bindingIndex];
 
     if (Object.is(oldValue, value)) {
         return false;
     } else {
-        // if (ngDevMode && isInCheckNoChangesMode()) {
+        // if (devMode && isInCheckNoChangesMode()) {
         //     // View engine didn't report undefined values as changed on the first checkNoChanges pass
         //     // (before the change detection was run).
         //     const oldValueToCompare = oldValue !== NO_CHANGE ? oldValue : undefined;

@@ -1,9 +1,10 @@
 import { Injector, Token, Type } from '@tsdi/ioc';
-import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, PipeDef, PipeDefList, RenderFlags, ViewQueriesFunction } from '../type';
+import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, RenderFlags, ViewQueriesFunction } from '../type';
 import { LContainer } from './container';
 import { IComment, IElement } from './dom';
 import { LQueries, TQueries } from './query';
 import { VConstants, TNode, TConstants } from './node';
+import { Renderer, RendererFactory } from './renderer';
 
 
 export const HOST = 0;
@@ -81,7 +82,15 @@ export interface LView extends Array<any> {
 
     [CONTEXT]: RootContext | any | null;
 
-    [INJECTOR]: Injector | null;
+    /** An optional Module Injector to be used as fall back after Element Injectors are consulted. */
+    readonly [INJECTOR]: Injector | null;
+
+    /** Factory to be used for creating Renderer. */
+    [RENDERER_FACTORY]: RendererFactory;
+
+    /** Renderer to be used for this view. */
+    [RENDERER]: Renderer;
+
 }
 
 
@@ -185,7 +194,6 @@ export const enum TViewType {
     Embedded = 2,
 }
 
-export type HostBindingsFunction<T> = <U extends T>(rf: RenderFlags, ctx: U) => void;
 export interface HostBindingOpCodes extends Array<number | HostBindingsFunction<any>> {
     debug?: string[];
 }

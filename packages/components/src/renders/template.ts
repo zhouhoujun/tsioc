@@ -6,7 +6,7 @@ import { EmbeddedViewRef } from '../refs/view';
 import { createElementRef } from './element';
 import { ViewRefImpl } from './view_ref';
 
-
+declare let devMode: any;
 
 // in g3 depends on them being separate.
 class TemplateRefImpl<T> extends TemplateRef<T> {
@@ -23,7 +23,7 @@ class TemplateRefImpl<T> extends TemplateRef<T> {
             embeddedTView.declTNode, null, null, null, null);
 
         const declarationLContainer = this._declarationLView[this._declarationTContainer.index];
-        //   ngDevMode && assertLContainer(declarationLContainer);
+        //   devMode && assertLContainer(declarationLContainer);
         embeddedLView[DECLARATION_LCONTAINER] = declarationLContainer;
 
         const declarationViewLQueries = this._declarationLView[QUERIES];
@@ -57,7 +57,7 @@ export function injectTemplateRef<T>(): TemplateRef<T> | null {
  */
 export function createTemplateRef<T>(hostTNode: TNode, hostLView: LView): TemplateRef<T> | null {
     if (hostTNode.type & TNodeType.Container) {
-        // ngDevMode && assertDefined(hostTNode.tViews, 'TView must be allocated');
+        // devMode && assertDefined(hostTNode.tViews, 'TView must be allocated');
         return new TemplateRefImpl(
             hostLView, hostTNode as TContainerNode, createElementRef(hostTNode, hostLView));
     }

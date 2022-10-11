@@ -1,16 +1,6 @@
 import { RendererStyleFlags } from '../type';
-import { IComment, IElement, INode, IText } from '../interfaces/dom';
+import { IComment, IElement, INode, IText } from './dom';
 
-/**
- * custom renderer
- */
-export interface ObjectOrientedRenderer {
-    createComment(data: string): IComment;
-    createElement(tagName: string): IElement;
-    createElementNS(namespace: string, tagName: string): IElement;
-    createTextNode(data: string): IText;
-    querySelector(selectors: string): IElement;
-}
 
 /**
  * Procedural style of API needed to create elements and text nodes.
@@ -19,7 +9,7 @@ export interface ObjectOrientedRenderer {
  * facade that enables element manipulation. This also facilitates backwards compatibility
  * with Renderer2.
  */
-export interface ProceduralRenderer {
+export interface Renderer {
     destroy(): void;
     createComment(value: string): IComment;
     createElement(name: string, namespace?: string | null): IElement;
@@ -55,13 +45,6 @@ export interface ProceduralRenderer {
     listen(
         target: string | INode, eventName: string,
         callback: (event: any) => boolean | void): () => void;
-}
-
-
-export type Renderer = ObjectOrientedRenderer | ProceduralRenderer;
-
-export function isProceduralRenderer(renderer: Renderer): renderer is ProceduralRenderer {
-    return !!((renderer as any).listen);
 }
 
 export interface RendererFactory {

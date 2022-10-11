@@ -9,7 +9,7 @@ import { removeFromArray } from '../util/array';
 import { checkNoChangesInRootView, checkNoChangesInternal, detectChangesInRootView, detectChangesInternal, markViewDirty, storeCleanupWithContext } from './share';
 import { RuntimeErrorCode, RuntimeExecption } from '../errors';
 
-declare let devMode: boolean;
+declare let devMode: any;
 /**
  * viewRef implement.
  */

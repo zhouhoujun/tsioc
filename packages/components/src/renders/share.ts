@@ -1,8 +1,91 @@
-import { isRootView } from '../interfaces/chk';
+import { Token } from '@tsdi/ioc';
+import { isComponentDef, isRootView } from '../interfaces/chk';
+import { CONTAINER_HEADER_OFFSET, LContainer } from '../interfaces/container';
 import { LContext } from '../interfaces/context';
+import { IComment, IElement } from '../interfaces/dom';
+import { TNode, TNodeProviderIndexes } from '../interfaces/node';
 import { CLEANUP, CONTEXT, FLAGS, LView, LViewFlags, RENDERER_FACTORY, RootContext, TVIEW, TView } from '../interfaces/view';
+import { DirectiveDef } from '../type';
 import { getLViewParent } from './native_nodes';
 
+declare let devMode: any;
+/**
+ * Searches for the given token among the node's directives and providers.
+ *
+ * @param tNode TNode on which directives are present.
+ * @param tView The tView we are currently processing
+ * @param token Provider token or type of a directive to look for.
+ * @param canAccessViewProviders Whether view providers should be considered.
+ * @param isHostSpecialCase Whether the host special case applies.
+ * @returns Index of a found directive or provider, or null when none found.
+ */
+export function locateDirectiveOrProvider<T>(
+    tNode: TNode, tView: TView, token: Token<T> | string, canAccessViewProviders: boolean,
+    isHostSpecialCase: boolean | number): number | null {
+    const nodeProviderIndexes = tNode.providerIndexes;
+    const tInjectables = tView.data;
+
+    const injectablesStart = nodeProviderIndexes & TNodeProviderIndexes.ProvidersStartIndexMask;
+    const directivesStart = tNode.directiveStart;
+    const directiveEnd = tNode.directiveEnd;
+    const cptViewProvidersCount =
+        nodeProviderIndexes >> TNodeProviderIndexes.CptViewProvidersCountShift;
+    const startingIndex =
+        canAccessViewProviders ? injectablesStart : injectablesStart + cptViewProvidersCount;
+    // When the host special case applies, only the viewProviders and the component are visible
+    const endIndex = isHostSpecialCase ? injectablesStart + cptViewProvidersCount : directiveEnd;
+    for (let i = startingIndex; i < endIndex; i++) {
+        const providerTokenOrDef = tInjectables[i] as Token<any> | DirectiveDef<any> | string;
+        if (i < directivesStart && token === providerTokenOrDef ||
+            i >= directivesStart && (providerTokenOrDef as DirectiveDef<any>).type === token) {
+            return i;
+        }
+    }
+    if (isHostSpecialCase) {
+        const dirDef = tInjectables[directivesStart] as DirectiveDef<any>;
+        if (dirDef && isComponentDef(dirDef) && dirDef.type === token) {
+            return directivesStart;
+        }
+    }
+    return null;
+}
+
+
+const LContainerArray: any = class LContainer extends Array {};
+/**
+ * Creates a LContainer, either from a container instruction, or for a ViewContainerRef.
+ *
+ * @param hostNative The host element for the LContainer
+ * @param hostTNode The host TNode for the LContainer
+ * @param currentView The parent view of the LContainer
+ * @param native The native comment element
+ * @param isForViewContainerRef Optional a flag indicating the ViewContainerRef case
+ * @returns LContainer
+ */
+export function createLContainer(
+    hostNative: IElement | IComment | LView, currentView: LView, native: IComment,
+    tNode: TNode): LContainer {
+    // devMode && assertLView(currentView);
+    // https://jsperf.com/array-literal-vs-new-array-really
+    const lContainer: LContainer = new (devMode ? LContainerArray : Array)(
+        hostNative,   // host native
+        true,         // Boolean `true` in this position signifies that this is an `LContainer`
+        false,        // has transplanted views
+        currentView,  // parent
+        null,         // next
+        0,            // transplanted views to refresh count
+        tNode,        // t_host
+        native,       // native,
+        null,         // view refs
+        null,         // moved views
+    );
+    // devMode &&
+    //     assertEqual(
+    //         lContainer.length, CONTAINER_HEADER_OFFSET,
+    //         'Should allocate correct number of slots for LContainer header.');
+    // devMode && attachLContainerDebug(lContainer);
+    return lContainer;
+}
 
 /**
  * Marks current view and all ancestors dirty.
@@ -44,8 +127,8 @@ export function storeCleanupWithContext(
     const lCleanup = getOrCreateLViewCleanup(lView);
     if (context === null) {
         // If context is null that this is instance specific callback. These callbacks can only be
-        // inserted after template shared instances. For this reason in ngDevMode we freeze the TView.
-        // if (ngDevMode) {
+        // inserted after template shared instances. For this reason in devMode we freeze the TView.
+        // if (devMode) {
         //   Object.freeze(getOrCreateTViewCleanup(tView));
         // }
         lCleanup.push(cleanupFn);
@@ -72,7 +155,7 @@ export function getOrCreateTViewCleanup(tView: TView): any[] {
  * a component, directive or a DOM node).
  */
 export function readPatchedData(target: any): LView | LContext | null {
-    // ngDevMode && assertDefined(target, 'Target expected');
+    // devMode && assertDefined(target, 'Target expected');
     return target[MONKEY_PATCH_KEY_NAME] || null;
 }
 
