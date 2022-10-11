@@ -1,7 +1,6 @@
-import { KeyValueArray } from '../../util/array';
+import { KeyValueArray } from '../util/array';
 import { INode } from './dom';
-import { View } from './view';
-
+import { TView } from './view';
 
 /**
  * TNodeType corresponds to the {@link TNode} `type` property.
@@ -54,7 +53,14 @@ export enum TNodeType {
      * location. Seeing a `Placeholder` `TNode` already there tells the system that it should reuse
      * existing `TNode` (rather than create a new one) and just update the missing information.
      */
-    Placeholder = 0b1000000
+    Placeholder = 0b1000000,
+
+    // Combined Types These should never be used for `TNode.type` only as a useful way to check
+    // if `TNode.type` is one of several choices.
+
+    // See: https://github.com/microsoft/TypeScript/issues/35875 why we can't refer to existing enum.
+    AnyRNode = 0b11,        // Text | Element,
+    AnyContainer = 0b1100,  // Container | ElementContainer, // See:
 }
 
 /**
@@ -348,6 +354,23 @@ export type VConstantsFactory = () => VConstants;
  */
 export type VConstantsOrFactory = VConstants | VConstantsFactory;
 
+
+
+/**
+ * A combination of:
+ * - Attribute names and values.
+ * - Special markers acting as flags to alter attributes processing.
+ * - Parsed ngProjectAs selectors.
+ */
+export type TAttributes = (string | AttributeMarker | CssSelector)[];
+
+/**
+ * Constants that are associated with a view. Includes:
+ * - Attribute arrays.
+ * - Local definition arrays.
+ * - Translated messages (i18n).
+ */
+export type TConstants = (TAttributes | string)[];
 
 /**
  * Binding data (flyweight) for a particular node that is shared between all templates
@@ -799,7 +822,7 @@ export interface TElement<TNode, TParent, TChild, TView, TProjection> {
  *
  * see: https://en.wikipedia.org/wiki/Flyweight_pattern for more on the Flyweight pattern
  */
-export interface TNode extends TElement<TNode, TElementNode | TContainerNode, TNode,  View | View[], (TNode | INode[])[] | number> {
+export interface TNode extends TElement<TNode, TElementNode | TContainerNode, TNode, TView | TView[], (TNode | INode[])[] | number> {
 
 }
 
@@ -867,7 +890,7 @@ export interface TContainerNode extends TNode {
      * - They are dynamically created
      */
     parent: TElementNode | TElementContainerNode | null;
-    views: View | View[] | null;
+    views: TView | TView[] | null;
     projection: null;
     value: null;
 }
@@ -977,7 +1000,7 @@ export type TNodeWithLocalRefs = TContainerNode | TElementNode | TElementContain
  * - `<div #nativeDivEl>` - `nativeDivEl` should point to the native `<div>` element;
  * - `<ng-template #tplRef>` - `tplRef` should point to the `TemplateRef` instance;
  */
-export type LocalRefExtractor = (TNode: TNodeWithLocalRefs, currentView: View) => any;
+export type LocalRefExtractor = (TNode: TNodeWithLocalRefs, currentView: TView) => any;
 
 /**
  * Returns `true` if the `TNode` has a directive which has `@Input()` for `class` binding.

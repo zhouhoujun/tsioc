@@ -1,21 +1,17 @@
-import { isLContainer } from './chk';
-import { INode } from './interfaces/dom';
-import { TElementNode, TNode, TNodeType } from './interfaces/node';
-import { CONTAINER_HEADER_OFFSET, LContainer } from './interfaces/container';
-import { DECLARATION_COMPONENT_VIEW, HOST, LView, PARENT, VIEW, View, V_HOST } from './interfaces/view';
+import { isLContainer } from '../interfaces/chk';
+import { INode } from '../interfaces/dom';
+import { TElementNode, TNode, TNodeType } from '../interfaces/node';
+import { CONTAINER_HEADER_OFFSET, LContainer } from '../interfaces/container';
+import { DECLARATION_COMPONENT_VIEW, HOST, LView, PARENT, TVIEW, TView, T_HOST } from '../interfaces/view';
+import { unwrapRNode } from '../util/view';
 
-export function unwrapNode(value: INode | LView | LContainer): INode {
-    while (Array.isArray(value)) {
-        value = value[HOST];
-    }
-    return value as INode;
-}
 
-export function collectNativeNodes(view: View, lView: LView, node: TNode | null, result: any[], isProjection = false): any[] {
+
+export function collectNativeNodes(view: TView, lView: LView, node: TNode | null, result: any[], isProjection = false): any[] {
     while (node !== null) {
         const lNode = lView[node.index];
         if (lNode !== null) {
-            result.push(unwrapNode(lNode));
+            result.push(unwrapRNode(lNode));
         }
 
         // A given lNode can represent either a native node or a LContainer (when it is a host of a
@@ -24,10 +20,10 @@ export function collectNativeNodes(view: View, lView: LView, node: TNode | null,
         if (isLContainer(lNode)) {
             for (let i = CONTAINER_HEADER_OFFSET; i < lNode.length; i++) {
                 const lViewInAContainer = lNode[i];
-                const lViewFirstChildTNode = lViewInAContainer[VIEW].firstChild;
+                const lViewFirstChildTNode = lViewInAContainer[TVIEW].firstChild;
                 if (lViewFirstChildTNode !== null) {
                     collectNativeNodes(
-                        lViewInAContainer[VIEW], lViewInAContainer, lViewFirstChildTNode, result);
+                        lViewInAContainer[TVIEW], lViewInAContainer, lViewFirstChildTNode, result);
                 }
             }
         }
@@ -36,22 +32,28 @@ export function collectNativeNodes(view: View, lView: LView, node: TNode | null,
         if (tNodeType & TNodeType.ElementContainer) {
             collectNativeNodes(view, lView, node.child, result);
         } else if (tNodeType & TNodeType.Projection) {
-            const componentView = lView[DECLARATION_COMPONENT_VIEW];
-            const componentHost = componentView[V_HOST] as TElementNode;
-            const slotIdx = node.projection as number;
-
-            const nodesInSlot = componentHost.projection[slotIdx];
+            const nodesInSlot = getProjectionNodes(lView, node);
             if (Array.isArray(nodesInSlot)) {
                 result.push(...nodesInSlot);
             } else {
-                const parentView = getLViewParent(componentView);
-                collectNativeNodes(parentView[VIEW], parentView, nodesInSlot, result, true);
+                const parentView = getLViewParent(lView[DECLARATION_COMPONENT_VIEW])!;
+                collectNativeNodes(parentView[TVIEW], parentView, nodesInSlot, result, true);
             }
         }
         node = isProjection ? node.projectionNext : node.next;
     }
 
     return result;
+}
+
+export function getProjectionNodes(lView: LView, tNode: TNode | null): TNode | INode[] | null {
+    if (tNode !== null) {
+        const componentView = lView[DECLARATION_COMPONENT_VIEW];
+        const componentHost = componentView[T_HOST] as TElementNode;
+        const slotIdx = tNode.projection as number;
+        return componentHost.projection![slotIdx];
+    }
+    return null;
 }
 
 /**

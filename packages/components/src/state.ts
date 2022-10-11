@@ -1,7 +1,7 @@
-import { Injectable, lang, Type } from '@tsdi/ioc';
+import { Injectable, isFunction, lang, Type } from '@tsdi/ioc';
 import { ApplicationContext } from '@tsdi/core';
 import { OnDestroy } from './lifecycle';
-import { ComponentFactory, ComponentRef } from './refs/component';
+import { ComponentFactory, ComponentFactoryResolver, ComponentRef } from './refs/component';
 import { InternalViewRef } from './refs/inter';
 import { ViewRef } from './refs/view';
 
@@ -27,8 +27,9 @@ export class ComponentState<T = any> implements OnDestroy {
    * bootstrap component ref.
    * @param compRef 
    */
-  bootstrap<C>(component: ComponentFactory<C> | Type<C>) {
-    const compRef = this.context.bootstrap(component) as ComponentRef<C>;
+  bootstrap<C>(component: ComponentFactory<C> | Type<C>): ComponentRef<C> {
+    const factory = isFunction(component) ? this.context.get(ComponentFactoryResolver).resolve(component) : component;
+    const compRef = factory.create(this.context.injector, { context: this.context }) as ComponentRef<C>;
     this.componentTypes.push(compRef.type);
     compRef.onDestroy(() => {
       this.detachView(compRef.hostView);
@@ -38,6 +39,7 @@ export class ComponentState<T = any> implements OnDestroy {
     this.attachView(compRef.hostView);
     this.tick();
     this.components.push(compRef);
+    return compRef;
   }
 
   tick(): void {

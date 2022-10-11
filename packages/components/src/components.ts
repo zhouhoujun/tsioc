@@ -5,6 +5,7 @@ import { TemplateOutletDirective } from './directivies/outlet';
 import { Plural, PluralCase } from './directivies/plural';
 import { DirSwitch, DirSwitchCase, DirSwitchDefault } from './directivies/switch';
 import { AsyncPipe } from './pipes/async';
+import { ComponentState } from './state';
 
 
 
@@ -16,6 +17,7 @@ import { AsyncPipe } from './pipes/async';
  */
 @Module({
     providers:[
+        ComponentState
         // {provide: ComponentFactoryResolver, useClass: }
     ],
     exports:[

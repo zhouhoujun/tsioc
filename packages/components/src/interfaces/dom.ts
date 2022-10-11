@@ -2,8 +2,16 @@ export const containerTag = 'v-container';
 export const contentTag = 'v-content';
 export const templateTag = 'v-template';
 
-export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-export const MATH_ML_NAMESPACE = 'http://www.w3.org/1998/MathML/';
+export const SVG_NAMESPACE = 'svg';
+export const SVG_NAMESPACE_URI = 'http://www.w3.org/2000/svg';
+export const MATH_ML_NAMESPACE = 'math';
+export const MATH_ML_NAMESPACE_URI = 'http://www.w3.org/1998/MathML/';
+
+export function getNamespaceUri(namespace: string): string | null {
+    const name = namespace.toLowerCase();
+    return name === SVG_NAMESPACE ? SVG_NAMESPACE_URI :
+        (name === MATH_ML_NAMESPACE ? MATH_ML_NAMESPACE_URI : null);
+}
 
 
 /**
@@ -13,15 +21,15 @@ export interface INode {
     /**
      * Returns the parent Element, Document, or DocumentFragment
      */
-    parentNode?: INode;
+    parentNode: INode | null;
     /**
      * Returns the parent Element if there is one
      */
-    parentElement?: IElement;
+    parentElement: IElement | null;
     /**
      * Gets the Node immediately following this one in the parent's childNodes
      */
-    nextSibling?: INode;
+    nextSibling: INode | null;
     /**
      * Removes a child from the current node and returns the removed node
      * @param oldChild the child node to remove

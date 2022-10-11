@@ -1,6 +1,6 @@
 import { Type, TypeDef } from '@tsdi/ioc';
-import { View } from './vdom/interfaces/view';
-import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/interfaces/node';
+import { TView } from './interfaces/view';
+import { CssSelectorList, VAttributes, VConstantsOrFactory } from './interfaces/node';
 
 /**
  * Flags passed into template functions to determine which blocks (i.e. creation, update)
@@ -183,6 +183,33 @@ export interface DirectiveDef<T = any> extends AnnotationDef<T> {
 
 }
 
+export enum ViewEncapsulation {
+    /**
+     * Emulates a native Shadow DOM encapsulation behavior by adding a specific attribute to the
+     * component's host element and applying the same attribute to all the CSS selectors provided
+     * via {@link Component#styles styles} or {@link Component#styleUrls styleUrls}.
+     *
+     * This is the default option.
+     */
+    Emulated = 0,
+
+    // Historically the 1 value was for `Native` encapsulation which has been removed as of v11.
+
+    /**
+     * Doesn't provide any sort of CSS style encapsulation, meaning that all the styles provided
+     * via {@link Component#styles styles} or {@link Component#styleUrls styleUrls} are applicable
+     * to any HTML element of the application regardless of their host Component.
+     */
+    None = 2,
+
+    /**
+     * Uses the browser's native Shadow DOM API to encapsulate CSS styles, meaning that it creates
+     * a ShadowRoot for the component's host element which is then used to encapsulate
+     * all the Component's styling.
+     */
+    ShadowDom = 3
+}
+
 /**
  * Runtime link information for Components.
  *
@@ -220,6 +247,17 @@ export interface ComponentDef<T = any> extends DirectiveDef<T> {
     viewQuery?: ViewQueriesFunction<T>;
 
     /**
+     * The view encapsulation type, which determines how styles are applied to
+     * DOM elements. One of
+     * - `Emulated` (default): Emulate native scoping of styles.
+     * - `Native`: Use the native encapsulation mechanism of the renderer.
+     * - `ShadowDom`: Use modern [ShadowDOM](https://w3c.github.io/webcomponents/spec/shadow/) and
+     *   create a ShadowRoot for component's host element.
+     * - `None`: Do not provide any template or style encapsulation.
+     */
+    readonly encapsulation: ViewEncapsulation;
+
+    /**
      * Defines arbitrary developer-defined data to be stored on a renderer instance.
      * This is useful for renderers that delegate to other renderers.
      */
@@ -248,7 +286,7 @@ export interface ComponentDef<T = any> extends DirectiveDef<T> {
      * runtime uses this place to store the computed virtual view for the component. This gets filled on
      * the first run of component.
      */
-    view?: View;
+    view?: TView;
 
 }
 

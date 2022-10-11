@@ -1,11 +1,15 @@
 import { InternalViewRef, ViewRefTracker } from '../refs/inter';
 import { EmbeddedViewRef } from '../refs/view';
-import { VIEW_REFS } from './interfaces/container';
-import { CONTEXT, FLAGS, INJECTOR, LView, LViewFlags, PARENT, VIEW } from './interfaces/view';
-import { isLContainer } from './chk';
+import { VIEW_REFS } from '../interfaces/container';
+import { CONTEXT, FLAGS, INJECTOR, LView, LViewFlags, PARENT, TVIEW } from '../interfaces/view';
+import { isLContainer } from '../interfaces/chk';
 import { collectNativeNodes } from './native_nodes';
-import { ApplicationContext } from '@tsdi/core';
+import { destroyLView, detachView, renderDetachView } from './manipulation';
+import { removeFromArray } from '../util/array';
+import { checkNoChangesInRootView, checkNoChangesInternal, detectChangesInRootView, detectChangesInternal, markViewDirty, storeCleanupWithContext } from './share';
+import { RuntimeErrorCode, RuntimeExecption } from '../errors';
 
+declare let devMode: boolean;
 /**
  * viewRef implement.
  */
@@ -15,7 +19,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
 
     get rootNodes(): any[] {
         const lView = this._lView;
-        const view = lView[VIEW];
+        const view = lView[TVIEW];
         return collectNativeNodes(view, lView, view.firstChild, []);
     }
 
@@ -47,6 +51,10 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
         return this._lView[CONTEXT] as T;
     }
 
+    set context(value: T) {
+        this._lView[CONTEXT] = value;
+    }
+
     get destroyed(): boolean {
         return (this._lView[FLAGS] & LViewFlags.Destroyed) === LViewFlags.Destroyed;
     }
@@ -66,11 +74,11 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
             }
             this._attachedToViewContainer = false;
         }
-        destroyLView(this._lView[VIEW], this._lView);
+        destroyLView(this._lView[TVIEW], this._lView);
     }
 
     onDestroy(callback: Function) {
-        storeCleanupWithContext(this._lView[VIEW], this._lView, null, callback);
+        storeCleanupWithContext(this._lView[TVIEW], this._lView, null, callback);
     }
 
     /**
@@ -250,7 +258,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * See {@link ChangeDetectorRef#detach detach} for more information.
      */
     detectChanges(): void {
-        this._lView[INJECTOR].get(ApplicationContext).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        detectChangesInternal(this._lView[TVIEW], this._lView, this.context);
     }
 
     /**
@@ -260,24 +268,29 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * introduce other changes.
      */
     checkNoChanges(): void {
-        this._lView[INJECTOR].get(ApplicationContext).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        if (devMode) {
+            checkNoChangesInternal(this._lView[TVIEW], this._lView, this.context);
+        }
     }
 
     attachToViewContainerRef() {
         if (this._appRef) {
-            throw new Error('This view is already attached directly to the ApplicationRef!');
+            const errorMessage =
+                devMode ? 'This view is already attached directly to the ApplicationRef!' : '';
+            throw new RuntimeExecption(RuntimeErrorCode.VIEW_ALREADY_ATTACHED, errorMessage);
         }
         this._attachedToViewContainer = true;
     }
 
     detachFromAppRef() {
         this._appRef = null;
-        renderDetachView(this._lView[VIEW], this._lView);
+        renderDetachView(this._lView[TVIEW], this._lView);
     }
 
     attachToAppRef(appRef: ViewRefTracker) {
         if (this._attachedToViewContainer) {
-            throw new Error('This view is already attached to a ViewContainer!');
+            const errorMessage = devMode ? 'This view is already attached to a ViewContainer!' : '';
+            throw new RuntimeExecption(RuntimeErrorCode.VIEW_ALREADY_ATTACHED, errorMessage);
         }
         this._appRef = appRef;
     }
@@ -291,15 +304,17 @@ export class RootViewRef<T> extends ViewRef<T> {
         super(_view);
     }
 
-    detectChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { lview: this._view, context: this._view[CONTEXT] } });
+    override detectChanges(): void {
+        detectChangesInRootView(this._view);
     }
 
-    checkNoChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { viewtype: this._lView[VIEW].type }, body: { lview: this._view, context: this._view[CONTEXT] } });
+    override checkNoChanges(): void {
+        if (devMode) {
+            checkNoChangesInRootView(this._view);
+        }
     }
 
-    get context(): T {
+    override get context(): T {
         return null!;
     }
 }

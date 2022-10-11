@@ -1,6 +1,6 @@
 import { Token, Type } from '@tsdi/ioc';
-import { QueryList } from '../../refs/query';
-import { View } from './view';
+import { QueryList } from '../refs/query';
+import { TView } from './view';
 import { TNode } from './node';
 
 /**
@@ -63,7 +63,7 @@ export interface TQuery {
      * @param view
      * @param node
      */
-    elementStart(view: View, node: TNode): void;
+    elementStart(view: TView, node: TNode): void;
 
     /**
      * A method called when processing the elementEnd instruction - this is mostly useful to determine
@@ -78,7 +78,7 @@ export interface TQuery {
      * @param view
      * @param node
      */
-    template(view: View, node: TNode): void;
+    template(view: TView, node: TNode): void;
 
     /**
      * A query-related method called when an embedded VView is created based on the content of a
@@ -119,7 +119,7 @@ export interface TQueries {
      * @param view
      * @param node
      */
-    elementStart(view: View, node: TNode): void;
+    elementStart(view: TView, node: TNode): void;
 
     /**
      * A proxy method that iterates over all the TQueries in a given VView and calls the corresponding
@@ -134,7 +134,7 @@ export interface TQueries {
      * @param VView
      * @param tNode
      */
-    template(view: View, node: TNode): void;
+    template(view: TView, node: TNode): void;
 
     /**
      * A proxy method that iterates over all the TQueries in a given VView and calls the corresponding
@@ -190,19 +190,19 @@ export interface LQueries {
      * for a new embedded view is instantiated (cloned) from the declaration view.
      * @param view
      */
-    createEmbeddedView(view: View): LQueries;
+    createEmbeddedView(view: TView): LQueries;
 
     /**
      * A method called when an embedded view is inserted into a container. As a result all impacted
      * `LQuery` objects (and associated `QueryList`) are marked as dirty.
      * @param view
      */
-    insertView(view: View): void;
+    insertView(view: TView): void;
 
     /**
      * A method called when an embedded view is detached from a container. As a result all impacted
      * `LQuery` objects (and associated `QueryList`) are marked as dirty.
      * @param view
      */
-    detachView(view: View): void;
+    detachView(view: TView): void;
 }

@@ -7,14 +7,8 @@
  */
 
 
-export * from './interfaces/container';
-export * from './interfaces/dom';
-export * from './interfaces/query';
-export * from './interfaces/view';
-export * from './interfaces/node';
 
-export * from './renders/view';
-export * from './chk';
+
 export * from './component_ref';
 export * from './native_nodes';
 export * from './view_ref';

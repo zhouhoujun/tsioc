@@ -36,6 +36,14 @@ export * from './refs/element';
 export * from './refs/template';
 export * from './refs/view';
 
+// interfaces
+export * from './interfaces/container';
+export * from './interfaces/dom';
+export * from './interfaces/query';
+export * from './interfaces/view';
+export * from './interfaces/node';
+export * from './interfaces/chk';
+
 // util
 export * from './util/array';
 export * from './util/stringify';

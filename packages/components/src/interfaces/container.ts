@@ -1,5 +1,5 @@
 import { IComment, IElement } from './dom';
-import { HOST, LView, NEXT, PARENT, V_HOST } from './view';
+import { HOST, LView, NEXT, PARENT, T_HOST } from './view';
 import { TNode } from './node';
 
 
@@ -67,7 +67,7 @@ export interface LContainer extends Array<any> {
     /**
      * Pointer to the `VNode` which represents the host of the container.
      */
-    [V_HOST]?: TNode;
+    [T_HOST]?: TNode;
     /**
      * Access to the parent view is necessary so we can propagate back
      * up from inside a container to parent
@@ -83,12 +83,12 @@ export interface LContainer extends Array<any> {
      * a different `LContainer`. We need to track views created from a given declaration point since
      * queries collect matches from the embedded view declaration point and _not_ the insertion point.
      */
-    [MOVED_VIEWS]?: LView[];
+    [MOVED_VIEWS]: LView[] | null;
 
     readonly [NATIVE]: IComment;
 
     /**
      * Array of `ViewRef`s used by any `ViewContainerRef`s that point to this container.
      */
-    [VIEW_REFS]?: any[];
+    [VIEW_REFS]: any[] | null;
 }
