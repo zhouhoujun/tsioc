@@ -12,7 +12,7 @@ import { Advisor } from '@tsdi/aop';
  *
  * @export
  * @class SuiteRunner
- * @implements {IRunner<any>}
+ * @implements {UnitRunner<T>}
  */
 export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitRunner<T> {
 
@@ -64,7 +64,7 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.invoke(key, {
+        Promise.resolve(this.ref.invoke(key, {
             providers: [
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }

@@ -1,4 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeOption, ReflectiveRef } from '@tsdi/ioc';
+import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeOption, ReflectiveRef, DestroyCallback } from '@tsdi/ioc';
 
 /**
  * runnable
@@ -14,14 +14,25 @@ export interface Runnable {
  * runner
  */
 @Abstract()
-export abstract class RunnableRef<T = any> extends ReflectiveRef<T> implements Runnable, Destroyable, OnDestroy {
+export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnDestroy {
     /**
-     * target instance.
+     * runnable reflective ref.
+     */
+    abstract get ref(): ReflectiveRef<T>;
+    /**
+      * runnable def.
+      */
+    abstract get def(): TypeDef<T>;
+    /**
+     * runnable type.
+     */
+    abstract get type(): Type<T>;
+    /**
+     * runnable instance.
      *
      * @readonly
      * @abstract
      * @type {T}
-     * @memberof RunnableRef
      */
     abstract get instance(): T;
     /**
@@ -32,6 +43,15 @@ export abstract class RunnableRef<T = any> extends ReflectiveRef<T> implements R
      * runnable ref has destroyed or not.
      */
     abstract get destroyed(): boolean;
+    /**
+     * destroy this.
+     */
+    abstract destroy(): void;
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    abstract onDestroy(callback?: DestroyCallback): void;
 }
 
 

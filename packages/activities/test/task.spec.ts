@@ -1,27 +1,38 @@
 import expect = require('expect');
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { ApplicationContext } from '@tsdi/core';
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 import { Workflow } from '../src/Workflow';
 import { WorkflowService } from '../src/service';
 
 
 describe('activity test', () => {
 
-    let ctx: ApplicationContext;
-    let workflow: WorkflowService;
-    before(async () => {
-        ctx = await Workflow.run({
-            declarations: [
-                SimpleCTask,
-                SimpleTask,
-                TaskModuleTest
-            ]
-        }, {});
-        workflow = ctx.get(WorkflowService);
+    describe('#run acitivity as boot', ()=> {
+        it('should bootstrap with single task.', async () => {
+            const ctx = await Workflow.run(SimpleTask);
+            const runner = ctx.runners.runners[0];
+            // console.log(ctx.startup);
+            expect(runner.instance instanceof SimpleTask).toBe(true);
+            // console.log(result);
+            expect(runner.instance.text).toEqual('simple task');
+        });
+
     })
 
-    describe('#auto register with build', () => {
+    describe('#run by WorkflowService', () => {
+        let ctx: ApplicationContext;
+        let workflow: WorkflowService;
+        before(async () => {
+            ctx = await Workflow.run({
+                declarations: [
+                    SimpleCTask,
+                    SimpleTask,
+                    TaskModuleTest
+                ]
+            }, {});
+            workflow = ctx.get(WorkflowService);
+        })
+
 
         it('should bootstrap with single task.', async () => {
             const acRef = await workflow.run(SimpleTask);

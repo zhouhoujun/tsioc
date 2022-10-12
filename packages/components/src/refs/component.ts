@@ -1,9 +1,10 @@
-import { Abstract, Injector, Type, TypeDef } from '@tsdi/ioc';
-import { BootstrapOption } from '@tsdi/core';
+import { Abstract, Injectable, Injector, InvokeArguments, isFunction, lang, refl, Type, TypeDef } from '@tsdi/ioc';
+import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 import { ComponentDef } from '../type';
+import { ComponentState } from '../state';
 
 
 /**
@@ -76,7 +77,7 @@ export abstract class ComponentFactory<T> {
      * @param type
      * @param option 
      */
-    abstract create(injector: Injector, option: BootstrapOption): ComponentRef<T>;
+    abstract create(injector: Injector): ComponentRef<T>;
 }
 
 /**
@@ -89,5 +90,52 @@ export abstract class ComponentFactoryResolver {
      * resolve component factory.
      * @param type 
      */
-    abstract resolve<T>(type: Type<T>): ComponentFactory<T>;
+    abstract resolve<T>(type: Type<T> | TypeDef<T>): ComponentFactory<T>;
+}
+
+/**
+ * Component RunnableRef.
+ *
+ * @export
+ * @class ComponentRunnableRef
+ */
+export class ComponentRunnableRef<T = any> extends DefaultRunnableRef<T> {
+
+    private _compRef?: ComponentRef<T>;
+    get componentRef(): ComponentRef<T> {
+        if (!this._compRef) {
+            this._compRef = this.injector.get(ComponentFactoryResolver).resolve(this.def).create(this.injector);
+        }
+        return this._compRef;
+    }
+
+    override run(): any {
+        return this.injector.get(ComponentState).run(this.componentRef);
+    }
+
+    protected override createInstance(): T {
+        return this.componentRef.instance;
+    }
+
+}
+
+export class ComponentRunnableFactory<T = any> extends DefaultRunnableFactory<T> {
+
+    protected createInstance(def: TypeDef<T> | TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
+        return new ComponentRunnableRef(def, injector, options, invokeMethod)
+    }
+
+}
+
+
+@Injectable()
+export class ComponentRunnableFactoryResolver extends RunnableFactoryResolver {
+    constructor(private moduleRef?: ModuleRef) {
+        super()
+    }
+
+    resolve<T>(type: Type<T> | TypeDef<T>): RunnableFactory<T> {
+        return new ComponentRunnableFactory(isFunction(type) ? refl.get(type) : type, this.moduleRef);
+    }
+
 }

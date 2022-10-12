@@ -29,7 +29,12 @@ export class ComponentState<T = any> implements OnDestroy {
    */
   bootstrap<C>(component: ComponentFactory<C> | Type<C>): ComponentRef<C> {
     const factory = isFunction(component) ? this.context.get(ComponentFactoryResolver).resolve(component) : component;
-    const compRef = factory.create(this.context.injector, { context: this.context }) as ComponentRef<C>;
+    const compRef = factory.create(this.context.injector) as ComponentRef<C>;
+    this.run(compRef);
+    return compRef;
+  }
+
+  run<C>(compRef: ComponentRef<C>) {
     this.componentTypes.push(compRef.type);
     compRef.onDestroy(() => {
       this.detachView(compRef.hostView);
@@ -39,7 +44,6 @@ export class ComponentState<T = any> implements OnDestroy {
     this.attachView(compRef.hostView);
     this.tick();
     this.components.push(compRef);
-    return compRef;
   }
 
   tick(): void {
