@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { RunnableFactory, BootstrapOption, RunnableRef } from './runnable';
@@ -138,8 +138,9 @@ export interface ApplicationOption<T = any> extends EnvironmentOption {
      *
      * @type {ClassType}
      */
-    module: Type<T>;
+    module: Type<T> | ModuleDef<T> | ModuleMetadata;
 }
+
 
 /**
  * application context factory, to create instance of {@link ApplicationContext}.

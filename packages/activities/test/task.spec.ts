@@ -1,27 +1,24 @@
 import expect = require('expect');
-import { ActivityModule } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { ApplicationContext } from '@tsdi/core';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 import { Workflow } from '../src/Workflow';
+import { WorkflowService } from '../src/service';
 
 
 describe('activity test', () => {
 
     let ctx: ApplicationContext;
-    let workflow: Workflow;
+    let workflow: WorkflowService;
     before(async () => {
-        ctx = await Application.run(ActivityModule.withOptions({
-            imports:[
-                ServerActivitiesModule
-            ],
+        ctx = await Workflow.run({
             declarations: [
                 SimpleCTask,
                 SimpleTask,
                 TaskModuleTest
             ]
-        }));
-        workflow = ctx.get(Workflow);
+        }, {});
+        workflow = ctx.get(WorkflowService);
     })
 
     describe('#auto register with build', () => {
@@ -56,7 +53,7 @@ describe('activity test', () => {
             const actRef = await workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
             expect(actRef.instance.text).toEqual('component task');
-    
+
         });
 
         // it('should bootstrap with configure.', async () => {

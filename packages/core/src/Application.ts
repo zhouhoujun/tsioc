@@ -1,9 +1,9 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Reflective, lang, Scopes } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationExit } from './exit';
-import { ModuleRef } from './module.ref';
+import { getModuleType, ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
 import { RunnableFactoryResolver } from './runnable';
 
@@ -30,10 +30,10 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
-            target.scope = 'root';
+            target.scope = Scopes.root;
             this.root = this.createInjector(providers, target)
         } else {
-            const option = { module: target, deps: this.getDeps(), scope: 'root' };
+            const option = { module: target, deps: this.getDeps(), scope: Scopes.root };
             this.root = this.createInjector(this.getDefaultProviders(), option)
         }
         this.initRoot()
@@ -113,7 +113,23 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             container.setValue(ModuleLoader, this.loader)
         }
         option.platformDeps && container.use(...option.platformDeps);
-        return container.resolve({ token: ModuleFactoryResolver, target: option.module }).resolve(option.module).create(container, option)
+        return container.resolve({ token: ModuleFactoryResolver, target: option.module }).resolve(this.moduleify(option.module)).create(container, option)
+    }
+
+    protected moduleify(module: Type | ModuleDef | ModuleMetadata): Type | ModuleDef {
+        if (isFunction(module)) return module;
+        if ((module as ModuleDef).class) return module as ModuleDef;
+
+        return {
+            type: DynamicModule,
+            class: new Reflective(DynamicModule),
+            ...module,
+            module: true,
+            annotation: module,
+            imports: module.imports ? getModuleType(module.imports) : [],
+            exports: module.exports ? lang.getTypes(module.exports) : [],
+            bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
+        } as ModuleDef;
     }
 
     protected async createContext(): Promise<T> {
@@ -166,3 +182,5 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
 }
+
+class DynamicModule { }

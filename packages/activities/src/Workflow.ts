@@ -1,46 +1,47 @@
-import { Type, Injectable, lang } from '@tsdi/ioc';
-import { ApplicationContext, BootstrapOption, getModuleType, RunnableFactory, Startup } from '@tsdi/core';
-import { ActivityRef } from './refs/compoent';
+import { Type, isFunction } from '@tsdi/ioc';
+import { Application, ApplicationContext, EnvironmentOption } from '@tsdi/core';
 import { ActivityOption } from './refs/activity';
+import { ActivityModule } from './ActivityModule';
+
+
 
 /**
  * workflow builder.
  *
  * @export
  * @class Workflow
- * @extends {Application}
  */
-@Injectable()
-export class Workflow implements Startup {
-
-    constructor(private context: ApplicationContext) { }
-
-    async startup(): Promise<void> {
-        const option = this.context.get(ActivityOption);
-        const injector = this.context.injector;
-        if (option.imports) {
-            getModuleType(option.imports).forEach(imp => injector.import(imp));
-        }
-        if (option.declarations) injector.load(option.declarations);
-        if (option.bootstrap) {
-            const boots = lang.getTypes(option.bootstrap);
-            await Promise.all(boots.map(b => this.run(b)));
-        }
-    }
+export class Workflow {
 
     /**
      * run activity.
      *
      * @template T
-     * @param {(Type<T> | RunnableFactory<T> )} target
-     * @param option bootstrap option, instance of {@link BootstrapOption}
-     * @returns {Promise<T>}
-     * @memberof Workflow
+     * @param {(Type<T> | ActivityOption )} target activity or  activity option.
+     * @param option bootstrap option, instance of {@link EnvironmentOption}
+     * @returns {Promise<ApplicationContext>}
      */
-    async run<T>(target: Type<T> | RunnableFactory<T>, option?: BootstrapOption): Promise<ActivityRef<T>> {
-        return this.context.bootstrap(target, option);
+    static run<T>(target: Type<T> | ActivityOption, option?: EnvironmentOption): Promise<ApplicationContext> {
+        return runActivity(target, option);
     }
 
 }
 
-
+/**
+ * run activity.
+ *
+ * @template T
+ * @param {(Type<T> | ActivityOption )} target activity or  activity option.
+ * @param option bootstrap option, instance of {@link EnvironmentOption}
+ * @returns {Promise<ApplicationContext>}
+ */
+export function runActivity<T>(target: Type<T> | ActivityOption, option?: EnvironmentOption): Promise<ApplicationContext> {
+    const op = isFunction(target) ? { declarations: [target], bootstrap: target } : target;
+    return Application.run({
+        ...option,
+        module: {
+            ...op,
+            imports: [ActivityModule, ...op.imports ?? []]
+        }
+    });
+}

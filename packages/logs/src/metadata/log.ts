@@ -141,7 +141,7 @@ const loggerResolver = {
             } else {
                 local = ' '
             }
-            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule in package '@tsdi/logs',  please register LogModule first. `)
+            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule (in package '@tsdi/logs') or LoggerModule (in package '@tsdi/core'),  please register LogModule first. `)
         } else if (ctx.has(LogConfigure)) {
             const adapter = ctx.get(LogConfigure)?.adapter ?? 'console';
             const token = isString(adapter) ? getToken(LoggerManager, adapter) : adapter;
