@@ -1,5 +1,5 @@
 import { TContainerNode, TNode, TNodeType } from '../interfaces/node';
-import { DECLARATION_LCONTAINER, LView, QUERIES } from '../interfaces/view';
+import { DECLARATION_LCONTAINER, LView, LViewFlags, QUERIES, TView } from '../interfaces/view';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';

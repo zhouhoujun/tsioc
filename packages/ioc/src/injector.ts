@@ -547,7 +547,17 @@ export const enum FnType {
 /**
  * injector scope.
  */
-export type InjectorScope = ClassType | 'platform' | 'root' | 'provider' | 'invocation' | 'configuration';
+export type InjectorScope = ClassType | 'platform' | 'root' | 'static' | 'configuration';
+
+/**
+ * injector scopes.
+ */
+export const enum Scopes {
+    platform = 'platform',
+    root = 'root',
+    configuration = 'configuration',
+    static = 'static'
+}
 
 export const enum OptionFlags {
     Optional = 1 << 4,

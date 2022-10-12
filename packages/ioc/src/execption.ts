@@ -1,4 +1,4 @@
-import { isArray } from './utils/chk';
+import { isArray, _tyfunc } from './utils/chk';
 
 /**
  * Execption is Basic Error.
@@ -15,10 +15,10 @@ export class Execption extends Error {
         }
 
         this.name = target.name;
-        if (typeof (Error as any).captureStackTrace === 'function') {
+        if (typeof (Error as any).captureStackTrace === _tyfunc) {
             (Error as any).captureStackTrace(this, target)
         }
-        if (typeof Object.setPrototypeOf === 'function') {
+        if (typeof Object.setPrototypeOf === _tyfunc) {
             Object.setPrototypeOf(this, target.prototype)
         } else {
             (this as any).__proto__ = target.prototype

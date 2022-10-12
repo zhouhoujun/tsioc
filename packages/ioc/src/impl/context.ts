@@ -4,7 +4,7 @@ import { forIn, remove, getClassName } from '../utils/lang';
 import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString, isNil } from '../utils/chk';
 import { isPlainObject, isTypeObject } from '../utils/obj'
 import { InjectFlags, Token } from '../tokens';
-import { Injector, isInjector } from '../injector';
+import { Injector, isInjector, Scopes } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { get } from '../metadata/refl';
@@ -83,7 +83,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
 
     protected createInjector(injector: Injector, providers?: ProviderType[]) {
-        return Injector.create(providers, injector, 'invocation')
+        return Injector.create(providers, injector, Scopes.static)
     }
 
     /**

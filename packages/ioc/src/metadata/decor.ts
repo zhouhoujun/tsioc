@@ -7,7 +7,7 @@ import {
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
-import { Injector } from '../injector';
+import { Injector, Scopes } from '../injector';
 import { OperationArgumentResolver } from '../resolver';
 import { InvokeArguments } from '../context';
 
@@ -772,7 +772,7 @@ export const IocExt: IocExt = createDecorator<RunnableMetadata>('IocExt', {
         metadata.method = 'setup';
         metadata.singleton = true;
         metadata.auto = true;
-        metadata.providedIn = 'platform';
+        metadata.providedIn = Scopes.platform;
     }
 });
 

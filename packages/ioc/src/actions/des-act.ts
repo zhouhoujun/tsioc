@@ -1,4 +1,3 @@
-import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { runChain } from '../handler';
 import { Type } from '../types';

@@ -6,7 +6,7 @@ import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { TypeDef } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
-import { Injector, InjectorScope, ModuleRef, Platform } from '../injector';
+import { Injector, InjectorScope, ModuleRef, Platform, Scopes } from '../injector';
 import { Execption } from '../execption';
 
 
@@ -72,7 +72,7 @@ export class DefaultPlatform implements Platform {
      * @param type
      */
     getInjector<T extends Injector = Injector>(scope: InjectorScope): T {
-        if (scope === 'platform') {
+        if (scope === Scopes.platform) {
             return this.injector as T
         }
         return this._scopes.get(scope) as T

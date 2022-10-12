@@ -1,4 +1,4 @@
-import { Injector, Type } from '@tsdi/ioc';
+import { Injector, Type, InjectorScope, Scopes } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentRef } from '../refs/component';
 import { ElementRef } from '../refs/element';
@@ -40,7 +40,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
   get injector(): Injector {
     if (!this._injector) {
       const tyInj = this._rootLView[INJECTOR]?.platform().getInjector(this.type);
-      this._injector = Injector.create(this.def.class.providers, tyInj);
+      this._injector = Injector.create(this.def.class.providers, tyInj, Scopes.static);
     }
     return this._injector;
   }

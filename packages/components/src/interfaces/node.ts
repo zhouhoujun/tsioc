@@ -613,7 +613,7 @@ export interface TElement<TNode, TParent, TChild, TView, TProjection> {
      *
      * If this TNode corresponds to an element, views will be null .
      */
-    views: TView | null;
+    tViews: TView | null;
 
     /**
      * The next sibling node. Necessary so we can propagate through the root nodes of a view
@@ -842,7 +842,7 @@ export interface TElementNode extends TNode {
      * retrieved using viewData[HOST_NODE]).
      */
     parent: TElementNode | TElementContainerNode | null;
-    views: null;
+    tViews: null;
 
     /**
      * If this is a component TNode with projection, this will be an array of projected
@@ -868,7 +868,7 @@ export interface TTexTNode extends TNode {
      * retrieved using LView.node).
      */
     parent: TElementNode | TElementContainerNode | null;
-    views: null;
+    tViews: null;
     projection: null;
 }
 
@@ -890,7 +890,7 @@ export interface TContainerNode extends TNode {
      * - They are dynamically created
      */
     parent: TElementNode | TElementContainerNode | null;
-    views: TView | TView[] | null;
+    tViews: TView | TView[] | null;
     projection: null;
     value: null;
 }
@@ -901,7 +901,7 @@ export interface TElementContainerNode extends TNode {
     index: number;
     child: TElementNode | TTexTNode | TContainerNode | TElementContainerNode | TProjectionNode | null;
     parent: TElementNode | TElementContainerNode | null;
-    views: null;
+    tViews: null;
     projection: null;
 }
 
@@ -916,7 +916,7 @@ export interface TProjectionNode extends TNode {
      * retrieved using LView.node).
      */
     parent: TElementNode | TElementContainerNode | null;
-    views: null;
+    tViews: null;
 
     /** Index of the projection node. (See TNode.projection for more info.) */
     projection: number;

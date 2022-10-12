@@ -5,7 +5,7 @@ import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
 import {
     ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
-    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
+    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, Scopes
 } from '../injector';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
 import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
@@ -14,7 +14,7 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { isTypeDef, ModuleDef, TypeDef } from '../metadata/type';
 import { get } from '../metadata/refl';
-import { ReflectiveRef, ReflectiveResolver } from '../reflective';
+import { ReflectiveResolver } from '../reflective';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
@@ -54,7 +54,7 @@ export class DefaultInjector extends Injector {
         if (parent) {
             this.initParent(parent)
         } else {
-            scope = this.scope = 'platform'
+            scope = this.scope = Scopes.platform
         }
         this.initScope(scope);
         this.inject(providers)
@@ -67,24 +67,23 @@ export class DefaultInjector extends Injector {
     protected initScope(scope?: InjectorScope) {
         const val = { value: this };
         switch (scope) {
-            case 'platform':
+            case Scopes.platform:
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
                 this._plat = new DefaultPlatform(this);
                 this.lifecycle = this.createLifecycle();
                 registerCores(this);
                 break;
-            case 'root':
+            case Scopes.root:
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 this.lifecycle = this.createLifecycle(this.platform());
                 break;
-            case 'provider':
-            case 'invocation':
+            case Scopes.static:
                 this.lifecycle = this.createLifecycle();
                 break;
-            case 'configuration':
+            case Scopes.configuration:
                 this.platform().setInjector(scope, this);
                 this.lifecycle = this.createLifecycle();
                 break;
@@ -589,7 +588,7 @@ const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === 'invocation' || scope === 'configuration') {
+    if (scope === Scopes.static || scope === Scopes.configuration) {
         return new StaticInjector(providers, parent, scope)
     }
     return new DefaultInjector(providers, parent!, scope)
@@ -615,7 +614,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             processInjectorType(imp, dedupStack, processProvider, regType, undefined, true)
         });
 
-        if (imported && !(typeRef.providedIn === 'root' || typeRef.providedIn === 'platform')) {
+        if (imported && !(typeRef.providedIn === Scopes.root || typeRef.providedIn === Scopes.platform)) {
             typeRef.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })

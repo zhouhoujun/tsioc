@@ -1,4 +1,4 @@
-import { Execption } from "./execption";
+import { Execption } from './execption';
 
 
 /**

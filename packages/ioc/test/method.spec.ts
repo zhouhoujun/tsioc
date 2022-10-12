@@ -92,33 +92,33 @@ describe('method exec test', () => {
         expect(refs.class.hasMetadata(Autowired, 'method', 'sayHello2')).toBeFalsy();
     });
 
-    it('show exec with type and instance', async () => {
+    it('show exec with type and instance', () => {
         // container.register(Person);
         container.register(MethodTest);
         const mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
-        expect(await container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
+        expect(container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
 
     });
 
-    it('show exec with specail param', async () => {
+    it('show exec with specail param', () => {
         // container.register(Person);
         container.register(MethodTest2);
-        expect(await container.invoke(MethodTest2, t => t.sayHello)).toEqual('Mama');
+        expect(container.invoke(MethodTest2, t => t.sayHello)).toEqual('Mama');
 
     });
 
-    it('show exec with many params', async () => {
+    it('show exec with many params', () => {
         // container.register(Person);
         container.register(MethodTest3);
-        expect(await container.invoke(MethodTest3, 'sayHello')).toEqual('Mama, I love you.');
+        expect(container.invoke(MethodTest3, 'sayHello')).toEqual('Mama, I love you.');
 
     });
 
-    it('show exec with many params and invoke with string', async () => {
+    it('show exec with many params and invoke with string', () => {
         // container.register(Person);
         container.register(MethodTest3);
-        expect(await container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
+        expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
 
     });
 
