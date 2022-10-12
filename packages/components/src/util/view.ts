@@ -6,6 +6,7 @@ import { TConstants, TNode } from '../interfaces/node';
 import { FLAGS, HOST, LView, LViewFlags, PARENT, PREORDER_HOOK_FLAGS, TData, TRANSPLANTED_VIEWS_TO_REFRESH, TView } from '../interfaces/view';
 
 
+declare let devMode: any;
 
 const PATCH_CTX = '_PATCH_CTX_';
 /**
@@ -59,8 +60,8 @@ export function unwrapLContainer(value: INode | LView | LContainer): LContainer 
  * from any containers, component views, or style contexts.
  */
 export function getNativeByIndex(index: number, lView: LView): INode {
-    // ngDevMode && assertIndexInRange(lView, index);
-    // ngDevMode && assertGreaterThanOrEqual(index, HEADER_OFFSET, 'Expected to be past HEADER_OFFSET');
+    // devMode && assertIndexInRange(lView, index);
+    // devMode && assertGreaterThanOrEqual(index, HEADER_OFFSET, 'Expected to be past HEADER_OFFSET');
     return unwrapRNode(lView[index]);
 }
 
@@ -73,10 +74,10 @@ export function getNativeByIndex(index: number, lView: LView): INode {
  * @param lView
  */
 export function getNativeByTNode(tNode: TNode, lView: LView): INode {
-    // ngDevMode && assertTNodeForLView(tNode, lView);
-    // ngDevMode && assertIndexInRange(lView, tNode.index);
+    // devMode && assertTNodeForLView(tNode, lView);
+    // devMode && assertIndexInRange(lView, tNode.index);
     const node: INode = unwrapRNode(lView[tNode.index]);
-    // ngDevMode && !isProceduralRenderer(lView[RENDERER]) && assertDomNode(node);
+    // devMode && !isProceduralRenderer(lView[RENDERER]) && assertDomNode(node);
     return node;
 }
 
@@ -91,9 +92,9 @@ export function getNativeByTNode(tNode: TNode, lView: LView): INode {
 export function getNativeByTNodeOrNull(tNode: TNode | null, lView: LView): INode | null {
     const index = tNode === null ? -1 : tNode.index;
     if (index !== -1) {
-        //   ngDevMode && assertTNodeForLView(tNode!, lView);
+        //   devMode && assertTNodeForLView(tNode!, lView);
         const node: INode | null = unwrapRNode(lView[index]);
-        //   ngDevMode && node !== null && !isProceduralRenderer(lView[RENDERER]) && assertDomNode(node);
+        //   devMode && node !== null && !isProceduralRenderer(lView[RENDERER]) && assertDomNode(node);
         return node;
     }
     return null;
@@ -102,22 +103,22 @@ export function getNativeByTNodeOrNull(tNode: TNode | null, lView: LView): INode
 
 // fixme(misko): The return Type should be `TNode|null`
 export function getTNode(tView: TView, index: number): TNode {
-    // ngDevMode && assertGreaterThan(index, -1, 'wrong index for TNode');
-    // ngDevMode && assertLessThan(index, tView.data.length, 'wrong index for TNode');
+    // devMode && assertGreaterThan(index, -1, 'wrong index for TNode');
+    // devMode && assertLessThan(index, tView.data.length, 'wrong index for TNode');
     const tNode = tView.data[index] as TNode;
-    // ngDevMode && tNode !== null && assertTNode(tNode);
+    // devMode && tNode !== null && assertTNode(tNode);
     return tNode;
 }
 
 /** Retrieves a value from any `LView` or `TData`. */
 export function load<T>(view: LView | TData, index: number): T {
-    // ngDevMode && assertIndexInRange(view, index);
+    // devMode && assertIndexInRange(view, index);
     return view[index];
 }
 
 export function getComponentLViewByIndex(nodeIndex: number, hostView: LView): LView {
     // Could be an LView or an LContainer. If LContainer, unwrap to find LView.
-    // ngDevMode && assertIndexInRange(hostView, nodeIndex);
+    // devMode && assertIndexInRange(hostView, nodeIndex);
     const slotValue = hostView[nodeIndex];
     const lView = isLView(slotValue) ? slotValue : slotValue[HOST];
     return lView;
@@ -149,7 +150,7 @@ export function getConstant<T>(consts: TConstants, index: number): T | null;
 export function getConstant<T>(consts: TConstants | null, index: number | null | undefined): T | null;
 export function getConstant<T>(consts: TConstants | null, index: number | null | undefined): T | null {
     if (index === null || index === undefined) return null;
-    // ngDevMode && assertIndexInRange(consts!, index);
+    // devMode && assertIndexInRange(consts!, index);
     return consts![index] as unknown as T;
 }
 

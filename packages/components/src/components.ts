@@ -20,7 +20,6 @@ import { ComponentState } from './state';
     providers:[
         ComponentState,
         ComponentRunnableFactoryResolver
-        // {provide: ComponentFactoryResolver, useClass: }
     ],
     exports:[
         DirSwitch,

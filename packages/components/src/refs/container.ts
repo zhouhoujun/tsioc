@@ -1,3 +1,4 @@
+import { ModuleRef } from '@tsdi/core';
 import { Abstract, Injector, Type } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';
@@ -64,6 +65,26 @@ export abstract class ViewContainerRef {
      * Instantiates an embedded view and inserts it
      * into this container.
      * @param templateRef The HTML template that defines the view.
+     * @param context The data-binding context of the embedded view, as declared
+     * in the `<ng-template>` usage.
+     * @param options Extra configuration for the created view. Includes:
+     *  * index: The 0-based index at which to insert the new view into this container.
+     *           If not specified, appends the new view as the last entry.
+     *  * injector: Injector to be used within the embedded view.
+     *
+     * @returns The `ViewRef` instance for the newly created view.
+     */
+    abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, options?: {
+        index?: number,
+        injector?: Injector
+    }): EmbeddedViewRef<C>;
+
+    /**
+     * Instantiates an embedded view and inserts it
+     * into this container.
+     * @param templateRef The HTML template that defines the view.
+     * @param context The data-binding context of the embedded view, as declared
+     * in the `<ng-template>` usage.
      * @param index The 0-based index at which to insert the new view into this container.
      * If not specified, appends the new view as the last entry.
      *
@@ -74,19 +95,30 @@ export abstract class ViewContainerRef {
     /**
      * Instantiates a single component and inserts its host view into this container.
      *
-     * @param type The factory to use.
-     * @param index The index at which to insert the new component's host view into this container.
-     * If not specified, appends the new view as the last entry.
-     * @param injector The injector to use as the parent for the new component.
-     * @param projectableNodes
-     * @param ngModule
+     * @param componentType Component Type to use.
+     * @param options An object that contains extra parameters:
+     *  * index: the index at which to insert the new component's host view into this container.
+     *           If not specified, appends the new view as the last entry.
+     *  * injector: the injector to use as the parent for the new component.
+     *  * moduleRef: an ModuleRef of the component's Module, you should almost always provide
+     *                 this to ensure that all expected providers are available for the component
+     *                 instantiation.
+     *  * environmentInjector: an EnvironmentInjector which will provide the component's environment.
+     *                 you should almost always provide this to ensure that all expected providers
+     *                 are available for the component instantiation. This option is intended to
+     *                 replace the `moduleRef` parameter.
+     *  * projectableNodes: list of DOM nodes that should be projected through
+     *                      [`<ng-content>`](api/core/ng-content) of the new component instance.
      *
-     * @returns The new component instance, containing the host view.
-     *
+     * @returns The new `ComponentRef` which contains the component instance and the host view.
      */
-    abstract createComponent<C>(
-        type: Type<C>, index?: number, injector?: Injector,
-        projectableNodes?: any[][]): ComponentRef<C>;
+    abstract createComponent<C>(componentType: Type<C>, options?: {
+        index?: number,
+        injector?: Injector,
+        moduleRef?: ModuleRef,
+        environmentInjector?: Injector | ModuleRef<unknown>,
+        projectableNodes?: Node[][],
+    }): ComponentRef<C>;
 
     /**
      * Inserts a view into this container.

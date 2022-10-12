@@ -1,12 +1,12 @@
 import { InternalViewRef, ViewRefTracker } from '../refs/inter';
 import { EmbeddedViewRef } from '../refs/view';
 import { VIEW_REFS } from '../interfaces/container';
-import { CONTEXT, FLAGS, INJECTOR, LView, LViewFlags, PARENT, TVIEW } from '../interfaces/view';
+import { CONTEXT, FLAGS, LView, LViewFlags, PARENT, TVIEW } from '../interfaces/view';
 import { isLContainer } from '../interfaces/chk';
 import { collectNativeNodes } from './native_nodes';
 import { destroyLView, detachView, renderDetachView } from './manipulation';
 import { removeFromArray } from '../util/array';
-import { checkNoChangesInRootView, checkNoChangesInternal, detectChangesInRootView, detectChangesInternal, markViewDirty, storeCleanupWithContext } from './share';
+import { checkNoChangesInternal, detectChangesInternal, markViewDirty, storeCleanupWithContext } from './share';
 import { RuntimeErrorCode, RuntimeExecption } from '../errors';
 
 declare let devMode: any;
@@ -305,16 +305,22 @@ export class RootViewRef<T> extends ViewRefImpl<T> {
     }
 
     override detectChanges(): void {
-        detectChangesInRootView(this._view);
-    }
-
-    override checkNoChanges(): void {
+        const lView = this._view;
+        const tView = lView[TVIEW];
+        const context = lView[CONTEXT];
+        detectChangesInternal(tView, lView, context, false);
+      }
+    
+      override checkNoChanges(): void {
         if (devMode) {
-            checkNoChangesInRootView(this._view);
+          const lView = this._view;
+          const tView = lView[TVIEW];
+          const context = lView[CONTEXT];
+          checkNoChangesInternal(tView, lView, context, false);
         }
-    }
-
-    override get context(): T {
+      }
+    
+      override get context(): T {
         return null!;
-    }
+      }
 }

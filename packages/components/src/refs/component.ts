@@ -1,4 +1,4 @@
-import { Abstract, Injectable, Injector, InvokeArguments, isFunction, lang, refl, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, InvokeArguments, isFunction, Platform, refl, Type, TypeDef } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
@@ -77,7 +77,8 @@ export abstract class ComponentFactory<T> {
      * @param type
      * @param option 
      */
-    abstract create(injector: Injector): ComponentRef<T>;
+    abstract create(injector: Injector, projectableNodes?: any[][], rootSelectorOrNode?: string|any,
+        environmentInjector?: Injector|ModuleRef): ComponentRef<T>;
 }
 
 /**

@@ -51,7 +51,7 @@ export function locateDirectiveOrProvider<T>(
 }
 
 
-const LContainerArray: any = class LContainer extends Array {};
+const LContainerArray: any = class LContainer extends Array { };
 /**
  * Creates a LContainer, either from a container instruction, or for a ViewContainerRef.
  *
@@ -168,62 +168,49 @@ export function readPatchedLView(target: any): LView | null {
     return null;
 }
 
+let _isInCheckNoChangesMode = false;
 
-export function tickRootContext(rootContext: RootContext) {
-    for (let i = 0; i < rootContext.components.length; i++) {
-        const rootComponent = rootContext.components[i];
-        const lView = readPatchedLView(rootComponent)!;
-        const tView = lView[TVIEW];
-        renderComponentOrTemplate(tView, lView, tView.template, rootComponent);
-    }
-}
+export function isInCheckNoChangesMode(): boolean {
+    // !devMode && throwError('Must never be called in production mode');
+    return _isInCheckNoChangesMode;
+  }
+  
+  export function setIsInCheckNoChangesMode(mode: boolean): void {
+    // !devMode && throwError('Must never be called in production mode');
+    _isInCheckNoChangesMode = mode;
+  }
 
-export function detectChangesInternal<T>(tView: TView, lView: LView, context: T) {
+
+export function detectChangesInternal<T>(
+    tView: TView, lView: LView, context: T, notifyErrorHandler = true) {
     const rendererFactory = lView[RENDERER_FACTORY];
-    if (rendererFactory.begin) rendererFactory.begin();
+
+    // Check no changes mode is a dev only mode used to verify that bindings have not changed
+    // since they were assigned. We do not want to invoke renderer factory functions in that mode
+    // to avoid any possible side-effects.
+    const checkNoChangesMode = !!devMode && isInCheckNoChangesMode();
+
+    if (!checkNoChangesMode && rendererFactory.begin) rendererFactory.begin();
     try {
         refreshView(tView, lView, tView.template, context);
     } catch (error) {
-        handleError(lView, error);
+        if (notifyErrorHandler) {
+            handleError(lView, error);
+        }
         throw error;
     } finally {
-        if (rendererFactory.end) rendererFactory.end();
+        if (!checkNoChangesMode && rendererFactory.end) rendererFactory.end();
     }
 }
 
-/**
- * Synchronously perform change detection on a root view and its components.
- *
- * @param lView The view which the change detection should be performed on.
- */
-export function detectChangesInRootView(lView: LView): void {
-    tickRootContext(lView[CONTEXT] as RootContext);
-}
-
-export function checkNoChangesInternal<T>(tView: TView, view: LView, context: T) {
+export function checkNoChangesInternal<T>(
+    tView: TView, lView: LView, context: T, notifyErrorHandler = true) {
     setIsInCheckNoChangesMode(true);
     try {
-        detectChangesInternal(tView, view, context);
+        detectChangesInternal(tView, lView, context, notifyErrorHandler);
     } finally {
         setIsInCheckNoChangesMode(false);
     }
 }
 
 
-/**
- * Checks the change detector on a root view and its components, and throws if any changes are
- * detected.
- *
- * This is used in development mode to verify that running change detection doesn't
- * introduce other changes.
- *
- * @param lView The view which the change detection should be checked on.
- */
-export function checkNoChangesInRootView(lView: LView): void {
-    setIsInCheckNoChangesMode(true);
-    try {
-        detectChangesInRootView(lView);
-    } finally {
-        setIsInCheckNoChangesMode(false);
-    }
-}
