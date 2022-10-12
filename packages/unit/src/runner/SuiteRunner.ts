@@ -1,5 +1,5 @@
-import { lang, Injectable, Decors, Type, TypeDef, isFunction, refl, Injector, InvokeArguments, Platform } from '@tsdi/ioc';
-import { DefaultRunnableFactory, DefaultRunnableRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
+import { lang, Injectable, Decors, TypeDef, refl, Injector, InvokeArguments, Platform } from '@tsdi/ioc';
+import { DefaultRunnableFactory, DefaultRunnableRef, RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -167,21 +167,15 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
 
 }
 
-class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
+@Injectable()
+export class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
+    constructor(platform: Platform) {
+        super()
+        platform.getAction(Advisor).register(SuiteRunner);
+    }
     protected override createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
         const runnableRef = new SuiteRunner(def, injector, options, invokeMethod);
         injector.platform().getAction(Advisor).attach(refl.get(SuiteRunner, true), runnableRef)
         return runnableRef;
-    }
-}
-
-@Injectable()
-export class SuiteRunnableFactoryResolver extends RunnableFactoryResolver {
-    constructor(platform: Platform){
-        super()
-        platform.getAction(Advisor).register(SuiteRunner);
-    }
-    resolve<T>(type: Type<T> | TypeDef<T>): RunnableFactory<T> {
-        return new SuiteRunnableFactory(isFunction(type) ? refl.get(type) : type)
     }
 }

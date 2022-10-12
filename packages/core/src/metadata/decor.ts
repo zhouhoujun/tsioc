@@ -1,14 +1,14 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes,
-    ReflectiveResolver, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, isString, Parameter
+    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, isString, Parameter
 } from '@tsdi/ioc';
 import { ConfigureService } from '../service';
 import { PipeMetadata, ComponentScanMetadata, ScanDef, BeanMetadata } from './meta';
 import { PipeTransform } from '../pipes/pipe';
 import { Startup } from '../startup';
 import { getModuleType } from '../module.ref';
-import { Runnable, RunnableFactoryResolver } from '../runnable';
+import { Runnable, RunnableFactory } from '../runnable';
 import { ApplicationRunners } from '../runners';
 
 
@@ -189,13 +189,13 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
             const def = ctx.def as ScanDef;
             const runners = injector.get(ApplicationRunners);
             if (def.class.runnables.length || def.class.hasMetadata('run')) {
-                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
+                const typeRef = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector);
                 runners.addRunnable(typeRef, def.order)
             } else if (def.class.hasMethod('startup')) {
-                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { defaultInvoke: 'startup' });
+                const typeRef = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector, { defaultInvoke: 'startup' });
                 runners.addStartup(typeRef, def.order)
             } else if (def.class.hasMethod('configureService')) {
-                const typeRef = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector, { defaultInvoke: 'configureService' });
+                const typeRef = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector, { defaultInvoke: 'configureService' });
                 runners.addConfigureService(typeRef, def.order)
             }
             return next()
@@ -309,7 +309,7 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
         afterAnnoation: (ctx, next) => {
             const { def, injector } = ctx;
 
-            const factory = injector.get(ReflectiveResolver).resolve(def, injector);
+            const factory = injector.get(ReflectiveFactory).create(def, injector);
             const pdrs = def.class.decors.filter(d => d.decor === '@Bean')
                 .map(d => {
                     const key = d.propertyKey;

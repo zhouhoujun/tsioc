@@ -1,5 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { Server, RunnableFactoryResolver, ModuleRef, Router, ListenOpts, TransportStrategy } from '@tsdi/core';
+import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -149,14 +149,14 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
 
         //sharing servers
         if (opts.sharing) {
-            const resolver = injector.get(RunnableFactoryResolver);
+            const factory = injector.get(RunnableFactory);
             const providers = [
                 { provide: HttpServer, useValue: this },
                 { provide: HTTP_SERVEROPTIONS, useValue: opts }
             ];
             await Promise.all(opts.sharing.map(sr => {
-                const runnable = resolver.resolve(sr);
-                return runnable.create(injector, { providers }).run()
+                const runnable = factory.create(sr, injector, { providers });
+                return runnable.run()
             }))
         }
 

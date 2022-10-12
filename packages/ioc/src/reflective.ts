@@ -102,10 +102,10 @@ import { OperationInvoker } from './operation';
  
 
  /**
-  * ReflectiveRef resolver.
+  * ReflectiveRef factory.
   */
  @Abstract()
- export abstract class ReflectiveResolver {
+ export abstract class ReflectiveFactory {
      /**
       * resolve operation factory of target type
       * @param type target type or target type def.
@@ -113,7 +113,7 @@ import { OperationInvoker } from './operation';
       * @param option target type invoke option {@link InvokeArguments}
       * @returns instance of {@link ReflectiveRef}
       */
-     abstract resolve<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
+     abstract create<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
  }
  
  

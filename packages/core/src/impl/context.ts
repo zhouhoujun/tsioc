@@ -1,11 +1,11 @@
 import {
-    Type, isFunction, ModuleMetadata, getClass, Injector, ProviderType,
-    DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ
+    Type, ModuleMetadata, getClass, Injector, ProviderType,
+    DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ, TypeDef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { PROCESS_ROOT } from '../metadata/tk';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
-import { RunnableFactory, RunnableFactoryResolver, BootstrapOption, RunnableRef } from '../runnable';
+import { RunnableFactory, BootstrapOption, RunnableRef } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
@@ -63,14 +63,13 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._runners
     }
 
-    createRunnable<C>(type: Type<C>, option?: BootstrapOption): RunnableRef<C> {
-        const factory = this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type);
-        return factory.create(this.injector, option)
+    createRunnable<C>(type: Type<C> | TypeDef<C>, option?: BootstrapOption): RunnableRef<C> {
+        const factory = this.injector.resolve({ token: RunnableFactory, target: type });
+        return factory.create(type, this.injector, option)
     }
 
-    bootstrap<C>(type: Type<C> | RunnableFactory<C>, option?: BootstrapOption): any {
-        const factory = isFunction(type) ? this.injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type) : type;
-        return factory.create(this.injector, option).run()
+    bootstrap<C>(type: Type<C> | TypeDef<C>, option?: BootstrapOption): any {
+        return this.createRunnable(type, option).run()
     }
 
     getLogger(name?: string): Logger {

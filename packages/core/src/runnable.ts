@@ -70,31 +70,16 @@ export interface BootstrapOption extends InvokeOption {
  * runnable factory.
  */
 @Abstract()
-export abstract class RunnableFactory<T> {
-    /**
-     * runnbale def.
-     */
-    abstract get def(): TypeDef<T>;
+export abstract class RunnableFactory<T = any> {
     /**
      * create new instance of {@link RunnableRef} via this type.
      * @param injector injector.
      * @param option bootstrap option.
      * @returns instance of {@link RunnableRef}.
      */
-    abstract create(injector: Injector, option?: BootstrapOption): RunnableRef<T>;
+    abstract create(type: Type<T> | TypeDef<T>, injector: Injector, option?: BootstrapOption): RunnableRef<T>;
 }
 
-/**
- * runnable factory resolver.
- */
-@Abstract()
-export abstract class RunnableFactoryResolver {
-    /**
-     * resolve runnable factory of type.
-     * @param type class type.
-     */
-    abstract resolve<T>(type: Type<T> | TypeDef<T>): RunnableFactory<T>;
-}
 
 /**
  * runnable scan set.

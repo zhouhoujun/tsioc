@@ -9,7 +9,7 @@ import { RuntimeLifeScope } from './runtime';
 import { FactoryRecord, FnType, Injector, Platform } from '../injector';
 import { InvocationContext } from '../context';
 import { Decors } from '../metadata/type';
-import { ReflectiveResolver } from '../reflective';
+import { ReflectiveFactory } from '../reflective';
 
 
 /**
@@ -175,7 +175,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     const injector = ctx.injector;
     const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
-    const factory = injector.get(ReflectiveResolver).resolve(ctx.def, injector);
+    const factory = injector.get(ReflectiveFactory).create(ctx.def, injector);
     runs.forEach(meta => {
         factory.invoke(meta.method, undefined, instance);
     });

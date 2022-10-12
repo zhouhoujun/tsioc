@@ -1,5 +1,5 @@
-import { Abstract, Injectable, Injector, InvokeArguments, isFunction, refl, Type, TypeDef } from '@tsdi/ioc';
-import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
+import { Abstract, Injectable, Injector, InvokeArguments, Type, TypeDef } from '@tsdi/ioc';
+import { DefaultRunnableFactory, DefaultRunnableRef, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -93,23 +93,11 @@ export class ComponentRunnableRef<T = any> extends DefaultRunnableRef<T> {
 
 }
 
+@Injectable()
 export class ComponentRunnableFactory<T = any> extends DefaultRunnableFactory<T> {
 
-    protected createInstance(def: TypeDef<T> | TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
+    protected createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
         return new ComponentRunnableRef(def, injector, options, invokeMethod)
-    }
-
-}
-
-
-@Injectable()
-export class ComponentRunnableFactoryResolver extends RunnableFactoryResolver {
-    constructor(private moduleRef?: ModuleRef) {
-        super()
-    }
-
-    resolve<T>(type: Type<T> | TypeDef<T>): RunnableFactory<T> {
-        return new ComponentRunnableFactory(isFunction(type) ? refl.get(type) : type, this.moduleRef);
     }
 
 }

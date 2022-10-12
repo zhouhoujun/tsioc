@@ -14,12 +14,12 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { isTypeDef, ModuleDef, TypeDef } from '../metadata/type';
 import { get } from '../metadata/refl';
-import { ReflectiveResolver } from '../reflective';
+import { ReflectiveFactory } from '../reflective';
 import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
-import { DefaultReflectiveResolver } from './reflective';
+import { DefaultReflectiveFactory } from './reflective';
 import { BASE_RESOLVERS } from './context';
 import { createContext, InvocationContext, InvokeOption } from '../context';
 import { DEFAULT_RESOLVERS } from '../resolver';
@@ -460,7 +460,7 @@ export class DefaultInjector extends Injector {
 
         tgRefl = tgRefl ?? get(targetClass);
 
-        const factory = this.get(ReflectiveResolver).resolve(tgRefl, this, context ?? { ...option, providers });
+        const factory = this.get(ReflectiveFactory).create(tgRefl, this, context ?? { ...option, providers });
         if (!context) {
             return factory.invoke(propertyKey, { ...option, providers }, instance)
         }
@@ -920,7 +920,7 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
 function registerCores(container: Container) {
     container.setValue(DEFAULT_RESOLVERS, BASE_RESOLVERS);
     container.setValue(ModuleLoader, new DefaultModuleLoader());
-    container.setValue(ReflectiveResolver, new DefaultReflectiveResolver());
+    container.setValue(ReflectiveFactory, new DefaultReflectiveFactory());
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

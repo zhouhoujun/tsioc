@@ -1,6 +1,6 @@
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveResolver, Execption, isClassType
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, Execption, isClassType
 } from '@tsdi/ioc';
 import { PipeTransform } from '../../pipes/pipe';
 import { InterceptorType } from '../../transport/endpoint';
@@ -110,7 +110,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 if (!(router instanceof Router)) {
                     throw new Execption(lang.getClassName(router) + 'is not message router!');
                 }
-                const factory = injector.get(ReflectiveResolver).resolve(def, injector);
+                const factory = injector.get(ReflectiveFactory).create(def, injector);
                 factory.onDestroy(() => router.unuse(path));
 
                 router.use({

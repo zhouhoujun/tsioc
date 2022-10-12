@@ -1,7 +1,7 @@
 import { ActionTypes, createDecorator, DecoratorOption, EMPTY_OBJ } from '@tsdi/ioc';
-import { RunnableFactoryResolver } from '@tsdi/core';
+import { RunnableFactory } from '@tsdi/core';
 import { SuiteMetadata, SuiteReflect, TestCaseMetadata, TestMetadata } from './meta';
-import { SuiteRunnableFactoryResolver } from '../runner/SuiteRunner';
+import { SuiteRunnableFactory } from '../runner/SuiteRunner';
 
 
 /**
@@ -48,7 +48,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         return metadata
     },
     providers: [
-        { provide: RunnableFactoryResolver, useClass: SuiteRunnableFactoryResolver }
+        { provide: RunnableFactory, useClass: SuiteRunnableFactory }
     ]
 });
 

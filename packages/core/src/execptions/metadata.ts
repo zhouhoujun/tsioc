@@ -1,4 +1,4 @@
-import { createDecorator, Decors, isClass, isFunction, ReflectiveResolver, Type } from '@tsdi/ioc';
+import { createDecorator, Decors, isClass, isFunction, ReflectiveFactory, Type } from '@tsdi/ioc';
 import { ServerEndpointContext } from '../transport';
 import { ExecptionRespond, ExecptionTypedRespond } from './adapter';
 import { ExecptionHandlerMethodResolver } from './resolver';
@@ -61,7 +61,7 @@ export const ExecptionHandler: ExecptionHandler = createDecorator('ExecptionHand
             const def = ctx.def;
             const decors = def.class.getDecorDefines<ExecptionHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveResolver).resolve(def, injector);
+            const factory = injector.get(ReflectiveFactory).create(def, injector);
             decors.forEach(decor => {
                 const { execption, order, response } = decor.metadata;
                 const invoker = factory.createInvoker(decor.propertyKey);

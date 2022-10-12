@@ -2,14 +2,14 @@ import {
     Token, InjectableMetadata, isArray, getClass,
     refl, createDecorator, createPropDecorator, createParamDecorator, ActionTypes
 } from '@tsdi/ioc';
-import {  RunnableFactoryResolver } from '@tsdi/core';
+import {  RunnableFactory } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { AnnotationDef, ComponentDef, DirectiveDef } from '../type';
 import { CompilerFacade } from '../compile/facade';
-import { ComponentRunnableFactoryResolver } from '../refs/component';
+import { ComponentRunnableFactory } from '../refs/component';
 
 
 /**
@@ -133,7 +133,7 @@ export const Component: Component = createDecorator<ComponentMetadata>('Componen
         }
     },
     providers: [
-        { provide: RunnableFactoryResolver, useExisting: ComponentRunnableFactoryResolver }
+        { provide: RunnableFactory, useExisting: ComponentRunnableFactory }
     ]
 });
 

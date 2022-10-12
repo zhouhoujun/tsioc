@@ -1,6 +1,6 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    ReflectiveResolver, TypeDef, ReflectiveRef, DestroyCallback, InvokeOption, isClass
+    ReflectiveFactory, TypeDef, ReflectiveRef, DestroyCallback, InvokeOption, isClass
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from './guard';
@@ -245,7 +245,7 @@ export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
         super()
     }
     create(injector: Injector, option?: InvokeOption): RouteRef<T> {
-        const factory = injector.get(ReflectiveResolver).resolve(this.def, injector, option);
+        const factory = injector.get(ReflectiveFactory).create(this.def, injector, option);
         return this.routeRef = new RouteMappingRef(factory)
     }
 

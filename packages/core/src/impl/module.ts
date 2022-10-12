@@ -2,16 +2,16 @@
 import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleDef, processInjectorType, Token, Type, lang,
-    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, ReflectiveResolver,
-    DefaultReflectiveResolver, isPlainObject, isArray, EMPTY_OBJ, isClass
+    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, ReflectiveFactory,
+    DefaultReflectiveFactory, isPlainObject, isArray, EMPTY_OBJ, isClass
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
 import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
 import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
 import { ModuleRef, ModuleType } from '../module.ref';
-import { RunnableFactoryResolver } from '../runnable';
-import { DefaultRunnableFactoryResolver } from './runnable';
+import { RunnableFactory } from '../runnable';
+import { DefaultRunnableFactory } from './runnable';
 
 
 /**
@@ -25,8 +25,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _typeRefl: ModuleDef;
 
 
-    reflectiveResolver = new DefaultReflectiveResolver();
-    runnableFactoryResolver: RunnableFactoryResolver = new DefaultRunnableFactoryResolver(this);
+    reflectiveFactory = new DefaultReflectiveFactory();
+    runnableFactory: RunnableFactory = new DefaultRunnableFactory(this);
 
     lifecycle!: ModuleLifecycleHooks;
 
@@ -37,8 +37,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
         this.inject(
-            { provide: ReflectiveResolver, useValue: this.reflectiveResolver },
-            { provide: RunnableFactoryResolver, useValue: this.runnableFactoryResolver }
+            { provide: ReflectiveFactory, useValue: this.reflectiveFactory },
+            { provide: RunnableFactory, useValue: this.runnableFactory }
         );
 
         this.setValue(ModuleRef, this);
@@ -125,8 +125,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = null!;
         this.lifecycle.clear();
         this.lifecycle = null!;
-        this.reflectiveResolver = null!;
-        this.runnableFactoryResolver = null!;
+        this.reflectiveFactory = null!;
+        this.runnableFactory = null!;
         this._typeRefl = null!;
         this._instance = null!
     }

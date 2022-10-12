@@ -5,7 +5,7 @@ import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationExit } from './exit';
 import { getModuleType, ModuleRef } from './module.ref';
 import { ModuleFactoryResolver } from './module.factory';
-import { RunnableFactoryResolver } from './runnable';
+import { RunnableFactory } from './runnable';
 
 /**
  * application.
@@ -153,7 +153,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         if (bootstraps && bootstraps.length) {
             const injector = ctx.injector;
             bootstraps.forEach(type => {
-                const runner = injector.resolve({ token: RunnableFactoryResolver, target: type }).resolve(type).create(injector);
+                const runner = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector);
                 ctx.runners.addBootstrap(runner)
             })
         }

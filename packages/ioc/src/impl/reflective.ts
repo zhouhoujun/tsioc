@@ -5,7 +5,7 @@ import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
-import { ReflectiveRef, ReflectiveResolver } from '../reflective';
+import { ReflectiveRef, ReflectiveFactory } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
 import { OperationInvoker } from '../operation';
@@ -157,8 +157,8 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 }
 
-export class DefaultReflectiveResolver extends ReflectiveResolver {
-    resolve<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
+export class DefaultReflectiveFactory extends ReflectiveFactory {
+    create<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
         return new DefaultReflectiveRef(isFunction(type) ? get(type) : type, injector, option)
     }
 }
