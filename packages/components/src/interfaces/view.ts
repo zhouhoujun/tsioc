@@ -1,9 +1,9 @@
 import { Injector, Token, Type } from '@tsdi/ioc';
 import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, RenderFlags, ViewQueriesFunction } from '../type';
 import { LContainer } from './container';
-import { IComment, IElement } from './dom';
+import { IElement } from './dom';
 import { LQueries, TQueries } from './query';
-import { VConstants, TNode, TConstants } from './node';
+import { TNode, TConstants } from './node';
 import { Renderer, RendererFactory } from './renderer';
 
 
@@ -27,6 +27,8 @@ export const DECLARATION_COMPONENT_VIEW = 16;
 export const DECLARATION_LCONTAINER = 17;
 export const PREORDER_HOOK_FLAGS = 18;
 export const QUERIES = 19;
+export const ID = 20;
+export const EMBEDDED_VIEW_INJECTOR = 21;
 
 
 /**

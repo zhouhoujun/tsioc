@@ -998,7 +998,7 @@ export type TNodeWithLocalRefs = TContainerNode | TElementNode | TElementContain
  * Type for a function that extracts a value for a local refs.
  * Example:
  * - `<div #nativeDivEl>` - `nativeDivEl` should point to the native `<div>` element;
- * - `<ng-template #tplRef>` - `tplRef` should point to the `TemplateRef` instance;
+ * - `<template #tplRef>` - `tplRef` should point to the `TemplateRef` instance;
  */
 export type LocalRefExtractor = (TNode: TNodeWithLocalRefs, currentView: TView) => any;
 

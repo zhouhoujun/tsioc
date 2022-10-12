@@ -1,11 +1,11 @@
 import { ModuleRef } from '@tsdi/core';
-import { Injector, isClass, Type } from '@tsdi/ioc';
+import { createContext, Injector, InvocationContext, isClass, isFunction, Type, TypeDef } from '@tsdi/ioc';
 import { isLContainer } from '../interfaces/chk';
 import { CONTAINER_HEADER_OFFSET, LContainer, NATIVE } from '../interfaces/container';
 import { IComment, IElement } from '../interfaces/dom';
 import { TContainerNode, TElementContainerNode, TElementNode, TNodeType } from '../interfaces/node';
 import { LView, PARENT, RENDERER, TVIEW, T_HOST } from '../interfaces/view';
-import { ComponentFactory, ComponentRef } from '../refs/component';
+import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
@@ -13,7 +13,7 @@ import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { addToArray, removeFromArray } from '../util/array';
 import { getNativeByTNode, unwrapRNode, viewAttachedToContainer } from '../util/view';
 import { createElementRef } from './element';
-import { addViewToContainer, destroyLView, destroyLView, getBeforeNodeForView, insertView } from './manipulation';
+import { addViewToContainer, destroyLView, getBeforeNodeForView, insertView } from './manipulation';
 import { createLContainer } from './share';
 import { ViewRefImpl } from './view_ref';
 
@@ -92,11 +92,11 @@ export class ViewContainerRefImpl extends ViewContainerRef {
         return viewRef;
     }
 
-    override createComponent<C>(componentType: Type<C>, options: {
+    override createComponent<C>(componentType: Type<C> | TypeDef<C>, options: {
         index?: number,
         injector?: Injector,
         projectableNodes?: Node[][],
-        environmentInjector?: Injector,
+        context?: InvocationContext,
         moduleRef?: ModuleRef,
     } = {}): ComponentRef<C> {
 
@@ -114,30 +114,23 @@ export class ViewContainerRefImpl extends ViewContainerRef {
         //         'is incompatible. Please use an object as the second argument instead.');
         // }
 
-        if (devMode && options.environmentInjector && options.moduleRef) {
+        if (devMode && options.context && options.moduleRef) {
             throwError(
-                `Cannot pass both environmentInjector and moduleRef options to createComponent().`);
+                `Cannot pass both context and moduleRef options to createComponent().`);
         }
         // index = options.index;
         // injector = options.injector;
         // projectableNodes = options.projectableNodes;
 
-        let environmentInjector = options.environmentInjector || options.moduleRef;
+        let environmentInjector = options.context;
 
 
-        const componentFactory: ComponentFactory<C> = new ComponentFactory(getComponentDef(componentFactoryOrType)!);
+        const componentFactory = new ComponentFactoryImpl(isFunction(componentType));
         const contextInjector = options.injector || this.parentInjector;
 
         // If an `NgModuleRef` is not provided explicitly, try retrieving it from the DI tree.
-        if (!environmentInjector && (componentFactory as any).ngModule == null) {
-
-            // DO NOT REFACTOR. The code here used to have a `injector.get(NgModuleRef, null) ||
-            // undefined` expression which seems to cause internal google apps to fail. This is documented
-            // in the following internal bug issue: go/b/142967802
-            const result = contextInjector.get(EnvironmentInjector, null);
-            if (result) {
-                environmentInjector = result;
-            }
+        if (!environmentInjector) {
+            environmentInjector = createContext(options.moduleRef ?? contextInjector);
         }
 
         const componentRef =

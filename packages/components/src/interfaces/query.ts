@@ -68,21 +68,21 @@ export interface TQuery {
      *
      * A TNode index can be either:
      * - a positive number (the most common case) to indicate a matching TNode;
-     * - a negative number to indicate that a given query is crossing a <ng-template> element and
+     * - a negative number to indicate that a given query is crossing a <template> element and
      * results from views created based on TemplateRef should be inserted at this place.
      *
      * A match index is a number used to find an actual value (for a given node) when query results
      * are materialized. This index can have one of the following values:
      * - -2 - indicates that we need to read a special token (TemplateRef, ViewContainerRef etc.);
      * - -1 - indicates that we need to read a default value based on the node type (TemplateRef for
-     * ng-template and ElementRef for other elements);
+     * template and ElementRef for other elements);
      * - a positive number - index of an injectable to be read from the element injector.
      */
     matches: number[] | null;
 
     /**
-     * A flag indicating if a given query crosses an <ng-template> element. This flag exists for
-     * performance reasons: we can notice that queries not crossing any <ng-template> elements will
+     * A flag indicating if a given query crosses an <template> element. This flag exists for
+     * performance reasons: we can notice that queries not crossing any <template> elements will
      * have matches from a given view only (and adapt processing accordingly).
      */
     crossesNgTemplate: boolean;
@@ -112,7 +112,7 @@ export interface TQuery {
 
     /**
      * A query-related method called when an embedded TView is created based on the content of a
-     * <ng-template> element. We call this method to determine if a given query should be propagated
+     * <template> element. We call this method to determine if a given query should be propagated
      * to the embedded view and if so - return a cloned TQuery for this embedded view.
      * @param tNode
      * @param childQueryIndex

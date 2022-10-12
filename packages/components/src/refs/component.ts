@@ -1,10 +1,11 @@
-import { Abstract, Injectable, Injector, InvokeArguments, isFunction, Platform, refl, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, InvokeArguments, isFunction, refl, Type, TypeDef } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 import { ComponentDef } from '../type';
 import { ComponentState } from '../state';
+import { ViewContainerRef } from './container';
 
 
 /**
@@ -64,37 +65,6 @@ export abstract class ComponentRef<C = any> {
 }
 
 /**
- * component factory.
- */
-@Abstract()
-export abstract class ComponentFactory<T> {
-    /**
-     * component def.
-     */
-    abstract get def(): TypeDef<T>;
-    /**
-     * create compontent ref.
-     * @param type
-     * @param option 
-     */
-    abstract create(injector: Injector, projectableNodes?: any[][], rootSelectorOrNode?: string|any,
-        environmentInjector?: Injector|ModuleRef): ComponentRef<T>;
-}
-
-/**
- * component factory resolver.
- */
-@Abstract()
-export abstract class ComponentFactoryResolver {
-
-    /**
-     * resolve component factory.
-     * @param type 
-     */
-    abstract resolve<T>(type: Type<T> | TypeDef<T>): ComponentFactory<T>;
-}
-
-/**
  * Component RunnableRef.
  *
  * @export
@@ -105,7 +75,10 @@ export class ComponentRunnableRef<T = any> extends DefaultRunnableRef<T> {
     private _compRef?: ComponentRef<T>;
     get componentRef(): ComponentRef<T> {
         if (!this._compRef) {
-            this._compRef = this.injector.get(ComponentFactoryResolver).resolve(this.def).create(this.injector);
+            this._compRef = this.injector.get(ViewContainerRef).createComponent(this.def, {
+                injector: this.injector,
+                // moduleRef: this.
+            });
         }
         return this._compRef;
     }

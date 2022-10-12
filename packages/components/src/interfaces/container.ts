@@ -1,5 +1,5 @@
 import { IComment, IElement } from './dom';
-import { HOST, LView, NEXT, PARENT, T_HOST } from './view';
+import { HOST, LView, NEXT, PARENT, TRANSPLANTED_VIEWS_TO_REFRESH, T_HOST } from './view';
 import { TNode } from './node';
 
 
@@ -65,9 +65,19 @@ export interface LContainer extends Array<any> {
     readonly [HOST]: IElement | IComment | LView;
 
     /**
-     * Pointer to the `VNode` which represents the host of the container.
+     * This is a type field which allows us to differentiate `LContainer` from `StylingContext` in an
+     * efficient way. The value is always set to `true`
      */
-    [T_HOST]?: TNode;
+    [TYPE]: true;
+
+    /**
+     * Flag to signify that this `LContainer` may have transplanted views which need to be change
+     * detected. (see: `LView[DECLARATION_COMPONENT_VIEW])`.
+     *
+     * This flag, once set, is never unset for the `LContainer`.
+     */
+    [HAS_TRANSPLANTED_VIEWS]: boolean;
+
     /**
      * Access to the parent view is necessary so we can propagate back
      * up from inside a container to parent
@@ -78,6 +88,15 @@ export interface LContainer extends Array<any> {
      * view with the same parent, so we can remove listeners efficiently.
      */
     [NEXT]?: LView | LContainer;
+
+    /**
+     * The number of direct transplanted views which need a refresh or have descendants themselves
+     * that need a refresh but have not marked their ancestors as Dirty. This tells us that during
+     * change detection we should still descend to find those children to refresh, even if the parents
+     * are not `Dirty`/`CheckAlways`.
+     */
+    [TRANSPLANTED_VIEWS_TO_REFRESH]: number;
+
     /**
      * A collection of views created based on the underlying `<v-template>` element but inserted into
      * a different `LContainer`. We need to track views created from a given declaration point since
@@ -85,10 +104,22 @@ export interface LContainer extends Array<any> {
      */
     [MOVED_VIEWS]: LView[] | null;
 
+        
+    /**
+     * Pointer to the `VNode` which represents the host of the container.
+     */
+    [T_HOST]: TNode;
+
+    /** The comment element that serves as an anchor for this LContainer. */
     readonly [NATIVE]: IComment;
 
     /**
      * Array of `ViewRef`s used by any `ViewContainerRef`s that point to this container.
+     *
+     * This is lazily initialized by `ViewContainerRef` when the first view is inserted.
+     *
+     * NOTE: This is stored as `any[]` because render should really not be aware of `ViewRef` and
+     * doing so creates circular dependency.
      */
     [VIEW_REFS]: any[] | null;
 }

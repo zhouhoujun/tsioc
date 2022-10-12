@@ -54,3 +54,4 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     this.hostView.onDestroy(callback);
   }
 }
+

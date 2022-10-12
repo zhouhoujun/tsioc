@@ -1,14 +1,15 @@
-import { Injectable, isFunction, lang, Type } from '@tsdi/ioc';
-import { ApplicationContext } from '@tsdi/core';
+import { Injectable, Injector, InvocationContext, lang, Type, TypeDef } from '@tsdi/ioc';
 import { OnDestroy } from './lifecycle';
-import { ComponentFactory, ComponentFactoryResolver, ComponentRef } from './refs/component';
+import { ComponentRef } from './refs/component';
 import { InternalViewRef } from './refs/inter';
 import { ViewRef } from './refs/view';
+import { ViewContainerRef } from './refs/container';
+import { ModuleRef } from '@tsdi/core';
 
 @Injectable()
 export class ComponentState<T = any> implements OnDestroy {
 
-  constructor(public context: ApplicationContext) { }
+  constructor(public context: InvocationContext) { }
 
   private _runningTick = false;
   private _views: InternalViewRef[] = [];
@@ -27,9 +28,14 @@ export class ComponentState<T = any> implements OnDestroy {
    * bootstrap component ref.
    * @param compRef 
    */
-  bootstrap<C>(component: ComponentFactory<C> | Type<C>): ComponentRef<C> {
-    const factory = isFunction(component) ? this.context.get(ComponentFactoryResolver).resolve(component) : component;
-    const compRef = factory.create(this.context.injector) as ComponentRef<C>;
+  bootstrap<C>(component: Type<C> | TypeDef<C>, options?: {
+    index?: number,
+    injector?: Injector,
+    moduleRef?: ModuleRef,
+    context?: InvocationContext,
+    projectableNodes?: Node[][],
+  }): ComponentRef<C> {
+    const compRef = this.context.get(ViewContainerRef).createComponent(component, { context: this.context, ...options }) as ComponentRef<C>;
     this.run(compRef);
     return compRef;
   }

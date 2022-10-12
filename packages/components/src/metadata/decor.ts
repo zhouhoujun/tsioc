@@ -753,7 +753,7 @@ export interface ViewChildDecorator {
      * `@ViewChild(SomeService) someService: SomeService`)
      *   * Any provider defined through a string token (e.g. `@ViewChild('someToken') someTokenVal:
      * any`)
-     *   * A `TemplateRef` (e.g. query `<ng-template></ng-template>` with `@ViewChild(TemplateRef)
+     *   * A `TemplateRef` (e.g. query `<template></template>` with `@ViewChild(TemplateRef)
      * template;`)
      *
      *

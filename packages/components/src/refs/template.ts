@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Injector } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 
@@ -8,7 +8,7 @@ import { EmbeddedViewRef } from './view';
  * To instantiate embedded views based on a template, use the `ViewContainerRef`
  * method `createEmbeddedView()`.
  *
- * Access a `TemplateRef` instance by placing a directive on an `<ng-template>`
+ * Access a `TemplateRef` instance by placing a directive on an `<template>`
  * element (or directive prefixed with `*`). The `TemplateRef` for the embedded view
  * is injected into the constructor of the directive,
  * using the `TemplateRef` token.
@@ -40,9 +40,10 @@ export abstract class TemplateRef<C = any> {
      * Instantiates an embedded view based on this template,
      * and attaches it to the view container.
      * @param context The data-binding context of the embedded view, as declared
-     * in the `<ng-template>` usage.
+     * in the `<template>` usage.
+     * @param injector Injector to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    abstract createEmbeddedView(context: C): EmbeddedViewRef<C>;
+    abstract createEmbeddedView(context: C, injector?: Injector): EmbeddedViewRef<C>;
 
 }

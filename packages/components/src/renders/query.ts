@@ -179,8 +179,8 @@ class TQuery_ implements TQuery {
     embeddedTView(tNode: TNode, childQueryIndex: number): TQuery | null {
         if (this.isApplyingToNode(tNode)) {
             this.crossesNgTemplate = true;
-            // A marker indicating a `<ng-template>` element (a placeholder for query results from
-            // embedded views created based on this `<ng-template>`).
+            // A marker indicating a `<template>` element (a placeholder for query results from
+            // embedded views created based on this `<template>`).
             this.addMatch(-tNode.index, childQueryIndex);
             return new TQuery_(this.metadata);
         }
@@ -197,7 +197,7 @@ class TQuery_ implements TQuery {
             // option). There are 3 main use-case / conditions to consider here:
             // - <needs-target><i #target></i></needs-target>: here <i #target> parent node is a query
             // host node;
-            // - <needs-target><ng-template [ngIf]="true"><i #target></i></ng-template></needs-target>:
+            // - <needs-target><template [ngIf]="true"><i #target></i></template></needs-target>:
             // here <i #target> parent node is null;
             // - <needs-target><ng-container><i #target></i></ng-container></needs-target>: here we need
             // to go past `<ng-container>` to determine <i #target> parent node (but we shouldn't traverse

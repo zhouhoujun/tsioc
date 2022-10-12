@@ -1,5 +1,5 @@
 import { ModuleRef } from '@tsdi/core';
-import { Abstract, Injector, Type } from '@tsdi/ioc';
+import { Abstract, Injector, InvocationContext, Type, TypeDef } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
@@ -66,7 +66,7 @@ export abstract class ViewContainerRef {
      * into this container.
      * @param templateRef The HTML template that defines the view.
      * @param context The data-binding context of the embedded view, as declared
-     * in the `<ng-template>` usage.
+     * in the `<template>` usage.
      * @param options Extra configuration for the created view. Includes:
      *  * index: The 0-based index at which to insert the new view into this container.
      *           If not specified, appends the new view as the last entry.
@@ -84,7 +84,7 @@ export abstract class ViewContainerRef {
      * into this container.
      * @param templateRef The HTML template that defines the view.
      * @param context The data-binding context of the embedded view, as declared
-     * in the `<ng-template>` usage.
+     * in the `<template>` usage.
      * @param index The 0-based index at which to insert the new view into this container.
      * If not specified, appends the new view as the last entry.
      *
@@ -108,15 +108,15 @@ export abstract class ViewContainerRef {
      *                 are available for the component instantiation. This option is intended to
      *                 replace the `moduleRef` parameter.
      *  * projectableNodes: list of DOM nodes that should be projected through
-     *                      [`<ng-content>`](api/core/ng-content) of the new component instance.
+     *                      [`<content>`](api/core/content) of the new component instance.
      *
      * @returns The new `ComponentRef` which contains the component instance and the host view.
      */
-    abstract createComponent<C>(componentType: Type<C>, options?: {
+    abstract createComponent<C>(componentType: Type<C>|TypeDef<C>, options?: {
         index?: number,
         injector?: Injector,
         moduleRef?: ModuleRef,
-        environmentInjector?: Injector | ModuleRef<unknown>,
+        context?: InvocationContext,
         projectableNodes?: Node[][],
     }): ComponentRef<C>;
 
