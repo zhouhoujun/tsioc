@@ -140,7 +140,7 @@ class TQueries_ implements TQueries {
 class TQuery_ implements TQuery {
     matches: number[] | null = null;
     indexInDeclarationView = -1;
-    crossesNgTemplate = false;
+    crossesTemplate = false;
 
     /**
      * A node index on which a query was declared (-1 for view queries and ones inherited from the
@@ -178,7 +178,7 @@ class TQuery_ implements TQuery {
 
     embeddedTView(tNode: TNode, childQueryIndex: number): TQuery | null {
         if (this.isApplyingToNode(tNode)) {
-            this.crossesNgTemplate = true;
+            this.crossesTemplate = true;
             // A marker indicating a `<template>` element (a placeholder for query results from
             // embedded views created based on this `<template>`).
             this.addMatch(-tNode.index, childQueryIndex);
@@ -419,7 +419,7 @@ export function ɵɵqueryRefresh(queryList: QueryList<any>): boolean {
         if (tQuery.matches === null) {
             queryList.reset([]);
         } else {
-            const result = tQuery.crossesNgTemplate ?
+            const result = tQuery.crossesTemplate ?
                 collectQueryResults(tView, lView, queryIndex, []) :
                 materializeViewResults(tView, lView, tQuery, queryIndex);
             queryList.reset(result, unwrapElementRef);

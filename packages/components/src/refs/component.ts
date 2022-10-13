@@ -77,7 +77,8 @@ export class ComponentRunnableRef<T = any> extends DefaultRunnableRef<T> {
         if (!this._compRef) {
             this._compRef = this.injector.get(ViewContainerRef).createComponent(this.def, {
                 injector: this.injector,
-                // moduleRef: this.
+                context: this.context,
+                moduleRef: this.moduleRef
             });
         }
         return this._compRef;
@@ -97,7 +98,7 @@ export class ComponentRunnableRef<T = any> extends DefaultRunnableRef<T> {
 export class ComponentRunnableFactory<T = any> extends DefaultRunnableFactory<T> {
 
     protected createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new ComponentRunnableRef(def, injector, options, invokeMethod)
+        return new ComponentRunnableRef(def, injector, this.moduleRef, options, invokeMethod)
     }
 
 }

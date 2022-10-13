@@ -1,4 +1,5 @@
 import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeOption, ReflectiveRef, DestroyCallback } from '@tsdi/ioc';
+import { ModuleRef } from './module.ref';
 
 /**
  * runnable
@@ -27,6 +28,14 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
      * runnable type.
      */
     abstract get type(): Type<T>;
+    /**
+     * runnable injector.
+     */
+    abstract get injector(): Injector;
+    /**
+     * moduleRef
+     */
+    abstract get moduleRef(): ModuleRef;
     /**
      * runnable instance.
      *

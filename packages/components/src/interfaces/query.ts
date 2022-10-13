@@ -85,7 +85,7 @@ export interface TQuery {
      * performance reasons: we can notice that queries not crossing any <template> elements will
      * have matches from a given view only (and adapt processing accordingly).
      */
-    crossesNgTemplate: boolean;
+    crossesTemplate: boolean;
 
     /**
      * A method call when a given query is crossing an element (or element container). This is where a

@@ -13,9 +13,11 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
 
     private _instance: T | undefined;
     private _ref: ReflectiveRef<T>;
-    constructor(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, protected defaultInvoke = 'run') {
+    private _moduleRef?: ModuleRef;
+    constructor(def: TypeDef<T>, injector: Injector, moduleRef?: ModuleRef, options?: InvokeArguments, protected defaultInvoke = 'run') {
         super();
         this._ref = injector.get(ReflectiveFactory).create(def, injector, options);
+        this._moduleRef = moduleRef;
         this.context.setValue(RunnableRef, this);
     }
 
@@ -55,6 +57,13 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
         return this._ref.injector;
     }
 
+    get moduleRef(): ModuleRef {
+        if (!this._moduleRef) {
+            this._moduleRef = this.injector.get(ModuleRef);
+        }
+        return this._moduleRef;
+    }
+
     get def(): TypeDef<T> {
         return this._ref.def;
     }
@@ -80,7 +89,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
  */
 export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
 
-    constructor(private moduleRef?: ModuleRef) {
+    constructor(protected moduleRef?: ModuleRef) {
         super()
     }
 
@@ -94,7 +103,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
     }
 
     protected createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new DefaultRunnableRef(def, injector, options, invokeMethod)
+        return new DefaultRunnableRef(def, injector, this.moduleRef, options, invokeMethod)
     }
 
 }

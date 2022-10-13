@@ -1,11 +1,11 @@
 import { lang, Injectable, Decors, TypeDef, refl, Injector, InvokeArguments, Platform } from '@tsdi/ioc';
-import { DefaultRunnableFactory, DefaultRunnableRef, RunnableRef } from '@tsdi/core';
+import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableRef } from '@tsdi/core';
+import { Advisor } from '@tsdi/aop';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
-import { Advisor } from '@tsdi/aop';
 
 /**
  * Suite runner.
@@ -169,12 +169,12 @@ export class SuiteRunner<T = any> extends DefaultRunnableRef<T> implements UnitR
 
 @Injectable()
 export class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
-    constructor(platform: Platform) {
-        super()
+    constructor(moduleRef: ModuleRef, platform: Platform) {
+        super(moduleRef)
         platform.getAction(Advisor).register(SuiteRunner);
     }
     protected override createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        const runnableRef = new SuiteRunner(def, injector, options, invokeMethod);
+        const runnableRef = new SuiteRunner(def, injector, this.moduleRef, options, invokeMethod);
         injector.platform().getAction(Advisor).attach(refl.get(SuiteRunner, true), runnableRef)
         return runnableRef;
     }
