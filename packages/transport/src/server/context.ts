@@ -1,12 +1,11 @@
-import { MiddlewareLike, HeadersContext, AssetContext, ServerEndpointContext, ServerContext, Incoming, Outgoing } from '@tsdi/core';
+import { MiddlewareLike, ServerEndpointContext, ServerContext, Incoming, Outgoing } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 
 /**
  * Transport context for `TransportServer`.
  */
-export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing>
-    extends AssetServerContext<TRequest, TResponse> implements HeadersContext, AssetContext {
+export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
     get status(): number {
         return this.response.statusCode

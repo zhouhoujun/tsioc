@@ -1,10 +1,10 @@
 import {
     Abstract, Token, Type, ClassType, TypeOf, composeResolver, isArray, isDefined, isPrimitiveType,
-    isString, Injector, InvokeArguments, MissingParameterExecption, Parameter, EMPTY, isFunction
+    isString, Injector, InvokeArguments, MissingParameterExecption, Parameter, EMPTY
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
-import { ServerEndpointContext } from './context';
+import { AssetContext, ServerEndpointContext } from './context';
 import { TransportArgumentExecption } from './execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
@@ -23,8 +23,7 @@ export interface ServerContextOpts extends InvokeArguments {
  * server context with model reovlers.
  */
 @Abstract()
-export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerEndpointContext<TRequest, TResponse> {
-
+export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, {

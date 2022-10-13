@@ -128,6 +128,9 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
 }
 
+/**
+ * create module ref.
+ */
 export function createModuleRef<T>(module: Type<T> | ModuleDef<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
     if (isFunction(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module), parent, option);
     if (isModuleProviders(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module.module), parent, {

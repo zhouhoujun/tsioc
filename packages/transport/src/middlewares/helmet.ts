@@ -1,4 +1,4 @@
-import { HeadersContext, Middleware } from '@tsdi/core';
+import { AssetContext, Middleware } from '@tsdi/core';
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 
@@ -43,7 +43,7 @@ export class HelmetMiddleware implements Middleware {
         };
     }
 
-    async invoke(ctx: HeadersContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         ctx.setHeader(hdr.X_DNS_PREFETCH_CONTROL, this.options.dnsPrefetch!);
 
         this.setXFormOptions(ctx);
@@ -60,7 +60,7 @@ export class HelmetMiddleware implements Middleware {
         await next();
     }
 
-    protected setXFormOptions(ctx: HeadersContext) {
+    protected setXFormOptions(ctx: AssetContext) {
         const xFrame = this.options.xFrame ?? EMPTY_OBJ;
         let action = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
@@ -72,12 +72,12 @@ export class HelmetMiddleware implements Middleware {
         ctx.setHeader(hdr.X_FRAME_OPTIONS, action);
     }
 
-    protected setPoweredBy(ctx: HeadersContext) {
+    protected setPoweredBy(ctx: AssetContext) {
         const poweredby = this.options.xPoweredBy;
         poweredby ? ctx.setHeader(hdr.X_POWERED_BY, poweredby) : ctx.removeHeader(hdr.X_POWERED_BY);
     }
 
-    protected setMaxAge(ctx: HeadersContext) {
+    protected setMaxAge(ctx: AssetContext) {
         const maxAge = this.options.maxAge!;
         if (maxAge > 0) {
             let age = `max-age=${Math.round(maxAge)}`;
@@ -91,7 +91,7 @@ export class HelmetMiddleware implements Middleware {
         }
     }
 
-    protected setXssProtection(ctx: HeadersContext, xssProt: {
+    protected setXssProtection(ctx: AssetContext, xssProt: {
         oldIE?: boolean;
         mode?: 'block';
         reportUri?: string;

@@ -194,10 +194,12 @@ export interface Throwable {
     throwError(error: Error): Error;
 }
 
+
 /**
- * tansport context with headers.
+ * asset context.
  */
-export interface HeadersContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerEndpointContext<TRequest, TResponse> {
+@Abstract()
+export abstract class AssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerEndpointContext<TRequest, TResponse> {
     /**
      * Return request header.
      *
@@ -219,13 +221,13 @@ export interface HeadersContext<TRequest extends Incoming = Incoming, TResponse 
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | string[] | undefined;
+    abstract getHeader(field: string): string | string[] | undefined;
 
     /**
      * has response header field or not.
      * @param field 
      */
-    hasHeader(field: string): boolean;
+    abstract hasHeader(field: string): boolean;
     /**
      * Set response header `field` to `val` or pass
      * an object of header fields.
@@ -240,7 +242,7 @@ export interface HeadersContext<TRequest extends Incoming = Incoming, TResponse 
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: string | number | string[]): void;
+    abstract setHeader(field: string, val: string | number | string[]): void;
     /**
      * Set response header `field` to `val` or pass
      * an object of header fields.
@@ -253,21 +255,15 @@ export interface HeadersContext<TRequest extends Incoming = Incoming, TResponse 
      * @param {String} val
      * @api public
      */
-    setHeader(fields: Record<string, string | number | string[]>): void;
+    abstract setHeader(fields: Record<string, string | number | string[]>): void;
     /**
      * Remove response header `field`.
      *
      * @param {String} name
      * @api public
      */
-    removeHeader(field: string): void;
+    abstract removeHeader(field: string): void;
 
-}
-
-/**
- * asset context.
- */
-export interface AssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends HeadersContext<TRequest, TResponse> {
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
@@ -289,12 +285,12 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      *
      *     this.is('html'); // => false
      */
-    is(type: string | string[]): string | null | false;
+    abstract is(type: string | string[]): string | null | false;
 
     /**
      * content type.
      */
-    get contentType(): string;
+    abstract get contentType(): string;
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
      * when it does not contain a charset.
@@ -313,7 +309,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @param {String} type
      * @api public
      */
-    set contentType(type: string);
+    abstract set contentType(type: string);
 
     /**
      * Set Content-Length field to `n`.
@@ -321,15 +317,14 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @param {Number} n
      * @api public
      */
-    set length(n: number | undefined);
+    abstract set length(n: number | undefined);
     /**
      * Return parsed response Content-Length when present.
      *
      * @return {Number}
      * @api public
      */
-    get length(): number | undefined;
-
+    abstract get length(): number | undefined;
 
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
@@ -346,7 +341,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @param {String} type
      * @api public
      */
-    set type(type: string);
+    abstract set type(type: string);
 
     /**
      * Return the response mime type void of
@@ -355,7 +350,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @return {String}
      * @api public
      */
-    get type(): string;
+    abstract get type(): string;
 
     /**
      * Check if the given `type(s)` is acceptable, returning
@@ -397,7 +392,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @api public
      */
 
-    accepts(...args: string[]): string | string[] | false;
+    abstract accepts(...args: string[]): string | string[] | false;
     /**
     * Return accepted encodings or best fit based on `encodings`.
     *
@@ -410,7 +405,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
     * @return {String|Array}
     * @api public
     */
-    acceptsEncodings(...encodings: string[]): string | string[] | false;
+    abstract acceptsEncodings(...encodings: string[]): string | string[] | false;
     /**
      * Return accepted charsets or best fit based on `charsets`.
      *
@@ -423,7 +418,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @return {String|Array}
      * @api public
      */
-    acceptsCharsets(...charsets: string[]): string | string[] | false;
+    abstract acceptsCharsets(...charsets: string[]): string | string[] | false;
 
     /**
      * Return accepted languages or best fit based on `langs`.
@@ -437,7 +432,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @return {Array|String}
      * @api public
      */
-    acceptsLanguages(...langs: string[]): string | string[];
+    abstract acceptsLanguages(...langs: string[]): string | string[];
 
 
     /**
@@ -447,7 +442,7 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
     * @param options content disposition.
     * @api public
     */
-    attachment(filename: string, options?: {
+    abstract attachment(filename: string, options?: {
         contentType?: string;
         /**
         * Specifies the disposition type.
@@ -485,6 +480,6 @@ export interface AssetContext<TRequest extends Incoming = Incoming, TResponse ex
      * @param {String} [alt]
      * @api public
      */
-    redirect(url: string, alt?: string): void;
+    abstract redirect(url: string, alt?: string): void;
 
 }

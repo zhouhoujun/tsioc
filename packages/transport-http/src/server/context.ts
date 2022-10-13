@@ -1,4 +1,4 @@
-import { AssetContext, HeadersContext, MiddlewareLike, mths, Throwable, ServerEndpointContext, Incoming } from '@tsdi/core';
+import { MiddlewareLike, mths, Throwable, ServerEndpointContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
@@ -16,7 +16,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements HeadersContext, AssetContext, Throwable {
+export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements Throwable {
 
     protected isSelf(token: Token) {
         return token === HttpContext || token === AssetServerContext || token === ServerEndpointContext;
