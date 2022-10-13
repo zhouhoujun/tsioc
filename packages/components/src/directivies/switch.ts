@@ -32,7 +32,7 @@ export class SwitchView {
 }
 
 /**
- * @ngModule CommonModule
+ * @Module ComponentsModule
  *
  * @description
  * The `[switch]` directive on a container specifies an expression to match against.
@@ -152,7 +152,7 @@ export class DirSwitch {
 }
 
 /**
- * @ngModule CommonModule
+ * @Module ComponentsModule
  *
  * @description
  * Provides a switch case expression to match against an enclosing `switch` expression.
@@ -208,7 +208,7 @@ export class DirSwitchCase implements DoCheck {
 }
 
 /**
- * @ngModule CommonModule
+ * @Module ComponentsModule
  *
  * @description
  *

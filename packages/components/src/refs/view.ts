@@ -87,10 +87,26 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
   /**
    * The context for this view, inherited from the anchor element.
    */
-  abstract get context(): C;
+  abstract context: C;
 
   /**
    * The root nodes for this embedded view.
    */
   abstract get rootNodes(): any[];
+}
+
+
+export interface InternalViewRef extends ViewRef {
+  detachFromAppRef(): void;
+  attachToAppRef(appRef: ViewRefTracker): void;
+}
+
+/**
+ * Interface for tracking root `ViewRef`s in `ApplicationRef`.
+ *
+ * NOTE: Importing `ApplicationRef` here directly creates circular dependency, which is why we have
+ * a subset of the `ApplicationRef` interface `ViewRefTracker` here.
+ */
+export interface ViewRefTracker {
+  detachView(viewRef: ViewRef): void;
 }

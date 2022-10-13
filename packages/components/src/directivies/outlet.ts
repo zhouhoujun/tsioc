@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injector, Type } from '@tsdi/ioc';
-import { ModuleFactory, ModuleRef } from '@tsdi/core';
+import { createModuleRef, ModuleRef } from '@tsdi/core';
 import { Directive, Input } from '../metadata/decor';
 import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
@@ -8,7 +8,7 @@ import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 
 /**
- * @ngModule CommonModule
+ * @Module ComponentsModule
  *
  * @description
  *
@@ -45,12 +45,14 @@ export class TemplateOutletDirective implements OnChanges {
    */
   @Input() public templateOutlet: TemplateRef<any> | null = null;
 
+  /** Injector to be used within the embedded view. */
+  @Input() public templateOutletInjector: Injector | null = null;
+
   constructor(private _viewContainerRef: ViewContainerRef) { }
 
   onChanges(changes: Changes) {
-    const recreateView = this._shouldRecreateView(changes);
+    if (changes['templateOutlet'] || changes['templateOutletInjector']) {
 
-    if (recreateView) {
       const viewContainerRef = this._viewContainerRef;
 
       if (this._viewRef) {
@@ -58,53 +60,20 @@ export class TemplateOutletDirective implements OnChanges {
       }
 
       this._viewRef = this.templateOutlet ?
-        viewContainerRef.createEmbeddedView(this.templateOutlet, this.templateOutletContext) :
+        viewContainerRef.createEmbeddedView(this.templateOutlet, this.templateOutletContext, this.templateOutletInjector ? { injector: this.templateOutletInjector } : undefined) :
         null;
-    } else if (this._viewRef && this.templateOutletContext) {
-      this._updateExistingContext(this.templateOutletContext);
+    } else if (this._viewRef && changes['templateOutletContext'] && this.templateOutletContext) {
+      this._viewRef.context = this.templateOutletContext;
     }
   }
 
-  /**
-   * We need to re-create existing embedded view if:
-   * - templateRef has changed
-   * - context has changes
-   *
-   * We mark context object as changed when the corresponding object
-   * shape changes (new properties are added or existing properties are removed).
-   * In other words we consider context with the same properties as "the same" even
-   * if object reference changes (see https://github.com/angular/angular/issues/13407).
-   */
-  private _shouldRecreateView(changes: Changes): boolean {
-    const ctxChange = changes['templateOutletContext'];
-    return !!changes['templateOutlet'] || (ctxChange && this._hasContextShapeChanged(ctxChange));
-  }
-
-  private _hasContextShapeChanged(ctxChange: Change): boolean {
-    const prevCtxKeys = Object.keys(ctxChange.previousValue || EMPTY_OBJ);
-    const currCtxKeys = Object.keys(ctxChange.currentValue || EMPTY_OBJ);
-
-    if (prevCtxKeys.length === currCtxKeys.length) {
-      for (const propName of currCtxKeys) {
-        if (prevCtxKeys.indexOf(propName) === -1) {
-          return true;
-        }
-      }
-      return false;
-    }
-    return true;
-  }
-
-  private _updateExistingContext(ctx: Object): void {
-    for (const propName of Object.keys(ctx)) {
-      (<any>this._viewRef!.context)[propName] = (<any>this.templateOutletContext)[propName];
-    }
-  }
 }
 
 
 
 /**
+ * @Module ComponentsModule
+ * 
  * Instantiates a single {@link Component} type and inserts its Host View into current View.
  * `DirComponentOutlet` provides a declarative approach for dynamic component creation.
  *
@@ -154,10 +123,11 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
   @Input() componentOutlet!: Type<any>;
   @Input() componentOutletInjector!: Injector;
   @Input() componentOutletContent!: any[][];
-  @Input() componentOutletModuleFactory!: ModuleFactory;
+
+  @Input() componentOutletModule?: Type<any>;
 
   private _componentRef: ComponentRef<any> | null = null;
-  private _moduleRef: ModuleRef<any> | null = null;
+  private _moduleRef?: ModuleRef<any>;
 
   constructor(private _viewContainerRef: ViewContainerRef) { }
 
@@ -168,19 +138,22 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
     if (this.componentOutlet) {
       const injector = this.componentOutletInjector || this._viewContainerRef.injector;
 
-      if (changes['componentOutletModuleFactory']) {
+      if (changes['componentOutletModule']) {
         if (this._moduleRef) this._moduleRef.destroy();
 
-        if (this.componentOutletModuleFactory) {
-          this._moduleRef = this.componentOutletModuleFactory.create(injector);
+        if (this.componentOutletModule) {
+          this._moduleRef = createModuleRef(this.componentOutletModule, injector.get(ModuleRef));
         } else {
-          this._moduleRef = null;
+          this._moduleRef = undefined;
         }
       }
 
-      this._componentRef = this._viewContainerRef.createComponent(
-        this.componentOutlet, this._viewContainerRef.length, injector,
-        this.componentOutletContent);
+      this._componentRef = this._viewContainerRef.createComponent(this.componentOutlet, {
+        index: this._viewContainerRef.length,
+        injector,
+        moduleRef: this._moduleRef,
+        projectableNodes: this.componentOutletContent
+      });
     }
   }
 

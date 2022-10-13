@@ -1,5 +1,4 @@
-import { InternalViewRef, ViewRefTracker } from '../refs/inter';
-import { EmbeddedViewRef } from '../refs/view';
+import { EmbeddedViewRef, InternalViewRef, ViewRefTracker } from '../refs/view';
 import { VIEW_REFS } from '../interfaces/container';
 import { CONTEXT, FLAGS, LView, LViewFlags, PARENT, TVIEW } from '../interfaces/view';
 import { isLContainer } from '../interfaces/chk';
@@ -10,6 +9,9 @@ import { checkNoChangesInternal, detectChangesInternal, markViewDirty, storeClea
 import { RuntimeErrorCode, RuntimeExecption } from '../errors';
 
 declare let devMode: any;
+
+
+
 /**
  * viewRef implement.
  */

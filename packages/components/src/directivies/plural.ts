@@ -5,7 +5,7 @@ import { TemplateRef } from '../refs/template';
 import { SwitchView } from './switch';
 
 /**
- * @ngModule CommonModule
+ * @Module ComponentsModule
  *
  * @usageNotes
  * ```
@@ -74,7 +74,7 @@ export class Plural {
 }
 
 /**
- * @ngModule CommonModule
+ * @Module ComponentsModule
  *
  * @description
  *

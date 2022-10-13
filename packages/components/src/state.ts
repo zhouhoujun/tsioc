@@ -1,8 +1,7 @@
 import { Injectable, Injector, InvocationContext, lang, Type, TypeDef } from '@tsdi/ioc';
 import { OnDestroy } from './lifecycle';
 import { ComponentRef } from './refs/component';
-import { InternalViewRef } from './refs/inter';
-import { ViewRef } from './refs/view';
+import { ViewRef, InternalViewRef } from './refs/view';
 import { ViewContainerRef } from './refs/container';
 import { ModuleRef } from '@tsdi/core';
 
