@@ -2,6 +2,7 @@ import { IElement } from '../interfaces/dom';
 import { TNode } from '../interfaces/node';
 import { LView } from '../interfaces/view';
 import { ElementRef } from '../refs/element';
+import { getNativeByTNode } from '../util/view';
 
 
 

@@ -6,7 +6,7 @@ import { ActivityModule } from './ActivityModule';
 
 
 /**
- * workflow builder.
+ * workflow.
  *
  * @export
  * @class Workflow

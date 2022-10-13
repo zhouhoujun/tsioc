@@ -81,13 +81,11 @@ export class WorkTask implements AfterViewInit {
 @Component({
     selector: 'comptest',
     template: `
-        <activity *if="arg; else elseBlock">
-            
-        <activity>
+        <activity *if="arg; else elseBlock"></activity>
         <template #elseBlock>
             <activity [switch]="args?.length">
                 <assign *case="0" [value]="a"></assign>
-            <activity>
+            </activity>
             <comowork (textChange)="textChange($event)"></comowork>
         <template>
     `
@@ -134,7 +132,7 @@ export class SimpleCTask implements OnInit {
     }
 
     onInit(): void {
-        throw new Error('Method not implemented.');
+        
     }
 
 
