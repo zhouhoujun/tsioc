@@ -1,26 +1,15 @@
-import { IncomingMsg, ListenOpts, mths } from '@tsdi/core';
+import { Incoming, ListenOpts, mths, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
-    Connection, ConnectionOpts, isBuffer, PacketGenerator, PacketParser, SteamOptions,
-    StreamGenerator, StreamParser, StreamTransportStrategy, TransportStream
+    Connection, ConnectionOpts, isBuffer, PacketGenerator, Packetor, PacketParser, SteamOptions,
+    StreamGenerator, StreamParser, TransportStream
 } from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
 
-@Injectable()
-export class CoapTransportStrategy extends StreamTransportStrategy {
-    private _protocol = 'coap';
 
-
-    get protocol(): string {
-        return this._protocol;
-    }
-
-    isContinue(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-    parseStatus(status?: string | number | undefined): number {
+export class CoapTransportStatus extends TransportStatus {
+    parse(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseFloat(status) : 0) : status ?? 0;
     }
 
@@ -82,6 +71,12 @@ export class CoapTransportStrategy extends StreamTransportStrategy {
         return retryStatus[status];
     }
 
+
+    isContinue(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+
+
     isRedirect(status: number): boolean {
         return redirectStatus[status]
     }
@@ -97,17 +92,30 @@ export class CoapTransportStrategy extends StreamTransportStrategy {
     message(status: number): string {
         return statusMessage[status as HttpStatusCode];
     }
+}
 
-    isUpdate(incoming: IncomingMsg): boolean {
+@Injectable()
+export class CoapTransportStrategy extends TransportStrategy {
+    private _protocol = 'coap';
+
+    constructor(readonly status: CoapTransportStatus) {
+        super()
+    }
+
+
+    get protocol(): string {
+        return this._protocol;
+    }
+
+    isUpdate(incoming: Incoming): boolean {
         return incoming.method === 'put';
     }
 
-    isSecure(req: IncomingMsg): boolean {
+    isSecure(req: Incoming): boolean {
         return req.connection?.encrypted === true
     }
 
-
-    parseURL(req: IncomingMsg, opts: ListenOpts, proxy?: boolean | undefined): URL {
+    parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
         const url = req.url?.trim() ?? '';
         if (coapPfx.test(url)) {
             return new URL(url);
@@ -130,24 +138,6 @@ export class CoapTransportStrategy extends StreamTransportStrategy {
 
     valid(header: string): boolean {
         return true;
-    }
-
-
-    parser(connection: Connection, opts: ConnectionOpts): PacketParser {
-        return new CoapPacketParser(connection, opts);
-    }
-    streamParser(stream: TransportStream, opts: SteamOptions): StreamParser {
-        throw new Error('Method not implemented.');
-    }
-
-
-    generator(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
-        return new CoapPacketGenerator(stream, opts);
-    }
-
-
-    streamGenerator(output: Writable, packetId: number, opts?: SteamOptions): StreamGenerator {
-        throw new Error('Method not implemented.');
     }
 
 }
@@ -248,6 +238,9 @@ export class CoapPacketGenerator extends PacketGenerator {
 
 }
 
+export class CoapPacketor extends Packetor {
+
+}
 
 export class CoapStreamParser extends StreamParser {
 

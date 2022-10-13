@@ -8,11 +8,6 @@ import { TransportEndpoint, TransportOpts } from './transport';
 
 
 @Abstract()
-export abstract class ConnectionManager<TDuplex = any, TOpts = any, TConn = any> {
-    abstract connect(duplex: TDuplex, opts: TOpts): Observable<TConn>;
-}
-
-@Abstract()
 export abstract class Sender<TInput = any, TOutput = any, TConn = any> extends TransportEndpoint<TInput, TOutput> {
     /**
      * transform, send data to remoting.
@@ -48,7 +43,6 @@ export abstract class ReceiverOpts<TInput = any, TOutput = any> extends Transpor
 @Abstract()
 export abstract class TransportStrategyOpts {
     abstract get strategy(): TypeOf<TransportStrategy>;
-    abstract connectionManager?: TypeOf<ConnectionManager>;
     abstract senderOpts?: SenderOpts;
     abstract receiverOpts?: ReceiverOpts;
 }

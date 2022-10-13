@@ -1,5 +1,5 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { Incoming, ListenOpts, mths, Packet, TransportStrategy } from '@tsdi/core';
+import { Incoming, ListenOpts, mths, Packet, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
     ConnectionOpts, hdr, isBuffer, ServerRequest, PacketParser,
@@ -10,10 +10,9 @@ import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 
 @Injectable()
-export class DelimiterTransportStrategy extends TransportStrategy {
-    private _protocol = 'tcp';
+export class TcpTransportStatus extends TransportStatus {
 
-    parseStatus(status?: string | number | undefined): number {
+    parse(status?: string | number | undefined): number {
         return isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
     }
 
@@ -93,6 +92,18 @@ export class DelimiterTransportStrategy extends TransportStrategy {
     message(status: number): string {
         return statusMessage[status as HttpStatusCode];
     }
+}
+
+
+@Injectable()
+export class DelimiterTransportStrategy extends TransportStrategy {
+    private _protocol = 'tcp';
+
+    constructor(readonly status: TcpTransportStatus) {
+        super()
+    }
+
+    
 
     isUpdate(req: Incoming): boolean {
         return req.method === 'PUT';
@@ -138,22 +149,23 @@ export class DelimiterTransportStrategy extends TransportStrategy {
         return true;
     }
 
-    parser(connection: Connection, opts: ConnectionOpts): PacketParser {
-        return new DelimiterParser(connection, opts);
-    }
-    generator(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
-        return new DelimiterGenerator(stream, opts);
-    }
+    // parser(connection: Connection, opts: ConnectionOpts): PacketParser {
+    //     return new DelimiterParser(connection, opts);
+    // }
+    // generator(stream: Duplex, opts: ConnectionOpts): PacketGenerator {
+    //     return new DelimiterGenerator(stream, opts);
+    // }
 
-    streamParser(stream: TransportStream, opts: SteamOptions): StreamParser {
-        return new TcpStreamParser(stream, opts);
-    }
-    streamGenerator(output: Writable, packetId: number, opts: SteamOptions): StreamGenerator {
-        return new TcptreamGenerator(output, packetId, opts);
-    }
-
+    // streamParser(stream: TransportStream, opts: SteamOptions): StreamParser {
+    //     return new TcpStreamParser(stream, opts);
+    // }
+    // streamGenerator(output: Writable, packetId: number, opts: SteamOptions): StreamGenerator {
+    //     return new TcptreamGenerator(output, packetId, opts);
+    // }
 
 }
+
+
 
 export class DelimiterParser extends PacketParser {
     private delimiter!: Buffer;

@@ -1,12 +1,13 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor } from '@tsdi/transport';
+import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, ev } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttConnection } from './connection';
-import { MqttTransportStrategy } from '../transport';
+import { MqttPacketor, MqttTransportStrategy } from '../transport';
+import { Observable } from 'rxjs';
 
 
 
@@ -75,7 +76,6 @@ const defaults = {
 @Injectable()
 export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Server, MqttServerOpts> {
 
-
     constructor(options: MqttServerOpts) {
         super(options);
     }
@@ -120,6 +120,33 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
     // protected override createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): ServerConnection {
     //     return new MqttConnection(duplex, transport, opts);
     // }
+
+    protected onConnection(server: net.Server | tls.Server | ws.Server<ws.WebSocket> | Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+        const packetor = this.context.get(MqttPacketor);
+        return new Observable((observer) => {
+            const onError = (err: Error) => {
+                observer.error(err);
+            };
+            const onConnection = (socket: Duplex | ws.WebSocket) => {
+                if (socket instanceof ws.WebSocket) {
+                    socket = ws.createWebSocketStream(socket, { objectMode: true });
+                }
+                observer.next(new MqttConnection(socket, packetor, opts));
+            }
+            const onClose = () => {
+                observer.complete();
+            }
+            server.on(ev.ERROR, onError);
+            server.on(ev.CONNECTION, onConnection);
+            server.on(ev.CLOSE, onClose)
+
+            return () => {
+                server.off(ev.ERROR, onError);
+                server.off(ev.CLOSE, onClose);
+                server.off(ev.CONNECTION, onConnection);
+            }
+        })
+    }
 
     protected listen(server: net.Server | tls.Server | ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();

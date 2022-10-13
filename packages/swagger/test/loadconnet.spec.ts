@@ -2,7 +2,7 @@ import { ApplicationContext, Application } from '@tsdi/core';
 
 import { User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
-import { TypeOrmHelper } from '../src';
+import { TypeOrmHelper } from '@tsdi/typeorm-adapter';
 import * as expect from 'expect';
 import { UserRepository } from './repositories/UserRepository';
 import { option, MockBootTest } from './app';
@@ -15,17 +15,7 @@ export class LoadReposTest {
 
     @Before()
     async beforeInit() {
-        this.ctx = await Application.run({
-            type: MockBootTest,
-            exit: false,
-            configures: [
-                {
-                    models: ['./models/**/*.ts'],
-                    repositories: ['./repositories/**/*.ts'],
-                    connections: option
-                }
-            ]
-        });
+        this.ctx = await Application.run(MockBootTest);
     }
 
     @Test()
@@ -36,19 +26,19 @@ export class LoadReposTest {
 
     @Test()
     async canGetUserRepository() {
-        let rep = this.ctx.injector.get(UserRepository);
+        const rep = this.ctx.injector.get(UserRepository);
         expect(rep).toBeInstanceOf(UserRepository);
     }
 
     @Test()
     async save() {
-        let rep = this.ctx.injector.get(UserRepository);
-        let newUr = new User();
+        const rep = this.ctx.injector.get(UserRepository);
+        const newUr = new User();
         newUr.name = 'admin----test';
         newUr.account = 'admin----test';
         newUr.password = '111111';
         await rep.save(newUr);
-        let svu = await rep.findByAccount('admin----test')
+        const svu = await rep.findByAccount('admin----test')
         // console.log(svu);
         expect(svu).toBeInstanceOf(User);
         expect(svu?.id).toBeDefined();

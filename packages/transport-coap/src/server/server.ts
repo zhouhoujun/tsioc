@@ -3,7 +3,7 @@ import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType } from '@tsdi/
 import { Abstract, Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     CatchInterceptor, LogInterceptor, RespondInterceptor, TransportServer, TransportServerOpts, ServerRequest,
-    ServerResponse, ConnectionOpts, StreamTransportStrategy, ServerConnection, ev, parseToDuplex
+    ServerResponse, ConnectionOpts, ev, parseToDuplex, Packetor, Connection
 } from '@tsdi/transport';
 import * as net from 'net';
 import * as dgram from 'dgram';
@@ -76,26 +76,27 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
         return defOpts;
     }
 
-    protected buildServer(opts: CoapServerOpts): dgram.Socket | net.Server {
+    protected override createServer(opts: CoapServerOpts): dgram.Socket | net.Server {
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
     }
 
-    protected override onConnection(server: net.Server | dgram.Socket, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): Observable<ServerConnection> {
+    protected override onConnection(server: net.Server | dgram.Socket, opts?: ConnectionOpts): Observable<Connection> {
+        const packetor = this.context.get(Packetor);
         if (server instanceof net.Server) {
-            return this.tcpConnect(server, transport, opts);
+            return this.tcpConnect(server, packetor, opts);
         } else {
-            return this.udpConnect(server, transport, opts);
+            return this.udpConnect(server, packetor, opts);
         }
 
     }
 
-    protected tcpConnect(server: net.Server, transport: StreamTransportStrategy, opts?: any): Observable<ServerConnection> {
+    protected tcpConnect(server: net.Server, packetor: Packetor, opts?: any): Observable<Connection> {
         return new Observable((observer) => {
             const onError = (err: Error) => {
                 observer.error(err);
             };
             const onConnection = (socket: net.Socket) => {
-                observer.next(new ServerConnection(socket, transport, opts));
+                observer.next(new Connection(socket, packetor, opts));
             }
             const onClose = () => {
                 observer.complete();
@@ -112,9 +113,9 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
         })
     }
 
-    protected udpConnect(server: dgram.Socket, parser: StreamTransportStrategy, opts?: any): Observable<ServerConnection> {
+    protected udpConnect(server: dgram.Socket, packetor: Packetor, opts?: any): Observable<Connection> {
         return new Observable((observer) => {
-            const connections = new Map<string, ServerConnection>()
+            const connections = new Map<string, Connection>()
             const onError = (err: Error) => {
                 observer.error(err);
             };
@@ -122,7 +123,7 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, CoapS
                 const addr = `${rinfo.family}_${rinfo.address}:${rinfo.port}`;
                 let conn = connections.get(addr);
                 if (!conn) {
-                    conn = new ServerConnection(parseToDuplex(server, rinfo), parser, opts);
+                    conn = new Connection(parseToDuplex(server, rinfo), packetor, opts);
                     conn.once(ev.DISCONNECT, () => connections.delete(addr));
                     conn.once(ev.END, () => connections.delete(addr));
                     connections.set(addr, conn);

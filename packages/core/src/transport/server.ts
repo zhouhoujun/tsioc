@@ -6,7 +6,7 @@ import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
 import { Incoming, Outgoing } from './packet';
-import { ConnectionManager, Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
+import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 /**
@@ -85,7 +85,7 @@ export abstract class Server<
         super.initContext(options);
         if (options.transport) {
             this.context.setValue(TransportStrategyOpts, options.transport);
-            const { strategy, connectionManager, senderOpts, receiverOpts } = options.transport;
+            const { strategy, senderOpts, receiverOpts } = options.transport;
             if (!strategy) {
                 throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
             }
@@ -96,9 +96,6 @@ export abstract class Server<
             if (receiverOpts) {
                 if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
                 if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
-            }
-            if (connectionManager) {
-                this.regTypeof(ConnectionManager, connectionManager);
             }
             this.regTypeof(TransportStrategy, strategy);
         }

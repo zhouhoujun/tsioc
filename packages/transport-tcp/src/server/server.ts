@@ -3,12 +3,13 @@ import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionFilter, CatchInterceptor, LogInterceptor, RespondInterceptor,
     BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, SessionMiddleware,
-    TransportServer, TransportContext, TransportFinalizeFilter
+    TransportServer, TransportContext, TransportFinalizeFilter, Connection, ConnectionOpts, Packetor, ev
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { DelimiterTransportStrategy } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
+import { Observable } from 'rxjs';
 
 
 /**
@@ -66,7 +67,6 @@ export const TCP_SERVER_OPTS = {
 @Injectable()
 export class TcpServer extends TransportServer<net.Server | tls.Server, TcpServerOpts> {
 
-
     constructor(@Nullable() options: TcpServerOpts) {
         super(options)
     }
@@ -78,6 +78,31 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, TcpServe
     protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
         return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
     }
+
+    protected override onConnection(server: net.Server | tls.Server, opts?: ConnectionOpts): Observable<Connection> {
+        const packetor = this.context.get(Packetor);
+        return new Observable((observer) => {
+            const onError = (err: Error) => {
+                observer.error(err);
+            };
+            const onConnection = (socket: net.Socket) => {
+                observer.next(new Connection(socket, packetor, opts));
+            }
+            const onClose = () => {
+                observer.complete();
+            }
+            server.on(ev.ERROR, onError);
+            server.on(ev.CONNECTION, onConnection);
+            server.on(ev.CLOSE, onClose)
+
+            return () => {
+                server.off(ev.ERROR, onError);
+                server.off(ev.CLOSE, onClose);
+                server.off(ev.CONNECTION, onConnection);
+            }
+        })
+    }
+
 
     protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();

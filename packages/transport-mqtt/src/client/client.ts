@@ -1,12 +1,13 @@
 import { Abstract, Execption, Injectable, tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
-import { LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, ConnectionOpts, ev, LogInterceptor, Packetor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { IConnectPacket } from 'mqtt-packet';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
-import { MqttTransportStrategy, PacketOptions } from '../transport';
+import { MqttPacketor, MqttTransportStrategy, PacketOptions } from '../transport';
+import { Observable, Observer } from 'rxjs';
 
 
 
@@ -159,6 +160,39 @@ export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> 
             default:
                 throw new Execption('Unknown protocol for secure connection: "' + (connOpts as any).protocol + '"!')
         }
+    }
+
+    protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+        const logger = this.logger;
+        const packetor = this.context.get(MqttPacketor);
+        return new Observable((observer: Observer<Connection>) => {
+            const client = new Connection(duplex, packetor, opts);
+            if (opts?.keepalive) {
+                client.setKeepAlive(true, opts.keepalive);
+            }
+
+            const onError = (err: Error) => {
+                logger.error(err);
+                observer.error(err);
+            }
+            const onClose = () => {
+                client.end();
+            };
+            const onConnected = () => {
+                observer.next(client);
+            }
+            client.on(ev.ERROR, onError);
+            client.on(ev.CLOSE, onClose);
+            client.on(ev.END, onClose);
+            client.on(ev.CONNECT, onConnected);
+
+            return () => {
+                client.off(ev.ERROR, onError);
+                client.off(ev.CLOSE, onClose);
+                client.off(ev.END, onClose);
+                client.off(ev.CONNECT, onConnected);
+            }
+        });
     }
 
 }

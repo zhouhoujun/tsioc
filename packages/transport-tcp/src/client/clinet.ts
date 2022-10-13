@@ -1,11 +1,12 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
-import { TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, ConnectionOpts, ev, Packetor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { DelimiterTransportStrategy } from '../transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
+import { Observable, Observer } from 'rxjs';
 
 
 
@@ -30,7 +31,6 @@ export const TCP_CLIENT_OPTS = {
  */
 @Injectable()
 export class TcpClient extends TransportClient<RequestOptions> implements OnDispose {
-
     constructor(@Nullable() options: TcpClientOpts) {
         super(options);
     }
@@ -44,5 +44,38 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
         return socket;
     }
 
+    
+    protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
+        const logger = this.logger;
+        const packetor = this.context.get(Packetor);
+        return new Observable((observer: Observer<Connection>) => {
+            const client = new Connection(duplex, packetor, opts);
+            if (opts?.keepalive) {
+                client.setKeepAlive(true, opts.keepalive);
+            }
+
+            const onError = (err: Error) => {
+                logger.error(err);
+                observer.error(err);
+            }
+            const onClose = () => {
+                client.end();
+            };
+            const onConnected = () => {
+                observer.next(client);
+            }
+            client.on(ev.ERROR, onError);
+            client.on(ev.CLOSE, onClose);
+            client.on(ev.END, onClose);
+            client.on(ev.CONNECT, onConnected);
+
+            return () => {
+                client.off(ev.ERROR, onError);
+                client.off(ev.CLOSE, onClose);
+                client.off(ev.END, onClose);
+                client.off(ev.CONNECT, onConnected);
+            }
+        });
+    }
 }
 

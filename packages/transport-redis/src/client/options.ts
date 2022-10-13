@@ -1,8 +1,8 @@
-import { ClientOpts, RequestPacket, ResponseEvent } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { TransportClientOpts } from '@tsdi/transport';
 import { RedisClientOptions } from 'redis';
 
 @Abstract()
-export abstract class RedisClientOpts extends ClientOpts<RequestPacket, ResponseEvent> {
+export abstract class RedisClientOpts extends TransportClientOpts {
     abstract redisOpts: RedisClientOptions;
 }

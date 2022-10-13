@@ -1,7 +1,7 @@
-import { ConnectionManager, Incoming, ListenOpts, ModuleRef, Outgoing, Receiver, Router, Server, TransportStrategy } from '@tsdi/core';
+import { Incoming, ListenOpts, ModuleRef, Outgoing, Receiver, Router, Server, TransportStrategy } from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { mergeMap } from 'rxjs';
+import { mergeMap, Observable } from 'rxjs';
 import { CatchInterceptor, LogInterceptor } from '../interceptors';
 import { TransportContext, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
@@ -11,6 +11,7 @@ import { TransportExecptionFilter, TransportFinalizeFilter } from './finalize-fi
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { RespondInterceptor } from './respond';
+import { Connection, ConnectionOpts } from '../connection';
 
 
 
@@ -68,8 +69,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const opts = this.getOptions();
             const server = this._server = this.createServer(opts);
             const logger = this.logger;
-            const connMgr = this.context.get(ConnectionManager);
-            const sub = connMgr.connect(server, opts.connectionOpts)
+            const sub = this.onConnection(server, opts.connectionOpts)
                 .pipe(mergeMap(conn => this.context.get(Receiver).receive(conn, this.endpoint)))
                 .subscribe({
                     error: (err) => {
@@ -98,30 +98,43 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
      */
     protected abstract listen(server: T, opts: ListenOpts): Promise<void>;
 
-    // protected onConnection(server: T, opts?: ConnectionOpts): Observable<Connection> {
-    //     return new Observable((observer) => {
-    //         const onError = (err: Error) => {
-    //             observer.error(err);
-    //         };
-    //         const onConnection = (conn: any, ...args: any[]) => {
-    //             const duplex = isDuplex(conn) ? conn : this.parseToDuplex(conn, ...args);
-    //             const connection = this.createConnection(duplex, opts);
-    //             observer.next(connection);
-    //         }
-    //         const onClose = () => {
-    //             observer.complete();
-    //         }
-    //         server.on(ev.ERROR, onError);
-    //         server.on(ev.CONNECTION, onConnection);
-    //         server.on(ev.CLOSE, onClose)
+    /**
+     * on connection.
+     * 
+     * ### Example
+     * 
+     * ```typescript
+     * protected override onConnection(server: net.Server | tls.Server, opts?: ConnectionOpts): Observable<Connection> {
+     *   const packetor = this.context.get(Packetor);
+     *   return new Observable((observer) => {
+     *       const onError = (err: Error) => {
+     *           observer.error(err);
+     *       };
+     *       const onConnection = (socket: net.Socket) => {
+     *           observer.next(new Connection(socket, packetor, opts));
+     *       }
+     *       const onClose = () => {
+     *           observer.complete();
+     *       }
+     *       server.on(ev.ERROR, onError);
+     *       server.on(ev.CONNECTION, onConnection);
+     *       server.on(ev.CLOSE, onClose)
+     *
+     *       return () => {
+     *           server.off(ev.ERROR, onError);
+     *           server.off(ev.CLOSE, onClose);
+     *           server.off(ev.CONNECTION, onConnection);
+     *       }
+     *   })
+     * }
+     * 
+     * ```
+     * 
+     * @param server 
+     * @param opts 
+     */
+    protected abstract onConnection(server: T, opts?: ConnectionOpts): Observable<Connection>;
 
-    //         return () => {
-    //             server.off(ev.ERROR, onError);
-    //             server.off(ev.CLOSE, onClose);
-    //             server.off(ev.CONNECTION, onConnection);
-    //         }
-    //     })
-    // }
 
     // protected parseToDuplex(target: any, ...args: any[]): Duplex {
     //     throw new Execption('parse connection client to Duplex not implemented.')

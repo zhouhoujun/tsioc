@@ -1,11 +1,12 @@
-import { OnDispose, ClientEndpointContext, Client, RequestOptions, TransportRequest, Pattern, TransportStrategy, ConnectionManager, Sender } from '@tsdi/core';
+import { OnDispose, ClientEndpointContext, Client, RequestOptions, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
 import { Abstract, EMPTY } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
+import { Duplex } from 'stream';
 import { ClientEndpointBackend, TransportBackend } from './backend';
 import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
-import { Connection } from '../connection';
+import { Connection, ConnectionOpts } from '../connection';
 
 
 
@@ -76,7 +77,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         }
         const opts = this.getOptions();
         const duplex = this.createDuplex(opts);
-        return this.context.get(ConnectionManager).connect(duplex, opts.connectionOpts)
+        return this.onConnect(duplex, opts.connectionOpts)
             .pipe(
                 map(conn => {
                     this.context.setValue(Connection, conn);
@@ -86,39 +87,59 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             );
     }
 
-    protected abstract createDuplex(opts: TOpts): any;
+    protected abstract createDuplex(opts: TOpts): Duplex;
 
-    // protected buildConnection(opts: TOpts): Observable<Connection> {
-    //     const logger = this.logger;
-    //     return new Observable((observer: Observer<Connection>) => {
-    //         const client = this.createConnection(opts);
-    //         if (opts.keepalive) {
-    //             client.setKeepAlive(true, opts.keepalive);
-    //         }
+    /**
+     * on client connect.
+     * @usageNotes
+     * 
+     * ### Example
+     * 
+     * ```typescript
+     * 
+     * class MyClient extends TransportClient {
+     *   ...
+     *   protected override onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
+     *       const logger = this.logger;
+     *       const packetor = this.context.get(Packetor);
+     *       return new Observable((observer: Observer<Connection>) => {
+     *          const client = new Connection(duplex, packetor, opts);
+     *           if (opts.keepalive) {
+     *               client.setKeepAlive(true, opts.keepalive);
+     *           }
+     *
+     *           const onError = (err: Error) => {
+     *               logger.error(err);
+     *               observer.error(err);
+     *           }
+     *           const onClose = () => {
+     *               client.end();
+     *           };
+     *           const onConnected = () => {
+     *               observer.next(client);
+     *           }
+     *           client.on(ev.ERROR, onError);
+     *           client.on(ev.CLOSE, onClose);
+     *           client.on(ev.END, onClose);
+     *           client.on(ev.CONNECT, onConnected);
+     *
+     *           return () => {
+     *               client.off(ev.ERROR, onError);
+     *               client.off(ev.CLOSE, onClose);
+     *               client.off(ev.END, onClose);
+     *               client.off(ev.CONNECT, onConnected);
+     *           }
+     *       });
+     *   }
+     * }
+     * ```
+     * 
+     * @param duplex 
+     * @param opts 
+     */
+    protected abstract onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection>;
 
-    //         const onError = (err: Error) => {
-    //             logger.error(err);
-    //             observer.error(err);
-    //         }
-    //         const onClose = () => {
-    //             client.end();
-    //         };
-    //         const onConnected = () => {
-    //             observer.next(client);
-    //         }
-    //         client.on(ev.ERROR, onError);
-    //         client.on(ev.CLOSE, onClose);
-    //         client.on(ev.END, onClose);
-    //         client.on(ev.CONNECT, onConnected);
-
-    //         return () => {
-    //             client.off(ev.ERROR, onError);
-    //             client.off(ev.CLOSE, onClose);
-    //             client.off(ev.END, onClose);
-    //             client.off(ev.CONNECT, onConnected);
-    //         }
-    //     });
-    // }
+    
 
 }
 

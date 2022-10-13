@@ -1,4 +1,4 @@
-import { ApplicationContext, Boot, RouteMapping, StartupService } from '@tsdi/core';
+import { RouteMapping } from '@tsdi/core';
 import { Inject, Injector, lang } from '@tsdi/ioc';
 import { ApiOperation } from 'packages/swagger/src/metadata/decor';
 import { User } from '../models/models';
@@ -34,16 +34,6 @@ export class UserController {
         console.log('id:', id);
         await this.usrRep.delete(id);
         return true;
-    }
-
-}
-
-
-@Boot()
-export class RouteStartup extends StartupService {
-   
-    override async configureService(ctx: ApplicationContext): Promise<void> {
-        ctx.injector.register(UserController);
     }
 
 }

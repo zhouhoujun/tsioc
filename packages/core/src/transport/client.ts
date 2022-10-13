@@ -6,7 +6,7 @@ import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
 import { TransportRequest, RequestOptions, Pattern } from './request';
 import { TransportEvent, TransportResponse } from './response';
-import { ConnectionManager, Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
+import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 
@@ -392,7 +392,7 @@ export abstract class Client<
     protected override initContext(options: TOpts): void {
         super.initContext(options);
         if (options.transport) {
-            const { strategy, connectionManager, senderOpts, receiverOpts } = options.transport;
+            const { strategy, senderOpts, receiverOpts } = options.transport;
             if (!strategy) {
                 throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
             }
@@ -403,9 +403,6 @@ export abstract class Client<
             if (receiverOpts) {
                 if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
                 if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
-            }
-            if (connectionManager) {
-                this.regTypeof(ConnectionManager, connectionManager);
             }
             this.regTypeof(TransportStrategy, strategy);
         }
