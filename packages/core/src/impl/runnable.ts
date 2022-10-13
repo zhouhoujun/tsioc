@@ -1,6 +1,6 @@
 import {
-    Type, refl, TypeDef, isFunction, Injector, lang, InvokeArguments, DestroyCallback,
-    InvocationContext, ReflectiveFactory, ReflectiveRef
+    Type, refl, TypeDef, isFunction, Injector, lang, DestroyCallback,
+    InvocationContext, ReflectiveFactory, ReflectiveRef, InvokeArguments
 } from '@tsdi/ioc';
 import { BootstrapOption, RunnableFactory, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
@@ -47,7 +47,6 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     get ref() {
         return this._ref;
     }
-
 
     get destroyed(): boolean {
         return this._ref.destroyed;

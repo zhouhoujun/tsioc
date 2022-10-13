@@ -1,6 +1,7 @@
 import { Modules, Type } from './types';
 import { Token } from './tokens';
 import { Injector } from './injector';
+import { isArray, isFunction, _tyfunc } from './utils/chk';
 
 /**
  * provider for {@link Injector }.
@@ -184,4 +185,8 @@ export interface ModuleWithProviders<T = any> {
      * providers for the module
      */
     providers: ProviderType[];
+}
+
+export function isModuleProviders(target: any): target is ModuleWithProviders {
+    return target && isFunction(target.module) && isArray(target.providers)
 }

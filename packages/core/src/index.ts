@@ -19,7 +19,6 @@ export * from './pipes';
 
 // modules
 export * from './module.ref';
-export * from './module.factory';
 
 // impl
 export * from './impl/module';

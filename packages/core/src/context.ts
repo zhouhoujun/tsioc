@@ -6,8 +6,7 @@ import { Logger } from '@tsdi/logs';
 import { BootstrapOption, RunnableRef } from './runnable';
 import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
-import { ModuleOption } from './module.factory';
-import { ModuleRef } from './module.ref';
+import { ModuleOption, ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 
 /**

@@ -1,7 +1,7 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, ModuleWithProviders, Type,
     isFunction, isPlainObject, lang, ModuleDef, OnDestroy, ReflectiveFactory,
-    ModuleRef as ModRef, Modules
+    ModuleRef as ModRef, Modules, ProviderType
 } from '@tsdi/ioc';
 import { ModuleLifecycleHooks } from './lifecycle';
 import { RunnableFactory } from './runnable';
@@ -79,6 +79,34 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
     abstract onDestroy(callback: DestroyCallback): void
 }
 
+
+/**
+ * module option.
+ */
+export interface ModuleOption {
+    /**
+     *  providers.
+     */
+    providers?: ProviderType[];
+    /**
+     * dependence modules. register before module injector init.
+     */
+    deps?: ModuleType[];
+    /**
+     * register modules after module injector inited.
+     */
+    uses?: ModuleType[];
+    /**
+     * moduel scope.
+     */
+    scope?: 'root' | string;
+
+    /**
+     * is static or not.
+     */
+    isStatic?: boolean;
+
+}
 
 export function getModuleType(input: any[]): (Type | ModuleWithProviders)[] {
     const types: (Type | ModuleWithProviders)[] = [];

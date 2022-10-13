@@ -4,8 +4,8 @@ import { DEFAULTA_PROVIDERS } from './providers';
 import { PROCESS_ROOT } from './metadata/tk';
 import { ApplicationExit } from './exit';
 import { getModuleType, ModuleRef } from './module.ref';
-import { ModuleFactoryResolver } from './module.factory';
 import { RunnableFactory } from './runnable';
+import { createModuleRef } from './impl/module';
 
 /**
  * application.
@@ -113,7 +113,11 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             container.setValue(ModuleLoader, this.loader)
         }
         option.platformDeps && container.use(...option.platformDeps);
-        return container.resolve({ token: ModuleFactoryResolver, target: option.module }).resolve(this.moduleify(option.module)).create(container, option)
+        return this.createModuleRef(container, option);
+    }
+
+    protected createModuleRef(container: Injector, option: ApplicationOption) {
+        return createModuleRef(this.moduleify(option.module), container, option)
     }
 
     protected moduleify(module: Type | ModuleDef | ModuleMetadata): Type | ModuleDef {

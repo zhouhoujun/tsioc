@@ -1,7 +1,6 @@
 import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, isFunction } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
-import { ModuleFactoryResolver } from './module.factory';
-import { DefaultModuleFactoryResolver, ModuleLifecycleHooksResolver } from './impl/module';
+import { ModuleLifecycleHooksResolver } from './impl/module';
 import { DefaultApplicationFactory } from './impl/context';
 import { RunnableRef, RunnableSet } from './runnable';
 import { Observable, from, lastValueFrom } from 'rxjs';
@@ -151,7 +150,6 @@ export class DefaultApplicationRunners extends ApplicationRunners {
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
-    { provide: ModuleFactoryResolver, useValue: new DefaultModuleFactoryResolver() },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true },
     {

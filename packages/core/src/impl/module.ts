@@ -3,13 +3,12 @@ import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleDef, processInjectorType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks, ReflectiveFactory,
-    DefaultReflectiveFactory, isPlainObject, isArray, EMPTY_OBJ, isClass
+    DefaultReflectiveFactory, isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
 import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
-import { ModuleFactory, ModuleFactoryResolver, ModuleOption } from '../module.factory';
-import { ModuleRef, ModuleType } from '../module.ref';
+import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { RunnableFactory } from '../runnable';
 import { DefaultRunnableFactory } from './runnable';
 
@@ -80,11 +79,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     import(typeOrDef: Type | ModuleWithProviders, children?: boolean) {
         if (children) {
-            if (isFunction(typeOrDef)) {
-                this.get(ModuleFactoryResolver).resolve(typeOrDef).create(this)
-            } else {
-                this.get(ModuleFactoryResolver).resolve(typeOrDef.module).create(this, typeOrDef)
-            }
+            createModuleRef(typeOrDef, this)
         } else {
             this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect)
         }
@@ -133,6 +128,14 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
 }
 
+export function createModuleRef<T>(module: Type<T> | ModuleDef<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
+    if (isFunction(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module), parent, option);
+    if (isModuleProviders(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module.module), parent, {
+        ...option,
+        providers: [...module.providers ?? EMPTY, ...option?.providers ?? EMPTY]
+    });
+    return new DefaultModuleRef(module, parent, option)
+}
 
 
 export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implements ModuleLifecycleHooks {
@@ -228,39 +231,39 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     }
 }
 
-export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
+// export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
 
-    private _moduleType: Type;
-    private _moduleRefl: ModuleDef;
-    constructor(moduleType: Type<T> | ModuleDef<T>) {
-        super();
-        if (isFunction(moduleType)) {
-            this._moduleType = moduleType;
-            this._moduleRefl = refl.get(moduleType);
-        } else {
-            this._moduleRefl = moduleType;
-            this._moduleType = moduleType.type as Type;
-        }
-    }
+//     private _moduleType: Type;
+//     private _moduleRefl: ModuleDef;
+//     constructor(moduleType: Type<T> | ModuleDef<T>) {
+//         super();
+//         if (isFunction(moduleType)) {
+//             this._moduleType = moduleType;
+//             this._moduleRefl = refl.get(moduleType);
+//         } else {
+//             this._moduleRefl = moduleType;
+//             this._moduleType = moduleType.type as Type;
+//         }
+//     }
 
-    get moduleType() {
-        return this._moduleType
-    }
+//     get moduleType() {
+//         return this._moduleType
+//     }
 
-    get moduleReflect() {
-        return this._moduleRefl
-    }
+//     get moduleReflect() {
+//         return this._moduleRefl
+//     }
 
-    create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-        return new DefaultModuleRef(this.moduleReflect, parent, option)
-    }
-}
+//     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
+//         return new DefaultModuleRef(this.moduleReflect, parent, option)
+//     }
+// }
 
-export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
-    resolve<T>(type: Type<T> | ModuleDef<T>): ModuleFactory<T> {
-        return new DefaultModuleFactory(type)
-    }
-}
+// export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
+//     resolve<T>(type: Type<T> | ModuleDef<T>): ModuleFactory<T> {
+//         return new DefaultModuleFactory(type)
+//     }
+// }
 
 export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
     resolve(plaform?: Platform): LifecycleHooks {
