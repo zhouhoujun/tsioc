@@ -1,10 +1,6 @@
-import { ApplicationContext, BootstrapOption, RunnableFactory, RunnableFactoryResolver, RunnableRef } from '@tsdi/core';
-import { Injectable, Injector, isFunction, Type } from '@tsdi/ioc';
+import { BootstrapOption, RunnableFactory } from '@tsdi/core';
+import { Injectable, Injector, Type, TypeDef } from '@tsdi/ioc';
 
-
-export class ActivityRunnableFactoryResover extends RunnableFactoryResolver {
-
-}
 
 @Injectable()
 export class WorkflowService {
@@ -21,8 +17,8 @@ export class WorkflowService {
      * @param option bootstrap option, instance of {@link BootstrapOption}
      * @returns {*}
      */
-    run<T>(target: Type<T> | RunnableFactory<T>, option?: BootstrapOption): any {
-        const factory = isFunction(target) ? this.injector.resolve({ token: RunnableFactoryResolver, target }).resolve(target) : target;
-        return this.injector.get(ApplicationContext).bootstrap(target)
+    run<T>(target: Type<T> | TypeDef<T>, option?: BootstrapOption): any {
+        const factory = this.injector.resolve({ token: RunnableFactory, target });
+        return factory.create(target, this.injector, option).run()
     }
 }
