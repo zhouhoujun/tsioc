@@ -218,6 +218,7 @@ export interface ObjectPattern {
 
 export type Pattern = string | number | CommandPattern | ObjectPattern;
 
+
 /**
  * Client Request.
  */
@@ -230,13 +231,23 @@ export class TransportRequest<T = any> implements Message<ReqHeaders, T> {
     public body: T | null;
     readonly headers: ReqHeaders;
 
-    constructor(pattern: Pattern, option: RequestOptions = EMPTY_OBJ) {
+    readonly context: InvocationContext | undefined;
+
+    readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    readonly reportProgress: boolean;
+    readonly withCredentials: boolean;
+
+    constructor(pattern: Pattern, options: RequestInit = EMPTY_OBJ) {
         this.url = patternToPath(pattern);
         this.pattern = pattern;
-        this.method = option.method;
-        this.params = new TransportParams(option);
-        this.body = option.body ?? option.playload ?? null;
-        this.headers = new ReqHeaders(option.headers ?? option.options);
+        this.method = options.method;
+        this.params = new TransportParams(options);
+        this.context = options.context;
+        this.responseType = options.responseType ?? 'json';
+        this.reportProgress = !!options.reportProgress;
+        this.withCredentials = !!options.withCredentials;
+        this.body = options.body ?? options.playload ?? null;
+        this.headers = new ReqHeaders(options.headers ?? options.options);
     }
 
 }
@@ -314,3 +325,8 @@ export interface RequestOptions {
     encoder?: ParameterCodec;
 }
 
+export interface RequestInit extends RequestOptions {
+    reportProgress?: boolean;
+    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
+    withCredentials?: boolean;
+}

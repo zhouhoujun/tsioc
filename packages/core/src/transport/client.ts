@@ -326,9 +326,6 @@ export abstract class Client<
         // case, the first step is to filter the event stream to extract a stream of
         // responses(s).
         const res$: Observable<any> = events$;
-        if ((req as ResponseAs).responseType) {
-            context.responseType = (req as ResponseAs).responseType!
-        }
         // Decide which stream to return.
         switch (context.observe || 'body') {
             case 'body':
@@ -337,7 +334,7 @@ export abstract class Client<
                 // transform the response body into a different format and ignore the requested
                 // responseType. Guard against this by validating that the response is of the
                 // requested type.
-                switch (context.responseType) {
+                switch (req.responseType) {
                     case 'arraybuffer':
                         return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is an ArrayBuffer.
@@ -386,7 +383,7 @@ export abstract class Client<
             this.context.injector,
             this as any,
             this.context.get(TransportStrategy),
-            { responseType: options?.responseType, observe: isTypeObject(req) ? 'events' : options?.observe });
+            { observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 
     protected override initContext(options: TOpts): void {

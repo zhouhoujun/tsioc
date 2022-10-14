@@ -33,7 +33,7 @@ export class TransportBackend implements ClientEndpointBackend<TransportRequest,
         return sender.send(conn, req, ctx)
             .pipe(
                 mergeMap(async body => {
-                    let type = ctx.responseType;
+                    let type = req.responseType;
                     const headers = ctx.get(ResHeaders);
                     const status = ctx.transport.status.parse(headers.get(hdr.STATUS) ?? headers.get(hdr.STATUS2));
 

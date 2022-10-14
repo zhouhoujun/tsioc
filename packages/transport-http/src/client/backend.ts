@@ -104,7 +104,7 @@ export class HttpBackend2 extends HttpBackend {
                     }));
                 }
 
-                const rqstatus = ctx.getValueify(RequestStauts, () => new RequestStauts());
+                const rqstatus = (req.context ?? ctx).getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
 

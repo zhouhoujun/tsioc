@@ -35,10 +35,6 @@ export abstract class ClientEndpointContext extends EndpointContext {
      * response observe type
      */
     abstract get observe(): 'body' | 'events' | 'response';
-    /**
-     * response data type.
-     */
-    abstract responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
 

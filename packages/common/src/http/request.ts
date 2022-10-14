@@ -103,12 +103,15 @@ export class HttpRequest<T = any> implements TransportRequest {
      */
     readonly urlWithParams: string;
 
+    readonly context: InvocationContext<any>|undefined;
+
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
+        context?: InvocationContext
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
         headers?: ReqHeaders,
@@ -116,6 +119,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
+        context?: InvocationContext
     });
     constructor(method: string, url: string, body: T | null, init?: {
         headers?: ReqHeaders,
@@ -123,6 +127,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
+        context?: InvocationContext
     });
     constructor(
         method: string, readonly url: string, third?: T | {
@@ -131,13 +136,14 @@ export class HttpRequest<T = any> implements TransportRequest {
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
+            context?: InvocationContext
         } | null,
         fourth?: {
             headers?: ReqHeaders,
             reportProgress?: boolean,
             params?: HttpParams,
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-            withCredentials?: boolean,
+            withCredentials?: boolean
         }) {
         this.method = method.toUpperCase();
         // Next, need to figure out which argument holds the HttpRequestInit
@@ -155,6 +161,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             options = third as HttpRequestInit
         }
 
+        this.context = options?.context;
         // If options have been passed, interpret them.
         if (options) {
             // Normalize reportProgress and withCredentials.
@@ -281,7 +288,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     clone(): HttpRequest<T>;
     clone(update: {
         headers?: ReqHeaders,
-
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -294,6 +301,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     }): HttpRequest<T>;
     clone<V>(update: {
         headers?: ReqHeaders,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -306,6 +314,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     }): HttpRequest<V>;
     clone(update: {
         headers?: ReqHeaders,
+        context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -339,7 +348,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         // `setParams` are used.
         let headers = update.headers || this.headers;
         let params = update.params || this.params;
-
+        const context = update.context ?? this.context;
         // Check whether the caller has asked to add headers.
         if (update.setHeaders !== undefined) {
             // Set every requested header.
@@ -362,6 +371,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             reportProgress,
             responseType,
             withCredentials,
+            context
         })
     }
 }

@@ -63,8 +63,8 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return opts as TOpts;
     }
 
-    protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts | undefined): TransportRequest {
-        return url instanceof TransportRequest ? url : this.createRequest(url, options);
+    protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts): TransportRequest {
+        return url instanceof TransportRequest ? url : this.createRequest(url, { context, ...options } as ReqOpts);
     }
 
     protected createRequest(pattern: Pattern, options?: ReqOpts) {
@@ -139,7 +139,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      */
     protected abstract onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection>;
 
-    
+
 
 }
 

@@ -130,6 +130,7 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
 
             // Construct the request.
             return new HttpRequest(options.method ?? mths.GET, url!, (options.body !== undefined ? options.body : null), {
+                context,
                 ...options,
                 headers,
                 params,
