@@ -1,21 +1,26 @@
 import { IncomingHeaders, IncomingStatusHeaders } from '@tsdi/core';
-import { Readable } from 'stream';
+import { Duplex, Readable } from 'stream';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
-import { SteamOptions, StreamStateFlags, PacketEncoding, TransportStream } from '../stream';
-import { Connection } from '../../connection';
+import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
+import { Connection, Packetor } from '../../connection';
+import { ClientSession } from './session';
+import { Session } from '../session';
 
 /**
  * ClientStream
  */
 export class ClientStream extends TransportStream {
-
-    constructor(connection: Connection, id: number | undefined, transformor: PacketEncoding, private headers: IncomingHeaders, opts: SteamOptions) {
-        super(connection, transformor, { ...opts, client: true });
+    constructor(session: ClientSession, id: number | undefined, packetor: Packetor, private headers: IncomingHeaders, opts: SteamOptions) {
+        super(session, packetor, { ...opts, client: true });
         if (id !== undefined) {
             this.init(id);
         }
     }
+    protected createDuplex(session: Session): Duplex {
+        throw new Error('Method not implemented.');
+    }
+
 
     protected proceed(): void {
         this.request(this.headers);

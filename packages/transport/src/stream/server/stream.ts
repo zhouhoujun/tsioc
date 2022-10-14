@@ -1,24 +1,32 @@
 import { OutgoingHeaders } from '@tsdi/core';
 import { ArgumentExecption, isFunction } from '@tsdi/ioc';
-import { Connection } from '../../connection';
+import { Duplex } from 'form-data';
+import { Packetor } from '../../connection';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../../execptions';
-import { SteamOptions, StreamStateFlags, PacketEncoding, TransportStream } from '../stream';
+import { Session } from '../session';
+import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
+import { ServerSession } from './session';
 
 
 /**
  * Server stream
  */
 export class ServerStream extends TransportStream {
-
     readonly authority: string;
-    constructor(connection: Connection, id: number | undefined, transformor: PacketEncoding, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
-        super(connection, transformor, opts)
+    constructor(session: ServerSession, id: number | undefined, packetor: Packetor, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
+        super(session, packetor, opts)
         this.authority = this.getAuthority(headers);
         if (id != undefined) {
             this.init(id);
         }
     }
+
+
+    protected createDuplex(session: Session): Duplex {
+        throw new Error('Method not implemented.');
+    }
+
 
     getAuthority(headers: OutgoingHeaders): string {
         return headers[hdr.AUTHORITY] ?? headers[hdr.HOST] as string ?? '';
@@ -30,9 +38,9 @@ export class ServerStream extends TransportStream {
     get pushAllowed() {
         return !this.destroyed &&
             !this.isClosed &&
-            !this.connection.isClosed &&
-            !this.connection.destroyed
-        // && this.connection.remoteSettings.enablePush;
+            !this.session.closed &&
+            !this.session.destroyed 
+            // && this.session.remoteSettings.enablePush;
     }
 
     protected proceed(): void {
@@ -94,7 +102,7 @@ export class ServerStream extends TransportStream {
             throw new ArgumentExecption('callback is not function.')
         }
 
-        const connection = this.connection;
+        const session = this.session;
 
         let headRequest = false;
         const len = headers[hdr.CONTENT_LENGTH];
@@ -103,11 +111,11 @@ export class ServerStream extends TransportStream {
             headRequest = options.endStream = true;
         }
 
-        // this.connection.packet.connect(headers, options)
+        // this.session.once(ev.CONNECT, (headers, options)
         //     .subscribe({
         //         next: (ret) => {
         //             const id = ret.id;
-        //             const stream = new ServerStream(connection, id, options, headers);
+        //             const stream = new ServerStream(session, id, options, headers);
 
         //             stream.push(null);
 

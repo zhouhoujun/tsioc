@@ -1,5 +1,5 @@
 import { OnDispose, ClientEndpointContext, Client, RequestOptions, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
-import { Abstract, EMPTY } from '@tsdi/ioc';
+import { Abstract, EMPTY, lang } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { Duplex } from 'stream';
 import { ClientEndpointBackend, TransportBackend } from './backend';
@@ -40,7 +40,9 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     async close(): Promise<void> {
-        await this._connection?.close();
+        const defer = lang.defer();
+        this._connection?.destroy(undefined, defer.resolve);
+        await defer.promise;
     }
 
     async onDispose(): Promise<void> {
@@ -72,7 +74,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     protected connect(): Observable<Connection> {
-        if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
+        if (this._connection && !this._connection.destroyed && !this._connection.closed) {
             return of(this._connection);
         }
         const opts = this.getOptions();
