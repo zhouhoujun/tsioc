@@ -1,12 +1,18 @@
-import { isFunction } from '@tsdi/ioc';
+import { hasOwn, isFunction } from '@tsdi/ioc';
 import { Duplex, Readable, Writable, DuplexOptions, finished } from 'stream';
 import { ev } from './consts';
 
+/**
+ * duplexify options.
+ */
 export interface DuplexifyOptions extends DuplexOptions {
     forwardDestroy?: boolean;
     end?: boolean;
 }
 
+/**
+ * Duplexify
+ */
 export class Duplexify extends Duplex {
 
     protected _autoDestroy: boolean;
@@ -36,10 +42,27 @@ export class Duplexify extends Duplex {
         this._forwardEnd = opts?.end !== false;
         this.destroyed = false;
 
+        // for node <=17
+        if (!hasOwn(this, 'closed')) {
+            (this as any).closed = false;
+            this.on(ev.CLOSE, () => {
+                (this as any).closed = true;
+            })
+        }
+
         if (writable) this.setWritable(writable);
         if (readable) this.setReadable(readable);
     }
 
+    /**
+     * is closed or not.
+     * Is true after 'close' has been emitted.
+     * 
+     * @since v18.0.0 has `closed` property.
+     */
+    get isClosed() {
+        return (this as Duplexify & Closed).closed;
+    }
 
     static obj(writable: Writable | null | false, readable: Readable | null | false, opts?: DuplexifyOptions) {
         opts = { highWaterMark: 16, objectMode: true, ...opts };
@@ -243,6 +266,15 @@ export class Duplexify extends Duplex {
             fn();
         }
     }
+}
+
+
+/**
+ * Readable stream.
+ * for node <=17
+ */
+interface Closed {
+    readonly closed: boolean;
 }
 
 const noop = () => { };

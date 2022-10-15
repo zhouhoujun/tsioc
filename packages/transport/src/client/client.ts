@@ -77,7 +77,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     protected connect(): Observable<Connection> {
-        if (this._connection && !this._connection.destroyed && !this._connection.closed) {
+        if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
             return of(this._connection);
         }
         const opts = this.getOptions();
