@@ -137,7 +137,7 @@ export interface Incoming {
      */
     readonly method?: string;
 
-    readonly connection?: any;
+    readonly session?: any;
 
     readonly stream?: any;
 

@@ -1,5 +1,5 @@
 import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, ClassType, EMPTY_OBJ, tokenId, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, tokenId, TypeOf } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
 import { ConnectionOpts } from '../connection';
 

@@ -70,7 +70,7 @@ export abstract class Session extends EventEmitter implements Closeable {
     protected _regevs: Record<string, (...args: any[]) => void>;
     readonly state: ConnectionState;
     protected opts: SessionOpts;
-    constructor(readonly duplex: Duplex, opts: SessionOpts = EMPTY_OBJ) {
+    constructor(readonly socket: Duplex, opts: SessionOpts = EMPTY_OBJ) {
         super();
         this.opts = opts;
         this.state = {
@@ -88,7 +88,7 @@ export abstract class Session extends EventEmitter implements Closeable {
         this._regevs = {};
         evets.forEach(n => {
             const evt = this.emit.bind(this, n);
-            this.duplex.on(n, evt);
+            this.socket.on(n, evt);
             this._regevs[n] = evt;
         });
     }
@@ -129,7 +129,7 @@ export abstract class Session extends EventEmitter implements Closeable {
      * @return The socket itself.
      */
     setKeepAlive(enable?: boolean, initialDelay?: number): this {
-        (this.duplex as any).setKeepAlive?.(enable, initialDelay);
+        (this.socket as any).setKeepAlive?.(enable, initialDelay);
         return this;
     }
 
@@ -203,7 +203,7 @@ export abstract class Session extends EventEmitter implements Closeable {
         this.removeAllListeners(ev.TIMEOUT);
 
         lang.forIn(this._regevs, (e, n) => {
-            this.duplex.off(n, e);
+            this.socket.off(n, e);
             this._regevs[n] = null!
         });
 
@@ -215,12 +215,12 @@ export abstract class Session extends EventEmitter implements Closeable {
             state.streams.forEach((stream) => stream.destroy(error));
         }
 
-        if (!this.duplex.destroyed) {
-            this.duplex.end(() => {
-                this.duplex.destroy(error);
+        if (!this.socket.destroyed) {
+            this.socket.end(() => {
+                this.socket.destroy(error);
             })
         } else {
-            process.nextTick(() => this.duplex.destroy(error));
+            process.nextTick(() => this.socket.destroy(error));
         }
 
     }

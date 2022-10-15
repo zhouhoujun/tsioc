@@ -4,15 +4,16 @@ import {
     TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportResponse
 
 } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';
-import { PassThrough, pipeline, Writable, Readable } from 'stream';
+import { Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';
+import { PassThrough, pipeline, Readable } from 'stream';
 import { Observable, Observer, throwError, finalize } from 'rxjs';
 import * as zlib from 'zlib';
 import { ctype, ev, hdr } from '../../consts';
 import { MimeAdapter, MimeTypes } from '../../mime';
 import { isBuffer, pmPipeline, toBuffer } from '../../utils';
 import { RequestStauts, TransportClientOpts } from '../../client/options';
-import { Connection } from '../../connection';
+import { sendbody, XSSI_PREFIX } from '../../client/backend';
+import { ClientSession } from './session';
 
 
 /**
@@ -22,7 +23,7 @@ import { Connection } from '../../connection';
 export class TransportBackend2 implements EndpointBackend<TransportRequest, TransportEvent> {
 
     handle(req: TransportRequest, ctx: ClientEndpointContext): Observable<TransportEvent> {
-        const session = ctx.get(Connection);
+        const session = ctx.get(ClientSession);
         const { method, url } = req;
         if (!session || session.destroyed) return throwError(() => new TransportErrorResponse({
             url,
@@ -159,7 +160,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                     }
                 }
 
-                let type = ctx.responseType;
+                let type = req.responseType;
                 if (type === 'stream' && body instanceof Readable) {
                     ok = true;
                 } else {

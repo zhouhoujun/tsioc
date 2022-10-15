@@ -1,10 +1,7 @@
+import { Injectable, isString } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { Incoming, ListenOpts, mths, Packet, TransportStatus, TransportStrategy } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
-import {
-    ConnectionOpts, hdr, isBuffer, ServerRequest, PacketParser,
-    PacketGenerator, ev, SteamOptions, StreamParser, StreamGenerator, TransportStream, Connection
-} from '@tsdi/transport';
+import { ConnectionOpts, hdr, isBuffer, ServerRequest, PacketParser, PacketGenerator, ev, Connection } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -103,14 +100,14 @@ export class DelimiterTransportStrategy extends TransportStrategy {
         super()
     }
 
-    
+
 
     isUpdate(req: Incoming): boolean {
         return req.method === 'PUT';
     }
 
     isSecure(incoming: ServerRequest): boolean {
-        return incoming.connection.stream instanceof tsl.TLSSocket;
+        return incoming.session.socket instanceof tsl.TLSSocket;
     }
 
     get protocol(): string {

@@ -35,7 +35,6 @@ export class Duplexify extends Duplex {
         this._forwardDestroy = opts?.forwardDestroy !== false;
         this._forwardEnd = opts?.end !== false;
         this.destroyed = false;
-        
 
         if (writable) this.setWritable(writable);
         if (readable) this.setReadable(readable);

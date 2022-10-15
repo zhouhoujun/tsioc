@@ -11,7 +11,7 @@ export class ServerSession extends Session {
     private sid = 0;
     constructor(stream: Duplex, opts: SessionOpts = EMPTY_OBJ) {
         super(stream, opts);
-        this.duplex.on(ev.CONNECTION, this.emit.bind(this, ev.CONNECTION));
+        this.socket.on(ev.CONNECTION, this.emit.bind(this, ev.CONNECTION));
     }
 
     getNextStreamId(id?: number) {

@@ -3,7 +3,7 @@ import { ConnectionOpts, ev, Connection } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import { IPacket } from 'mqtt-packet';
 import {
-    AuthOptions, ConnackOptions, ConnectOptions, DisconnectOptions, MqttPacketor, MqttTransportStrategy,
+    AuthOptions, ConnackOptions, ConnectOptions, DisconnectOptions, MqttPacketor,
     PingreqOptions, PingrespOptions, PubackOptions, PubcompOptions, PublishOptions, PubrecOptions,
     PubrelOptions, SubackOptions, SubscribeOptions, UnsubackOptions, UnsubscribeOptions
 } from '../transport';

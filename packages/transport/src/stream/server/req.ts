@@ -32,8 +32,8 @@ export class ServerRequest extends Readable implements Incoming, Message {
         this.on(ev.RESUME, this.onRequestResume.bind(this));
     }
 
-    get connection() {
-        return this.stream.connection;
+    get session() {
+        return this.stream.session;
     }
 
     get aborted() {

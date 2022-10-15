@@ -3,7 +3,7 @@ import { Duplex, Readable } from 'stream';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
-import { Connection, Packetor } from '../../connection';
+import { Packetor } from '../../connection';
 import { ClientSession } from './session';
 import { Session } from '../session';
 

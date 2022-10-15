@@ -47,8 +47,8 @@ export class ServerResponse extends Writable implements Outgoing {
 
     }
 
-    get connection() {
-        return this.stream.connection;
+    get session() {
+        return this.stream.session;
     }
 
     // get writableEnded() {

@@ -1,4 +1,7 @@
-import { OnDispose, ClientEndpointContext, Client, RequestOptions, TransportRequest, Pattern, TransportStrategy } from '@tsdi/core';
+import {
+    OnDispose, ClientEndpointContext, Client, RequestOptions,
+    TransportRequest, Pattern, TransportStrategy
+} from '@tsdi/core';
 import { Abstract, EMPTY, lang } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { Duplex } from 'stream';
@@ -89,6 +92,10 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
             );
     }
 
+    /**
+     * create Duplex.
+     * @param opts 
+     */
     protected abstract createDuplex(opts: TOpts): Duplex;
 
     /**
@@ -140,8 +147,6 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * @param opts 
      */
     protected abstract onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection>;
-
-
 
 }
 
