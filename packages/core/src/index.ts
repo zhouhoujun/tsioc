@@ -4,6 +4,8 @@ export * from './metadata/decor';
 export * from './metadata/tk';
 
 export * from './args';
+export * from './context';
+export * from './EventEmitter';
 export * from './events';
 export * from './exit';
 export * from './lifecycle';
@@ -13,7 +15,6 @@ export * from './service';
 export * from './runners';
 
 export * from './logger';
-export * from './context';
 export * from './pipes';
 
 

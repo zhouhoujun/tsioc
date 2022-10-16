@@ -7,21 +7,21 @@ import { AssetServerContext } from '../asset.ctx';
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    get status(): number {
+    get status(): number | string {
         return this.response.statusCode
     }
 
-    set status(status: number) {
+    set status(status: number | string) {
         if (this.sent) return;
         this._explicitStatus = true;
         this.response.statusCode = status;
-        if (this.body && this.status.status.isEmpty(status)) {
+        if (this.body && this.transport.isEmpty(status)) {
             this.body = null;
         }
     }
 
     get statusMessage(): string {
-        return this.response.statusMessage ?? this.status.status.message(this.status)
+        return this.response.statusMessage ?? this.transport.message(this.status)
     }
 
     set statusMessage(msg: string) {

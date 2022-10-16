@@ -10,11 +10,11 @@ export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
             ctx.setHeader(value as Record<string, any>);
         } else if (response === 'response') {
             if (value instanceof TransportExecption) {
-                ctx.status.code = value.statusCode;
-                ctx.status.message = value.message
+                ctx.status = value.statusCode;
+                ctx.statusMessage = value.message
             } else {
-                ctx.status.state = States.InternalServerError;
-                ctx.status.message = String(value)
+                ctx.status = ctx.transport.toCode(States.InternalServerError);
+                ctx.statusMessage = String(value)
             }
         }
     }

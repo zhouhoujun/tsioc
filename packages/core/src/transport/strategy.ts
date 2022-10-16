@@ -1,5 +1,6 @@
 import { Abstract, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { EventEmitter } from '../EventEmitter';
 import { EndpointContext } from './context';
 import { Endpoint } from './endpoint';
 import { Incoming } from './packet';
@@ -83,11 +84,6 @@ export abstract class TransportStrategy<T = number | string> extends TransportSt
      * @param protocol 
      */
     abstract match(protocol: string): boolean;
-
-    /**
-     * status changed event.
-     */
-    abstract get statusChanged(): Observable<T>;
 
 }
 

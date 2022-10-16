@@ -1,7 +1,7 @@
 import {
     EndpointBackend, IncomingHeaders, IncomingStatusHeaders, TransportRequest, RedirectTransportStatus,
     mths, Redirector, ClientEndpointContext, ResHeaders, ResponseJsonParseError, TransportExecption,
-    TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportResponse
+    TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportResponse, TransportStatus, States
 
 } from '@tsdi/core';
 import { Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';
@@ -32,7 +32,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
         }));
 
         return new Observable((observer: Observer<any>) => {
-            const stgy = ctx.status;
+            const stgy = ctx.transport;
             const path = url.replace(session.authority, '');
 
             req.headers.set(hdr.METHOD, method);
@@ -44,7 +44,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
             const ac = this.getAbortSignal(ctx);
             const request = session.request(req.headers.headers, { ...opts.requestOpts, signal: ac.signal });
 
-            let status: number, statusText: string;
+            let status: number | string, statusText: string;
             let completed = false;
 
             let error: any;
@@ -53,11 +53,11 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
             const onResponse = async (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
                 let body: any;
                 const headers = new ResHeaders(hdrs as Record<string, any>);
-                status = stgy.code.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+                status = stgy.parseCode(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+                const state = stgy.toState(status);
+                statusText = stgy.message(status) ?? 'OK';
 
-                statusText = stgy.code.message(status) ?? 'OK';
-
-                if (stgy.code.isEmpty(status)) {
+                if (stgy.isEmpty(status)) {
                     completed = true;
                     observer.next(new TransportHeaderResponse({
                         url,
@@ -75,7 +75,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                     ok = !err;
                 });
 
-                if (status && stgy.code instanceof RedirectTransportStatus && stgy.code.isRedirect(status)) {
+                if (status && state === States.Redirect) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -85,7 +85,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                 }
 
                 completed = true;
-                ok = stgy.code.isOk(status);
+                ok = state === States.Ok;
 
                 if (!ok) {
                     if (!error) {

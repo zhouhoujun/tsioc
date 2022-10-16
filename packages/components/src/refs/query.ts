@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { EventEmitter } from '../EventEmitter';
+import { EventEmitter } from '@tsdi/core';
 import { arrayEquals, flatten } from '../util/array';
 
 /**

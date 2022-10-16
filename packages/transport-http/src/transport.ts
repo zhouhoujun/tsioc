@@ -4,143 +4,58 @@ import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
 import * as http2 from 'http2';
-import { Observable } from 'rxjs';
 import { TLSSocket } from 'tls';
 
+@Injectable({ static: true })
+export class HttpTransportStrategy extends TransportStrategy<number> implements RedirectTransportStatus {
+    private _protocol = 'http';
 
-@Injectable()
-export class HttpTransportStatus extends RedirectTransportStatus {
-
-    parse(status?: string | number | undefined): number {
-        return isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
-    }
-
-    get ok(): number {
-        return HttpStatusCode.Ok;
-    }
-    get badRequest(): number {
-        return HttpStatusCode.BadRequest;
-    }
-    get notFound(): number {
-        return HttpStatusCode.NotFound;
-    }
-    get found(): number {
-        return HttpStatusCode.Found
-    }
-    get unauthorized(): number {
-        return HttpStatusCode.Unauthorized;
-    }
-    get forbidden(): number {
-        return HttpStatusCode.Forbidden;
-    }
-    get noContent(): number {
-        return HttpStatusCode.NoContent;
-    }
-    get serverError(): number {
-        return HttpStatusCode.InternalServerError;
-    }
-
-    get unsupportedMediaType(): number {
-        return HttpStatusCode.UnsupportedMediaType;
-    }
-
-
-
-    isVaild(statusCode: number): boolean {
-        return !!statusMessage[statusCode as HttpStatusCode];
-    }
-
-    isNotFound(status: number): boolean {
-        return status === HttpStatusCode.NotFound;
+    get protocol(): string {
+        return this._protocol;
     }
 
     isEmpty(status: number): boolean {
         return emptyStatus[status];
     }
 
-    isOk(status: number): boolean {
-        return status >= 200 && status < 300;
-    }
 
-    isRetry(status: number): boolean {
-        return retryStatus[status];
-    }
-
-    isContinue(status: number): boolean {
-        return status === HttpStatusCode.Continue;
-    }
-
-    isRedirect(status: number): boolean {
-        return redirectStatus[status]
-    }
-
-    isRequestFailed(status: number): boolean {
-        return status >= 400 && status < 500
-    }
-
-    redirectDefaultMethod(): string {
-        return mths.GET;
-    }
-
-    redirectBodify(status: number, method?: string | undefined): boolean {
-        if (status === 303) return false;
-        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
-    }
-
-    isServerError(status: number): boolean {
-        return status >= 500
-    }
-
-    message(status: number): string {
-        return statusMessage[status as HttpStatusCode];
-    }
-
-}
-
-
-@Injectable({ static: true })
-export class HttpTransportStrategy extends TransportStrategy<number> implements RedirectTransportStatus {
-    private _protocol = 'http';
-    private _empty = false;
-    private _state: States = States.NotFound;
-    private _code = HttpStatusCode.NotFound;
-
-    constructor() {
-        super();
-    }
-
-    get statusChanged(): Observable<number> {
-        throw new Error('Method not implemented.');
-    }
-    get isEmpty(): boolean {
-        return this._empty;
-    }
-
-
-    get code(): number {
-        return this._code;
-    }
-    set code(code: number) {
-        this._code = code;
+    isValidCode(code: number): boolean {
+        return !!statusMessage[code as HttpStatusCode];
     }
 
     parseCode(code?: string | number | null | undefined): number {
         return isString(code) ? (code ? parseInt(code) : 0) : code ?? 0;
     }
 
-    get state(): States {
-        return this._state;
-    }
-
-    set state(state: States) {
-        if (this._state === state) return;
-        this._state = state;
-        this._code
-
-    }
-
     toState(status: string | number): States {
-        throw new Error('Method not implemented.');
+        switch (status) {
+            case HttpStatusCode.Ok:
+                return States.Ok;
+            case HttpStatusCode.BadRequest:
+                return States.BadRequest;
+            case HttpStatusCode.NotFound:
+                return States.NotFound;
+            // case HttpStatusCode.Found:
+            //     return States.Found;
+            case HttpStatusCode.Unauthorized:
+                return States.Unauthorized;
+            case HttpStatusCode.Forbidden:
+                return States.Forbidden;
+            case HttpStatusCode.NoContent:
+                return States.NoContent;
+            case HttpStatusCode.UnsupportedMediaType:
+                return States.UnsupportedMediaType;
+            case HttpStatusCode.InternalServerError:
+                return States.InternalServerError;
+            default:
+                if (redirectStatus[status as HttpStatusCode]) {
+                    return States.Redirect;
+                }
+                if (retryStatus[status as HttpStatusCode]) {
+                    return States.Retry;
+                }
+                return States.InternalServerError;
+        }
     }
 
     toCode(state: States): number {
@@ -169,22 +84,17 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
         }
     }
 
-    get message(): string {
-        throw new Error('Method not implemented.');
-    }
-    set message(msg: string) {
-        throw new Error('Method not implemented.');
+    message(status: number): string {
+        return statusMessage[status as HttpStatusCode];
     }
 
     redirectBodify(status: string | number, method?: string | undefined): boolean {
-        throw new Error('Method not implemented.');
-    }
-    redirectDefaultMethod(): string {
-        throw new Error('Method not implemented.');
+        if (status === HttpStatusCode.SeeOther) return false;
+        return method ? (status === HttpStatusCode.MovedPermanently || status === HttpStatusCode.Found) && method !== mths.POST : true;
     }
 
-    get protocol(): string {
-        return this._protocol;
+    redirectDefaultMethod(): string {
+        return mths.GET;
     }
 
     isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {

@@ -199,7 +199,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: ServerEndpointContext): MiddlewareFn | undefined {
-        if (ctx.status && ctx.status.state !== States.NotFound) return;
+        if (ctx.transport && ctx.state !== States.NotFound) return;
 
         let url: string;
         if (this.prefix) {

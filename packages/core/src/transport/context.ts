@@ -15,9 +15,9 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     abstract get target(): TransportEndpoint;
 
     /**
-     * status of transport.
+     * transport.
      */
-    abstract get status(): TransportStatus;
+    abstract get transport(): TransportStatus;
 
 
     protected override clear(): void {
@@ -56,7 +56,7 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
     /**
      * state of transport.
      */
-    abstract get status(): TransportStrategy;
+    abstract get transport(): TransportStrategy;
 
     /**
      * Get request rul
@@ -111,55 +111,50 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
      * response body length.
      */
     abstract get length(): number | undefined;
-    // /**
-    //  * Get response status code.
-    //  */
-    // get status(): number {
-    //     return this.transport.status;
-    // }
-    // /**
-    //  * Set response status code, defaults to OK.
-    //  */
-    // set status(status: number) {
-    //     this.transport.status = status;
-    // }
+
+    get state(): States {
+        return this.transport.toState(this.status);
+    }
+
+    set state(state: States) {
+        this.status = this.transport.toCode(state);
+    }
+
+    /**
+     * Get response status code.
+     */
+    abstract get status(): number | string;
+    /**
+     * Set response status code, defaults to OK.
+     */
+    abstract set status(status: number | string);
 
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-    get statusMessage(): string {
-        return this.status.message;
-    }
-
+    abstract get statusMessage(): string;
     /**
      * Set Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
-    set statusMessage(msg: string) {
-        this.status.message = msg;
-    }
+    abstract set statusMessage(msg: string);
 
     /**
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.status.state === States.Ok;
+        return this.status === this.transport.toCode(States.Ok);
     }
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status.state = ok ? States.Ok : States.NotFound
+        this.status = this.transport.toCode(ok ? States.Ok : States.NotFound)
     }
-    // /**
-    //  * request status is not found or not.
-    //  */
-    // get notFound(): boolean {
-    //     return this.status === this.transport.status.notFound;
-    // }
+
 
     /**
      * has sent or not.
@@ -173,14 +168,14 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
      * @returns 
      */
     match(protocol: string): boolean {
-        return this.status.match(protocol);
+        return this.transport.match(protocol);
     }
 
     /**
      * is update request or not.
      */
     get update(): boolean {
-        return this.status.isUpdate(this.request);
+        return this.transport.isUpdate(this.request);
     }
 
 }

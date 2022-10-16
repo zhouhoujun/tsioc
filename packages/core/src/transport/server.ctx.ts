@@ -25,7 +25,7 @@ export interface ServerContextOpts extends InvokeArguments {
 @Abstract()
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly status: TransportStrategy, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [

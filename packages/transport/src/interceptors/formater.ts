@@ -20,10 +20,10 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
 
 
     private formatStatus(ctx: ServerEndpointContext): [string, string] {
-        const { status, status: transport, statusMessage } = ctx;
-        const stat = transport.state;
+        const { state, status, statusMessage } = ctx;
 
-        switch (stat) {
+
+        switch (state) {
             case States.Ok:
                 return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
 

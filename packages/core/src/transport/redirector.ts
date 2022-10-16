@@ -16,5 +16,5 @@ export abstract class Redirector {
      * @param status response status
      * @param headers response headers.
      */
-    abstract redirect<T>(ctx: EndpointContext, req: Message, status: number, headers: ResHeaders): Observable<T>;
+    abstract redirect<T>(ctx: EndpointContext, req: Message, status: number | string, headers: ResHeaders): Observable<T>;
 }

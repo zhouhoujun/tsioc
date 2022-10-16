@@ -10,7 +10,7 @@ export class AssetRedirector extends Redirector {
 
     redirect<T>(ctx: EndpointContext, req: Message, status: number | string, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            const tst = ctx.status as TransportStrategy & RedirectTransportStatus;
+            const tst = ctx.transport as TransportStrategy & RedirectTransportStatus;
             if (!isFunction(tst.redirectBodify)) return observer.error(new BadRequestExecption('not extends RestfulStatus.'))
             const rdstatus = ctx.getValueify(RedirectStauts, () => new RedirectStauts());
             // HTTP fetch step 5.2

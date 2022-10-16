@@ -2,7 +2,7 @@ import { _tyobj } from '@tsdi/ioc';
 import { PartialObserver, Subject, Subscription } from 'rxjs';
 
 /**
- * Use in components with the `@Output` directive to emit custom events
+ * Use emit custom events
  * synchronously or asynchronously, and register handlers for those events
  * by subscribing to an instance.
  */
@@ -18,6 +18,23 @@ export class EventEmitter<T = any> extends Subject<T | undefined> {
      */
     emit(value?: T) { super.next(value); }
 
+    /**
+   * Registers handlers for events emitted by this instance.
+   * @param next When supplied, a custom handler for emitted events.
+   * @param error When supplied, a custom handler for an error notification from this emitter.
+   * @param complete When supplied, a custom handler for a completion notification from this
+   *     emitter.
+   */
+    subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription;
+    /**
+    * Registers handlers for events emitted by this instance.
+    * @param observerOrNext When supplied, a custom handler for emitted events, or an observer
+    *     object.
+    * @param error When supplied, a custom handler for an error notification from this emitter.
+    * @param complete When supplied, a custom handler for a completion notification from this
+    *     emitter.
+    */
+    subscribe(observerOrNext?: any, error?: any, complete?: any): Subscription;
     /**
      * Registers handlers for events emitted by this instance.
      * @param next When supplied, a custom handler for emitted events.
@@ -47,7 +64,7 @@ export class EventEmitter<T = any> extends Subject<T | undefined> {
                 (value: any) => { next(value); };
         }
 
-        const sink = super.subscribe({next: schedulerFn, error: errorFn, complete: completeFn});
+        const sink = super.subscribe({ next: schedulerFn, error: errorFn, complete: completeFn });
 
         if (next instanceof Subscription) {
             next.add(sink);

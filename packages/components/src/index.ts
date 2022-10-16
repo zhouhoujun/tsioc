@@ -1,6 +1,5 @@
 export * from './type';
 export * from './state';
-export * from './EventEmitter';
 
 // metadata
 export * from './metadata/meta';

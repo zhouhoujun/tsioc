@@ -3,24 +3,10 @@ import { Abstract } from '@tsdi/ioc';
 
 @Abstract()
 export abstract class TransportStatus<T = number | string> {
-    /**
-     * get status code
-     */
-    abstract get code(): T;
-    /**
-     * set status code
-     */
-    abstract set code(code: T);
+
+    abstract isValidCode(code: T): boolean;
 
     abstract parseCode(code?: string | number | null): T;
-    /**
-     * get state of transport status.
-     */
-    abstract get state(): States;
-    /**
-     * set state of transport.
-     */
-    abstract set state(state: States);
 
     abstract toState(status: T): States;
 
@@ -28,16 +14,11 @@ export abstract class TransportStatus<T = number | string> {
     /**
      * is status empty body or not.
      */
-    abstract get isEmpty(): boolean;
+    abstract isEmpty(code: T): boolean;
     /**
      * get status message.
      */
-    abstract get message(): string;
-
-    /**
-     * set status message.
-     */
-    abstract set message(msg: string);
+    abstract message(code: T): string;
 
 }
 
@@ -46,15 +27,15 @@ export abstract class TransportStatus<T = number | string> {
  */
 export enum States {
     /**
-     * ok status code.
+     * ok state flags.
      */
     Ok,
     /**
-     * bad request status code.
+     * bad request state flags.
      */
     BadRequest,
     /**
-     * not found status code.
+     * not found state flags.
      */
     NotFound,
     /**
@@ -62,15 +43,15 @@ export enum States {
      */
     Found,
     /**
-     * Unauthorized status code.
+     * Unauthorized state flags.
      */
     Unauthorized,
     /**
-     * forbidden status code.
+     * forbidden state flags.
      */
     Forbidden,
     /**
-     * not content status code.
+     * not content state flags.
      */
     NoContent,
     /**
@@ -78,15 +59,21 @@ export enum States {
      */
     requestFailed,
     /**
-     * Internal server error status.
+     * Internal server error state flags.
      */
     InternalServerError,
     /**
-     * unsupported media type status code.
+     * unsupported media type state flags.
      */
     UnsupportedMediaType,
-
-    Redirect
+    /**
+     * redirect state flags
+     */
+    Redirect,
+    /**
+     * retry state flags
+     */
+    Retry
 }
 
 // @Abstract()
@@ -194,7 +181,7 @@ export interface RedirectTransportStatus {
      * @param status 
      * @param method 
      */
-    redirectBodify(status: string| number, method?: string): boolean;
+    redirectBodify(status: string | number, method?: string): boolean;
 
     /**
      * redirect default request method.

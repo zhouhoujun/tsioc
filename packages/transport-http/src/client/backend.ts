@@ -33,8 +33,8 @@ export class HttpBackend2 extends HttpBackend {
                 request = this.request1(url, req, ac);
             }
 
-            const stat = ctx.status as TransportStrategy<number> & RedirectTransportStatus;
-            let status: number, statusText: string;
+            const stat = ctx.transport as TransportStrategy<number> & RedirectTransportStatus;
+            let status: number, state: States,statusText: string;
             let completed = false;
             let headers: ResHeaders;
 
@@ -45,10 +45,10 @@ export class HttpBackend2 extends HttpBackend {
                 let body: any;
                 if (incoming instanceof http.IncomingMessage) {
                     headers = new ResHeaders(incoming.headers);
-                    stat.code = status = stat.parseCode(incoming.statusCode ?? 0);
-
+                    status = stat.parseCode(incoming.statusCode ?? 0);
+                    state = stat.toState(status);
                     statusText = incoming.statusMessage ?? 'OK';
-                    if (stat.state !== States.NoContent) {
+                    if (state !== States.NoContent) {
                         body = statusText;
                     }
                     if (status === 0) {
@@ -56,12 +56,13 @@ export class HttpBackend2 extends HttpBackend {
                     }
                 } else {
                     headers = new ResHeaders(incoming);
-                    stat.code = status = stat.parseCode(incoming[hdr.STATUS2] ?? 0);
-                    statusText = stat.message ?? 'OK'
+                    status = stat.parseCode(incoming[hdr.STATUS2] ?? 0);
+                    state = stat.toState(status);
+                    statusText = stat.message(status) ?? 'OK'
                 }
 
 
-                if (stat.isEmpty) {
+                if (stat.isEmpty(status)) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
@@ -79,7 +80,7 @@ export class HttpBackend2 extends HttpBackend {
                     ok = !err;
                 });
 
-                if (status && stat.state === States.Redirect) {
+                if (status && state === States.Redirect) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -89,7 +90,7 @@ export class HttpBackend2 extends HttpBackend {
                 }
 
                 completed = true;
-                ok = stat.state === States.Ok;
+                ok = state === States.Ok;
 
                 if (!ok) {
                     if (!error) {

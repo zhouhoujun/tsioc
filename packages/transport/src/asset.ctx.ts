@@ -21,14 +21,13 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     readonly originalUrl: string;
     private _url?: string;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly status: TransportStrategy, options?: ServerContextOpts) {
-        super(injector, request, response, target, status, options);
-        this.status.state = States.NotFound;
-        this.response.statusCode = this.status.code;
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
+        super(injector, request, response, target, transport, options);
+        this.response.statusCode = transport.toCode(States.NotFound);
         this.originalUrl = request.url?.toString() ?? '';
         this._url = request.url ?? '';
 
-        if (this.status.isAbsoluteUrl(this._url)) {
+        if (this.transport.isAbsoluteUrl(this._url)) {
             this._url = this.URL.pathname;
         } else {
             const sidx = this._url.indexOf('?');
@@ -75,7 +74,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
     protected createURL() {
         try {
-            return this.status.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
+            return this.transport.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -88,7 +87,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
      * @api public
      */
     get secure(): boolean {
-        return this.status.isSecure(this.request);
+        return this.transport.isSecure(this.request);
     }
 
     get pathname(): string {
@@ -491,7 +490,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
         // no content
         if (null == val) {
-            if (this.status.isEmpty) this.status.state = States.NoContent;
+            if (this.transport.isEmpty(this.status)) this.status = States.NoContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -688,14 +687,14 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        const stat = this.status as TransportStrategy & RedirectTransportStatus;
+        const stat = this.transport as TransportStrategy & RedirectTransportStatus;
         if (!isFunction(stat.redirectBodify)) {
             throw new TransportExecption('the status not extends RedirectTransportStatus');
         }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (stat.state !== States.Redirect) stat.state = States.Found;
+        if (this.state !== States.Redirect) this.state = States.Found;
 
         // html
         if (this.accepts('html')) {

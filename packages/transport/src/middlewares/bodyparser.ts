@@ -118,8 +118,7 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            ctx.status.state = States.BadRequest;
-            (err as any).status = ctx.status.code;
+            (err as any).status = ctx.transport.toCode(States.BadRequest);
             (err as any).body = str;
             throw err
         }
@@ -187,8 +186,7 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            ctx.status.state = States.BadRequest;
-            (err as any).status = ctx.status.code;
+            (err as any).status = ctx.transport.toCode(States.BadRequest);
             (err as any).body = str;
             throw err
         }
