@@ -1,7 +1,7 @@
 import { Incoming, IncomingHeaders, Message } from '@tsdi/core';
 import { Readable } from 'stream';
-import { ev, hdr } from '../../consts';
-import { ServerStream } from './stream';
+import { Connection } from '../connection';
+import { ev, hdr } from '../consts';
 
 
 /**
@@ -16,7 +16,7 @@ export class ServerRequest extends Readable implements Incoming, Message {
     _closed = false;
     private _aborted = false;
     constructor(
-        readonly connection: ServerStream,
+        readonly connection: Connection,
         readonly headers: IncomingHeaders) {
         super({ objectMode: true });
         this.url = headers[hdr.PATH] ?? '';
@@ -31,9 +31,9 @@ export class ServerRequest extends Readable implements Incoming, Message {
         this.on(ev.PAUSE, this.onRequestPause.bind(this));
         this.on(ev.RESUME, this.onRequestResume.bind(this));
     }
-
+    
     get session() {
-        return this.connection.session;
+        return this.connection.stream;
     }
 
     get aborted() {

@@ -115,7 +115,7 @@ export interface PacketClonable<T = any> {
 /**
  * server side incoming message.
  */
-export interface Incoming {
+export interface Incoming<TConn = any> {
     /**
      * packet id.
      */
@@ -137,9 +137,7 @@ export interface Incoming {
      */
     readonly method?: string;
 
-    readonly session?: any;
-
-    readonly stream?: any;
+    readonly connection: TConn;
 
     body?: any;
 
@@ -156,7 +154,9 @@ export interface Incoming {
 /**
  * server outgoing message.
  */
-export interface Outgoing {
+export interface Outgoing<TConn = any> {
+
+    readonly connection: TConn;
     /**
      * Get response status code.
      */
@@ -268,7 +268,7 @@ export interface Outgoing {
 
     end(cb?: (() => void) | undefined): this;
     end(chunk: any, cb?: (() => void) | undefined): this;
-    
+
     writable?: boolean;
     writableEnded?: boolean;
 

@@ -1,8 +1,7 @@
 import { Incoming, ListenOpts, mths, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
-    Connection, ConnectionOpts, isBuffer, PacketGenerator, Packetor, PacketParser, SteamOptions,
-    StreamGenerator, StreamParser, TransportStream
+    Connection, ConnectionOpts, isBuffer, PacketGenerator, Packetor, PacketParser
 } from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
@@ -111,8 +110,8 @@ export class CoapTransportStrategy extends TransportStrategy {
         return incoming.method === 'put';
     }
 
-    isSecure(req: Incoming): boolean {
-        return req.connection?.encrypted === true
+    isSecure(req: Incoming<Connection>): boolean {
+        return (req.connection.stream as any).encrypted === true
     }
 
     parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
@@ -164,7 +163,7 @@ export class CoapPacketParser extends PacketParser {
     bytes = 0;
     buffers: Buffer[];
 
-    constructor(private connection: Connection, opts: ConnectionOpts) {
+    constructor(opts: ConnectionOpts) {
         super(opts);
         this.buffers = [];
         this.setOptions(opts);
@@ -238,24 +237,12 @@ export class CoapPacketGenerator extends PacketGenerator {
 
 }
 
+@Injectable()
 export class CoapPacketor extends Packetor {
-
-}
-
-export class CoapStreamParser extends StreamParser {
-
-    constructor(private id: number, opts?: SteamOptions) {
-        super(opts)
+    parser(opts: ConnectionOpts): PacketParser {
+        return new CoapPacketParser(opts);
     }
-
-    setOptions(opts: SteamOptions): void {
-
+    generator(output: Writable, opts: ConnectionOpts): PacketGenerator {
+        return new CoapPacketGenerator(output, opts);
     }
-
-    override _transform(chunk: ParsedPacket, encoding: BufferEncoding, callback: TransformCallback): void {
-        if (chunk.messageId == this.id) {
-            chunk.code
-        }
-    }
-
 }

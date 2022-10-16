@@ -1,5 +1,5 @@
 import { TransportExecption } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { Writable, Duplex, Transform } from 'stream';
 import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
@@ -53,6 +53,7 @@ export abstract class Packetor {
 const evets = [ev.CLOSE, ev.ERROR];
 
 export class Connection extends Duplexify {
+    private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;
     protected _regevs: Record<string, (...args: any[]) => void>;
@@ -109,6 +110,37 @@ export class Connection extends Duplexify {
         return this;
     }
 
+    setTimeout(msecs: number, callback?: () => void) {
+        if (this.destroyed)
+            return this;
+
+        // Attempt to clear an existing timer in both cases -
+        //  even if it will be rescheduled we don't want to leak an existing timer.
+        this._timeout && clearTimeout(this._timeout);
+
+        if (msecs === 0) {
+            if (callback !== undefined) {
+                this.removeListener(ev.TIMEOUT, callback);
+            }
+        } else {
+            this._timeout = setTimeout(this._onTimeout.bind(this), msecs);
+            if (callback !== undefined) {
+                this.once(ev.TIMEOUT, callback);
+            }
+        }
+        return this;
+    }
+
+    _updateTimer() {
+        if (this.destroyed) return;
+        if (this._timeout && isFunction(this._timeout.refresh)) this._timeout.refresh()
+    }
+
+    protected _onTimeout() {
+        if (this.destroyed) return;
+        this.emit(ev.TIMEOUT);
+    }
+
     setOptions(packet: any, opts: ConnectionOpts) {
         const copts = this.opts = { ...packet, opts };
         this._parser.setOptions(copts);
@@ -116,9 +148,8 @@ export class Connection extends Duplexify {
     }
 
 
-    override destroy(error?: Error, cb?: (() => void)): this {
+    override destroy(error?: Error | null, callback?: (err?: Error | null) => void): this {
         if (this.destroyed) return this;
-
         lang.forIn(this._regevs, (e, n) => {
             this._regevs[n] = null!;
             this.stream.off(n, e);
@@ -126,12 +157,12 @@ export class Connection extends Duplexify {
             this._generator.off(n, e);
         });
         if (this.stream.destroy) {
-            this.stream.destroy(error);
-            cb && cb();
+            this.stream.destroy(error ?? undefined);
+            callback && callback();
         } else {
-            this.stream.end(cb)
+            this.stream.end(callback);
         }
-        return this;
+        return super.destroy(error, callback);
     }
 
 

@@ -5,7 +5,7 @@ import * as dgram from 'dgram';
 import * as net from 'net'
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
-import { CoapTransportStrategy } from '../transport';
+import { CoapPacketor, CoapTransportStrategy } from '../transport';
 
 
 @Abstract()

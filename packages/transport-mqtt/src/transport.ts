@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Incoming, ListenOpts, TransportStatus, TransportStrategy } from '@tsdi/core';
-import { ConnectionOpts, ev, PacketGenerator, PacketParser,  Packetor } from '@tsdi/transport';
+import { ConnectionOpts, ev, PacketGenerator, PacketParser, Packetor } from '@tsdi/transport';
 import { TransformCallback, Writable } from 'stream';
 import {
     Parser, parser, writeToStream,
@@ -93,20 +93,8 @@ export declare type PacketOptions = ConnectOptions |
 
 
 @Injectable()
-export class MqttTransportStrategy extends TransportStrategy {
-
-    constructor(readonly status: TransportStatus) {
-        super()
-    }
-
-    valid(header: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-    get protocol(): string {
-        throw new Error('Method not implemented.');
-    }
-    parseStatus(status?: string | number | undefined): number {
+export class MqttTransportStatus extends TransportStatus {
+    parse(status?: string | number | undefined): number {
         throw new Error('Method not implemented.');
     }
     get ok(): number {
@@ -163,6 +151,24 @@ export class MqttTransportStrategy extends TransportStrategy {
     message(status: number): string {
         throw new Error('Method not implemented.');
     }
+}
+
+@Injectable()
+export class MqttTransportStrategy extends TransportStrategy {
+
+    private _protocol = 'mqtt';
+    constructor(readonly status: MqttTransportStatus) {
+        super()
+    }
+
+    valid(header: string): boolean {
+        throw new Error('Method not implemented.');
+    }
+
+    get protocol(): string {
+        return this._protocol;
+    }
+
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }
