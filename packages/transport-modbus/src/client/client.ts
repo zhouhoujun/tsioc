@@ -1,17 +1,16 @@
-import { EndpointBackend, RequstOption, TransportClient } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
+import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Duplex } from 'form-data';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class ModbusClient extends TransportClient {
-    protected buildRequest(url: any, options?: RequstOption | undefined) {
+
+    protected createDuplex(opts: TransportClientOpts): Duplex {
         throw new Error('Method not implemented.');
     }
-    protected connect(): Promise<void> {
+    protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
         throw new Error('Method not implemented.');
     }
-    protected getBackend(): EndpointBackend<any, any> {
-        throw new Error('Method not implemented.');
-    }
-    
 
 }

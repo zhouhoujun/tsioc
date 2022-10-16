@@ -96,24 +96,12 @@ export declare type PacketOptions = ConnectOptions |
 export class MqttTransportStrategy extends TransportStrategy {
 
     private _protocol = 'mqtt';
-    // constructor(readonly code: MqttTransportStatus) {
-    //     super()
-    // }
 
 
-    get code(): string | number {
+    isValidCode(code: string | number): boolean {
         throw new Error('Method not implemented.');
     }
-    set code(status: string | number) {
-        throw new Error('Method not implemented.');
-    }
-    parseCode(status?: string | number | null | undefined): string | number {
-        throw new Error('Method not implemented.');
-    }
-    get state(): States {
-        throw new Error('Method not implemented.');
-    }
-    set state(state: States) {
+    parseCode(code?: string | number | null | undefined): string | number {
         throw new Error('Method not implemented.');
     }
     toState(status: string | number): States {
@@ -122,13 +110,12 @@ export class MqttTransportStrategy extends TransportStrategy {
     toCode(state: States): string | number {
         throw new Error('Method not implemented.');
     }
-    get message(): string {
+    isEmpty(code: string | number): boolean {
         throw new Error('Method not implemented.');
     }
-    set message(msg: string) {
+    message(code: string | number): string {
         throw new Error('Method not implemented.');
     }
-
 
     valid(header: string): boolean {
         throw new Error('Method not implemented.');

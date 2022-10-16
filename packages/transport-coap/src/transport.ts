@@ -8,7 +8,7 @@ import { parse, generate, ParsedPacket } from 'coap-packet';
 
 
 @Injectable()
-export class CoapTransportStrategy extends TransportStrategy {
+export class CoapTransportStrategy extends TransportStrategy<string> {
     private _protocol = 'coap';
 
 
@@ -19,34 +19,25 @@ export class CoapTransportStrategy extends TransportStrategy {
     }
 
 
-    get code(): string | number {
+    isValidCode(code: string): boolean {
         throw new Error('Method not implemented.');
     }
-    set code(code: string | number) {
+    parseCode(code?: string | number | null | undefined): string {
         throw new Error('Method not implemented.');
     }
-
-    parseCode(status?: string | number | null | undefined): string | number {
+    toState(status: string): States {
         throw new Error('Method not implemented.');
     }
-    get state(): States {
+    toCode(state: States): string {
         throw new Error('Method not implemented.');
     }
-    set state(state: States) {
+    isEmpty(code: string): boolean {
         throw new Error('Method not implemented.');
     }
-    toState(status: string | number): States {
+    message(code: string): string {
         throw new Error('Method not implemented.');
     }
-    toCode(state: States): string | number {
-        throw new Error('Method not implemented.');
-    }
-    get message(): string {
-        throw new Error('Method not implemented.');
-    }
-    set message(msg: string) {
-        throw new Error('Method not implemented.');
-    }
+    
 
     isUpdate(incoming: Incoming): boolean {
         return incoming.method === 'put';
