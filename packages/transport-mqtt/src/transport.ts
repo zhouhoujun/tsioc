@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { Incoming, ListenOpts, TransportStatus, TransportStrategy } from '@tsdi/core';
+import { Incoming, ListenOpts, States, TransportStrategy } from '@tsdi/core';
 import { ConnectionOpts, ev, PacketGenerator, PacketParser, Packetor } from '@tsdi/transport';
 import { TransformCallback, Writable } from 'stream';
 import {
@@ -93,73 +93,42 @@ export declare type PacketOptions = ConnectOptions |
 
 
 @Injectable()
-export class MqttTransportStatus extends TransportStatus {
-    parse(status?: string | number | undefined): number {
-        throw new Error('Method not implemented.');
-    }
-    get ok(): number {
-        throw new Error('Method not implemented.');
-    }
-    get badRequest(): number {
-        throw new Error('Method not implemented.');
-    }
-    get notFound(): number {
-        throw new Error('Method not implemented.');
-    }
-    get found(): number {
-        throw new Error('Method not implemented.');
-    }
-    get unauthorized(): number {
-        throw new Error('Method not implemented.');
-    }
-    get forbidden(): number {
-        throw new Error('Method not implemented.');
-    }
-    get noContent(): number {
-        throw new Error('Method not implemented.');
-    }
-    get serverError(): number {
-        throw new Error('Method not implemented.');
-    }
-    get unsupportedMediaType(): number {
-        throw new Error('Method not implemented.');
-    }
-    isVaild(statusCode: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isNotFound(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isEmpty(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isOk(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isContinue(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isRetry(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isRequestFailed(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isServerError(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    message(status: number): string {
-        throw new Error('Method not implemented.');
-    }
-}
-
-@Injectable()
 export class MqttTransportStrategy extends TransportStrategy {
 
     private _protocol = 'mqtt';
-    constructor(readonly status: MqttTransportStatus) {
-        super()
+    // constructor(readonly code: MqttTransportStatus) {
+    //     super()
+    // }
+
+
+    get code(): string | number {
+        throw new Error('Method not implemented.');
     }
+    set code(status: string | number) {
+        throw new Error('Method not implemented.');
+    }
+    parseCode(status?: string | number | null | undefined): string | number {
+        throw new Error('Method not implemented.');
+    }
+    get state(): States {
+        throw new Error('Method not implemented.');
+    }
+    set state(state: States) {
+        throw new Error('Method not implemented.');
+    }
+    toState(status: string | number): States {
+        throw new Error('Method not implemented.');
+    }
+    toCode(state: States): string | number {
+        throw new Error('Method not implemented.');
+    }
+    get message(): string {
+        throw new Error('Method not implemented.');
+    }
+    set message(msg: string) {
+        throw new Error('Method not implemented.');
+    }
+
 
     valid(header: string): boolean {
         throw new Error('Method not implemented.');

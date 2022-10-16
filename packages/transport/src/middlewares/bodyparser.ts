@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, ServerOpts, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { AssetContext, Middleware, ServerOpts, States, UnsupportedMediaTypeExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
@@ -118,7 +118,8 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            (err as any).status = ctx.transport.status.badRequest;
+            ctx.status.state = States.BadRequest;
+            (err as any).status = ctx.status.code;
             (err as any).body = str;
             throw err
         }
@@ -186,7 +187,8 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            (err as any).status = ctx.transport.status.badRequest;
+            ctx.status.state = States.BadRequest;
+            (err as any).status = ctx.status.code;
             (err as any).body = str;
             throw err
         }

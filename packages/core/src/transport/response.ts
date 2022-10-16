@@ -8,7 +8,7 @@ import { Message } from './packet';
 export class TransportErrorResponse {
     readonly error: any;
     readonly url: string;
-    readonly status: number;
+    readonly status: number | string;
     get statusText(): string {
         return this.statusMessage;
     }
@@ -18,7 +18,7 @@ export class TransportErrorResponse {
     constructor(options: {
         url?: string,
         headers?: Record<string, OutgoingHeader>;
-        status: number;
+        status: number | string;
         error?: any;
         statusText?: string;
         statusMessage?: string;
@@ -38,7 +38,7 @@ export class TransportErrorResponse {
 export class TransportHeaderResponse implements Message<ResHeaders> {
     readonly url: string;
     readonly ok: boolean;
-    readonly status: number;
+    readonly status: number | string;
     get statusText(): string {
         return this.statusMessage;
     }
@@ -50,7 +50,7 @@ export class TransportHeaderResponse implements Message<ResHeaders> {
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
-        status: number;
+        status: number | string;
         statusText?: string;
         statusMessage?: string;
     }) {
@@ -75,7 +75,7 @@ export class TransportResponse<T = any> extends TransportHeaderResponse {
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
-        status: number;
+        status: number | string;
         statusText?: string;
         statusMessage?: string;
         body?: T;

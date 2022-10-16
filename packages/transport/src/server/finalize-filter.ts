@@ -38,7 +38,7 @@ export class TransportFinalizeFilter implements ExecptionFilter {
         }
 
         const res = hctx.response as Outgoing;
-        const stgy = hctx.transport;
+        const stgy = hctx.status;
 
         // first unset all headers
         if (isFunction(res.getHeaderNames)) {
@@ -95,53 +95,53 @@ export class TransportExecptionFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundExecption)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundExecption) {
-        execption.status = ctx.get(ServerEndpointContext).transport.status.notFound;
+        execption.status = ctx.get(ServerEndpointContext).status.code.notFound;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(ForbiddenExecption)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenExecption) {
-        execption.status = ctx.get(ServerEndpointContext).transport.status.forbidden;
+        execption.status = ctx.get(ServerEndpointContext).status.code.forbidden;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestExecption) {
-        execption.status = ctx.get(ServerEndpointContext).transport.status.badRequest;
+        execption.status = ctx.get(ServerEndpointContext).status.code.badRequest;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnauthorizedExecption)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedExecption) {
-        execption.status = ctx.get(ServerEndpointContext).transport.status.unauthorized;
+        execption.status = ctx.get(ServerEndpointContext).status.code.unauthorized;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(InternalServerExecption)
     internalServerError(ctx: ExecptionContext, execption: InternalServerExecption) {
-        execption.status = ctx.get(ServerEndpointContext).transport.status.serverError;
+        execption.status = ctx.get(ServerEndpointContext).status.code.serverError;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeExecption) {
-        execption.status = ctx.get(ServerEndpointContext).transport.status.unsupportedMediaType;
+        execption.status = ctx.get(ServerEndpointContext).status.code.unsupportedMediaType;
         ctx.execption = execption;
     }
 
     @ExecptionHandler(TransportArgumentExecption)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ServerEndpointContext).transport.status.badRequest)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ServerEndpointContext).status.code.badRequest)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ServerEndpointContext).transport.status.badRequest)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ServerEndpointContext).status.code.badRequest)
     }
 
     @ExecptionHandler(TransportMissingExecption)
     missExecption(ctx: ExecptionContext, execption: TransportMissingExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ServerEndpointContext).transport.status.badRequest)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(ServerEndpointContext).status.code.badRequest)
     }
 
 }

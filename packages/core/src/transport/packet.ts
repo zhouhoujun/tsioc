@@ -160,11 +160,11 @@ export interface Outgoing<TConn = any> {
     /**
      * Get response status code.
      */
-    get statusCode(): number;
+    get statusCode(): number|string;
     /**
      * Set response status code.
      */
-    set statusCode(status: number);
+    set statusCode(status: number|string);
     /**
      * Textual description of response status code, defaults to OK.
      *

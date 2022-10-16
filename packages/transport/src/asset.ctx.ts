@@ -1,8 +1,8 @@
 import {
-    OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, 
-    ServerContextOpts, ServerEndpointContext, TransportExecption, RedirectTransportStatus, TransportStrategy
+    OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
+    ServerContextOpts, ServerEndpointContext, TransportExecption, RedirectTransportStatus, TransportStrategy, States
 } from '@tsdi/core';
-import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
@@ -21,14 +21,14 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     readonly originalUrl: string;
     private _url?: string;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
-        super(injector, request, response, target, transport, options);
-
-        this.response.statusCode = this.transport.status.notFound;
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly status: TransportStrategy, options?: ServerContextOpts) {
+        super(injector, request, response, target, status, options);
+        this.status.state = States.NotFound;
+        this.response.statusCode = this.status.code;
         this.originalUrl = request.url?.toString() ?? '';
         this._url = request.url ?? '';
 
-        if (this.transport.isAbsoluteUrl(this._url)) {
+        if (this.status.isAbsoluteUrl(this._url)) {
             this._url = this.URL.pathname;
         } else {
             const sidx = this._url.indexOf('?');
@@ -75,7 +75,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
     protected createURL() {
         try {
-            return this.transport.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
+            return this.status.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -88,7 +88,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
      * @api public
      */
     get secure(): boolean {
-        return this.transport.isSecure(this.request);
+        return this.status.isSecure(this.request);
     }
 
     get pathname(): string {
@@ -449,19 +449,19 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         }
     }
 
-    /**
-     * Whether the status code is ok
-     */
-    get ok(): boolean {
-        return this.transport.status.isOk(this.status);
-    }
+    // /**
+    //  * Whether the status code is ok
+    //  */
+    // get ok(): boolean {
+    //     return this.transport.status.isOk(this.status);
+    // }
 
-    /**
-     * Whether the status code is ok
-     */
-    set ok(ok: boolean) {
-        this.status = ok ? this.transport.status.ok : this.transport.status.notFound
-    }
+    // /**
+    //  * Whether the status code is ok
+    //  */
+    // set ok(ok: boolean) {
+    //     this.status = ok ? this.transport.status.ok : this.transport.status.notFound
+    // }
 
 
     protected _body: any;
@@ -491,7 +491,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
         // no content
         if (null == val) {
-            if (!this.transport.status.isEmpty(this.status)) this.status = this.transport.status.noContent;
+            if (this.status.isEmpty) this.status.state = States.NoContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -500,7 +500,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         }
 
         // set the status
-        if (!this._explicitStatus) this.status = this.transport.status.ok;
+        if (!this._explicitStatus) this.ok = true;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -688,14 +688,14 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        const stat = this.transport.status;
-        if (!(stat instanceof RedirectTransportStatus)) {
+        const stat = this.status as TransportStrategy & RedirectTransportStatus;
+        if (!isFunction(stat.redirectBodify)) {
             throw new TransportExecption('the status not extends RedirectTransportStatus');
         }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!stat.isRedirect(this.status)) this.status = stat.found;
+        if (stat.state !== States.Redirect) stat.state = States.Found;
 
         // html
         if (this.accepts('html')) {

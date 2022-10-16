@@ -96,7 +96,7 @@ export class TcpTransportStatus extends TransportStatus {
 export class DelimiterTransportStrategy extends TransportStrategy {
     private _protocol = 'tcp';
 
-    constructor(readonly status: TcpTransportStatus) {
+    constructor(readonly code: TcpTransportStatus) {
         super()
     }
 

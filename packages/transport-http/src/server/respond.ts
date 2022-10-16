@@ -12,10 +12,10 @@ export class HttpRespondInterceptor extends RespondInterceptor {
         if (!ctx.writable) return;
 
         let body = ctx.body;
-        const code = ctx.status;
+        const code = ctx.status.code;
 
         // ignore body
-        if (ctx.transport.status.isEmpty(code)) {
+        if (ctx.status.isEmpty) {
             // strip headers
             ctx.body = null;
             return res.end()

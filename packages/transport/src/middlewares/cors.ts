@@ -1,4 +1,4 @@
-import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, States, TransportExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -151,7 +151,12 @@ export class CorsMiddleware implements Middleware {
                     ...{ vary: varyWithOrigin },
                 };
 
-                ctx.status = err instanceof TransportExecption ? err.status || ctx.transport.status.serverError : ctx.transport.status.serverError;
+                if (err instanceof TransportExecption && err.status) {
+                    ctx.status.code = err.status
+                } else {
+                    ctx.status.state = States.InternalServerError;
+                }
+                // ctx.status = err instanceof TransportExecption ? err.status || ctx.transport.status.serverError : ctx.transport.status.serverError;
                 ctx.statusMessage = err.message || err.toString() || '';
                 ctx.get(Logger)?.error(err)
             }
@@ -184,7 +189,7 @@ export class CorsMiddleware implements Middleware {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = ctx.transport.status.noContent
+            ctx.status.state = States.NoContent
         }
     }
 }

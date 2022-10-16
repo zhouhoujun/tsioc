@@ -10,11 +10,11 @@ import { ArgumentExecption, Execption, isArray } from '@tsdi/ioc';
  */
 export class TransportExecption extends Execption {
 
-    constructor(message?: string | string[], public status?: number) {
+    constructor(message?: string | string[], public status?: number | string) {
         super(isArray(message) ? message.join('\n') : message || '')
     }
 
-    get statusCode(): number {
+    get statusCode(): number | string {
         return this.status ?? 0;
     }
 
@@ -37,7 +37,7 @@ export class InvalidHeaderTokenExecption extends TransportExecption {
 
 const statmsg = 'INVALID_STATE_ERR';
 
-export class InvalidStateExecption  extends TransportExecption {
+export class InvalidStateExecption extends TransportExecption {
     constructor(message?: string) {
         super(message ? `${statmsg}: ${message}` : statmsg)
     }
@@ -95,7 +95,7 @@ export class ForbiddenExecption extends TransportExecption {
  * @extends {TransportExecption}
  */
 export class BadRequestExecption extends TransportExecption {
-    constructor(message = 'Bad Request', status?: number) {
+    constructor(message = 'Bad Request', status?: number | string) {
         super(message, status)
     }
 }
@@ -108,7 +108,7 @@ export class BadRequestExecption extends TransportExecption {
  * @extends {TransportExecption}
  */
 export class UnauthorizedExecption extends TransportExecption {
-    constructor(message = 'Unauthorized', status?: number) {
+    constructor(message = 'Unauthorized', status?: number | string) {
         super(message, status)
     }
 }
@@ -121,7 +121,7 @@ export class UnauthorizedExecption extends TransportExecption {
  * @extends {TransportExecption}
  */
 export class InternalServerExecption extends TransportExecption {
-    constructor(message = 'Internal Server Error', status?: number) {
+    constructor(message = 'Internal Server Error', status?: number | string) {
         super(message, status)
     }
 }

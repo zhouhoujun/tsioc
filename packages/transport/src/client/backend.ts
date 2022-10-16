@@ -35,8 +35,8 @@ export class TransportBackend implements ClientEndpointBackend<TransportRequest,
                 mergeMap(async body => {
                     let type = req.responseType;
                     const headers = ctx.get(ResHeaders);
-                    const status = ctx.transport.status.parse(headers.get(hdr.STATUS) ?? headers.get(hdr.STATUS2));
-
+                    const status = ctx.status.parseCode(headers.get(hdr.STATUS) ?? headers.get(hdr.STATUS2));
+                    
                     let statusText: string | undefined;
                     if (type === 'stream' && body instanceof Readable) {
                         return new TransportResponse({

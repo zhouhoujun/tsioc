@@ -53,15 +53,11 @@ export abstract class TransportStrategyOpts {
  * transport strategy.
  */
 @Abstract()
-export abstract class TransportStrategy {
+export abstract class TransportStrategy<T = number | string> extends TransportStatus<T> {
     /**
      * protocol name
      */
     abstract get protocol(): string;
-    /**
-     * transport status.
-     */
-    abstract get status(): TransportStatus;
 
     /**
      * the url is absolute url or not.
@@ -87,6 +83,11 @@ export abstract class TransportStrategy {
      * @param protocol 
      */
     abstract match(protocol: string): boolean;
+
+    /**
+     * status changed event.
+     */
+    abstract get statusChanged(): Observable<T>;
 
 }
 

@@ -5,10 +5,11 @@ import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { InterceptorType } from '../transport/endpoint';
-import { Middleware, MiddlewareFn, createMiddleware,  InterceptorMiddleware} from '../transport/middleware';
+import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } from '../transport/middleware';
 import { AssetContext, ServerEndpointContext } from '../transport/context';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../transport/execptions';
 import { promisify } from './promisify';
+import { States } from '../transport';
 
 
 
@@ -198,7 +199,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: ServerEndpointContext): MiddlewareFn | undefined {
-        if (ctx.status && !ctx.notFound) return;
+        if (ctx.status && ctx.status.state !== States.NotFound) return;
 
         let url: string;
         if (this.prefix) {

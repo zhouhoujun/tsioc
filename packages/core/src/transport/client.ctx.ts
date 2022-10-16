@@ -22,7 +22,7 @@ export class ClientContext extends ClientEndpointContext {
     readonly target: Client;
     readonly observe: 'body' | 'events' | 'response';
 
-    constructor(injector: Injector, target: Client, readonly transport: TransportStrategy, options?: ClientInvocationOptions) {
+    constructor(injector: Injector, target: Client, readonly status: TransportStrategy, options?: ClientInvocationOptions) {
         super(injector, options);
         this.target = target;
         this.observe = options?.observe ?? 'body';

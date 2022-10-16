@@ -1,5 +1,5 @@
 import { Injectable, isUndefined, lang, _tyundef } from '@tsdi/ioc';
-import { EndpointContext, mths, ResHeaders, Redirector, RedirectTransportStatus } from '@tsdi/core';
+import { EndpointContext, mths, ResHeaders, Redirector, RedirectTransportStatus, TransportStrategy, States } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -33,7 +33,7 @@ export class HttpBackend2 extends HttpBackend {
                 request = this.request1(url, req, ac);
             }
 
-            const stat = ctx.transport.status as RedirectTransportStatus;
+            const stat = ctx.status as TransportStrategy<number> & RedirectTransportStatus;
             let status: number, statusText: string;
             let completed = false;
             let headers: ResHeaders;
@@ -45,22 +45,23 @@ export class HttpBackend2 extends HttpBackend {
                 let body: any;
                 if (incoming instanceof http.IncomingMessage) {
                     headers = new ResHeaders(incoming.headers);
-                    status = stat.parse(incoming.statusCode ?? 0);
+                    stat.code = status = stat.parseCode(incoming.statusCode ?? 0);
+
                     statusText = incoming.statusMessage ?? 'OK';
-                    if (status !== stat.noContent) {
+                    if (stat.state !== States.NoContent) {
                         body = statusText;
                     }
                     if (status === 0) {
-                        status = body ? stat.ok : 0
+                        status = body ? stat.toCode(States.Ok) : 0
                     }
                 } else {
                     headers = new ResHeaders(incoming);
-                    status = stat.parse(incoming[hdr.STATUS2] ?? 0);
-                    statusText = stat.message(status) ?? 'OK'
+                    stat.code = status = stat.parseCode(incoming[hdr.STATUS2] ?? 0);
+                    statusText = stat.message ?? 'OK'
                 }
 
 
-                if (stat.isEmpty(status)) {
+                if (stat.isEmpty) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
@@ -78,7 +79,7 @@ export class HttpBackend2 extends HttpBackend {
                     ok = !err;
                 });
 
-                if (status && stat.isRedirect(status)) {
+                if (status && stat.state === States.Redirect) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -88,8 +89,8 @@ export class HttpBackend2 extends HttpBackend {
                 }
 
                 completed = true;
-                ok = stat.isOk(status);
-                
+                ok = stat.state === States.Ok;
+
                 if (!ok) {
                     if (!error) {
                         body = await toBuffer(body);

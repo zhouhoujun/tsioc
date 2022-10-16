@@ -1,4 +1,4 @@
-import { ServerEndpointContext, RedirectTransportStatus } from '@tsdi/core';
+import { ServerEndpointContext, States } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import * as chalk from 'chalk';
 import { ResponseStatusFormater } from './log';
@@ -20,25 +20,26 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
 
 
     private formatStatus(ctx: ServerEndpointContext): [string, string] {
-        const { status, transport, statusMessage } = ctx;
-        const stat = transport.status;
-        if (stat.isOk(status)) {
-            return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
+        const { status, status: transport, statusMessage } = ctx;
+        const stat = transport.state;
+
+        switch (stat) {
+            case States.Ok:
+                return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
+
+            case States.Redirect:
+                return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
+
+            case States.requestFailed:
+                return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
+
+            case States.InternalServerError:
+                return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
+
+            default:
+                return [chalk.cyan(status), statusMessage ? chalk.cyan(statusMessage) : '']
         }
 
-        if (stat instanceof RedirectTransportStatus && stat.isRedirect(status)) {
-            return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : '']
-        }
-
-        if (stat.isRequestFailed(status)) {
-            return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
-        }
-
-        if (stat.isServerError(status)) {
-            return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
-        }
-
-        return [chalk.cyan(status), statusMessage ? chalk.cyan(statusMessage) : '']
     }
 
 }

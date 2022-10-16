@@ -41,7 +41,7 @@ export class DefaultRespondInterceptor extends RespondInterceptor {
         const code = ctx.status;
 
         // ignore body
-        if (ctx.transport.status.isEmpty(code)) {
+        if (ctx.status.status.isEmpty(code)) {
             // strip headers
             ctx.body = null;
             return res.end()

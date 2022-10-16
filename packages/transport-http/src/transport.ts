@@ -1,9 +1,10 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ListenOpts, mths, RedirectTransportStatus, TransportStrategy } from '@tsdi/core';
+import { ListenOpts, mths, RedirectTransportStatus, States, TransportStrategy } from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
 import * as http2 from 'http2';
+import { Observable } from 'rxjs';
 import { TLSSocket } from 'tls';
 
 
@@ -43,14 +44,7 @@ export class HttpTransportStatus extends RedirectTransportStatus {
         return HttpStatusCode.UnsupportedMediaType;
     }
 
-    redirectDefaultMethod(): string {
-        return mths.GET;
-    }
 
-    redirectBodify(status: number, method?: string | undefined): boolean {
-        if (status === 303) return false;
-        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
-    }
 
     isVaild(statusCode: number): boolean {
         return !!statusMessage[statusCode as HttpStatusCode];
@@ -83,6 +77,16 @@ export class HttpTransportStatus extends RedirectTransportStatus {
     isRequestFailed(status: number): boolean {
         return status >= 400 && status < 500
     }
+
+    redirectDefaultMethod(): string {
+        return mths.GET;
+    }
+
+    redirectBodify(status: number, method?: string | undefined): boolean {
+        if (status === 303) return false;
+        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
+    }
+
     isServerError(status: number): boolean {
         return status >= 500
     }
@@ -95,14 +99,90 @@ export class HttpTransportStatus extends RedirectTransportStatus {
 
 
 @Injectable({ static: true })
-export class HttpTransportStrategy extends TransportStrategy {
+export class HttpTransportStrategy extends TransportStrategy<number> implements RedirectTransportStatus {
+    private _protocol = 'http';
+    private _empty = false;
+    private _state: States = States.NotFound;
+    private _code = HttpStatusCode.NotFound;
 
-    private _protocol = 'http';   
-
-    constructor(readonly status: HttpTransportStatus) {
+    constructor() {
         super();
     }
-    
+
+    get statusChanged(): Observable<number> {
+        throw new Error('Method not implemented.');
+    }
+    get isEmpty(): boolean {
+        return this._empty;
+    }
+
+
+    get code(): number {
+        return this._code;
+    }
+    set code(code: number) {
+        this._code = code;
+    }
+
+    parseCode(code?: string | number | null | undefined): number {
+        return isString(code) ? (code ? parseInt(code) : 0) : code ?? 0;
+    }
+
+    get state(): States {
+        return this._state;
+    }
+
+    set state(state: States) {
+        if (this._state === state) return;
+        this._state = state;
+        this._code
+
+    }
+
+    toState(status: string | number): States {
+        throw new Error('Method not implemented.');
+    }
+
+    toCode(state: States): number {
+        switch (state) {
+            case States.Ok:
+                return HttpStatusCode.Ok;
+            case States.BadRequest:
+                return HttpStatusCode.BadRequest;
+            case States.NotFound:
+                return HttpStatusCode.NotFound;
+            case States.Found:
+                return HttpStatusCode.Found;
+            case States.Unauthorized:
+                return HttpStatusCode.Unauthorized;
+            case States.Forbidden:
+                return HttpStatusCode.Forbidden;
+            case States.NoContent:
+                return HttpStatusCode.NoContent;
+            case States.UnsupportedMediaType:
+                return HttpStatusCode.UnsupportedMediaType;
+
+            case States.InternalServerError:
+            default:
+                return HttpStatusCode.InternalServerError;
+
+        }
+    }
+
+    get message(): string {
+        throw new Error('Method not implemented.');
+    }
+    set message(msg: string) {
+        throw new Error('Method not implemented.');
+    }
+
+    redirectBodify(status: string | number, method?: string | undefined): boolean {
+        throw new Error('Method not implemented.');
+    }
+    redirectDefaultMethod(): string {
+        throw new Error('Method not implemented.');
+    }
+
     get protocol(): string {
         return this._protocol;
     }

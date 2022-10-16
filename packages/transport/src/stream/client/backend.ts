@@ -32,7 +32,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
         }));
 
         return new Observable((observer: Observer<any>) => {
-            const stgy = ctx.transport;
+            const stgy = ctx.status;
             const path = url.replace(session.authority, '');
 
             req.headers.set(hdr.METHOD, method);
@@ -53,11 +53,11 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
             const onResponse = async (hdrs: IncomingHeaders & IncomingStatusHeaders, flags: number) => {
                 let body: any;
                 const headers = new ResHeaders(hdrs as Record<string, any>);
-                status = stgy.status.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
+                status = stgy.code.parse(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
 
-                statusText = stgy.status.message(status) ?? 'OK';
+                statusText = stgy.code.message(status) ?? 'OK';
 
-                if (stgy.status.isEmpty(status)) {
+                if (stgy.code.isEmpty(status)) {
                     completed = true;
                     observer.next(new TransportHeaderResponse({
                         url,
@@ -75,7 +75,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                     ok = !err;
                 });
 
-                if (status && stgy.status instanceof RedirectTransportStatus && stgy.status.isRedirect(status)) {
+                if (status && stgy.code instanceof RedirectTransportStatus && stgy.code.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -85,7 +85,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                 }
 
                 completed = true;
-                ok = stgy.status.isOk(status);
+                ok = stgy.code.isOk(status);
 
                 if (!ok) {
                     if (!error) {

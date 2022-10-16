@@ -1,4 +1,4 @@
-import { Incoming, ListenOpts, mths, TransportStatus, TransportStrategy } from '@tsdi/core';
+import { Incoming, ListenOpts, mths, States, TransportStatus, TransportStrategy } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
     Connection, ConnectionOpts, isBuffer, PacketGenerator, Packetor, PacketParser
@@ -7,103 +7,45 @@ import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
 
 
-export class CoapTransportStatus extends TransportStatus {
-    parse(status?: string | number | undefined): number {
-        return isString(status) ? (status ? parseFloat(status) : 0) : status ?? 0;
-    }
-
-    get ok(): number {
-        return HttpStatusCode.Ok;
-    }
-    get badRequest(): number {
-        return HttpStatusCode.BadRequest;
-    }
-    get notFound(): number {
-        return HttpStatusCode.NotFound;
-    }
-    get found(): number {
-        return HttpStatusCode.Found
-    }
-    get unauthorized(): number {
-        return HttpStatusCode.Unauthorized;
-    }
-    get forbidden(): number {
-        return HttpStatusCode.Forbidden;
-    }
-    get noContent(): number {
-        return HttpStatusCode.NoContent;
-    }
-    get serverError(): number {
-        return HttpStatusCode.InternalServerError;
-    }
-
-    get unsupportedMediaType(): number {
-        return HttpStatusCode.UnsupportedMediaType;
-    }
-
-    redirectDefaultMethod(): string {
-        return mths.MESSAGE;
-    }
-
-    redirectBodify(status: number, method?: string | undefined): boolean {
-        if (status === 303) return false;
-        return method ? (status === 301 || status === 302) && method !== mths.POST : true;
-    }
-
-    isVaild(statusCode: number): boolean {
-        return !!statusMessage[statusCode as HttpStatusCode];
-    }
-
-    isNotFound(status: number): boolean {
-        return status === HttpStatusCode.NotFound;
-    }
-
-    isEmpty(status: number): boolean {
-        return emptyStatus[status];
-    }
-
-    isOk(status: number): boolean {
-        return status >= 200 && status < 300;
-    }
-
-    isRetry(status: number): boolean {
-        return retryStatus[status];
-    }
-
-
-    isContinue(status: number): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-
-    isRedirect(status: number): boolean {
-        return redirectStatus[status]
-    }
-
-    isRequestFailed(status: number): boolean {
-        return status >= 400 && status < 500
-    }
-
-    isServerError(status: number): boolean {
-        return status >= 500
-    }
-
-    message(status: number): string {
-        return statusMessage[status as HttpStatusCode];
-    }
-}
-
 @Injectable()
 export class CoapTransportStrategy extends TransportStrategy {
     private _protocol = 'coap';
 
-    constructor(readonly status: CoapTransportStatus) {
-        super()
-    }
+
 
 
     get protocol(): string {
         return this._protocol;
+    }
+
+
+    get code(): string | number {
+        throw new Error('Method not implemented.');
+    }
+    set code(code: string | number) {
+        throw new Error('Method not implemented.');
+    }
+
+    parseCode(status?: string | number | null | undefined): string | number {
+        throw new Error('Method not implemented.');
+    }
+    get state(): States {
+        throw new Error('Method not implemented.');
+    }
+    set state(state: States) {
+        throw new Error('Method not implemented.');
+    }
+    toState(status: string | number): States {
+        throw new Error('Method not implemented.');
+    }
+    toCode(state: States): string | number {
+        throw new Error('Method not implemented.');
+    }
+    get message(): string {
+        throw new Error('Method not implemented.');
+    }
+    set message(msg: string) {
+        throw new Error('Method not implemented.');
     }
 
     isUpdate(incoming: Incoming): boolean {
