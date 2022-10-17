@@ -1,6 +1,5 @@
 import { Abstract, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { EventEmitter } from '../EventEmitter';
 import { EndpointContext } from './context';
 import { Endpoint } from './endpoint';
 import { Incoming } from './packet';
@@ -17,6 +16,14 @@ export abstract class Sender<TInput = any, TOutput = any, TConn = any> extends T
      * @returns 
      */
     abstract send(conn: TConn, input: TInput, context: EndpointContext): Observable<TOutput>;
+
+    /**
+     * initialize interceptors with options.
+     * @param options 
+     */
+    protected override initOption(options?: SenderOpts): SenderOpts {
+        return options ?? {} as SenderOpts;
+    }
 }
 
 @Abstract()
@@ -27,6 +34,15 @@ export abstract class Receiver<TInput = any, TOutput = any, TConn = any> extends
      * @param endpoint as backend endpoint form receive.
      */
     abstract receive(conn: TConn, endpoint: Endpoint): Observable<TOutput>;
+
+    /**
+     * initialize interceptors with options.
+     * @param options 
+     */
+    protected override initOption(options?: ReceiverOpts): ReceiverOpts {
+        return options ?? {} as ReceiverOpts;
+    }
+
 }
 
 @Abstract()
