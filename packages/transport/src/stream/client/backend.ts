@@ -54,7 +54,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                 let body: any;
                 const headers = new ResHeaders(hdrs as Record<string, any>);
                 status = stgy.parseCode(hdrs[hdr.STATUS2] ?? hdrs[hdr.STATUS]);
-                const state = stgy.toState(status);
+                const state = stgy.fromCode(status);
                 statusText = stgy.message(status) ?? 'OK';
 
                 if (stgy.isEmpty(status)) {
@@ -75,7 +75,7 @@ export class TransportBackend2 implements EndpointBackend<TransportRequest, Tran
                     ok = !err;
                 });
 
-                if (status && state === States.Redirect) {
+                if (status &&  stgy.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers)
                         .pipe(

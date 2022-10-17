@@ -40,7 +40,7 @@ export class ContentMiddleware implements Middleware {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
-                if (ctx.transport.toState((err as TransportExecption).status!) !== States.NotFound) {
+                if (ctx.transport.fromCode((err as TransportExecption).status!) !== States.NotFound) {
                     throw err
                 }
             }

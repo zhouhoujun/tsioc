@@ -22,7 +22,7 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
         return redirectStatus[code];
     }
 
-    override isRertry(code: number): boolean {
+    override isRetry(code: number): boolean {
         return retryStatus[code];
     }
 
@@ -34,7 +34,7 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
         return isString(code) ? (code ? parseInt(code) : 0) : code ?? 0;
     }
 
-    toState(status: number): States {
+    fromCode(status: number): States {
         switch (status) {
             case HttpStatusCode.Ok:
                 return States.Ok;

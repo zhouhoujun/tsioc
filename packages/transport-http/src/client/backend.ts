@@ -46,7 +46,7 @@ export class HttpBackend2 extends HttpBackend {
                 if (incoming instanceof http.IncomingMessage) {
                     headers = new ResHeaders(incoming.headers);
                     status = stat.parseCode(incoming.statusCode ?? 0);
-                    state = stat.toState(status);
+                    state = stat.fromCode(status);
                     statusText = incoming.statusMessage ?? 'OK';
                     if (state !== States.NoContent) {
                         body = statusText;
@@ -57,7 +57,7 @@ export class HttpBackend2 extends HttpBackend {
                 } else {
                     headers = new ResHeaders(incoming);
                     status = stat.parseCode(incoming[hdr.STATUS2] ?? 0);
-                    state = stat.toState(status);
+                    state = stat.fromCode(status);
                     statusText = stat.message(status) ?? 'OK'
                 }
 

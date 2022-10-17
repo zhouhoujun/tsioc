@@ -104,7 +104,7 @@ export class MqttTransportStrategy extends TransportStrategy {
     parseCode(code?: string | number | null | undefined): string | number {
         throw new Error('Method not implemented.');
     }
-    toState(status: string | number): States {
+    fromCode(status: string | number): States {
         throw new Error('Method not implemented.');
     }
     toCode(state: States): string | number {

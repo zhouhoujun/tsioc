@@ -1,28 +1,43 @@
 import { Abstract } from '@tsdi/ioc';
 
-
+/**
+ * transport status.
+ */
 @Abstract()
 export abstract class TransportStatus<T = number | string> {
 
     abstract isValidCode(code: T): boolean;
-
+    /**
+     * parse code.
+     * @param code 
+     */
     abstract parseCode(code?: string | number | null): T;
-
-    abstract toState(status: T): States;
-
+    /**
+     * from code.
+     * @param code 
+     */
+    abstract fromCode(code: T): States;
+    /**
+     * to code.
+     * @param state 
+     */
     abstract toCode(state: States): T;
     /**
      * is status empty body or not.
      */
     isEmpty(code: T): boolean {
-        const state = this.toState(code);
+        const state = this.fromCode(code);
         return state == States.NoContent
             || state == States.ResetContent
             || state == States.NotModified
     }
-
+    /**
+     * is redirect or not.
+     * @param code 
+     * @returns 
+     */
     isRedirect(code: T): boolean {
-        const state = this.toState(code);
+        const state = this.fromCode(code);
         return state == States.Found
             || state == States.MovedPermanently
             || state == States.SeeOther
@@ -30,9 +45,13 @@ export abstract class TransportStatus<T = number | string> {
             || state == States.TemporaryRedirect
             || state == States.PermanentRedirect
     }
-
-    isRertry(code: T): boolean {
-        const state = this.toState(code);
+    /**
+     * is retry o not.
+     * @param code 
+     * @returns 
+     */
+    isRetry(code: T): boolean {
+        const state = this.fromCode(code);
         return state == States.BadGateway
             || state == States.ServiceUnavailable
             || state == States.GatewayTimeout
@@ -136,7 +155,7 @@ export enum States {
      */
     InternalServerError,
 
-    
+
     /**
      * Not implemeted.
      */

@@ -18,17 +18,17 @@ export class ServerResponse extends Writable implements Outgoing {
 
     writable = true;
     constructor(
-        readonly stream: ServerStream,
+        readonly connection: ServerStream,
         readonly headers: OutgoingHeaders,
         readonly socket?: any) {
         super({ objectMode: true });
         this._hdr = new ResHeaders();
 
-        stream.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
-        stream.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
-        stream.on(ev.CLOSE, this.onStreamClose.bind(this));
+        connection.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
+        connection.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        connection.on(ev.CLOSE, this.onStreamClose.bind(this));
         // stream.on('wantTrailers', this.onStreamTrailersReady.bind(this));
-        stream.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+        connection.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
     }
 
     protected onStreamClose() {
@@ -48,7 +48,7 @@ export class ServerResponse extends Writable implements Outgoing {
     }
 
     get session() {
-        return this.stream.session;
+        return this.connection.session;
     }
 
     // get writableEnded() {
@@ -95,7 +95,7 @@ export class ServerResponse extends Writable implements Outgoing {
     }
 
     get headersSent() {
-        return this.stream.headersSent;
+        return this.connection.headersSent;
     }
 
     getHeaders(): Record<string, OutgoingHeader> {
@@ -117,7 +117,7 @@ export class ServerResponse extends Writable implements Outgoing {
     }
 
     flushHeaders() {
-        if (!this._closed && !this.stream.headersSent) {
+        if (!this._closed && !this.connection.headersSent) {
             this.writeHead(this.statusCode)
         }
     }
@@ -160,19 +160,19 @@ export class ServerResponse extends Writable implements Outgoing {
         this.ending = true;
 
         if (isFunction(cb)) {
-            if (this.stream.writableEnded)
+            if (this.connection.writableEnded)
                 this.once(ev.FINISH, cb);
             else
-                this.stream.once(ev.FINISH, cb);
+                this.connection.once(ev.FINISH, cb);
         }
 
-        if (!this.stream.headersSent)
+        if (!this.connection.headersSent)
             this.writeHead(this.statusCode);
 
-        if (this.isClosed || this.stream.destroyed) {
+        if (this.isClosed || this.connection.destroyed) {
             this.onStreamClose()
         } else {
-            this.stream.end();
+            this.connection.end();
         }
         return this;
     }
@@ -202,7 +202,7 @@ export class ServerResponse extends Writable implements Outgoing {
         this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
 
-        this.stream.respond(this.getHeaders(), { endStream: this.ending, waitForTrailers: true, sendDate: this.sendDate });
+        this.connection.respond(this.getHeaders(), { endStream: this.ending, waitForTrailers: true, sendDate: this.sendDate });
         return this;
     }
 
@@ -255,13 +255,13 @@ export class ServerResponse extends Writable implements Outgoing {
             this.writeHead(this.statusCode, this.statusMessage);
         }
 
-        this.stream.write(chunk, encoding, cb);
+        this.connection.write(chunk, encoding, cb);
     }
 
     setTimeout(msecs: number, callback?: () => void): this {
         if (this._closed)
             return this;
-        this.stream.setTimeout(msecs, callback);
+        this.connection.setTimeout(msecs, callback);
         return this;
     }
 
@@ -276,7 +276,7 @@ export class ServerResponse extends Writable implements Outgoing {
     // }
 
     override _destroy(error: Error | null, callback: (error?: Error | null | undefined) => void): void {
-        this.stream.destroy(error, callback);
+        this.connection.destroy(error, callback);
     }
 
 

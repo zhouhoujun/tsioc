@@ -113,7 +113,7 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
     abstract get length(): number | undefined;
 
     get state(): States {
-        return this.transport.toState(this.status);
+        return this.transport.fromCode(this.status);
     }
 
     set state(state: States) {
