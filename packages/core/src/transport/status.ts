@@ -26,6 +26,7 @@ export abstract class TransportStatus<T = number | string> {
  * transport states.
  */
 export enum States {
+    None = 0,
     /**
      * ok state flags.
      */

@@ -18,7 +18,6 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
         return emptyStatus[status];
     }
 
-
     isValidCode(code: number): boolean {
         return !!statusMessage[code as HttpStatusCode];
     }
@@ -35,8 +34,6 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
                 return States.BadRequest;
             case HttpStatusCode.NotFound:
                 return States.NotFound;
-            // case HttpStatusCode.Found:
-            //     return States.Found;
             case HttpStatusCode.Unauthorized:
                 return States.Unauthorized;
             case HttpStatusCode.Forbidden:
@@ -54,7 +51,7 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
                 if (retryStatus[status as HttpStatusCode]) {
                     return States.Retry;
                 }
-                return States.InternalServerError;
+                return status >= 500 ? States.InternalServerError : States.None;
         }
     }
 
@@ -76,10 +73,11 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
                 return HttpStatusCode.NoContent;
             case States.UnsupportedMediaType:
                 return HttpStatusCode.UnsupportedMediaType;
-
             case States.InternalServerError:
-            default:
                 return HttpStatusCode.InternalServerError;
+
+            default:
+                return HttpStatusCode.NotFound;
 
         }
     }
