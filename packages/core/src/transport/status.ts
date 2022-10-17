@@ -14,7 +14,29 @@ export abstract class TransportStatus<T = number | string> {
     /**
      * is status empty body or not.
      */
-    abstract isEmpty(code: T): boolean;
+    isEmpty(code: T): boolean {
+        const state = this.toState(code);
+        return state == States.NoContent
+            || state == States.ResetContent
+            || state == States.NotModified
+    }
+
+    isRedirect(code: T): boolean {
+        const state = this.toState(code);
+        return state == States.Found
+            || state == States.MovedPermanently
+            || state == States.SeeOther
+            || state == States.UseProxy
+            || state == States.TemporaryRedirect
+            || state == States.PermanentRedirect
+    }
+
+    isRertry(code: T): boolean {
+        const state = this.toState(code);
+        return state == States.BadGateway
+            || state == States.ServiceUnavailable
+            || state == States.GatewayTimeout
+    }
     /**
      * get status message.
      */
@@ -30,19 +52,60 @@ export enum States {
     /**
      * ok state flags.
      */
-    Ok,
+    Ok = 1,
+
+
+    /**
+     * no content state flags.
+     */
+    NoContent,
+    /**
+     * reset content.
+     * no content state.
+     */
+    ResetContent,
+    /**
+     * not modified.
+     */
+    NotModified,
+
+
+    /**
+     * found flags
+     * redirect state.
+     */
+    Found,
+    /**
+     * moved permanently.
+     * redirect state.
+     */
+    MovedPermanently,
+    /**
+     * see other.
+     * redirect state.
+     */
+    SeeOther,
+    /**
+     * use proxy.
+     * redirect state.
+     */
+    UseProxy,
+    /**
+     * temporary redirect.
+     * redirect state.
+     */
+    TemporaryRedirect,
+    /**
+     * Permanent Redirect.
+     * redirect state.
+     */
+    PermanentRedirect,
+
+
     /**
      * bad request state flags.
      */
     BadRequest,
-    /**
-     * not found state flags.
-     */
-    NotFound,
-    /**
-     * found status.
-     */
-    Found,
     /**
      * Unauthorized state flags.
      */
@@ -52,124 +115,49 @@ export enum States {
      */
     Forbidden,
     /**
-     * not content state flags.
+     * not found state flags.
      */
-    NoContent,
+    NotFound,
     /**
-     * request failed.
+     * method not allowed.
      */
-    requestFailed,
+    MethodNotAllowed,
     /**
-     * Internal server error state flags.
+     * request timeout.
      */
-    InternalServerError,
+    RequestTimeout,
     /**
      * unsupported media type state flags.
      */
     UnsupportedMediaType,
+
     /**
-     * redirect state flags
+     * Internal server error state flags.
      */
-    Redirect,
+    InternalServerError,
+
+    
     /**
-     * retry state flags
+     * Not implemeted.
      */
-    Retry
+    NotImplemented,
+
+
+    /**
+     * bad gateway.
+     * retry state
+     */
+    BadGateway,
+    /**
+     * retry state
+     */
+    ServiceUnavailable,
+    /**
+     * retry state
+     */
+    GatewayTimeout
+
 }
-
-// @Abstract()
-// export abstract class TransportStatus {
-//     /**
-//      * parse response status.
-//      * @param status 
-//      */
-//     abstract parse(status?: string | number | null): number;
-//     /**
-//      * ok status code.
-//      */
-//     abstract get ok(): number;
-//     /**
-//      * bad request status code.
-//      */
-//     abstract get badRequest(): number;
-//     /**
-//      * not found status code.
-//      */
-//     abstract get notFound(): number;
-//     /**
-//      * found status.
-//      */
-//     abstract get found(): number;
-//     /**
-//      * Unauthorized status code.
-//      */
-//     abstract get unauthorized(): number;
-//     /**
-//      * forbidden status code.
-//      */
-//     abstract get forbidden(): number;
-//     /**
-//      * not content status code.
-//      */
-//     abstract get noContent(): number;
-//     /**
-//      * Internal server error status.
-//      */
-//     abstract get serverError(): number;
-//     /**
-//      * unsupported media type status code.
-//      */
-//     abstract get unsupportedMediaType(): number;
-//     /**
-//      * is the status code vaild or not.
-//      * @param statusCode 
-//      */
-//     abstract isVaild(statusCode: number): boolean;
-//     /**
-//      * is not found status or not.
-//      * @param status 
-//      */
-//     abstract isNotFound(status: number): boolean;
-//     /**
-//      * is empty status or not.
-//      * @param status 
-//      */
-//     abstract isEmpty(status: number): boolean;
-//     /**
-//      * is ok status or not.
-//      * @param status 
-//      */
-//     abstract isOk(status: number): boolean;
-//     /**
-//      * 
-//      * @param status 
-//      */
-//     abstract isContinue(status: number): boolean;
-//     /**
-//      * is retry status or not.
-//      * @param status 
-//      */
-//     abstract isRetry(status: number): boolean;
-//     /**
-//      * is request failed status or not.
-//      * @param status 
-//      */
-//     abstract isRequestFailed(status: number): boolean;
-
-//     /**
-//      * is server error status or not.
-//      * @param status 
-//      */
-//     abstract isServerError(status: number): boolean;
-
-//     /**
-//      * get status default message.
-//      * @param status 
-//      */
-//     abstract message(status: number): string;
-
-// }
-
 
 
 /**

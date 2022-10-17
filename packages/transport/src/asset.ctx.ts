@@ -490,7 +490,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
         // no content
         if (null == val) {
-            if (this.transport.isEmpty(this.status)) this.status = States.NoContent;
+            if (this.transport.isEmpty(this.status)) this.state = States.NoContent;
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -694,7 +694,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (this.state !== States.Redirect) this.state = States.Found;
+        if (!this.transport.isRedirect(this.status)) this.state = States.Found;
 
         // html
         if (this.accepts('html')) {

@@ -80,7 +80,7 @@ export class HttpBackend2 extends HttpBackend {
                     ok = !err;
                 });
 
-                if (status && state === States.Redirect) {
+                if (status && stat.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .pipe(
