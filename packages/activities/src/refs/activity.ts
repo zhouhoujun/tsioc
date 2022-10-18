@@ -1,46 +1,42 @@
-import { Abstract, Modules, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
+import { ComponentRef, ComponentState } from '@tsdi/components';
+import { RunState } from './state';
 
 
-/**
- * activity option.
- *
- * @export
- * @interface ActivityOption
- * @extends {BootOption}
- */
+
 @Abstract()
-export abstract class ActivityOption {
-    /**
-     * name.
-     */
-    name?: string;
-    /**
-    * imports dependens modules
-    *
-    * @type {Modules[]}
-    */
-    imports?: (Modules | ModuleWithProviders)[];
-    /**
-     * activity declarations 
-     */
-    declarations?: Modules[];
-    /**
-     * providers for the module
-     */
-    providers?: ProviderType[];
-    /**
-     * activities component template scope.
-     *
-     * @type {ActivityTemplate}
-     * @memberof ActivityConfigure
-     */
-    template?: string | any[];
+export abstract class ActivityRef<T = any> extends ComponentRef<T> {
+    abstract get result(): any;
+
+    abstract state: RunState;
 
     /**
-     * bootstrap.
-     *
-     * @type {Type<T>}
+     * runable interface.
+     * @param context 
+     * @returns 
      */
-    bootstrap?: Modules;
+    run() {
+        const state = this.injector.get(ComponentState);
+        if (state.componentTypes.indexOf(this.type) < 0) {
+            state.componentTypes.push(this.type);
+        }
+        state.components.push(this);
+        this.execute();
+    }
 
+    /**
+     * execute activity.
+     */
+    abstract execute(): Promise<T>;
+
+    /**
+     * render the activity component.
+     */
+    abstract render(): void;
+
+    abstract stop(): Promise<void>;
+
+    abstract pause(): Promise<void>;
 }
+
+

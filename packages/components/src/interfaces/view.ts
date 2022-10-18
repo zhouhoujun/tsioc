@@ -1,5 +1,5 @@
 import { Injector, Token, Type } from '@tsdi/ioc';
-import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, RenderFlags, ViewQueriesFunction } from '../type';
+import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, ViewQueriesFunction } from '../type';
 import { LContainer } from './container';
 import { IElement } from './dom';
 import { LQueries, TQueries } from './query';

@@ -1,5 +1,5 @@
-export * from './ActivityModule';
 
+export * from './options';
 export * from './utils/types';
 
 export * from './refs';
@@ -8,3 +8,5 @@ export * from './refs';
 export * from './aop/RunAspect';
 
 export * from './activities';
+export * from './ActivityModule';
+export * from './service';

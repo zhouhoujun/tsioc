@@ -8,7 +8,7 @@ import { Component, Input } from '@tsdi/components';
  * @class InvokeActivity
  * @extends {ControlActivity}
  */
-@Component('invoke')
+@Component('invoke,[invoke]')
 export class InvokeActivity {
     @Input() target?: Token;
     @Input() method?: string;

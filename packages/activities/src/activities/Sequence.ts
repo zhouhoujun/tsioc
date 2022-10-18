@@ -7,7 +7,7 @@ import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewCon
  * @class SequenceActivity
  * @extends {ControlActivity}
  */
-@Component('sequence')
+@Component('sequence,[sequence]')
 export class SequenceActivity<T> {
 
     private _context: DirSequenceContext<T> = new DirSequenceContext<T>();

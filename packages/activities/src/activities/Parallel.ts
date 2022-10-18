@@ -7,7 +7,7 @@ import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewCon
  * @class ParallelActivity
  * @extends {ControlActivity}
  */
-@Component('parallel')
+@Component('parallel, [parallel]')
 export class ParallelActivity<T> {
 
     private _context: DirParallelContext<T> = new DirParallelContext<T>();

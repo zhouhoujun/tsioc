@@ -3,6 +3,12 @@ import { Module } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { RunAspect } from './aop/RunAspect';
 import { WorkflowService } from './service';
+import { Activity } from './activities/Activity';
+import {
+    CatchActivity, ConfirmActivity, DelayActivity, DoWhileActivity, IntervalActivity,
+    InvokeActivity, ParallelActivity, SequenceActivity, ThrowActivity, TimerActivity,
+    TryActivity, TryCatchActivity, WhileActivity
+} from './activities';
 
 
 
@@ -20,6 +26,38 @@ import { WorkflowService } from './service';
     providers: [
         WorkflowService,
         RunAspect
+    ],
+    declarations: [
+        Activity,
+        ConfirmActivity,
+        DelayActivity,
+        WhileActivity,
+        DoWhileActivity,
+        IntervalActivity,
+        InvokeActivity,
+        ParallelActivity,
+        SequenceActivity,
+        ThrowActivity,
+        TimerActivity,
+        TryCatchActivity,
+        TryActivity,
+        CatchActivity
+    ],
+    exports: [
+        Activity,
+        ConfirmActivity,
+        DelayActivity,
+        WhileActivity,
+        DoWhileActivity,
+        IntervalActivity,
+        InvokeActivity,
+        ParallelActivity,
+        SequenceActivity,
+        ThrowActivity,
+        TimerActivity,
+        TryCatchActivity,
+        TryActivity,
+        CatchActivity
     ]
 })
 export class ActivityModule {

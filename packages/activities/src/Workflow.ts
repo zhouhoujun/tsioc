@@ -1,6 +1,6 @@
 import { Type, isFunction } from '@tsdi/ioc';
 import { Application, ApplicationContext, EnvironmentOption } from '@tsdi/core';
-import { ActivityOption } from './refs/activity';
+import { ActivityOption } from './options';
 import { ActivityModule } from './ActivityModule';
 
 

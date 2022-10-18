@@ -1,5 +1,5 @@
 import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
-import { ActivityRef } from '../refs/compoent';
+import { ActivityRef } from '../refs/activity';
 import { RunState } from '../refs/state';
 
 
