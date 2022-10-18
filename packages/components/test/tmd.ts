@@ -1,4 +1,4 @@
-import { Binding, CompilerFacade, Component, Directive, ElementRef, EventEmitter, HostMapping, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
+import { Binding, CompilerFacade, Component, Directive, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
 import { Module } from '@tsdi/core';
 import { Inject, Injectable, Injector } from '@tsdi/ioc';
 
@@ -51,7 +51,6 @@ export class FieldComponent {
         <comp></comp>
     `
 })
-@HostMapping()
 export class AppComponent implements OnInit {
 
     label: string;
@@ -110,7 +109,7 @@ export class Components {
     address: string;
 
     @ViewChild('se1') se1: ElementRef<Selector1>;
-    @ViewChild('se3') se3: ElementRef<Selector1>;
+    @ViewChild('se3') se3: ElementRef<Selector3>;
 
     @HostMapping('/address', 'post')
     updateAddress(name: string, address: string) {
