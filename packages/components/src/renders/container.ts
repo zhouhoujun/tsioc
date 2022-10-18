@@ -1,9 +1,9 @@
 import { ModuleRef } from '@tsdi/core';
-import { createContext, Injector, InvocationContext, isClass, isFunction, Type, TypeDef } from '@tsdi/ioc';
+import { createContext, Injector, InvocationContext, isFunction, Type, TypeDef } from '@tsdi/ioc';
 import { isLContainer } from '../interfaces/chk';
 import { CONTAINER_HEADER_OFFSET, LContainer, NATIVE } from '../interfaces/container';
 import { IComment, IElement } from '../interfaces/dom';
-import { TContainerNode, TElementContainerNode, TElementNode, TNodeType } from '../interfaces/node';
+import { TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TNodeType } from '../interfaces/node';
 import { LView, PARENT, RENDERER, TVIEW, T_HOST } from '../interfaces/view';
 import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
@@ -11,7 +11,9 @@ import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { addToArray, removeFromArray } from '../util/array';
+import { assertDefined, assertEqual, assertGreaterThan, assertLessThan, throwError } from '../util/assert';
 import { getNativeByTNode, unwrapRNode, viewAttachedToContainer } from '../util/view';
+import { assertTNodeType } from './assert';
 import { createElementRef } from './element';
 import { addViewToContainer, destroyLView, getBeforeNodeForView, insertView } from './manipulation';
 import { createLContainer } from './share';
@@ -101,18 +103,18 @@ export class ViewContainerRefImpl extends ViewContainerRef {
     } = {}): ComponentRef<C> {
 
 
-        // if (devMode) {
-        //     assertDefined(
-        //         getComponentDef(componentFactoryOrType),
-        //         `Provided Component class doesn't contain Component definition. ` +
-        //         `Please check whether provided class has @Component decorator.`);
-        //     assertEqual(
-        //         typeof indexOrOptions !== 'number', true,
-        //         'It looks like Component type was provided as the first argument ' +
-        //         'and a number (representing an index at which to insert the new component\'s ' +
-        //         'host view into this container as the second argument. This combination of arguments ' +
-        //         'is incompatible. Please use an object as the second argument instead.');
-        // }
+        if (devMode) {
+            assertDefined(
+                getComponentDef(componentFactoryOrType),
+                `Provided Component class doesn't contain Component definition. ` +
+                `Please check whether provided class has @Component decorator.`);
+            assertEqual(
+                typeof indexOrOptions !== 'number', true,
+                'It looks like Component type was provided as the first argument ' +
+                'and a number (representing an index at which to insert the new component\'s ' +
+                'host view into this container as the second argument. This combination of arguments ' +
+                'is incompatible. Please use an object as the second argument instead.');
+        }
 
         if (devMode && options.context && options.moduleRef) {
             throwError(
@@ -256,7 +258,7 @@ export class ViewContainerRefImpl extends ViewContainerRef {
 export function createContainerRef(
     hostTNode: TElementNode | TContainerNode | TElementContainerNode,
     hostLView: LView): ViewContainerRef {
-    //   devMode && assertTNodeType(hostTNode, TNodeType.AnyContainer | TNodeType.AnyRNode);
+      devMode && assertTNodeType(hostTNode, TNodeType.AnyContainer | TNodeType.AnyRNode);
 
     let lContainer: LContainer;
     const slotValue = hostLView[hostTNode.index];

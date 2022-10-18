@@ -926,7 +926,7 @@ export interface TProjectionNode extends TNode {
 /**
  * A union type representing all TNode types that can host a directive.
  */
-export type VDirectiveHosTNode = TElementNode | TContainerNode | TElementContainerNode;
+export type TDirectiveHostNode = TElementNode | TContainerNode | TElementContainerNode;
 
 /**
  * This mapping is necessary so we can set input properties and output listeners

@@ -1,9 +1,12 @@
+import { Injector } from '@tsdi/ioc';
 import { TContainerNode, TNode, TNodeType } from '../interfaces/node';
 import { DECLARATION_LCONTAINER, LView, LViewFlags, QUERIES, TView } from '../interfaces/view';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
+import { assertLContainer } from './assert';
 import { createElementRef } from './element';
+import { createLView } from './share';
 import { ViewRefImpl } from './view_ref';
 
 declare let devMode: any;
@@ -16,14 +19,14 @@ class TemplateRefImpl<T> extends TemplateRef<T> {
         super();
     }
 
-    override createEmbeddedView(context: T): EmbeddedViewRef<T> {
+    override createEmbeddedView(context: T, injector?: Injector): EmbeddedViewRef<T> {
         const embeddedTView = this._declarationTContainer.tViews as TView;
         const embeddedLView = createLView(
             this._declarationLView, embeddedTView, context, LViewFlags.CheckAlways, null,
-            embeddedTView.declTNode, null, null, null, null);
+            embeddedTView.declTNode, null, null, null, null, injector||null);
 
         const declarationLContainer = this._declarationLView[this._declarationTContainer.index];
-        //   devMode && assertLContainer(declarationLContainer);
+          devMode && assertLContainer(declarationLContainer);
         embeddedLView[DECLARATION_LCONTAINER] = declarationLContainer;
 
         const declarationViewLQueries = this._declarationLView[QUERIES];

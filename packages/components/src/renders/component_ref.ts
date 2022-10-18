@@ -1,4 +1,4 @@
-import { Injector, Type, InjectorScope, Scopes } from '@tsdi/ioc';
+import { Injector, Type, Scopes } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentRef } from '../refs/component';
 import { ElementRef } from '../refs/element';

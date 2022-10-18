@@ -4,12 +4,18 @@ import { CONTAINER_HEADER_OFFSET } from '../interfaces/container';
 import { TElementNode, TNode, TNodeType } from '../interfaces/node';
 import { DECLARATION_COMPONENT_VIEW, LView, PARENT, TVIEW, TView, T_HOST } from '../interfaces/view';
 import { unwrapRNode } from '../util/view';
+import { assertParentView, assertTNodeType } from './assert';
+
+declare let devMode: any;
 
 
-
-export function collectNativeNodes(view: TView, lView: LView, node: TNode | null, result: any[], isProjection = false): any[] {
-    while (node !== null) {
-        const lNode = lView[node.index];
+export function collectNativeNodes(view: TView, lView: LView, tNode: TNode | null, result: any[], isProjection = false): any[] {
+    while (tNode !== null) {
+        devMode &&
+            assertTNodeType(
+                tNode,
+                TNodeType.AnyRNode | TNodeType.AnyContainer | TNodeType.Projection);
+        const lNode = lView[tNode.index];
         if (lNode !== null) {
             result.push(unwrapRNode(lNode));
         }
@@ -28,19 +34,20 @@ export function collectNativeNodes(view: TView, lView: LView, node: TNode | null
             }
         }
 
-        const tNodeType = node.type;
+        const tNodeType = tNode.type;
         if (tNodeType & TNodeType.ElementContainer) {
-            collectNativeNodes(view, lView, node.child, result);
+            collectNativeNodes(view, lView, tNode.child, result);
         } else if (tNodeType & TNodeType.Projection) {
-            const nodesInSlot = getProjectionNodes(lView, node);
+            const nodesInSlot = getProjectionNodes(lView, tNode);
             if (Array.isArray(nodesInSlot)) {
                 result.push(...nodesInSlot);
             } else {
                 const parentView = getLViewParent(lView[DECLARATION_COMPONENT_VIEW])!;
+                devMode && assertParentView(parentView);
                 collectNativeNodes(parentView[TVIEW], parentView, nodesInSlot, result, true);
             }
         }
-        node = isProjection ? node.projectionNext : node.next;
+        tNode = isProjection ? tNode.projectionNext : tNode.next;
     }
 
     return result;

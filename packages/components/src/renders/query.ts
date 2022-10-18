@@ -7,7 +7,10 @@ import { ViewContainerRef } from '../refs/container';
 import { ElementRef } from '../refs/element';
 import { QueryList } from '../refs/query';
 import { TemplateRef } from '../refs/template';
+import { assertDefined, assertIndexInRange, assertNumber, throwError } from '../util/assert';
+import { stringify } from '../util/stringify';
 import { isCreationMode } from '../util/view';
+import { assertFirstCreatePass, assertLContainer, assertTNodeType } from './assert';
 import { createContainerRef } from './container';
 import { createElementRef, unwrapElementRef } from './element';
 import { locateDirectiveOrProvider, storeCleanupWithContext } from './share';
@@ -81,9 +84,9 @@ class TQueries_ implements TQueries {
     constructor(private queries: TQuery[] = []) { }
 
     elementStart(tView: TView, tNode: TNode): void {
-        // devMode &&
-        //     assertFirstCreatePass(
-        //         tView, 'Queries should collect results on the first template pass only');
+        devMode &&
+            assertFirstCreatePass(
+                tView, 'Queries should collect results on the first template pass only');
         for (let i = 0; i < this.queries.length; i++) {
             this.queries[i].elementStart(tView, tNode);
         }
@@ -115,16 +118,16 @@ class TQueries_ implements TQueries {
     }
 
     template(tView: TView, tNode: TNode): void {
-        // devMode &&
-        //     assertFirstCreatePass(
-        //         tView, 'Queries should collect results on the first template pass only');
+        devMode &&
+            assertFirstCreatePass(
+                tView, 'Queries should collect results on the first template pass only');
         for (let i = 0; i < this.queries.length; i++) {
             this.queries[i].template(tView, tNode);
         }
     }
 
     getByIndex(index: number): TQuery {
-        // devMode && assertIndexInRange(this.queries, index);
+        devMode && assertIndexInRange(this.queries, index);
         return this.queries[index];
     }
 
@@ -312,13 +315,13 @@ function createSpecialToken(lView: LView, tNode: TNode, read: any): any {
     } else if (read === TemplateRef) {
         return createTemplateRef(tNode, lView);
     } else if (read === ViewContainerRef) {
-        // devMode && assertTNodeType(tNode, TNodeType.AnyRNode | TNodeType.AnyContainer);
+        devMode && assertTNodeType(tNode, TNodeType.AnyRNode | TNodeType.AnyContainer);
         return createContainerRef(
             tNode as TElementNode | TContainerNode | TElementContainerNode, lView);
     } else {
-        // devMode &&
-        //     throwError(
-        //         `Special token to read should be one of ElementRef, TemplateRef or ViewContainerRef but got ${stringify(read)}.`);
+        devMode &&
+            throwError(
+                `Special token to read should be one of ElementRef, TemplateRef or ViewContainerRef but got ${stringify(read)}.`);
     }
 }
 
@@ -342,7 +345,7 @@ function materializeViewResults<T>(
                 // null as a placeholder
                 result.push(null);
             } else {
-                // devMode && assertIndexInRange(tViewData, matchedNodeIdx);
+                devMode && assertIndexInRange(tViewData, matchedNodeIdx);
                 const tNode = tViewData[matchedNodeIdx] as TNode;
                 result.push(createResultForNode(lView, tNode, tQueryMatches[i + 1], tQuery.metadata.read));
             }
@@ -371,7 +374,7 @@ function collectQueryResults<T>(tView: TView, lView: LView, queryIndex: number, 
                 const childQueryIndex = tQueryMatches[i + 1];
 
                 const declarationLContainer = lView[-tNodeIdx] as LContainer;
-                // devMode && assertLContainer(declarationLContainer);
+                devMode && assertLContainer(declarationLContainer);
 
                 // collect matches for views inserted in this container
                 for (let i = CONTAINER_HEADER_OFFSET; i < declarationLContainer.length; i++) {
@@ -468,7 +471,7 @@ export function ɵɵviewQuery<T>(
 export function ɵɵcontentQuery<T>(
     directiveIndex: number, predicate: Token | string[], flags: QueryFlags,
     read?: any): void {
-    // devMode && assertNumber(flags, 'Expecting flags');
+    devMode && assertNumber(flags, 'Expecting flags');
     const tView = getTView();
     if (tView.firstCreatePass) {
         const tNode = getCurrentTNode()!;
@@ -492,9 +495,9 @@ export function ɵɵloadQuery<T>(): QueryList<T> {
 }
 
 function loadQueryInternal<T>(lView: LView, queryIndex: number): QueryList<T> {
-    // devMode &&
-    //     assertDefined(lView[QUERIES], 'LQueries should be defined when trying to load a query');
-    // devMode && assertIndexInRange(lView[QUERIES]!.queries, queryIndex);
+    devMode &&
+        assertDefined(lView[QUERIES], 'LQueries should be defined when trying to load a query');
+    devMode && assertIndexInRange(lView[QUERIES]!.queries, queryIndex);
     return lView[QUERIES]!.queries[queryIndex].queryList;
 }
 
@@ -522,6 +525,6 @@ function saveContentQueryAndDirectiveIndex(tView: TView, directiveIndex: number)
 }
 
 function getTQuery(tView: TView, index: number): TQuery {
-    // devMode && assertDefined(tView.queries, 'TQueries must be defined to retrieve a TQuery');
+    devMode && assertDefined(tView.queries, 'TQueries must be defined to retrieve a TQuery');
     return tView.queries!.getByIndex(index);
 }

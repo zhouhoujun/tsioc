@@ -11,6 +11,8 @@ import { getLViewParent } from './native_nodes';
 import { ComponentDef, RendererStyleFlags, ViewEncapsulation } from '../type';
 import { InvocationContext } from '@tsdi/ioc';
 import { profiler, ProfilerEvent } from './profiler';
+import { assertDefined, assertEqual, assertFunction, assertString } from '../util/assert';
+import { assertLContainer, assertLView, assertProjectionSlots, assertTNodeForLView, assertTNodeType } from './assert';
 
 declare let devMode: any;
 
@@ -54,24 +56,23 @@ function applyToElementOrContainer(
             lContainer = lNodeToHandle;
         } else if (isLView(lNodeToHandle)) {
             isComponent = true;
-            //    devMode && assertDefined(lNodeToHandle[HOST], 'HOST must be defined for a component LView');
+            devMode && assertDefined(lNodeToHandle[HOST], 'HOST must be defined for a component LView');
             lNodeToHandle = lNodeToHandle[HOST]!;
         }
         const rNode: INode = unwrapRNode(lNodeToHandle);
-        //  devMode && !isProceduralRenderer(renderer) && assertDomNode(rNode);
 
         if (action === WalkTNodeTreeAction.Create && parent !== null) {
             if (beforeNode == null) {
-                renderer.appendChild(parent, rNode);
+                nativeAppendChild(renderer, parent, rNode);
             } else {
-                renderer.insertBefore(parent, rNode, beforeNode || null, true);
+                nativeInsertBefore(renderer, parent, rNode, beforeNode || null, true);
             }
         } else if (action === WalkTNodeTreeAction.Insert && parent !== null) {
-            renderer.insertBefore(parent, rNode, beforeNode || null, true);
+            nativeInsertBefore(renderer, parent, rNode, beforeNode || null, true);
         } else if (action === WalkTNodeTreeAction.Detach) {
             nativeRemoveNode(renderer, rNode, isComponent);
         } else if (action === WalkTNodeTreeAction.Destroy) {
-            //    devMode && devMode.rendererDestroyNode++;
+            devMode && devMode.rendererDestroyNode++;
             renderer.destroyNode!(rNode);
         }
         if (lContainer != null) {
@@ -81,20 +82,18 @@ function applyToElementOrContainer(
 }
 
 export function createTextNode(renderer: Renderer, value: string): IText {
-    //    devMode && devMode.rendererCreateTextNode++;
-    //    devMode && devMode.rendererSetText++;
+    devMode && devMode.rendererCreateTextNode++;
+    devMode && devMode.rendererSetText++;
     return renderer.createText(value);
 }
 
 export function updateTextNode(renderer: Renderer, rNode: IText, value: string): void {
-    //    devMode && devMode.rendererSetText++;
+    devMode && devMode.rendererSetText++;
     renderer.setValue(rNode, value);
 }
 
 export function createCommentNode(renderer: Renderer, value: string): IComment {
-    //    devMode && devMode.rendererCreateComment++;
-    // isProceduralRenderer check is not needed because both `Renderer2` and `Renderer` have the same
-    // method name.
+    devMode && devMode.rendererCreateComment++;
     return renderer.createComment(escapeCommentText(value));
 }
 
@@ -107,7 +106,7 @@ export function createCommentNode(renderer: Renderer, value: string): IComment {
  */
 export function createElementNode(
     renderer: Renderer, name: string, namespace: string | null): IElement {
-    //    devMode && devMode.rendererCreateElement++;
+    devMode && devMode.rendererCreateElement++;
     return renderer.createElement(name, namespace);
 }
 
@@ -189,7 +188,7 @@ export function destroyViewTree(rootView: LView): void {
             // If LView, traverse down to child.
             next = lViewOrLContainer[CHILD_HEAD];
         } else {
-            // devMode && assertLContainer(lViewOrLContainer);
+            devMode && assertLContainer(lViewOrLContainer);
             // If container, traverse down to its first LView.
             const firstView: LView | undefined = lViewOrLContainer[CONTAINER_HEADER_OFFSET];
             if (firstView) next = firstView;
@@ -228,8 +227,8 @@ export function destroyViewTree(rootView: LView): void {
  * @param index Which index in the container to insert the child view into
  */
 export function insertView(tView: TView, lView: LView, lContainer: LContainer, index: number) {
-    // devMode && assertLView(lView);
-    // devMode && assertLContainer(lContainer);
+    devMode && assertLView(lView);
+    devMode && assertLContainer(lContainer);
     const indexInContainer = CONTAINER_HEADER_OFFSET + index;
     const containerLength = lContainer.length;
 
@@ -268,15 +267,15 @@ export function insertView(tView: TView, lView: LView, lContainer: LContainer, i
  * different LContainer.
  */
 function trackMovedView(declarationContainer: LContainer, lView: LView) {
-    // devMode && assertDefined(lView, 'LView required');
-    // devMode && assertLContainer(declarationContainer);
+    devMode && assertDefined(lView, 'LView required');
+    devMode && assertLContainer(declarationContainer);
     const movedViews = declarationContainer[MOVED_VIEWS];
     const insertedLContainer = lView[PARENT] as LContainer;
-    // devMode && assertLContainer(insertedLContainer);
+    devMode && assertLContainer(insertedLContainer);
     const insertedComponentLView = insertedLContainer[PARENT]![DECLARATION_COMPONENT_VIEW];
-    // devMode && assertDefined(insertedComponentLView, 'Missing insertedComponentLView');
+    devMode && assertDefined(insertedComponentLView, 'Missing insertedComponentLView');
     const declaredComponentLView = lView[DECLARATION_COMPONENT_VIEW];
-    // devMode && assertDefined(declaredComponentLView, 'Missing declaredComponentLView');
+    devMode && assertDefined(declaredComponentLView, 'Missing declaredComponentLView');
     if (declaredComponentLView !== insertedComponentLView) {
         // At this point the declaration-component is not same as insertion-component; this means that
         // this is a transplanted view. Mark the declared lView as having transplanted views so that
@@ -291,15 +290,15 @@ function trackMovedView(declarationContainer: LContainer, lView: LView) {
 }
 
 function detachMovedView(declarationContainer: LContainer, lView: LView) {
-    // devMode && assertLContainer(declarationContainer);
-    // devMode &&
-    //     assertDefined(
-    //         declarationContainer[MOVED_VIEWS],
-    //         'A projected view should belong to a non-empty projected views collection');
+    devMode && assertLContainer(declarationContainer);
+    devMode &&
+        assertDefined(
+            declarationContainer[MOVED_VIEWS],
+            'A projected view should belong to a non-empty projected views collection');
     const movedViews = declarationContainer[MOVED_VIEWS]!;
     const declarationViewIndex = movedViews.indexOf(lView);
     const insertionLContainer = lView[PARENT] as LContainer;
-    // devMode && assertLContainer(insertionLContainer);
+    devMode && assertLContainer(insertionLContainer);
 
     // If the view was marked for refresh but then detached before it was checked (where the flag
     // would be cleared and the counter decremented), we need to decrement the view counter here
@@ -398,7 +397,7 @@ function cleanUpView(tView: TView, lView: LView): void {
         processCleanups(tView, lView);
         // For component views only, the local renderer is destroyed at clean up time.
         if (lView[TVIEW].type === TViewType.Component) {
-            // devMode && devMode.rendererDestroy++;
+            devMode && devMode.rendererDestroy++;
             lView[RENDERER].destroy();
         }
 
@@ -460,7 +459,7 @@ function processCleanups(tView: TView, lView: LView): void {
     if (lCleanup !== null) {
         for (let i = lastLCleanupIndex + 1; i < lCleanup.length; i++) {
             const instanceCleanupFn = lCleanup[i];
-            // devMode && assertFunction(instanceCleanupFn, 'Expecting instance cleanup function.');
+            devMode && assertFunction(instanceCleanupFn, 'Expecting instance cleanup function.');
             instanceCleanupFn();
         }
         lView[CLEANUP] = null;
@@ -557,7 +556,7 @@ export function getClosestRElement(tView: TView, tNode: TNode | null, lView: LVi
     } else {
         // devMode && assertTNodeType(parentTNode, TNodeType.AnyRNode | TNodeType.Container);
         if (parentTNode.flags & TNodeFlags.isComponentHost) {
-            // devMode && assertTNodeForLView(parentTNode, lView);
+            devMode && assertTNodeForLView(parentTNode, lView);
             const encapsulation =
                 (tView.data[parentTNode.directiveStart] as ComponentDef<unknown>).encapsulation;
             // We've got a parent which is an element in the current view. We just need to verify if the
@@ -576,13 +575,30 @@ export function getClosestRElement(tView: TView, tNode: TNode | null, lView: LVi
     }
 }
 
+/**
+ * Inserts a native node before another native node for a given parent.
+ * This is a utility function that can be used when native nodes were determined.
+ */
+export function nativeInsertBefore(
+    renderer: Renderer, parent: IElement, child: INode, beforeNode: INode | null,
+    isMove: boolean): void {
+    devMode && devMode.rendererInsertBefore++;
+    renderer.insertBefore(parent, child, beforeNode, isMove);
+}
+
+function nativeAppendChild(renderer: Renderer, parent: IElement, child: INode): void {
+    devMode && devMode.rendererAppendChild++;
+    devMode && assertDefined(parent, 'parent node must be defined');
+    renderer.appendChild(parent, child);
+  }
+  
 
 function nativeAppendOrInsertBefore(
     renderer: Renderer, parent: IElement, child: INode, beforeNode: INode | null, isMove: boolean) {
     if (beforeNode !== null) {
         renderer.insertBefore(parent, child, beforeNode, isMove);
     } else {
-        renderer.appendChild(parent, child);
+        nativeAppendChild(renderer, parent, child);
     }
 }
 
@@ -728,7 +744,7 @@ export function getProjectionNodes(lView: LView, tNode: TNode | null): TNode | I
         const componentView = lView[DECLARATION_COMPONENT_VIEW];
         const componentHost = componentView[T_HOST] as TElementNode;
         const slotIdx = tNode.projection as number;
-        // devMode && assertProjectionSlots(lView);
+        devMode && assertProjectionSlots(lView);
         return componentHost.projection![slotIdx];
     }
     return null;
@@ -758,7 +774,7 @@ export function getBeforeNodeForView(viewIndexInContainer: number, lContainer: L
  * @param isHostElement A flag indicating if a node to be removed is a host of a component.
  */
 export function nativeRemoveNode(renderer: Renderer, rNode: INode, isHostElement?: boolean): void {
-    // devMode && devMode.rendererRemoveNode++;
+    devMode && devMode.rendererRemoveNode++;
     const nativeParent = renderer.parentNode(rNode);
     if (nativeParent) {
         renderer.removeChild(nativeParent, rNode, isHostElement);
@@ -774,11 +790,11 @@ function applyNodes(
     renderer: Renderer, action: WalkTNodeTreeAction, tNode: TNode | null, lView: LView,
     parentRElement: IElement | null, beforeNode: INode | null, isProjection: boolean) {
     while (tNode != null) {
-        // devMode && assertTNodeForLView(tNode, lView);
-        // devMode &&
-        //     assertTNodeType(
-        //         tNode,
-        //         TNodeType.AnyRNode | TNodeType.AnyContainer | TNodeType.Projection | TNodeType.Icu);
+        devMode && assertTNodeForLView(tNode, lView);
+        devMode &&
+            assertTNodeType(
+                tNode,
+                TNodeType.AnyRNode | TNodeType.AnyContainer | TNodeType.Projection);
         const rawSlotValue = lView[tNode.index];
         const tNodeType = tNode.type;
         if (isProjection) {
@@ -795,7 +811,7 @@ function applyNodes(
                 applyProjectionRecursive(
                     renderer, action, lView, tNode as TProjectionNode, parentRElement, beforeNode);
             } else {
-                // devMode && assertTNodeType(tNode, TNodeType.AnyRNode | TNodeType.Container);
+                devMode && assertTNodeType(tNode, TNodeType.AnyRNode | TNodeType.Container);
                 applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
             }
         }
@@ -877,7 +893,7 @@ function applyProjectionRecursive(
     tProjectionNode: TProjectionNode, parentRElement: IElement | null, beforeNode: INode | null) {
     const componentLView = lView[DECLARATION_COMPONENT_VIEW];
     const componentNode = componentLView[T_HOST] as TElementNode;
-    // devMode && assertEqual(typeof tProjectionNode.projection, 'number', 'expecting projection index');
+    devMode && assertEqual(typeof tProjectionNode.projection, 'number', 'expecting projection index');
     const nodeToProjectOrRNodes = componentNode.projection![tProjectionNode.projection]!;
     if (Array.isArray(nodeToProjectOrRNodes)) {
         // This should not exist, it is a bit of a hack. When we bootstrap a top level node and we
@@ -914,7 +930,7 @@ function applyProjectionRecursive(
 function applyContainer(
     renderer: Renderer, action: WalkTNodeTreeAction, lContainer: LContainer,
     parentRElement: IElement | null, beforeNode: INode | null | undefined) {
-    // devMode && assertLContainer(lContainer);
+    devMode && assertLContainer(lContainer);
     const anchor = lContainer[NATIVE];  // LContainer has its own before node.
     const native = unwrapRNode(lContainer);
     // An LContainer can be created dynamically on any node by injecting ViewContainerRef.
@@ -951,16 +967,16 @@ export function applyStyling(
     if (isClassBased) {
         // We actually want JS true/false here because any truthy value should add the class
         if (!value) {
-            // devMode && devMode.rendererRemoveClass++;
+            devMode && devMode.rendererRemoveClass++;
             renderer.removeClass(rNode, prop);
         } else {
-            // devMode && devMode.rendererAddClass++;
+            devMode && devMode.rendererAddClass++;
             renderer.addClass(rNode, prop);
         }
     } else {
         let flags = prop.indexOf('-') === -1 ? undefined : RendererStyleFlags.DashCase as number;
         if (value == null /** || value === undefined */) {
-            // devMode && devMode.rendererRemoveStyle++;
+            devMode && devMode.rendererRemoveStyle++;
             renderer.removeStyle(rNode, prop, flags);
         } else {
             // A value is important if it ends with `!important`. The style
@@ -973,7 +989,7 @@ export function applyStyling(
                 flags! |= RendererStyleFlags.Important;
             }
 
-            // devMode && devMode.rendererSetStyle++;
+            devMode && devMode.rendererSetStyle++;
             renderer.setStyle(rNode, prop, value, flags);
         }
     }
@@ -991,9 +1007,9 @@ export function applyStyling(
  * @param newValue The new class list to write.
  */
 export function writeDirectStyle(renderer: Renderer, element: IElement, newValue: string) {
-    // devMode && assertString(newValue, '\'newValue\' should be a string');
+    devMode && assertString(newValue, '\'newValue\' should be a string');
     renderer.setAttribute(element, 'style', newValue);
-    // devMode && devMode.rendererSetStyle++;
+    devMode && devMode.rendererSetStyle++;
 }
 
 /**
@@ -1007,12 +1023,12 @@ export function writeDirectStyle(renderer: Renderer, element: IElement, newValue
  * @param newValue The new class list to write.
  */
 export function writeDirectClass(renderer: Renderer, element: IElement, newValue: string) {
-    // devMode && assertString(newValue, '\'newValue\' should be a string');
+    devMode && assertString(newValue, '\'newValue\' should be a string');
     if (newValue === '') {
         // There are tests in `google3` which expect `element.getAttribute('class')` to be `null`.
         renderer.removeAttribute(element, 'class');
     } else {
         renderer.setAttribute(element, 'class', newValue);
     }
-    // devMode && devMode.rendererSetClassName++;
+    devMode && devMode.rendererSetClassName++;
 }

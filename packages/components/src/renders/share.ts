@@ -1,11 +1,16 @@
-import { Token } from '@tsdi/ioc';
+import { Injector, Token } from '@tsdi/ioc';
 import { isComponentDef, isRootView } from '../interfaces/chk';
 import { CONTAINER_HEADER_OFFSET, LContainer } from '../interfaces/container';
 import { LContext } from '../interfaces/context';
 import { IComment, IElement } from '../interfaces/dom';
+import { getUniqueLViewId } from '../interfaces/lview';
 import { TNode, TNodeProviderIndexes } from '../interfaces/node';
-import { CLEANUP, CONTEXT, FLAGS, LView, LViewFlags, RENDERER_FACTORY, RootContext, TVIEW, TView } from '../interfaces/view';
+import { Renderer, RendererFactory } from '../interfaces/renderer';
+import { CLEANUP, CONTEXT, DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, EMBEDDED_VIEW_INJECTOR, FLAGS, HOST, ID, INJECTOR, LView, LViewFlags, PARENT, RENDERER, RENDERER_FACTORY, RootContext, SANITIZER, TVIEW, TView, TViewType, T_HOST } from '../interfaces/view';
 import { DirectiveDef } from '../type';
+import { assertDefined, assertEqual, throwError } from '../util/assert';
+import { resetPreOrderHookFlags } from '../util/view';
+import { assertTNodeForLView } from './assert';
 import { getLViewParent } from './native_nodes';
 
 declare let devMode: any;
@@ -128,9 +133,9 @@ export function storeCleanupWithContext(
     if (context === null) {
         // If context is null that this is instance specific callback. These callbacks can only be
         // inserted after template shared instances. For this reason in devMode we freeze the TView.
-        // if (devMode) {
-        //   Object.freeze(getOrCreateTViewCleanup(tView));
-        // }
+        if (devMode) {
+            Object.freeze(getOrCreateTViewCleanup(tView));
+        }
         lCleanup.push(cleanupFn);
     } else {
         lCleanup.push(context);
@@ -151,11 +156,15 @@ export function getOrCreateTViewCleanup(tView: TView): any[] {
 }
 
 /**
+ * This property will be monkey-patched on elements, components and directives.
+ */
+const MONKEY_PATCH_KEY_NAME = '__context__';
+/**
  * Returns the monkey-patch value data present on the target (which could be
  * a component, directive or a DOM node).
  */
 export function readPatchedData(target: any): LView | LContext | null {
-    // devMode && assertDefined(target, 'Target expected');
+    devMode && assertDefined(target, 'Target expected');
     return target[MONKEY_PATCH_KEY_NAME] || null;
 }
 
@@ -171,14 +180,14 @@ export function readPatchedLView(target: any): LView | null {
 let _isInCheckNoChangesMode = false;
 
 export function isInCheckNoChangesMode(): boolean {
-    // !devMode && throwError('Must never be called in production mode');
+    !devMode && throwError('Must never be called in production mode');
     return _isInCheckNoChangesMode;
-  }
-  
-  export function setIsInCheckNoChangesMode(mode: boolean): void {
-    // !devMode && throwError('Must never be called in production mode');
+}
+
+export function setIsInCheckNoChangesMode(mode: boolean): void {
+    !devMode && throwError('Must never be called in production mode');
     _isInCheckNoChangesMode = mode;
-  }
+}
 
 
 export function detectChangesInternal<T>(
@@ -213,4 +222,39 @@ export function checkNoChangesInternal<T>(
     }
 }
 
+export function createLView<T>(
+    parentLView: LView | null, tView: TView, context: T | null, flags: LViewFlags, host: IElement | null,
+    tHostNode: TNode | null, rendererFactory: RendererFactory | null, renderer: Renderer | null,
+    sanitizer: Sanitizer | null, injector: Injector | null,
+    embeddedViewInjector: Injector | null): LView {
+    const lView =
+        devMode ? cloneToLViewFromTViewBlueprint(tView) : tView.blueprint.slice() as LView;
+    lView[HOST] = host;
+    lView[FLAGS] = flags | LViewFlags.CreationMode | LViewFlags.Attached | LViewFlags.FirstLViewPass;
+    if (embeddedViewInjector !== null ||
+        (parentLView && (parentLView[FLAGS] & LViewFlags.HasEmbeddedViewInjector))) {
+        lView[FLAGS] |= LViewFlags.HasEmbeddedViewInjector;
+    }
+    resetPreOrderHookFlags(lView);
+    devMode && tView.declTNode && parentLView && assertTNodeForLView(tView.declTNode, parentLView);
+    lView[PARENT] = lView[DECLARATION_VIEW] = parentLView;
+    lView[CONTEXT] = context;
+    lView[RENDERER_FACTORY] = (rendererFactory || parentLView && parentLView[RENDERER_FACTORY])!;
+    devMode && assertDefined(lView[RENDERER_FACTORY], 'RendererFactory is required');
+    lView[RENDERER] = (renderer || parentLView && parentLView[RENDERER])!;
+    devMode && assertDefined(lView[RENDERER], 'Renderer is required');
+    lView[SANITIZER] = sanitizer || parentLView && parentLView[SANITIZER] || null!;
+    lView[INJECTOR as any] = injector || parentLView && parentLView[INJECTOR] || null;
+    lView[T_HOST] = tHostNode;
+    lView[ID] = getUniqueLViewId();
+    lView[EMBEDDED_VIEW_INJECTOR as any] = embeddedViewInjector;
+    devMode &&
+        assertEqual(
+            tView.type == TViewType.Embedded ? parentLView !== null : true, true,
+            'Embedded views must have parentLView');
+    lView[DECLARATION_COMPONENT_VIEW] =
+        tView.type == TViewType.Embedded ? parentLView![DECLARATION_COMPONENT_VIEW] : lView;
+    devMode && attachLViewDebug(lView);
+    return lView;
+}
 
