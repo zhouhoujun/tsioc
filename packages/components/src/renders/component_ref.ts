@@ -2,18 +2,21 @@ import { Injector, Type, Scopes } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentRef } from '../refs/component';
 import { ElementRef } from '../refs/element';
-import { INJECTOR, LView } from '../interfaces/view';
-import { TContainerNode, TElementContainerNode, TElementNode } from '../interfaces/node';
+import { INJECTOR, LView, TVIEW } from '../interfaces/view';
+import { PropertyAliasValue, TContainerNode, TElementContainerNode, TElementNode } from '../interfaces/node';
 import { RootViewRef, ViewRefImpl } from './view_ref';
 import { ComponentDef } from '../type';
+import { NodeInjector } from './injector';
+import { stringifyForError } from '../util/stringify';
+
+declare let devMode: any;
 
 /**
  * component ref.
  */
 export class ComponentRefImpl<T> extends ComponentRef<T> {
-  private _injector?: Injector;
+
   private _type: Type<T>;
-  private _destroyed = false;
 
   hostView: ViewRefImpl<T>;
   changeDetectorRef: ChangeDetectorRef;
@@ -32,25 +35,34 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
   get type(): Type<T> {
     return this._type;
   }
-  get destroyed(): boolean {
-    return this._destroyed;
-  }
-  
 
-  get injector(): Injector {
-    if (!this._injector) {
-      const tyInj = this._rootLView[INJECTOR]?.platform().getInjector(this.type);
-      this._injector = Injector.create(this.def.class.providers, tyInj, Scopes.static);
+  override setInput(name: string, value: unknown): void {
+    const inputData = this._tNode.inputs;
+    let dataValue: PropertyAliasValue | undefined;
+    if (inputData !== null && (dataValue = inputData[name])) {
+      const lView = this._rootLView;
+      setInputsForProperty(lView[TVIEW], lView, dataValue, name, value);
+      markDirtyIfOnPush(lView, this._tNode.index);
+    } else {
+      if (devMode) {
+        const cmpNameForError = stringifyForError(this.type);
+        let message =
+          `Can't set value of the '${name}' input on the '${cmpNameForError}' component. `;
+        message += `Make sure that the '${name}' property is annotated with @Input() or a mapped @Input('${name}') exists.`;
+        reportUnknownPropertyError(message);
+      }
     }
-    return this._injector;
   }
 
-  destroy(): void {
+  override get injector(): Injector {
+    return new NodeInjector(this._tNode, this._rootLView);
+  }
+
+  override destroy(): void {
     this.hostView.destroy();
-    this.injector?.destroy();
   }
 
-  onDestroy(callback: () => void): void {
+  override onDestroy(callback: () => void): void {
     this.hostView.onDestroy(callback);
   }
 }

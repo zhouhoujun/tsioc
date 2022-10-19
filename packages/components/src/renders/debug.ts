@@ -1,5 +1,7 @@
+import { Injector } from '@tsdi/ioc';
 import { LContainer } from '../interfaces/container';
-import { LView, TView } from '../interfaces/view';
+import { Renderer, RendererFactory } from '../interfaces/renderer';
+import { CHILD_HEAD, CHILD_TAIL, CLEANUP, DebugNode, DECLARATION_VIEW, FLAGS, HEADER_OFFSET, ID, INJECTOR, LView, LViewDebugRange, LViewFlags, NEXT, QUERIES, RENDERER, RENDERER_FACTORY, SANITIZER, TVIEW, TView, T_HOST } from '../interfaces/view';
 
 
 
@@ -56,7 +58,7 @@ export class LViewDebug<T = unknown> implements ILViewDebug<T> {
     get template(): string {
         return (this.tView as any as { template_: string }).template_;
     }
-    get tView(): ITView {
+    get tView(): TView {
         return this._raw_lView[TVIEW];
     }
     get cleanup(): any[] | null {

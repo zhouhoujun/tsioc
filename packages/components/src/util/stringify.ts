@@ -47,8 +47,30 @@ export function stringify(token: any): string {
  * @param after after string.
  * @returns concatenated string.
  */
-export function concatStringsWithSpace(before: string|null, after: string|null): string {
+export function concatStringsWithSpace(before: string | null, after: string | null): string {
   return (before == null || before === '') ?
-      (after === null ? '' : after) :
-      ((after == null || after === '') ? before : before + ' ' + after);
+    (after === null ? '' : after) :
+    ((after == null || after === '') ? before : before + ' ' + after);
+}
+
+
+export function renderStringify(value: any): string {
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  return String(value);
+}
+
+
+/**
+ * Used to stringify a value so that it can be displayed in an error message.
+ * Important! This function contains a megamorphic read and should only be
+ * used for error messages.
+ */
+export function stringifyForError(value: any): string {
+  if (typeof value === 'function') return value.name || value.toString();
+  if (typeof value === 'object' && value != null && typeof value.type === 'function') {
+    return value.type.name || value.type.toString();
+  }
+
+  return renderStringify(value);
 }

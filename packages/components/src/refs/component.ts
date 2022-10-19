@@ -25,6 +25,17 @@ export abstract class ComponentRef<C = any> {
     * get target def.
     */
     abstract get def(): ComponentDef<C>;
+
+    /**
+     * Updates a specified input name to a new value. Using this method will properly mark for check
+     * component using the `OnPush` change detection strategy. It will also assure that the
+     * `OnChanges` lifecycle hook runs when a dynamically created component is change-detected.
+     *
+     * @param name The name of an input.
+     * @param value The new value of an input.
+     */
+    abstract setInput(name: string, value: unknown): void;
+
     /**
      * The host or anchor element for this component instance.
      */
@@ -50,8 +61,7 @@ export abstract class ComponentRef<C = any> {
      * The change detector for this component instance.
      */
     abstract get changeDetectorRef(): ChangeDetectorRef;
-
-    abstract get destroyed(): boolean;
+    
     /**
     * destroy this.
     */

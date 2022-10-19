@@ -1,5 +1,5 @@
-import { Type, TypeDef } from '@tsdi/ioc';
-import { TView } from './interfaces/view';
+import { Injector, ProviderType, Type, TypeDef } from '@tsdi/ioc';
+import { SchemaMetadata, TView } from './interfaces/view';
 import { CssSelectorList, VAttributes, VConstantsOrFactory } from './interfaces/node';
 
 /**
@@ -89,6 +89,19 @@ export interface AnnotationDef<T = any> extends TypeDef<T> {
 }
 
 
+export interface DirectiveDefFeature {
+    <T>(directiveDef: DirectiveDef<T>): void;
+    /**
+     * Marks a feature as something that {@link InheritDefinitionFeature} will execute
+     * during inheritance.
+     *
+     * NOTE: DO NOT SET IN ROOT OF MODULE! Doing so will result in tree-shakers/bundlers
+     * identifying the change as a side effect, and the feature will be included in
+     * every bundle.
+     */
+    inherit?: true;
+}
+
 /**
  * Runtime link information for Directives.
  *
@@ -114,19 +127,19 @@ export interface DirectiveDef<T = any> extends AnnotationDef<T> {
     /**
      * Function to create and refresh content queries associated with a given directive.
      */
-    contentQueries?: ContentQueriesFunction<T>;
+    contentQueries: ContentQueriesFunction<T> | null;
 
     /**
      * Query-related instructions for a directive. Note that while directives don't have a
      * view and as such view queries won't necessarily do anything, there might be
      * components that extend the directive.
      */
-    viewQuery?: ViewQueriesFunction<T>;
+    viewQuery: ViewQueriesFunction<T> | null;
 
     /**
      * Refreshes host bindings on the associated directive.
      */
-    readonly hostBindings?: HostBindingsFunction<T>;
+    readonly hostBindings: HostBindingsFunction<T> | null;
 
     /**
      * The number of bindings in this directive `hostBindings` (including pure fn bindings).
@@ -172,14 +185,40 @@ export interface DirectiveDef<T = any> extends AnnotationDef<T> {
     /** Token representing the directive. Used by DI. */
     readonly type: Type<T>;
 
+    /** Function that resolves providers and publishes them into the DI system. */
+    providersResolver:
+    (<U extends T>(def: DirectiveDef<U>, processProvidersFn?: (providers: ProviderType[]) => ProviderType[]) =>
+        void) | null;
+
+
     /** The selectors that will be used to match nodes to this directive. */
     readonly selectors: CssSelectorList;
+
+    /**
+     * Name under which the directive is exported (for use with local references in template)
+     */
+    readonly exportAs: string[] | null;
+
+    /**
+     * Whether this directive (or component) is standalone.
+     */
+    readonly standalone: boolean;
 
     /**
      * Factory function used to create a new directive instance. Will be null initially.
      * Populated when the factory is first requested by directive instantiation logic.
      */
-    readonly factory?: FactoryFn<T>;
+    readonly factory: FactoryFn<T> | null;
+
+    /**
+     * The features applied to this directive
+     */
+    readonly features: DirectiveDefFeature[] | null;
+
+    setInput:
+    (<U extends T>(
+        this: DirectiveDef<U>, instance: U, value: any, publicName: string,
+        privateName: string) => void) | null;
 
 }
 
@@ -229,7 +268,7 @@ export interface ComponentDef<T = any> extends DirectiveDef<T> {
     readonly template: ComponentTemplate<T>;
 
     /** Constants associated with the component's view. */
-    readonly consts?: VConstantsOrFactory;
+    readonly consts: VConstantsOrFactory | null;
 
     /**
      * An array of `v-content[selector]` values that were found in the template.
@@ -242,9 +281,27 @@ export interface ComponentDef<T = any> extends DirectiveDef<T> {
     readonly styles: string[];
 
     /**
+     * The number of nodes, local refs, and pipes in this component template.
+     *
+     * Used to calculate the length of the component's LView array, so we
+     * can pre-fill the array and set the binding start index.
+     */
+    // TODO(kara): remove queries from this count
+    readonly decls: number;
+
+    /**
+     * The number of bindings in this component template (including pure fn bindings).
+     *
+     * Used to calculate the length of the component's LView array, so we
+     * can pre-fill the array and set the host binding start index.
+     */
+    readonly vars: number;
+
+
+    /**
      * Query-related instructions for a component.
      */
-    viewQuery?: ViewQueriesFunction<T>;
+    viewQuery: ViewQueriesFunction<T> | null;
 
     /**
      * The view encapsulation type, which determines how styles are applied to
@@ -272,7 +329,7 @@ export interface ComponentDef<T = any> extends DirectiveDef<T> {
      * The property is either an array of `DirectiveDef`s or a function which returns the array of
      * `DirectiveDef`s. The function is necessary to be able to support forward declarations.
      */
-    directiveDefs?: DirectiveDefListOrFactory;
+    directiveDefs: DirectiveDefListOrFactory | null;
 
     /**
      * Registry of pipes that may be found in this view.
@@ -280,13 +337,29 @@ export interface ComponentDef<T = any> extends DirectiveDef<T> {
      * The property is either an array of `PipeDefs`s or a function which returns the array of
      * `PipeDefs`s. The function is necessary to be able to support forward declarations.
      */
-    pipeDefs?: PipeDefListOrFactory;
+    pipeDefs: PipeDefListOrFactory | null;
 
     /**
-     * runtime uses this place to store the computed virtual view for the component. This gets filled on
+     * Unfiltered list of all dependencies of a component, or `null` if none.
+     */
+    dependencies: Type[] | null;
+
+    /**
+     * The set of schemas that declare elements to be allowed in the component's template.
+     */
+    schemas: SchemaMetadata[] | null;
+
+    /**
+     * Ivy runtime uses this place to store the computed tView for the component. This gets filled on
      * the first run of component.
      */
-    view?: TView;
+    tView: TView | null;
+
+    /**
+     * A function added by the {@link ɵɵStandaloneFeature} and used by the framework to create
+     * standalone injectors.
+     */
+    getStandaloneInjector: ((parentInjector: Injector) => Injector | null) | null;
 
 }
 

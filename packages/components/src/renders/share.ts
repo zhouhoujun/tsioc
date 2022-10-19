@@ -5,11 +5,11 @@ import { CONTAINER_HEADER_OFFSET, LContainer } from '../interfaces/container';
 import { LContext } from '../interfaces/context';
 import { IComment, IElement } from '../interfaces/dom';
 import { getUniqueLViewId } from '../interfaces/lview';
-import { TNode, TNodeProviderIndexes } from '../interfaces/node';
+import { PropertyAliasValue, TNode, TNodeProviderIndexes } from '../interfaces/node';
 import { Renderer, RendererFactory } from '../interfaces/renderer';
 import { CLEANUP, CONTEXT, DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, EMBEDDED_VIEW_INJECTOR, FLAGS, HEADER_OFFSET, HOST, ID, InitPhaseState, INJECTOR, LView, LViewFlags, PARENT, RENDERER, RENDERER_FACTORY, RootContext, SANITIZER, TVIEW, TView, TViewType, T_HOST } from '../interfaces/view';
 import { ComponentTemplate, DirectiveDef, RenderFlags } from '../type';
-import { assertDefined, assertEqual, throwError } from '../util/assert';
+import { assertDefined, assertEqual, assertIndexInRange, throwError } from '../util/assert';
 import { isCreationMode, resetPreOrderHookFlags, updateTransplantedViewCount } from '../util/view';
 import { assertLView, assertTNodeForLView } from './assert';
 import { attachLContainerDebug, attachLViewDebug, cloneToLViewFromTViewBlueprint } from './debug';
@@ -503,4 +503,30 @@ export function handleError(lView: LView, error: any): void {
     const injector = lView[INJECTOR];
     const errorHandler = injector ? injector.get(ExecptionHandler, null) : null;
     errorHandler && errorHandler.handleError(error);
+}
+
+
+/**
+ * Set the inputs of directives at the current node to corresponding value.
+ *
+ * @param tView The current TView
+ * @param lView the `LView` which contains the directives.
+ * @param inputs mapping between the public "input" name and privately-known,
+ *        possibly minified, property names to write to.
+ * @param value Value to set.
+ */
+ export function setInputsForProperty(
+    tView: TView, lView: LView, inputs: PropertyAliasValue, publicName: string, value: any): void {
+  for (let i = 0; i < inputs.length;) {
+    const index = inputs[i++] as number;
+    const privateName = inputs[i++] as string;
+    const instance = lView[index];
+    devMode && assertIndexInRange(lView, index);
+    const def = tView.data[index] as DirectiveDef<any>;
+    if (def.setInput !== null) {
+      def.setInput!(instance, value, publicName, privateName);
+    } else {
+      instance[privateName] = value;
+    }
+  }
 }

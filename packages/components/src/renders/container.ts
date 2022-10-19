@@ -15,6 +15,7 @@ import { assertDefined, assertEqual, assertGreaterThan, assertLessThan, throwErr
 import { getNativeByTNode, unwrapRNode, viewAttachedToContainer } from '../util/view';
 import { assertTNodeType } from './assert';
 import { createElementRef } from './element';
+import { NodeInjector } from './injector';
 import { addViewToContainer, destroyLView, getBeforeNodeForView, insertView } from './manipulation';
 import { createLContainer } from './share';
 import { ViewRefImpl } from './view_ref';
