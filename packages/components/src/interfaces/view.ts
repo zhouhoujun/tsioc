@@ -1,7 +1,7 @@
 import { Injector, Token, Type } from '@tsdi/ioc';
 import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, ViewQueriesFunction } from '../type';
 import { LContainer } from './container';
-import { IElement } from './dom';
+import { IComment, IElement } from './dom';
 import { LQueries, TQueries } from './query';
 import { TNode, TConstants } from './node';
 import { Renderer, RendererFactory } from './renderer';
@@ -30,6 +30,14 @@ export const QUERIES = 19;
 export const ID = 20;
 export const EMBEDDED_VIEW_INJECTOR = 21;
 
+/**
+ * Size of LView's header. Necessary to adjust for it when setting slots.
+ *
+ * IMPORTANT: `HEADER_OFFSET` should only be referred to the in the `ɵɵ*` instructions to translate
+ * instruction index into `LView` index. All other indexes should be in the `LView` index space and
+ * there should be no need to refer to `HEADER_OFFSET` anywhere else.
+ */
+export const HEADER_OFFSET = 22;
 
 /**
  * `LView` stores all of the information needed to process the instructions as
@@ -41,7 +49,15 @@ export const EMBEDDED_VIEW_INJECTOR = 21;
  * Keeping separate state for each view facilities view insertion / deletion, so we
  * don't have to edit the data array based on which views are present.
  */
-export interface LView extends Array<any> {
+export interface LView<T = unknown> extends Array<any> {
+    /**
+     * Human readable representation of the `LView`.
+     *
+     * NOTE: This property only exists if `ngDevMode` is set to `true` and it is not present in
+     * production. Its presence is purely to help debug issue in development, and should not be relied
+     * on in production application.
+     */
+    debug?: LViewDebug;
 
     /**
      * The node into which this `LView` is inserted.
@@ -49,13 +65,15 @@ export interface LView extends Array<any> {
     [HOST]: IElement | null;
 
     /**
-     * Store the `VNode` of the location where the current `LView` is inserted into.
+     * The static data for this view. We need a reference to this so we can easily walk up the
+     * node tree in DI and get the TView.data array associated with a node (where the
+     * directive defs are stored).
      */
-    [T_HOST]: TNode | null;
-
     readonly [TVIEW]: TView;
 
+    /** Flags for this view. See LViewFlags for more info. */
     [FLAGS]: LViewFlags;
+
     /**
      * This may store an {@link LView} or {@link LContainer}.
      *
@@ -66,6 +84,7 @@ export interface LView extends Array<any> {
      * `LContainer` - The current view is part of a container, and is an embedded view.
      */
     [PARENT]: LView | LContainer | null;
+
     /**
      *
      * The next sibling LView or LContainer.
@@ -82,7 +101,60 @@ export interface LView extends Array<any> {
      */
     [QUERIES]: LQueries | null;
 
-    [CONTEXT]: RootContext | any | null;
+    /**
+     * Store the `TNode` of the location where the current `LView` is inserted into.
+     *
+     * Given:
+     * ```
+     * <div>
+     *   <ng-template><span></span></ng-template>
+     * </div>
+     * ```
+     *
+     * We end up with two `TView`s.
+     * - `parent` `TView` which contains `<div><!-- anchor --></div>`
+     * - `child` `TView` which contains `<span></span>`
+     *
+     * Typically the `child` is inserted into the declaration location of the `parent`, but it can be
+     * inserted anywhere. Because it can be inserted anywhere it is not possible to store the
+     * insertion information in the `TView` and instead we must store it in the `LView[T_HOST]`.
+     *
+     * So to determine where is our insertion parent we would execute:
+     * ```
+     * const parentLView = lView[PARENT];
+     * const parentTNode = lView[T_HOST];
+     * const insertionParent = parentLView[parentTNode.index];
+     * ```
+     *
+     *
+     * If `null`, this is the root view of an application (root component is in this view) and it has
+     * no parents.
+     */
+    [T_HOST]: TNode | null;
+
+
+    /**
+     * When a view is destroyed, listeners need to be released and outputs need to be
+     * unsubscribed. This context array stores both listener functions wrapped with
+     * their context and output subscription instances for a particular view.
+     *
+     * These change per LView instance, so they cannot be stored on TView. Instead,
+     * TView.cleanup saves an index to the necessary context in this array.
+     *
+     * After `LView` is created it is possible to attach additional instance specific functions at the
+     * end of the `lView[CLEANUP]` because we know that no more `T` level cleanup functions will be
+     * added here.
+     */
+    [CLEANUP]: any[] | null;
+
+    /**
+     * - For dynamic views, this is the context with which to render the template (e.g.
+     *   `NgForContext`), or `{}` if not defined explicitly.
+     * - For root view of the root component it's a reference to the component instance itself.
+     * - For components, the context is a reference to the component instance itself.
+     * - For inline views, the context is null.
+     */
+    [CONTEXT]: T;
 
     /** An optional Module Injector to be used as fall back after Element Injectors are consulted. */
     readonly [INJECTOR]: Injector | null;
@@ -92,6 +164,155 @@ export interface LView extends Array<any> {
 
     /** Renderer to be used for this view. */
     [RENDERER]: Renderer;
+
+    /** An optional custom sanitizer. */
+    // [SANITIZER]: Sanitizer|null;
+
+
+    /**
+   * Reference to the first LView or LContainer beneath this LView in
+   * the hierarchy.
+   *
+   * Necessary to store this so views can traverse through their nested views
+   * to remove listeners and call onDestroy callbacks.
+   */
+    [CHILD_HEAD]: LView | LContainer | null;
+
+    /**
+     * The last LView or LContainer beneath this LView in the hierarchy.
+     *
+     * The tail allows us to quickly add a new state to the end of the view list
+     * without having to propagate starting from the first child.
+     */
+    [CHILD_TAIL]: LView | LContainer | null;
+
+    /**
+     * View where this view's template was declared.
+     *
+     * The template for a dynamically created view may be declared in a different view than
+     * it is inserted. We already track the "insertion view" (view where the template was
+     * inserted) in LView[PARENT], but we also need access to the "declaration view"
+     * (view where the template was declared). Otherwise, we wouldn't be able to call the
+     * view's template function with the proper contexts. Context should be inherited from
+     * the declaration view tree, not the insertion view tree.
+     *
+     * Example (AppComponent template):
+     *
+     * <ng-template #foo></ng-template>       <-- declared here -->
+     * <some-comp [tpl]="foo"></some-comp>    <-- inserted inside this component -->
+     *
+     * The <ng-template> above is declared in the AppComponent template, but it will be passed into
+     * SomeComp and inserted there. In this case, the declaration view would be the AppComponent,
+     * but the insertion view would be SomeComp. When we are removing views, we would want to
+     * traverse through the insertion view to clean up listeners. When we are calling the
+     * template function during change detection, we need the declaration view to get inherited
+     * context.
+     */
+    [DECLARATION_VIEW]: LView | null;
+
+
+    /**
+     * Points to the declaration component view, used to track transplanted `LView`s.
+     *
+     * See: `DECLARATION_VIEW` which points to the actual `LView` where it was declared, whereas
+     * `DECLARATION_COMPONENT_VIEW` points to the component which may not be same as
+     * `DECLARATION_VIEW`.
+     *
+     * Example:
+     * ```
+     * <#VIEW #myComp>
+     *  <div *ngIf="true">
+     *   <ng-template #myTmpl>...</ng-template>
+     *  </div>
+     * </#VIEW>
+     * ```
+     * In the above case `DECLARATION_VIEW` for `myTmpl` points to the `LView` of `ngIf` whereas
+     * `DECLARATION_COMPONENT_VIEW` points to `LView` of the `myComp` which owns the template.
+     *
+     * The reason for this is that all embedded views are always check-always whereas the component
+     * view can be check-always or on-push. When we have a transplanted view it is important to
+     * determine if we have transplanted a view from check-always declaration to on-push insertion
+     * point. In such a case the transplanted view needs to be added to the `LContainer` in the
+     * declared `LView` and CD during the declared view CD (in addition to the CD at the insertion
+     * point.) (Any transplanted views which are intra Component are of no interest because the CD
+     * strategy of declaration and insertion will always be the same, because it is the same
+     * component.)
+     *
+     * Queries already track moved views in `LView[DECLARATION_LCONTAINER]` and
+     * `LContainer[MOVED_VIEWS]`. However the queries also track `LView`s which moved within the same
+     * component `LView`. Transplanted views are a subset of moved views, and we use
+     * `DECLARATION_COMPONENT_VIEW` to differentiate them. As in this example.
+     *
+     * Example showing intra component `LView` movement.
+     * ```
+     * <#VIEW #myComp>
+     *   <div *ngIf="condition; then thenBlock else elseBlock"></div>
+     *   <ng-template #thenBlock>Content to render when condition is true.</ng-template>
+     *   <ng-template #elseBlock>Content to render when condition is false.</ng-template>
+     * </#VIEW>
+     * ```
+     * The `thenBlock` and `elseBlock` is moved but not transplanted.
+     *
+     * Example showing inter component `LView` movement (transplanted view).
+     * ```
+     * <#VIEW #myComp>
+     *   <ng-template #myTmpl>...</ng-template>
+     *   <insertion-component [template]="myTmpl"></insertion-component>
+     * </#VIEW>
+     * ```
+     * In the above example `myTmpl` is passed into a different component. If `insertion-component`
+     * instantiates `myTmpl` and `insertion-component` is on-push then the `LContainer` needs to be
+     * marked as containing transplanted views and those views need to be CD as part of the
+     * declaration CD.
+     *
+     *
+     * When change detection runs, it iterates over `[MOVED_VIEWS]` and CDs any child `LView`s where
+     * the `DECLARATION_COMPONENT_VIEW` of the current component and the child `LView` does not match
+     * (it has been transplanted across components.)
+     *
+     * Note: `[DECLARATION_COMPONENT_VIEW]` points to itself if the LView is a component view (the
+     *       simplest / most common case).
+     *
+     * see also:
+     *   - https://hackmd.io/@mhevery/rJUJsvv9H write up of the problem
+     *   - `LContainer[HAS_TRANSPLANTED_VIEWS]` which marks which `LContainer` has transplanted views.
+     *   - `LContainer[TRANSPLANT_HEAD]` and `LContainer[TRANSPLANT_TAIL]` storage for transplanted
+     *   - `LView[DECLARATION_LCONTAINER]` similar problem for queries
+     *   - `LContainer[MOVED_VIEWS]` similar problem for queries
+     */
+    [DECLARATION_COMPONENT_VIEW]: LView;
+
+    /**
+     * A declaration point of embedded views (ones instantiated based on the content of a
+     * <ng-template>), null for other types of views.
+     *
+     * We need to track all embedded views created from a given declaration point so we can prepare
+     * query matches in a proper order (query matches are ordered based on their declaration point and
+     * _not_ the insertion point).
+     */
+    [DECLARATION_LCONTAINER]: LContainer | null;
+
+    /**
+     * More flags for this view. See PreOrderHookFlags for more info.
+     */
+    [PREORDER_HOOK_FLAGS]: PreOrderHookFlags;
+
+    /**
+     * The number of direct transplanted views which need a refresh or have descendants themselves
+     * that need a refresh but have not marked their ancestors as Dirty. This tells us that during
+     * change detection we should still descend to find those children to refresh, even if the parents
+     * are not `Dirty`/`CheckAlways`.
+     */
+    [TRANSPLANTED_VIEWS_TO_REFRESH]: number;
+
+    /** Unique ID of the view. Used for `__ngContext__` lookups in the `LView` registry. */
+    [ID]: number;
+
+    /**
+     * Optional injector assigned to embedded views that takes
+     * precedence over the element and module injectors.
+     */
+    readonly [EMBEDDED_VIEW_INJECTOR]: Injector | null;
 
 }
 
@@ -154,6 +375,38 @@ export const enum LViewFlags {
 }
 
 /**
+ * Possible states of the init phase:
+ * - 00: OnInit hooks to be run.
+ * - 01: AfterContentInit hooks to be run
+ * - 10: AfterViewInit hooks to be run
+ * - 11: All init hooks have been run
+ */
+export const enum InitPhaseState {
+    OnInitHooksToBeRun = 0b00,
+    AfterContentInitHooksToBeRun = 0b01,
+    AfterViewInitHooksToBeRun = 0b10,
+    InitPhaseCompleted = 0b11,
+}
+
+/** More flags associated with an LView (saved in LView[PREORDER_HOOK_FLAGS]) */
+export const enum PreOrderHookFlags {
+    /**
+       The index of the next pre-order hook to be called in the hooks array, on the first 16
+       bits
+     */
+    IndexOfTheNextPreOrderHookMaskMask = 0b01111111111111111,
+
+    /**
+     * The number of init hooks that have already been called, on the last 16 bits
+     */
+    NumberOfInitHooksCalledIncrementer = 0b010000000000000000,
+    NumberOfInitHooksCalledShift = 16,
+    NumberOfInitHooksCalledMask = 0b11111111111111110000000000000000,
+}
+
+
+
+/**
  * Explicitly marks `TView` as a specific type in `devMode`
  *
  * It is useful to know conceptually what time of `View` we are dealing with when
@@ -182,7 +435,67 @@ export const enum TViewType {
     Embedded = 2,
 }
 
+/**
+ * Stores a set of OpCodes to process `HostBindingsFunction` associated with a current view.
+ *
+ * In order to invoke `HostBindingsFunction` we need:
+ * 1. 'elementIdx`: Index to the element associated with the `HostBindingsFunction`.
+ * 2. 'directiveIdx`: Index to the directive associated with the `HostBindingsFunction`. (This will
+ *    become the context for the `HostBindingsFunction` invocation.)
+ * 3. `bindingRootIdx`: Location where the bindings for the `HostBindingsFunction` start. Internally
+ *    `HostBindingsFunction` binding indexes start from `0` so we need to add `bindingRootIdx` to
+ *    it.
+ * 4. `HostBindingsFunction`: A host binding function to execute.
+ *
+ * The above information needs to be encoded into the `HostBindingOpCodes` in an efficient manner.
+ *
+ * 1. `elementIdx` is encoded into the `HostBindingOpCodes` as `~elementIdx` (so a negative number);
+ * 2. `directiveIdx`
+ * 3. `bindingRootIdx`
+ * 4. `HostBindingsFunction` is passed in as is.
+ *
+ * The `HostBindingOpCodes` array contains:
+ * - negative number to select the element index.
+ * - followed by 1 or more of:
+ *    - a number to select the directive index
+ *    - a number to select the bindingRoot index
+ *    - and a function to invoke.
+ *
+ * ## Example
+ *
+ * ```
+ * const hostBindingOpCodes = [
+ *   ~30,                               // Select element 30
+ *   40, 45, MyDir.ɵdir.hostBindings    // Invoke host bindings on MyDir on element 30;
+ *                                      // directiveIdx = 40; bindingRootIdx = 45;
+ *   50, 55, OtherDir.ɵdir.hostBindings // Invoke host bindings on OtherDire on element 30
+ *                                      // directiveIdx = 50; bindingRootIdx = 55;
+ * ]
+ * ```
+ *
+ * ## Pseudocode
+ * ```
+ * const hostBindingOpCodes = tView.hostBindingOpCodes;
+ * if (hostBindingOpCodes === null) return;
+ * for (let i = 0; i < hostBindingOpCodes.length; i++) {
+ *   const opCode = hostBindingOpCodes[i] as number;
+ *   if (opCode < 0) {
+ *     // Negative numbers are element indexes.
+ *     setSelectedIndex(~opCode);
+ *   } else {
+ *     // Positive numbers are NumberTuple which store bindingRootIndex and directiveIndex.
+ *     const directiveIdx = opCode;
+ *     const bindingRootIndx = hostBindingOpCodes[++i] as number;
+ *     const hostBindingFn = hostBindingOpCodes[++i] as HostBindingsFunction<any>;
+ *     setBindingRootForHostBindings(bindingRootIndx, directiveIdx);
+ *     const context = lView[directiveIdx];
+ *     hostBindingFn(RenderFlags.Update, context);
+ *   }
+ * }
+ * ```
+ */
 export interface HostBindingOpCodes extends Array<number | HostBindingsFunction<any>> {
+    __brand__: 'HostBindingOpCodes';
     debug?: string[];
 }
 
@@ -597,3 +910,253 @@ export type DestroyHookData = (HookEntry | HookData)[];
 export type TData =
     (TNode | PipeDef | DirectiveDef | ComponentDef | number |
         Type | Token | null | string)[];
+
+
+
+
+/**
+ * Human readable version of the `LView`.
+ *
+ * `LView` is a data structure used internally to keep track of views. The `LView` is designed for
+ * efficiency and so at times it is difficult to read or write tests which assert on its values. For
+ * this reason when `ngDevMode` is true we patch a `LView.debug` property which points to
+ * `LViewDebug` for easier debugging and test writing. It is the intent of `LViewDebug` to be used
+ * in tests.
+ */
+export interface LViewDebug<T = unknown> {
+    /**
+     * Flags associated with the `LView` unpacked into a more readable state.
+     *
+     * See `LViewFlags` for the flag meanings.
+     */
+    readonly flags: {
+        initPhaseState: number,
+        creationMode: boolean,
+        firstViewPass: boolean,
+        checkAlways: boolean,
+        dirty: boolean,
+        attached: boolean,
+        destroyed: boolean,
+        isRoot: boolean,
+        indexWithinInitPhase: number,
+    };
+
+    /**
+     * Associated TView
+     */
+    readonly tView: TView;
+
+    /**
+     * Parent view (or container)
+     */
+    readonly parent: LViewDebug | LContainerDebug | null;
+
+    /**
+     * Next sibling to the `LView`.
+     */
+    readonly next: LViewDebug | LContainerDebug | null;
+
+    /**
+     * The context used for evaluation of the `LView`
+     *
+     * (Usually the component)
+     */
+    readonly context: T;
+
+    /**
+     * Hierarchical tree of nodes.
+     */
+    readonly nodes: DebugNode[];
+
+    /**
+     * Template structure (no instance data).
+     * (Shows how TNodes are connected)
+     */
+    readonly template: string;
+
+    /**
+     * HTML representation of the `LView`.
+     *
+     * This is only approximate to actual HTML as child `LView`s are removed.
+     */
+    readonly html: string;
+
+    /**
+     * The host element to which this `LView` is attached.
+     */
+    readonly hostHTML: string | null;
+
+    /**
+     * Child `LView`s
+     */
+    readonly childViews: Array<LViewDebug | LContainerDebug>;
+
+    /**
+     * Sub range of `LView` containing decls (DOM elements).
+     */
+    readonly decls: LViewDebugRange;
+
+    /**
+     * Sub range of `LView` containing vars (bindings).
+     */
+    readonly vars: LViewDebugRange;
+
+    /**
+     * Sub range of `LView` containing expando (used by DI).
+     */
+    readonly expando: LViewDebugRange;
+}
+
+/**
+ * Human readable version of the `LContainer`
+ *
+ * `LContainer` is a data structure used internally to keep track of child views. The `LContainer`
+ * is designed for efficiency and so at times it is difficult to read or write tests which assert on
+ * its values. For this reason when `ngDevMode` is true we patch a `LContainer.debug` property which
+ * points to `LContainerDebug` for easier debugging and test writing. It is the intent of
+ * `LContainerDebug` to be used in tests.
+ */
+export interface LContainerDebug {
+    readonly native: IComment;
+    /**
+     * Child `LView`s.
+     */
+    readonly views: LViewDebug[];
+    readonly parent: LViewDebug | null;
+    readonly movedViews: LView[] | null;
+    readonly host: IElement | IComment | LView;
+    readonly next: LViewDebug | LContainerDebug | null;
+    readonly hasTransplantedViews: boolean;
+}
+
+
+
+/**
+ * `LView` is subdivided to ranges where the actual data is stored. Some of these ranges such as
+ * `decls` and `vars` are known at compile time. Other such as `i18n` and `expando` are runtime only
+ * concepts.
+ */
+export interface LViewDebugRange {
+    /**
+     * The starting index in `LView` where the range begins. (Inclusive)
+     */
+    start: number;
+
+    /**
+     * The ending index in `LView` where the range ends. (Exclusive)
+     */
+    end: number;
+
+    /**
+     * The length of the range
+     */
+    length: number;
+
+    /**
+     * The merged content of the range. `t` contains data from `TView.data` and `l` contains `LView`
+     * data at an index.
+     */
+    content: LViewDebugRangeContent[];
+}
+
+/**
+ * For convenience the static and instance portions of `TView` and `LView` are merged into a single
+ * object in `LViewRange`.
+ */
+export interface LViewDebugRangeContent {
+    /**
+     * Index into original `LView` or `TView.data`.
+     */
+    index: number;
+
+    /**
+     * Value from the `TView.data[index]` location.
+     */
+    t: any;
+
+    /**
+     * Value from the `LView[index]` location.
+     */
+    l: any;
+}
+
+
+/**
+ * A logical node which comprise into `LView`s.
+ *
+ */
+export interface DebugNode {
+    /**
+     * HTML representation of the node.
+     */
+    html: string | null;
+
+    /**
+     * Associated `TNode`
+     */
+    tNode: TNode;
+
+    /**
+     * Human readable node type.
+     */
+    type: string;
+
+    /**
+     * DOM native node.
+     */
+    native: Node;
+
+    /**
+     * Child nodes
+     */
+    children: DebugNode[];
+
+    /**
+     * A list of Component/Directive types which need to be instantiated an this location.
+     */
+    factories: Type<unknown>[];
+
+    /**
+     * A list of Component/Directive instances which were instantiated an this location.
+     */
+    instances: unknown[];
+
+    /**
+     * NodeInjector information.
+     */
+    injector: NodeInjectorDebug;
+
+    /**
+     * Injector resolution path.
+     */
+    injectorResolutionPath: any;
+}
+
+export interface NodeInjectorDebug {
+    /**
+     * Instance bloom. Does the current injector have a provider with a given bloom mask.
+     */
+    bloom: string;
+
+
+    /**
+     * Cumulative bloom. Do any of the above injectors have a provider with a given bloom mask.
+     */
+    cumulativeBloom: string;
+
+    /**
+     * A list of providers associated with this injector.
+     */
+    providers: (Type<unknown> | DirectiveDef<unknown> | ComponentDef<unknown>)[];
+
+    /**
+     * A list of providers associated with this injector visible to the view of the component only.
+     */
+    viewProviders: Type<unknown>[];
+
+
+    /**
+     * Location of the parent `TNode`.
+     */
+    parentInjectorIndex: number;
+}

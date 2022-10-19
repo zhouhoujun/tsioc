@@ -68,6 +68,19 @@ export function assertIndexInRange(arr: any[], index: number) {
     }
 }
 
+export function assertSame<T>(actual: T, expected: T, msg: string): asserts actual is T {
+    if (!(actual === expected)) {
+        throwError(msg, actual, expected, '===');
+    }
+}
+
+export function assertNotSame<T>(actual: T, expected: T, msg: string) {
+    if (!(actual !== expected)) {
+        throwError(msg, actual, expected, '!==');
+    }
+}
+
+
 export function assertLessThan<T>(actual: T, expected: T, msg: string): asserts actual is T {
     if (!(actual < expected)) {
         throwError(msg, actual, expected, '<');

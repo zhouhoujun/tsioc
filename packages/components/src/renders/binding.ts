@@ -1,6 +1,20 @@
 import { LView } from '../interfaces/view';
+import { assertIndexInRange, assertLessThan, assertNotSame } from '../util/assert';
+import { devModeEqual } from '../util/dev';
+import { getExpressionChangedErrorDetails, throwErrorIfNoChangesMode } from './errors';
+import { isInCheckNoChangesMode } from './share';
 
 declare let devMode: any;
+
+export interface NO_CHANGE {
+    // This is a brand that ensures that this type can never match anything else
+    __brand__: 'NO_CHANGE';
+}
+
+/** A special value which designates that a value has not changed. */
+export const NO_CHANGE: NO_CHANGE =
+    (typeof devMode === 'undefined' || devMode) ? { __brand__: 'NO_CHANGE' } : ({} as NO_CHANGE);
+
 
 /** Updates binding and returns the value. */
 export function updateBinding(lView: LView, bindingIndex: number, value: any): any {
@@ -10,9 +24,9 @@ export function updateBinding(lView: LView, bindingIndex: number, value: any): a
 
 /** Gets the current binding value. */
 export function getBinding(lView: LView, bindingIndex: number): any {
-    // devMode && assertIndexInRange(lView, bindingIndex);
-    // devMode &&
-    //     assertNotSame(lView[bindingIndex], NO_CHANGE, 'Stored value should never be NO_CHANGE.');
+    devMode && assertIndexInRange(lView, bindingIndex);
+    devMode &&
+        assertNotSame(lView[bindingIndex], NO_CHANGE, 'Stored value should never be NO_CHANGE.');
     return lView[bindingIndex];
 }
 
@@ -30,30 +44,30 @@ export function getBinding(lView: LView, bindingIndex: number): any {
  *          `CheckNoChangesMode`)
  */
 export function bindingUpdated(lView: LView, bindingIndex: number, value: any): boolean {
-    // devMode && assertNotSame(value, NO_CHANGE, 'Incoming value should never be NO_CHANGE.');
-    // devMode &&
-    //     assertLessThan(bindingIndex, lView.length, `Slot should have been initialized to NO_CHANGE`);
+    devMode && assertNotSame(value, NO_CHANGE, 'Incoming value should never be NO_CHANGE.');
+    devMode &&
+        assertLessThan(bindingIndex, lView.length, `Slot should have been initialized to NO_CHANGE`);
     const oldValue = lView[bindingIndex];
 
     if (Object.is(oldValue, value)) {
         return false;
     } else {
-        // if (devMode && isInCheckNoChangesMode()) {
-        //     // View engine didn't report undefined values as changed on the first checkNoChanges pass
-        //     // (before the change detection was run).
-        //     const oldValueToCompare = oldValue !== NO_CHANGE ? oldValue : undefined;
-        //     if (!devModeEqual(oldValueToCompare, value)) {
-        //         const details =
-        //             getExpressionChangedErrorDetails(lView, bindingIndex, oldValueToCompare, value);
-        //         throwErrorIfNoChangesMode(
-        //             oldValue === NO_CHANGE, details.oldValue, details.newValue, details.propName);
-        //     }
-        //     // There was a change, but the `devModeEqual` decided that the change is exempt from an error.
-        //     // For this reason we exit as if no change. The early exit is needed to prevent the changed
-        //     // value to be written into `LView` (If we would write the new value that we would not see it
-        //     // as change on next CD.)
-        //     return false;
-        // }
+        if (devMode && isInCheckNoChangesMode()) {
+            // View engine didn't report undefined values as changed on the first checkNoChanges pass
+            // (before the change detection was run).
+            const oldValueToCompare = oldValue !== NO_CHANGE ? oldValue : undefined;
+            if (!devModeEqual(oldValueToCompare, value)) {
+                const details =
+                    getExpressionChangedErrorDetails(lView, bindingIndex, oldValueToCompare, value);
+                throwErrorIfNoChangesMode(
+                    oldValue === NO_CHANGE, details.oldValue, details.newValue, details.propName);
+            }
+            // There was a change, but the `devModeEqual` decided that the change is exempt from an error.
+            // For this reason we exit as if no change. The early exit is needed to prevent the changed
+            // value to be written into `LView` (If we would write the new value that we would not see it
+            // as change on next CD.)
+            return false;
+        }
         lView[bindingIndex] = value;
         return true;
     }

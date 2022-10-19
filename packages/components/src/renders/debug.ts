@@ -1,3 +1,4 @@
+import { LContainer } from '../interfaces/container';
 import { LView, TView } from '../interfaces/view';
 
 
@@ -6,6 +7,9 @@ export function attachLViewDebug(lView: LView) {
     attachDebugObject(lView, new LViewDebug(lView));
 }
 
+export function attachLContainerDebug(lContainer: LContainer) {
+    attachDebugObject(lContainer, new LContainerDebug(lContainer));
+}
 
 export class LViewDebug<T = unknown> implements ILViewDebug<T> {
     constructor(private readonly _raw_lView: LView<T>) { }
