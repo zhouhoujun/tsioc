@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, Message, RedirectTransportStatus, TransportStrategy, States } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, isFunction, TypeExecption } from '@tsdi/ioc';
+import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, Message, RedirectStatus, Status, mths, SeeOtherStatus, MovedPermanentlyStatus, FoundStatus } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
 import { hdr } from '../consts';
@@ -8,13 +8,12 @@ import { hdr } from '../consts';
 @Injectable()
 export class AssetRedirector extends Redirector {
 
-    redirect<T>(ctx: EndpointContext, req: Message, status: number | string, headers: ResHeaders): Observable<T> {
+    redirect<T>(ctx: EndpointContext, req: Message, status: RedirectStatus, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            const tst = ctx.transport as TransportStrategy & RedirectTransportStatus;
-            if (!isFunction(tst.redirectBodify)) return observer.error(new BadRequestExecption('not extends RestfulStatus.'))
-            const rdstatus = ctx.getValueify(RedirectStauts, () => new RedirectStauts());
+            const rdstatus = ctx.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
             const location = headers.get(hdr.LOCATION) as string;
+
 
             // HTTP fetch step 5.3
             let locationURL = null;
@@ -25,7 +24,7 @@ export class AssetRedirector extends Redirector {
                 // do not throw when options.redirect == manual
                 // let the user extract the errorneous redirect URL
                 if (rdstatus.redirect !== 'manual') {
-                    observer.error(new BadRequestExecption(`uri requested responds with an invalid redirect URL: ${location}`, tst.toCode(States.BadRequest)));
+                    observer.error(new BadRequestExecption(`uri requested responds with an invalid redirect URL: ${location}`));
                 }
             }
 
@@ -33,7 +32,7 @@ export class AssetRedirector extends Redirector {
             // HTTP fetch step 5.5
             switch (rdstatus.redirect) {
                 case 'error':
-                    observer.error(new BadRequestExecption(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`, tst.toCode(States.BadRequest)));
+                    observer.error(new BadRequestExecption(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`));
                     break;
                 case 'manual':
                     // Nothing to do
@@ -46,7 +45,7 @@ export class AssetRedirector extends Redirector {
 
                     // HTTP-redirect fetch step 5
                     if (rdstatus.counter >= rdstatus.follow) {
-                        observer.error(new BadRequestExecption(`maximum redirect reached at: ${req.url}`, tst.toCode(States.BadRequest)));
+                        observer.error(new BadRequestExecption(`maximum redirect reached at: ${req.url}`));
                         break;
                     }
 
@@ -73,14 +72,14 @@ export class AssetRedirector extends Redirector {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (tst.redirectBodify(status) && req.body && req.body instanceof Readable) {
-                        observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream', tst.toCode(States.BadRequest)));
+                    if (this.redirectBodify(status) && req.body && req.body instanceof Readable) {
+                        observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
                         break;
                     }
 
                     // HTTP-redirect fetch step 11
-                    if (!tst.redirectBodify(status, req.method)) {
-                        method = tst.redirectDefaultMethod() as RequestMethod;
+                    if (!this.redirectBodify(status, req.method)) {
+                        method = this.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
                         reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
                     }
@@ -111,6 +110,16 @@ export class AssetRedirector extends Redirector {
             }
         });
     }
+
+    protected redirectBodify(status: Status, method?: string | undefined): boolean {
+        if (status instanceof SeeOtherStatus) return false;
+        return method ? (status instanceof MovedPermanentlyStatus || status instanceof FoundStatus) && method !== mths.POST : true;
+    }
+
+    protected redirectDefaultMethod(): string {
+        return mths.GET;
+    }
+
 
 }
 
@@ -149,7 +158,7 @@ export function parseReferrerPolicyFromHeader(headers: ResHeaders) {
 
 
 
-export class RedirectStauts {
+export class RedirectState {
     public follow: number;
     public counter: number;
     public redirect: 'manual' | 'error' | 'follow' | '';

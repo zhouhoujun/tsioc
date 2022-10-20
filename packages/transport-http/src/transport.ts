@@ -1,5 +1,12 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { ListenOpts, mths, RedirectTransportStatus, States, TransportStrategy } from '@tsdi/core';
+import {
+    BadGatewayStatus, BadRequestStatus, ForbiddenStatus, FoundStatus,
+    GatewayTimeoutStatus, IncomingHeaders, InternalServerErrorStatus, ListenOpts,
+    MethodNotAllowedStatus, MovedPermanentlyStatus, mths, NoContentStatus, NotFoundStatus,
+    NotImplementedStatus, NotModifiedStatus, OkStatus, PermanentRedirectStatus, RequestTimeoutStatus,
+    ResetContentStatus, ServiceUnavailableStatus, Status, StatusFactory, StatusTypes, TemporaryRedirectStatus,
+    TransportStrategy, UnauthorizedStatus, UnsupportedMediaTypeStatus, UseProxyStatus
+} from '@tsdi/core';
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import * as http from 'http';
@@ -7,23 +14,11 @@ import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 
 @Injectable({ static: true })
-export class HttpTransportStrategy extends TransportStrategy<number> implements RedirectTransportStatus {
+export class HttpTransportStrategy extends TransportStrategy<number> {
     private _protocol = 'http';
 
     get protocol(): string {
         return this._protocol;
-    }
-
-    override isEmpty(status: number): boolean {
-        return emptyStatus[status];
-    }
-
-    override isRedirect(code: number): boolean {
-        return redirectStatus[code];
-    }
-
-    override isRetry(code: number): boolean {
-        return retryStatus[code];
     }
 
     isValidCode(code: number): boolean {
@@ -32,134 +27,6 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
 
     parseCode(code?: string | number | null | undefined): number {
         return isString(code) ? (code ? parseInt(code) : 0) : code ?? 0;
-    }
-
-    fromCode(status: number): States {
-        switch (status) {
-            case HttpStatusCode.Ok:
-                return States.Ok;
-
-            case HttpStatusCode.NoContent:
-                return States.NoContent;
-            case HttpStatusCode.ResetContent:
-                return States.ResetContent;
-            case HttpStatusCode.NotModified:
-                return States.NotModified;
-
-            case HttpStatusCode.Found:
-                return States.Found;
-            case HttpStatusCode.MovedPermanently:
-                return States.MovedPermanently;
-            case HttpStatusCode.SeeOther:
-                return States.SeeOther;
-            case HttpStatusCode.UseProxy:
-                return States.UseProxy;
-            case HttpStatusCode.TemporaryRedirect:
-                return States.TemporaryRedirect;
-            case HttpStatusCode.PermanentRedirect:
-                return States.PermanentRedirect;
-
-            case HttpStatusCode.BadRequest:
-                return States.BadRequest;
-            case HttpStatusCode.Unauthorized:
-                return States.Unauthorized;
-            case HttpStatusCode.Forbidden:
-                return States.Forbidden;
-            case HttpStatusCode.NotFound:
-                return States.NotFound;
-            case HttpStatusCode.MethodNotAllowed:
-                return States.MethodNotAllowed;
-            case HttpStatusCode.RequestTimeout:
-                return States.RequestTimeout;
-            case HttpStatusCode.UnsupportedMediaType:
-                return States.UnsupportedMediaType;
-
-            case HttpStatusCode.InternalServerError:
-                return States.InternalServerError;
-            case HttpStatusCode.NotImplemented:
-                return States.NotImplemented;
-            case HttpStatusCode.BadGateway:
-                return States.BadGateway;
-            case HttpStatusCode.ServiceUnavailable:
-                return States.ServiceUnavailable;
-            case HttpStatusCode.GatewayTimeout:
-                return States.GatewayTimeout;
-            default:
-                if (status >= 500) {
-                    return States.InternalServerError;
-                }
-                return States.None;
-        }
-    }
-
-    toCode(state: States): number {
-        switch (state) {
-            case States.Ok:
-                return HttpStatusCode.Ok;
-
-            case States.NoContent:
-                return HttpStatusCode.NoContent;
-            case States.ResetContent:
-                return HttpStatusCode.ResetContent;
-            case States.NotModified:
-                return HttpStatusCode.NotModified;
-
-            case States.Found:
-                return HttpStatusCode.Found;
-            case States.MovedPermanently:
-                return HttpStatusCode.MovedPermanently;
-            case States.SeeOther:
-                return HttpStatusCode.SeeOther;
-            case States.UseProxy:
-                return HttpStatusCode.UseProxy;
-            case States.TemporaryRedirect:
-                return HttpStatusCode.TemporaryRedirect;
-            case States.PermanentRedirect:
-                return HttpStatusCode.PermanentRedirect;
-
-            case States.BadRequest:
-                return HttpStatusCode.BadRequest;
-            case States.Unauthorized:
-                return HttpStatusCode.Unauthorized;
-            case States.Forbidden:
-                return HttpStatusCode.Forbidden;
-            case States.NotFound:
-                return HttpStatusCode.NotFound;
-            case States.MethodNotAllowed:
-                return HttpStatusCode.MethodNotAllowed;
-            case States.RequestTimeout:
-                return HttpStatusCode.RequestTimeout;
-            case States.UnsupportedMediaType:
-                return HttpStatusCode.UnsupportedMediaType;
-
-            case States.InternalServerError:
-                return HttpStatusCode.InternalServerError;
-            case States.NotImplemented:
-                return HttpStatusCode.NotImplemented;
-            case States.BadGateway:
-                return HttpStatusCode.BadGateway;
-            case States.ServiceUnavailable:
-                return HttpStatusCode.ServiceUnavailable;
-            case States.GatewayTimeout:
-                return HttpStatusCode.GatewayTimeout;
-
-            default:
-                return HttpStatusCode.NotFound;
-
-        }
-    }
-
-    message(status: number): string {
-        return statusMessage[status as HttpStatusCode];
-    }
-
-    redirectBodify(status: string | number, method?: string | undefined): boolean {
-        if (status === HttpStatusCode.SeeOther) return false;
-        return method ? (status === HttpStatusCode.MovedPermanently || status === HttpStatusCode.Found) && method !== mths.POST : true;
-    }
-
-    redirectDefaultMethod(): string {
-        return mths.GET;
     }
 
     isUpdate(req: http.IncomingMessage | http2.Http2ServerRequest): boolean {
@@ -209,6 +76,78 @@ export class HttpTransportStrategy extends TransportStrategy<number> implements 
     }
 
 }
+
+
+@Injectable({ static: true })
+export class HttpStatusFactory extends StatusFactory<number> {
+
+
+    create(type: StatusTypes, statusText?: string | undefined): Status<number> {
+        throw new Error('Method not implemented.');
+    }
+    createByCode(status: number | string | null, statusText?: string | undefined): Status<number> {
+        status = isString(status) ? (status ? parseInt(status) : 0) : status ?? 0;
+        switch (status) {
+            case HttpStatusCode.Ok:
+                return new OkStatus(HttpStatusCode.Ok, statusText ?? statusMessage[HttpStatusCode.Ok]);
+
+            case HttpStatusCode.NoContent:
+                return new NoContentStatus(HttpStatusCode.NoContent, statusText ?? statusMessage[HttpStatusCode.NoContent]);
+            case HttpStatusCode.ResetContent:
+                return new ResetContentStatus(HttpStatusCode.ResetContent, statusText ?? statusMessage[HttpStatusCode.ResetContent]);
+            case HttpStatusCode.NotModified:
+                return new NotModifiedStatus(HttpStatusCode.NotModified, statusText ?? statusMessage[HttpStatusCode.NotModified]);
+
+            case HttpStatusCode.Found:
+                return new FoundStatus(HttpStatusCode.Found, statusText ?? statusMessage[HttpStatusCode.Found]);
+            case HttpStatusCode.MovedPermanently:
+                return new MovedPermanentlyStatus(HttpStatusCode.MovedPermanently, statusText ?? statusMessage[HttpStatusCode.MovedPermanently]);
+            case HttpStatusCode.SeeOther:
+                return new MovedPermanentlyStatus(HttpStatusCode.SeeOther, statusText ?? statusMessage[HttpStatusCode.SeeOther]);
+            case HttpStatusCode.UseProxy:
+                return new UseProxyStatus(HttpStatusCode.UseProxy, statusText ?? statusMessage[HttpStatusCode.UseProxy]);
+            case HttpStatusCode.TemporaryRedirect:
+                return new TemporaryRedirectStatus(HttpStatusCode.TemporaryRedirect, statusText ?? statusMessage[HttpStatusCode.TemporaryRedirect]);
+            case HttpStatusCode.PermanentRedirect:
+                return new PermanentRedirectStatus(HttpStatusCode.PermanentRedirect, statusText ?? statusMessage[HttpStatusCode.PermanentRedirect]);
+
+            case HttpStatusCode.BadRequest:
+                return new BadRequestStatus(HttpStatusCode.BadRequest, statusText ?? statusMessage[HttpStatusCode.BadRequest]);
+            case HttpStatusCode.Unauthorized:
+                return new UnauthorizedStatus(HttpStatusCode.Unauthorized, statusText ?? statusMessage[HttpStatusCode.Unauthorized]);
+            case HttpStatusCode.Forbidden:
+                return new ForbiddenStatus(HttpStatusCode.Forbidden, statusText ?? statusMessage[HttpStatusCode.Forbidden]);
+            case HttpStatusCode.NotFound:
+                return new NotFoundStatus(HttpStatusCode.NotFound, statusText ?? statusMessage[HttpStatusCode.NotFound]);
+            case HttpStatusCode.MethodNotAllowed:
+                return new MethodNotAllowedStatus(HttpStatusCode.MethodNotAllowed, statusText ?? statusMessage[HttpStatusCode.MethodNotAllowed]);
+            case HttpStatusCode.RequestTimeout:
+                return new RequestTimeoutStatus(HttpStatusCode.RequestTimeout, statusText ?? statusMessage[HttpStatusCode.RequestTimeout]);
+            case HttpStatusCode.UnsupportedMediaType:
+                return new UnsupportedMediaTypeStatus(HttpStatusCode.UnsupportedMediaType, statusText ?? statusMessage[HttpStatusCode.UnsupportedMediaType]);
+
+            case HttpStatusCode.InternalServerError:
+                return new InternalServerErrorStatus(HttpStatusCode.InternalServerError, statusText ?? statusMessage[HttpStatusCode.InternalServerError]);
+            case HttpStatusCode.NotImplemented:
+                return new NotImplementedStatus(HttpStatusCode.NotImplemented, statusText ?? statusMessage[HttpStatusCode.NotImplemented]);
+            case HttpStatusCode.BadGateway:
+                return new BadGatewayStatus(HttpStatusCode.BadGateway, statusText ?? statusMessage[HttpStatusCode.BadGateway]);
+            case HttpStatusCode.ServiceUnavailable:
+                return new ServiceUnavailableStatus(HttpStatusCode.ServiceUnavailable, statusText ?? statusMessage[HttpStatusCode.ServiceUnavailable]);
+            case HttpStatusCode.GatewayTimeout:
+                return new GatewayTimeoutStatus(HttpStatusCode.GatewayTimeout, statusText ?? statusMessage[HttpStatusCode.GatewayTimeout]);
+            default:
+                return new Status(status);
+
+        }
+    }
+    createByHeaders(headers: IncomingHeaders): Status<number> {
+        throw new Error('Method not implemented.');
+    }
+
+
+}
+
 
 const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
 

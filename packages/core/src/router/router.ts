@@ -9,7 +9,7 @@ import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } fro
 import { AssetContext, ServerEndpointContext } from '../transport/context';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../transport/execptions';
 import { promisify } from './promisify';
-import { States } from '../transport';
+import { NotFoundStatus } from '../transport';
 
 
 
@@ -199,7 +199,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: ServerEndpointContext): MiddlewareFn | undefined {
-        if (ctx.transport && ctx.state !== States.NotFound) return;
+        if (!(ctx.status instanceof NotFoundStatus)) return;
 
         let url: string;
         if (this.prefix) {

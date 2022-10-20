@@ -3,7 +3,6 @@ import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 import { Endpoint } from './endpoint';
 import { Incoming } from './packet';
-import { TransportStatus } from './status';
 import { TransportEndpoint, TransportOpts } from './transport';
 
 
@@ -70,7 +69,7 @@ export abstract class TransportStrategyOpts {
  * transport strategy.
  */
 @Abstract()
-export abstract class TransportStrategy<T = number | string> extends TransportStatus<T> {
+export abstract class TransportStrategy<T = number | string>  {
     /**
      * protocol name
      */
@@ -102,7 +101,6 @@ export abstract class TransportStrategy<T = number | string> extends TransportSt
     abstract match(protocol: string): boolean;
 
 }
-
 
 
 /**

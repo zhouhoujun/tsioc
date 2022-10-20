@@ -2,7 +2,7 @@
 import {
     EndpointBackend, isArrayBuffer, isBlob, isFormData, ResHeaders, ResponseJsonParseError,
     TransportErrorResponse, TransportEvent, TransportResponse, ClientContext,
-    UnsupportedMediaTypeExecption, TransportRequest, Sender
+    UnsupportedMediaTypeExecption, TransportRequest, Sender, StatusFactory
 } from '@tsdi/core';
 import { Abstract, Injectable, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
@@ -34,8 +34,9 @@ export class TransportBackend implements ClientEndpointBackend<TransportRequest,
             .pipe(
                 mergeMap(async body => {
                     let type = req.responseType;
-                    const headers = ctx.get(ResHeaders);
+                    const factory = ctx.get(StatusFactory);
                     const status = ctx.transport.parseCode(headers.get(hdr.STATUS) ?? headers.get(hdr.STATUS2));
+                    ctx.target.filter().handle(ctx)
                     
                     let statusText: string | undefined;
                     if (type === 'stream' && body instanceof Readable) {

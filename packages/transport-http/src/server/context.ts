@@ -2,7 +2,6 @@ import { MiddlewareLike, mths, Throwable, ServerEndpointContext } from '@tsdi/co
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
-import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { HttpError, HttpInternalServerError } from './../errors';
@@ -100,7 +99,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
      */
     get fresh(): boolean {
         const method = this.methodName;
-        const s = this.status;
+        const s = this.status.status;
 
         // GET or HEAD for weak freshness validation only
         if (mths.GET !== method && mths.HEAD !== method) return false;
@@ -168,30 +167,30 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return true
     }
 
-    get status(): HttpStatusCode {
-        return this.response.statusCode
-    }
+    // get status(): HttpStatusCode {
+    //     return this.response.statusCode
+    // }
 
-    set status(code: HttpStatusCode) {
-        if (this.sent) return;
+    // set status(code: HttpStatusCode) {
+    //     if (this.sent) return;
 
-        assert(Number.isInteger(code), 'status code must be a number');
-        assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
-        this._explicitStatus = true;
-        this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.transport.message(code);
-        if (this.body && this.transport.isEmpty(code)) this.body = null;
-    }
+    //     assert(Number.isInteger(code), 'status code must be a number');
+    //     assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
+    //     this._explicitStatus = true;
+    //     this.response.statusCode = code;
+    //     if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.transport.message(code);
+    //     if (this.body && this.transport.isEmpty(code)) this.body = null;
+    // }
 
-    get statusMessage() {
-        return this.response.statusMessage || this.transport.message(this.status)
-    }
+    // get statusMessage() {
+    //     return this.response.statusMessage || this.transport.message(this.status)
+    // }
 
-    set statusMessage(msg: string) {
-        if (this.request.httpVersionMajor < 2) {
-            this.response.statusMessage = msg
-        }
-    }
+    // set statusMessage(msg: string) {
+    //     if (this.request.httpVersionMajor < 2) {
+    //         this.response.statusMessage = msg
+    //     }
+    // }
 
     protected override onNullBody(): void {
         this._explicitNullBody = true;

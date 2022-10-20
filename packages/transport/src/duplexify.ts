@@ -1,4 +1,4 @@
-import { hasOwn, isFunction } from '@tsdi/ioc';
+import { hasOwn, isFunction, isNil } from '@tsdi/ioc';
 import { Duplex, Readable, Writable, DuplexOptions, finished } from 'stream';
 import { ev } from './consts';
 
@@ -43,10 +43,10 @@ export class Duplexify extends Duplex {
         this.destroyed = false;
 
         // for node <=17
-        if (!hasOwn(this, 'closed')) {
-            (this as any).closed = false;
+        if (isNil((this as Closed).closed)) {
+            (this as Closed).closed = false;
             this.on(ev.CLOSE, () => {
-                (this as any).closed = true;
+                (this as Closed).closed = true;
             })
         }
 
@@ -274,7 +274,7 @@ export class Duplexify extends Duplex {
  * for node <=17
  */
 interface Closed {
-    readonly closed: boolean;
+    closed: boolean;
 }
 
 const noop = () => { };

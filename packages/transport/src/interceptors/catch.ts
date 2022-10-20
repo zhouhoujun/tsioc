@@ -17,7 +17,7 @@ export class CatchInterceptor<TRequest = any, TResponse = any> implements Interc
                     // log error
                     ctx.get(Logger).error(err);
                     // handle error
-                    const filter = ctx.target.filter();
+                    const filter = ctx.target.execptionfilter();
                     const context = createExecptionContext(ctx, err);
                     return from(filter.handle(context, async () => {
                         await context.destroy()

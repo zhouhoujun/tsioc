@@ -1,4 +1,4 @@
-import { Endpoint, EndpointBackend, EndpointContext, Interceptor, mths, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import { EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Interceptor, mths, NEXT, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { TransportContext } from './context';
@@ -18,10 +18,14 @@ export abstract class RespondInterceptor<IInput = any, TOutput = any> implements
 
     constructor() { }
 
-    intercept(req: IInput, next: Endpoint<IInput, TOutput>, ctx: EndpointContext): Observable<TOutput> {
+    intercept(req: IInput, next: Endpoint<IInput, TOutput>, ctx: TransportContext): Observable<TOutput> {
         return next.handle(req, ctx)
             .pipe(
-                mergeMap(res => this.respond(res, ctx))
+                mergeMap(res => {
+                    // this.respond(res, ctx)
+                    const filter = ctx.target.filter()
+                    return filter.handle(ctx, NEXT);
+                })
             )
     }
 
@@ -38,10 +42,10 @@ export class DefaultRespondInterceptor extends RespondInterceptor {
         if (!ctx.writable) return;
 
         let body = ctx.body;
-        const code = ctx.status;
+        const status = ctx.status;
 
         // ignore body
-        if (ctx.transport.isEmpty(code)) {
+        if (ctx.status instanceof EmptyStatus) {
             // strip headers
             ctx.body = null;
             return res.end()
@@ -64,7 +68,7 @@ export class DefaultRespondInterceptor extends RespondInterceptor {
                 return res.end()
             }
 
-            body = ctx.statusMessage || String(code);
+            body = status.statusText || String(status.status);
             body = Buffer.from(body);
             if (!res.headersSent) {
                 ctx.type = 'text';

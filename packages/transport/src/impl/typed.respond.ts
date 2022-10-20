@@ -1,5 +1,5 @@
-import { ExecptionTypedRespond, TransportExecption, AssetContext, States } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { ExecptionTypedRespond, TransportExecption, AssetContext, StatusFactory } from '@tsdi/core';
+import { Execption, Injectable } from '@tsdi/ioc';
 
 @Injectable({ static: true })
 export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
@@ -9,13 +9,9 @@ export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
         } else if (response === 'header') {
             ctx.setHeader(value as Record<string, any>);
         } else if (response === 'response') {
-            if (value instanceof TransportExecption) {
-                ctx.status = value.statusCode;
-                ctx.statusMessage = value.message
-            } else {
-                ctx.status = ctx.transport.toCode(States.InternalServerError);
-                ctx.statusMessage = String(value)
-            }
+            const factory = ctx.get(StatusFactory);
+            ctx.status = (value as TransportExecption).statusCode ? factory.createByCode((value as TransportExecption).statusCode, (value as Execption).message)
+                : factory.create('InternalServerError', (value as Execption).message);
         }
     }
 }

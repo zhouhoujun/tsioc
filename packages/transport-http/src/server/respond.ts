@@ -1,4 +1,4 @@
-import { mths } from '@tsdi/core';
+import { EmptyStatus, mths } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { hdr, isBuffer, isStream, RespondInterceptor, pipeStream } from '@tsdi/transport';
 import { HttpContext, HttpServResponse } from './context';
@@ -12,10 +12,10 @@ export class HttpRespondInterceptor extends RespondInterceptor {
         if (!ctx.writable) return;
 
         let body = ctx.body;
-        const code = ctx.status;
+        const status = ctx.status;
 
         // ignore body
-        if (ctx.transport.isEmpty(code)) {
+        if (status instanceof EmptyStatus) {
             // strip headers
             ctx.body = null;
             return res.end()
@@ -38,9 +38,9 @@ export class HttpRespondInterceptor extends RespondInterceptor {
                 return res.end()
             }
             if (ctx.request.httpVersionMajor >= 2) {
-                body = String(code)
+                body = String(status.status)
             } else {
-                body = ctx.statusMessage || String(code)
+                body = status.statusText || String(status.status)
             }
             body = Buffer.from(body);
             if (!res.headersSent) {

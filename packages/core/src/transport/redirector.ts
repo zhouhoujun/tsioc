@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 import { ResHeaders } from './headers';
 import { Message } from './packet';
+import { RedirectStatus } from './status';
 
 /**
  * transport client redirector.
@@ -16,5 +17,5 @@ export abstract class Redirector {
      * @param status response status
      * @param headers response headers.
      */
-    abstract redirect<T>(ctx: EndpointContext, req: Message, status: number | string, headers: ResHeaders): Observable<T>;
+    abstract redirect<T>(ctx: EndpointContext, req: Message, status: RedirectStatus, headers: ResHeaders): Observable<T>;
 }

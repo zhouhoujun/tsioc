@@ -2,7 +2,7 @@ import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Incoming, Outgoing } from './packet';
 import { TransportEndpoint } from './transport';
 import { TransportStrategy } from './strategy';
-import { States, TransportStatus } from './status';
+import { OkStatus, Status, StatusFactory } from './status';
 
 /**
  * endpoint context.
@@ -15,10 +15,13 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     abstract get target(): TransportEndpoint;
 
     /**
-     * transport.
+     * Get response status.
      */
-    abstract get transport(): TransportStatus;
-
+    abstract get status(): Status;
+    /**
+     * Set response status, defaults to OK.
+     */
+    abstract set status(status: Status);
 
     protected override clear(): void {
         super.clear();
@@ -112,47 +115,48 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
      */
     abstract get length(): number | undefined;
 
-    get state(): States {
-        return this.transport.fromCode(this.status);
-    }
+    // get state(): States {
+    //     return this.transport.fromCode(this.status);
+    // }
 
-    set state(state: States) {
-        this.status = this.transport.toCode(state);
-    }
+    // set state(state: States) {
+    //     this.status = this.transport.toCode(state);
+    // }
 
-    /**
-     * Get response status code.
-     */
-    abstract get status(): number | string;
-    /**
-     * Set response status code, defaults to OK.
-     */
-    abstract set status(status: number | string);
+    // /**
+    //  * Get response status code.
+    //  */
+    // abstract get status(): number | string;
+    // /**
+    //  * Set response status code, defaults to OK.
+    //  */
+    // abstract set status(status: number | string);
 
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    abstract get statusMessage(): string;
-    /**
-     * Set Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    abstract set statusMessage(msg: string);
+    // /**
+    //  * Textual description of response status code, defaults to OK.
+    //  *
+    //  * Do not depend on this.
+    //  */
+    // abstract get statusMessage(): string;
+    // /**
+    //  * Set Textual description of response status code, defaults to OK.
+    //  *
+    //  * Do not depend on this.
+    //  */
+    // abstract set statusMessage(msg: string);
 
     /**
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.status === this.transport.toCode(States.Ok);
+        return this.status instanceof OkStatus;
     }
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status = this.transport.toCode(ok ? States.Ok : States.NotFound)
+        const factory = this.get(StatusFactory);
+        this.status = ok ? factory.create('Ok') : factory.create('NotFound')
     }
 
 

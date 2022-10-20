@@ -1,6 +1,7 @@
 import {
     OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
-    ServerContextOpts, ServerEndpointContext, TransportExecption, RedirectTransportStatus, TransportStrategy, States
+    ServerContextOpts, ServerEndpointContext, TransportExecption, TransportStrategy, FoundStatus,
+    Status, NotFoundStatus, EmptyStatus, NoContentStatus, RedirectStatus
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -20,11 +21,12 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
+    private _status: Status;
 
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, request, response, target, transport, options);
-        this.response.statusCode = transport.toCode(States.NotFound);
         this.originalUrl = request.url?.toString() ?? '';
+        this._status = injector.get(NotFoundStatus);
         this._url = request.url ?? '';
 
         if (this.transport.isAbsoluteUrl(this._url)) {
@@ -35,6 +37,25 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
                 this._url = this._url.slice(0, sidx);
             }
         }
+    }
+
+    get status(): Status {
+        return this._status;
+    }
+
+    set status(status: Status) {
+        if (this.sent) return;
+        this._explicitStatus = true;
+        const chged = this.status !== status;
+        this.status = status;
+        if (chged) {
+            this.onStatusChanged(status);
+        }
+        if (this.body && status instanceof EmptyStatus) this.body = null;
+    }
+
+    protected onStatusChanged(status: Status) {
+
     }
 
     /**
@@ -490,7 +511,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
         // no content
         if (null == val) {
-            if (this.transport.isEmpty(this.status)) this.state = States.NoContent;
+            if (this.status instanceof EmptyStatus && !(this.status instanceof NoContentStatus)) this.status = this.get(NoContentStatus);
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -687,14 +708,10 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        const stat = this.transport as TransportStrategy & RedirectTransportStatus;
-        if (!isFunction(stat.redirectBodify)) {
-            throw new TransportExecption('the status not extends RedirectTransportStatus');
-        }
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!this.transport.isRedirect(this.status)) this.state = States.Found;
+        if (!(this.status instanceof RedirectStatus)) this.status = this.get(FoundStatus);
 
         // html
         if (this.accepts('html')) {

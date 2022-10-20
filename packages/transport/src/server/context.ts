@@ -7,26 +7,26 @@ import { AssetServerContext } from '../asset.ctx';
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    get status(): number | string {
-        return this.response.statusCode
-    }
+    // get status(): number | string {
+    //     return this.response.statusCode
+    // }
 
-    set status(status: number | string) {
-        if (this.sent) return;
-        this._explicitStatus = true;
-        this.response.statusCode = status;
-        if (this.body && this.transport.isEmpty(status)) {
-            this.body = null;
-        }
-    }
+    // set status(status: number | string) {
+    //     if (this.sent) return;
+    //     this._explicitStatus = true;
+    //     this.response.statusCode = status;
+    //     if (this.body && this.transport.isEmpty(status)) {
+    //         this.body = null;
+    //     }
+    // }
 
-    get statusMessage(): string {
-        return this.response.statusMessage ?? this.transport.message(this.status)
-    }
+    // get statusMessage(): string {
+    //     return this.response.statusMessage ?? this.transport.message(this.status)
+    // }
 
-    set statusMessage(msg: string) {
-        this.response.statusMessage = msg;
-    }
+    // set statusMessage(msg: string) {
+    //     this.response.statusMessage = msg;
+    // }
 
     get sent(): boolean {
         return this.response.headersSent;

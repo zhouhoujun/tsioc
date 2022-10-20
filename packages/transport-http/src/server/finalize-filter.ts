@@ -1,6 +1,6 @@
 import {
     BadRequestExecption, ENOENT, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
-    ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption, TransportExecption,
+    ForbiddenExecption, InternalServerExecption, NotFoundExecption, Status, TransportArgumentExecption, TransportExecption,
     TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
@@ -68,7 +68,8 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             // respond
             msg = statusMessage[statusCode]
         }
-        hctx.status = statusCode;
+        
+        hctx.status = new Status(statusCode, msg);
         msg = Buffer.from(msg);
         hctx.length = Buffer.byteLength(msg);
         res.end(msg)

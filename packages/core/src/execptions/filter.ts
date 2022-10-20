@@ -1,11 +1,12 @@
 import { Abstract } from '@tsdi/ioc';
+import { Filter } from '../filter';
 import { ExecptionContext } from './context';
 
 /**
  * execption filter.
  */
 @Abstract()
-export abstract class ExecptionFilter {
+export abstract class ExecptionFilter extends Filter {
     /**
      * handle execption.
      * @param ctx invocation context with execption error.

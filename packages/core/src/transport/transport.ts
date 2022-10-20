@@ -6,6 +6,7 @@ import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
+import { RespondChain, RespondFilter } from './filter';
 
 
 
@@ -35,13 +36,22 @@ export abstract class TransportOpts<TInput, TOutput> {
      */
     abstract backendToken?: Token<EndpointBackend<TInput, TOutput>>;
     /**
-     * execption filters of server.
+     * respond filters.
      */
-    abstract execptions?: TypeOf<ExecptionFilter>[];
+    abstract responds?: TypeOf<RespondFilter>[];
     /**
      * the mutil token to register execption filters in the server context.
      */
+    abstract respondsToken?: Token<RespondFilter[]>;
+    /**
+     * execption filters.
+     */
+    abstract execptions?: TypeOf<ExecptionFilter>[];
+    /**
+     * the mutil token to register execption filters in the context.
+     */
     abstract execptionsToken?: Token<ExecptionFilter[]>;
+
     /**
      * endpoint timeout.
      */
@@ -72,9 +82,11 @@ export abstract class TransportEndpoint<
 
     private _chain?: Endpoint<TInput, TOutput>;
     private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
-    private _filterToken!: Token<ExecptionFilter[]>;
     private _bToken!: Token<EndpointBackend<TInput, TOutput>>;
-    private _filter?: ExecptionFilter;
+    private _rspdFilterToken!: Token<RespondFilter[]>;
+    private _rspdFilter!: RespondFilter;
+    private _expFilterToken!: Token<ExecptionFilter[]>;
+    private _expFilter?: ExecptionFilter;
     private _opts: Opts;
 
     constructor(options?: Opts) {
@@ -107,26 +119,49 @@ export abstract class TransportEndpoint<
     }
 
     /**
+     * use respond filter.
+     * @param filter 
+     */
+    useFilter(filter: TypeOf<RespondFilter>, order?: number): this {
+        if (!this._rspdFilterToken) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
+        }
+        this.multiOrder(this._rspdFilterToken, filter, order);
+        this._rspdFilter = null!;
+        return this;
+    }
+
+    /**
+     * respond filter chain.
+     */
+    filter(): RespondFilter {
+        if (!this._rspdFilter) {
+            this._rspdFilter = new RespondChain(this.context.injector.get(this._rspdFilterToken, EMPTY));
+        }
+        return this._rspdFilter;
+    }
+
+    /**
      * use execption filter.
      * @param filter 
      */
-    useFilter(filter: TypeOf<ExecptionFilter>, order?: number): this {
-        if (!this._filterToken) {
+    useExecptionFilter(filter: TypeOf<ExecptionFilter>, order?: number): this {
+        if (!this._expFilterToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
-        this.multiOrder(this._filterToken, filter, order);
-        this._filter = null!;
+        this.multiOrder(this._expFilterToken, filter, order);
+        this._expFilter = null!;
         return this;
     }
 
     /**
      * execption filter chain.
      */
-    filter(): ExecptionFilter {
-        if (!this._filter) {
-            this._filter = new ExecptionChain(this.context.injector.get(this._filterToken, EMPTY));
+    execptionfilter(): ExecptionFilter {
+        if (!this._expFilter) {
+            this._expFilter = new ExecptionChain(this.context.injector.get(this._expFilterToken, EMPTY));
         }
-        return this._filter;
+        return this._expFilter;
     }
 
     /**
@@ -183,12 +218,20 @@ export abstract class TransportEndpoint<
             this.multiReg(iToken, options.interceptors);
         }
 
-        const eToken = this._filterToken = options.execptionsToken!;
+        const eToken = this._expFilterToken = options.execptionsToken!;
         if (!eToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
         if (options.execptions && options.execptions.length) {
             this.multiReg(eToken, options.execptions);
+        }
+
+        const rspdToken = this._rspdFilterToken = options.respondsToken!;
+        if (!rspdToken) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
+        }
+        if (options.responds && options.responds.length) {
+            this.multiReg(rspdToken, options.responds);
         }
 
         const bToken = this._bToken = options.backendToken ?? EndpointBackend;

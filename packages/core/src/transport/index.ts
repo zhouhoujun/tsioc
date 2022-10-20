@@ -16,6 +16,9 @@ export * from './resolver';
 export * from './model';
 export * from './execptions';
 
+export * from './filter';
+export * from './middleware';
+
 export * from './transport';
 
 export * from './client';

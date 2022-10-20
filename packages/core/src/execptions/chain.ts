@@ -14,7 +14,7 @@ export class ExecptionChain implements ExecptionFilter {
     }
 
     handle(ctx: ExecptionContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.completed) return NEXT();
+        if (ctx.completed) return next ? next() : NEXT();
         if (!this._chain) {
             const fns = this.filters.map(f => (c: ExecptionContext, n: () => Promise<void>) => f.handle(c, n));
             this._chain = chain(fns)

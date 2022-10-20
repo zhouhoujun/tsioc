@@ -1,5 +1,5 @@
 import { Injectable, isUndefined, lang, _tyundef } from '@tsdi/ioc';
-import { EndpointContext, mths, ResHeaders, Redirector, RedirectTransportStatus, TransportStrategy, States } from '@tsdi/core';
+import { EndpointContext, mths, ResHeaders, Redirector, StatusFactory, Status, EmptyStatus, NoContentStatus, RedirectStatus, OkStatus } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -33,42 +33,38 @@ export class HttpBackend2 extends HttpBackend {
                 request = this.request1(url, req, ac);
             }
 
-            const stat = ctx.transport as TransportStrategy<number> & RedirectTransportStatus;
-            let status: number, state: States,statusText: string;
+            // const stat = ctx.transport as TransportStrategy<number> & RedirectTransportStatus;
+            let status: Status<number>;
             let completed = false;
             let headers: ResHeaders;
 
             let error: any;
             let ok = false;
+            const factory = ctx.get(StatusFactory);
 
             const onResponse = async (incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, flags: number) => {
                 let body: any;
                 if (incoming instanceof http.IncomingMessage) {
                     headers = new ResHeaders(incoming.headers);
-                    status = stat.parseCode(incoming.statusCode ?? 0);
-                    state = stat.fromCode(status);
-                    statusText = incoming.statusMessage ?? 'OK';
-                    if (state !== States.NoContent) {
-                        body = statusText;
+                    status = factory.createByCode(incoming.statusCode ?? 0, incoming.statusMessage ?? 'OK');
+                    if (!(status instanceof NoContentStatus)) {
+                        body = status.statusText;
                     }
-                    if (status === 0) {
-                        status = body ? stat.toCode(States.Ok) : 0
+                    if (status.status === 0 && body) {
+                        status = factory.create('Ok');
                     }
                 } else {
                     headers = new ResHeaders(incoming);
-                    status = stat.parseCode(incoming[hdr.STATUS2] ?? 0);
-                    state = stat.fromCode(status);
-                    statusText = stat.message(status) ?? 'OK'
+                    status = factory.createByCode(incoming[hdr.STATUS2] ?? 0);
                 }
 
 
-                if (stat.isEmpty(status)) {
+                if (status instanceof EmptyStatus) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
                         headers,
-                        status,
-                        statusText
+                        ...status
                     }));
                     observer.complete();
                     return;
@@ -80,7 +76,7 @@ export class HttpBackend2 extends HttpBackend {
                     ok = !err;
                 });
 
-                if (status && stat.isRedirect(status)) {
+                if (status instanceof RedirectStatus) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -90,7 +86,7 @@ export class HttpBackend2 extends HttpBackend {
                 }
 
                 completed = true;
-                ok = state === States.Ok;
+                ok = status instanceof OkStatus;
 
                 if (!ok) {
                     if (!error) {
@@ -101,8 +97,7 @@ export class HttpBackend2 extends HttpBackend {
                     return observer.error(new HttpErrorResponse({
                         url,
                         error: error ?? body,
-                        status,
-                        statusText
+                        ...status
                     }));
                 }
 
@@ -233,16 +228,14 @@ export class HttpBackend2 extends HttpBackend {
                         url,
                         body,
                         headers,
-                        status,
-                        statusText
+                        ...status
                     }));
                     observer.complete();
                 } else {
                     observer.error(new HttpErrorResponse({
                         url,
                         error: error ?? body,
-                        status,
-                        statusText
+                        ...status
                     }));
                 }
             };
@@ -253,8 +246,9 @@ export class HttpBackend2 extends HttpBackend {
                 const res = new HttpErrorResponse({
                     url,
                     error,
-                    status: status || 0,
-                    statusText: statusText || 'Unknown Error',
+                    statusText: 'Unknown Error',
+                    ...status
+
                 });
                 observer.error(res)
             };

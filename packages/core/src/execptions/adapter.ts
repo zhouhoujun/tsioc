@@ -1,11 +1,12 @@
 import { Abstract } from '@tsdi/ioc';
 import { ServerEndpointContext } from '../transport/context';
+import { Respond } from '../transport/filter';
 
 /**
  * Execption respond.
  */
 @Abstract()
-export abstract class ExecptionRespond {
+export abstract class ExecptionRespond extends Respond {
     /**
      * respond with execption handled data.
      * @param ctx transport context. instance of {@link ServerEndpointContext}.
