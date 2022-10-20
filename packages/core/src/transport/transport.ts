@@ -6,7 +6,7 @@ import { Log, Logger } from '@tsdi/logs';
 import { ExecptionChain } from '../execptions/chain';
 import { ExecptionFilter } from '../execptions/filter';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { RespondChain, RespondFilter } from './filter';
+import { FilterChain, InterceptorFilter } from './filter';
 
 
 
@@ -36,13 +36,13 @@ export abstract class TransportOpts<TInput, TOutput> {
      */
     abstract backendToken?: Token<EndpointBackend<TInput, TOutput>>;
     /**
-     * respond filters.
+     * intercpetor filters.
      */
-    abstract responds?: TypeOf<RespondFilter>[];
+    abstract filters?: TypeOf<InterceptorFilter>[];
     /**
      * the mutil token to register execption filters in the server context.
      */
-    abstract respondsToken?: Token<RespondFilter[]>;
+    abstract filtersToken?: Token<InterceptorFilter[]>;
     /**
      * execption filters.
      */
@@ -83,8 +83,8 @@ export abstract class TransportEndpoint<
     private _chain?: Endpoint<TInput, TOutput>;
     private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
     private _bToken!: Token<EndpointBackend<TInput, TOutput>>;
-    private _rspdFilterToken!: Token<RespondFilter[]>;
-    private _rspdFilter!: RespondFilter;
+    private _rspdFilterToken!: Token<InterceptorFilter[]>;
+    private _rspdFilter!: EndpointBackend;
     private _expFilterToken!: Token<ExecptionFilter[]>;
     private _expFilter?: ExecptionFilter;
     private _opts: Opts;
@@ -122,7 +122,7 @@ export abstract class TransportEndpoint<
      * use respond filter.
      * @param filter 
      */
-    useFilter(filter: TypeOf<RespondFilter>, order?: number): this {
+    useFilter(filter: TypeOf<InterceptorFilter>, order?: number): this {
         if (!this._rspdFilterToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
         }
@@ -134,9 +134,9 @@ export abstract class TransportEndpoint<
     /**
      * respond filter chain.
      */
-    filter(): RespondFilter {
+    filter(): EndpointBackend {
         if (!this._rspdFilter) {
-            this._rspdFilter = new RespondChain(this.context.injector.get(this._rspdFilterToken, EMPTY));
+            this._rspdFilter = new FilterChain(this.getBackend(), this.context.injector.get(this._rspdFilterToken, EMPTY));
         }
         return this._rspdFilter;
     }
@@ -175,7 +175,7 @@ export abstract class TransportEndpoint<
     }
 
     protected buildEndpoint(): Endpoint<TInput, TOutput> {
-        return new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
+        return new InterceptorChain(this.filter(), this.context.injector.get(this._iptToken, EMPTY));
     }
 
     /**
@@ -226,12 +226,12 @@ export abstract class TransportEndpoint<
             this.multiReg(eToken, options.execptions);
         }
 
-        const rspdToken = this._rspdFilterToken = options.respondsToken!;
+        const rspdToken = this._rspdFilterToken = options.filtersToken!;
         if (!rspdToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
         }
-        if (options.responds && options.responds.length) {
-            this.multiReg(rspdToken, options.responds);
+        if (options.filters && options.filters.length) {
+            this.multiReg(rspdToken, options.filters);
         }
 
         const bToken = this._bToken = options.backendToken ?? EndpointBackend;

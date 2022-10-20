@@ -1,12 +1,12 @@
 import { EMPTY, getClass, Injectable, isFunction, isNumber, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { Module } from '../metadata/decor';
-import { RespondHandlerMethodResolver } from './filter';
+import { EndpointHandlerMethodResolver } from './filter';
 import { Status } from './status';
 
 
 
 @Injectable()
-export class DefaultRespondHandlerMethodResolver extends RespondHandlerMethodResolver {
+export class DefaultRespondHandlerMethodResolver extends EndpointHandlerMethodResolver {
     private maps = new Map<Type, OperationInvoker[]>();
 
     resolve(execption: Type<Status> | Status): OperationInvoker[] {
@@ -36,7 +36,7 @@ export class DefaultRespondHandlerMethodResolver extends RespondHandlerMethodRes
 
 
 export const RESPOND_PROVIDERS: ProviderType[] = [
-    { provide: RespondHandlerMethodResolver, useClass: DefaultRespondHandlerMethodResolver, static: true }
+    { provide: EndpointHandlerMethodResolver, useClass: DefaultRespondHandlerMethodResolver, static: true }
 ]
 
 @Module({

@@ -141,7 +141,7 @@ export class HttpStatusFactory extends StatusFactory<number> {
 
         }
     }
-    createByHeaders(headers: IncomingHeaders): Status<number> {
+    createByIncoming(headers: IncomingHeaders): Status<number> {
         throw new Error('Method not implemented.');
     }
 

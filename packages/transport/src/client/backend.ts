@@ -32,103 +32,106 @@ export class TransportBackend implements ClientEndpointBackend<TransportRequest,
         const sender = ctx.get(Sender);
         return sender.send(conn, req, ctx)
             .pipe(
-                mergeMap(async body => {
-                    let type = req.responseType;
+                mergeMap(incoming => {
                     const factory = ctx.get(StatusFactory);
-                    const status = ctx.transport.parseCode(headers.get(hdr.STATUS) ?? headers.get(hdr.STATUS2));
-                    ctx.target.filter().handle(ctx)
-                    
-                    let statusText: string | undefined;
-                    if (type === 'stream' && body instanceof Readable) {
-                        return new TransportResponse({
-                            url,
-                            body,
-                            headers,
-                            status,
-                            statusText
-                        })
-                    }
+                    const status = factory.createByIncoming(incoming);
+                    ctx.status = status;
 
-                    let error: any;
-                    let ok = true;
-                    let originalBody: any;
-                    const contentType = headers.get(hdr.CONTENT_TYPE) as string;
-                    body = body instanceof Readable ? await toBuffer(body) : body;
-                    if (contentType) {
-                        const adapter = ctx.get(MimeAdapter);
-                        const mity = ctx.get(MimeTypes);
-                        if (type === 'json' && !adapter.match(mity.json, contentType)) {
-                            if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
-                                type = 'text';
-                            } else {
-                                type = 'blob';
-                            }
-                        }
-                    }
-                    switch (type) {
-                        case 'json':
-                            // Save the original body, before attempting XSSI prefix stripping.
-                            if (isBuffer(body)) {
-                                body = new TextDecoder().decode(body);
-                            }
-                            originalBody = body;
-                            try {
-                                body = body.replace(XSSI_PREFIX, '');
-                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                body = body !== '' ? JSON.parse(body) : null
-                            } catch (err) {
-                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                                // a better error response.
-                                body = originalBody;
-
-                                // If this was an error request to begin with, leave it as a string, it probably
-                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                                if (ok) {
-                                    // Even though the response status was 2xx, this is still an error.
-                                    ok = false;
-                                    // The parse error contains the text of the body that failed to parse.
-                                    error = { error: err, text: body } as ResponseJsonParseError
-                                }
-                            }
-                            break;
-
-                        case 'arraybuffer':
-                            body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
-                            break;
-                        case 'blob':
-                            body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                                type: headers.get(hdr.CONTENT_TYPE) as string
-                            });
-                            break;
-                        case 'text':
-                        default:
-                            body = new TextDecoder().decode(body);
-                            break;
-                    }
-
-
-
-                    if (!ok) throw new TransportErrorResponse({
-                        url,
-                        error: error ?? body,
-                        status,
-                        statusText
-                    });
-
-                    return new TransportResponse({
-                        url,
-                        body,
-                        headers,
-                        status,
-                        statusText
-                    });
-
+                    return ctx.target.filter().handle(ctx, incoming)
                 })
             );
     }
 }
 
+
+
+// let statusText: string | undefined;
+// if (type === 'stream' && body instanceof Readable) {
+//     return new TransportResponse({
+//         url,
+//         body,
+//         headers,
+//         status,
+//         statusText
+//     })
+// }
+
+// let error: any;
+// let ok = true;
+// let originalBody: any;
+// const contentType = headers.get(hdr.CONTENT_TYPE) as string;
+// body = body instanceof Readable ? await toBuffer(body) : body;
+// if (contentType) {
+//     const adapter = ctx.get(MimeAdapter);
+//     const mity = ctx.get(MimeTypes);
+//     if (type === 'json' && !adapter.match(mity.json, contentType)) {
+//         if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
+//             type = 'text';
+//         } else {
+//             type = 'blob';
+//         }
+//     }
+// }
+// switch (type) {
+//     case 'json':
+//         // Save the original body, before attempting XSSI prefix stripping.
+//         if (isBuffer(body)) {
+//             body = new TextDecoder().decode(body);
+//         }
+//         originalBody = body;
+//         try {
+//             body = body.replace(XSSI_PREFIX, '');
+//             // Attempt the parse. If it fails, a parse error should be delivered to the user.
+//             body = body !== '' ? JSON.parse(body) : null
+//         } catch (err) {
+//             // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+//             // JSON response. Restore the original body (including any XSSI prefix) to deliver
+//             // a better error response.
+//             body = originalBody;
+
+//             // If this was an error request to begin with, leave it as a string, it probably
+//             // just isn't JSON. Otherwise, deliver the parsing error to the user.
+//             if (ok) {
+//                 // Even though the response status was 2xx, this is still an error.
+//                 ok = false;
+//                 // The parse error contains the text of the body that failed to parse.
+//                 error = { error: err, text: body } as ResponseJsonParseError
+//             }
+//         }
+//         break;
+
+//     case 'arraybuffer':
+//         body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
+//         break;
+//     case 'blob':
+//         body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
+//             type: headers.get(hdr.CONTENT_TYPE) as string
+//         });
+//         break;
+//     case 'text':
+//     default:
+//         body = new TextDecoder().decode(body);
+//         break;
+// }
+
+
+
+// if (!ok) throw new TransportErrorResponse({
+//     url,
+//     error: error ?? body,
+//     status,
+//     statusText
+// });
+
+// return new TransportResponse({
+//     url,
+//     body,
+//     headers,
+//     status,
+//     statusText
+// });
+
+// })
 
 /**
  * json xss.

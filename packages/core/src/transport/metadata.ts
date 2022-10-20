@@ -1,13 +1,13 @@
 
 import { createDecorator, Decors, isClass, isFunction, ReflectiveFactory, Type } from '@tsdi/ioc';
-import { Respond, RespondHandlerMethodResolver, TypedRespond } from './filter';
+import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 import { Status } from './status';
 
 /**
- * Respond handler metadata.
+ * Endpoint handler metadata.
  */
-export interface RespondHandlerMetadata {
+export interface EndpointHandlerMetadata {
     /**
      * execption type.
      */
@@ -25,12 +25,12 @@ export interface RespondHandlerMetadata {
 
 
 /**
- * RespondHandler decorator, for class. use to define the class as response handle register in global response filter.
+ * EndpointHandler decorator, for class. use to define the class as response handle register in global EndpointHandler filter.
  *
  * @export
- * @interface RespondHandler
+ * @interface EndpointHandler
  */
-export interface RespondHandler {
+export interface EndpointHandler {
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -53,14 +53,14 @@ export interface RespondHandler {
  * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
  * @ExecptionHandler
  * 
- * @exports {@link RespondHandler}
+ * @exports {@link EndpointHandler}
  */
-export const RespondHandler: RespondHandler = createDecorator('RespondHandler', {
+export const RespondHandler: EndpointHandler = createDecorator('RespondHandler', {
     props: (execption?: Type<Error>, options?: { order?: number }) => ({ execption, ...options }),
     design: {
         method: (ctx, next) => {
             const def = ctx.def;
-            const decors = def.class.getDecorDefines<RespondHandlerMetadata>(ctx.currDecor, Decors.method);
+            const decors = def.class.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(def, injector);
             decors.forEach(decor => {
@@ -81,7 +81,7 @@ export const RespondHandler: RespondHandler = createDecorator('RespondHandler', 
                         })
                     }
                 }
-                injector.get(RespondHandlerMethodResolver).addHandle(status, invoker, order)
+                injector.get(EndpointHandlerMethodResolver).addHandle(status, invoker, order)
             });
 
             next()

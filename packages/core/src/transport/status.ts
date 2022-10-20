@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { IncomingHeaders } from './headers';
+import { Incoming } from './packet';
 
 /**
  * transport response status
@@ -240,7 +240,8 @@ export type StatusTypes = 'Ok'
 export abstract class StatusFactory<T = string | number> {
     abstract create(type: StatusTypes, statusText?: string): Status<T>;
     abstract createByCode(status: number | string | null, statusText?: string): Status<T>;
-    abstract createByHeaders(headers: IncomingHeaders): Status<T>;
+    abstract createByIncoming(headers: Incoming): Status<T>;
+    abstract getStatusCode(type: StatusTypes): T;
 }
 
 

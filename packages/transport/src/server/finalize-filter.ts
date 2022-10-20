@@ -1,17 +1,16 @@
 import {
     BadRequestExecption, ExecptionContext, ExecptionFilter, ExecptionHandler, ExecptionHandlerMethodResolver,
     ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption, TransportExecption,
-    ENOENT, TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, Outgoing,
-    NotFoundStatus, ForbiddenStatus, BadRequestStatus, UnauthorizedStatus, InternalServerErrorStatus, UnsupportedMediaTypeStatus, Status, StatusFactory
+    ENOENT, TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, Outgoing, StatusFactory
 } from '@tsdi/core';
-import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { Injectable, isFunction } from '@tsdi/ioc';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { Buffer } from 'buffer';
 import { TransportContext } from './context';
 
 
 @Injectable({ static: true })
-export class TransportFinalizeFilter implements ExecptionFilter {
+export class ExecptionFinalizeFilter implements ExecptionFilter {
 
     async handle(ctx: ExecptionContext, next: () => Promise<void>): Promise<any> {
         if (ctx.completed || !ctx.execption) return;
@@ -94,53 +93,53 @@ export class TransportExecptionFilter implements ExecptionFilter {
 
     @ExecptionHandler(NotFoundExecption)
     notFoundExecption(ctx: ExecptionContext, execption: NotFoundExecption) {
-        execption.status = ctx.get(NotFoundStatus).status;
+        execption.status = ctx.get(StatusFactory).getStatusCode('NotFound');
         ctx.execption = execption;
     }
 
     @ExecptionHandler(ForbiddenExecption)
     forbiddenExecption(ctx: ExecptionContext, execption: ForbiddenExecption) {
-        execption.status = ctx.get(ForbiddenStatus).status;
+        execption.status = ctx.get(StatusFactory).getStatusCode('Forbidden');
         ctx.execption = execption;
     }
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: ExecptionContext, execption: BadRequestExecption) {
-        execption.status = ctx.get(BadRequestStatus).status;
+        execption.status = ctx.get(StatusFactory).getStatusCode('BadRequest');
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnauthorizedExecption)
     unauthorized(ctx: ExecptionContext, execption: UnauthorizedExecption) {
-        execption.status = ctx.get(UnauthorizedStatus).status;
+        execption.status = ctx.get(StatusFactory).getStatusCode('Unauthorized');
         ctx.execption = execption;
     }
 
     @ExecptionHandler(InternalServerExecption)
     internalServerError(ctx: ExecptionContext, execption: InternalServerExecption) {
-        execption.status = ctx.get(InternalServerErrorStatus).status;
+        execption.status = ctx.get(StatusFactory).getStatusCode('InternalServerError');
         ctx.execption = execption;
     }
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: ExecptionContext, execption: UnsupportedMediaTypeExecption) {
-        execption.status = ctx.get(UnsupportedMediaTypeStatus).status;
+        execption.status = ctx.get(StatusFactory).getStatusCode('UnsupportedMediaType');
         ctx.execption = execption;
     }
 
     @ExecptionHandler(TransportArgumentExecption)
     anguExecption(ctx: ExecptionContext, execption: TransportArgumentExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(BadRequestStatus).status)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
     missFieldExecption(ctx: ExecptionContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(BadRequestStatus).status)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
     }
 
     @ExecptionHandler(TransportMissingExecption)
     missExecption(ctx: ExecptionContext, execption: TransportMissingExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(BadRequestStatus).status)
+        ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
     }
 
 }

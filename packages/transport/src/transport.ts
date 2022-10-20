@@ -8,8 +8,8 @@ import { TransportServer } from './server/server';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { CatchInterceptor, DefaultStatusFormater, LogInterceptor } from './interceptors';
 import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
-import { TransportExecptionFilter, TransportFinalizeFilter } from './server/finalize-filter';
-import { DefaultRespondInterceptor } from './server/respond';
+import { TransportExecptionFilter, ExecptionFinalizeFilter } from './server/finalize-filter';
+import { ServerInterceptorFinalizeFilter } from './server/respond';
 
 
 @Module({
@@ -35,8 +35,8 @@ import { DefaultRespondInterceptor } from './server/respond';
         EncodeJsonMiddleware,
         SessionMiddleware,
 
-        DefaultRespondInterceptor,
-        TransportFinalizeFilter,
+        ServerInterceptorFinalizeFilter,
+        ExecptionFinalizeFilter,
         TransportExecptionFilter,
         
         { provide: Client, useExisting: TransportClient },

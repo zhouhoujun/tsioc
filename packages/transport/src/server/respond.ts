@@ -1,4 +1,4 @@
-import { EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Interceptor, mths, NEXT, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import { EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorFilter, mths, NEXT, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { TransportContext } from './context';
@@ -13,31 +13,40 @@ export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpoin
 }
 
 
-@Abstract()
-export abstract class RespondInterceptor<IInput = any, TOutput = any> implements Interceptor<IInput, TOutput> {
+// @Abstract()
+// export abstract class RespondInterceptor<IInput = any, TOutput = any> implements Interceptor<IInput, TOutput> {
 
-    constructor() { }
+//     constructor() { }
 
-    intercept(req: IInput, next: Endpoint<IInput, TOutput>, ctx: TransportContext): Observable<TOutput> {
-        return next.handle(req, ctx)
-            .pipe(
-                mergeMap(res => {
-                    // this.respond(res, ctx)
-                    const filter = ctx.target.filter()
-                    return filter.handle(ctx, NEXT);
-                })
-            )
-    }
+//     intercept(req: IInput, next: Endpoint<IInput, TOutput>, ctx: TransportContext): Observable<TOutput> {
+//         return next.handle(req, ctx)
+//             .pipe(
+//                 mergeMap(res => {
+//                     // this.respond(res, ctx)
+//                     const filter = ctx.target.filter()
+//                     return filter.handle(ctx, NEXT);
+//                 })
+//             )
+//     }
 
-    protected abstract respond(res: TOutput, ctx: EndpointContext): Promise<any>;
-}
+//     protected abstract respond(res: TOutput, ctx: EndpointContext): Promise<any>;
+// }
 
 
 
 @Injectable({ static: true })
-export class DefaultRespondInterceptor extends RespondInterceptor {
+export class ServerInterceptorFinalizeFilter extends InterceptorFilter {
 
-    protected override async respond(res: Outgoing, ctx: TransportContext): Promise<any> {
+    intercept(input: any, next: Endpoint<any, any>, context: TransportContext): Observable<any> {
+        return next.handle(input, context)
+            .pipe(
+                mergeMap(res => {
+                    return this.respond(res, context)
+                })
+            )
+    }
+
+    protected async respond(res: Outgoing, ctx: TransportContext): Promise<any> {
 
         if (!ctx.writable) return;
 

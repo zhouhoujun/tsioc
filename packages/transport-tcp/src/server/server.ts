@@ -3,7 +3,7 @@ import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionFilter, CatchInterceptor, LogInterceptor, RespondInterceptor,
     BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, SessionMiddleware,
-    TransportServer, TransportContext, TransportFinalizeFilter, Connection, ConnectionOpts, Packetor, ev
+    TransportServer, TransportContext, ExecptionFinalizeFilter, Connection, ConnectionOpts, Packetor, ev
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { DelimiterTransportStrategy } from '../transport';
@@ -46,7 +46,7 @@ export const TCP_SERVER_OPTS = {
     serverOpts: {
     },
     execptions: [
-        TransportFinalizeFilter,
+        ExecptionFinalizeFilter,
         TransportExecptionFilter
     ],
     middlewares: [
