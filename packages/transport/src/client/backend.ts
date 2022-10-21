@@ -5,9 +5,9 @@ import {
 } from '@tsdi/core';
 import { Abstract, Injectable, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
-import { Observable, mergeMap } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import * as zlib from 'zlib';
-import { createFormData, isBuffer, isFormDataLike, pmPipeline, toBuffer } from '../utils';
+import { createFormData, isBuffer, isFormDataLike, pmPipeline } from '../utils';
 import { Connection } from '../connection';
 
 
@@ -29,11 +29,10 @@ export class TransportBackend implements ClientEndpointBackend<TransportRequest,
         const sender = ctx.get(Sender);
         return sender.send(conn, req, ctx)
             .pipe(
-                mergeMap(incoming => {
+                map(incoming => {
                     const status = ctx.statusFactory.createByIncoming(incoming);
                     ctx.status = status;
-
-                    return ctx.target.filter().handle(ctx, incoming)
+                    return incoming;
                 })
             );
     }
