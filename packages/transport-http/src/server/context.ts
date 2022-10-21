@@ -1,7 +1,8 @@
-import { MiddlewareLike, mths, Throwable, ServerEndpointContext } from '@tsdi/core';
+import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
+import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { HttpError, HttpInternalServerError } from './../errors';
@@ -191,6 +192,16 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     //         this.response.statusMessage = msg
     //     }
     // }
+
+    protected override onStatusChanged(status: Status<number>): void {
+        const code = status.status;
+        assert(Number.isInteger(code), 'status code must be a number');
+        assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
+        this.response.statusCode = code;
+        if (this.request.httpVersionMajor < 2) {
+            this.response.statusMessage = statusMessage[code as HttpStatusCode];
+        }
+    }
 
     protected override onNullBody(): void {
         this._explicitNullBody = true;

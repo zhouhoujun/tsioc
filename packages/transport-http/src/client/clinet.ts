@@ -11,7 +11,7 @@ import * as http2 from 'http2';
 import { ev } from '@tsdi/transport';
 import { HttpPathInterceptor } from './path';
 import { HttpBodyInterceptor } from './body';
-import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS } from './option';
+import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS, HTTP_CLIENT_FILTERS } from './option';
 import { HTTP_CLIENT_PROVIDERS } from './providers';
 import { HttpTransportStrategy } from '../transport';
 
@@ -24,6 +24,7 @@ const defOpts = {
         strategy: HttpTransportStrategy
     },
     interceptorsToken: HTTP_INTERCEPTORS,
+    filtersToken: HTTP_CLIENT_FILTERS,
     execptionsToken: HTTP_EXECPTIONFILTERS,
 } as HttpClientOpts;
 

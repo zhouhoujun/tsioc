@@ -83,8 +83,8 @@ export abstract class TransportEndpoint<
     private _chain?: Endpoint<TInput, TOutput>;
     private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
     private _bToken!: Token<EndpointBackend<TInput, TOutput>>;
-    private _rspdFilterToken!: Token<InterceptorFilter[]>;
-    private _rspdFilter!: EndpointBackend;
+    private _filterToken!: Token<InterceptorFilter[]>;
+    private _filter!: EndpointBackend;
     private _expFilterToken!: Token<ExecptionFilter[]>;
     private _expFilter?: ExecptionFilter;
     private _opts: Opts;
@@ -123,11 +123,11 @@ export abstract class TransportEndpoint<
      * @param filter 
      */
     useFilter(filter: TypeOf<InterceptorFilter>, order?: number): this {
-        if (!this._rspdFilterToken) {
+        if (!this._filterToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
         }
-        this.multiOrder(this._rspdFilterToken, filter, order);
-        this._rspdFilter = null!;
+        this.multiOrder(this._filterToken, filter, order);
+        this._filter = null!;
         return this;
     }
 
@@ -135,10 +135,10 @@ export abstract class TransportEndpoint<
      * respond filter chain.
      */
     filter(): EndpointBackend {
-        if (!this._rspdFilter) {
-            this._rspdFilter = new FilterChain(this.getBackend(), this.context.injector.get(this._rspdFilterToken, EMPTY));
+        if (!this._filter) {
+            this._filter = new FilterChain(this.getBackend(), this.context.injector.get(this._filterToken, EMPTY));
         }
-        return this._rspdFilter;
+        return this._filter;
     }
 
     /**
@@ -226,9 +226,9 @@ export abstract class TransportEndpoint<
             this.multiReg(eToken, options.execptions);
         }
 
-        const rspdToken = this._rspdFilterToken = options.filtersToken!;
+        const rspdToken = this._filterToken = options.filtersToken!;
         if (!rspdToken) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
+            throw new ArgumentExecption(lang.getClassName(this) + ' options filtersToken is missing.');
         }
         if (options.filters && options.filters.length) {
             this.multiReg(rspdToken, options.filters);

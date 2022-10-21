@@ -57,7 +57,7 @@ export class HttpBackend2 extends HttpBackend {
                     headers = new ResHeaders(incoming);
                     status = factory.createByCode(incoming[hdr.STATUS2] ?? 0);
                 }
-
+                ctx.status = status;
 
                 if (status instanceof EmptyStatus) {
                     completed = true;

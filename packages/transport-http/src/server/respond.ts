@@ -1,12 +1,22 @@
-import { EmptyStatus, mths } from '@tsdi/core';
+import { EmptyStatus, Endpoint, InterceptorFilter, mths } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { hdr, isBuffer, isStream, RespondInterceptor, pipeStream } from '@tsdi/transport';
+import { hdr, isBuffer, isStream, pipeStream } from '@tsdi/transport';
+import { mergeMap, Observable } from 'rxjs';
 import { HttpContext, HttpServResponse } from './context';
 
 @Injectable({ static: true })
-export class HttpRespondInterceptor extends RespondInterceptor {
+export class HttpInterceptorFinalizeFilter extends InterceptorFilter {
 
-    protected override async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
+    intercept(input: any, next: Endpoint<any, any>, context: HttpContext): Observable<any> {
+        return next.handle(input, context)
+            .pipe(
+                mergeMap(res => {
+                    return this.respond(res, context)
+                })
+            )
+    }
+
+    protected async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
         if (ctx.destroyed) return;
 
         if (!ctx.writable) return;

@@ -130,3 +130,4 @@ export abstract class TypedRespond {
      */
     abstract respond<T>(ctx: ServerEndpointContext, responseType: 'body' | 'header' | 'response', value: T): void;
 }
+

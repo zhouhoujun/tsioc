@@ -13,7 +13,7 @@ import { ServerEndpointContext } from '../transport/context';
 import { promisify } from './promisify';
 import { Protocols } from '../transport/packet';
 import { ForbiddenExecption } from '../transport/execptions';
-import { NotFoundStatus, StatusFactory } from '../transport';
+import { StatusFactory } from '../transport';
 
 
 const isRest = /\/:/;

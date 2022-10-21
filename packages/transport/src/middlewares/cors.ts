@@ -1,4 +1,4 @@
-import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, States, TransportExecption } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, StatusFactory, TransportExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -150,10 +150,9 @@ export class CorsMiddleware implements Middleware {
                     ...headersSet,
                     ...{ vary: varyWithOrigin },
                 };
-
-                const errCode = ctx.transport.toCode(States.InternalServerError);
-                ctx.status = err instanceof TransportExecption ? err.status || errCode : errCode;
-                ctx.statusMessage = err.message || err.toString() || '';
+                const factory = ctx.get(StatusFactory);
+                const errCode = factory.getStatusCode('InternalServerError');
+                ctx.status = factory.createByCode(err instanceof TransportExecption ? err.status || errCode : errCode, err.message || err.toString() || '');
                 ctx.get(Logger)?.error(err)
             }
         } else {
@@ -185,7 +184,8 @@ export class CorsMiddleware implements Middleware {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.state = States.NoContent
+            const factory = ctx.get(StatusFactory);
+            ctx.status = factory.create('NoContent')
         }
     }
 }

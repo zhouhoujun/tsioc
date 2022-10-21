@@ -1,9 +1,9 @@
 import {
     OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
-    ServerContextOpts, ServerEndpointContext, TransportExecption, TransportStrategy, FoundStatus,
-    Status, NotFoundStatus, EmptyStatus, NoContentStatus, RedirectStatus
+    ServerContextOpts, ServerEndpointContext, TransportStrategy,
+    Status, RedirectStatus, StatusFactory, EmptyStatus
 } from '@tsdi/core';
-import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
@@ -26,7 +26,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, request, response, target, transport, options);
         this.originalUrl = request.url?.toString() ?? '';
-        this._status = injector.get(NotFoundStatus);
+        this._status = injector.get(StatusFactory).create('NotFound');
         this._url = request.url ?? '';
 
         if (this.transport.isAbsoluteUrl(this._url)) {
@@ -46,8 +46,8 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     set status(status: Status) {
         if (this.sent) return;
         this._explicitStatus = true;
-        const chged = this.status !== status;
-        this.status = status;
+        const chged = this._status !== status;
+        this._status = status;
         if (chged) {
             this.onStatusChanged(status);
         }
@@ -469,20 +469,6 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         }
     }
 
-    // /**
-    //  * Whether the status code is ok
-    //  */
-    // get ok(): boolean {
-    //     return this.transport.status.isOk(this.status);
-    // }
-
-    // /**
-    //  * Whether the status code is ok
-    //  */
-    // set ok(ok: boolean) {
-    //     this.status = ok ? this.transport.status.ok : this.transport.status.notFound
-    // }
-
 
     protected _body: any;
     protected _explicitStatus?: boolean;
@@ -511,7 +497,9 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
         // no content
         if (null == val) {
-            if (this.status instanceof EmptyStatus && !(this.status instanceof NoContentStatus)) this.status = this.get(NoContentStatus);
+            if (!(this.status instanceof EmptyStatus)) {
+                this.status = this.get(StatusFactory).create('NoContent');
+            }
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
             this.removeHeader(hdr.CONTENT_LENGTH);
@@ -711,7 +699,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!(this.status instanceof RedirectStatus)) this.status = this.get(FoundStatus);
+        if (!(this.status instanceof RedirectStatus)) this.status = this.get(StatusFactory).create('Found');
 
         // html
         if (this.accepts('html')) {

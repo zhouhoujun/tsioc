@@ -4,13 +4,15 @@ import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouter, Router } from './router';
 import { ExecptionModule } from '../execptions';
+import { FilterMoudle } from '../transport/respond';
 
 /*
  * Middleware module.
  */
 @Module({
     imports: [
-        ExecptionModule
+        ExecptionModule,
+        FilterMoudle
     ],
     providers: [
         { provide: Router, useClass: MappingRouter, static: true },

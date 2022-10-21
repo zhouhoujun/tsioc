@@ -1,5 +1,5 @@
-import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy } from '@tsdi/core';
+import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ, EMPTY } from '@tsdi/ioc';
+import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, HanlderFilter } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -7,17 +7,18 @@ import * as http2 from 'http2';
 import * as assert from 'assert';
 import {
     CONTENT_DISPOSITION, ev, LOCALHOST,
-    CatchInterceptor, LogInterceptor, RespondInterceptor,
+    CatchInterceptor, LogInterceptor,
     CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
     ContentMiddleware, ContentOptions, SessionMiddleware, CsrfMiddleware, MimeDb
 } from '@tsdi/transport';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 
 import { HttpExecptionFilter, HttpFinalizeFilter } from './finalize-filter';
-import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
-import { HTTP_SERVR_PROVIDERS } from './providers';
+import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
+// import { HTTP_SERVR_PROVIDERS } from './providers';
 import { HttpHandlerBinding } from './binding';
 import { HttpTransportStrategy } from '../transport';
+import { HttpInterceptorFinalizeFilter } from './respond';
 
 
 
@@ -46,8 +47,12 @@ const httpOpts = {
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
-        RespondInterceptor
     ],
+    filters: [
+        HanlderFilter,
+        HttpInterceptorFinalizeFilter
+    ],
+    filtersToken: HTTP_FILTERS,
     middlewares: [
         HelmetMiddleware,
         CorsMiddleware,
@@ -112,7 +117,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
     }
 
     protected defaultProviders() {
-        return HTTP_SERVR_PROVIDERS;
+        return EMPTY;
     }
 
     async start(): Promise<void> {

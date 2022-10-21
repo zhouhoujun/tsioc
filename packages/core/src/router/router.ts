@@ -9,7 +9,7 @@ import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } fro
 import { AssetContext, ServerEndpointContext } from '../transport/context';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../transport/execptions';
 import { promisify } from './promisify';
-import { NotFoundStatus } from '../transport';
+import { NotFoundStatus } from '../transport/status';
 
 
 

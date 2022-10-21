@@ -10,8 +10,11 @@ export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
             ctx.setHeader(value as Record<string, any>);
         } else if (response === 'response') {
             const factory = ctx.get(StatusFactory);
-            ctx.status = (value as TransportExecption).statusCode ? factory.createByCode((value as TransportExecption).statusCode, (value as Execption).message)
-                : factory.create('InternalServerError', (value as Execption).message);
+            if (value instanceof TransportExecption) {
+                ctx.status = factory.createByCode(value.statusCode, value.message);
+            } else {
+                ctx.status = factory.create('InternalServerError', String(value));
+            }
         }
     }
 }
