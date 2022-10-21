@@ -1,34 +1,32 @@
-import { EMPTY, getClass, Injectable, isFunction, isNumber, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
+import { EMPTY, getClass, Injectable, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { Module } from '../metadata/decor';
 import { EndpointHandlerMethodResolver } from './filter';
-import { Status } from './status';
-
 
 
 @Injectable()
 export class DefaultRespondHandlerMethodResolver extends EndpointHandlerMethodResolver {
-    private maps = new Map<Type, OperationInvoker[]>();
+    private maps = new Map<Type | string, OperationInvoker[]>();
 
-    resolve(execption: Type<Status> | Status): OperationInvoker[] {
-        return this.maps.get(isFunction(execption) ? execption : getClass(execption)) ?? EMPTY
+    resolve<T>(filter: Type<T> | T | string): OperationInvoker[] {
+        return this.maps.get(isString(filter) ? filter : (isFunction(filter) ? filter : getClass(filter))) ?? EMPTY
     }
 
-    addHandle(execption: Type<Status>, methodInvoker: OperationInvoker, order?: number): this {
-        let hds = this.maps.get(execption);
+    addHandle(filter: Type | string, methodInvoker: OperationInvoker, order?: number): this {
+        let hds = this.maps.get(filter);
         if (isNumber(order)) {
             methodInvoker.order = order
         }
         if (!hds) {
             hds = [methodInvoker];
-            this.maps.set(execption, hds)
+            this.maps.set(filter, hds)
         } else if (!hds.some(h => h.descriptor === methodInvoker.descriptor)) {
             hds.push(methodInvoker)
         }
         return this
     }
 
-    removeHandle(execption: Type<Status>, methodInvoker: OperationInvoker): this {
-        const hds = this.maps.get(execption);
+    removeHandle(filter: Type | string, methodInvoker: OperationInvoker): this {
+        const hds = this.maps.get(filter);
         if (hds) lang.remove(hds, methodInvoker);
         return this
     }

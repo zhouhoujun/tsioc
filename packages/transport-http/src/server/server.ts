@@ -1,5 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ, EMPTY } from '@tsdi/ioc';
-import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, HanlderFilter } from '@tsdi/core';
+import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, EndpointHanlderFilter } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -13,12 +13,11 @@ import {
 } from '@tsdi/transport';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 
-import { HttpExecptionFilter, HttpFinalizeFilter } from './finalize-filter';
+import { HttpExecptionFilter, HttpFinalizeFilter } from './exception-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
-// import { HTTP_SERVR_PROVIDERS } from './providers';
 import { HttpHandlerBinding } from './binding';
 import { HttpTransportStrategy } from '../transport';
-import { HttpInterceptorFinalizeFilter } from './respond';
+import { HttpInterceptorFinalizeFilter } from './filter';
 
 
 
@@ -49,7 +48,7 @@ const httpOpts = {
         CatchInterceptor,
     ],
     filters: [
-        HanlderFilter,
+        EndpointHanlderFilter,
         HttpInterceptorFinalizeFilter
     ],
     filtersToken: HTTP_FILTERS,

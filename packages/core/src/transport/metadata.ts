@@ -2,7 +2,6 @@
 import { createDecorator, Decors, isClass, isFunction, ReflectiveFactory, Type } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
-import { Status } from './status';
 
 /**
  * Endpoint handler metadata.
@@ -11,7 +10,7 @@ export interface EndpointHandlerMetadata {
     /**
      * execption type.
      */
-    status: Type<Status>;
+    filter: Type | string;
     /**
      * order.
      */
@@ -34,10 +33,10 @@ export interface EndpointHandler {
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @param {string} pattern message match pattern.
+     * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: {
+    (filter: Type, option?: {
         /**
          * order.
          */
@@ -50,13 +49,13 @@ export interface EndpointHandler {
 }
 
 /**
- * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
- * @ExecptionHandler
+ * EndpointHandler decorator, for class. use to define the class as Endpoint handle register in global Endpoint filter.
+ * @EndpointHandler
  * 
  * @exports {@link EndpointHandler}
  */
-export const RespondHandler: EndpointHandler = createDecorator('RespondHandler', {
-    props: (execption?: Type<Error>, options?: { order?: number }) => ({ execption, ...options }),
+export const EndpointHandler: EndpointHandler = createDecorator('EndpointHandler', {
+    props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
     design: {
         method: (ctx, next) => {
             const def = ctx.def;
@@ -64,7 +63,7 @@ export const RespondHandler: EndpointHandler = createDecorator('RespondHandler',
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(def, injector);
             decors.forEach(decor => {
-                const { status, order, response } = decor.metadata;
+                const { filter, order, response } = decor.metadata;
                 const invoker = factory.createInvoker(decor.propertyKey);
                 if (response) {
                     if (isClass(response)) {
@@ -81,7 +80,7 @@ export const RespondHandler: EndpointHandler = createDecorator('RespondHandler',
                         })
                     }
                 }
-                injector.get(EndpointHandlerMethodResolver).addHandle(status, invoker, order)
+                injector.get(EndpointHandlerMethodResolver).addHandle(filter, invoker, order)
             });
 
             next()

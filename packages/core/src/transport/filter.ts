@@ -2,7 +2,6 @@ import { Abstract, Injectable, OperationInvoker, Type } from '@tsdi/ioc';
 import { mergeMap, Observable, of } from 'rxjs';
 import { EndpointContext, ServerEndpointContext } from './context';
 import { Endpoint, EndpointBackend, endpointify, EndpointLike, Interceptor, InterceptorEndpoint, interceptorify } from './endpoint';
-import { Status } from './status';
 
 
 /**
@@ -52,27 +51,27 @@ export class FilterChain<TInput = any, TOutput = any> implements EndpointBackend
 @Abstract()
 export abstract class EndpointHandlerMethodResolver {
     /**
-     * resolve execption hanlde.
-     * @param status 
+     * resolve filter hanlde.
+     * @param filter 
      */
-    abstract resolve(status: Type<Status> | Status): OperationInvoker[];
+    abstract resolve<T>(filter: Type<T> | T | string): OperationInvoker[];
     /**
-     * add execption handle.
-     * @param status execption type
-     * @param methodInvoker execption handle invoker.
+     * add filter handle.
+     * @param filter filter type
+     * @param methodInvoker filter handle invoker.
      * @param order order.
      */
-    abstract addHandle(status: Type<Status>, methodInvoker: OperationInvoker, order?: number): this;
+    abstract addHandle(filter: Type | string, methodInvoker: OperationInvoker, order?: number): this;
     /**
-     * remove execption handle.
-     * @param status execption type.
-     * @param methodInvoker execption handle.
+     * remove filter handle.
+     * @param filter filter type.
+     * @param methodInvoker filter handle.
      */
-    abstract removeHandle(status: Type<Status>, methodInvoker: OperationInvoker): this;
+    abstract removeHandle(filter: Type | string, methodInvoker: OperationInvoker): this;
 }
 
 @Injectable({ static: true })
-export class HanlderFilter implements InterceptorFilter {
+export class EndpointHanlderFilter implements InterceptorFilter {
 
     intercept(input: any, next: Endpoint<any, any>, ctx: EndpointContext): Observable<any> {
 
