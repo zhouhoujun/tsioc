@@ -1,5 +1,5 @@
 import { Abstract, Injectable, OperationInvoker, Type } from '@tsdi/ioc';
-import { mergeMap, Observable, of } from 'rxjs';
+import { catchError, mergeMap, Observable, of } from 'rxjs';
 import { EndpointContext, ServerEndpointContext } from './context';
 import { Endpoint, EndpointBackend, endpointify, EndpointLike, Interceptor, InterceptorEndpoint, interceptorify } from './endpoint';
 import { Incoming, Outgoing } from './packet';
@@ -47,10 +47,10 @@ export class FilterChain<TInput = any, TOutput = any> implements EndpointBackend
 
 
 /**
- * respond handler method resolver.
+ * filter handler method resolver.
  */
 @Abstract()
-export abstract class EndpointHandlerMethodResolver {
+export abstract class FilterHandlerMethodResolver {
     /**
      * resolve filter hanlde.
      * @param filter 
@@ -78,7 +78,7 @@ export abstract class EndpointHandlerMethodResolver {
  * @returns 
  */
 export function runHandlers(ctx: EndpointContext, input: any, filter: any): Observable<any> {
-    const handles = ctx.injector.get(EndpointHandlerMethodResolver).resolve(filter);
+    const handles = ctx.injector.get(FilterHandlerMethodResolver).resolve(filter);
     let obs = of(input);
     handles.forEach(i => {
         obs = obs.pipe(
@@ -106,7 +106,7 @@ export class PathHanlderFilter implements InterceptorFilter<Incoming, Outgoing> 
 }
 
 @Injectable({ static: true })
-export class StatusHanlderFilter implements InterceptorFilter<Incoming, Outgoing> {
+export class StatusInterceptorFilter implements InterceptorFilter<Incoming, Outgoing> {
 
     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
         return next.handle(input, ctx)
@@ -119,9 +119,24 @@ export class StatusHanlderFilter implements InterceptorFilter<Incoming, Outgoing
 
 }
 
+@Injectable({ static: true })
+export class CatchInterceptorFilter implements InterceptorFilter<Incoming, Outgoing> {
+
+    intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
+        return next.handle(input, ctx)
+            .pipe(
+                catchError((err, caught) => {
+                    return runHandlers(ctx, err, err)
+                })
+            )
+    }
+
+}
+
+
 
 @Injectable({ static: true })
-export class InputOutputHanlderFilter implements InterceptorFilter {
+export class InOutInterceptorFilter implements InterceptorFilter {
 
     intercept(input: any, next: Endpoint<any, any>, ctx: EndpointContext): Observable<any> {
         return runHandlers(ctx, input, input)

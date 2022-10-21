@@ -1,6 +1,6 @@
 
 import { createDecorator, Decors, isClass, isFunction, ReflectiveFactory, Type } from '@tsdi/ioc';
-import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
+import { Respond, FilterHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 
 /**
@@ -80,7 +80,7 @@ export const EndpointHandler: EndpointHandler = createDecorator('EndpointHandler
                         })
                     }
                 }
-                injector.get(EndpointHandlerMethodResolver).addHandle(filter, invoker, order)
+                injector.get(FilterHandlerMethodResolver).addHandle(filter, invoker, order)
             });
 
             next()

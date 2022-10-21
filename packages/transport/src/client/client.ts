@@ -1,6 +1,6 @@
 import {
     OnDispose, ClientEndpointContext, Client, RequestOptions,
-    TransportRequest, Pattern, TransportStrategy, InputOutputHanlderFilter
+    TransportRequest, Pattern, TransportStrategy, InOutInterceptorFilter
 } from '@tsdi/core';
 import { Abstract, EMPTY, lang } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
@@ -24,7 +24,7 @@ const tsptDeftOpts = {
         BodyContentInterceptor
     ],
     filters: [
-        InputOutputHanlderFilter,
+        InOutInterceptorFilter,
         ClientInterceptorFinalizeFilter
     ],
     interceptorsToken: CLIENT_INTERCEPTORS,

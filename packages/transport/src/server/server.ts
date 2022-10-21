@@ -1,4 +1,4 @@
-import { InputOutputHanlderFilter, Incoming, ListenOpts, ModuleRef, Outgoing, Receiver, Router, Server, TransportStrategy } from '@tsdi/core';
+import { InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing, Receiver, Router, Server, TransportStrategy } from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { mergeMap, Observable } from 'rxjs';
@@ -33,7 +33,7 @@ const defOpts = {
         CatchInterceptor
     ],
     filters: [
-        InputOutputHanlderFilter,
+        InOutInterceptorFilter,
         ServerInterceptorFinalizeFilter
     ],
     execptions: [

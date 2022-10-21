@@ -1,7 +1,7 @@
 import { Injectable, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, Middleware, Chain, BadRequestExecption
+    ServerEndpointContext, Middleware, Chain, BadRequestExecption, EndpointHandler, BadRequestStatus, OkStatus
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
 
@@ -75,7 +75,15 @@ export class DeviceController {
 
     }
 
+    @EndpointHandler(OkStatus)
+    async OkEndpoint() {
+        console.log('OkStatus')
+    }
 
+    @EndpointHandler(BadRequestStatus)
+    async badReqEndpoint() {
+        console.log('BadRequestStatus')
+    }
 
 
 }

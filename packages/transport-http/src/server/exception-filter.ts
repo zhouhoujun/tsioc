@@ -68,8 +68,8 @@ export class HttpFinalizeFilter implements ExecptionFilter {
             // respond
             msg = statusMessage[statusCode]
         }
-        
-        hctx.status = new Status(statusCode, msg);
+
+        hctx.status = hctx.statusFactory.createByCode(statusCode);
         msg = Buffer.from(msg);
         hctx.length = Buffer.byteLength(msg);
         res.end(msg)

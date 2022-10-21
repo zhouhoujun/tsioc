@@ -1,4 +1,3 @@
-// export * from './protocol';
 export * from './context';
 export * from './headers';
 export * from './packet';
@@ -16,7 +15,11 @@ export * from './resolver';
 export * from './model';
 export * from './execptions';
 
+export * from './metadata';
 export * from './filter';
+export * from './filter.module';
+
+
 export * from './middleware';
 
 export * from './transport';

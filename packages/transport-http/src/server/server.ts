@@ -1,5 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ, EMPTY } from '@tsdi/ioc';
-import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, InputOutputHanlderFilter, PathHanlderFilter } from '@tsdi/core';
+import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -44,12 +44,13 @@ const httpOpts = {
     ],
     detailError: true,
     interceptors: [
-        LogInterceptor,
-        CatchInterceptor,
+        LogInterceptor
     ],
     filters: [
         PathHanlderFilter,
-        InputOutputHanlderFilter,
+        InOutInterceptorFilter,
+        StatusInterceptorFilter,
+        CatchInterceptor,
         HttpInterceptorFinalizeFilter
     ],
     filtersToken: HTTP_FILTERS,
