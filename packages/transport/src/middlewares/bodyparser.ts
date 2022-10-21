@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, StatusFactory, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { AssetContext, Middleware, UnsupportedMediaTypeExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
@@ -118,8 +118,7 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            const factory = ctx.get(StatusFactory);
-            (err as any).status = factory.getStatusCode('BadRequest');
+            (err as any).status = ctx.statusFactory.getStatusCode('BadRequest');
             (err as any).body = str;
             throw err
         }
@@ -187,8 +186,7 @@ export class BodyparserMiddleware implements Middleware {
                 body
             }
         } catch (err) {
-            const factory = ctx.get(StatusFactory);
-            (err as any).status = factory.getStatusCode('BadRequest');
+            (err as any).status = ctx.statusFactory.getStatusCode('BadRequest');
             (err as any).body = str;
             throw err
         }

@@ -13,7 +13,6 @@ import { ServerEndpointContext } from '../transport/context';
 import { promisify } from './promisify';
 import { Protocols } from '../transport/packet';
 import { ForbiddenExecption } from '../transport/execptions';
-import { StatusFactory } from '../transport';
 
 
 const isRest = /\/:/;
@@ -90,7 +89,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) {
-            ctx.status = ctx.get(StatusFactory).create('NotFound');
+            ctx.status = ctx.statusFactory.create('NotFound');
             return await next();
         }
 

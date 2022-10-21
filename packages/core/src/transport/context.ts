@@ -24,6 +24,8 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      */
     abstract set status(status: Status);
 
+    abstract get statusFactory(): StatusFactory;
+
     protected override clear(): void {
         super.clear();
         (this as any).target = null;

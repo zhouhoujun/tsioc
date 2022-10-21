@@ -22,10 +22,12 @@ export class ClientContext extends ClientEndpointContext {
     readonly target: Client;
     readonly observe: 'body' | 'events' | 'response';
     public status: Status;
+    readonly statusFactory: StatusFactory<string | number>;
     constructor(injector: Injector, target: Client, options?: ClientInvocationOptions) {
         super(injector, options);
         this.target = target;
-        this.status = injector.get(StatusFactory).create('Ok');
+        this.statusFactory = injector.get(StatusFactory);
+        this.status = this.statusFactory.create('NotFound');
         this.observe = options?.observe ?? 'body';
     }
 

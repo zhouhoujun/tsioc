@@ -1,7 +1,7 @@
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import {
     BadGatewayStatus, BadRequestStatus, ForbiddenStatus, FoundStatus,
-    GatewayTimeoutStatus, Incoming, IncomingHeaders, InternalServerErrorStatus, ListenOpts,
+    GatewayTimeoutStatus, Incoming, InternalServerErrorStatus, ListenOpts,
     MethodNotAllowedStatus, MovedPermanentlyStatus, mths, NoContentStatus, NotFoundStatus,
     NotImplementedStatus, NotModifiedStatus, OkStatus, PermanentRedirectStatus, RequestTimeoutStatus,
     ResetContentStatus, ServiceUnavailableStatus, Status, StatusFactory, StatusTypes, TemporaryRedirectStatus,

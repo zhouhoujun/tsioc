@@ -10,6 +10,7 @@ import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
 import { TransportStrategy } from './strategy';
 import { Incoming, Outgoing } from './packet';
+import { StatusFactory } from './status';
 
 
 /**
@@ -25,6 +26,7 @@ export interface ServerContextOpts extends InvokeArguments {
 @Abstract()
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
+    readonly statusFactory: StatusFactory<string | number>;
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, {
             ...options,
@@ -34,6 +36,7 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
                 ...injector.get(MODEL_RESOLVERS, EMPTY)
             ]
         });
+        this.statusFactory = injector.get(StatusFactory);
 
     }
 

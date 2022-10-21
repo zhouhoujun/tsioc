@@ -50,7 +50,7 @@ export class ExecptionFinalizeFilter implements ExecptionFilter {
         if (err.headers) hctx.setHeader(err.headers);
 
         // force text/plain
-        const factory = ctx.get(StatusFactory);
+        const factory = hctx.statusFactory;
         hctx.type = 'text';
         const code = err.status || err.statusCode;
         let status = code ? factory.createByCode(code) : factory.create('InternalServerError');

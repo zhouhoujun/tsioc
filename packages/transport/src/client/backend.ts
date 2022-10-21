@@ -1,15 +1,12 @@
 /* eslint-disable no-case-declarations */
 import {
-    EndpointBackend, isArrayBuffer, isBlob, isFormData, ResHeaders, ResponseJsonParseError,
-    TransportErrorResponse, TransportEvent, TransportResponse, ClientContext,
-    UnsupportedMediaTypeExecption, TransportRequest, Sender, StatusFactory
+    EndpointBackend, isArrayBuffer, isBlob, isFormData,TransportEvent, ClientContext,
+    UnsupportedMediaTypeExecption, TransportRequest, Sender
 } from '@tsdi/core';
 import { Abstract, Injectable, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
 import { Observable, mergeMap } from 'rxjs';
 import * as zlib from 'zlib';
-import { hdr } from '../consts';
-import { MimeAdapter, MimeTypes } from '../mime';
 import { createFormData, isBuffer, isFormDataLike, pmPipeline, toBuffer } from '../utils';
 import { Connection } from '../connection';
 
@@ -33,8 +30,7 @@ export class TransportBackend implements ClientEndpointBackend<TransportRequest,
         return sender.send(conn, req, ctx)
             .pipe(
                 mergeMap(incoming => {
-                    const factory = ctx.get(StatusFactory);
-                    const status = factory.createByIncoming(incoming);
+                    const status = ctx.statusFactory.createByIncoming(incoming);
                     ctx.status = status;
 
                     return ctx.target.filter().handle(ctx, incoming)

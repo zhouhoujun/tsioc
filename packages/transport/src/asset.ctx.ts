@@ -1,7 +1,7 @@
 import {
     OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
     ServerContextOpts, ServerEndpointContext, TransportStrategy,
-    Status, RedirectStatus, StatusFactory, EmptyStatus
+    Status, RedirectStatus, EmptyStatus
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -26,7 +26,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
         super(injector, request, response, target, transport, options);
         this.originalUrl = request.url?.toString() ?? '';
-        this._status = injector.get(StatusFactory).create('NotFound');
+        this._status = this.statusFactory.create('NotFound');
         this._url = request.url ?? '';
 
         if (this.transport.isAbsoluteUrl(this._url)) {
@@ -498,7 +498,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         // no content
         if (null == val) {
             if (!(this.status instanceof EmptyStatus)) {
-                this.status = this.get(StatusFactory).create('NoContent');
+                this.status = this.statusFactory.create('NoContent');
             }
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
@@ -699,7 +699,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!(this.status instanceof RedirectStatus)) this.status = this.get(StatusFactory).create('Found');
+        if (!(this.status instanceof RedirectStatus)) this.status = this.statusFactory.create('Found');
 
         // html
         if (this.accepts('html')) {

@@ -1,5 +1,5 @@
 import { Injectable, isUndefined, lang, _tyundef } from '@tsdi/ioc';
-import { EndpointContext, mths, ResHeaders, Redirector, StatusFactory, Status, EmptyStatus, NoContentStatus, RedirectStatus, OkStatus } from '@tsdi/core';
+import { EndpointContext, mths, ResHeaders, Redirector, Status, EmptyStatus, NoContentStatus, RedirectStatus, OkStatus, StatusFactory } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -40,7 +40,7 @@ export class HttpBackend2 extends HttpBackend {
 
             let error: any;
             let ok = false;
-            const factory = ctx.get(StatusFactory);
+            const factory = ctx.statusFactory as StatusFactory<number>;
 
             const onResponse = async (incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, flags: number) => {
                 let body: any;
