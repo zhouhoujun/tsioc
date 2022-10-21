@@ -1,7 +1,7 @@
 import { Injectable, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, Middleware, Chain, BadRequestExecption, EndpointHandler, BadRequestStatus, OkStatus
+    ServerEndpointContext, Middleware, Chain, BadRequestExecption, Filter, BadRequestStatus, OkStatus
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
 
