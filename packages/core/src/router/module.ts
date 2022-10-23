@@ -3,7 +3,6 @@ import { Module } from '../metadata/decor';
 import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouter, Router } from './router';
-import { ExecptionModule } from '../execptions';
 import { FilterMoudle } from '../transport/filter.module';
 
 /*
@@ -11,7 +10,6 @@ import { FilterMoudle } from '../transport/filter.module';
  */
 @Module({
     imports: [
-        ExecptionModule,
         FilterMoudle
     ],
     providers: [

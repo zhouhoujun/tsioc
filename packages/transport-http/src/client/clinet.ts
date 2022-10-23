@@ -1,6 +1,6 @@
 import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
 import {
-    RequestMethod, Client, EndpointBackend, OnDispose, InterceptorLike, RequestOptions,
+    RequestMethod, Client, OnDispose, InterceptorLike, RequestOptions,
     ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
@@ -11,21 +11,17 @@ import * as http2 from 'http2';
 import { ev } from '@tsdi/transport';
 import { HttpPathInterceptor } from './path';
 import { HttpBodyInterceptor } from './body';
-import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_EXECPTIONFILTERS, HTTP_CLIENT_FILTERS } from './option';
+import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_EXECPTION_FILTERS } from './option';
 import { HTTP_CLIENT_PROVIDERS } from './providers';
-import { HttpTransportStrategy } from '../transport';
+import { HttpBackend2 } from './backend';
 
 
 
 
 const defOpts = {
-    backendToken: HttpBackend,
-    transport: {
-        strategy: HttpTransportStrategy
-    },
+    backend: { provide: HttpBackend, useClass: HttpBackend2 },
     interceptorsToken: HTTP_INTERCEPTORS,
-    filtersToken: HTTP_CLIENT_FILTERS,
-    execptionsToken: HTTP_EXECPTIONFILTERS,
+    filtersToken: HTTP_CLIENT_EXECPTION_FILTERS,
 } as HttpClientOpts;
 
 
@@ -50,7 +46,6 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
 
-    private _backend?: EndpointBackend<HttpRequest, HttpEvent>;
     private _client?: http2.ClientHttp2Session;
     constructor(@Nullable() option: HttpClientOpts) {
         super(option)

@@ -1,5 +1,5 @@
-import { ClientOpts, EndpointBackend, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, tokenId, TypeOf } from '@tsdi/ioc';
+import { ClientOpts, EndpointBackend, Interceptor, TransportEvent, TransportRequest, ExecptionFilter } from '@tsdi/core';
+import { Abstract, EMPTY_OBJ, StaticProvider, tokenId } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
 import { ConnectionOpts } from '../connection';
 
@@ -21,7 +21,7 @@ export abstract class TransportClientOpts extends ClientOpts {
     /**
      * backend.
      */
-    abstract backend?: TypeOf<EndpointBackend<TransportRequest, TransportEvent>>;
+    abstract backend?: StaticProvider<EndpointBackend<TransportRequest, TransportEvent>>;
 }
 
 
@@ -60,6 +60,6 @@ export const CLIENT_RECEIVE_INTERCEPTORS = tokenId<Interceptor<Writable, Readabl
  */
 export const CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('CLIENT_INTERCEPTORS');
 /**
- * client execption filters token.
+ * client filters token.
  */
-export const CLIENT_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('CLIENT_EXECPTIONFILTERS');
+export const CLIENT_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('CLIENT_EXECPTION_FILTERS');

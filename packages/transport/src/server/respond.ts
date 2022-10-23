@@ -1,4 +1,4 @@
-import { EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Interceptor, InterceptorFilter, mths, NEXT, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import { EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Interceptor, EndpointFilter, mths, NEXT, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { TransportContext } from './context';
@@ -35,7 +35,7 @@ export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpoin
 
 
 @Injectable({ static: true })
-export class ServerInterceptorFinalizeFilter extends InterceptorFilter {
+export class ServerInterceptorFinalizeFilter extends EndpointFilter {
 
     intercept(input: any, next: Endpoint<any, any>, context: TransportContext): Observable<any> {
         return next.handle(input, context)

@@ -24,12 +24,12 @@ export interface EndpointHandlerMetadata {
 
 
 /**
- * Filter decorator, for class. use to define the class as response handle register in global Endpoint filter.
+ * EndpointHanlder decorator, for class. use to define the class as response handle register in global Endpoint filter.
  *
  * @export
- * @interface Filter
+ * @interface EndpointHanlder
  */
-export interface Filter {
+export interface EndpointHanlder {
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -49,12 +49,12 @@ export interface Filter {
 }
 
 /**
- * Filter decorator, for class. use to define the class as Endpoint handle register in global Endpoint filter.
- * @Filter
+ * EndpointHanlder decorator, for class. use to define the class as Endpoint handle register in global Endpoint filter.
+ * @EndpointHanlder
  * 
- * @exports {@link Filter}
+ * @exports {@link EndpointHanlder}
  */
-export const Filter: Filter = createDecorator('Filter', {
+export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder', {
     props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
     design: {
         method: (ctx, next) => {
@@ -89,36 +89,36 @@ export const Filter: Filter = createDecorator('Filter', {
 });
 
 
-// /**
-//  * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
-//  *
-//  * @export
-//  * @interface ExecptionHandler
-//  */
-//  export interface ExecptionHandler {
-//     /**
-//      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
-//      *
-//      * @param {string} pattern message match pattern.
-//      * @param {order?: number } option message match option.
-//      */
-//     (execption: Type<Error>, option?: {
-//         /**
-//          * order.
-//          */
-//         order?: number;
-//         /**
-//          * handle expection as response type.
-//          */
-//         response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: ServerEndpointContext, returnning: any) => void)
-//     }): MethodDecorator;
-// }
+/**
+ * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ *
+ * @export
+ * @interface ExecptionHandler
+ */
+ export interface ExecptionHandler {
+    /**
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {string} pattern message match pattern.
+     * @param {order?: number } option message match option.
+     */
+    (execption: Type<Error>, option?: {
+        /**
+         * order.
+         */
+        order?: number;
+        /**
+         * handle expection as response type.
+         */
+        response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: ServerEndpointContext, returnning: any) => void)
+    }): MethodDecorator;
+}
 
-// /**
-//  * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
-//  * @ExecptionHandler
-//  * 
-//  * @exports {@link ExecptionHandler}
-//  */
-//  export const ExecptionHandler: ExecptionHandler = Filter;
+/**
+ * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ * @ExecptionHandler
+ * 
+ * @exports {@link ExecptionHandler}
+ */
+ export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
 

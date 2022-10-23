@@ -18,7 +18,7 @@ export const TCP_CLIENT_OPTS = {
         strategy: DelimiterTransportStrategy
     },
     interceptorsToken: TCP_INTERCEPTORS,
-    execptionsToken: TCP_EXECPTIONFILTERS,
+    execptionFiltersToken: TCP_EXECPTIONFILTERS,
     connectionOpts: {
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024,

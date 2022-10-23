@@ -6,7 +6,7 @@ import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
 import { TransportRequest, RequestOptions, Pattern } from './request';
 import { TransportEvent, TransportResponse } from './response';
-import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
+// import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 
@@ -15,10 +15,10 @@ import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './st
  */
 @Abstract()
 export abstract class ClientOpts<TRequest = TransportRequest, TResponse = TransportEvent> extends TransportOpts<TRequest, TResponse> {
-    /**
-     * transport options.
-     */
-    abstract transport?: TransportStrategyOpts;
+    // /**
+    //  * transport options.
+    //  */
+    // abstract transport?: TransportStrategyOpts;
 }
 
 
@@ -385,24 +385,24 @@ export abstract class Client<
             { observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 
-    protected override initContext(options: TOpts): void {
-        super.initContext(options);
-        if (options.transport) {
-            const { strategy, senderOpts, receiverOpts } = options.transport;
-            if (!strategy) {
-                throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
-            }
-            if (senderOpts) {
-                if (senderOpts.sender) this.regTypeof(Sender, senderOpts.sender);
-                if (senderOpts.interceptorsToken && senderOpts.interceptors) this.multiReg(senderOpts.interceptorsToken, senderOpts.interceptors ?? []);
-            }
-            if (receiverOpts) {
-                if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
-                if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
-            }
-            this.regTypeof(TransportStrategy, strategy);
-        }
-    }
+    // protected override initContext(options: TOpts): void {
+    //     super.initContext(options);
+    //     if (options.transport) {
+    //         const { strategy, senderOpts, receiverOpts } = options.transport;
+    //         if (!strategy) {
+    //             throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
+    //         }
+    //         if (senderOpts) {
+    //             if (senderOpts.sender) this.regTypeof(Sender, senderOpts.sender);
+    //             if (senderOpts.interceptorsToken && senderOpts.interceptors) this.multiReg(senderOpts.interceptorsToken, senderOpts.interceptors ?? []);
+    //         }
+    //         if (receiverOpts) {
+    //             if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
+    //             if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
+    //         }
+    //         this.regProvider(strategy);
+    //     }
+    // }
 
     protected abstract buildRequest(context: ClientEndpointContext, url: TRequest | TPattern, options?: TReqOpts): TRequest;
 

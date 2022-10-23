@@ -1,4 +1,4 @@
-import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Execption } from '@tsdi/ioc';
 import { Incoming, Outgoing } from './packet';
 import { TransportEndpoint } from './transport';
 import { TransportStrategy } from './strategy';
@@ -15,6 +15,8 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     abstract get target(): TransportEndpoint;
 
     done?: boolean;
+
+    execption?: any;
     /**
      * Get response status.
      */
@@ -117,36 +119,6 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
      * response body length.
      */
     abstract get length(): number | undefined;
-
-    // get state(): States {
-    //     return this.transport.fromCode(this.status);
-    // }
-
-    // set state(state: States) {
-    //     this.status = this.transport.toCode(state);
-    // }
-
-    // /**
-    //  * Get response status code.
-    //  */
-    // abstract get status(): number | string;
-    // /**
-    //  * Set response status code, defaults to OK.
-    //  */
-    // abstract set status(status: number | string);
-
-    // /**
-    //  * Textual description of response status code, defaults to OK.
-    //  *
-    //  * Do not depend on this.
-    //  */
-    // abstract get statusMessage(): string;
-    // /**
-    //  * Set Textual description of response status code, defaults to OK.
-    //  *
-    //  * Do not depend on this.
-    //  */
-    // abstract set statusMessage(msg: string);
 
     /**
      * Whether the status code is ok

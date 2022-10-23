@@ -1,4 +1,4 @@
-import { Abstract, TypeOf } from '@tsdi/ioc';
+import { Abstract, StaticProvider } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 import { Endpoint } from './endpoint';
@@ -47,21 +47,21 @@ export abstract class Receiver<TInput = any, TOutput = any, TConn = any> extends
 @Abstract()
 export abstract class SenderOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
     [K: string]: any;
-    abstract sender?: TypeOf<Sender>;
+    abstract sender?: StaticProvider<Sender>;
 }
 
 @Abstract()
 export abstract class ReceiverOpts<TInput = any, TOutput = any> extends TransportOpts<TInput, TOutput> {
     [K: string]: any;
-    abstract receiver?: TypeOf<Receiver>;
+    abstract receiver?: StaticProvider<Receiver>;
 }
 
-@Abstract()
-export abstract class TransportStrategyOpts {
-    abstract get strategy(): TypeOf<TransportStrategy>;
-    abstract senderOpts?: SenderOpts;
-    abstract receiverOpts?: ReceiverOpts;
-}
+// @Abstract()
+// export abstract class TransportStrategyOpts {
+//     abstract get strategy(): StaticProvider<TransportStrategy>;
+//     abstract senderOpts?: SenderOpts;
+//     abstract receiverOpts?: ReceiverOpts;
+// }
 
 
 

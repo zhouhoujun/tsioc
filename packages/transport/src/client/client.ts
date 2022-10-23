@@ -6,7 +6,7 @@ import { Abstract, EMPTY, lang } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { Duplex } from 'stream';
 import { ClientEndpointBackend, TransportBackend } from './backend';
-import { CLIENT_EXECPTIONFILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
+import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { Connection, ConnectionOpts } from '../connection';
@@ -28,7 +28,7 @@ const tsptDeftOpts = {
         ClientInterceptorFinalizeFilter
     ],
     interceptorsToken: CLIENT_INTERCEPTORS,
-    execptionsToken: CLIENT_EXECPTIONFILTERS,
+    execptionFiltersToken: CLIENT_EXECPTION_FILTERS,
 } as TransportClientOpts;
 
 
@@ -68,8 +68,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         const connectionOpts = { objectMode: true, ...defaults.connectionOpts, ...options?.connectionOpts };
         const interceptors = options?.interceptors ?? EMPTY;
         const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
-        const transport = { ...defaults.transport, ...options?.transport };
-        const opts = { ...tsptDeftOpts, ...defaults, ...options, transport, connectOpts, connectionOpts, interceptors, providers };
+        const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
         return opts as TOpts;
     }
 

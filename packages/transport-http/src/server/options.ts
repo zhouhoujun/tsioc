@@ -1,4 +1,4 @@
-import { ExecptionFilter, Interceptor, ServerOpts, Server, InterceptorFilter } from '@tsdi/core';
+import { Interceptor, ServerOpts, Server, EndpointFilter } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -60,9 +60,7 @@ export type HttpServerOpts = Http1ServerOpts | Http2ServerOpts;
  */
 export const HTTP_SERVEROPTIONS = tokenId<HttpServerOpts>('HTTP_SERVEROPTIONS');
 
-export const HTTP_FILTERS = tokenId<InterceptorFilter[]>('HTTP_FILTERS');
-
-export const HTTP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
+export const HTTP_EXECPTION_FILTERS = tokenId<EndpointFilter[]>('HTTP_EXECPTION_FILTERS');
 
 /**
  * http server Interceptor tokens for {@link HttpServer}.

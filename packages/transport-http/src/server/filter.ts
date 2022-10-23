@@ -1,11 +1,11 @@
-import { EmptyStatus, Endpoint, InterceptorFilter, mths } from '@tsdi/core';
+import { EmptyStatus, Endpoint, EndpointFilter, mths } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { hdr, isBuffer, isStream, pipeStream } from '@tsdi/transport';
 import { mergeMap, Observable } from 'rxjs';
 import { HttpContext, HttpServResponse } from './context';
 
 @Injectable({ static: true })
-export class HttpInterceptorFinalizeFilter extends InterceptorFilter {
+export class HttpInterceptorFinalizeFilter extends EndpointFilter {
 
     intercept(input: any, next: Endpoint<any, any>, context: HttpContext): Observable<any> {
         return next.handle(input, context)

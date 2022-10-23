@@ -1,5 +1,5 @@
 
-import { ExecptionTypedRespond, MiddlewareFilter, Redirector } from '@tsdi/core';
+import { MiddlewareFilter, Redirector, TypedRespond } from '@tsdi/core';
 import { ProviderType } from '@tsdi/ioc';
 import { DefaultStatusFormater } from './interceptors/formater';
 import { ResponseStatusFormater } from './interceptors/log';
@@ -11,7 +11,7 @@ import { MimeTypesImpl, TrasportMimeAdapter } from './impl/mime';
 import { TransportNegotiator } from './impl/negotiator';
 import { TransportSendAdapter } from './impl/send';
 import { AssetRedirector } from './impl/redirector';
-import { TranspotExecptionTypedRespond } from './impl/typed.respond';
+import { TranspotTypedRespond } from './impl/typed.respond';
 import { DefaultMiddlewareFilter } from './middlewares/filter';
 
 
@@ -28,6 +28,6 @@ export const ASSET_SERVR_PROVIDERS: ProviderType[] = [
     { provide: Negotiator, useClass: TransportNegotiator },
     { provide: ResponseStatusFormater, useClass: DefaultStatusFormater },
     { provide: ContentSendAdapter, useClass: TransportSendAdapter },
-    { provide: ExecptionTypedRespond, useClass: TranspotExecptionTypedRespond },
+    { provide: TypedRespond, useClass: TranspotTypedRespond },
     { provide: MiddlewareFilter, useClass: DefaultMiddlewareFilter }
 ];

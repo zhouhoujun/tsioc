@@ -1,13 +1,16 @@
-import { InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing, Receiver, Router, Server, TransportStrategy } from '@tsdi/core';
+import {
+    InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
+    Receiver, Router, Server, StatusInterceptorFilter, CatchInterceptor
+} from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { mergeMap, Observable } from 'rxjs';
-import { CatchInterceptor, LogInterceptor } from '../interceptors';
+import { LogInterceptor } from '../interceptors';
 import { TransportContext, SERVER_MIDDLEWARES } from './context';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
-import { TransportExecptionFilter, ExecptionFinalizeFilter } from './finalize-filter';
+import { ExecptionFinalizeFilter } from './finalize-filter';
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { Connection, ConnectionOpts } from '../connection';
@@ -19,26 +22,22 @@ import { ServerInterceptorFinalizeFilter } from './respond';
 const defOpts = {
     sizeLimit: 10 * 1024 * 1024,
     interceptorsToken: SERVER_INTERCEPTORS,
-    execptionsToken: SERVER_EXECPTION_FILTERS,
     middlewaresToken: SERVER_MIDDLEWARES,
-    transport: {
-        strategy: TransportStrategy
-    },
+    filtersToken: SERVER_EXECPTION_FILTERS,
+    // transport: TransportStrategy,
     content: {
         root: 'public'
     },
     mimeDb: db,
     interceptors: [
         LogInterceptor,
-        CatchInterceptor
+        CatchInterceptor,
+        InOutInterceptorFilter,
+        StatusInterceptorFilter,
+        ServerInterceptorFinalizeFilter,
     ],
     filters: [
-        InOutInterceptorFilter,
-        ServerInterceptorFinalizeFilter
-    ],
-    execptions: [
-        ExecptionFinalizeFilter,
-        TransportExecptionFilter
+        ExecptionFinalizeFilter
     ],
     middlewares: [
         ContentMiddleware,

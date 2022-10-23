@@ -1,8 +1,8 @@
-import { ExecptionTypedRespond, TransportExecption, AssetContext } from '@tsdi/core';
+import { TransportExecption, AssetContext, TypedRespond } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable({ static: true })
-export class TranspotExecptionTypedRespond extends ExecptionTypedRespond {
+export class TranspotTypedRespond extends TypedRespond {
     respond<T>(ctx: AssetContext, response: 'body' | 'header' | 'response', value: T): void {
         if (response === 'body') {
             ctx.body = value

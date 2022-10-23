@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY, lang, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, lang, StaticProvider, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { EndpointBackend } from './endpoint';
@@ -6,7 +6,7 @@ import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
 import { Incoming, Outgoing } from './packet';
-import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
+import { TransportStrategy } from './strategy';
 
 
 /**
@@ -17,7 +17,7 @@ export abstract class ServerOpts<TRequest extends Incoming = any, TResponse exte
     /**
      * transport options.
      */
-    abstract transport?: TransportStrategyOpts;
+    abstract transport?: StaticProvider<TransportStrategy>;
     /**
      * middlewares of server.
      */
@@ -46,6 +46,8 @@ export abstract class Server<
     extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
+
+    private _strgy!: Token<TransportStrategy>;
 
     get proxy(): boolean {
         return this.getOptions().proxy === true;
@@ -84,20 +86,21 @@ export abstract class Server<
     protected override initContext(options: Opts) {
         super.initContext(options);
         if (options.transport) {
-            this.context.setValue(TransportStrategyOpts, options.transport);
-            const { strategy, senderOpts, receiverOpts } = options.transport;
-            if (!strategy) {
-                throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
-            }
-            if (senderOpts) {
-                if (senderOpts.sender) this.regTypeof(Sender, senderOpts.sender);
-                if (senderOpts.interceptorsToken && senderOpts.interceptors) this.multiReg(senderOpts.interceptorsToken, senderOpts.interceptors ?? []);
-            }
-            if (receiverOpts) {
-                if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
-                if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
-            }
-            this.regTypeof(TransportStrategy, strategy);
+            // const { strategy, senderOpts, receiverOpts } = options.transport;
+            // if (!strategy) {
+            //     throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
+            // }
+            // if (senderOpts) {
+            //     if (senderOpts.sender) this.regTypeof(Sender, senderOpts.sender);
+            //     if (senderOpts.interceptorsToken && senderOpts.interceptors) this.multiReg(senderOpts.interceptorsToken, senderOpts.interceptors ?? []);
+            // }
+            // if (receiverOpts) {
+            //     if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
+            //     if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
+            // }
+            this._strgy = this.regProvider(options.transport);
+        } else {
+            this._strgy = TransportStrategy;
         }
 
         const mToken = this._midlsToken = options.middlewaresToken!;
@@ -107,7 +110,7 @@ export abstract class Server<
 
         if (options.middlewares && options.middlewares.length) {
             const filter = this.context.get(MiddlewareFilter);
-            const middlewares = filter? filter.filter(options.middlewares, options): options.middlewares;
+            const middlewares = filter ? filter.filter(options.middlewares, options) : options.middlewares;
             this.multiReg(mToken, middlewares);
         }
     }
@@ -123,6 +126,9 @@ export abstract class Server<
         return this.context.injector.get(this._midlsToken, EMPTY)
     }
 
+    protected getStrategy<T extends TransportStrategy>(): T {
+        return this.context.injector.get(this._strgy) as T;
+    }
     /**
      * close server.
      */

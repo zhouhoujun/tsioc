@@ -1,14 +1,11 @@
 import {
     Abstract, ArgumentExecption, Autorun, AutoWired, EMPTY, InvocationContext,
-    isClass, isClassType, lang, ProviderType, Token, Type, TypeOf
+    isClass, isClassType, isFunction, lang, ProviderType, StaticProvider, Token, Type, TypeOf
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
-import { ExecptionChain } from '../execptions/chain';
-import { ExecptionFilter } from '../execptions/filter';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
-import { FilterChain, InterceptorFilter } from './filter';
-
-
+import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from './execption.filter';
+import { FilterChain, EndpointFilter } from './filter';
 
 /**
  * transport endpoint options.
@@ -20,7 +17,7 @@ export abstract class TransportOpts<TInput, TOutput> {
      */
     abstract providers?: ProviderType[];
     /**
-     * interceptors of endpoint.
+     * interceptors or filter of endpoint.
      */
     abstract interceptors?: InterceptorType<TInput, TOutput>[];
     /**
@@ -30,28 +27,19 @@ export abstract class TransportOpts<TInput, TOutput> {
     /**
      * backend.
      */
-    abstract backend?: TypeOf<EndpointBackend<TInput, TOutput>>;
-    /**
-     * backend token.
-     */
-    abstract backendToken?: Token<EndpointBackend<TInput, TOutput>>;
-    /**
-     * intercpetor filters.
-     */
-    abstract filters?: TypeOf<InterceptorFilter>[];
-    /**
-     * the mutil token to register execption filters in the server context.
-     */
-    abstract filtersToken?: Token<InterceptorFilter[]>;
+    abstract backend?: StaticProvider<EndpointBackend>;
     /**
      * execption filters.
      */
-    abstract execptions?: TypeOf<ExecptionFilter>[];
+    abstract filters?: TypeOf<ExecptionFilter>[];
     /**
      * the mutil token to register execption filters in the context.
      */
-    abstract execptionsToken?: Token<ExecptionFilter[]>;
-
+    abstract filtersToken?: Token<ExecptionFilter[]>;
+    /**
+     * execption filters backend.
+     */
+    abstract filtersBackend?: StaticProvider<ExecptionBackend>;
     /**
      * endpoint timeout.
      */
@@ -83,10 +71,9 @@ export abstract class TransportEndpoint<
     private _chain?: Endpoint<TInput, TOutput>;
     private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
     private _bToken!: Token<EndpointBackend<TInput, TOutput>>;
-    private _filterToken!: Token<InterceptorFilter[]>;
-    private _filter!: EndpointBackend;
-    private _expFilterToken!: Token<ExecptionFilter[]>;
-    private _expFilter?: ExecptionFilter;
+    private _expFToken!: Token<ExecptionFilter[]>;
+    private _expFilter?: ExecptionBackend;
+    private _expBToken!: Token<ExecptionBackend>;
     private _opts: Opts;
 
     constructor(options?: Opts) {
@@ -119,37 +106,14 @@ export abstract class TransportEndpoint<
     }
 
     /**
-     * use respond filter.
-     * @param filter 
-     */
-    useFilter(filter: TypeOf<InterceptorFilter>, order?: number): this {
-        if (!this._filterToken) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options respondsToken is missing.');
-        }
-        this.multiOrder(this._filterToken, filter, order);
-        this._filter = null!;
-        return this;
-    }
-
-    /**
-     * respond filter chain.
-     */
-    filter(): EndpointBackend {
-        if (!this._filter) {
-            this._filter = new FilterChain(this.getBackend(), this.context.injector.get(this._filterToken, EMPTY));
-        }
-        return this._filter;
-    }
-
-    /**
      * use execption filter.
      * @param filter 
      */
-    useExecptionFilter(filter: TypeOf<ExecptionFilter>, order?: number): this {
-        if (!this._expFilterToken) {
+    useExecptionFilter(filter: TypeOf<EndpointFilter>, order?: number): this {
+        if (!this._expFToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
         }
-        this.multiOrder(this._expFilterToken, filter, order);
+        this.multiOrder(this._expFToken, filter, order);
         this._expFilter = null!;
         return this;
     }
@@ -157,9 +121,9 @@ export abstract class TransportEndpoint<
     /**
      * execption filter chain.
      */
-    execptionfilter(): ExecptionFilter {
+    execptionfilter(): Endpoint {
         if (!this._expFilter) {
-            this._expFilter = new ExecptionChain(this.context.injector.get(this._expFilterToken, EMPTY));
+            this._expFilter = new FilterChain(this.getExecptionBackend(), this.context.injector.get(this._expFToken, EMPTY));
         }
         return this._expFilter;
     }
@@ -175,7 +139,7 @@ export abstract class TransportEndpoint<
     }
 
     protected buildEndpoint(): Endpoint<TInput, TOutput> {
-        return new InterceptorChain(this.filter(), this.context.injector.get(this._iptToken, EMPTY));
+        return new InterceptorChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
     }
 
     /**
@@ -190,6 +154,13 @@ export abstract class TransportEndpoint<
      */
     protected getBackend(): EndpointBackend<TInput, TOutput> {
         return this.context.get(this._bToken);
+    }
+
+    /**
+     *  get backend endpoint. 
+     */
+    protected getExecptionBackend(): ExecptionBackend {
+        return this.context.get(this._expBToken);
     }
 
     /**
@@ -218,26 +189,26 @@ export abstract class TransportEndpoint<
             this.multiReg(iToken, options.interceptors);
         }
 
-        const eToken = this._expFilterToken = options.execptionsToken!;
-        if (!eToken) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options execptionsToken is missing.');
-        }
-        if (options.execptions && options.execptions.length) {
-            this.multiReg(eToken, options.execptions);
+        // if (!options.backend) {
+        //     throw new ArgumentExecption(lang.getClassName(this) + ' options backend is missing.');
+        // }
+        if (options.backend) {
+            this._bToken = this.regProvider(options.backend);
         }
 
-        const rspdToken = this._filterToken = options.filtersToken!;
-        if (!rspdToken) {
+
+        const expfToken = this._expFToken = options.filtersToken!;
+        if (!expfToken) {
             throw new ArgumentExecption(lang.getClassName(this) + ' options filtersToken is missing.');
         }
         if (options.filters && options.filters.length) {
-            this.multiReg(rspdToken, options.filters);
+            this.multiReg(expfToken, options.filters);
         }
-
-        const bToken = this._bToken = options.backendToken ?? EndpointBackend;
-        if (options.backend) {
-            this.regTypeof(bToken, options.backend);
+        if (!options.filtersBackend) {
+            options.filtersBackend = ExecptionHandlerBackend
+            // throw new ArgumentExecption(lang.getClassName(this) + ' options filtersBackend is missing.');
         }
+        this._expBToken = this.regProvider(options.filtersBackend);
 
     }
 
@@ -261,13 +232,10 @@ export abstract class TransportEndpoint<
         }
     }
 
-    protected regTypeof<T>(provide: Token<T>, target: TypeOf<T>): void {
-        if (isClassType(target)) {
-            const pdr = isClass(target) ? { provide, useClass: target } : { provide, useExisting: target }
-            this.context.injector.inject(pdr)
-        } else {
-            this.context.injector.inject({ provide, useValue: target })
-        }
+    protected regProvider(provider: StaticProvider): Token {
+        const prvoide = isFunction(provider) ? provider : provider.provide;
+        if (!isFunction(provider) || isClass(provider)) this.context.injector.inject(provider);
+        return prvoide;
     }
 
 }

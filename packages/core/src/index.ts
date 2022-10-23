@@ -33,6 +33,6 @@ export * from './global';
 
 export * from './uuid';
 
-export * from './execptions';
+// export * from './execptions';
 export * from './transport';
 export * from './router';

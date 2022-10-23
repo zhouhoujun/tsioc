@@ -7,7 +7,7 @@ import { HttpPathInterceptor } from './client/path';
 import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
 import { TransportModule } from '@tsdi/transport';
 import { HttpBackend2 } from './client/backend';
-import { HttpExecptionFilter, HttpFinalizeFilter } from './server/exception-filter';
+import { HttpExecptionHandlers, HttpExecptionFinalizeFilter } from './server/exception-filter';
 import { HttpStatusFactory, HttpTransportStrategy } from './transport';
 import { HttpHandlerBinding } from './server/binding';
 import { HttpInterceptorFinalizeFilter } from './server/filter';
@@ -25,8 +25,8 @@ import { HttpInterceptorFinalizeFilter } from './server/filter';
         HttpTransportStrategy,
         HttpBodyInterceptor,
         HttpPathInterceptor,
-        HttpFinalizeFilter,
-        HttpExecptionFilter,
+        HttpExecptionFinalizeFilter,
+        HttpExecptionHandlers,
         HttpBackend2,
         HttpInterceptorFinalizeFilter,
         HttpHandlerBinding,

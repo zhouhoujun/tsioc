@@ -1,4 +1,4 @@
-import { Interceptor, ServerOpts, ListenOpts, Incoming, Outgoing, ExecptionFilter } from '@tsdi/core';
+import { Interceptor, ServerOpts, ListenOpts, Incoming, Outgoing, EndpointFilter, ExecptionFilter } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
@@ -49,6 +49,6 @@ export const SERVER_RECEIVE_INTERCEPTORS = tokenId<Interceptor<Writable, Readabl
 export const SERVER_INTERCEPTORS = tokenId<Interceptor<Incoming, Outgoing>[]>('SERVER_INTERCEPTORS');
 
 /**
- * Transport execption filters token of server.
+ * execption filters token of server.
  */
 export const SERVER_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('SERVER_EXECPTION_FILTERS');
