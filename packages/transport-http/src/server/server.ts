@@ -39,10 +39,10 @@ const httpOpts = {
     detailError: true,
     interceptors: [
         LogInterceptor,
+        StatusInterceptorFilter,
         CatchInterceptor,
         PathHanlderFilter,
         InOutInterceptorFilter,
-        StatusInterceptorFilter,
         HttpInterceptorFinalizeFilter
     ],
     filters: [

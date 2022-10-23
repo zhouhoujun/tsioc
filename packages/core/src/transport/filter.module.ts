@@ -35,10 +35,10 @@ export class DefaultFilterHandlerMethodResolver extends FilterHandlerMethodResol
 
 
 export const RESPOND_PROVIDERS: ProviderType[] = [
-    // PathHanlderFilter,
-    // StatusInterceptorFilter,
-    // ExecptionHandlerBackend,
-    // InOutInterceptorFilter,
+    PathHanlderFilter,
+    StatusInterceptorFilter,
+    ExecptionHandlerBackend,
+    InOutInterceptorFilter,
     { provide: FilterHandlerMethodResolver, useClass: DefaultFilterHandlerMethodResolver, static: true }
 ]
 

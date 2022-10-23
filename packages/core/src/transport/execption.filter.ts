@@ -1,5 +1,5 @@
 import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
-import { catchError, map, Observable, Observer, of } from 'rxjs';
+import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { EndpointContext } from './context';
 import { Endpoint, Interceptor } from './endpoint';
 import { InternalServerExecption, TransportExecption } from './execptions';
@@ -53,7 +53,14 @@ export class CatchInterceptor<TInput = any, TOutput = any> implements Intercepto
             .pipe(
                 catchError((err, caught) => {
                     // ctx.execption = err;
-                    return ctx.target.execptionfilter().handle(err, ctx);
+                    const token = getClass(err);
+                    ctx.setValue(token, err);
+                    return ctx.target.execptionfilter().handle(err, ctx)
+                        .pipe(
+                            finalize(() => {
+                                ctx.setValue(token, null);
+                            })
+                        );
                 })
             )
     }
