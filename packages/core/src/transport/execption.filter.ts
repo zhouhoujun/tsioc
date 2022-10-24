@@ -52,7 +52,7 @@ export class CatchInterceptor<TInput = any, TOutput = any> implements Intercepto
         return next.handle(input, ctx)
             .pipe(
                 catchError((err, caught) => {
-                    // ctx.execption = err;
+                    ctx.execption = err;
                     const token = getClass(err);
                     ctx.setValue(token, err);
                     return ctx.target.execptionfilter().handle(err, ctx)
