@@ -1,5 +1,8 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor, getMiddlewareBackend } from '@tsdi/core';
+import {
+    Server, RunnableFactory, ModuleRef, Router, ListenOpts, InOutInterceptorFilter,
+    PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor
+} from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -15,7 +18,7 @@ import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from
 import { HttpExecptionFinalizeFilter } from './exception-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HttpHandlerBinding } from './binding';
-import { HttpTransportStrategy } from '../transport';
+// import { HttpTransportStrategy } from '../transport';
 import { HttpInterceptorFinalizeFilter } from './filter';
 import { HTTP_SERVR_PROVIDERS } from './providers';
 
@@ -32,7 +35,7 @@ const httpOpts = {
     content: {
         root: 'public'
     },
-    transport: HttpTransportStrategy,
+    // transport: HttpTransportStrategy,
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
     filtersToken: HTTP_EXECPTION_FILTERS,
@@ -189,7 +192,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
      * @param response 
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = new HttpContext(this.context.injector, request, response, this as Server, this.getStrategy());
+        const ctx = new HttpContext(this.context.injector, request, response, this as Server);
         this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint);
     }
 

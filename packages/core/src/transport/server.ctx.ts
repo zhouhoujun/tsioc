@@ -1,5 +1,5 @@
 import {
-    Abstract, Token, Type, ClassType, TypeOf, composeResolver, isArray, isDefined, isPrimitiveType,
+    Abstract, Token, Type, ClassType, composeResolver, isArray, isDefined, isPrimitiveType,
     isString, Injector, InvokeArguments, MissingParameterExecption, Parameter, EMPTY
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
@@ -8,7 +8,6 @@ import { AssetContext, ServerEndpointContext } from './context';
 import { TransportArgumentExecption } from './execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
-import { TransportStrategy } from './strategy';
 import { Incoming, Outgoing } from './packet';
 import { StatusFactory } from './status';
 
@@ -17,7 +16,6 @@ import { StatusFactory } from './status';
  * server context options.
  */
 export interface ServerContextOpts extends InvokeArguments {
-    transport?: TypeOf<TransportStrategy>
 }
 
 /**
@@ -27,7 +25,7 @@ export interface ServerContextOpts extends InvokeArguments {
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
     readonly statusFactory: StatusFactory<string | number>;
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [

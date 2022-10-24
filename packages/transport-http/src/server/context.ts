@@ -1,10 +1,11 @@
-import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status } from '@tsdi/core';
+import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status, ListenOpts } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
+import { TLSSocket } from 'tls';
 import { HttpError, HttpInternalServerError } from './../errors';
 import { HttpServer } from './server';
 
@@ -22,6 +23,13 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return token === HttpContext || token === AssetServerContext || token === ServerEndpointContext;
     }
 
+    get protocol(): string {
+        if ((this.socket as TLSSocket).encrypted) return httpsPtl;
+        if (!this.target.proxy) return httpPtl;
+        const proto = this.getHeader(hdr.X_FORWARDED_PROTO);
+        return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
+    }
+
     /**
      * Return the request socket.
      *
@@ -31,6 +39,42 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
     get socket() {
         return this.request.socket
+    }
+
+
+    get secure(): boolean {
+        return this.protocol === httpsPtl;
+    }
+
+    get update(): boolean {
+        return this.method === mths.PUT;
+    }
+
+    isAbsoluteUrl(url: string): boolean {
+        return httptl.test(url.trim())
+    }
+
+    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
+        const url = req.url?.trim() ?? '';
+        if (httptl.test(url)) {
+            return new URL(url);
+        } else {
+            let host = proxy && req.headers[hdr.X_FORWARDED_HOST];
+            if (!host) {
+                if (req.httpVersionMajor >= 2) host = req.headers[AUTHORITY];
+                if (!host) host = req.headers[hdr.HOST];
+            }
+            if (!host || isNumber(host)) {
+                host = '';
+            } else {
+                host = isString(host) ? host.split(urlsplit, 1)[0] : host[0]
+            }
+            return new URL(`${this.protocol}://${host}${url}`);
+        }
+    }
+    
+    match(protocol: string): boolean {
+        return protocol === this.protocol;
     }
 
     /**
@@ -239,6 +283,11 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
 
 }
 
+const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
+const httpsPtl = 'https';
+const httpPtl = 'http';
+const httptl = /^https?:\/\//i;
+const urlsplit = /\s*,\s*/;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
 const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
 

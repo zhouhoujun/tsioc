@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 import {
     EndpointBackend, isArrayBuffer, isBlob, isFormData,TransportEvent, ClientContext,
-    UnsupportedMediaTypeExecption, TransportRequest, Sender
+    UnsupportedMediaTypeExecption, TransportRequest, Incoming
 } from '@tsdi/core';
 import { Abstract, Injectable, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
@@ -11,30 +11,27 @@ import { createFormData, isBuffer, isFormDataLike, pmPipeline } from '../utils';
 import { Connection } from '../connection';
 
 
-@Abstract()
-export abstract class ClientEndpointBackend<TInput = any, TOutput = any> implements EndpointBackend<TInput, TOutput> {
-    abstract handle(input: TInput, ctx: ClientContext): Observable<TOutput>
-}
-
-
 /**
  * transport endpoint backend.
  */
 @Injectable()
-export class TransportBackend implements ClientEndpointBackend<TransportRequest, TransportEvent> {
+export abstract class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
         const conn = ctx.get(Connection);
-        const sender = ctx.get(Sender);
-        return sender.send(conn, req, ctx)
+        return this.send(conn, req, ctx)
             .pipe(
                 map(incoming => {
                     const status = ctx.statusFactory.createByIncoming(incoming);
                     ctx.status = status;
-                    return incoming;
+                    return this.toEvent(incoming, ctx);
                 })
             );
     }
+
+    protected abstract send(conn: Connection, req: TransportRequest, ctx: ClientContext): Observable<Incoming>;
+
+    protected abstract toEvent(incoming:Incoming, ctx: ClientContext): TransportEvent;
 }
 
 

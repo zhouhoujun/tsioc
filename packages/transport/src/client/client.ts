@@ -5,7 +5,6 @@ import {
 import { Abstract, lang } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { Duplex } from 'stream';
-import { ClientEndpointBackend, TransportBackend } from './backend';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
@@ -15,8 +14,6 @@ import { ClientInterceptorFinalizeFilter } from './filter';
 
 
 const tsptDeftOpts = {
-    backendToken: ClientEndpointBackend,
-    backend: TransportBackend,
     interceptors: [
         BodyContentInterceptor
     ],

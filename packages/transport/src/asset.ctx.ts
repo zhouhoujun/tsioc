@@ -1,7 +1,6 @@
 import {
     OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
-    ServerContextOpts, ServerEndpointContext, TransportStrategy,
-    Status, RedirectStatus, EmptyStatus
+    ServerContextOpts, ServerEndpointContext, Status, RedirectStatus, EmptyStatus
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -23,13 +22,13 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     private _url?: string;
     private _status: Status;
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly transport: TransportStrategy, options?: ServerContextOpts) {
-        super(injector, request, response, target, transport, options);
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
+        super(injector, request, response, target, options);
         this.originalUrl = request.url?.toString() ?? '';
         this._status = this.statusFactory.create('NotFound');
         this._url = request.url ?? '';
 
-        if (this.transport.isAbsoluteUrl(this._url)) {
+        if (this.isAbsoluteUrl(this._url)) {
             this._url = this.URL.pathname;
         } else {
             const sidx = this._url.indexOf('?');
@@ -95,20 +94,10 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
     protected createURL() {
         try {
-            return this.transport.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
+            return this.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
         } catch (err) {
             return Object.create(null);
         }
-    }
-
-    /**
-     * is secure protocol or not.
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get secure(): boolean {
-        return this.transport.isSecure(this.request);
     }
 
     get pathname(): string {

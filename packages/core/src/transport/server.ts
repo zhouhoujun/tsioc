@@ -5,7 +5,6 @@ import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
 import { Incoming, Outgoing } from './packet';
-import { TransportStrategy } from './strategy';
 
 
 /**
@@ -13,10 +12,6 @@ import { TransportStrategy } from './strategy';
  */
 @Abstract()
 export abstract class ServerOpts<TRequest extends Incoming = any, TResponse extends Outgoing = any> extends TransportOpts<TRequest, TResponse> {
-    /**
-     * transport options.
-     */
-    abstract transport?: StaticProvider<TransportStrategy>;
     /**
      * middlewares of server.
      */
@@ -60,8 +55,6 @@ export abstract class Server<
     extends TransportEndpoint<TRequest, TResponse, Opts> implements OnDispose {
 
     private _midlsToken!: Token<MiddlewareLike[]>;
-
-    private _strgy!: Token<TransportStrategy>;
 
     get proxy(): boolean {
         return this.getOptions().proxy === true;
@@ -113,11 +106,6 @@ export abstract class Server<
      */
     protected override initContext(options: Opts) {
         super.initContext(options);
-        if (options.transport) {
-            this._strgy = this.regProvider(options.transport);
-        } else {
-            this._strgy = TransportStrategy;
-        }
 
         const mToken = this._midlsToken = options.middlewaresToken!;
         if (!mToken) {
@@ -131,9 +119,6 @@ export abstract class Server<
         }
     }
 
-    protected getStrategy<T extends TransportStrategy>(): T {
-        return this.context.injector.get(this._strgy) as T;
-    }
     /**
      * close server.
      */

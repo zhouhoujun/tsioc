@@ -1,7 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Incoming, Outgoing } from './packet';
 import { TransportEndpoint } from './transport';
-import { TransportStrategy } from './strategy';
 import { OkStatus, Status, StatusFactory } from './status';
 
 /**
@@ -48,6 +47,33 @@ export abstract class ClientEndpointContext extends EndpointContext {
 
 
 /**
+ * Listen options.
+ */
+@Abstract()
+export abstract class ListenOpts {
+
+    [x: string]: any;
+
+    /**
+    * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
+    */
+    signal?: AbortSignal | undefined;
+    port?: number | undefined;
+    host?: string | undefined;
+    backlog?: number | undefined;
+    path?: string | undefined;
+    exclusive?: boolean | undefined;
+    readableAll?: boolean | undefined;
+    writableAll?: boolean | undefined;
+    /**
+     * @default false
+     */
+    ipv6Only?: boolean | undefined;
+    withCredentials?: boolean;
+}
+
+
+/**
  * abstract server side endpoint context.
  */
 @Abstract()
@@ -62,9 +88,9 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
     abstract get response(): TResponse;
 
     /**
-     * state of transport.
+     * protocol name
      */
-    abstract get transport(): TransportStrategy;
+    abstract get protocol(): string;
 
     /**
      * Get request rul
@@ -142,20 +168,32 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
 
 
     /**
+     * is update request or not.
+     */
+    abstract get update(): boolean;
+    /**
+     * is secure protocol or not.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    abstract get secure(): boolean;
+    /**
      * match protocol.
      * @param protocol 
      * @returns 
      */
-    match(protocol: string): boolean {
-        return this.transport.match(protocol);
-    }
-
+    abstract match(protocol: string): boolean;
     /**
-     * is update request or not.
+     * the url is absolute url or not.
+     * @param url 
      */
-    get update(): boolean {
-        return this.transport.isUpdate(this.request);
-    }
+    abstract isAbsoluteUrl(url: string): boolean;
+    /**
+     * url parse.
+     * @param url 
+     */
+    abstract parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean): URL;
 
 }
 

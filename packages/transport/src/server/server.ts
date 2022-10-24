@@ -1,6 +1,6 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    Receiver, Router, Server, StatusInterceptorFilter, CatchInterceptor
+    Router, Server, StatusInterceptorFilter, CatchInterceptor, Endpoint
 } from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
@@ -71,7 +71,7 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
             const server = this._server = this.createServer(opts);
             const logger = this.logger;
             const sub = this.onConnection(server, opts.connectionOpts)
-                .pipe(mergeMap(conn => this.context.get(Receiver).receive(conn, this.endpoint)))
+                .pipe(mergeMap(conn => this.onRequest(conn, this.endpoint)))
                 .subscribe({
                     error: (err) => {
                         logger.error(err);
@@ -135,6 +135,13 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
      * @param opts 
      */
     protected abstract onConnection(server: T, opts?: ConnectionOpts): Observable<Connection>;
+
+    /**
+     * transform, receive data from remoting.
+     * @param conn connection
+     * @param endpoint as backend endpoint form receive.
+     */
+    protected abstract onRequest(conn: Connection, endpoint: Endpoint): Observable<any>;
 
 
     // protected parseToDuplex(target: any, ...args: any[]): Duplex {

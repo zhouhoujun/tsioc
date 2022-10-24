@@ -25,7 +25,6 @@ import { ServerInterceptorFinalizeFilter } from './server/respond';
         DefaultStatusFormater,
         LogInterceptor,
 
-        TransportBackend,
         BodyContentInterceptor,
 
         BodyparserMiddleware,
