@@ -1,4 +1,4 @@
-import { EMPTY, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
+import { EMPTY, Injectable, InvocationContext, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import {
     RequestMethod, Client, OnDispose, RequestOptions,
     ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike
@@ -21,6 +21,7 @@ import { HttpBackend2 } from './backend';
 const defOpts = {
     backend: { provide: HttpBackend, useClass: HttpBackend2 },
     interceptorsToken: HTTP_INTERCEPTORS,
+    interceptors: [HttpPathInterceptor, HttpBodyInterceptor],
     filtersToken: HTTP_CLIENT_EXECPTION_FILTERS,
 } as HttpClientOpts;
 
@@ -56,10 +57,12 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
         return this._client;
     }
 
-    protected override initOption(options?: HttpClientOpts): HttpClientOpts {
-        const interceptors = [...options?.interceptors ?? EMPTY, HttpPathInterceptor, HttpBodyInterceptor]
-        const providers = options && options.providers ? [...HTTP_CLIENT_PROVIDERS, ...options.providers] : HTTP_CLIENT_PROVIDERS;
-        return { ...defOpts, ...options, interceptors, providers } as HttpClientOpts;
+    protected override getDefaultOptions(): HttpClientOpts {
+        return defOpts
+    }
+
+    protected override defaultProviders(): ProviderType[] {
+        return HTTP_CLIENT_PROVIDERS
     }
 
     protected override initContext(options: HttpClientOpts): void {

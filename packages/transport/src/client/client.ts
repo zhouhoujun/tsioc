@@ -2,7 +2,7 @@ import {
     OnDispose, ClientEndpointContext, Client, RequestOptions,
     TransportRequest, Pattern, InOutInterceptorFilter
 } from '@tsdi/core';
-import { Abstract, EMPTY, lang } from '@tsdi/ioc';
+import { Abstract, lang } from '@tsdi/ioc';
 import { map, Observable, of } from 'rxjs';
 import { Duplex } from 'stream';
 import { ClientEndpointBackend, TransportBackend } from './backend';
@@ -55,17 +55,20 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         await this.context.destroy();
     }
 
-    protected getDefaultOptions() {
-        return tsptDeftOpts;
+    protected override getDefaultOptions(): TOpts {
+        return tsptDeftOpts as TOpts;
+    }
+
+    protected override defaultProviders() {
+        return TRANSPORT_CLIENT_PROVIDERS
     }
 
     protected override initOption(options?: TOpts): TOpts {
-        const defaults = this.getDefaultOptions();
-        const connectOpts = { ...defaults.connectOpts, ...options?.connectOpts };
-        const connectionOpts = { objectMode: true, ...defaults.connectionOpts, ...options?.connectionOpts };
-        const interceptors = options?.interceptors ?? EMPTY;
-        const providers = options && options.providers ? [...TRANSPORT_CLIENT_PROVIDERS, ...options.providers] : TRANSPORT_CLIENT_PROVIDERS;
-        const opts = { ...tsptDeftOpts, ...defaults, ...options, connectOpts, connectionOpts, interceptors, providers };
+        const opts = super.initOption(options);
+        const dOpts = this.getDefaultOptions();
+        if (options?.connectOpts) opts.connectOpts = { ...dOpts.connectOpts, ...options.connectOpts };
+        if (options?.connectionOpts) opts.connectionOpts = { ...dOpts.connectionOpts, ...options?.connectionOpts }
+
         return opts as TOpts;
     }
 

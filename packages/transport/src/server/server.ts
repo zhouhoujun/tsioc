@@ -228,23 +228,20 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         }
     }
 
-    protected getDefaultOptions() {
-        return defOpts;
-    }
-
     protected override initOption(options: TOpts): TOpts {
-        const defOpts = this.getDefaultOptions();
-        const listenOpts = { ...defOpts.listenOpts, ...options?.listenOpts };
-        const connectionOpts = { objectMode: true, ...defOpts.connectionOpts, ...options?.connectionOpts };
-        const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
-        const opts = { ...defOpts, ...options, listenOpts, connectionOpts, providers };
-        if (!opts.backend && opts.middlewaresToken) {
-            opts.backend = getMiddlewareBackend(opts.middlewaresToken);
-        }
+        const opts = super.initOption(options);
+        const dOpts = this.getDefaultOptions();
+        if (options.listenOpts) opts.listenOpts = { ...dOpts.listenOpts, ...options?.listenOpts };
+        if (options.connectionOpts) opts.connectionOpts = { objectMode: true, ...dOpts.connectionOpts, ...options?.connectionOpts };
+
         return opts;
     }
 
-    protected defaultProviders() {
+    protected override getDefaultOptions(): TOpts {
+        return defOpts as TOpts;
+    }
+
+    protected override defaultProviders() {
         return TRANSPORT_SERVR_PROVIDERS;
     }
 

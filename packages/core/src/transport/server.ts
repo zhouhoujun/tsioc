@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, lang, StaticProvider, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, lang, ProviderType, StaticProvider, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
 import { TransportEndpoint, TransportOpts } from './transport';
@@ -90,7 +90,21 @@ export abstract class Server<
      * @returns 
      */
     protected override initOption(options?: Opts): Opts {
-        return options ?? {} as Opts;
+        const defOpts = this.getDefaultOptions();
+        const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
+        const opts = { ...defOpts, ...options, providers };
+        if (!opts.backend && opts.middlewaresToken) {
+            opts.backend = getMiddlewareBackend(opts.middlewaresToken);
+        }
+        return opts as Opts;
+    }
+
+    protected getDefaultOptions(): Opts {
+        return EMPTY_OBJ as Opts;
+    }
+
+    protected defaultProviders(): ProviderType[] {
+        return EMPTY;
     }
 
     /**

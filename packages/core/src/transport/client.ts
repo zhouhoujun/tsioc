@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, _tystr } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, Execption, isNil, isTypeObject, ProviderType, _tystr } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { ClientEndpointContext } from './context';
@@ -39,7 +39,18 @@ export abstract class Client<
      * @param options 
      */
     protected override initOption(options?: TOpts): TOpts {
-        return options ?? {} as TOpts;
+        const defOpts = this.getDefaultOptions();
+        const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
+        const opts = { ...defOpts, ...options, providers };
+        return opts as TOpts;
+    }
+
+    protected getDefaultOptions(): TOpts {
+        return EMPTY_OBJ as TOpts;
+    }
+
+    protected defaultProviders(): ProviderType[] {
+        return EMPTY;
     }
 
 

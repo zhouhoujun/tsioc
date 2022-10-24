@@ -86,17 +86,11 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
     }
 
     protected override initOption(options: HttpServerOpts): HttpServerOpts {
-        if (options?.options) {
-            options.options = { ...httpOpts.options, ...options.options }
-        }
-        if (options?.listenOpts) {
-            options.listenOpts = { ...httpOpts.listenOpts, ...options.listenOpts }
-        }
-        const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
-        const opts = { ...httpOpts, ...options, providers } as HttpServerOpts;
-        if (!opts.backend && opts.middlewaresToken) {
-            opts.backend = getMiddlewareBackend(opts.middlewaresToken);
-        }
+        const opts = super.initOption(options);
+        const dOpts = this.getDefaultOptions();
+        if (options?.options) opts.options = { ...dOpts.options, ...options.options }
+        if (options?.listenOpts) opts.listenOpts = { ...dOpts.listenOpts, ...options.listenOpts }
+
         return opts;
     }
 
@@ -114,7 +108,11 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
         super.initContext(options);
     }
 
-    protected defaultProviders() {
+    protected override getDefaultOptions(): HttpServerOpts {
+        return httpOpts
+    }
+
+    protected override defaultProviders() {
         return HTTP_SERVR_PROVIDERS;
     }
 
