@@ -1,7 +1,6 @@
-import { Abstract, ArgumentExecption, EMPTY, lang, StaticProvider, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, lang, StaticProvider, Token } from '@tsdi/ioc';
 import { Runner } from '../metadata/decor';
 import { OnDispose } from '../lifecycle';
-import { EndpointBackend } from './endpoint';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';
 import { MiddlewareBackend, MiddlewareLike, MiddlewareType } from './middleware';
@@ -30,6 +29,21 @@ export abstract class ServerOpts<TRequest extends Incoming = any, TResponse exte
     abstract listenOpts?: any;
 
     abstract proxy?: boolean;
+}
+
+/**
+ * get middleware backend.
+ * @param deps 
+ * @returns 
+ */
+export function getMiddlewareBackend(...deps: Token[]): StaticProvider<MiddlewareBackend> {
+    return {
+        provide: MiddlewareBackend,
+        useFactory(middlewares: MiddlewareLike[]) {
+            return new MiddlewareBackend(middlewares)
+        },
+        deps
+    }
 }
 
 /**
@@ -86,18 +100,6 @@ export abstract class Server<
     protected override initContext(options: Opts) {
         super.initContext(options);
         if (options.transport) {
-            // const { strategy, senderOpts, receiverOpts } = options.transport;
-            // if (!strategy) {
-            //     throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
-            // }
-            // if (senderOpts) {
-            //     if (senderOpts.sender) this.regTypeof(Sender, senderOpts.sender);
-            //     if (senderOpts.interceptorsToken && senderOpts.interceptors) this.multiReg(senderOpts.interceptorsToken, senderOpts.interceptors ?? []);
-            // }
-            // if (receiverOpts) {
-            //     if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
-            //     if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
-            // }
             this._strgy = this.regProvider(options.transport);
         } else {
             this._strgy = TransportStrategy;
@@ -113,17 +115,6 @@ export abstract class Server<
             const middlewares = filter ? filter.filter(options.middlewares, options) : options.middlewares;
             this.multiReg(mToken, middlewares);
         }
-    }
-
-    /**
-     * get backend endpoint.
-     */
-    protected override getBackend(): EndpointBackend<TRequest, TResponse> {
-        return new MiddlewareBackend(this.getMiddlewares())
-    }
-
-    protected getMiddlewares() {
-        return this.context.injector.get(this._midlsToken, EMPTY)
     }
 
     protected getStrategy<T extends TransportStrategy>(): T {

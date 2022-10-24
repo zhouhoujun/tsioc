@@ -1,5 +1,5 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
-import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor } from '@tsdi/core';
+import { Server, RunnableFactory, ModuleRef, Router, ListenOpts, TransportStrategy, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor, getMiddlewareBackend } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -94,6 +94,9 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
         }
         const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
         const opts = { ...httpOpts, ...options, providers } as HttpServerOpts;
+        if (!opts.backend && opts.middlewaresToken) {
+            opts.backend = getMiddlewareBackend(opts.middlewaresToken);
+        }
         return opts;
     }
 

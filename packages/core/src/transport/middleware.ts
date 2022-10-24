@@ -99,7 +99,7 @@ export class Chain implements Middleware {
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<TRequest extends Incoming, TResponse extends Outgoing, Tx extends ServerEndpointContext> implements EndpointBackend<TRequest, TResponse> {
+export class MiddlewareBackend<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, Tx extends ServerEndpointContext = ServerEndpointContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) {

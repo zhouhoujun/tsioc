@@ -56,14 +56,6 @@ export abstract class ReceiverOpts<TInput = any, TOutput = any> extends Transpor
     abstract receiver?: StaticProvider<Receiver>;
 }
 
-// @Abstract()
-// export abstract class TransportStrategyOpts {
-//     abstract get strategy(): StaticProvider<TransportStrategy>;
-//     abstract senderOpts?: SenderOpts;
-//     abstract receiverOpts?: ReceiverOpts;
-// }
-
-
 
 /**
  * transport strategy.

@@ -1,7 +1,7 @@
 import {
-    EndpointBackend, IncomingHeaders, IncomingStatusHeaders, TransportRequest, RedirectTransportStatus,
+    EndpointBackend, IncomingHeaders, IncomingStatusHeaders, TransportRequest,
     mths, Redirector, ClientEndpointContext, ResHeaders, ResponseJsonParseError, TransportExecption,
-    TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportResponse, TransportStatus, States
+    TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportResponse
 
 } from '@tsdi/core';
 import { Injectable, InvocationContext, isUndefined, lang, _tyundef } from '@tsdi/ioc';

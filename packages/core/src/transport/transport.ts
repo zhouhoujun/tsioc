@@ -189,12 +189,10 @@ export abstract class TransportEndpoint<
             this.multiReg(iToken, options.interceptors);
         }
 
-        // if (!options.backend) {
-        //     throw new ArgumentExecption(lang.getClassName(this) + ' options backend is missing.');
-        // }
-        if (options.backend) {
-            this._bToken = this.regProvider(options.backend);
+        if (!options.backend) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options backend is missing.');
         }
+        this._bToken = this.regProvider(options.backend);
 
 
         const expfToken = this._expFToken = options.filtersToken!;
@@ -205,8 +203,7 @@ export abstract class TransportEndpoint<
             this.multiReg(expfToken, options.filters);
         }
         if (!options.filtersBackend) {
-            options.filtersBackend = ExecptionHandlerBackend
-            // throw new ArgumentExecption(lang.getClassName(this) + ' options filtersBackend is missing.');
+            options.filtersBackend = ExecptionHandlerBackend;
         }
         this._expBToken = this.regProvider(options.filtersBackend);
 

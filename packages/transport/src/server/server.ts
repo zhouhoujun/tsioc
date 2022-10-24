@@ -1,6 +1,6 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    Receiver, Router, Server, StatusInterceptorFilter, CatchInterceptor
+    Receiver, Router, Server, StatusInterceptorFilter, CatchInterceptor, getMiddlewareBackend
 } from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
@@ -24,7 +24,6 @@ const defOpts = {
     interceptorsToken: SERVER_INTERCEPTORS,
     middlewaresToken: SERVER_MIDDLEWARES,
     filtersToken: SERVER_EXECPTION_FILTERS,
-    // transport: TransportStrategy,
     content: {
         root: 'public'
     },
@@ -239,6 +238,9 @@ export abstract class TransportServer<T extends EventEmitter = any, TOpts extend
         const connectionOpts = { objectMode: true, ...defOpts.connectionOpts, ...options?.connectionOpts };
         const providers = options && options.providers ? [...this.defaultProviders(), ...options.providers] : this.defaultProviders();
         const opts = { ...defOpts, ...options, listenOpts, connectionOpts, providers };
+        if (!opts.backend && opts.middlewaresToken) {
+            opts.backend = getMiddlewareBackend(opts.middlewaresToken);
+        }
         return opts;
     }
 

@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, lang, _tystr } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, isNil, isTypeObject, _tystr } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { ClientEndpointContext } from './context';
@@ -6,7 +6,6 @@ import { ClientContext } from './client.ctx';
 import { OnDispose } from '../lifecycle';
 import { TransportRequest, RequestOptions, Pattern } from './request';
 import { TransportEvent, TransportResponse } from './response';
-// import { Receiver, Sender, TransportStrategy, TransportStrategyOpts } from './strategy';
 
 
 
@@ -15,10 +14,7 @@ import { TransportEvent, TransportResponse } from './response';
  */
 @Abstract()
 export abstract class ClientOpts<TRequest = TransportRequest, TResponse = TransportEvent> extends TransportOpts<TRequest, TResponse> {
-    // /**
-    //  * transport options.
-    //  */
-    // abstract transport?: TransportStrategyOpts;
+
 }
 
 
@@ -384,25 +380,6 @@ export abstract class Client<
             this as any,
             { observe: isTypeObject(req) ? 'events' : options?.observe });
     }
-
-    // protected override initContext(options: TOpts): void {
-    //     super.initContext(options);
-    //     if (options.transport) {
-    //         const { strategy, senderOpts, receiverOpts } = options.transport;
-    //         if (!strategy) {
-    //             throw new ArgumentExecption(lang.getClassName(this) + ' transport options strategy is missing.');
-    //         }
-    //         if (senderOpts) {
-    //             if (senderOpts.sender) this.regTypeof(Sender, senderOpts.sender);
-    //             if (senderOpts.interceptorsToken && senderOpts.interceptors) this.multiReg(senderOpts.interceptorsToken, senderOpts.interceptors ?? []);
-    //         }
-    //         if (receiverOpts) {
-    //             if (receiverOpts.receiver) this.regTypeof(Receiver, receiverOpts.receiver);
-    //             if (receiverOpts.interceptorsToken && receiverOpts.interceptors) this.multiReg(receiverOpts.interceptorsToken, receiverOpts.interceptors ?? []);
-    //         }
-    //         this.regProvider(strategy);
-    //     }
-    // }
 
     protected abstract buildRequest(context: ClientEndpointContext, url: TRequest | TPattern, options?: TReqOpts): TRequest;
 
