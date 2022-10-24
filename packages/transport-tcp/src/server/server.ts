@@ -1,14 +1,14 @@
-import { Router, MiddlewareLike, ListenOpts } from '@tsdi/core';
+import { Router, MiddlewareLike, ListenOpts, ExecptionFilter, Endpoint, IncomingHeaders, Incoming } from '@tsdi/core';
 import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, SessionMiddleware,
-    TransportServer, TransportContext, ExecptionFinalizeFilter, Connection, ConnectionOpts, Packetor, ev
+    TransportServer, TransportContext, ExecptionFinalizeFilter, Connection, ConnectionOpts, Packetor, ev, ServerRequest, ServerResponse, IncomingUtil
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
-import { DelimiterTransportStrategy } from '../transport';
+import { TcpIncomingUtil } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Observable } from 'rxjs';
+import { finalize, Observable, Subscription } from 'rxjs';
 
 
 /**
@@ -24,9 +24,6 @@ export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_
  * tcp server default options.
  */
 export const TCP_SERVER_OPTS = {
-    transport: {
-        strategy: DelimiterTransportStrategy
-    },
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionFiltersToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
@@ -100,6 +97,41 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, TcpServe
         })
     }
 
+    protected onRequest(conn: Connection, endpoint: Endpoint): Observable<any> {
+        // conn.on(ev.REQUEST,)
+        return new Observable((observer) => {
+            const subs: Set<Subscription> = new Set();
+            const injector = this.context.injector;
+            const onRequest = (req: ServerRequest, res: ServerResponse) => {
+                const ctx = new TransportContext(injector, req, res, this, injector.get(IncomingUtil));
+                const sub = endpoint.handle(req, ctx)
+                    .pipe(finalize(() => ctx.destroy()))
+                    .subscribe()
+                const opts = ctx.target.getOptions();
+                opts.timeout && req.setTimeout(opts.timeout, () => {
+                    req.emit(ev.TIMEOUT);
+                    sub?.unsubscribe()
+                });
+                req.once(ev.CLOSE, async () => {
+                    await lang.delay(500);
+                    sub?.unsubscribe();
+                    if (!ctx.sent) {
+                        ctx.response.end()
+                    }
+                });
+                subs.add(sub);
+            };
+
+            conn.on(ev.REQUEST, onRequest);
+            return () => {
+                subs.forEach(s => {
+                    s && s.unsubscribe();
+                });
+                subs.clear();
+                conn.off(ev.REQUEST, onRequest);
+            }
+        });
+    }
 
     protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();

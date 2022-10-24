@@ -1,28 +1,65 @@
-import { MiddlewareLike, ServerEndpointContext, ServerContext, Incoming, Outgoing, ListenOpts } from '@tsdi/core';
-import { Token, tokenId } from '@tsdi/ioc';
+import { MiddlewareLike, ServerEndpointContext, ServerContext, Incoming, Outgoing, ListenOpts, ServerContextOpts } from '@tsdi/core';
+import { Abstract, Injector, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
+import { TransportServer } from './server';
+
+@Abstract()
+export abstract class IncomingUtil {
+
+    /**
+     * get protocol of incoming message.
+     * @param incoming 
+     */
+    abstract getProtocol(incoming: Incoming): string;
+    /**
+     * is request update or not.
+     * @param req 
+     */
+    abstract isUpdate(req: Incoming): boolean;
+    /**
+     * is secure or not.
+     * @param incoming 
+     */
+    abstract isSecure(incoming: Incoming): boolean;
+    /**
+     * parse url.
+     * @param req 
+     * @param opts 
+     * @param proxy 
+     */
+    abstract parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean): URL;
+
+    abstract isAbsoluteUrl(url: string): boolean;
+
+}
 
 /**
  * Transport context for `TransportServer`.
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
+
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, readonly util: IncomingUtil, options?: ServerContextOpts) {
+        super(injector, request, response, target, options)
+    }
+
     get protocol(): string {
-        throw new Error('Method not implemented.');
+        return this.util.getProtocol(this.request)
     }
     get update(): boolean {
-        throw new Error('Method not implemented.');
+        return this.util.isUpdate(this.request)
     }
     get secure(): boolean {
-        throw new Error('Method not implemented.');
+        return this.util.isSecure(this.request)
     }
     match(protocol: string): boolean {
-        throw new Error('Method not implemented.');
+        return protocol === this.protocol;
     }
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return this.util.isAbsoluteUrl(url)
     }
+
     parseURL(incoming: Incoming<any>, opts: ListenOpts, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+        return this.util.parseURL(incoming, opts, proxy);
     }
 
     get sent(): boolean {
@@ -37,6 +74,8 @@ export class TransportContext<TRequest extends Incoming = Incoming, TResponse ex
     protected isSelf(token: Token) {
         return token === TransportContext || token === AssetServerContext || token === ServerEndpointContext || token === ServerContext;
     }
+
+
 
 }
 

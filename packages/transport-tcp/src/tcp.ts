@@ -2,7 +2,7 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
-import { DelimiterTransportStrategy } from './transport';
+import { TcpIncomingUtil } from './transport';
 import { TcpServerOpts } from './server/options';
 import { TcpServer } from './server/server';
 
@@ -13,7 +13,7 @@ import { TcpServer } from './server/server';
         TransportModule
     ],
     providers: [
-        DelimiterTransportStrategy,
+        TcpIncomingUtil,
         TcpClient,
         TcpServer
     ]

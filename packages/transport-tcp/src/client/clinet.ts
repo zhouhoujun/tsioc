@@ -2,7 +2,7 @@ import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
 import { Connection, ConnectionOpts, ev, Packetor, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { DelimiterTransportStrategy } from '../transport';
+import { TcpIncomingUtil } from '../transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -15,7 +15,7 @@ import { Observable, Observer } from 'rxjs';
  */
 export const TCP_CLIENT_OPTS = {
     transport: {
-        strategy: DelimiterTransportStrategy
+        strategy: TcpIncomingUtil
     },
     interceptorsToken: TCP_INTERCEPTORS,
     execptionFiltersToken: TCP_EXECPTIONFILTERS,

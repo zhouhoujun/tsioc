@@ -3,7 +3,7 @@ import {
     EndpointBackend, isArrayBuffer, isBlob, isFormData,TransportEvent, ClientContext,
     UnsupportedMediaTypeExecption, TransportRequest, Incoming
 } from '@tsdi/core';
-import { Abstract, Injectable, _tyundef } from '@tsdi/ioc';
+import { Abstract, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Writable, Readable, PipelineSource } from 'stream';
 import { Observable, map } from 'rxjs';
 import * as zlib from 'zlib';
@@ -14,7 +14,7 @@ import { Connection } from '../connection';
 /**
  * transport endpoint backend.
  */
-@Injectable()
+@Abstract()
 export abstract class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
 
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
@@ -169,7 +169,4 @@ export async function sendbody(data: any, request: Writable, error: (err: any) =
         error(err);
     }
 }
-
-
-
 

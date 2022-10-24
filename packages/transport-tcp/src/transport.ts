@@ -1,20 +1,20 @@
 import { Injectable, isString } from '@tsdi/ioc';
-import { Incoming, ListenOpts, mths, Packet, TransportStrategy } from '@tsdi/core';
-import { ConnectionOpts, hdr, isBuffer, PacketParser, PacketGenerator, ev, Connection } from '@tsdi/transport';
+import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
+import { ConnectionOpts, hdr, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { Duplex, TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 
 
 @Injectable()
-export class DelimiterTransportStrategy extends TransportStrategy {
-    private _protocol = 'tcp';
-    get protocol(): string {
-        return this._protocol;
-    }
+export class TcpIncomingUtil extends IncomingUtil {
 
     isUpdate(req: Incoming): boolean {
         return req.method === mths.PUT;
+    }
+
+    getProtocol(incoming: Incoming<Connection>): string {
+        return incoming.connection? 'ipc': 'tcp';
     }
 
     isSecure(incoming: Incoming<Connection>): boolean {
@@ -45,9 +45,6 @@ export class DelimiterTransportStrategy extends TransportStrategy {
         return tcptl.test(url.trim())
     }
 
-    match(protocol: string): boolean {
-        return protocol === this.protocol;
-    }
 
 }
 
