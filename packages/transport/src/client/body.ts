@@ -10,6 +10,9 @@ import { hdr } from '../consts';
 import { createFormData, isBuffer, isFormDataLike, isStream } from '../utils';
 
 
+/**
+ * body content interceptor.
+ */
 @Injectable({ static: true })
 export class BodyContentInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 

@@ -1,4 +1,7 @@
-import { EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Interceptor, EndpointFilter, mths, NEXT, Outgoing, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import {
+    EmptyStatus, Endpoint, EndpointBackend, EndpointContext, EndpointFilter,
+    mths, Outgoing, ServerEndpointContext, TransportExecption
+} from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { TransportContext } from './context';
@@ -11,27 +14,6 @@ import { mergeMap, Observable } from 'rxjs';
 export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpointContext = ServerEndpointContext> implements EndpointBackend<IInput, TOutput> {
     abstract handle(input: IInput, context: EndpointContext): Observable<TOutput>;
 }
-
-
-// @Abstract()
-// export abstract class RespondInterceptor<IInput = any, TOutput = any> implements Interceptor<IInput, TOutput> {
-
-//     constructor() { }
-
-//     intercept(req: IInput, next: Endpoint<IInput, TOutput>, ctx: TransportContext): Observable<TOutput> {
-//         return next.handle(req, ctx)
-//             .pipe(
-//                 mergeMap(res => {
-//                     // this.respond(res, ctx)
-//                     const filter = ctx.target.filter()
-//                     return filter.handle(ctx, NEXT);
-//                 })
-//             )
-//     }
-
-//     protected abstract respond(res: TOutput, ctx: EndpointContext): Promise<any>;
-// }
-
 
 
 @Injectable({ static: true })

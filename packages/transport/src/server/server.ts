@@ -1,6 +1,6 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    Receiver, Router, Server, StatusInterceptorFilter, CatchInterceptor, getMiddlewareBackend
+    Receiver, Router, Server, StatusInterceptorFilter, CatchInterceptor
 } from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';

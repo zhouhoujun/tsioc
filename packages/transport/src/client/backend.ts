@@ -24,7 +24,6 @@ export abstract class ClientEndpointBackend<TInput = any, TOutput = any> impleme
 export class TransportBackend implements ClientEndpointBackend<TransportRequest, TransportEvent> {
 
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
-        const url = req.url;
         const conn = ctx.get(Connection);
         const sender = ctx.get(Sender);
         return sender.send(conn, req, ctx)

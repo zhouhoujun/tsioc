@@ -7,7 +7,10 @@ import { TransportServerOpts } from './server/options';
 import { TransportServer } from './server/server';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { DefaultStatusFormater, LogInterceptor } from './interceptors';
-import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware } from './middlewares';
+import {
+    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware,
+    EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware
+} from './middlewares';
 import { ExecptionFinalizeFilter } from './server/finalize-filter';
 import { ServerInterceptorFinalizeFilter } from './server/respond';
 
@@ -25,7 +28,6 @@ import { ServerInterceptorFinalizeFilter } from './server/respond';
         TransportBackend,
         BodyContentInterceptor,
 
-
         BodyparserMiddleware,
         ContentMiddleware,
         CorsMiddleware,
@@ -36,7 +38,7 @@ import { ServerInterceptorFinalizeFilter } from './server/respond';
 
         ServerInterceptorFinalizeFilter,
         ExecptionFinalizeFilter,
-        
+
         { provide: Client, useExisting: TransportClient },
         { provide: Server, useExisting: TransportServer }
     ]

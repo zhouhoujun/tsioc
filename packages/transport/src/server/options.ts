@@ -1,4 +1,4 @@
-import { Interceptor, ServerOpts, ListenOpts, Incoming, Outgoing, EndpointFilter, ExecptionFilter } from '@tsdi/core';
+import { Interceptor, ServerOpts, ListenOpts, Incoming, Outgoing, ExecptionFilter } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
