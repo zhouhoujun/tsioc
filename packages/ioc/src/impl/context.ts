@@ -288,7 +288,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     protected clear() {
         this._args = null!;
         this.resolvers = null!;
-        this._refs = []
+        this._refs = null!;
     }
 
 }

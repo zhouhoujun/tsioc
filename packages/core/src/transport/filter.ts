@@ -95,11 +95,6 @@ export function runHandlers(ctx: EndpointContext, input: any, filter: Type | str
                 return $res;
             }));
     });
-    // $obs = concat(handles.map(h => {
-    //     const $res = h.invoke(ctx);
-    //     if (!isPromise($res) || !isObservable($res)) return of($res);
-    //     return $res;
-    // }))
     return $obs;
 
 }

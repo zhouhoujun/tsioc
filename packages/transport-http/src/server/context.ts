@@ -168,31 +168,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return true
     }
 
-    // get status(): HttpStatusCode {
-    //     return this.response.statusCode
-    // }
-
-    // set status(code: HttpStatusCode) {
-    //     if (this.sent) return;
-
-    //     assert(Number.isInteger(code), 'status code must be a number');
-    //     assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
-    //     this._explicitStatus = true;
-    //     this.response.statusCode = code;
-    //     if (this.request.httpVersionMajor < 2) this.response.statusMessage = this.transport.message(code);
-    //     if (this.body && this.transport.isEmpty(code)) this.body = null;
-    // }
-
-    // get statusMessage() {
-    //     return this.response.statusMessage || this.transport.message(this.status)
-    // }
-
-    // set statusMessage(msg: string) {
-    //     if (this.request.httpVersionMajor < 2) {
-    //         this.response.statusMessage = msg
-    //     }
-    // }
-
     protected override onStatusChanged(status: Status<number>): void {
         const code = status.status;
         assert(Number.isInteger(code), 'status code must be a number');

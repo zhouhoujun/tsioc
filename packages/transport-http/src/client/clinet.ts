@@ -1,6 +1,6 @@
-import { EMPTY, Injectable, InvocationContext, lang, Nullable, Token } from '@tsdi/ioc';
+import { EMPTY, Injectable, InvocationContext, lang, Nullable } from '@tsdi/ioc';
 import {
-    RequestMethod, Client, OnDispose, InterceptorLike, RequestOptions,
+    RequestMethod, Client, OnDispose, RequestOptions,
     ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
@@ -65,10 +65,6 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
     protected override initContext(options: HttpClientOpts): void {
         super.initContext(options);
         this.context.setValue(HttpClientOpts, options);
-    }
-
-    protected getInterceptorsToken(): Token<InterceptorLike<HttpRequest<any>, HttpEvent<any>>[]> {
-        return HTTP_INTERCEPTORS;
     }
 
     protected override async connect(): Promise<void> {

@@ -566,7 +566,6 @@ export class DefaultInjector extends Injector {
         this.isAlias = null!;
         this.lifecycle.clear();
         (this as any).parent = null!;
-        (this as any).strategy = null!
     }
 }
 
