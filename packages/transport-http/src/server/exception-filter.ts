@@ -107,7 +107,7 @@ export class HttpExecptionHandlers {
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: HttpContext, execption: UnsupportedMediaTypeExecption) {
-        ctx.execption = new HttpError(415, execption.message)
+        ctx.execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message)
     }
 
     @ExecptionHandler(TransportArgumentExecption)

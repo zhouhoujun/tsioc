@@ -154,7 +154,7 @@ export interface Incoming<TConn = any> {
      * @param msecs 
      * @param callback 
      */
-    setTimeout?(msecs: number, callback: () => void): this;
+    setTimeout?(msecs: number, callback: () => void): void | this;
 
     emit?(event: string, ...args: any[]): void;
     on?(event: string, listener: (...args: any) => void): this;
