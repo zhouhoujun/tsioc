@@ -7,7 +7,10 @@ import { HtmlParser } from './ml_parser/html_parser';
 
 import { ConstantPool } from './constant';
 import { Identifiers as Idf } from './identifiers';
-import { AST, AstMemoryEfficientTransformer, BindingPipe, BindingType, FunctionCall, ImplicitReceiver, Interpolation, LiteralArray, LiteralPrimitive, ParsedEventType, PropertyRead } from './exp_parser/ast';
+import {
+   AST, AstMemoryEfficientTransformer, BindingPipe, BindingType, FunctionCall, ImplicitReceiver,
+   Interpolation, LiteralArray, LiteralPrimitive, ParsedEventType, PropertyRead
+} from './exp_parser/ast';
 import { splitNsName } from './ml_parser/tags';
 import { CssSelector, SelectorMatcher } from './selector';
 import { htmlAstToRender3Ast } from './parser';

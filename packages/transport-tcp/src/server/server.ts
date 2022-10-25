@@ -2,7 +2,7 @@ import { Router, MiddlewareLike, ListenOpts, ExecptionFilter } from '@tsdi/core'
 import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, SessionMiddleware,
-    TransportServer, TransportContext, ExecptionFinalizeFilter, Connection, ConnectionOpts, PacketFactory, ev, ServerRequest, ServerResponse
+    TransportServer, TransportContext, ExecptionFinalizeFilter, Connection, ConnectionOpts, PacketFactory, ev, IncomingMessage, OutgoingMessage
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpIncomingUtil } from '../transport';
@@ -61,7 +61,7 @@ export const TCP_SERVER_OPTS = {
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TransportServer<ServerRequest, ServerResponse, net.Server | tls.Server, TcpServerOpts> {
+export class TcpServer extends TransportServer<IncomingMessage, OutgoingMessage, net.Server | tls.Server, TcpServerOpts> {
     constructor(@Nullable() options: TcpServerOpts) {
         super(options)
     }
@@ -80,7 +80,7 @@ export class TcpServer extends TransportServer<ServerRequest, ServerResponse, ne
         return new Connection(socket, packet, opts);
     }
 
-    protected createContext(req: ServerRequest, res: ServerResponse): TransportContext<ServerRequest, ServerResponse> {
+    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
         const injector = this.context.injector;
         return new TransportContext(injector, req, res, this, injector.get(TcpIncomingUtil))
     }

@@ -3,11 +3,10 @@ import { Readable } from 'stream';
 import { Connection } from '../connection';
 import { ev, hdr } from '../consts';
 
-
 /**
  * Server request.
  */
-export class ServerRequest extends Readable implements Incoming, Message {
+export class IncomingMessage extends Readable implements Incoming, Message {
     readonly url: string;
     readonly method: string;
     readonly authority: string;

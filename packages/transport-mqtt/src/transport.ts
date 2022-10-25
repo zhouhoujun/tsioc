@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { Incoming, ListenOpts, States, TransportStrategy } from '@tsdi/core';
-import { ConnectionOpts, ev, PacketGenerator, PacketParser, Packetor } from '@tsdi/transport';
+import { Incoming, ListenOpts } from '@tsdi/core';
+import { ConnectionOpts, ev, PacketGenerator, PacketParser, PacketFactory, IncomingUtil } from '@tsdi/transport';
 import { TransformCallback, Writable } from 'stream';
 import {
     Parser, parser, writeToStream,
@@ -93,36 +93,9 @@ export declare type PacketOptions = ConnectOptions |
 
 
 @Injectable()
-export class MqttTransportStrategy extends TransportStrategy {
-
-    private _protocol = 'mqtt';
-
-
-    isValidCode(code: string | number): boolean {
+export class MqttIcomingUtil extends IncomingUtil {
+    getProtocol(incoming: Incoming<any>): string {
         throw new Error('Method not implemented.');
-    }
-    parseCode(code?: string | number | null | undefined): string | number {
-        throw new Error('Method not implemented.');
-    }
-    fromCode(status: string | number): States {
-        throw new Error('Method not implemented.');
-    }
-    toCode(state: States): string | number {
-        throw new Error('Method not implemented.');
-    }
-    isEmpty(code: string | number): boolean {
-        throw new Error('Method not implemented.');
-    }
-    message(code: string | number): string {
-        throw new Error('Method not implemented.');
-    }
-
-    valid(header: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-
-    get protocol(): string {
-        return this._protocol;
     }
 
     isAbsoluteUrl(url: string): boolean {
@@ -143,12 +116,12 @@ export class MqttTransportStrategy extends TransportStrategy {
 }
 
 @Injectable()
-export class MqttPacketor implements Packetor {
-    generator(output: Writable, opts: ConnectionOpts): PacketGenerator {
+export class MqttPacketFactory implements PacketFactory {
+    createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator {
         return new MqttPacketGenerator(output, opts);
     }
 
-    parser(opts: ConnectionOpts): PacketParser {
+    createParser(opts: ConnectionOpts): PacketParser {
         return new MqttPacketParser(opts);
     }
 

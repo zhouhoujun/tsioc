@@ -1,12 +1,12 @@
-import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest, CatchInterceptor } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId } from '@tsdi/ioc';
-import { CatchInterceptor, LogInterceptor, TransportServer, TransportServerOpts, RespondInterceptor, Connection, ConnectionOpts, ev } from '@tsdi/transport';
+import { LogInterceptor, TransportServer, TransportServerOpts, Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext, IncomingUtil } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttConnection } from './connection';
-import { MqttPacketor, MqttTransportStrategy } from '../transport';
+import { MqttPacketFactory, MqttIcomingUtil } from '../transport';
 import { Observable } from 'rxjs';
 
 
@@ -28,7 +28,7 @@ export interface MqttWsServerOpts {
 }
 
 @Abstract()
-export abstract class MqttServerOpts extends TransportServerOpts {
+export abstract class MqttServerOpts<TRequest extends IncomingMessage = IncomingMessage, TResponse extends OutgoingMessage = OutgoingMessage> extends TransportServerOpts<TRequest, TResponse> {
     abstract serverOpts: MqttTcpServerOpts | MqttTlsServerOpts | MqttWsServerOpts;
 }
 
@@ -60,12 +60,11 @@ const defaults = {
     execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
     middlewaresToken: MQTT_MIDDLEWARES,
     transport: {
-        strategy: MqttTransportStrategy
+        strategy: MqttIcomingUtil
     },
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
-        RespondInterceptor
     ],
     listenOpts: {
         host: 'localhost'
@@ -74,7 +73,7 @@ const defaults = {
 
 
 @Injectable()
-export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Server, MqttServerOpts> {
+export class MqttServer extends TransportServer<IncomingMessage, OutgoingMessage, net.Server | tls.Server | ws.Server, MqttServerOpts> {
 
     constructor(options: MqttServerOpts) {
         super(options);
@@ -121,32 +120,42 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
     //     return new MqttConnection(duplex, transport, opts);
     // }
 
-    protected onConnection(server: net.Server | tls.Server | ws.Server<ws.WebSocket> | Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
-        const packetor = this.context.get(MqttPacketor);
-        return new Observable((observer) => {
-            const onError = (err: Error) => {
-                observer.error(err);
-            };
-            const onConnection = (socket: Duplex | ws.WebSocket) => {
-                if (socket instanceof ws.WebSocket) {
-                    socket = ws.createWebSocketStream(socket, { objectMode: true });
-                }
-                observer.next(new MqttConnection(socket, packetor, opts));
-            }
-            const onClose = () => {
-                observer.complete();
-            }
-            server.on(ev.ERROR, onError);
-            server.on(ev.CONNECTION, onConnection);
-            server.on(ev.CLOSE, onClose)
+    // protected onConnection(server: net.Server | tls.Server | ws.Server<ws.WebSocket> | Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+    //     const packetor = this.context.get(MqttPacketFactory);
+    //     return new Observable((observer) => {
+    //         const onError = (err: Error) => {
+    //             observer.error(err);
+    //         };
+    //         const onConnection = (socket: Duplex | ws.WebSocket) => {
+    //             if (socket instanceof ws.WebSocket) {
+    //                 socket = ws.createWebSocketStream(socket, { objectMode: true });
+    //             }
+    //             observer.next(new MqttConnection(socket, packetor, opts));
+    //         }
+    //         const onClose = () => {
+    //             observer.complete();
+    //         }
+    //         server.on(ev.ERROR, onError);
+    //         server.on(ev.CONNECTION, onConnection);
+    //         server.on(ev.CLOSE, onClose)
 
-            return () => {
-                server.off(ev.ERROR, onError);
-                server.off(ev.CLOSE, onClose);
-                server.off(ev.CONNECTION, onConnection);
-            }
-        })
+    //         return () => {
+    //             server.off(ev.ERROR, onError);
+    //             server.off(ev.CLOSE, onClose);
+    //             server.off(ev.CONNECTION, onConnection);
+    //         }
+    //     })
+    // }
+
+    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+        const packet = this.context.get(MqttPacketFactory);
+        return new MqttConnection(socket, packet, opts);
     }
+    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
+        const injector = this.context.injector;
+        return new TransportContext(injector, req, res, this, injector.get(IncomingUtil))
+    }
+
 
     protected listen(server: net.Server | tls.Server | ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();

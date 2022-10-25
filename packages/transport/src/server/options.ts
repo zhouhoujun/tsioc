@@ -1,10 +1,8 @@
-import { Interceptor, ServerOpts, ListenOpts, Incoming, Outgoing, ExecptionFilter } from '@tsdi/core';
+import { Interceptor, ServerOpts, ListenOpts, ExecptionFilter, Incoming, Outgoing } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
-import { Readable, Writable } from 'stream';
 import { MimeSource } from '../mime';
-
 
 /**
  * transport server options.
@@ -33,14 +31,6 @@ export abstract class TransportServerOpts<TRequest extends Incoming = Incoming, 
 }
 
 
-/**
- * send interceptors token of server.
- */
-export const SERVER_SEND_INTERCEPTORS = tokenId<Interceptor<Writable, Readable>[]>('SERVER_SEND_INTERCEPTORS');
-/**
- * receive interceptors token of server.
- */
-export const SERVER_RECEIVE_INTERCEPTORS = tokenId<Interceptor<Writable, Readable>[]>('CLIENT_RECEIVE_INTERCEPTORS');
 
 /**
  * Transport interceptors token of server.

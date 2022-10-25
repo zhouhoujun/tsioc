@@ -3,6 +3,7 @@ import { ModuleWithProviders } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { MqttClient } from './client/client';
 import { MqttServer, MqttServerOpts } from './server/server';
+import { MqttPacketFactory } from './transport';
 
 
 @Module({
@@ -12,6 +13,7 @@ import { MqttServer, MqttServerOpts } from './server/server';
         TransportModule
     ],
     providers: [
+        MqttPacketFactory,
         MqttClient,
         MqttServer
     ]

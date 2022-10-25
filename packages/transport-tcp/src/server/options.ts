@@ -1,6 +1,6 @@
 import { Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts, ServerRequest, ServerResponse } from '@tsdi/transport';
+import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts, IncomingMessage, OutgoingMessage } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 
@@ -10,7 +10,7 @@ import * as tls from 'tls';
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOpts extends TransportServerOpts<ServerRequest, ServerResponse> {
+export abstract class TcpServerOpts extends TransportServerOpts<IncomingMessage, OutgoingMessage> {
 
     abstract maxConnections?: number;
     abstract proxy?: boolean;
@@ -28,4 +28,4 @@ export abstract class TcpServerOpts extends TransportServerOpts<ServerRequest, S
 /**
  * Tcp server interceptors.
  */
-export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerResponse>[]>('TCP_SERV_INTERCEPTORS');
+export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<IncomingMessage, OutgoingMessage>[]>('TCP_SERV_INTERCEPTORS');

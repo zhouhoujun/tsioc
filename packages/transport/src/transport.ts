@@ -11,7 +11,7 @@ import {
     EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware
 } from './middlewares';
 import { ExecptionFinalizeFilter } from './server/finalize-filter';
-import { ServerInterceptorFinalizeFilter } from './server/respond';
+import { ServerInterceptorFinalizeFilter } from './server/filter';
 
 
 @Module({

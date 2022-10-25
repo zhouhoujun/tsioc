@@ -1,5 +1,5 @@
 import { Injectable, ObjectMap, isArray, isString, lang, isFunction, ArgumentExecption } from '@tsdi/ioc';
-import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
+import { toAbsolutePath } from '@tsdi/platform-server';
 import { Src } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';

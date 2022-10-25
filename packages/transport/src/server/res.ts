@@ -9,7 +9,7 @@ import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
 /**
  * server response.
  */
-export class ServerResponse extends Writable implements Outgoing {
+export class OutgoingMessage extends Writable implements Outgoing {
 
     _closed = false;
     ending = false;
