@@ -2,10 +2,10 @@ import {
     Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
     InvokeOption, OnDestroy, tokenId, Type, TypeDef
 } from '@tsdi/ioc';
-import { ServerEndpointContext } from '../transport/context';
-import { InterceptorLike } from '../transport/endpoint';
-import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { Protocols } from '../transport/packet';
+import { InterceptorLike } from '../transport/endpoint';
+import { ServerEndpointContext } from '../transport/context';
+import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { CanActivate } from './guard';
 
 /**

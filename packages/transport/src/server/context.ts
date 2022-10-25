@@ -28,7 +28,10 @@ export abstract class IncomingUtil {
      * @param proxy 
      */
     abstract parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean): URL;
-
+    /**
+     * is absolute url.
+     * @param url 
+     */
     abstract isAbsoluteUrl(url: string): boolean;
 
 }
@@ -38,7 +41,7 @@ export abstract class IncomingUtil {
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer, readonly util: IncomingUtil, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer<TRequest, TResponse>, readonly util: IncomingUtil, options?: ServerContextOpts) {
         super(injector, request, response, target, options)
     }
 

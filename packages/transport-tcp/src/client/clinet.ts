@@ -1,6 +1,6 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
-import { TcpClientOpts, TCP_EXECPTIONFILTERS, TCP_INTERCEPTORS } from './options';
+import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
 import { Connection, ConnectionOpts, ev, Packetor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpIncomingUtil } from '../transport';
 import { Duplex } from 'stream';
@@ -17,8 +17,8 @@ export const TCP_CLIENT_OPTS = {
     transport: {
         strategy: TcpIncomingUtil
     },
-    interceptorsToken: TCP_INTERCEPTORS,
-    execptionFiltersToken: TCP_EXECPTIONFILTERS,
+    interceptorsToken: TCP_CLIENT_INTERCEPTORS,
+    execptionFiltersToken: TCP_CLIENT_EXECPTION_FILTERS,
     connectionOpts: {
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024,

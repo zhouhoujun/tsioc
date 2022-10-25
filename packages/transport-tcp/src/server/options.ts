@@ -10,7 +10,7 @@ import * as tls from 'tls';
  * TCP server options.
  */
 @Abstract()
-export abstract class TcpServerOpts extends TransportServerOpts {
+export abstract class TcpServerOpts extends TransportServerOpts<ServerRequest, ServerResponse> {
 
     abstract maxConnections?: number;
     abstract proxy?: boolean;

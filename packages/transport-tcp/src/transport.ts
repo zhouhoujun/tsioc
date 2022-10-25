@@ -1,8 +1,8 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
-import { ConnectionOpts, hdr, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil } from '@tsdi/transport';
+import { ConnectionOpts, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil } from '@tsdi/transport';
 import { Buffer } from 'buffer';
-import { Duplex, TransformCallback, Writable } from 'stream';
+import { TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
 
 
@@ -28,10 +28,7 @@ export class TcpIncomingUtil extends IncomingUtil {
         } else {
             const { host, port, path } = opts;
             const isIPC = !host && !port;
-            if (isIPC) {
-                this._protocol = 'ipc'
-            }
-            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
+            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`tcp://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
             if (isIPC) {
                 uri.protocol = 'ipc';

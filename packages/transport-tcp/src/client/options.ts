@@ -36,8 +36,8 @@ export abstract class TcpClientOpts extends TransportClientOpts {
 /**
  * tcp client interceptors.
  */
-export const TCP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('TCP_INTERCEPTORS');
+export const TCP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('TCP_CLIENT_INTERCEPTORS');
 /**
- * tcp client interceptors.
+ * tcp client execption filters.
  */
-export const TCP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('TCP_EXECPTIONFILTERS');
+export const TCP_CLIENT_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('TCP_CLIENT_EXECPTION_FILTERS');

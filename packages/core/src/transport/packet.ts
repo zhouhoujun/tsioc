@@ -149,6 +149,18 @@ export interface Incoming<TConn = any> {
      */
     pipe(destination: any, options?: { end?: boolean | undefined; }): any;
 
+    /**
+     * set timeout.
+     * @param msecs 
+     * @param callback 
+     */
+    setTimeout?(msecs: number, callback: () => void): this;
+
+    emit?(event: string, ...args: any[]): void;
+    on?(event: string, listener: (...args: any) => void): this;
+    once?(event: string, listener: (...args: any) => void): this;
+    off?(event: string, listener: (...args: any) => void): this;
+
 }
 
 /**
@@ -160,11 +172,11 @@ export interface Outgoing<TConn = any> {
     /**
      * Get response status code.
      */
-    get statusCode(): number|string;
+    get statusCode(): number | string;
     /**
      * Set response status code.
      */
-    set statusCode(status: number|string);
+    set statusCode(status: number | string);
     /**
      * Textual description of response status code, defaults to OK.
      *
@@ -268,6 +280,14 @@ export interface Outgoing<TConn = any> {
 
     end(cb?: (() => void) | undefined): this;
     end(chunk: any, cb?: (() => void) | undefined): this;
+
+
+
+    emit?(event: string, ...args: any[]): void;
+    on?(event: string, listener: (...args: any) => void): this;
+    once?(event: string, listener: (...args: any) => void): this;
+    off?(event: string, listener: (...args: any) => void): this;
+
 
     writable?: boolean;
     writableEnded?: boolean;
