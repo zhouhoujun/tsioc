@@ -6,6 +6,7 @@ import { Log, Logger } from '@tsdi/logs';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
 import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterChain, EndpointFilter } from './filter';
+import { StatusFactory } from './status';
 
 /**
  * transport endpoint options.
@@ -16,6 +17,10 @@ export abstract class TransportOpts<TInput, TOutput> {
      * providers for transport.
      */
     abstract providers?: ProviderType[];
+    /**
+     * status factory.
+     */
+    abstract statusFactory?: StaticProvider<StatusFactory>;
     /**
      * interceptors or filter of endpoint.
      */
@@ -75,6 +80,7 @@ export abstract class TransportEndpoint<
     private _expFilter?: ExecptionBackend;
     private _expBToken!: Token<ExecptionBackend>;
     private _opts: Opts;
+    private _statfToken!: Token<StatusFactory>;
 
     constructor(options?: Opts) {
         this._opts = this.initOption(options);
@@ -194,6 +200,11 @@ export abstract class TransportEndpoint<
         }
         this._bToken = this.regProvider(options.backend);
 
+        if (!options.statusFactory) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options statusFactory is missing.');
+        }
+        this._statfToken = this.regProvider(options.statusFactory);
+
 
         const expfToken = this._expFToken = options.filtersToken!;
         if (!expfToken) {
@@ -233,6 +244,10 @@ export abstract class TransportEndpoint<
         const prvoide = isFunction(provider) ? provider : provider.provide;
         if (!isFunction(provider) || isClass(provider)) this.context.injector.inject(provider);
         return prvoide;
+    }
+
+    protected statusFactory(): StatusFactory {
+        return this.context.injector.get(this._statfToken);
     }
 
 }

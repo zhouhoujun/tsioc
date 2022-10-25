@@ -24,8 +24,7 @@ export interface ServerContextOpts extends InvokeArguments {
 @Abstract()
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
-    readonly statusFactory: StatusFactory<string | number>;
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, readonly statusFactory: StatusFactory<string | number>,  options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [
@@ -34,8 +33,6 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
                 ...injector.get(MODEL_RESOLVERS, EMPTY)
             ]
         });
-        this.statusFactory = injector.get(StatusFactory);
-
     }
 
     protected isSelf(token: Token) {

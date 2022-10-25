@@ -7,6 +7,7 @@ import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import { Observable, Observer } from 'rxjs';
+import { HttpStatusFactory } from '@tsdi/transport-http';
 
 
 
@@ -14,9 +15,7 @@ import { Observable, Observer } from 'rxjs';
  * tcp client default options.
  */
 export const TCP_CLIENT_OPTS = {
-    transport: {
-        strategy: TcpIncomingUtil
-    },
+    statusFactory: HttpStatusFactory,
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     execptionFiltersToken: TCP_CLIENT_EXECPTION_FILTERS,
     connectionOpts: {

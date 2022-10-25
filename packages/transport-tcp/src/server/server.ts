@@ -8,7 +8,8 @@ import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpIncomingUtil } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Duplex } from 'form-data';
+import { Duplex } from 'stream';
+import { HttpStatusFactory } from '@tsdi/transport-http';
 
 
 /**
@@ -27,6 +28,7 @@ export const TCP_SERVER_OPTS = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     execptionFiltersToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
+    statusFactory: HttpStatusFactory,
     content: {
         root: 'public'
     },
@@ -80,10 +82,10 @@ export class TcpServer extends TransportServer<ServerRequest, ServerResponse, ne
 
     protected createContext(req: ServerRequest, res: ServerResponse): TransportContext<ServerRequest, ServerResponse> {
         const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(TcpIncomingUtil))
+        return new TransportContext(injector, req, res, this, this.statusFactory(), injector.get(TcpIncomingUtil))
     }
 
-    
+
 
     // protected override onConnection(server: net.Server | tls.Server, opts?: ConnectionOpts): Observable<Connection> {
     //     const packetor = this.context.get(Packetor);

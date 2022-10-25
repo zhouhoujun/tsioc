@@ -1,4 +1,4 @@
-import { Module, RouterModule, StatusFactory, TransformModule } from '@tsdi/core';
+import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
@@ -8,9 +8,9 @@ import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
 import { TransportModule } from '@tsdi/transport';
 import { HttpBackend2 } from './client/backend';
 import { HttpExecptionHandlers, HttpExecptionFinalizeFilter } from './server/exception-filter';
-import { HttpStatusFactory } from './status';
 import { HttpHandlerBinding } from './server/binding';
 import { HttpInterceptorFinalizeFilter } from './server/filter';
+import { HttpStatusFactory } from './status';
 
 /**
  * http module.
@@ -29,8 +29,8 @@ import { HttpInterceptorFinalizeFilter } from './server/filter';
         HttpBackend2,
         HttpInterceptorFinalizeFilter,
         HttpHandlerBinding,
-        { provide: StatusFactory, useClass: HttpStatusFactory },
         HttpServer,
+        HttpStatusFactory,
         Http
     ]
 })

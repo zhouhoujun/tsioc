@@ -14,11 +14,13 @@ import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_EXECPTION_FILTERS } from './option';
 import { HTTP_CLIENT_PROVIDERS } from './providers';
 import { HttpBackend2 } from './backend';
+import { HttpStatusFactory } from '../status';
 
 
 
 
 const defOpts = {
+    statusFactory: HttpStatusFactory,
     backend: { provide: HttpBackend, useClass: HttpBackend2 },
     interceptorsToken: HTTP_INTERCEPTORS,
     interceptors: [HttpPathInterceptor, HttpBodyInterceptor],

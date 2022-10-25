@@ -1,4 +1,4 @@
-import { MiddlewareLike, ServerEndpointContext, ServerContext, Incoming, Outgoing, ListenOpts, ServerContextOpts } from '@tsdi/core';
+import { MiddlewareLike, ServerEndpointContext, ServerContext, Incoming, Outgoing, ListenOpts, ServerContextOpts, StatusFactory } from '@tsdi/core';
 import { Abstract, Injector, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 import { TransportServer } from './server';
@@ -41,8 +41,8 @@ export abstract class IncomingUtil {
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: TransportServer<TRequest, TResponse>, readonly util: IncomingUtil, options?: ServerContextOpts) {
-        super(injector, request, response, target, options)
+    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<TRequest, TResponse>,  statusFactory: StatusFactory<string | number>, readonly util: IncomingUtil, options?: ServerContextOpts) {
+        super(injector, request, response, target, statusFactory, options)
     }
 
     get protocol(): string {
