@@ -20,7 +20,6 @@ import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPT
 import { HttpHandlerBinding } from './binding';
 import { HttpInterceptorFinalizeFilter } from './filter';
 import { HTTP_SERVR_PROVIDERS } from './providers';
-import { HttpStatusFactory } from '../status';
 
 
 
@@ -32,7 +31,6 @@ const httpOpts = {
     options: { allowHTTP1: true },
     listenOpts: { port: 3000, host: LOCALHOST } as ListenOptions,
     closeDelay: 500,
-    statusFactory: { provide: StatusFactory, useExisting: HttpStatusFactory },
     content: {
         root: 'public'
     },
@@ -192,7 +190,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
      * @param response 
      */
     protected onRequestHandler(request: HttpServRequest, response: HttpServResponse) {
-        const ctx = new HttpContext(this.context.injector, request, response, this as Server, this.statusFactory());
+        const ctx = new HttpContext(this.context.injector, request, response, this as Server);
         this.context.injector.get(HttpHandlerBinding).binding(ctx, this.endpoint);
     }
 

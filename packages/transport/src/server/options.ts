@@ -11,7 +11,6 @@ import { MimeSource } from '../mime';
  */
 @Abstract()
 export abstract class TransportServerOpts<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerOpts<TRequest, TResponse> {
-
     /**
      * options of protocol.
      */

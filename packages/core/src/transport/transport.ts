@@ -18,10 +18,6 @@ export abstract class TransportOpts<TInput, TOutput> {
      */
     abstract providers?: ProviderType[];
     /**
-     * status factory.
-     */
-    abstract statusFactory?: StaticProvider<StatusFactory>;
-    /**
      * interceptors or filter of endpoint.
      */
     abstract interceptors?: InterceptorType<TInput, TOutput>[];
@@ -80,7 +76,6 @@ export abstract class TransportEndpoint<
     private _expFilter?: ExecptionBackend;
     private _expBToken!: Token<ExecptionBackend>;
     private _opts: Opts;
-    private _statfToken!: Token<StatusFactory>;
 
     constructor(options?: Opts) {
         this._opts = this.initOption(options);
@@ -98,15 +93,6 @@ export abstract class TransportEndpoint<
     getOptions(): Opts {
         return this._opts;
     }
-
-    /**
-     * status factory.
-     * @returns 
-     */
-    statusFactory(): StatusFactory {
-        return this.context.injector.get(this._statfToken);
-    }
-
 
     /**
      * use interceptors.
@@ -208,12 +194,6 @@ export abstract class TransportEndpoint<
             throw new ArgumentExecption(lang.getClassName(this) + ' options backend is missing.');
         }
         this._bToken = this.regProvider(options.backend);
-
-        if (!options.statusFactory) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options statusFactory is missing.');
-        }
-        this._statfToken = this.regProvider(options.statusFactory);
-
 
         const expfToken = this._expFToken = options.filtersToken!;
         if (!expfToken) {

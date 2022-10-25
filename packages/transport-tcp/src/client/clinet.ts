@@ -1,7 +1,7 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
-import { Connection, ConnectionOpts, ev, Packetor, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, ConnectionOpts, ev, PacketFactory, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpIncomingUtil } from '../transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
@@ -46,9 +46,9 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
     
     protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
         const logger = this.logger;
-        const packetor = this.context.get(Packetor);
+        const packet = this.context.get(PacketFactory);
         return new Observable((observer: Observer<Connection>) => {
-            const client = new Connection(duplex, packetor, opts);
+            const client = new Connection(duplex, packet, opts);
             if (opts?.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }

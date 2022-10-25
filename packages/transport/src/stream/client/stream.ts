@@ -3,7 +3,7 @@ import { Duplex, Readable } from 'stream';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption } from '../../execptions';
 import { SteamOptions, StreamStateFlags, TransportStream } from '../stream';
-import { Packetor } from '../../connection';
+import { PacketFactory } from '../../connection';
 import { ClientSession } from './session';
 import { Session } from '../session';
 
@@ -11,7 +11,7 @@ import { Session } from '../session';
  * ClientStream
  */
 export class ClientStream extends TransportStream {
-    constructor(session: ClientSession, id: number | undefined, packetor: Packetor, private headers: IncomingHeaders, opts: SteamOptions) {
+    constructor(session: ClientSession, id: number | undefined, packetor: PacketFactory, private headers: IncomingHeaders, opts: SteamOptions) {
         super(session, packetor, { ...opts, client: true });
         if (id !== undefined) {
             this.init(id);

@@ -389,7 +389,6 @@ export abstract class Client<
         return (options as any)?.context ?? new ClientContext(
             this.context.injector,
             this as any,
-            this.statusFactory(),
             { observe: isTypeObject(req) ? 'events' : options?.observe });
     }
 

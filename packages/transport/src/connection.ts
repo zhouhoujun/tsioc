@@ -36,18 +36,18 @@ export abstract class PacketGenerator extends Writable {
 }
 
 @Abstract()
-export abstract class Packetor {
+export abstract class PacketFactory {
     /**
-     * packet parser
+     * create packet parser
      * @param opts options of type {@link ConnectionOpts}.
      */
-    abstract parser(opts: ConnectionOpts): PacketParser;
+    abstract createParser(opts: ConnectionOpts): PacketParser;
     /**
-     * packet generator
+     * create packet generator
      * @param output the connection wirte output.
      * @param opts options of type {@link ConnectionOpts}.
      */
-    abstract generator(output: Writable, opts: ConnectionOpts): PacketGenerator;
+    abstract createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator;
 }
 
 const evets = [ev.CLOSE, ev.ERROR];
@@ -58,12 +58,12 @@ export class Connection extends Duplexify {
     protected _generator: PacketGenerator;
     protected _regevs: Record<string, (...args: any[]) => void>;
     protected opts: ConnectionOpts;
-    constructor(readonly stream: Duplex, readonly packetor: Packetor, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly stream: Duplex, readonly packet: PacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
         super(null, null, opts = { ...opts, objectMode: true });
         this.opts = opts;
 
-        this._parser = packetor.parser(opts);
-        this._generator = packetor.generator(stream, opts);
+        this._parser = packet.createParser(opts);
+        this._generator = packet.createGenerator(stream, opts);
         this.setReadable(this._parser);
         this.setWritable(this._generator);
 

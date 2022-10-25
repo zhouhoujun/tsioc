@@ -1,7 +1,7 @@
 import { ClientOpts, EndpointBackend, Interceptor, TransportEvent, TransportRequest, ExecptionFilter } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, StaticProvider, tokenId } from '@tsdi/ioc';
 import { Readable, Writable } from 'stream';
-import { ConnectionOpts } from '../connection';
+import { ConnectionOpts, PacketFactory } from '../connection';
 
 /**
  * Transport client options.

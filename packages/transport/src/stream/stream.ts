@@ -6,7 +6,7 @@ import { PacketGenerator, PacketParser } from '../connection';
 import { ev } from '../consts';
 import { setTimeout } from 'timers';
 import { Duplexify } from '../duplexify';
-import { ConnectionOpts, Packetor } from '../connection';
+import { ConnectionOpts, PacketFactory } from '../connection';
 import { Closeable, Session } from './session';
 
 
@@ -108,15 +108,15 @@ export abstract class TransportStream extends Duplexify implements Closeable {
 
     readonly stream: Duplex;
 
-    constructor(readonly session: Session, protected packetor: Packetor, opts: SteamOptions) {
+    constructor(readonly session: Session, protected packetor: PacketFactory, opts: SteamOptions) {
         super(null, null, opts = { ...opts, objectMode: true, allowHalfOpen: true, autoDestroy: false, decodeStrings: false });
         this.opts = opts;
 
         this.cork();
 
         const stream = this.stream = this.createDuplex(session);
-        this._parser = packetor.parser(opts);
-        this._generator = packetor.generator(stream, opts);
+        this._parser = packetor.createParser(opts);
+        this._generator = packetor.createGenerator(stream, opts);
         this.setReadable(this._parser);
         this.setWritable(this._generator);
 

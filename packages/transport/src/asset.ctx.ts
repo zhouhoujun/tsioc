@@ -1,6 +1,6 @@
 import {
     OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
-    ServerContextOpts, ServerEndpointContext, Status, RedirectStatus, EmptyStatus, StatusFactory
+    ServerContextOpts, ServerEndpointContext, Status, RedirectStatus, EmptyStatus
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -22,10 +22,10 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     private _url?: string;
     private _status: Status;
 
-    constructor(injector: Injector, request: TRequest, response: TResponse, target: Server, statusFactory: StatusFactory<string | number>, options?: ServerContextOpts) {
-        super(injector, request, response, target, statusFactory, options);
+    constructor(injector: Injector, request: TRequest, response: TResponse, target: Server, options?: ServerContextOpts) {
+        super(injector, request, response, target, options);
         this.originalUrl = request.url?.toString() ?? '';
-        this._status = statusFactory.create('NotFound');
+        this._status = this.statusFactory.create('NotFound');
         this._url = request.url ?? '';
 
         if (this.isAbsoluteUrl(this._url)) {

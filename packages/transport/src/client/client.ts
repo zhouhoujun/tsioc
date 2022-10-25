@@ -69,6 +69,11 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return opts as TOpts;
     }
 
+    protected override initContext(options: TOpts): void {
+        super.initContext(options);
+
+    }
+
     protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts): TransportRequest {
         return url instanceof TransportRequest ? url : this.createRequest(url, { context, ...options } as ReqOpts);
     }

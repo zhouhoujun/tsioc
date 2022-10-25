@@ -1,4 +1,4 @@
-import { Abstract, ClassType, isFunction, Type } from '@tsdi/ioc';
+import { Abstract, ClassType, isFunction } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 

@@ -1,7 +1,7 @@
 import { OutgoingHeaders } from '@tsdi/core';
 import { ArgumentExecption, isFunction } from '@tsdi/ioc';
 import { Duplex } from 'form-data';
-import { Packetor } from '../../connection';
+import { PacketFactory } from '../../connection';
 import { ev, hdr } from '../../consts';
 import { HeandersSentExecption, InvalidStreamExecption, NestedPushExecption, PushDisabledExecption } from '../../execptions';
 import { Session } from '../session';
@@ -14,7 +14,7 @@ import { ServerSession } from './session';
  */
 export class ServerStream extends TransportStream {
     readonly authority: string;
-    constructor(session: ServerSession, id: number | undefined, packetor: Packetor, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
+    constructor(session: ServerSession, id: number | undefined, packetor: PacketFactory, opts: SteamOptions, protected headers: OutgoingHeaders = {}) {
         super(session, packetor, opts)
         this.authority = this.getAuthority(headers);
         if (id != undefined) {

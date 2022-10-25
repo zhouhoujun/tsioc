@@ -41,8 +41,8 @@ export abstract class IncomingUtil {
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<TRequest, TResponse>,  statusFactory: StatusFactory<string | number>, readonly util: IncomingUtil, options?: ServerContextOpts) {
-        super(injector, request, response, target, statusFactory, options)
+    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<TRequest, TResponse>, readonly util: IncomingUtil, options?: ServerContextOpts) {
+        super(injector, request, response, target, options)
     }
 
     get protocol(): string {
