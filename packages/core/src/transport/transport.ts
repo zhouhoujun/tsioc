@@ -100,6 +100,15 @@ export abstract class TransportEndpoint<
     }
 
     /**
+     * status factory.
+     * @returns 
+     */
+    statusFactory(): StatusFactory {
+        return this.context.injector.get(this._statfToken);
+    }
+
+
+    /**
      * use interceptors.
      * @param interceptor 
      * @param order 
@@ -242,13 +251,8 @@ export abstract class TransportEndpoint<
 
     protected regProvider(provider: StaticProvider): Token {
         const prvoide = isFunction(provider) ? provider : provider.provide;
-        if (!isFunction(provider) || isClass(provider)) this.context.injector.inject(provider);
+        if (!isFunction(provider) || isClass(provider)) this.context.injector.register(provider as Type);
         return prvoide;
     }
-
-    protected statusFactory(): StatusFactory {
-        return this.context.injector.get(this._statfToken);
-    }
-
 }
 

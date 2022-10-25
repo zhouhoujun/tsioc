@@ -10,7 +10,7 @@ import {
 } from '@tsdi/core';
 
 
-@Injectable({ static: true })
+@Injectable()
 export class HttpStatusFactory extends StatusFactory<number> {
 
     create(type: StatusTypes, statusText?: string | undefined): Status<number> {

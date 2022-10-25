@@ -29,8 +29,8 @@ import { HttpStatusFactory } from './status';
         HttpBackend2,
         HttpInterceptorFinalizeFilter,
         HttpHandlerBinding,
-        HttpServer,
         HttpStatusFactory,
+        HttpServer,
         Http
     ]
 })

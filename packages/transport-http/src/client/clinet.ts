@@ -1,7 +1,7 @@
 import { EMPTY, Injectable, InvocationContext, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import {
     RequestMethod, Client, OnDispose, RequestOptions,
-    ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike
+    ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike, StatusFactory
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -20,7 +20,7 @@ import { HttpStatusFactory } from '../status';
 
 
 const defOpts = {
-    statusFactory: HttpStatusFactory,
+    statusFactory: { provide: StatusFactory, useExisting: HttpStatusFactory },
     backend: { provide: HttpBackend, useClass: HttpBackend2 },
     interceptorsToken: HTTP_INTERCEPTORS,
     interceptors: [HttpPathInterceptor, HttpBodyInterceptor],

@@ -1,7 +1,7 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
 import {
     Server, RunnableFactory, ModuleRef, Router, ListenOpts, InOutInterceptorFilter,
-    PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor
+    PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor, StatusFactory
 } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -32,7 +32,7 @@ const httpOpts = {
     options: { allowHTTP1: true },
     listenOpts: { port: 3000, host: LOCALHOST } as ListenOptions,
     closeDelay: 500,
-    statusFactory: HttpStatusFactory,
+    statusFactory: { provide: StatusFactory, useExisting: HttpStatusFactory },
     content: {
         root: 'public'
     },
@@ -104,11 +104,11 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse, HttpCo
             this.context.setValue(ContentOptions, options.content)
         }
 
+        super.initContext(options);
         if (options.mimeDb) {
             const mimedb = this.context.injector.get(MimeDb);
             mimedb.from(options.mimeDb)
         }
-        super.initContext(options);
     }
 
     protected override getDefaultOptions(): HttpServerOpts {
