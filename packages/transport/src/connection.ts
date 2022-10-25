@@ -1,8 +1,8 @@
 import { TransportExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { Writable, Duplex, Transform } from 'stream';
-import { ev } from './consts';
 import { Duplexify, DuplexifyOptions } from './duplexify';
+import { ev } from './consts';
 
 
 /**

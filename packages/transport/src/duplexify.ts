@@ -1,4 +1,4 @@
-import { hasOwn, isFunction, isNil } from '@tsdi/ioc';
+import { isFunction, isNil } from '@tsdi/ioc';
 import { Duplex, Readable, Writable, DuplexOptions, finished } from 'stream';
 import { ev } from './consts';
 
