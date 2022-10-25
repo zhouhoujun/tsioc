@@ -6,7 +6,6 @@ import { Log, Logger } from '@tsdi/logs';
 import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
 import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterChain, EndpointFilter } from './filter';
-import { StatusFactory } from './status';
 
 /**
  * transport endpoint options.

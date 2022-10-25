@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { Incoming } from './packet';
 
 /**
- * transport response status
+ * transport status
  */
 export class Status<T = string | number> {
     readonly status: T;
@@ -35,26 +35,36 @@ export class EmptyStatus<T = string | number> extends Status<T> {
 
 
 /**
- * not found status
+ * not found status.
+ * empty status
  */
 export class NotFoundStatus<T = string | number> extends EmptyStatus<T> {
     constructor(status: T, statusText = 'NotFound') {
         super(status, statusText);
     }
 }
-
+/**
+ * no content status.
+ * empty status
+ */
 export class NoContentStatus<T = string | number> extends EmptyStatus<T> {
     constructor(status: T, statusText = 'NoContent') {
         super(status, statusText);
     }
 }
-
+/**
+ * reset content status.
+ * empty status
+ */
 export class ResetContentStatus<T = string | number> extends EmptyStatus<T> {
     constructor(status: T, statusText = 'ResetContent') {
         super(status, statusText);
     }
 }
-
+/**
+ * not modified status.
+ * empty status
+ */
 export class NotModifiedStatus<T = string | number> extends EmptyStatus<T> {
     constructor(status: T, statusText = 'NotModified') {
         super(status, statusText);
@@ -75,7 +85,8 @@ export class RedirectStatus<T = string | number> extends Status<T> {
 }
 
 /**
- * Found status
+ * Found status.
+ * redircet status.
  */
 export class FoundStatus<T = string | number> extends RedirectStatus<T> {
     constructor(status: T, statusText = 'Found') {
@@ -83,31 +94,43 @@ export class FoundStatus<T = string | number> extends RedirectStatus<T> {
     }
 }
 
+/**
+ * See other status.
+ * redircet status.
+ */
 export class SeeOtherStatus<T = string | number> extends RedirectStatus<T> {
     constructor(status: T, statusText = 'SeeOther') {
         super(status, statusText);
     }
 }
-
+/**
+ * Use proxy status.
+ * redircet status.
+ */
 export class UseProxyStatus<T = string | number> extends RedirectStatus<T> {
     constructor(status: T, statusText = 'UseProxy') {
         super(status, statusText);
     }
 }
-
+/**
+ * redircet status.
+ */
 export class TemporaryRedirectStatus<T = string | number> extends RedirectStatus<T> {
     constructor(status: T, statusText = 'TemporaryRedirect') {
         super(status, statusText);
     }
 }
-
+/**
+ * redircet status.
+ */
 export class PermanentRedirectStatus<T = string | number> extends RedirectStatus<T> {
     constructor(status: T, statusText = 'PermanentRedirect') {
         super(status, statusText);
     }
 }
-
-
+/**
+ * redircet status.
+ */
 export class MovedPermanentlyStatus<T = string | number> extends RedirectStatus<T> {
     constructor(status: T, statusText = 'MovedPermanently') {
         super(status, statusText);
@@ -125,32 +148,47 @@ export class RequestFailedStatus<T = string | number> extends Status<T> {
     }
 }
 
-
+/**
+ * Bad Request.
+ * request failed.
+ */
 export class BadRequestStatus<T = string | number> extends RequestFailedStatus<T> {
     constructor(status: T, statusText = 'BadRequest') {
         super(status, statusText);
     }
 }
 
-
+/**
+ * Forbidden status.
+ * request failed.
+ */
 export class ForbiddenStatus<T = string | number> extends RequestFailedStatus<T> {
     constructor(status: T, statusText = 'Forbidden') {
         super(status, statusText);
     }
 }
-
+/**
+ * Unauthorized status.
+ * request failed.
+ */
 export class UnauthorizedStatus<T = string | number> extends RequestFailedStatus<T> {
     constructor(status: T, statusText = 'Unauthorized') {
         super(status, statusText);
     }
 }
-
+/**
+ * Method not allowed status.
+ * request failed.
+ */
 export class MethodNotAllowedStatus<T = string | number> extends RequestFailedStatus<T> {
     constructor(status: T, statusText = 'MethodNotAllowed') {
         super(status, statusText);
     }
 }
-
+/**
+ * request timeout status.
+ * request failed.
+ */
 export class RequestTimeoutStatus<T = string | number> extends RequestFailedStatus<T> {
     constructor(status: T, statusText = 'RequestTimeout') {
         super(status, statusText);
