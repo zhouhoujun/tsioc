@@ -6,17 +6,17 @@ import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { Duplex } from 'stream';
 import { EventEmitter } from 'events';
-import { LogInterceptor } from '../interceptors';
-import { TransportContext, SERVER_MIDDLEWARES } from './context';
-import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
+import { ev } from '../consts';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
-import { ExecptionFinalizeFilter } from './finalize-filter';
-import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
+import { LogInterceptor } from '../interceptors';
+import { Connection, ConnectionOpts, Events } from '../connection';
+import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { Connection, ConnectionOpts } from '../connection';
 import { ServerInterceptorFinalizeFilter } from './filter';
-import { ev } from '../consts';
+import { ExecptionFinalizeFilter } from './finalize-filter';
+import { TransportContext, SERVER_MIDDLEWARES } from './context';
+import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 
 
 
@@ -160,7 +160,7 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
     protected createServerEvents(observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
         const events: Events = {};
         events[ev.ERROR] = (err: Error) => observer.error(err);
-        events[ev.CONNECTION] = (socket: Duplex) => observer.next(this.createConnection(socket, opts));
+        events[opts?.connect ?? ev.CONNECTION] = (socket: Duplex) => observer.next(this.createConnection(socket, opts));
         events[ev.CLOSE] = () => observer.complete();
 
         return events;
@@ -310,84 +310,6 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
         }
         super.initContext(options)
     }
-
-
-    // protected parseToDuplex(target: any, ...args: any[]): Duplex {
-    //     throw new Execption('parse connection client to Duplex not implemented.')
-    // }
-
-    // protected abstract createConnection(duplex: Duplex, opts?: ConnectionOpts): Connection;
-
-
-    // protected onRequest(conn: Connection): Observable<any> {
-
-    //     return new Observable((observer) => {
-    //         const subs: Set<Subscription> = new Set();
-
-    //         const onHeaders = (headers: IncomingHeaders, id: number) => {
-    //             const sid = conn.getNextStreamId(id);
-    //             const stream = this.createStream(conn, sid, headers);
-    //             conn.emit(ev.STREAM, stream, headers);
-    //         };
-
-
-    //         const onStream = (stream: ServerStream, headers: IncomingHeaders) => {
-    //             const ctx = this.buildContext(stream, headers);
-    //             subs.add(this.handle(ctx, this.endpoint(), observer));
-    //         };
-
-    //         conn.on(ev.HEADERS, onHeaders);
-    //         conn.on(ev.STREAM, onStream);
-    //         return () => {
-    //             subs.forEach(s => {
-    //                 s && s.unsubscribe();
-    //             });
-    //             subs.clear();
-    //             conn.off(ev.HEADERS, onHeaders);
-    //             conn.off(ev.STREAM, onStream);
-    //         }
-    //     });
-    // }
-
-    // /**
-    //  * 
-    //  * handle request.
-    //  * @param context 
-    //  * @param endpoint 
-    //  */
-    // protected handle(ctx: TransportContext, endpoint: Endpoint, subscriber: Subscriber<TransportEvent>): Subscription {
-    //     const req = ctx.request;
-    //     const cancel = endpoint.handle(req, ctx)
-    //         .pipe(finalize(() => ctx.destroy))
-    //         .subscribe(subscriber);
-    //     const opts = ctx.target.getOptions() as TransportServerOpts;
-    //     opts.timeout && req.setTimeout(opts.timeout, () => {
-    //         req.emit(ev.TIMEOUT);
-    //         cancel?.unsubscribe()
-    //     });
-    //     req.once(ev.CLOSE, async () => {
-    //         await lang.delay(500);
-    //         cancel?.unsubscribe();
-    //         if (!ctx.sent) {
-    //             ctx.response.end()
-    //         }
-    //     });
-    //     return cancel;
-    // }
-
-    // protected buildContext(stream: ServerStream, headers: IncomingHeaders): TransportContext {
-    //     const request = new ServerRequest(stream, headers);
-    //     const response = new ServerResponse(stream, headers);
-    //     const parent = this.context;
-    //     return new TransportContext(parent.injector, request, response, this, { parent });
-    // }
-
-}
-
-/**
- * events maps.
- */
-export interface Events extends Record<string, (...args: any[]) => void> {
 
 }
 

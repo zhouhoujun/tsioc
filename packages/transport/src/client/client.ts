@@ -3,13 +3,14 @@ import {
     TransportRequest, Pattern, InOutInterceptorFilter
 } from '@tsdi/core';
 import { Abstract, lang } from '@tsdi/ioc';
-import { map, Observable, of } from 'rxjs';
+import { map, Observable, of, Subscriber } from 'rxjs';
 import { Duplex } from 'stream';
-import { Connection, ConnectionOpts } from '../connection';
+import { Connection, ConnectionOpts, Events } from '../connection';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientInterceptorFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
+import { ev } from '../consts';
 
 
 
@@ -67,11 +68,6 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         if (options?.connectionOpts) opts.connectionOpts = { ...dOpts.connectionOpts, ...options?.connectionOpts }
 
         return opts as TOpts;
-    }
-
-    protected override initContext(options: TOpts): void {
-        super.initContext(options);
-
     }
 
     protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts): TransportRequest {
@@ -152,7 +148,60 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * @param duplex 
      * @param opts 
      */
-    protected abstract onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection>;
+    protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
+        return new Observable((observer) => {
+            const conn = this.createConnection(duplex, opts)
+            const evetns = this.createConnectionEvents(conn, observer, opts);
+            for (const e in evetns) {
+                conn.on(e, evetns[e]);
+            }
+            return () => {
+                for (const e in evetns) {
+                    conn.off(e, evetns[e]);
+                }
+            }
+        })
+    }
+
+    /**
+     * create server events
+     * 
+     * @usageNotes
+     * 
+     * ### Examples
+     * 
+     * ```typescript
+     * 
+     *  protected createConnectionEvents(conntion: Connection, observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
+     *   const events: Events = {};
+     *   events[ev.ERROR] = (err: Error) => observer.error(err);
+     *   events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
+     *   events[ev.CLOSE] = events[ev.END] = () => conntion.end(), observer.complete();
+     *
+     *   return events;
+     * }
+     * ```
+     * 
+     * @param observer 
+     * @param opts 
+     * @returns 
+     */
+    protected createConnectionEvents(conntion: Connection, observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
+        const events: Events = {};
+        events[ev.ERROR] = (err: Error) => observer.error(err);
+        events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
+        events[ev.CLOSE] = events[ev.END] = () => conntion.end(), observer.complete();
+
+        return events;
+    }
+
+    /**
+     * create connection.
+     * @param socket 
+     * @param opts 
+     */
+    protected abstract createConnection(socket: Duplex, opts?: ConnectionOpts): Connection;
+
 
 }
 

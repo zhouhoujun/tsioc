@@ -9,6 +9,10 @@ import { ev } from './consts';
  * connection options.
  */
 export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
+    /**
+     * connect event name
+     */
+    connect?: string; 
     noData?: boolean;
     noError?: number;
     /**
@@ -24,6 +28,15 @@ export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
      */
     encoding?: BufferEncoding;
 }
+
+
+/**
+ * events maps.
+ */
+export interface Events extends Record<string, (...args: any[]) => void> {
+
+}
+
 
 @Abstract()
 export abstract class PacketParser extends Transform {
