@@ -1,6 +1,6 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
-import { ConnectionOpts, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil } from '@tsdi/transport';
+import { ConnectionOpts, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil, IncomingMessage } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -42,7 +42,6 @@ export class TcpIncomingUtil extends IncomingUtil {
         return tcptl.test(url.trim())
     }
 
-
 }
 
 
@@ -50,10 +49,12 @@ export class TcpIncomingUtil extends IncomingUtil {
 export class DelimiterParser extends PacketParser {
     private delimiter!: Buffer;
 
+    private incomings: Map<string, IncomingMessage>;
     buffers: Buffer[];
     bytes: number;
     constructor(private connection: Connection, opts: ConnectionOpts) {
         super(opts);
+        this.incomings = new Map();
         this.buffers = [];
         this.bytes = 0;
         this.setOptions(opts);
