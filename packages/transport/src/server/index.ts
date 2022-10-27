@@ -1,6 +1,6 @@
 export * from './options';
 export * from './context';
-export * from './finalize-filter';
+export * from './execption-filter';
 export * from './providers';
 export * from './filter';
 export * from './server';

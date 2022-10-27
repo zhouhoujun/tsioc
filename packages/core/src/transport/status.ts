@@ -280,8 +280,25 @@ export type StatusTypes = 'Ok'
  */
 @Abstract()
 export abstract class StatusFactory<T = string | number> {
+    /**
+     * create status by type.
+     * @param type 
+     * @param statusText 
+     */
     abstract create(type: StatusTypes, statusText?: string): Status<T>;
+    /**
+     * create status by status code.
+     * @param status 
+     * @param statusText 
+     */
     abstract createByCode(status: number | string | null, statusText?: string): Status<T>;
-    abstract createByIncoming(headers: Incoming): Status<T>;
+    /**
+     * get status code by type.
+     */
     abstract getStatusCode(type: StatusTypes): T;
+    /**
+     * create by incoming.
+     * @param headers 
+     */
+    abstract createByIncoming(headers: Incoming): Status<T>;
 }

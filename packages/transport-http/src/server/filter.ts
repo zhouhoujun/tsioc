@@ -5,7 +5,7 @@ import { mergeMap, Observable } from 'rxjs';
 import { HttpContext, HttpServResponse } from './context';
 
 @Injectable({ static: true })
-export class HttpInterceptorFinalizeFilter extends EndpointFilter {
+export class HttpFinalizeFilter extends EndpointFilter {
 
     intercept(input: any, next: Endpoint<any, any>, context: HttpContext): Observable<any> {
         return next.handle(input, context)

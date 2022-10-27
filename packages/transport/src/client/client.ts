@@ -7,7 +7,7 @@ import { map, Observable, of, Subscriber } from 'rxjs';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts, Events } from '../connection';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
-import { ClientInterceptorFinalizeFilter } from './filter';
+import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { ev } from '../consts';
@@ -20,7 +20,7 @@ const tsptDeftOpts = {
     ],
     filters: [
         InOutInterceptorFilter,
-        ClientInterceptorFinalizeFilter
+        ClientFinalizeFilter
     ],
     interceptorsToken: CLIENT_INTERCEPTORS,
     execptionFiltersToken: CLIENT_EXECPTION_FILTERS,

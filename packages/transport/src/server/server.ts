@@ -13,8 +13,8 @@ import { LogInterceptor } from '../interceptors';
 import { Connection, ConnectionOpts, Events } from '../connection';
 import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMiddleware, SessionMiddleware } from '../middlewares';
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
-import { ServerInterceptorFinalizeFilter } from './filter';
-import { ExecptionFinalizeFilter } from './finalize-filter';
+import { ServerFinalizeFilter } from './filter';
+import { ExecptionFinalizeFilter } from './execption-filter';
 import { TransportContext, SERVER_MIDDLEWARES } from './context';
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 
@@ -34,7 +34,7 @@ const defOpts = {
         CatchInterceptor,
         InOutInterceptorFilter,
         StatusInterceptorFilter,
-        ServerInterceptorFinalizeFilter,
+        ServerFinalizeFilter,
     ],
     filters: [
         ExecptionFinalizeFilter

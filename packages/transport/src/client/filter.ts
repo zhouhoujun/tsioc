@@ -1,10 +1,10 @@
-import { ClientContext, Endpoint, EndpointFilter } from '@tsdi/core'
-import { Abstract } from '@tsdi/ioc'
-import { Observable } from 'rxjs'
+import { ClientContext, Endpoint, EndpointFilter } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 
 
 @Abstract()
-export abstract class ClientInterceptorFinalizeFilter <TInput = any, TOutput = any>  extends EndpointFilter<TInput, TOutput> {
+export abstract class ClientFinalizeFilter <TInput = any, TOutput = any>  extends EndpointFilter<TInput, TOutput> {
     /**
      * the method to implemet interceptor filter.
      * @param input  request input.

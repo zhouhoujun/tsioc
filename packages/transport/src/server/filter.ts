@@ -17,7 +17,7 @@ export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpoin
 
 
 @Injectable({ static: true })
-export class ServerInterceptorFinalizeFilter extends EndpointFilter {
+export class ServerFinalizeFilter extends EndpointFilter {
 
     intercept(input: any, next: Endpoint<any, any>, context: TransportContext): Observable<any> {
         return next.handle(input, context)

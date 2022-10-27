@@ -26,7 +26,7 @@ export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_
  */
 export const TCP_SERVER_OPTS = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
-    execptionFiltersToken: TCP_EXECPTION_FILTERS,
+    filtersToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
     statusFactory: HttpStatusFactory,
     content: {

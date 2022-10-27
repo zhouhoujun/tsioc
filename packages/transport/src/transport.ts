@@ -10,8 +10,8 @@ import {
     BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware,
     EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware
 } from './middlewares';
-import { ExecptionFinalizeFilter } from './server/finalize-filter';
-import { ServerInterceptorFinalizeFilter } from './server/filter';
+import { ExecptionFinalizeFilter } from './server/execption-filter';
+import { ServerFinalizeFilter } from './server/filter';
 
 
 @Module({
@@ -34,7 +34,7 @@ import { ServerInterceptorFinalizeFilter } from './server/filter';
         EncodeJsonMiddleware,
         SessionMiddleware,
 
-        ServerInterceptorFinalizeFilter,
+        ServerFinalizeFilter,
         ExecptionFinalizeFilter,
 
         { provide: Client, useExisting: TransportClient },

@@ -1,8 +1,9 @@
 import { ArgumentExecption, isFunction, isString, lang, TypeExecption } from '@tsdi/ioc';
-import { Outgoing, isFormData } from '@tsdi/core';
+import { Outgoing, isFormData, isArrayBuffer, isBlob, UnsupportedMediaTypeExecption } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, Writable, Readable, Duplex, pipeline } from 'stream';
+import { Stream, Writable, Readable, Duplex, PassThrough, pipeline, PipelineSource } from 'stream';
 import { promisify } from 'util';
+import * as zlib from 'zlib';
 import * as FormData from 'form-data';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
@@ -302,3 +303,48 @@ export function append(header: string, field: string) {
   return val
 }
 
+
+/**
+ * json xss.
+ */
+export const XSSI_PREFIX = /^\)\]\}',?\n/;
+
+export async function sendbody(data: any, request: Writable, error: (err: any) => void, encoding?: string): Promise<void> {
+  let source: PipelineSource<any>;
+  try {
+    if (isArrayBuffer(data)) {
+      source = Buffer.from(data);
+    } else if (isBuffer(data)) {
+      source = data;
+    } else if (isBlob(data)) {
+      const arrbuff = await data.arrayBuffer();
+      source = Buffer.from(arrbuff);
+    } else if (isFormDataLike(data)) {
+      if (isFormData(data)) {
+        const form = createFormData();
+        data.forEach((v, k, parent) => {
+          form.append(k, v);
+        });
+        data = form;
+      }
+      source = data.getBuffer();
+    } else {
+      source = String(data);
+    }
+    if (encoding) {
+      switch (encoding) {
+        case 'gzip':
+        case 'deflate':
+          source = (source instanceof Readable ? source : pipeline(source, new PassThrough())).pipe(zlib.createGzip());
+          break;
+        case 'identity':
+          break;
+        default:
+          throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
+      }
+    }
+    await pmPipeline(source, request)
+  } catch (err) {
+    error(err);
+  }
+}
