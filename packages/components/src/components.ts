@@ -5,7 +5,7 @@ import { TemplateOutletDirective } from './directivies/outlet';
 import { Plural, PluralCase } from './directivies/plural';
 import { DirSwitch, DirSwitchCase, DirSwitchDefault } from './directivies/switch';
 import { AsyncPipe } from './pipes/async';
-import { ComponentRunnableFactory } from './refs/component';
+import { ComponentRunnableFactory } from './runnable';
 import { ComponentState } from './state';
 
 

@@ -9,7 +9,7 @@ import {
 } from './meta';
 import { AnnotationDef, ComponentDef, DirectiveDef } from '../type';
 import { CompilerFacade } from '../compile/facade';
-import { ComponentRunnableFactory } from '../refs/component';
+import { ComponentRunnableFactory } from '../runnable';
 
 
 /**

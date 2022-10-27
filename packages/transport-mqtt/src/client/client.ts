@@ -8,6 +8,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttPacketFactory, MqttIcomingUtil, PacketOptions } from '../transport';
+import { MqttConnection } from '../server/connection';
 
 
 
@@ -162,6 +163,13 @@ export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> 
         }
     }
 
+    
+    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+        const packet = this.context.get(MqttPacketFactory);
+        const conn = new MqttConnection(socket, packet, opts);
+        return conn
+    }
+    
     protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
         const logger = this.logger;
         const packetor = this.context.get(MqttPacketFactory);

@@ -1,6 +1,6 @@
 import { LView } from '../interfaces/view';
-import { assertIndexInRange, assertLessThan, assertNotSame } from '../util/assert';
 import { devModeEqual } from '../util/dev';
+import { assertIndexInRange, assertLessThan, assertNotSame } from '../util/assert';
 import { getExpressionChangedErrorDetails, throwErrorIfNoChangesMode } from './errors';
 import { isInCheckNoChangesMode } from './share';
 

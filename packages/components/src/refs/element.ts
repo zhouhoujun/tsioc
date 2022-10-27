@@ -1,4 +1,3 @@
-import { Abstract } from '@tsdi/ioc';
 
 /**
  * A wrapper around a native element inside of a View.

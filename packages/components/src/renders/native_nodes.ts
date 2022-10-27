@@ -1,7 +1,7 @@
-import { isLContainer } from '../interfaces/chk';
 import { INode } from '../interfaces/dom';
-import { CONTAINER_HEADER_OFFSET } from '../interfaces/container';
+import { isLContainer } from '../interfaces/chk';
 import { TElementNode, TNode, TNodeType } from '../interfaces/node';
+import { CONTAINER_HEADER_OFFSET } from '../interfaces/container';
 import { DECLARATION_COMPONENT_VIEW, LView, PARENT, TVIEW, TView, T_HOST } from '../interfaces/view';
 import { unwrapRNode } from '../util/view';
 import { assertParentView, assertTNodeType } from './assert';

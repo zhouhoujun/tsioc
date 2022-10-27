@@ -14,7 +14,7 @@ export class TcpIncomingUtil extends IncomingUtil {
     }
 
     getProtocol(incoming: Incoming<Connection>): string {
-        return incoming.connection? 'ipc': 'tcp';
+        return incoming.connection ? 'ipc' : 'tcp';
     }
 
     isSecure(incoming: Incoming<Connection>): boolean {
@@ -66,58 +66,39 @@ export class DelimiterParser extends PacketParser {
             callback(null, chunk);
         }
 
-        const packets: Buffer[] = [];
         let rem: Buffer | undefined;
         this.redbuff(chunk, (r, pkg) => {
             if (r) {
                 rem = r;
             }
             if (pkg) {
-                packets.push(pkg);
-            }
-        });
-
-        if (packets.length) {
-            if (this.buffers.length) {
-                let first = packets.shift()!;
-                this.buffers.push(first);
-                this.bytes += first.length;
-                first = Buffer.concat(this.buffers, this.bytes);
+                let buff = pkg;
+                this.buffers.push(buff);
+                this.bytes += buff.length;
+                buff = Buffer.concat(this.buffers, this.bytes);
                 this.buffers = [];
                 this.bytes = 0;
-                packets.unshift(first);
-            }
 
-            packets.forEach((buff, idx) => {
+
                 const type = buff.readUInt8(0);
                 const id = buff.readUInt16BE(1);
 
-                let pkg: any;
+                let packet: any;
                 if (type == 1) {
                     const headers = JSON.parse(buff.slice(3).toString(encoding));
-                    pkg = {
+                    packet = {
                         id,
                         headers
                     } as Packet;
                     if (headers) {
-                        // this.connection.emit(ev.HEADERS, headers, id)
                         process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
                     }
-                    // if (idx) {
-                    //     process.nextTick(() => this.write(pkg))
-                    // } else {
-                    callback(null, pkg);
-                    // }
+                    callback(null, packet);
                 } else {
-                    // if (idx) {
-                    //     process.nextTick(() => this.write(buff), this.write(this.delimiter));
-                    // } else {
-                    callback(null, buff.slice(1));
-                    // }
+                    callback(null, { id, playload: buff.slice(1) });
                 }
-            })
-
-        }
+            }
+        });
 
         if (rem) {
             this.buffers.push(rem);
@@ -193,6 +174,7 @@ export class DelimiterGenerator extends PacketGenerator {
 
             list.push(this.delimiter);
             bytes += this.delimiter.length;
+            this.output.write(Buffer.concat(list, bytes), encoding)
         }
 
         if (body) {
@@ -212,7 +194,7 @@ export class DelimiterGenerator extends PacketGenerator {
                 list.push(body);
                 bytes += Buffer.byteLength(body);
             } else {
-                const str = JSON.stringify(headers);
+                const str = JSON.stringify(body);
                 const buffer = Buffer.from(str, encoding);
                 list.push(buffer);
                 bytes += Buffer.byteLength(buffer);
@@ -221,11 +203,11 @@ export class DelimiterGenerator extends PacketGenerator {
                 bytes += eof.length;
             }
         }
-        if (list.length) {
-            this.output.write(Buffer.concat(list, bytes), encoding, callback)
-        } else {
-            this.output.write(chunk, callback);
-        }
+        // if (list.length) {
+        //     this.output.write(Buffer.concat(list, bytes), encoding, callback)
+        // } else {
+        //     this.output.write(chunk, callback);
+        // }
     }
 
     setOptions(opts: ConnectionOpts): void {

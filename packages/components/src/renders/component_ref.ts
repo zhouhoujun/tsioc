@@ -1,8 +1,8 @@
-import { Injector, Type, Scopes } from '@tsdi/ioc';
+import { Injector, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentRef } from '../refs/component';
 import { ElementRef } from '../refs/element';
-import { INJECTOR, LView, TVIEW } from '../interfaces/view';
+import { LView, TVIEW } from '../interfaces/view';
 import { PropertyAliasValue, TContainerNode, TElementContainerNode, TElementNode } from '../interfaces/node';
 import { RootViewRef, ViewRefImpl } from './view_ref';
 import { ComponentDef } from '../type';

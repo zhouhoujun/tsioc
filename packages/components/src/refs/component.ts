@@ -1,11 +1,8 @@
-import { Abstract, Injectable, Injector, InvokeArguments, Type, TypeDef } from '@tsdi/ioc';
-import { DefaultRunnableFactory, DefaultRunnableRef, RunnableRef } from '@tsdi/core';
+import { Abstract, Injector, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 import { ComponentDef } from '../type';
-import { ComponentState } from '../state';
-import { ViewContainerRef } from './container';
 
 
 /**
@@ -72,43 +69,4 @@ export abstract class ComponentRef<C = any> {
      * @param callback destroy callback
      */
     abstract onDestroy(callback: () => void): void;
-}
-
-/**
- * Component RunnableRef.
- *
- * @export
- * @class ComponentRunnableRef
- */
-export class ComponentRunnableRef<T = any> extends DefaultRunnableRef<T> {
-
-    private _compRef?: ComponentRef<T>;
-    get componentRef(): ComponentRef<T> {
-        if (!this._compRef) {
-            this._compRef = this.injector.get(ViewContainerRef).createComponent(this.def, {
-                injector: this.injector,
-                context: this.context,
-                moduleRef: this.moduleRef
-            });
-        }
-        return this._compRef;
-    }
-
-    override run(): any {
-        return this.injector.get(ComponentState).run(this.componentRef);
-    }
-
-    protected override createInstance(): T {
-        return this.componentRef.instance;
-    }
-
-}
-
-@Injectable()
-export class ComponentRunnableFactory<T = any> extends DefaultRunnableFactory<T> {
-
-    protected createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new ComponentRunnableRef(def, injector, this.moduleRef, options, invokeMethod)
-    }
-
 }

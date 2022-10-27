@@ -40,7 +40,9 @@ export interface ComponentMetadata extends DirectiveMetadata {
      * @memberof ComponentMetadata
      */
     template?: any;
-
+    /**
+     * template Url.
+     */
     templateUrl?: string;
 }
 
@@ -89,6 +91,9 @@ export interface QueryMetadata {
  *
  */
 export interface HostBindingMetadata {
+    /**
+     * type.
+     */
     type?: Type;
     /**
      * host property name.

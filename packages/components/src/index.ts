@@ -44,5 +44,6 @@ export * from './interfaces/chk';
 export * from './util/array';
 export * from './util/stringify';
 
+export * from './runnable';
 export * from './lifecycle';
 export * from './components';

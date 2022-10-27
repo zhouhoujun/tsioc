@@ -1,4 +1,4 @@
-import { Injectable, Injector, InvocationContext, lang, Type, TypeDef } from '@tsdi/ioc';
+import { Injectable, Injector, InvocationContext, isFunction, lang, Type, TypeDef } from '@tsdi/ioc';
 import { OnDestroy } from './lifecycle';
 import { ComponentRef } from './refs/component';
 import { ViewRef, InternalViewRef } from './refs/view';
@@ -6,7 +6,7 @@ import { ViewContainerRef } from './refs/container';
 import { ModuleRef } from '@tsdi/core';
 
 @Injectable()
-export class ComponentState<T = any> implements OnDestroy {
+export class ComponentState implements OnDestroy {
 
   constructor(public context: InvocationContext) { }
 
@@ -27,19 +27,16 @@ export class ComponentState<T = any> implements OnDestroy {
    * bootstrap component ref.
    * @param compRef 
    */
-  bootstrap<C>(component: Type<C> | TypeDef<C>, options?: {
+  bootstrap<C>(component: Type<C> | ComponentRef<C>, options?: {
+    rootSelector?: string;
+    rootNode?: any;
     index?: number,
     injector?: Injector,
     moduleRef?: ModuleRef,
     context?: InvocationContext,
     projectableNodes?: Node[][],
   }): ComponentRef<C> {
-    const compRef = this.context.get(ViewContainerRef).createComponent(component, { context: this.context, ...options }) as ComponentRef<C>;
-    this.run(compRef);
-    return compRef;
-  }
-
-  run<C>(compRef: ComponentRef<C>) {
+    const compRef = isFunction(component) ? this.context.get(ViewContainerRef).createComponent(component, { context: this.context, ...options }) as ComponentRef<C> : component;
     this.componentTypes.push(compRef.type);
     compRef.onDestroy(() => {
       this.detachView(compRef.hostView);
@@ -49,6 +46,7 @@ export class ComponentState<T = any> implements OnDestroy {
     this.attachView(compRef.hostView);
     this.tick();
     this.components.push(compRef);
+    return compRef;
   }
 
   tick(): void {

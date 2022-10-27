@@ -1,7 +1,11 @@
 import { Injector } from '@tsdi/ioc';
 import { LContainer } from '../interfaces/container';
 import { Renderer, RendererFactory } from '../interfaces/renderer';
-import { CHILD_HEAD, CHILD_TAIL, CLEANUP, DebugNode, DECLARATION_VIEW, FLAGS, HEADER_OFFSET, ID, INJECTOR, LView, LViewDebugRange, LViewFlags, NEXT, QUERIES, RENDERER, RENDERER_FACTORY, SANITIZER, TVIEW, TView, T_HOST } from '../interfaces/view';
+import {
+    CHILD_HEAD, CHILD_TAIL, CLEANUP, CONTEXT, DebugNode, DECLARATION_VIEW,
+    FLAGS, HEADER_OFFSET, HOST, ID, INJECTOR, LView, LViewDebugRange, LViewFlags,
+    NEXT, PARENT, QUERIES, RENDERER, RENDERER_FACTORY, SANITIZER, TVIEW, TView, T_HOST
+} from '../interfaces/view';
 
 
 
