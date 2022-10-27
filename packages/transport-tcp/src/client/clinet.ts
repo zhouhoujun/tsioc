@@ -1,11 +1,12 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
-import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
+import { HttpStatusFactory } from '@tsdi/transport-http';
 import { Connection, ConnectionOpts, PacketFactory, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
-import { HttpStatusFactory } from '@tsdi/transport-http';
+import { TcpBackend } from './backend';
 
 
 
@@ -13,7 +14,7 @@ import { HttpStatusFactory } from '@tsdi/transport-http';
  * tcp client default options.
  */
 export const TCP_CLIENT_OPTS = {
-    backend:,
+    backend: TcpBackend,
     statusFactory: HttpStatusFactory,
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     filtersToken: TCP_CLIENT_EXECPTION_FILTERS,
