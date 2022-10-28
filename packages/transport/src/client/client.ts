@@ -197,10 +197,10 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
 
     /**
      * create connection.
-     * @param socket 
+     * @param duplex 
      * @param opts 
      */
-    protected abstract createConnection(socket: Duplex, opts?: ConnectionOpts): Connection;
+    protected abstract createConnection(duplex: Duplex, opts?: ConnectionOpts): Connection;
 
 
 }

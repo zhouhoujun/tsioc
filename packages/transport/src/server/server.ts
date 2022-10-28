@@ -1,6 +1,6 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    Router, Server, StatusInterceptorFilter, CatchInterceptor
+    Router, Server, StatusInterceptorFilter, CatchInterceptor, TransportArgumentExecption
 } from '@tsdi/core';
 import { Abstract, Destroyable, isBoolean, isFunction, lang } from '@tsdi/ioc';
 import { finalize, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
@@ -160,12 +160,17 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
     protected createServerEvents(observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
         const events: Events = {};
         events[ev.ERROR] = (err: Error) => observer.error(err);
-        events[opts?.connect ?? ev.CONNECTION] = (socket: Duplex) => observer.next(this.createConnection(socket, opts));
+        events[opts?.connect ?? ev.CONNECTION] = (socket: EventEmitter) => observer.next(this.createConnection(this.createDuplex(socket), opts));
         events[ev.CLOSE] = () => observer.complete();
 
         return events;
     }
 
+    protected createDuplex(socket: EventEmitter): Duplex {
+        if (socket instanceof Duplex) return socket;
+        throw new TransportArgumentExecption('socket is not Duplex.')
+    }
+    
     /**
      * create connection.
      * @param socket 

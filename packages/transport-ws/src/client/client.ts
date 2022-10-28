@@ -1,10 +1,8 @@
 import { RequestOptions } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, Token, tokenId } from '@tsdi/ioc';
-import { ClientConnection, RequestStrategy, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { Duplex } from 'form-data';
+import { Connection, ConnectionOpts, PacketFactory, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Duplex } from 'stream';
 import * as ws from 'ws';
-import { WsTransportStrategy } from '../transport';
-
 
 @Abstract()
 export abstract class WSClitentOptions extends TransportClientOpts {
@@ -17,7 +15,7 @@ export abstract class WSClitentOptions extends TransportClientOpts {
 }
 
 const defs = {
-    transport: WsTransportStrategy
+    url: 'wss://127.0.0.1/'
 } as WSClitentOptions;
 
 
@@ -29,8 +27,8 @@ export class WsClient extends TransportClient<RequestOptions, WSClitentOptions> 
         super(options);
     }
 
-    protected override getDefaultOptions(): TransportClientOpts {
-        return defs
+    protected override getDefaultOptions(): WSClitentOptions {
+        return defs 
     }
 
     protected override createDuplex(opts: WSClitentOptions): Duplex {
@@ -38,5 +36,9 @@ export class WsClient extends TransportClient<RequestOptions, WSClitentOptions> 
         const stream = ws.createWebSocketStream(socket, { objectMode: true });
         return stream
 
+    }
+    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
+        const packet = this.context.get(PacketFactory);
+        return new Connection(duplex, packet, opts);
     }
 }
