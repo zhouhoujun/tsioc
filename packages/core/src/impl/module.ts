@@ -234,40 +234,6 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     }
 }
 
-// export class DefaultModuleFactory<T = any> extends ModuleFactory<T> {
-
-//     private _moduleType: Type;
-//     private _moduleRefl: ModuleDef;
-//     constructor(moduleType: Type<T> | ModuleDef<T>) {
-//         super();
-//         if (isFunction(moduleType)) {
-//             this._moduleType = moduleType;
-//             this._moduleRefl = refl.get(moduleType);
-//         } else {
-//             this._moduleRefl = moduleType;
-//             this._moduleType = moduleType.type as Type;
-//         }
-//     }
-
-//     get moduleType() {
-//         return this._moduleType
-//     }
-
-//     get moduleReflect() {
-//         return this._moduleRefl
-//     }
-
-//     create(parent: Injector, option?: ModuleOption): ModuleRef<T> {
-//         return new DefaultModuleRef(this.moduleReflect, parent, option)
-//     }
-// }
-
-// export class DefaultModuleFactoryResolver extends ModuleFactoryResolver {
-//     resolve<T>(type: Type<T> | ModuleDef<T>): ModuleFactory<T> {
-//         return new DefaultModuleFactory(type)
-//     }
-// }
-
 export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
     resolve(plaform?: Platform): LifecycleHooks {
         return new DefaultModuleLifecycleHooks(plaform)

@@ -7,7 +7,7 @@ import {
 } from '@tsdi/transport';
 import { HttpStatusFactory } from '@tsdi/transport-http';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
-import { TcpIncomingUtil } from '../transport';
+import { TcpIncomingUtil, TcpPackFactory } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { Duplex } from 'stream';
@@ -77,7 +77,7 @@ export class TcpServer extends TransportServer<IncomingMessage, OutgoingMessage,
 
 
     protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(PacketFactory);
+        const packet = this.context.get(TcpPackFactory);
         return new Connection(socket, packet, opts);
     }
 

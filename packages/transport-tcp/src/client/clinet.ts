@@ -1,12 +1,13 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
 import { HttpStatusFactory } from '@tsdi/transport-http';
-import { Connection, ConnectionOpts, PacketFactory, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TcpBackend } from './backend';
+import { TcpPackFactory } from '../transport';
 
 
 
@@ -44,7 +45,7 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
     }
 
     protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(PacketFactory);
+        const packet = this.context.get(TcpPackFactory);
         const conn = new Connection(socket, packet, opts);
         if (opts?.keepalive) {
             conn.setKeepAlive(true, opts.keepalive);

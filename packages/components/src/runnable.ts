@@ -1,4 +1,4 @@
-import { Injectable, Injector, InvokeArguments, Type, TypeDef } from '@tsdi/ioc';
+import { Injectable, Injector, InvokeArguments, TypeDef } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, RunnableRef } from '@tsdi/core';
 import { ComponentState } from './state';
 import { ComponentRef } from './refs/component';

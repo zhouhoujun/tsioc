@@ -1,6 +1,6 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
-import { ConnectionOpts, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil, IncomingMessage } from '@tsdi/transport';
+import { ConnectionOpts, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil, IncomingMessage, PacketFactory } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { TransformCallback, Writable } from 'stream';
 import * as tsl from 'tls';
@@ -44,6 +44,16 @@ export class TcpIncomingUtil extends IncomingUtil {
 
 }
 
+@Injectable()
+export class TcpPackFactory extends PacketFactory {
+    createParser(opts: ConnectionOpts): PacketParser {
+        return new DelimiterParser(opts)
+    }
+    createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator {
+        return new DelimiterGenerator(output, opts);
+    }
+
+}
 
 
 export class DelimiterParser extends PacketParser {
@@ -52,7 +62,7 @@ export class DelimiterParser extends PacketParser {
     private incomings: Map<string, IncomingMessage>;
     buffers: Buffer[];
     bytes: number;
-    constructor(private connection: Connection, opts: ConnectionOpts) {
+    constructor(opts: ConnectionOpts) {
         super(opts);
         this.incomings = new Map();
         this.buffers = [];
@@ -91,7 +101,7 @@ export class DelimiterParser extends PacketParser {
                         headers
                     } as Packet;
                     if (headers) {
-                        process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
+                        // process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
                     }
                     callback(null, packet);
                 } else {

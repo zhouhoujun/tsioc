@@ -149,7 +149,7 @@ export interface LView<T = unknown> extends Array<any> {
 
     /**
      * - For dynamic views, this is the context with which to render the template (e.g.
-     *   `NgForContext`), or `{}` if not defined explicitly.
+     *   `ForContext`), or `{}` if not defined explicitly.
      * - For root view of the root component it's a reference to the component instance itself.
      * - For components, the context is a reference to the component instance itself.
      * - For inline views, the context is null.

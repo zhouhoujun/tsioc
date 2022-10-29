@@ -2,7 +2,7 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
-import { TcpIncomingUtil } from './transport';
+import { TcpIncomingUtil, TcpPackFactory } from './transport';
 import { TcpServerOpts } from './server/options';
 import { TcpServer } from './server/server';
 
@@ -14,6 +14,7 @@ import { TcpServer } from './server/server';
     ],
     providers: [
         TcpIncomingUtil,
+        TcpPackFactory,
         TcpClient,
         TcpServer
     ]
