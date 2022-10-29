@@ -78,17 +78,22 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         return new TransportRequest(pattern, options);
     }
 
+    private $conn?: Observable<Connection> | null;
     protected connect(): Observable<Connection> {
         if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
             return of(this._connection);
         }
+
+        if (this.$conn) return this.$conn;
+
         const opts = this.getOptions();
         const duplex = this.createDuplex(opts);
-        return this.onConnect(duplex, opts.connectionOpts)
+        return this.$conn = this.onConnect(duplex, opts.connectionOpts)
             .pipe(
                 map(conn => {
                     this.context.setValue(Connection, conn);
                     this._connection = conn;
+                    this.$conn = null;
                     return conn;
                 })
             );
@@ -150,7 +155,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      */
     protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
         return new Observable((observer) => {
-            const conn = this.createConnection(duplex, opts)
+            const conn = this.createConnection(duplex, opts);
             const evetns = this.createConnectionEvents(conn, observer, opts);
             for (const e in evetns) {
                 conn.on(e, evetns[e]);
@@ -159,12 +164,13 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
                 for (const e in evetns) {
                     conn.off(e, evetns[e]);
                 }
+                conn.destroy()
             }
         })
     }
 
     /**
-     * create server events
+     * create connection events
      * 
      * @usageNotes
      * 
@@ -176,7 +182,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      *   const events: Events = {};
      *   events[ev.ERROR] = (err: Error) => observer.error(err);
      *   events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
-     *   events[ev.CLOSE] = events[ev.END] = () => conntion.end(), observer.complete();
+     *   events[ev.CLOSE] = events[ev.END] = () => (conntion.end(), observer.complete());
      *
      *   return events;
      * }
@@ -190,7 +196,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         const events: Events = {};
         events[ev.ERROR] = (err: Error) => observer.error(err);
         events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
-        events[ev.CLOSE] = events[ev.END] = () => conntion.end(), observer.complete();
+        events[ev.CLOSE] = events[ev.END] = () => (conntion.end(), observer.complete());
 
         return events;
     }

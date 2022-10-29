@@ -1,9 +1,8 @@
 import { TransportExecption } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { Writable, Duplex, Transform } from 'stream';
 import { Duplexify, DuplexifyOptions } from './duplexify';
 import { ev } from './consts';
-
 
 /**
  * connection options.
@@ -12,9 +11,10 @@ export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
     /**
      * connect event name
      */
-    connect?: string; 
+    connect?: string;
     noData?: boolean;
     noError?: number;
+    events?: string[];
     /**
      * packet size limit.
      */
@@ -86,7 +86,7 @@ export class Connection extends Duplexify {
 
         this._regevs = {};
 
-        evets.forEach(n => {
+        [...(opts.events || EMPTY), ...evets].forEach(n => {
             const evt = this.emit.bind(this, n);
             this._regevs[n] = evt;
             this.stream.on(n, evt);

@@ -3,9 +3,8 @@ import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware,
     EncodeJsonMiddleware, SessionMiddleware, TransportServer, TransportContext, ExecptionFinalizeFilter,
-    Connection, ConnectionOpts, PacketFactory, IncomingMessage, OutgoingMessage
+    Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev
 } from '@tsdi/transport';
-import { HttpStatusFactory } from '@tsdi/transport-http';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpIncomingUtil, TcpPackFactory } from '../transport';
 import * as net from 'net';
@@ -29,11 +28,11 @@ export const TCP_SERVER_OPTS = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     filtersToken: TCP_EXECPTION_FILTERS,
     middlewaresToken: TCP_MIDDLEWARES,
-    statusFactory: HttpStatusFactory,
     content: {
         root: 'public'
     },
     connectionOpts: {
+        events: [ev.CONNECTION],
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024
     },
