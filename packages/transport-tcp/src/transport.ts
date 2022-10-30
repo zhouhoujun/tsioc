@@ -98,14 +98,14 @@ export class DelimiterParser extends PacketParser {
 
                 let packet: any;
                 if (type == 1) {
-                    const headers = JSON.parse(buff.slice(3).toString(encoding));
+                    const headers = JSON.parse(buff.slice(5).toString(encoding));
                     packet = {
                         id,
                         headers,
                     } as Packet;
                     callback(null, packet);
                 } else {
-                    callback(null, { id, body: buff.slice(1) });
+                    callback(null, { id, body: buff.slice(5) });
                 }
             }
         });
@@ -172,8 +172,8 @@ export class DelimiterGenerator extends PacketGenerator {
             list.push(headFlag);
             bytes += headFlag.length;
             if (id) {
-                const idbuff = Buffer.alloc(2);
-                idbuff.writeInt16BE(id)
+                const idbuff = Buffer.alloc(4);
+                idbuff.writeInt32BE(id)
                 list.push(idbuff);
                 bytes += idbuff.length;
             }
@@ -190,8 +190,8 @@ export class DelimiterGenerator extends PacketGenerator {
             list.push(playloadFlag);
             bytes += playloadFlag.length;
             if (id) {
-                const idbuff = Buffer.alloc(2);
-                idbuff.writeInt16BE(id)
+                const idbuff = Buffer.alloc(4);
+                idbuff.writeInt32BE(id)
                 list.push(idbuff);
                 bytes += idbuff.length;
             }
