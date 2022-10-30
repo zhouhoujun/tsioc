@@ -290,6 +290,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
         return new TransportResponse(options);
     }
 
+    // protected abstract createRequest(conn: Connection, req: TransportRequest):
     protected abstract send(conn: Connection, req: TransportRequest, ctx: ClientContext, onError: (err: any)=> void): Promise<void>;
 
 }

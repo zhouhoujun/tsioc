@@ -18,7 +18,7 @@ import { HttpStatusFactory } from '@tsdi/transport-http';
         TcpPackFactory,
         TcpClient,
         TcpServer,
-        { provide: StatusFactory, useClass: HttpStatusFactory }
+        { provide: StatusFactory, useClass: HttpStatusFactory, asDefault: true }
     ]
 })
 export class TcpModule {

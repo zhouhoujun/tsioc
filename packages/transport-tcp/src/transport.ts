@@ -1,8 +1,11 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
-import { ConnectionOpts, isBuffer, PacketParser, PacketGenerator, ev, Connection, IncomingUtil, IncomingMessage, PacketFactory } from '@tsdi/transport';
+import {
+    ConnectionOpts, isBuffer, PacketParser, PacketGenerator,
+    Connection, IncomingUtil, PacketFactory
+} from '@tsdi/transport';
 import { Buffer } from 'buffer';
-import { TransformCallback, Writable } from 'stream';
+import { TransformCallback, Writable, PassThrough } from 'stream';
 import * as tsl from 'tls';
 
 
@@ -59,12 +62,12 @@ export class TcpPackFactory extends PacketFactory {
 export class DelimiterParser extends PacketParser {
     private delimiter!: Buffer;
 
-    private incomings: Map<string, IncomingMessage>;
+    // private incomings: Map<number, Packet>;
     buffers: Buffer[];
     bytes: number;
     constructor(opts: ConnectionOpts) {
         super(opts);
-        this.incomings = new Map();
+        // this.incomings = new Map();
         this.buffers = [];
         this.bytes = 0;
         this.setOptions(opts);
@@ -98,14 +101,11 @@ export class DelimiterParser extends PacketParser {
                     const headers = JSON.parse(buff.slice(3).toString(encoding));
                     packet = {
                         id,
-                        headers
+                        headers,
                     } as Packet;
-                    if (headers) {
-                        // process.nextTick(() => { this.connection.emit(ev.HEADERS, headers, id) });
-                    }
                     callback(null, packet);
                 } else {
-                    callback(null, { id, playload: buff.slice(1) });
+                    callback(null, { id, body: buff.slice(1) });
                 }
             }
         });
@@ -184,7 +184,6 @@ export class DelimiterGenerator extends PacketGenerator {
 
             list.push(this.delimiter);
             bytes += this.delimiter.length;
-            this.output.write(Buffer.concat(list, bytes), encoding)
         }
 
         if (body) {
@@ -213,11 +212,11 @@ export class DelimiterGenerator extends PacketGenerator {
                 bytes += eof.length;
             }
         }
-        // if (list.length) {
-        //     this.output.write(Buffer.concat(list, bytes), encoding, callback)
-        // } else {
-        //     this.output.write(chunk, callback);
-        // }
+        if (list.length) {
+            this.output.write(Buffer.concat(list, bytes), encoding, callback)
+        } else {
+            this.output.write(chunk, callback);
+        }
     }
 
     setOptions(opts: ConnectionOpts): void {

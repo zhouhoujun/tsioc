@@ -230,6 +230,7 @@ export class TransportRequest<T = any> implements Message<ReqHeaders, T> {
     readonly params: TransportParams;
     public body: T | null;
     readonly headers: ReqHeaders;
+    id?: number;
 
     readonly context: InvocationContext | undefined;
 
