@@ -16,6 +16,7 @@ import { StatusFactory } from './status';
  * server context options.
  */
 export interface ServerContextOpts extends InvokeArguments {
+
 }
 
 /**
@@ -25,7 +26,7 @@ export interface ServerContextOpts extends InvokeArguments {
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
     readonly statusFactory: StatusFactory<string | number>;
-    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server,  options?: ServerContextOpts) {
+    constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, {
             ...options,
             resolvers: [

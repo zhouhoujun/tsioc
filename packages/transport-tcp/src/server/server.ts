@@ -6,7 +6,7 @@ import {
     Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
-import { TcpIncomingUtil, TcpPackFactory } from '../transport';
+import { TcpVaildator, TcpPackFactory } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { Duplex } from 'stream';
@@ -82,7 +82,7 @@ export class TcpServer extends TransportServer<IncomingMessage, OutgoingMessage,
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
         const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(TcpIncomingUtil))
+        return new TransportContext(injector, req, res, this, injector.get(TcpVaildator))
     }
 
 

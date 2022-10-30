@@ -3,14 +3,16 @@ import { Abstract, Injector, Token, tokenId } from '@tsdi/ioc';
 import { AssetServerContext } from '../asset.ctx';
 import { TransportServer } from './server';
 
+
+
 @Abstract()
-export abstract class IncomingUtil {
+export abstract class MessageVaildator {
 
     /**
      * get protocol of incoming message.
      * @param incoming 
      */
-    abstract getProtocol(incoming: Incoming): string;
+    abstract protocol(incoming: Incoming): string;
     /**
      * is request update or not.
      * @param req 
@@ -37,32 +39,39 @@ export abstract class IncomingUtil {
 }
 
 /**
+ * transport context options.
+ */
+export interface TransportContextOpts extends ServerContextOpts {
+}
+
+
+/**
  * Transport context for `TransportServer`.
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<TRequest, TResponse>, readonly util: IncomingUtil, options?: ServerContextOpts) {
+    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<TRequest, TResponse>, protected vaildator: MessageVaildator, options?: TransportContextOpts) {
         super(injector, request, response, target, options)
     }
 
     get protocol(): string {
-        return this.util.getProtocol(this.request)
+        return this.vaildator.protocol(this.request)
     }
     get update(): boolean {
-        return this.util.isUpdate(this.request)
+        return this.vaildator.isUpdate(this.request)
     }
     get secure(): boolean {
-        return this.util.isSecure(this.request)
+        return this.vaildator.isSecure(this.request)
     }
     match(protocol: string): boolean {
         return protocol === this.protocol;
     }
     isAbsoluteUrl(url: string): boolean {
-        return this.util.isAbsoluteUrl(url)
+        return this.vaildator.isAbsoluteUrl(url)
     }
 
     parseURL(incoming: Incoming<any>, opts: ListenOpts, proxy?: boolean | undefined): URL {
-        return this.util.parseURL(incoming, opts, proxy);
+        return this.vaildator.parseURL(incoming, opts, proxy);
     }
 
     get sent(): boolean {
@@ -77,8 +86,6 @@ export class TransportContext<TRequest extends Incoming = Incoming, TResponse ex
     protected isSelf(token: Token) {
         return token === TransportContext || token === AssetServerContext || token === ServerEndpointContext || token === ServerContext;
     }
-
-
 
 }
 

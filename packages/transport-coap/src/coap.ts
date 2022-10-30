@@ -2,7 +2,7 @@ import { Module, RouterModule, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { CoapClient } from './client/client';
-import { CoapTransportStrategy } from './transport';
+import { CoapVaildator } from './transport';
 import { CoapServer, CoapServerOpts } from './server/server';
 
 @Module({
@@ -12,7 +12,7 @@ import { CoapServer, CoapServerOpts } from './server/server';
         TransportModule
     ],
     providers: [
-        CoapTransportStrategy,
+        CoapVaildator,
         CoapClient,
         CoapServer
     ]

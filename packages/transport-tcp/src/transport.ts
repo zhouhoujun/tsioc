@@ -2,7 +2,7 @@ import { Injectable, isString } from '@tsdi/ioc';
 import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
 import {
     ConnectionOpts, isBuffer, PacketParser, PacketGenerator,
-    Connection, IncomingUtil, PacketFactory
+    Connection, MessageVaildator, PacketFactory
 } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { TransformCallback, Writable, PassThrough } from 'stream';
@@ -10,13 +10,13 @@ import * as tsl from 'tls';
 
 
 @Injectable()
-export class TcpIncomingUtil extends IncomingUtil {
+export class TcpVaildator extends MessageVaildator {
 
     isUpdate(req: Incoming): boolean {
         return req.method === mths.PUT;
     }
 
-    getProtocol(incoming: Incoming<Connection>): string {
+    protocol(incoming: Incoming<Connection>): string {
         return incoming.connection ? 'ipc' : 'tcp';
     }
 

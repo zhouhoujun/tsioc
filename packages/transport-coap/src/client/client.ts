@@ -1,11 +1,11 @@
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, ev, Packetor, parseToDuplex, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, ConnectionOpts, ev, parseToDuplex, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import * as dgram from 'dgram';
 import * as net from 'net'
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
-import { CoapPacketor, CoapTransportStrategy } from '../transport';
+import { CoapPacketFactory, CoapVaildator } from '../transport';
 
 
 @Abstract()
@@ -31,7 +31,7 @@ export const COAP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTIONF
 
 const defaults = {
     transport: {
-        strategy: CoapTransportStrategy
+        strategy: CoapVaildator
     },
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_EXECPTIONFILTERS,
@@ -65,37 +65,42 @@ export class CoapClient extends TransportClient<RequestOptions, CoapClientOpts> 
         return socket;
     }
 
-    protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
-        const logger = this.logger;
-        const packetor = this.context.get(CoapPacketor);
-        return new Observable((observer: Observer<Connection>) => {
-            const client = new Connection(duplex, packetor, opts);
-            if (opts?.keepalive) {
-                client.setKeepAlive(true, opts.keepalive);
-            }
-
-            const onError = (err: Error) => {
-                logger.error(err);
-                observer.error(err);
-            }
-            const onClose = () => {
-                client.end();
-            };
-            const onConnected = () => {
-                observer.next(client);
-            }
-            client.on(ev.ERROR, onError);
-            client.on(ev.CLOSE, onClose);
-            client.on(ev.END, onClose);
-            client.on(ev.CONNECT, onConnected);
-
-            return () => {
-                client.off(ev.ERROR, onError);
-                client.off(ev.CLOSE, onClose);
-                client.off(ev.END, onClose);
-                client.off(ev.CONNECT, onConnected);
-            }
-        });
+    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
+        const packet = this.context.get(CoapPacketFactory);
+        return new Connection(duplex, packet, opts);
     }
+
+    // protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
+    //     const logger = this.logger;
+    //     const packetor = this.context.get(CoapPacketFactory);
+    //     return new Observable((observer: Observer<Connection>) => {
+    //         const client = new Connection(duplex, packetor, opts);
+    //         if (opts?.keepalive) {
+    //             client.setKeepAlive(true, opts.keepalive);
+    //         }
+
+    //         const onError = (err: Error) => {
+    //             logger.error(err);
+    //             observer.error(err);
+    //         }
+    //         const onClose = () => {
+    //             client.end();
+    //         };
+    //         const onConnected = () => {
+    //             observer.next(client);
+    //         }
+    //         client.on(ev.ERROR, onError);
+    //         client.on(ev.CLOSE, onClose);
+    //         client.on(ev.END, onClose);
+    //         client.on(ev.CONNECT, onConnected);
+
+    //         return () => {
+    //             client.off(ev.ERROR, onError);
+    //             client.off(ev.CLOSE, onClose);
+    //             client.off(ev.END, onClose);
+    //             client.off(ev.CONNECT, onConnected);
+    //         }
+    //     });
+    // }
 
 }

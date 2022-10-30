@@ -3,7 +3,7 @@ import {
     TransportRequest, Pattern, InOutInterceptorFilter
 } from '@tsdi/core';
 import { Abstract, lang } from '@tsdi/ioc';
-import { map, Observable, of, Subscriber } from 'rxjs';
+import { isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { Duplex } from 'stream';
 import { Connection, ConnectionOpts, Events } from '../connection';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
@@ -87,9 +87,10 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         if (this.$conn) return this.$conn;
 
         const opts = this.getOptions();
-        const duplex = this.createDuplex(opts);
-        return this.$conn = this.onConnect(duplex, opts.connectionOpts)
+        const duplex = this.createDuplex(opts)
+        return this.$conn = (isObservable(duplex) ? duplex : of(duplex))
             .pipe(
+                mergeMap(duplex => this.onConnect(duplex, opts.connectionOpts)),
                 map(conn => {
                     this.context.setValue(Connection, conn);
                     this._connection = conn;
@@ -103,7 +104,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * create Duplex.
      * @param opts 
      */
-    protected abstract createDuplex(opts: TOpts): Duplex;
+    protected abstract createDuplex(opts: TOpts): Observable<Duplex> | Duplex;
 
     /**
      * on client connect.

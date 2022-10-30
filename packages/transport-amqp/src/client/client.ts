@@ -1,7 +1,9 @@
-import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { TransportClient, TransportClientOpts, TransportEvent, TransportRequest } from '@tsdi/transport';
+import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import * as amqp from 'amqplib';
+import { Duplex } from 'stream';
+import { from, Observable } from 'rxjs';
 
 
 @Abstract()
@@ -28,7 +30,8 @@ const defaults = {
 
 
 @Injectable()
-export class AmqpClient extends TransportClient {
+export class AmqpClient extends TransportClient<RequestOptions, AmqpClientOpts> {
+
     constructor(@Nullable() options: any) {
         super(options)
     }
@@ -37,5 +40,12 @@ export class AmqpClient extends TransportClient {
         return defaults;
     }
 
+    protected createDuplex(opts: AmqpClientOpts): Observable<Duplex> {
+        return from(amqp.connect(opts.connectOpts!));
+    }
+
+    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
+        throw new Error('Method not implemented.');
+    }
 }
 

@@ -1,43 +1,19 @@
-import { Incoming, ListenOpts, mths, States, TransportStatus, TransportStrategy } from '@tsdi/core';
+import { Incoming, ListenOpts } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import {
-    Connection, ConnectionOpts, isBuffer, PacketGenerator, Packetor, PacketParser
+    Connection, ConnectionOpts, isBuffer, MessageVaildator, PacketFactory, PacketGenerator, PacketParser
 } from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
 
 
 @Injectable()
-export class CoapTransportStrategy extends TransportStrategy<string> {
+export class CoapVaildator extends MessageVaildator {
     private _protocol = 'coap';
 
-
-
-
-    get protocol(): string {
+    protocol(incoming: Incoming<any>): string {
         return this._protocol;
     }
-
-
-    isValidCode(code: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    parseCode(code?: string | number | null | undefined): string {
-        throw new Error('Method not implemented.');
-    }
-    toState(status: string): States {
-        throw new Error('Method not implemented.');
-    }
-    toCode(state: States): string {
-        throw new Error('Method not implemented.');
-    }
-    isEmpty(code: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    message(code: string): string {
-        throw new Error('Method not implemented.');
-    }
-    
 
     isUpdate(incoming: Incoming): boolean {
         return incoming.method === 'put';
@@ -64,13 +40,6 @@ export class CoapTransportStrategy extends TransportStrategy<string> {
         return coapPfx.test(url.trim())
     }
 
-    match(protocol: string): boolean {
-        return protocol === this.protocol;
-    }
-
-    valid(header: string): boolean {
-        return true;
-    }
 
 }
 
@@ -171,11 +140,13 @@ export class CoapPacketGenerator extends PacketGenerator {
 }
 
 @Injectable()
-export class CoapPacketor extends Packetor {
-    parser(opts: ConnectionOpts): PacketParser {
+export class CoapPacketFactory extends PacketFactory {
+    
+    createParser(opts: ConnectionOpts): PacketParser {
         return new CoapPacketParser(opts);
     }
-    generator(output: Writable, opts: ConnectionOpts): PacketGenerator {
+    
+    createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator {
         return new CoapPacketGenerator(output, opts);
     }
 }

@@ -2,7 +2,7 @@ import { Module, RouterModule, StatusFactory, TransformModule } from '@tsdi/core
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
-import { TcpIncomingUtil, TcpPackFactory } from './transport';
+import { TcpVaildator, TcpPackFactory } from './transport';
 import { TcpServerOpts } from './server/options';
 import { TcpServer } from './server/server';
 import { HttpStatusFactory } from '@tsdi/transport-http';
@@ -14,7 +14,7 @@ import { HttpStatusFactory } from '@tsdi/transport-http';
         TransportModule
     ],
     providers: [
-        TcpIncomingUtil,
+        TcpVaildator,
         TcpPackFactory,
         TcpClient,
         TcpServer,
