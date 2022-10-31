@@ -4,8 +4,9 @@ export * from './execptions';
 export * from './mime';
 export * from './negotiator';
 export * from './duplexify';
-// export * from './stream';
 export * from './connection';
+export * from './incoming';
+export * from './outgoing';
 
 export * from './stringify';
 export * from './utils';

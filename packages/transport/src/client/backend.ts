@@ -9,9 +9,10 @@ import { Abstract, lang, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Readable } from 'stream';
 import { Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
-import { isBuffer, pmPipeline, toBuffer, XSSI_PREFIX } from '../utils';
+import { isBuffer, pmPipeline, sendbody, toBuffer, XSSI_PREFIX } from '../utils';
 import { Connection } from '../connection';
-import { IncomingMessage } from '../server/req';
+import { IncomingMessage } from '../incoming';
+import { OutgoingMessage } from '../outgoing';
 import { ev, hdr } from '../consts';
 import { RequestStauts } from './options';
 import { MimeAdapter, MimeTypes } from '../mime';
@@ -28,11 +29,13 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
             const conn = ctx.get(Connection);
             const url = req.url.trim();
             let status: Status<number>;
-            let headers: ResHeaders;
 
             let error: any;
             let ok = false;
             const factory = ctx.statusFactory as StatusFactory<number>;
+
+            const request = this.createRequest(conn, req);
+
             const onError = (error: Error) => {
                 const res = this.createError({
                     url,
@@ -45,7 +48,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
             };
             const onResponse = async (incoming: IncomingMessage) => {
                 let body: any;
-                headers = new ResHeaders(incoming.headers);
+                const headers = new ResHeaders(incoming.headers);
                 status = factory.createByCode(headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0);
                 ctx.status = status;
 
@@ -226,20 +229,24 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
 
             const resName = this.getResponseEvenName();
 
-            conn.on(resName, onResponse);
-            conn.on(ev.ERROR, onError);
-            conn.on(ev.ABOUT, onError);
-            conn.on(ev.ABORTED, onError);
-            conn.on(ev.TIMEOUT, onError);
+            request.on(resName, onResponse);
+            request.on(ev.ERROR, onError);
+            request.on(ev.ABOUT, onError);
+            request.on(ev.ABORTED, onError);
+            request.on(ev.TIMEOUT, onError);
 
-            this.send(conn, req, ctx, onError);
+            if (req.body === null) {
+                request.end();
+            } else {
+                sendbody(req.body, request, onError);
+            }
 
             return () => {
-                conn.off(resName, onResponse);
-                conn.off(ev.ERROR, onError);
-                conn.off(ev.ABOUT, onError);
-                conn.off(ev.ABORTED, onError);
-                conn.off(ev.TIMEOUT, onError);
+                request.off(resName, onResponse);
+                request.off(ev.ERROR, onError);
+                request.off(ev.ABOUT, onError);
+                request.off(ev.ABORTED, onError);
+                request.off(ev.TIMEOUT, onError);
                 if (!ctx.destroyed) {
                     observer.error(this.createError({
                         status: 0,
@@ -290,8 +297,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
         return new TransportResponse(options);
     }
 
-    // protected abstract createRequest(conn: Connection, req: TransportRequest):
-    protected abstract send(conn: Connection, req: TransportRequest, ctx: ClientContext, onError: (err: any)=> void): Promise<void>;
+    protected abstract createRequest(conn: Connection, req: TransportRequest): OutgoingMessage;
 
 }
 

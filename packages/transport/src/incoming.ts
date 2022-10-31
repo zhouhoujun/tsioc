@@ -1,10 +1,10 @@
 import { Incoming, IncomingHeaders, Message } from '@tsdi/core';
 import { Readable } from 'stream';
-import { Connection } from '../connection';
-import { ev, hdr } from '../consts';
+import { Connection } from './connection';
+import { ev, hdr } from './consts';
 
 /**
- * Server request.
+ * incoming message.
  */
 export class IncomingMessage extends Readable implements Incoming, Message {
     readonly url: string;
@@ -30,7 +30,7 @@ export class IncomingMessage extends Readable implements Incoming, Message {
         this.on(ev.PAUSE, this.onRequestPause.bind(this));
         this.on(ev.RESUME, this.onRequestResume.bind(this));
     }
-    
+
     get session() {
         return this.connection.stream;
     }

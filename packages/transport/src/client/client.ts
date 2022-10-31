@@ -3,13 +3,13 @@ import {
     TransportRequest, Pattern, InOutInterceptorFilter
 } from '@tsdi/core';
 import { Abstract, lang } from '@tsdi/ioc';
-import { isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { Duplex } from 'stream';
-import { Connection, ConnectionOpts, Events } from '../connection';
+import { isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
+import { Connection, ConnectionOpts, Events } from '../connection';
 import { ev } from '../consts';
 
 
@@ -71,11 +71,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
     }
 
     protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts): TransportRequest {
-        return url instanceof TransportRequest ? url : this.createRequest(url, { context, ...options } as ReqOpts);
-    }
-
-    protected createRequest(pattern: Pattern, options?: ReqOpts) {
-        return new TransportRequest(pattern, options);
+        return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
     }
 
     private $conn?: Observable<Connection> | null;

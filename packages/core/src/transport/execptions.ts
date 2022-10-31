@@ -23,12 +23,18 @@ export class TransportExecption extends Execption {
     }
 }
 
+/**
+ * transport about execption.
+ */
 export class TransportAboutExecption extends TransportExecption {
     constructor(message = 'Transport about') {
         super(message)
     }
 }
 
+/**
+ * Invalid header token execption.
+ */
 export class InvalidHeaderTokenExecption extends TransportExecption {
     constructor(message = 'Invalid header token.') {
         super(message);
@@ -36,7 +42,9 @@ export class InvalidHeaderTokenExecption extends TransportExecption {
 }
 
 const statmsg = 'INVALID_STATE_ERR';
-
+/**
+ * Invalid state execption.
+ */
 export class InvalidStateExecption extends TransportExecption {
     constructor(message?: string) {
         super(message ? `${statmsg}: ${message}` : statmsg)
@@ -44,12 +52,14 @@ export class InvalidStateExecption extends TransportExecption {
 }
 
 const sectmsg = 'SecurityExecption';
+/**
+ * security execption.
+ */
 export class SecurityExecption extends TransportExecption {
     constructor(message?: string) {
         super(message ? `${sectmsg}: ${message}` : sectmsg)
     }
 }
-
 
 
 /**

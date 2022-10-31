@@ -65,6 +65,9 @@ export abstract class PacketFactory {
 
 const evets = [ev.CLOSE, ev.ERROR];
 
+/**
+ * Connection.
+ */
 export class Connection extends Duplexify {
     private _timeout?: any;
     protected _parser: PacketParser;
@@ -177,7 +180,6 @@ export class Connection extends Duplexify {
         }
         return super.destroy(error, callback);
     }
-
 
 }
 

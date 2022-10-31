@@ -1,13 +1,13 @@
 import { OutgoingHeader, OutgoingHeaders, Outgoing, ResHeaders, TransportExecption } from '@tsdi/core';
 import { ArgumentExecption, Execption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
-import { Connection } from '../connection';
-import { ev, hdr } from '../consts';
-import { HeandersSentExecption, InvalidStreamExecption } from '../execptions';
+import { HeandersSentExecption, InvalidStreamExecption } from './execptions';
+import { Connection } from './connection';
+import { ev, hdr } from './consts';
 
 
 /**
- * server response.
+ * outgoing message.
  */
 export class OutgoingMessage extends Writable implements Outgoing {
 
@@ -26,7 +26,11 @@ export class OutgoingMessage extends Writable implements Outgoing {
         readonly socket?: any) {
         super({ objectMode: true });
         this._hdr = new ResHeaders();
+        this.init();
+    }
 
+    protected init() {
+        const connection = this.connection;
         connection.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
         connection.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
         connection.on(ev.CLOSE, this.onStreamClose.bind(this));
@@ -125,17 +129,6 @@ export class OutgoingMessage extends Writable implements Outgoing {
         }
     }
 
-    // cork() {
-    //     this.stream.cork();
-    //     super.cork();
-    // }
-
-    // uncork() {
-    //     this.stream.uncork();
-    //     super.uncork();
-    // }
-
-
     end(cb?: (() => void) | undefined): this;
     end(chunk: any, cb?: (() => void) | undefined): this;
     end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
@@ -210,34 +203,6 @@ export class OutgoingMessage extends Writable implements Outgoing {
         return this;
     }
 
-    // write(chunk: any, cb?: (error?: Error | null | undefined) => void): boolean;
-    // write(chunk: any, encoding?: BufferEncoding, cb?: (error?: Error | null | undefined) => void): boolean;
-    // write(chunk: any, encoding?: any, cb?: (error?: Error | null | undefined) => void): boolean {
-    //     if (isFunction(encoding)) {
-    //         cb = encoding;
-    //         encoding = 'utf8';
-    //     }
-    //     let err: Execption | undefined;
-    //     if (this.ending) {
-    //         err = new TransportExecption('write after end');
-    //     } else if (this._closed) {
-    //         err = new TransportExecption('The stream has been destroyed');
-    //     } else if (this.destroyed) {
-    //         return false;
-    //     }
-    //     if (err) {
-    //         if (isFunction(cb)) {
-    //             process.nextTick(cb, err);
-    //         }
-    //         this.destroy(err);
-    //         return false;
-    //     }
-    //     if (!this.headersSent) {
-    //         this.writeHead(this.statusCode, this.statusMessage);
-    //     }
-    //     return this.stream.write(chunk, encoding, cb);
-    // }
-
     override _write(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void): void {
 
         let err: Execption | undefined;
@@ -291,16 +256,6 @@ export class OutgoingMessage extends Writable implements Outgoing {
             }
         });
     }
-
-
-    // destroy(err?: Error | undefined): this {
-    //     if (this.destroyed) return this;
-
-    //     this.destroyed = true;
-    //     this.stream.destroy(err);
-    //     super.destroy(err);
-    //     return this;
-    // }
 
     override _destroy(error: Error | null, callback: (error?: Error | null | undefined) => void): void {
         this.connection.destroy(error, callback);

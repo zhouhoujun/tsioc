@@ -1,7 +1,7 @@
 import { Inject, Injectable, isBoolean, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
 import {
     Server, RunnableFactory, ModuleRef, Router, ListenOpts, InOutInterceptorFilter,
-    PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor, StatusFactory
+    PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor
 } from '@tsdi/core';
 import { ListenOptions } from 'net';
 import * as http from 'http';
