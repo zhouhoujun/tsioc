@@ -1,6 +1,6 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
 import { Injectable, Nullable } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, ev, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, ConnectionOpts, ev, TransportConnection, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
 import { Duplex } from 'stream';
 import * as net from 'net';
@@ -38,14 +38,14 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
         return TCP_CLIENT_OPTS;
     }
 
-    protected override createDuplex(opts: TransportClientOpts): Duplex {
+    protected override createSocket(opts: TransportClientOpts): Duplex {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         return socket;
     }
 
     protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(TcpPackFactory);
-        const conn = new Connection(socket, packet, opts);
+        const conn = new TransportConnection(socket, packet, opts);
         if (opts?.keepalive) {
             conn.setKeepAlive(true, opts.keepalive);
         }

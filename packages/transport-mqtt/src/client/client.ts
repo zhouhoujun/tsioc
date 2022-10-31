@@ -1,13 +1,13 @@
 import { Abstract, Execption, Injectable, tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Connection, ConnectionOpts, ev, LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, TransportConnection, ConnectionOpts, ev, LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { IConnectPacket } from 'mqtt-packet';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
-import { MqttPacketFactory, MqttIcomingUtil, PacketOptions } from '../transport';
+import { MqttPacketFactory, PacketOptions } from '../transport';
 import { MqttConnection } from '../server/connection';
 
 
@@ -107,9 +107,6 @@ export type MqttReqOptions = PacketOptions & RequestOptions;
 
 const defaults = {
     encoding: 'utf8',
-    transport: {
-        strategy: MqttIcomingUtil,
-    },
     interceptorsToken: MQTT_INTERCEPTORS,
     execptionsToken: MQTT_EXECPTIONFILTERS,
     interceptors: [
@@ -137,7 +134,7 @@ export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> 
         return defaults;
     }
 
-    protected override createDuplex(opts: MqttClientOpts): Duplex {
+    protected override createSocket(opts: MqttClientOpts): Duplex {
         const connOpts = opts.connectOpts;
         switch (connOpts.protocol) {
             case 'mqtt':
@@ -174,7 +171,7 @@ export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> 
         const logger = this.logger;
         const packetor = this.context.get(MqttPacketFactory);
         return new Observable((observer: Observer<Connection>) => {
-            const client = new Connection(duplex, packetor, opts);
+            const client = new TransportConnection(duplex, packetor, opts);
             if (opts?.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }

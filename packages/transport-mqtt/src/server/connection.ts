@@ -1,5 +1,5 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { ConnectionOpts, ev, Connection } from '@tsdi/transport';
+import { ConnectionOpts, ev, Connection, TransportConnection } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import { IPacket } from 'mqtt-packet';
 import {
@@ -10,7 +10,7 @@ import {
 
 
 
-export class MqttConnection extends Connection {
+export class MqttConnection extends TransportConnection {
 
     constructor(stream: Duplex, packet: MqttPacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
         super(stream, packet, opts);

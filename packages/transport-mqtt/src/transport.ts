@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Incoming, ListenOpts } from '@tsdi/core';
-import { ConnectionOpts, ev, PacketGenerator, PacketParser, PacketFactory, IncomingUtil } from '@tsdi/transport';
+import { ConnectionOpts, ev, PacketGenerator, PacketParser, PacketFactory, MessageVaildator } from '@tsdi/transport';
 import { TransformCallback, Writable } from 'stream';
 import {
     Parser, parser, writeToStream,
@@ -93,8 +93,8 @@ export declare type PacketOptions = ConnectOptions |
 
 
 @Injectable()
-export class MqttIcomingUtil extends IncomingUtil {
-    getProtocol(incoming: Incoming<any>): string {
+export class MqttVaildator extends MessageVaildator {
+    protocol(incoming: Incoming<any>): string {
         throw new Error('Method not implemented.');
     }
 

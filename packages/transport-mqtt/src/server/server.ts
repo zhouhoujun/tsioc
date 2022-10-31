@@ -1,12 +1,12 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest, CatchInterceptor } from '@tsdi/core';
 import { Abstract, Execption, Injectable, lang, tokenId } from '@tsdi/ioc';
-import { LogInterceptor, TransportServer, TransportServerOpts, Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext, IncomingUtil } from '@tsdi/transport';
+import { LogInterceptor, TransportServer, TransportServerOpts, Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttConnection } from './connection';
-import { MqttPacketFactory, MqttIcomingUtil } from '../transport';
+import { MqttPacketFactory, MqttVaildator } from '../transport';
 import { Observable } from 'rxjs';
 
 
@@ -59,9 +59,6 @@ const defaults = {
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
     middlewaresToken: MQTT_MIDDLEWARES,
-    transport: {
-        strategy: MqttIcomingUtil
-    },
     interceptors: [
         LogInterceptor,
         CatchInterceptor,
@@ -153,7 +150,7 @@ export class MqttServer extends TransportServer<IncomingMessage, OutgoingMessage
     }
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
         const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(IncomingUtil))
+        return new TransportContext(injector, req, res, this, injector.get(MqttVaildator))
     }
 
 

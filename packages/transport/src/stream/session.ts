@@ -2,6 +2,7 @@ import { TransportExecption } from '@tsdi/core';
 import { EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
+import { Connection } from '../connection';
 import { ev } from '../consts';
 import { InvalidSessionExecption } from '../execptions';
 import { TransportStream } from './stream';
@@ -65,12 +66,13 @@ export interface Closeable {
 
 const evets = [ev.CLOSE, ev.ERROR];
 
+
 export abstract class Session extends EventEmitter implements Closeable {
     private _timeout?: any;
     protected _regevs: Record<string, (...args: any[]) => void>;
     readonly state: ConnectionState;
     protected opts: SessionOpts;
-    constructor(readonly socket: Duplex, opts: SessionOpts = EMPTY_OBJ) {
+    constructor(readonly socket: Connection, opts: SessionOpts = EMPTY_OBJ) {
         super();
         this.opts = opts;
         this.state = {

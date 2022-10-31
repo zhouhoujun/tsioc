@@ -1,6 +1,6 @@
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, ev, parseToDuplex, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, TransportConnection, ConnectionOpts, ev, parseToDuplex, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import * as dgram from 'dgram';
 import * as net from 'net'
 import { Observable, Observer } from 'rxjs';
@@ -60,14 +60,14 @@ export class CoapClient extends TransportClient<RequestOptions, CoapClientOpts> 
         return defaults;
     }
 
-    protected override createDuplex(opts: CoapClientOpts): Duplex {
+    protected override createSocket(opts: CoapClientOpts): Duplex {
         const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
         return socket;
     }
 
     protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(CoapPacketFactory);
-        return new Connection(duplex, packet, opts);
+        return new TransportConnection(duplex, packet, opts);
     }
 
     // protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {

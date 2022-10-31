@@ -1,7 +1,7 @@
 import { ListenOpts } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
 import { Connection, ConnectionOpts, TransportServer, TransportServerOpts } from '@tsdi/transport';
-import { ServerTCP } from 'modbus-serial'
+import * as modbus from 'modbus-serial';
 import { Observable, Subscription } from 'rxjs';
 
 
@@ -9,7 +9,8 @@ import { Observable, Subscription } from 'rxjs';
 export class ModbusServer extends TransportServer {
     
     protected createServer(opts: TransportServerOpts) {
-        throw new Error('Method not implemented.');
+        const server = new modbus.ServerTCP()
+    
     }
     protected listen(server: any, opts: ListenOpts): Promise<void> {
         throw new Error('Method not implemented.');

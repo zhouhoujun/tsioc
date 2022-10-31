@@ -3,7 +3,7 @@ import {
     TransportRequest, Pattern, InOutInterceptorFilter
 } from '@tsdi/core';
 import { Abstract, lang } from '@tsdi/ioc';
-import { Duplex } from 'stream';
+import { EventEmitter } from 'events';
 import { isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientFinalizeFilter } from './filter';
@@ -83,10 +83,10 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         if (this.$conn) return this.$conn;
 
         const opts = this.getOptions();
-        const duplex = this.createDuplex(opts)
-        return this.$conn = (isObservable(duplex) ? duplex : of(duplex))
+        const socket = this.createSocket(opts)
+        return this.$conn = (isObservable(socket) ? socket : of(socket))
             .pipe(
-                mergeMap(duplex => this.onConnect(duplex, opts.connectionOpts)),
+                mergeMap(socket => this.onConnect(socket, opts.connectionOpts)),
                 map(conn => {
                     this.context.setValue(Connection, conn);
                     this._connection = conn;
@@ -100,7 +100,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * create Duplex.
      * @param opts 
      */
-    protected abstract createDuplex(opts: TOpts): Observable<Duplex> | Duplex;
+    protected abstract createSocket(opts: TOpts): Observable<EventEmitter> | EventEmitter;
 
     /**
      * on client connect.
@@ -147,12 +147,12 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * }
      * ```
      * 
-     * @param duplex 
+     * @param socket 
      * @param opts 
      */
-    protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
+    protected onConnect(socket: EventEmitter, opts?: ConnectionOpts): Observable<Connection> {
         return new Observable((observer) => {
-            const conn = this.createConnection(duplex, opts);
+            const conn = this.createConnection(socket, opts);
             const evetns = this.createConnectionEvents(conn, observer, opts);
             for (const e in evetns) {
                 conn.on(e, evetns[e]);
@@ -194,16 +194,15 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
         events[ev.ERROR] = (err: Error) => observer.error(err);
         events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
         events[ev.CLOSE] = events[ev.END] = () => (conntion.end(), observer.complete());
-
         return events;
     }
 
     /**
      * create connection.
-     * @param duplex 
+     * @param socket 
      * @param opts 
      */
-    protected abstract createConnection(duplex: Duplex, opts?: ConnectionOpts): Connection;
+    protected abstract createConnection(socket: EventEmitter, opts?: ConnectionOpts): Connection;
 
 
 }

@@ -3,7 +3,7 @@ import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware,
     EncodeJsonMiddleware, SessionMiddleware, TransportServer, TransportContext, ExecptionFinalizeFilter,
-    Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev
+    Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev, TransportConnection
 } from '@tsdi/transport';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpVaildator, TcpPackFactory } from '../transport';
@@ -77,7 +77,7 @@ export class TcpServer extends TransportServer<IncomingMessage, OutgoingMessage,
 
     protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(TcpPackFactory);
-        return new Connection(socket, packet, opts);
+        return new TransportConnection(socket, packet, opts);
     }
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {

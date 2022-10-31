@@ -17,11 +17,11 @@ export class TcpVaildator extends MessageVaildator {
     }
 
     protocol(incoming: Incoming<Connection>): string {
-        return incoming.connection ? 'ipc' : 'tcp';
+        return incoming.connection.socket  ? 'ipc' : 'tcp';
     }
 
     isSecure(incoming: Incoming<Connection>): boolean {
-        return incoming.connection.stream instanceof tsl.TLSSocket;
+        return incoming.connection.socket instanceof tsl.TLSSocket;
     }
 
     parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean): URL {
