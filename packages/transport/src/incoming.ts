@@ -31,8 +31,8 @@ export class IncomingMessage extends Readable implements Incoming, Message {
         this.on(ev.RESUME, this.onRequestResume.bind(this));
     }
 
-    get session() {
-        return this.connection.stream;
+    get socket() {
+        return this.connection.socket;
     }
 
     get aborted() {

@@ -22,8 +22,7 @@ export class OutgoingMessage extends Writable implements Outgoing {
     writable = true;
     constructor(
         readonly connection: Connection,
-        readonly headers: OutgoingHeaders,
-        readonly socket?: any) {
+        readonly headers: OutgoingHeaders) {
         super({ objectMode: true });
         this._hdr = new ResHeaders();
         this.init();
@@ -54,8 +53,8 @@ export class OutgoingMessage extends Writable implements Outgoing {
 
     }
 
-    get session() {
-        return this.connection.stream;
+    get socket() {
+        return this.connection.socket;
     }
 
     // get writableEnded() {
