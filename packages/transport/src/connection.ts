@@ -9,7 +9,17 @@ import { ev } from './consts';
  * connection options.
  */
 export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
+    /**
+     * parse socket to duplex socket.
+     * @param socket 
+     */
     parseToDuplex?(socket: EventEmitter): Duplex;
+    /**
+     * custom set Keep alive.
+     * @param enable 
+     * @param initialDelay 
+     */
+    setKeepAlive?(enable?: boolean, initialDelay?: number): void;
     noData?: boolean;
     noError?: number;
     events?: string[];
@@ -164,7 +174,11 @@ export class DuplexConnection<TSocket extends EventEmitter = EventEmitter> exten
      * @return The socket itself.
      */
     setKeepAlive(enable?: boolean, initialDelay?: number): this {
-        (this.socket as any).setKeepAlive?.(enable, initialDelay);
+        if (this.opts.setKeepAlive) {
+            this.opts.setKeepAlive(enable, initialDelay);
+        } else if (isFunction((this.socket as any).setKeepAlive)) {
+            (this.socket as any).setKeepAlive(enable, initialDelay);
+        }
         return this;
     }
 
