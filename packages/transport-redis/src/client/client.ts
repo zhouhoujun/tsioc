@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Client, ClientEndpointContext, OnDispose, Pattern, RequestOptions, TransportRequest } from '@tsdi/core';
-import { ClientOpts, createClient, RedisClient as RClient } from 'redis';
+import { ClientOpts, createClient, RedisClient as RClient } from 'ioredis';
 import { TransportClientOpts } from '@tsdi/transport';
 
 

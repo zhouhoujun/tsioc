@@ -2,7 +2,7 @@ import { ListenOpts, Server } from '@tsdi/core';
 import { Abstract, ArgumentExecption, Injectable, Token } from '@tsdi/ioc';
 import { Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext, TransportServer, TransportServerOpts } from '@tsdi/transport';
 import { Duplex } from 'stream';
-import { RedisClient, createClient, ClientOpts } from 'redis';
+import { RedisClient, createClient, ClientOpts } from 'ioredis';
 import { Subscription } from 'rxjs';
 
 
