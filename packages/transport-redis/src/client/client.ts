@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Client, ClientEndpointContext, OnDispose, Pattern, RequestOptions, TransportRequest } from '@tsdi/core';
-import { ClientOpts, createClient, RedisClient as RClient } from 'ioredis';
+import Redis, { RedisOptions } from 'ioredis';
 import { TransportClientOpts } from '@tsdi/transport';
 
 
@@ -9,7 +9,7 @@ export abstract class RedisClientOpts extends TransportClientOpts {
     /**
      * connect options.
      */
-    abstract connectOpts?: ClientOpts;
+    abstract connectOpts: RedisOptions;
 }
 
 
@@ -17,8 +17,8 @@ export abstract class RedisClientOpts extends TransportClientOpts {
 @Injectable()
 export class RedisClient extends Client<Pattern, RequestOptions, RedisClientOpts> implements OnDispose {
 
-    private pubClient: RClient | null = null;
-    private subClient: RClient | null = null;
+    private pubClient: Redis | null = null;
+    private subClient: Redis | null = null;
     constructor(@Nullable() options: RedisClientOpts) {
         super(options);
     }
@@ -31,9 +31,8 @@ export class RedisClient extends Client<Pattern, RequestOptions, RedisClientOpts
         if (this.pubClient && this.subClient) return;
 
         const opts = this.getOptions();
-        this.subClient = createClient(opts.connectOpts);
-        this.pubClient = createClient(opts.connectOpts);
-
+        this.subClient = new Redis(opts.connectOpts);
+        this.pubClient = new Redis(opts.connectOpts);
 
     }
 

@@ -2,24 +2,24 @@ import { ListenOpts, Server } from '@tsdi/core';
 import { Abstract, ArgumentExecption, Injectable, Token } from '@tsdi/ioc';
 import { Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext, TransportServer, TransportServerOpts } from '@tsdi/transport';
 import { Duplex } from 'stream';
-import { RedisClient, createClient, ClientOpts } from 'ioredis';
+import Redis, { RedisOptions } from 'ioredis';
 import { Subscription } from 'rxjs';
 
 
 @Abstract()
 export abstract class RedisOpts extends TransportServerOpts<IncomingMessage, OutgoingMessage> {
-    abstract connectOpts?: ClientOpts;
+    abstract connectOpts: RedisOptions;
 }
 
 @Injectable()
 export class RedisServer extends Server<IncomingMessage, OutgoingMessage, TransportContext, RedisOpts> {
 
-    private pubClient: RedisClient | null = null;
-    private subClient: RedisClient | null = null;
+    private pubClient: Redis | null = null;
+    private subClient: Redis | null = null;
 
     protected createServer(opts: RedisOpts) {
-        this.pubClient = createClient(opts.connectOpts);
-        this.subClient = createClient(opts.connectOpts);
+        this.pubClient = new Redis(opts.connectOpts);
+        this.subClient = new Redis(opts.connectOpts);
     }
 
     async start(): Promise<void> {
