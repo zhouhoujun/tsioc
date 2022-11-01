@@ -1,6 +1,6 @@
 import { TransportRequest, ClientContext, Packet } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
-import { Connection, ev, hdr, IncomingMessage, OutgoingMessage, sendbody, TransportBackend } from '@tsdi/transport';
+import { Connection, ev, hdr, IncomingMessage, OutgoingMessage, RequestStream, sendbody, TransportBackend } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 
 
@@ -16,7 +16,7 @@ export class TcpBackend extends TransportBackend {
         const headers = req.headers.headers;
         const id = this.getAttachId();
 
-        const request = new OutgoingMessage(id, conn, headers);
+        const request = new RequestStream(id, conn, headers);
         return request;
     }
 
