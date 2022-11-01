@@ -29,6 +29,10 @@ export class TcpBackend extends TransportBackend {
         return id;
     }
 
+    protected override sendBody(request: OutgoingMessage, body: any, callback: (error?: Error | null) => void): void {
+        request.write({ id: request.id, body: body }, callback);
+    }
+
     // protected send(conn: Connection, req: TransportRequest<any>, ctx: ClientContext): Observable<IncomingMessage> {
 
     //     const url = `${req.url.trim()}?${req.params.toString()}`;

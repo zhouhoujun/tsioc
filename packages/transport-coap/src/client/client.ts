@@ -1,10 +1,9 @@
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { Connection, TransportConnection, ConnectionOpts, ev, parseToDuplex, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, DuplexConnection, ConnectionOpts, ev, parseToDuplex, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import * as dgram from 'dgram';
-import * as net from 'net'
+import * as net from 'net';
 import { Observable, Observer } from 'rxjs';
-import { Duplex } from 'stream';
 import { CoapPacketFactory, CoapVaildator } from '../transport';
 
 
@@ -16,7 +15,7 @@ export abstract class CoapClientOpts extends TransportClientOpts {
     abstract json?: boolean;
     abstract encoding?: BufferEncoding;
     abstract baseOn?: 'tcp' | 'udp';
-    abstract connectOpts: dgram.SocketOptions | net.NetConnectOpts;
+    abstract connectOpts: dgram.SocketOptions | net.TcpNetConnectOpts;
 }
 
 /**
@@ -50,7 +49,7 @@ const defaults = {
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends TransportClient<RequestOptions, CoapClientOpts> {
+export class CoapClient extends TransportClient<dgram.Socket | net.Socket, RequestOptions, CoapClientOpts> {
 
     constructor(@Nullable() option: CoapClientOpts) {
         super(option);
@@ -60,14 +59,14 @@ export class CoapClient extends TransportClient<RequestOptions, CoapClientOpts> 
         return defaults;
     }
 
-    protected override createSocket(opts: CoapClientOpts): Duplex {
-        const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.NetConnectOpts) : parseToDuplex(dgram.createSocket(opts.connectOpts as dgram.SocketOptions));
+    protected override createSocket(opts: CoapClientOpts): dgram.Socket | net.Socket {
+        const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.TcpNetConnectOpts) : dgram.createSocket(opts.connectOpts as dgram.SocketOptions);
         return socket;
     }
 
-    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    protected createConnection(socket: dgram.Socket | net.Socket, opts?: ConnectionOpts | undefined): Connection<dgram.Socket | net.Socket> {
         const packet = this.context.get(CoapPacketFactory);
-        return new TransportConnection(duplex, packet, opts);
+        return new DuplexConnection(socket, packet, { parseToDuplex, ...opts });
     }
 
     // protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {

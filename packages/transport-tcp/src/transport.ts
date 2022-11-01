@@ -49,6 +49,7 @@ export class TcpVaildator extends MessageVaildator {
 
 @Injectable()
 export class TcpPackFactory extends PacketFactory {
+
     createParser(opts: ConnectionOpts): PacketParser {
         return new DelimiterParser(opts)
     }
@@ -145,6 +146,9 @@ const eof = Buffer.from([0]);
 const headFlag = Buffer.from([1]);
 const playloadFlag = Buffer.from([2]);
 
+/**
+ * delimiter generator.
+ */
 export class DelimiterGenerator extends PacketGenerator {
     private delimiter: Buffer;
     private maxSize: number;

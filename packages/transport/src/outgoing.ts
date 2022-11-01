@@ -155,22 +155,25 @@ export class OutgoingMessage extends Writable implements Outgoing {
 
         this.ending = true;
 
-        if (isFunction(cb)) {
-            if (this.connection.writableEnded)
-                this.once(ev.FINISH, cb);
-            else
-                this.connection.once(ev.FINISH, cb);
-        }
+        // if (isFunction(cb)) {
+        //     if (this.writableEnded)
+        //         this.once(ev.FINISH, cb);
+        //     else
+        //         this.connection.once(ev.FINISH, cb);
+        // }
 
-        if (!this.headersSent)
-            this.writeHead(this.statusCode);
+        // if (!this.headersSent)
+        //     this.writeHead(this.statusCode);
 
-        if (this.isClosed || this.connection.destroyed) {
-            this.onStreamClose()
-        } else {
-            this.connection.end();
-        }
-        return this;
+        // if (this.isClosed || this.connection.destroyed) {
+        //     this.onStreamClose()
+        // } else {
+        //     super.end(cb);
+        // }
+        // return this;
+
+        return super.end(cb)
+
     }
 
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
@@ -234,7 +237,6 @@ export class OutgoingMessage extends Writable implements Outgoing {
         return this;
     }
 
-
     respond(headers: OutgoingHeaders, options?: {
         endStream?: boolean;
         waitForTrailers?: boolean;
@@ -246,8 +248,8 @@ export class OutgoingMessage extends Writable implements Outgoing {
 
         this._sentHeaders = headers;
         this._headersSent = true;
-
-        this.write({ headers }, () => {
+        const id = this.id;
+        this.write({ id, headers }, () => {
             const len = headers[hdr.CONTENT_LENGTH];
             const hasPlayload = len ? true : false;
             if (opts.endStream == true || !hasPlayload) {

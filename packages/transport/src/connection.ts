@@ -1,5 +1,5 @@
 import { TransportExecption } from '@tsdi/core';
-import { Abstract, EMPTY, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Writable, Duplex, Transform } from 'stream';
 import { Duplexify, DuplexifyOptions } from './duplexify';
@@ -9,6 +9,7 @@ import { ev } from './consts';
  * connection options.
  */
 export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
+    parseToDuplex?(socket: EventEmitter): Duplex;
     noData?: boolean;
     noError?: number;
     events?: string[];
@@ -99,27 +100,33 @@ export abstract class PacketFactory {
 
 const evets = [ev.CLOSE, ev.ERROR];
 
-
 /**
- * Connection.
+ * Duplex Connection.
  */
-export class TransportConnection<TSocket extends Duplex = Duplex> extends Connection<TSocket> {
+export class DuplexConnection<TSocket extends EventEmitter = EventEmitter> extends Connection<TSocket> {
     private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;
     protected _regevs: Record<string, (...args: any[]) => void>;
     protected opts: ConnectionOpts;
+    protected _duplex: Duplex;
     constructor(readonly socket: TSocket, readonly packet: PacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
         super(null, null, opts = { ...opts, objectMode: true });
         this.opts = opts;
-
+        if (socket instanceof Duplex) {
+            this._duplex = socket;
+        } else if (opts.parseToDuplex) {
+            this._duplex = opts.parseToDuplex(socket);
+        } else {
+            throw new ArgumentExecption('can not parse socket to duplex, missing parseToDuplex in ConnectionOpts')
+        }
         this._parser = packet.createParser(opts);
-        this._generator = packet.createGenerator(socket, opts);
+        this._generator = packet.createGenerator(this._duplex, opts);
         this.setReadable(this._parser);
         this.setWritable(this._generator);
 
         process.nextTick(() => {
-            this.socket.pipe(this._parser);
+            this._duplex.pipe(this._parser);
         });
 
         this._regevs = {};
@@ -127,7 +134,7 @@ export class TransportConnection<TSocket extends Duplex = Duplex> extends Connec
         [...(opts.events || EMPTY), ...evets].forEach(n => {
             const evt = this.emit.bind(this, n);
             this._regevs[n] = evt;
-            this.socket.on(n, evt);
+            this._duplex.on(n, evt);
             if (n === ev.ERROR) {
                 this._generator.on(n, evt);
                 this._parser.on(n, evt);
@@ -203,15 +210,15 @@ export class TransportConnection<TSocket extends Duplex = Duplex> extends Connec
         if (this.destroyed) return this;
         lang.forIn(this._regevs, (e, n) => {
             this._regevs[n] = null!;
-            this.socket.off(n, e);
+            this._duplex.off(n, e);
             this._parser.off(n, e);
             this._generator.off(n, e);
         });
-        if (this.socket.destroy) {
-            this.socket.destroy(error ?? undefined);
+        if (this._duplex.destroy) {
+            this._duplex.destroy(error ?? undefined);
             callback && callback();
         } else {
-            this.socket.end(callback);
+            this._duplex.end(callback);
         }
         return super.destroy(error, callback);
     }

@@ -150,7 +150,7 @@ export abstract class TransportClient<TSocket extends EventEmitter = EventEmitte
      * @param socket 
      * @param opts 
      */
-    protected onConnect(socket: TSocket, opts?: ConnectionOpts): Observable<Connection> {
+    protected onConnect(socket: TSocket, opts?: ConnectionOpts): Observable<Connection<TSocket>> {
         return new Observable((observer) => {
             const conn = this.createConnection(socket, opts);
             const evetns = this.createConnectionEvents(conn, observer, opts);
@@ -206,7 +206,7 @@ export abstract class TransportClient<TSocket extends EventEmitter = EventEmitte
      * @param socket 
      * @param opts 
      */
-    protected abstract createConnection(socket: EventEmitter, opts?: ConnectionOpts): Connection;
+    protected abstract createConnection(socket: EventEmitter, opts?: ConnectionOpts): Connection<TSocket>;
 
 
 }

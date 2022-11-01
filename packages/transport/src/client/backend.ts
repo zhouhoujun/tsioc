@@ -36,7 +36,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
 
             const request = this.createRequest(conn, req);
 
-            const onError = (error: Error) => {
+            const onError = (error?: Error | null) => {
                 const res = this.createError({
                     url,
                     error,
@@ -238,7 +238,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
             if (req.body === null) {
                 request.end();
             } else {
-                sendbody(req.body, request, onError);
+                this.sendBody(request, req.body, onError);
             }
 
 
@@ -301,6 +301,9 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
 
     protected abstract createRequest(conn: Connection, req: TransportRequest): OutgoingMessage;
 
+    protected sendBody(request: OutgoingMessage, body: any, callback: (error?: Error | null) => void) {
+        sendbody(body, request, callback);
+    }
 }
 
 

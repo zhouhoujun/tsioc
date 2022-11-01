@@ -32,11 +32,12 @@ export class UdpDuplex extends Duplex {
         socket.on(ev.MESSAGE, (msg, rinfo) => {
             this.push(msg);
             this.push(this.delimiter)
-        })
+        });
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
         const address = this.rinfo ?? this.socket.remoteAddress();
         this.socket.send(chunk, address.port, address.address, callback)
     }
+
 }

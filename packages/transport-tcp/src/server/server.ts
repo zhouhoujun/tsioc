@@ -3,12 +3,12 @@ import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware,
     EncodeJsonMiddleware, SessionMiddleware, TransportServer, TransportContext, ExecptionFinalizeFilter,
-    Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev, TransportConnection
+    Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev, DuplexConnection
 } from '@tsdi/transport';
-import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
-import { TcpVaildator, TcpPackFactory } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
+import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
+import { TcpVaildator, TcpPackFactory } from '../transport';
 
 
 /**
@@ -73,10 +73,9 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, Incoming
         return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
     }
 
-
-    protected createConnection(socket: tls.TLSSocket | net.Socket, opts?: ConnectionOpts | undefined): Connection {
+    protected createConnection(socket: tls.TLSSocket | net.Socket, opts?: ConnectionOpts | undefined): Connection<tls.TLSSocket | net.Socket> {
         const packet = this.context.get(TcpPackFactory);
-        return new TransportConnection(socket, packet, opts);
+        return new DuplexConnection(socket, packet, opts);
     }
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
@@ -84,6 +83,11 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, Incoming
         return new TransportContext(injector, req, res, this, injector.get(TcpVaildator))
     }
 
+    protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
+        const defer = lang.defer<void>();
+        server.listen(opts, defer.resolve);
+        return defer.promise;
+    }
 
 
     // protected override onConnection(server: net.Server | tls.Server, opts?: ConnectionOpts): Observable<Connection> {
@@ -155,11 +159,5 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, Incoming
     //         }
     //     });
     // }
-
-    protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
-        const defer = lang.defer<void>();
-        server.listen(opts, defer.resolve);
-        return defer.promise;
-    }
 
 }
