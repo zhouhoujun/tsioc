@@ -21,6 +21,7 @@ export class OutgoingMessage extends Writable implements Outgoing {
 
     writable = true;
     constructor(
+        readonly id: number,
         readonly connection: Connection,
         readonly headers: OutgoingHeaders) {
         super({ objectMode: true });

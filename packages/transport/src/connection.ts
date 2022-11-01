@@ -9,10 +9,6 @@ import { ev } from './consts';
  * connection options.
  */
 export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
-    /**
-     * connect event name
-     */
-    connect?: string;
     noData?: boolean;
     noError?: number;
     events?: string[];
@@ -32,12 +28,12 @@ export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
 
 
 @Abstract()
-export abstract class Connection extends Duplexify {
+export abstract class Connection<TSocket extends EventEmitter = EventEmitter> extends Duplexify {
 
     /**
      * socket.
      */
-    abstract get socket(): EventEmitter;
+    abstract get socket(): TSocket;
     /**
      * Enable/disable keep-alive functionality, and optionally set the initial
      * delay before the first keepalive probe is sent on an idle socket.
@@ -107,13 +103,13 @@ const evets = [ev.CLOSE, ev.ERROR];
 /**
  * Connection.
  */
-export class TransportConnection extends Connection {
+export class TransportConnection<TSocket extends Duplex = Duplex> extends Connection<TSocket> {
     private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;
     protected _regevs: Record<string, (...args: any[]) => void>;
     protected opts: ConnectionOpts;
-    constructor(readonly socket: Duplex, readonly packet: PacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
+    constructor(readonly socket: TSocket, readonly packet: PacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
         super(null, null, opts = { ...opts, objectMode: true });
         this.opts = opts;
 

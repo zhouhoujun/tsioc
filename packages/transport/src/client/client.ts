@@ -31,7 +31,7 @@ const tsptDeftOpts = {
  * Transport Client.
  */
 @Abstract()
-export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
+export abstract class TransportClient<TSocket extends EventEmitter = EventEmitter, ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
 
     private _connection?: Connection;
     constructor(options: TOpts) {
@@ -100,7 +100,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * create Duplex.
      * @param opts 
      */
-    protected abstract createSocket(opts: TOpts): Observable<EventEmitter> | EventEmitter;
+    protected abstract createSocket(opts: TOpts): Observable<TSocket> | TSocket;
 
     /**
      * on client connect.
@@ -150,7 +150,7 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      * @param socket 
      * @param opts 
      */
-    protected onConnect(socket: EventEmitter, opts?: ConnectionOpts): Observable<Connection> {
+    protected onConnect(socket: TSocket, opts?: ConnectionOpts): Observable<Connection> {
         return new Observable((observer) => {
             const conn = this.createConnection(socket, opts);
             const evetns = this.createConnectionEvents(conn, observer, opts);
@@ -191,10 +191,14 @@ export abstract class TransportClient<ReqOpts extends RequestOptions = RequestOp
      */
     protected createConnectionEvents(conntion: Connection, observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
         const events: Events = {};
+        events[this.connectEventName()] = () => observer.next(conntion);
         events[ev.ERROR] = (err: Error) => observer.error(err);
-        events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
         events[ev.CLOSE] = events[ev.END] = () => (conntion.end(), observer.complete());
         return events;
+    }
+
+    protected connectEventName() {
+        return ev.CONNECT;
     }
 
     /**

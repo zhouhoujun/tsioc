@@ -15,6 +15,7 @@ export class IncomingMessage extends Readable implements Incoming, Message {
     _closed = false;
     private _aborted = false;
     constructor(
+        readonly id: number,
         readonly connection: Connection,
         readonly headers: IncomingHeaders) {
         super({ objectMode: true });

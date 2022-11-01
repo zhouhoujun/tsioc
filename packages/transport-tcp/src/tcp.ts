@@ -1,11 +1,11 @@
 import { Module, RouterModule, StatusFactory, TransformModule } from '@tsdi/core';
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
+import { HttpStatusFactory } from '@tsdi/transport-http';
 import { TcpClient } from './client/clinet';
 import { TcpVaildator, TcpPackFactory } from './transport';
 import { TcpServerOpts } from './server/options';
 import { TcpServer } from './server/server';
-import { HttpStatusFactory } from '@tsdi/transport-http';
 
 @Module({
     imports: [

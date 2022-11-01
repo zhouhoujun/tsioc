@@ -29,7 +29,7 @@ export const TCP_CLIENT_OPTS = {
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends TransportClient<RequestOptions> implements OnDispose {
+export class TcpClient extends TransportClient<tls.TLSSocket | net.Socket, RequestOptions> implements OnDispose {
     constructor(@Nullable() options: TcpClientOpts) {
         super(options);
     }
@@ -38,12 +38,12 @@ export class TcpClient extends TransportClient<RequestOptions> implements OnDisp
         return TCP_CLIENT_OPTS;
     }
 
-    protected override createSocket(opts: TransportClientOpts): Duplex {
+    protected override createSocket(opts: TransportClientOpts): tls.TLSSocket | net.Socket {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         return socket;
     }
 
-    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    protected createConnection(socket: tls.TLSSocket | net.Socket, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(TcpPackFactory);
         const conn = new TransportConnection(socket, packet, opts);
         if (opts?.keepalive) {

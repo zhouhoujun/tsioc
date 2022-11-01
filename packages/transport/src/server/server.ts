@@ -55,16 +55,16 @@ const defOpts = {
  * Transport Server
  */
 @Abstract()
-export abstract class TransportServer<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, T extends EventEmitter = any, TOpts extends TransportServerOpts<TRequest, TResponse> = TransportServerOpts<TRequest, TResponse>> extends Server<TRequest, TResponse, TransportContext, TOpts> {
+export abstract class TransportServer<TServe extends EventEmitter = EventEmitter, TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TOpts extends TransportServerOpts<TRequest, TResponse> = TransportServerOpts<TRequest, TResponse>> extends Server<TRequest, TResponse, TransportContext, TOpts> {
 
-    private _server: T | null = null;
+    private _server: TServe | null = null;
     protected _reqSet: Set<Subscription> = new Set();
 
     constructor(options: TOpts) {
         super(options)
     }
 
-    get server(): T | null {
+    get server(): TServe | null {
         return this._server;
     }
 
@@ -94,13 +94,13 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
      * create server.
      * @param opts 
      */
-    protected abstract createServer(opts: TOpts): T;
+    protected abstract createServer(opts: TOpts): TServe;
     /**
      * listen
      * @param server 
      * @param opts 
      */
-    protected abstract listen(server: T, opts: ListenOpts): Promise<void>;
+    protected abstract listen(server: TServe, opts: ListenOpts): Promise<void>;
 
     /**
      * on connection.
@@ -137,7 +137,7 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
      * @param server 
      * @param opts 
      */
-    protected onConnection(server: T, opts?: ConnectionOpts): Observable<Connection> {
+    protected onConnection(server: TServe, opts?: ConnectionOpts): Observable<Connection> {
         return new Observable((observer) => {
             const evetns = this.createServerEvents(observer, opts);
             for (const e in evetns) {
@@ -159,24 +159,23 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
      */
     protected createServerEvents(observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
         const events: Events = {};
+        events[this.connectionEventName()] = (socket: EventEmitter) => observer.next(this.createConnection(socket, opts));
         events[ev.ERROR] = (err: Error) => observer.error(err);
-        events[opts?.connect ?? ev.CONNECTION] = (socket: EventEmitter) => observer.next(this.createConnection(this.createDuplex(socket), opts));
         events[ev.CLOSE] = () => observer.complete();
 
         return events;
     }
 
-    protected createDuplex(socket: EventEmitter): Duplex {
-        if (socket instanceof Duplex) return socket;
-        throw new TransportArgumentExecption('socket is not Duplex.')
+    protected connectionEventName() {
+        return ev.CONNECTION;
     }
-    
+
     /**
      * create connection.
      * @param socket 
      * @param opts 
      */
-    protected abstract createConnection(socket: Duplex, opts?: ConnectionOpts): Connection;
+    protected abstract createConnection(socket: EventEmitter, opts?: ConnectionOpts): Connection;
 
     /**
      * transform, receive data from remoting.
@@ -209,11 +208,22 @@ export abstract class TransportServer<TRequest extends Incoming = Incoming, TRes
      */
     protected createConnectionEvents(observer: Subscriber<any>): Events {
         const events: Events = {};
-        events[ev.REQUEST] = (req: TRequest, res: TResponse) => this.requestHandler(observer, req, res);
+        events[this.requestEventName()] = (...args: any[]) => {
+            const [req, res] = this.parseToReqRes(args);
+            this.requestHandler(observer, req, res);
+        };
         events[ev.ERROR] = (err) => observer.error(err);
         events[ev.CLOSE] = () => observer.complete();
 
         return events
+    }
+
+    protected parseToReqRes(args: any[]): [TRequest, TResponse] {
+        return args as [TRequest, TResponse];
+    }
+
+    protected requestEventName() {
+        return ev.REQUEST;
     }
 
     /**

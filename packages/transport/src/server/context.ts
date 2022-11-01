@@ -50,7 +50,7 @@ export interface TransportContextOpts extends ServerContextOpts {
  */
 export class TransportContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetServerContext<TRequest, TResponse> {
 
-    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<TRequest, TResponse>, protected vaildator: MessageVaildator, options?: TransportContextOpts) {
+    constructor(injector: Injector, request: TRequest, response: TResponse, readonly target: TransportServer<any, TRequest, TResponse>, protected vaildator: MessageVaildator, options?: TransportContextOpts) {
         super(injector, request, response, target, options)
     }
 

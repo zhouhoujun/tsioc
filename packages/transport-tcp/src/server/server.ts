@@ -9,7 +9,6 @@ import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpVaildator, TcpPackFactory } from '../transport';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Duplex } from 'stream';
 
 
 /**
@@ -61,7 +60,7 @@ export const TCP_SERVER_OPTS = {
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TransportServer<IncomingMessage, OutgoingMessage, net.Server | tls.Server, TcpServerOpts> {
+export class TcpServer extends TransportServer<net.Server | tls.Server, IncomingMessage, OutgoingMessage, TcpServerOpts> {
     constructor(@Nullable() options: TcpServerOpts) {
         super(options)
     }
@@ -75,7 +74,7 @@ export class TcpServer extends TransportServer<IncomingMessage, OutgoingMessage,
     }
 
 
-    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    protected createConnection(socket: tls.TLSSocket | net.Socket, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(TcpPackFactory);
         return new TransportConnection(socket, packet, opts);
     }
