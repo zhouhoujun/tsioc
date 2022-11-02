@@ -14,8 +14,9 @@ export * from './resolver';
 export * from './model';
 export * from './execptions';
 
-export * from './metadata';
+export * from './guard';
 export * from './filter';
+export * from './metadata';
 export * from './execption.filter';
 export * from './filter.module';
 

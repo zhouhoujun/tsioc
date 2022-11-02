@@ -48,10 +48,10 @@ export class FilterChain<TInput = any, TOutput = any> implements EndpointBackend
 
 
 /**
- * filter handler method resolver.
+ * Endpoint handler method resolver.
  */
 @Abstract()
-export abstract class FilterHandlerMethodResolver {
+export abstract class EndpointHandlerMethodResolver {
     /**
      * resolve filter hanlde.
      * @param filter 
@@ -80,7 +80,7 @@ export abstract class FilterHandlerMethodResolver {
  */
 export function runHandlers(ctx: EndpointContext, input: any, filter: Type | string): Observable<any> {
 
-    const handles = ctx.injector.get(FilterHandlerMethodResolver).resolve(filter);
+    const handles = ctx.injector.get(EndpointHandlerMethodResolver).resolve(filter);
     let $obs = of(input);
     if (!handles || !handles.length) {
         return $obs;

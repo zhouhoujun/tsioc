@@ -1,7 +1,8 @@
 
 import { createDecorator, Decors, isClass, isFunction, ReflectiveFactory, Type } from '@tsdi/ioc';
-import { Respond, FilterHandlerMethodResolver, TypedRespond } from './filter';
+import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
+import { CanActivate } from './guard';
 
 /**
  * Endpoint handler metadata.
@@ -15,6 +16,10 @@ export interface EndpointHandlerMetadata {
      * order.
      */
     order?: number;
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActivate>[];
     /**
      * handle expection as response type.
      */
@@ -36,7 +41,12 @@ export interface EndpointHanlder {
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    (filter: Type, option?: {
+    (filter: Type | string, option?: {
+
+        /**
+         * route guards.
+         */
+        guards?: Type<CanActivate>[];
         /**
          * order.
          */
@@ -63,8 +73,11 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(def, injector);
             decors.forEach(decor => {
-                const { filter, order, response } = decor.metadata;
+                const { filter, order, guards, response } = decor.metadata;
                 const invoker = factory.createInvoker(decor.propertyKey);
+                if (guards && guards.length) {
+                    // invoker.onBefore()
+                }
                 if (response) {
                     if (isClass(response)) {
                         invoker.onReturnning((ctx, value) => {
@@ -80,7 +93,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                         })
                     }
                 }
-                injector.get(FilterHandlerMethodResolver).addHandle(filter, invoker, order)
+                injector.get(EndpointHandlerMethodResolver).addHandle(filter, invoker, order)
             });
 
             next()
@@ -95,7 +108,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
  * @export
  * @interface ExecptionHandler
  */
- export interface ExecptionHandler {
+export interface ExecptionHandler {
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -120,5 +133,5 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
  * 
  * @exports {@link ExecptionHandler}
  */
- export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
+export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
 

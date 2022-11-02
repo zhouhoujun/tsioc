@@ -1,19 +1,25 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { ConnectionOpts, ev, Connection, TransportConnection } from '@tsdi/transport';
+import { ConnectionOpts, ev, DuplexConnection } from '@tsdi/transport';
 import { Duplex } from 'stream';
+import * as net from 'net';
+import * as tls from 'tls';
+import * as ws from 'ws';
 import { IPacket } from 'mqtt-packet';
 import {
     AuthOptions, ConnackOptions, ConnectOptions, DisconnectOptions, MqttPacketFactory,
     PingreqOptions, PingrespOptions, PubackOptions, PubcompOptions, PublishOptions, PubrecOptions,
     PubrelOptions, SubackOptions, SubscribeOptions, UnsubackOptions, UnsubscribeOptions
-} from '../transport';
+} from './transport';
 
 
 
-export class MqttConnection extends TransportConnection {
+export class MqttConnection extends DuplexConnection<net.Socket | tls.TLSSocket | ws.WebSocket> {
 
-    constructor(stream: Duplex, packet: MqttPacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
-        super(stream, packet, opts);
+    constructor(socket: net.Socket | tls.TLSSocket | ws.WebSocket, packet: MqttPacketFactory, opts: ConnectionOpts = EMPTY_OBJ) {
+        super(socket, packet, {
+            parseToDuplex: (socket: ws.WebSocket) => ws.createWebSocketStream(socket),
+            ...opts
+        });
         if (opts.noData !== true) {
             this.once(ev.DATA, (connPacket) => {
                 this.setOptions(connPacket, opts);

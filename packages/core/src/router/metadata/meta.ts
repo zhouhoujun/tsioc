@@ -1,7 +1,7 @@
 import { PatternMetadata, Type, TypeMetadata } from '@tsdi/ioc';
 import { InterceptorType } from '../../transport/endpoint';
 import { Protocols } from '../../transport/packet';
-import { CanActivate } from '../guard';
+import { CanActivate } from '../../transport/guard';
 import { Router } from '../router';
 
 /**

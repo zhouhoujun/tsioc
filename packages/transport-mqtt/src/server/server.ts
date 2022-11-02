@@ -5,7 +5,7 @@ import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
-import { MqttConnection } from './connection';
+import { MqttConnection } from '../connection';
 import { MqttPacketFactory, MqttVaildator } from '../transport';
 import { Observable } from 'rxjs';
 
@@ -70,7 +70,7 @@ const defaults = {
 
 
 @Injectable()
-export class MqttServer extends TransportServer<IncomingMessage, OutgoingMessage, net.Server | tls.Server | ws.Server, MqttServerOpts> {
+export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Server, IncomingMessage, OutgoingMessage, MqttServerOpts> {
 
     constructor(options: MqttServerOpts) {
         super(options);
@@ -144,7 +144,7 @@ export class MqttServer extends TransportServer<IncomingMessage, OutgoingMessage
     //     })
     // }
 
-    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    protected createConnection(socket: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(MqttPacketFactory);
         return new MqttConnection(socket, packet, opts);
     }

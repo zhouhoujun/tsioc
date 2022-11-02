@@ -1,6 +1,6 @@
 import { ClassType, Type } from '../types';
 import { TypeDef } from '../metadata/type';
-import { isFunction } from '../utils/chk';
+import { isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
@@ -37,7 +37,20 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.def.class.invoke(key, context, instance ?? this.resolve(), destroy)
+        return this.def.class.invoke(key, context, instance ?? this.resolve(), (args, runner) => {
+            const result = runner(args);
+            if (destroy) {
+                if (isPromise(result)) {
+                    return result.then(val => {
+                        isFunction(destroy) ? destroy() : context.destroy();
+                        return val;
+                    })
+                } else {
+                    isFunction(destroy) ? destroy() : context.destroy();
+                }
+            }
+            return result;
+        })
     }
 
     resolveArguments(method: MethodType<T>, option?: InvokeOption | InvocationContext) {

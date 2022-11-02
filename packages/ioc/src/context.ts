@@ -209,3 +209,18 @@ export interface InvocationOption extends InvokeArguments {
      */
     methodName?: string;
 }
+
+
+export type BeforeHook = (context: InvocationContext, args: any[]) => void | any[];
+export type AfterHook = (context: InvocationContext, returnning: any) => void;
+export type AfterReturnningHook = (context: InvocationContext, returnning: any) => any;
+export type AfterThrowingHook = (context: InvocationContext, throwing: Error) => void;
+export type FinallyHook = (context: InvocationContext) => void;
+
+export interface InvokeHooks {
+    before?: BeforeHook[],
+    after?: AfterHook[],
+    afterReturnning?: AfterReturnningHook[];
+    afterThrowing?: AfterThrowingHook[]
+    finally?: FinallyHook[]
+}

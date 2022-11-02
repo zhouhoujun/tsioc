@@ -10,7 +10,7 @@ import { InvocationContext, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ArgumentResolver, Parameter } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
-import { isFunction, isPromise, isString } from '../utils/chk';
+import { isFunction, isString } from '../utils/chk';
 import { forIn } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
@@ -287,10 +287,9 @@ export class Reflective<T = any> {
      * Invoke the underlying operation using the given {@code context}.
      * @param method invoke the method named with.
      * @param context the context to use to invoke the operation
-     * @param destroy destroy the context after invoked.
-     * @param completed invoked completed callback.
+     * @param proceeding proceeding invoke hooks
      */
-    invoke(method: string, context: InvocationContext, instance?: T, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
+    invoke(method: string, context: InvocationContext, instance?: T, proceeding?: (args: any[], run: (args: any[]) => any) => any) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
@@ -298,31 +297,33 @@ export class Reflective<T = any> {
         }
         const hasPointcut = inst[method]['_proxy'] == true;
         const args = this.resolveArguments(method, context);
-        if (hasPointcut) {
-            args.push(context)
-        }
-        const result = inst[method](...args);
-        if (isPromise(result)) {
-            return (completed || destroy) ? result.then(val => {
-                this.afterInvoke(context, val, hasPointcut, destroy, completed);
-                return val;
-            }) as any : result
+
+        if (proceeding) {
+            return proceeding(args, (pars) => {
+                if (hasPointcut) {
+                    pars.push(context)
+                }
+                return inst[method](...args);
+            })
         } else {
-            this.afterInvoke(context, result, hasPointcut, destroy, completed)
+            if (hasPointcut) {
+                args.push(context)
+            }
+            return inst[method](...args);
         }
-        return result
+
     }
 
-    private afterInvoke(context: InvocationContext, result: any, hasPointcut: boolean, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
-        if (completed) completed(context, result);
-        if (!hasPointcut && destroy) {
-            if (isFunction(destroy)) {
-                destroy()
-            } else if (!context?.injected) {
-                context?.destroy()
-            }
-        }
-    }
+    // private afterInvoke(context: InvocationContext, result: any, hasPointcut: boolean, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
+    //     if (completed) completed(context, result);
+    //     if (!hasPointcut && destroy) {
+    //         if (isFunction(destroy)) {
+    //             destroy()
+    //         } else if (!context?.injected) {
+    //             context?.destroy()
+    //         }
+    //     }
+    // }
 
     /**
      * resolve args.

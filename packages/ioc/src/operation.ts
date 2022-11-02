@@ -1,5 +1,5 @@
 import { ClassType } from './types';
-import { InvocationContext } from './context';
+import { AfterHook, BeforeHook, AfterReturnningHook, InvocationContext, FinallyHook } from './context';
 
 
 /**
@@ -19,9 +19,27 @@ export interface OperationInvoker<T = any> {
      */
     get descriptor(): TypedPropertyDescriptor<T>;
     /**
-     * method return callback hooks.
+     * before invoke.
+     * @param hook 
      */
-    onReturnning(callback: (ctx: InvocationContext, value: T) => void): void;
+    before(hook: BeforeHook): void;
+    /**
+     * after invoke.
+     * @param hook 
+     */
+    after(hook: AfterHook): void;
+    /**
+     * after returning hooks.
+     */
+    afterReturnning(hook: AfterReturnningHook): void;
+    /**
+     * after throwing hooks.
+     */
+    afterThrowing(hook: AfterReturnningHook): void;
+    /**
+     * finally hooks.
+     */
+    finally(hook: FinallyHook): void;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation

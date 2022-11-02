@@ -1,8 +1,8 @@
 import { Observable } from 'rxjs';
-import { EndpointContext } from '../transport/context';
+import { EndpointContext } from './context';
 
 /**
- * Route Guard.
+ * Guard.
  */
 export interface CanActivate<T extends EndpointContext = EndpointContext> {
     /**

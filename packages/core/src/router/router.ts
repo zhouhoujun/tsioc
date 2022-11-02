@@ -1,8 +1,8 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeDef } from '@tsdi/ioc';
-import { CanActivate } from './guard';
+import { CanActivate } from '../transport/guard';
 import { promisify } from './promisify';
 import { PipeTransform } from '../pipes/pipe';
-import { Route, RouteFactoryResolver, ROUTES, Routes } from './route';
+import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { NotFoundStatus } from '../transport/status';
 import { InterceptorType } from '../transport/endpoint';
@@ -75,7 +75,8 @@ export class MappingRoute implements Middleware {
 
     async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
         if (this.route.protocol && !ctx.match(this.route.protocol)) return next();
-        if (await this.canActive(ctx)) {
+        const can = await this.canActive(ctx);
+        if (can) {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx);
                 if (this.route.interceptors?.length) {
@@ -176,7 +177,7 @@ export class MappingRouter extends Router implements OnDestroy {
             this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware))
         } else {
             if (this.has(route.path)) return this;
-            this.routes.set(route.path, this.parse(new MappingRoute(route)))
+            this.routes.set(route.path, this.parse(route instanceof RouteRef ? route : new MappingRoute(route)))
         }
         return this
     }

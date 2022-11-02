@@ -3,7 +3,7 @@ import {
     ReflectiveFactory, TypeDef, ReflectiveRef, DestroyCallback, InvokeOption, isClass
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
-import { CanActivate } from './guard';
+import { CanActivate } from '../transport/guard';
 import { ResultValue } from './result';
 import { Protocols } from '../transport/packet';
 import { ForbiddenExecption } from '../transport/execptions';

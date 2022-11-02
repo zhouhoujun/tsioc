@@ -1,6 +1,6 @@
 import { Abstract, Execption, Injectable, tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Connection, TransportConnection, ConnectionOpts, ev, LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Connection, DuplexConnection, ConnectionOpts, ev, LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { IConnectPacket } from 'mqtt-packet';
 import { Observable, Observer } from 'rxjs';
 import { Duplex } from 'stream';
@@ -8,7 +8,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttPacketFactory, PacketOptions } from '../transport';
-import { MqttConnection } from '../server/connection';
+import { MqttConnection } from '../connection';
 
 
 
@@ -125,7 +125,7 @@ const defaults = {
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> {
+export class MqttClient extends TransportClient<net.Socket | tls.TLSSocket | ws.WebSocket, MqttReqOptions, MqttClientOpts> {
     constructor(options: MqttClientOpts) {
         super(options)
     }
@@ -134,7 +134,7 @@ export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> 
         return defaults;
     }
 
-    protected override createSocket(opts: MqttClientOpts): Duplex {
+    protected override createSocket(opts: MqttClientOpts): net.Socket | tls.TLSSocket | ws.WebSocket {
         const connOpts = opts.connectOpts;
         switch (connOpts.protocol) {
             case 'mqtt':
@@ -154,24 +154,24 @@ export class MqttClient extends TransportClient<MqttReqOptions, MqttClientOpts> 
                 return tls.connect(connOpts.options);
             case 'ws':
             case 'wss':
-                return ws.createWebSocketStream(new ws.WebSocket(connOpts.url, connOpts.options));
+                return new ws.WebSocket(connOpts.url, connOpts.options);
             default:
                 throw new Execption('Unknown protocol for secure connection: "' + (connOpts as any).protocol + '"!')
         }
     }
 
-    
-    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+
+    protected createConnection(socket: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Connection<net.Socket | tls.TLSSocket | ws.WebSocket> {
         const packet = this.context.get(MqttPacketFactory);
         const conn = new MqttConnection(socket, packet, opts);
         return conn
     }
-    
-    protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+
+    protected onConnect(duplex: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Observable<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>> {
         const logger = this.logger;
         const packetor = this.context.get(MqttPacketFactory);
-        return new Observable((observer: Observer<Connection>) => {
-            const client = new TransportConnection(duplex, packetor, opts);
+        return new Observable((observer: Observer<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>>) => {
+            const client = new DuplexConnection(duplex, packetor, opts);
             if (opts?.keepalive) {
                 client.setKeepAlive(true, opts.keepalive);
             }

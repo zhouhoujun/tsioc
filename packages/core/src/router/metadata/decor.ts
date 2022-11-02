@@ -6,7 +6,7 @@ import { PipeTransform } from '../../pipes/pipe';
 import { InterceptorType } from '../../transport/endpoint';
 import { Middleware, MiddlewareFn } from '../../transport/middleware';
 import { mths, Protocols, RequestMethod } from '../../transport/packet';
-import { CanActivate } from '../guard';
+import { CanActivate } from '../../transport/guard';
 import { joinprefix, normalize, RouteFactoryResolver } from '../route';
 import { MappingDef, ProtocolRouteMappingMetadata, Router } from '../router';
 import { HandleMetadata, HandleMessagePattern } from './meta';
@@ -281,7 +281,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 const routeRef = injector.get(RouteFactoryResolver).resolve(def).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));
-                router.use(routeRef);
+                router.use(path, routeRef);
 
                 next();
             }

@@ -26,11 +26,11 @@ export function omit(target: any, ...fields: string[]): any {
     }
 }
 
-export function pick(target: any,  ...fields: string[]): any {
+export function pick(target: any, ...fields: string[]): any {
     const obj: any = {};
-    for(const fd  in fields) {
+    for (const fd in fields) {
         const val = target[fd];
-        if(!isNil(val)) {
+        if (!isNil(val)) {
             obj[fd] = val;
         }
     }
@@ -342,20 +342,39 @@ export function delay(times: number): Promise<void> {
     return defer.promise
 }
 
+
 /**
  * run promise step by step.
  *
  * @export
  * @template T
- * @param {((T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[])} promises
+ * @param {(T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[]} promises
+ * @param {T} initVal init value.
+ * @param {(val: T) => boolean} guard can step next.
  * @returns
  */
-export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[]) {
-    let result = Promise.resolve<T>(null!);
-    promises.forEach(p => {
-        result = result.then(v => isFunction(p) ? p(v) : p)
-    });
-    return result
+export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], initVal?: T, guard?: (val: T) => boolean): Promise<T> {
+    function runStep(val: T, idx: number): Promise<T> {
+        let handle: T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>);
+        if (idx < promises.length) {
+            handle = promises[idx]
+        } else {
+            return Promise.resolve(val);
+        }
+
+        return Promise.resolve(isFunction(handle) ? handle(val) : handle)
+            .then(v => {
+                if (guard && !guard(v)) return v;
+                return runStep(v, idx + 1)
+            })
+    }
+    return runStep(initVal ?? null!, 0);
+
+    // let result = Promise.resolve<T>(initVal ?? null!);
+    // promises.forEach(p => {
+    //     result = result.then(v => guard && !guard(v)? v : (isFunction(p) ? p(v) : p))
+    // });
+    // return result
 }
 
 /**
@@ -364,22 +383,6 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
  * @param filter 
  * @returns 
  */
-export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | PromiseLike<T>))[], filter: (v: T) => boolean) {
-    return new Promise((r, j) => {
-        let val: T, find = false;
-        promises.forEach(p => {
-            if (find) return;
-            Promise.resolve(isFunction(p) ? p(val!) : p).then(value => {
-                if (find) return;
-                val = value;
-                if (filter(value)) {
-                    find = true;
-                    r(value)
-                }
-                return value
-            }, err => {
-                j(err)
-            })
-        })
-    })
+export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | PromiseLike<T>))[], filter: (v: T) => boolean): Promise<T> {
+    return step(promises, undefined, (v) => !filter(v));
 }

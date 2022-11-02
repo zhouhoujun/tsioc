@@ -1,11 +1,11 @@
 import { EMPTY, getClass, Injectable, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { Module } from '../metadata/decor';
 import { ExecptionHandlerBackend } from './execption.filter';
-import { FilterHandlerMethodResolver, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from './filter';
+import { EndpointHandlerMethodResolver, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from './filter';
 
 
 @Injectable()
-export class DefaultFilterHandlerMethodResolver extends FilterHandlerMethodResolver {
+export class DefaultEndpointHandlerMethodResolver extends EndpointHandlerMethodResolver {
     private maps = new Map<Type | string, OperationInvoker[]>();
 
     resolve<T>(filter: Type<T> | T | string): OperationInvoker[] {
@@ -39,7 +39,7 @@ export const RESPOND_PROVIDERS: ProviderType[] = [
     StatusInterceptorFilter,
     ExecptionHandlerBackend,
     InOutInterceptorFilter,
-    { provide: FilterHandlerMethodResolver, useClass: DefaultFilterHandlerMethodResolver, static: true }
+    { provide: EndpointHandlerMethodResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
 ]
 
 @Module({

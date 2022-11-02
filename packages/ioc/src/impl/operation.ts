@@ -1,6 +1,6 @@
 import { ClassType } from '../types';
 import { TypeDef } from '../metadata/type';
-import { InvocationContext } from '../context';
+import { AfterHook, AfterReturnningHook, BeforeHook, FinallyHook, InvocationContext } from '../context';
 import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
 
@@ -30,19 +30,43 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
         return this._returnType
     }
 
-    private _returns?: ((ctx: InvocationContext, returnning: any) => void)[]
     /**
-     * method return callback hooks.
+    * before invoke.
+    * @param hook 
+    */
+    before(hook: BeforeHook): void {
+
+    }
+    /**
+     * after invoke.
+     * @param hook 
      */
-    onReturnning(callback: (ctx: InvocationContext, returnning: T) => void): void {
-        if (!this._returns) {
-            this._returns = []
+    after(hook: AfterHook): void {
+
+    }
+    
+    private _returnnings?: ((ctx: InvocationContext, returnning: any) => void)[]
+    /**
+     * after returning hooks.
+     */
+    afterReturnning(hook: AfterReturnningHook): void {
+        if (!this._returnnings) {
+            this._returnnings = []
         }
-        this._returns.push(callback)
+        this._returnnings.push(hook)
     }
 
-    runHooks = (ctx: InvocationContext, returnning: T) => {
-        this._returns?.forEach(c => c(ctx, returnning))
+    /**
+     * after throwing hooks.
+     */
+    afterThrowing(hook: AfterReturnningHook): void {
+
+    }
+    /**
+     * finally hooks.
+     */
+    finally(hook: FinallyHook): void {
+
     }
 
     /**
@@ -59,9 +83,9 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): T;
     invoke(context: InvocationContext, arg?: object | boolean | Function, destroy?: boolean | Function): T {
         if (arg && isTypeObject(arg)) {
-            return this.typeRef.class.invoke(this.method, context, arg, destroy, this._returns ? this.runHooks : undefined)
+            return this.typeRef.class.invoke(this.method, context, arg, destroy, this._returnnings ? this.runHooks : undefined)
         }
-        return this.typeRef.class.invoke(this.method, context, this.instance, destroy, this._returns ? this.runHooks : undefined)
+        return this.typeRef.class.invoke(this.method, context, this.instance, destroy, this._returnnings ? this.runHooks : undefined)
     }
 
     /**
