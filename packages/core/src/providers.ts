@@ -1,9 +1,8 @@
-import { ProviderType, lang, isNumber, Type, ObservableParser, LifecycleHooksResolver, isFunction } from '@tsdi/ioc';
+import { ProviderType, lang, isNumber, Type, LifecycleHooksResolver, isFunction } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleLifecycleHooksResolver } from './impl/module';
 import { DefaultApplicationFactory } from './impl/context';
 import { RunnableRef, RunnableSet } from './runnable';
-import { Observable, from, lastValueFrom } from 'rxjs';
 import { ConfigureService } from './service';
 import { Startup } from './startup';
 import { ApplicationRunners } from './runners';
@@ -151,16 +150,5 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
-    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true },
-    {
-        provide: ObservableParser,
-        useValue: {
-            fromPromise<T>(promise: Promise<T>): Observable<T> {
-                return from(promise)
-            },
-            toPromise<T>(obser: Observable<T>): Promise<T> {
-                return lastValueFrom(obser)
-            }
-        } as ObservableParser
-    }
+    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
 ]

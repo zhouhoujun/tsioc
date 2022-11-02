@@ -1,6 +1,5 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, promisify, Type, TypeDef } from '@tsdi/ioc';
 import { CanActivate } from '../transport/guard';
-import { promisify } from './promisify';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';

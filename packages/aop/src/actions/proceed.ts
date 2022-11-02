@@ -1,6 +1,6 @@
 import {
     Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName, runChain, ActionSetup, IocActions,
-    ParameterMetadata, InvocationContext, Injector, object2string, isObservable, ObservableParser
+    ParameterMetadata, InvocationContext, Injector, object2string, isObservable
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -10,6 +10,7 @@ import { Advicer } from '../advices/Advicer';
 import { AroundMetadata } from '../metadata/meta';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
+import { from, lastValueFrom } from 'rxjs';
 
 const proxyFlag = '_proxy';
 const aExp = /^@/;
@@ -142,9 +143,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
 
             if (joinPoint.returningDefer) {
                 return isObservable(joinPoint.originReturning) ?
-                    joinPoint.get(ObservableParser).fromPromise(joinPoint.returningDefer.promise)
+                    from(joinPoint.returningDefer.promise)
                     : joinPoint.returningDefer.promise
             } else {
+                if (joinPoint.throwing) {
+                    throw joinPoint.throwing;
+                }
                 return joinPoint.returning
             }
         }
@@ -188,11 +192,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
 
         let returning = advicer.aspect.invoke(advicer.advice.name!, joinPoint);
 
-        if (sync && isObservable(returning)) {
-            const parser = joinPoint.get(ObservableParser)
-            if (parser) {
-                returning = parser.toPromise(returning)
-            }
+        if (isObservable(returning)) {
+            returning = lastValueFrom(returning)
         }
         if (isPromise(returning)) {
             return returning.finally(() => context && joinPoint.removeRef(context))
@@ -225,10 +226,10 @@ function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Ad
         if (!ctx.returningDefer) {
             ctx.returningDefer = lang.defer()
         }
-        return Promise.all(advicers.map(a => invoker(ctx, a, sync)))
+        return lang.step(advicers.map(a => () => invoker(ctx, a, sync)))
             .then(() => next())
             .catch(err => {
-                ctx.throwing = err
+                ctx.throwing = err;
             })
     } else {
         try {
@@ -246,7 +247,7 @@ export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void
     if (ctx.state === JoinpointState.Before) {
         const invoker = ctx.invokeHandle;
         runChain<Joinpoint>([
-            (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Before, anext, ctx.advices.syncBefore),
+            (ctx, bnext) => runAdvicers(ctx, invoker, ctx.advices.Before, bnext, ctx.advices.syncBefore),
             (ctx, pnext) => runAdvicers(ctx, invoker, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
             (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround)
         ], ctx, next)
@@ -350,11 +351,8 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     if (isPromise(returning)) {
         isAsync = true
     } else if (isObservable(returning)) {
-        const parser = ctx.get(ObservableParser);
-        if (parser) {
-            isAsync = true;
-            returning = parser.toPromise(returning)
-        }
+        isAsync = true;
+        returning = lastValueFrom(returning)
     }
     if (isAsync && !ctx.returningDefer) {
         ctx.returningDefer = lang.defer()

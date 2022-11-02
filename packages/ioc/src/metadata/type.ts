@@ -287,9 +287,9 @@ export class Reflective<T = any> {
      * Invoke the underlying operation using the given {@code context}.
      * @param method invoke the method named with.
      * @param context the context to use to invoke the operation
-     * @param proceeding proceeding invoke hooks
+     * @param proceeding proceeding invoke with hooks
      */
-    invoke(method: string, context: InvocationContext, instance?: T, proceeding?: (args: any[], run: (args: any[]) => any) => any) {
+    invoke(method: string, context: InvocationContext, instance?: T, proceeding?: (args: any[], runnable: (args: any[]) => any) => any) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {

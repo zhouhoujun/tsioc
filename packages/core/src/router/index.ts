@@ -1,6 +1,4 @@
 export * from './result';
-export * from './promisify';
-
 export * from './route';
 export * from './router';
 export * from './route_ref';

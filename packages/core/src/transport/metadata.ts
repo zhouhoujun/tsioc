@@ -1,8 +1,9 @@
 
-import { createDecorator, Decors, isClass, isFunction, ReflectiveFactory, Type } from '@tsdi/ioc';
+import { createDecorator, Decors, isClass, isFunction, lang, promisify, ReflectiveFactory, Type } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 import { CanActivate } from './guard';
+import { ForbiddenExecption } from './execptions';
 
 /**
  * Endpoint handler metadata.
@@ -76,19 +77,27 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                 const { filter, order, guards, response } = decor.metadata;
                 const invoker = factory.createInvoker(decor.propertyKey);
                 if (guards && guards.length) {
-                    // invoker.onBefore()
+                    invoker.before(async (ctx, args) => {
+                        const endpCtx = ctx.resolve(ServerEndpointContext);
+                        if (!(await lang.some(
+                            guards.map(token => () => promisify(factory.resolve(token)?.canActivate(endpCtx))),
+                            vaild => vaild === false))) {
+                            throw new ForbiddenExecption();
+                        }
+                    })
+
                 }
                 if (response) {
                     if (isClass(response)) {
-                        invoker.onReturnning((ctx, value) => {
+                        invoker.afterReturnning((ctx, value) => {
                             ctx.resolve(response).respond(ctx.resolve(ServerEndpointContext), value);
                         })
                     } else if (isFunction(response)) {
-                        invoker.onReturnning((ctx, value) => {
+                        invoker.afterReturnning((ctx, value) => {
                             response(ctx.resolve(ServerEndpointContext), value);
                         })
                     } else {
-                        invoker.onReturnning((ctx, value) => {
+                        invoker.afterReturnning((ctx, value) => {
                             ctx.resolve(TypedRespond).respond(ctx.resolve(ServerEndpointContext), response, value);
                         })
                     }

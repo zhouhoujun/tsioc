@@ -1,3 +1,4 @@
+import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { TypeDef } from '../metadata/type';
 import { AbstractType, AnnotationType, ClassType, Type } from '../types';
 import { clsNameExp } from './exps';
@@ -16,6 +17,8 @@ export const _tysymbol = 'symbol';
 export const _tybigint = 'bigint';
 export const _tyobj = 'object';
 
+
+export { isObservable } from 'rxjs';
 /**
  * check target is function or not.
  *
@@ -51,17 +54,17 @@ export function isPromise(target: any): target is Promise<any> {
     return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === _tyfunc && typeof target.catch === _tyfunc)
 }
 
-const obsTag = '[object Observable]';
-/**
- * is target rxjs observable or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isObservable(target: any): boolean {
-    return toString.call(target) === obsTag || (target && typeof target.subscribe === _tyfunc && target.lift === _tyfunc)
-}
+// const obsTag = '[object Observable]';
+// /**
+//  * is target rxjs observable or not.
+//  *
+//  * @export
+//  * @param {*} target
+//  * @returns {boolean}
+//  */
+// export function isObservable(target: any): boolean {
+//     return toString.call(target) === obsTag || (target && typeof target.subscribe === _tyfunc && target.lift === _tyfunc)
+// }
 
 
 /**
@@ -337,3 +340,18 @@ export function getClass(target: any): Type {
     return target.constructor || target.prototype.constructor
 }
 
+
+
+/**
+ * to promise.
+ * @param target 
+ * @returns 
+ */
+export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+    if (isObservable(target)) {
+        return lastValueFrom(target)
+    } else if (isPromise(target)) {
+        return target
+    }
+    return Promise.resolve(target)
+}

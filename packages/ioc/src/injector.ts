@@ -354,23 +354,6 @@ export interface ModuleRef<T = any> extends Destroyable {
 }
 
 /**
- * transformation between `Observable` and `Promise`.
- */
-@Abstract()
-export abstract class ObservableParser {
-    /**
-     * parse promise to observable.
-     * @param promise 
-     */
-    abstract fromPromise(promise: Promise<any>): { subscribe: Function; lift: Function };
-    /**
-     * parse observable to promise.
-     * @param observable 
-     */
-    abstract toPromise(observable: any): Promise<any>;
-}
-
-/**
  * platform of {@link Container}.
  */
 @Abstract()

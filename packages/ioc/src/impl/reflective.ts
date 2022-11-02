@@ -37,16 +37,16 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.def.class.invoke(key, context, instance ?? this.resolve(), (args, runner) => {
-            const result = runner(args);
+        return this.def.class.invoke(key, context, instance ?? this.resolve(), (args, runnable) => {
+            const result = runnable(args);
             if (destroy) {
                 if (isPromise(result)) {
                     return result.then(val => {
-                        isFunction(destroy) ? destroy() : context.destroy();
+                        isFunction(destroy) ? destroy() : !context.injected && context.destroy();
                         return val;
                     })
                 } else {
-                    isFunction(destroy) ? destroy() : context.destroy();
+                    isFunction(destroy) ? destroy() : !context.injected && context.destroy();
                 }
             }
             return result;
@@ -59,7 +59,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         if (destroy) {
             if (isFunction(destroy)) {
                 destroy()
-            } else {
+            } else if (!context.injected) {
                 context.destroy()
             }
         }

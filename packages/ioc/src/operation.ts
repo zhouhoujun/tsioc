@@ -1,5 +1,9 @@
 import { ClassType } from './types';
-import { AfterHook, BeforeHook, AfterReturnningHook, InvocationContext, FinallyHook } from './context';
+import { InvocationContext } from './context';
+import { Observable } from 'rxjs';
+
+
+export type AsyncLike<T> = T | Promise<T> | Observable<T>;
 
 
 /**
@@ -13,7 +17,7 @@ export interface OperationInvoker<T = any> {
     /**
      * method return type.
      */
-    get returnType(): ClassType<T>;
+    get returnType(): ClassType;
     /**
      * origin method descriptor.
      */
@@ -22,37 +26,37 @@ export interface OperationInvoker<T = any> {
      * before invoke.
      * @param hook 
      */
-    before(hook: BeforeHook): void;
+    before(hook: (context: InvocationContext, args: any[]) => AsyncLike<void | any[]>): void;
     /**
      * after invoke.
      * @param hook 
      */
-    after(hook: AfterHook): void;
+    after(hook: (context: InvocationContext, returnning: T) => AsyncLike<void>): void;
     /**
      * after returning hooks.
      */
-    afterReturnning(hook: AfterReturnningHook): void;
+    afterReturnning(hook: (context: InvocationContext, returnning: T) => AsyncLike<any>): void;
     /**
      * after throwing hooks.
      */
-    afterThrowing(hook: AfterReturnningHook): void;
+    afterThrowing(hook: (context: InvocationContext, throwing: Error) => AsyncLike<void>): void;
     /**
      * finally hooks.
      */
-    finally(hook: FinallyHook): void;
+    finally(hook: (context: InvocationContext) => AsyncLike<void>): void;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param destroy try destroy the context after invoked.
+     * @param proceeding proceeding invoke with hooks
      */
-    invoke(context: InvocationContext, destroy?: boolean | Function): T;
+    invoke(context: InvocationContext, proceeding?: (args: any[], runnable: (args: any[]) => any) => any): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param instance instance of the method to invoke.
-     * @param destroy try destroy the context after invoked.
+     * @param proceeding proceeding invoke with hooks
      */
-    invoke(context: InvocationContext, instance: object, destroy?: boolean | Function): T;
+    invoke(context: InvocationContext, instance: object, proceeding?: (args: any[], runnable: (args: any[]) => any) => any): T;
     /**
      * resolve args. 
      * @param context 
