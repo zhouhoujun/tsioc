@@ -238,7 +238,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
             .pipe(finalize(() => ctx.destroy()))
             .subscribe({
                 next: (val) => observer.next(val),
-                // error: (err)=> observer.error(err),
+                error: (err)=> this.logger.error(err),
                 complete: () => {
                     this._reqSet.delete(sub);
                     if (!this._reqSet.size) {
