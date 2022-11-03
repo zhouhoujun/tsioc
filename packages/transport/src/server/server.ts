@@ -92,7 +92,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                             s && s.unsubscribe();
                         });
                         this._reqSet.clear();
-                        logger.error('server shutdown');
+                        logger.info(lang.getClassName(this),'shutdown');
                     }
                 });
             this.context.onDestroy(() => sub?.unsubscribe())
