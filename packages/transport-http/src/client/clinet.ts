@@ -1,14 +1,14 @@
-import { EMPTY, Injectable, InvocationContext, lang, Nullable, ProviderType } from '@tsdi/ioc';
+import { Injectable, InvocationContext, lang, Nullable, ProviderType } from '@tsdi/ioc';
 import {
-    RequestMethod, Client, OnDispose, RequestOptions,
-    ResponseAs, ClientEndpointContext, mths, ReqHeaders, ReqHeadersLike, StatusFactory
+    RequestMethod, OnDispose, RequestOptions, ClientEndpointContext,
+    ResponseAs, mths, ReqHeaders, ReqHeadersLike
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { ev } from '@tsdi/transport';
+import { ev, TransportClient } from '@tsdi/transport';
 import { HttpPathInterceptor } from './path';
 import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_EXECPTION_FILTERS } from './option';
@@ -41,20 +41,17 @@ export type HttpNodeOpts = http.RequestOptions & https.RequestOptions;
 
 export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 
+const NONE = {} as http2.ClientHttp2Session;
+
 /**
  * http client for nodejs
  */
 @Injectable()
-export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
+export class Http extends TransportClient<http2.ClientHttp2Session, string, HttpReqOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
 
-    private _client?: http2.ClientHttp2Session;
     constructor(@Nullable() option: HttpClientOpts) {
         super(option)
 
-    }
-
-    get client() {
-        return this._client;
     }
 
     protected override getDefaultOptions(): HttpClientOpts {
@@ -67,28 +64,25 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
 
     protected override initContext(options: HttpClientOpts): void {
         super.initContext(options);
+        if (!options.authority) {
+            this.connection = NONE;
+        }
         this.context.setValue(HttpClientOpts, options);
     }
 
-    protected override async connect(): Promise<void> {
-        const opts = this.getOptions();
-        if (opts.authority) {
-            if (this._client && !this._client.closed) return;
-            this._client = http2.connect(opts.authority, opts.options);
-            const defer = lang.defer();
-            this._client.once(ev.ERROR, (err) => {
-                this.logger.error(err);
-                defer.reject(err);
-            });
-            this._client.once(ev.CONNECT, () => defer.resolve());
-            await defer.promise;
-        }
+    protected isValid(connection: http2.ClientHttp2Session): boolean {
+        if (connection === NONE) return true;
+        return !connection.closed && !connection.destroyed;
+    }
+
+    protected createConnection(opts: HttpClientOpts): http2.ClientHttp2Session {
+        return http2.connect(opts.authority!, opts.options);
     }
 
     protected override createContext(req: HttpRequest | string, options?: HttpReqOptions & ResponseAs): ClientEndpointContext {
         const ctx = super.createContext(req, options);
-        if (this.client) {
-            ctx.setValue(CLIENT_HTTP2SESSION, this.client);
+        if (this.connection && this.connection !== NONE) {
+            ctx.setValue(CLIENT_HTTP2SESSION, this.connection);
         }
         return ctx;
     }
@@ -2372,18 +2366,12 @@ export class Http extends Client<string, HttpReqOptions, HttpClientOpts, HttpReq
     }
 
     async close(): Promise<void> {
-        if (this._client) {
+        if (this.connection) {
+            if (this.connection === NONE) return;
             const defer = lang.defer();
-            this._client.close(() => defer.resolve());
-            return defer.promise
+            this.connection.close(() => defer.resolve());
+            await defer.promise
         }
-    }
-
-    /**
-     * on dispose.
-     */
-    onDispose(): Promise<void> {
-        return this.close()
     }
 
 }

@@ -17,6 +17,7 @@ import { ExecptionFinalizeFilter } from './execption-filter';
 import { TransportContext, SERVER_MIDDLEWARES } from './context';
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 import { AssetServerContext } from '../asset.ctx';
+import { map } from 'bluebird';
 
 
 
@@ -112,10 +113,12 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      */
     protected setup(opts: TOpts): Observable<TServe> {
         return from(promisify(this.createServer(opts)))
-            .pipe(mergeMap(server => {
-                this._server = server;
-                return this.bindEvent(server, opts);
-            }))
+            .pipe(
+                mergeMap(server => {
+                    this._server = server;
+                    return this.bindEvent(server, opts);
+                })
+            )
     }
 
     /**
@@ -143,6 +146,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                 server.on(e, events[e]);
             }
             observer.next(server);
+            server.emit(ev.READY);
             return () => {
                 this._reqSet.forEach(s => {
                     s && s.unsubscribe();
@@ -169,7 +173,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
             this.requestHandler(req, res);
         };
         events[ev.ERROR] = (err: Error) => observer.error(err);
-        events[ev.CLOSE] = () => {
+        events[ev.CLOSE] = events[ev.END] = () => {
             observer.complete();
             for (const e in events) {
                 server.off(e, events[e]);

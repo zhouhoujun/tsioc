@@ -4,7 +4,7 @@ import {
 } from '@tsdi/core';
 import { Abstract, AsyncLike, isPromise } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { defer, from, isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { defer, isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
@@ -99,6 +99,7 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
                     return connection;
                 })
             );
+
     }
 
     protected abstract isValid(connection: TConnection): boolean;
@@ -176,6 +177,7 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
         events[this.connectEventName()] = () => {
             this.onConnected();
             observer.next(connection);
+            observer.complete();
         }
         events[ev.ERROR] = events[ev.TIMEOUT] = (err: Error) => observer.error(err);
         events[ev.CLOSE] = events[ev.END] = () => {
