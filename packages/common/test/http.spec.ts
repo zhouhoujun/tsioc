@@ -199,7 +199,7 @@ class DeviceAModule {
         // TcpModule,
         HttpModule.withOption({
             majorVersion: 1,
-            options: {
+            serverOpts: {
                 // allowHTTP1: true,
                 // key,
                 // cert

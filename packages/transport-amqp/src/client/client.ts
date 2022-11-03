@@ -1,9 +1,8 @@
 import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { ev, Events, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { from, map, Observable, Subscriber } from 'rxjs';
 import * as amqp from 'amqplib';
-import { Duplex } from 'stream';
-import { from, Observable } from 'rxjs';
 
 
 @Abstract()
@@ -30,22 +29,56 @@ const defaults = {
 
 
 @Injectable()
-export class AmqpClient extends TransportClient<RequestOptions, AmqpClientOpts> {
+export class AmqpClient extends TransportClient<amqp.Connection, RequestOptions, AmqpClientOpts> {
 
+    private _connected = false;
     constructor(@Nullable() options: any) {
         super(options)
+    }
+
+    close(): Promise<void> {
+        return this.connection.close()
+    }
+
+    protected isValid(connection: amqp.Connection): boolean {
+        return this._connected
     }
 
     protected override getDefaultOptions(): AmqpClientOpts {
         return defaults;
     }
 
-    protected createDuplex(opts: AmqpClientOpts): Observable<Duplex> {
-        return from(amqp.connect(opts.connectOpts!));
+    protected createConnection(opts: AmqpClientOpts): Observable<amqp.Connection> {
+        return from(amqp.connect(opts.connectOpts!))
+            .pipe(
+                map(conn => {
+                    return conn;
+                })
+            );
     }
 
-    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        throw new Error('Method not implemented.');
+    protected async createChannel(conn: amqp.Connection) {
+        const channel = await conn.createChannel();
+
     }
+
+    protected override createConnectionEvents(connection: amqp.Connection, observer: Subscriber<amqp.Connection>): Events {
+        const events = super.createConnectionEvents(connection, observer);
+        events[ev.DISCONNECT] = (err?: Error) => {
+            err && observer.error(err);
+            this.onDisconnected();
+        }
+
+        return events;
+    }
+
+    protected onDisconnected(): void {
+        this._connected = false;
+    }
+
+    protected onConnected(): void {
+        this._connected = true;
+    }
+
 }
 

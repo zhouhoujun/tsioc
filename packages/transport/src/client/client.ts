@@ -2,14 +2,14 @@ import {
     OnDispose, ClientEndpointContext, Client, RequestOptions,
     TransportRequest, Pattern, InOutInterceptorFilter
 } from '@tsdi/core';
-import { Abstract, lang } from '@tsdi/ioc';
+import { Abstract, AsyncLike, lang, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { from, isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
-import { Connection, ConnectionOpts, Events } from '../connection';
+import { Events } from '../connection';
 import { ev } from '../consts';
 
 
@@ -31,22 +31,19 @@ const tsptDeftOpts = {
  * Transport Client.
  */
 @Abstract()
-export abstract class TransportClient<TSocket extends EventEmitter = EventEmitter, ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
+export abstract class TransportClient<TConnection extends EventEmitter = EventEmitter, ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
 
-    private _connection?: Connection;
+    private _conn?: TConnection;
     constructor(options: TOpts) {
         super(options);
     }
 
-    get connection(): Connection {
-        return this._connection ?? null!;
+    get connection(): TConnection {
+        return this._conn ?? null!;
     }
 
-    async close(): Promise<void> {
-        const defer = lang.defer();
-        this._connection?.destroy(undefined, defer.resolve);
-        await defer.promise;
-    }
+    abstract close(): Promise<void>;
+
 
     async onDispose(): Promise<void> {
         await this.close();
@@ -74,33 +71,33 @@ export abstract class TransportClient<TSocket extends EventEmitter = EventEmitte
         return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
     }
 
-    private $conn?: Observable<Connection> | null;
-    protected connect(): Observable<Connection> {
-        if (this._connection && !this._connection.destroyed && !this._connection.isClosed) {
-            return of(this._connection);
+    private $conn?: Observable<TConnection> | null;
+    protected connect(): Observable<TConnection> {
+        if (this.connection && this.isValid(this.connection)) {
+            return of(this.connection);
         }
 
         if (this.$conn) return this.$conn;
 
         const opts = this.getOptions();
-        const socket = this.createSocket(opts)
-        return this.$conn = (isObservable(socket) ? socket : of(socket))
+        return this.$conn = from(promisify(this.createConnection(opts)))
             .pipe(
-                mergeMap(socket => this.onConnect(socket, opts.connectionOpts)),
-                map(conn => {
-                    this.context.setValue(Connection, conn);
-                    this._connection = conn;
+                mergeMap(connection => this.onConnect(connection)),
+                map(connection => {
+                    this._conn = connection;
                     this.$conn = null;
-                    return conn;
+                    return connection;
                 })
             );
     }
+
+    protected abstract isValid(connection: TConnection): boolean;
 
     /**
      * create Duplex.
      * @param opts 
      */
-    protected abstract createSocket(opts: TOpts): Observable<TSocket> | TSocket;
+    protected abstract createConnection(opts: TOpts): AsyncLike<TConnection>;
 
     /**
      * on client connect.
@@ -147,67 +144,47 @@ export abstract class TransportClient<TSocket extends EventEmitter = EventEmitte
      * }
      * ```
      * 
-     * @param socket 
+     * @param connection 
      * @param opts 
      */
-    protected onConnect(socket: TSocket, opts?: ConnectionOpts): Observable<Connection<TSocket>> {
+    protected onConnect(connection: TConnection): Observable<TConnection> {
         return new Observable((observer) => {
-            const conn = this.createConnection(socket, opts);
-            const evetns = this.createConnectionEvents(conn, observer, opts);
-            for (const e in evetns) {
-                conn.on(e, evetns[e]);
+            const events = this.createConnectionEvents(connection, observer);
+            for (const e in events) {
+                connection.on(e, events[e]);
             }
             return () => {
-                for (const e in evetns) {
-                    conn.off(e, evetns[e]);
+                for (const e in events) {
+                    connection.off(e, events[e]);
                 }
-                conn.destroy()
+                this.close();
             }
         })
     }
 
-    /**
-     * create connection events
-     * 
-     * @usageNotes
-     * 
-     * ### Examples
-     * 
-     * ```typescript
-     * 
-     *  protected createConnectionEvents(conntion: Connection, observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
-     *   const events: Events = {};
-     *   events[ev.ERROR] = (err: Error) => observer.error(err);
-     *   events[opts?.connect ?? ev.CONNECT] = () => observer.next(conntion);
-     *   events[ev.CLOSE] = events[ev.END] = () => (conntion.end(), observer.complete());
-     *
-     *   return events;
-     * }
-     * ```
-     * 
-     * @param observer 
-     * @param opts 
-     * @returns 
-     */
-    protected createConnectionEvents(conntion: Connection, observer: Subscriber<Connection>, opts?: ConnectionOpts): Events {
+    protected createConnectionEvents(connection: TConnection, observer: Subscriber<TConnection>): Events {
         const events: Events = {};
-        events[this.connectEventName()] = () => observer.next(conntion);
-        events[ev.ERROR] = (err: Error) => observer.error(err);
-        events[ev.CLOSE] = events[ev.END] = () => (conntion.end(), observer.complete());
+        events[this.connectEventName()] = () => {
+            this.onConnected();
+            observer.next(connection);
+        }
+        events[ev.ERROR] = events[ev.TIMEOUT] = (err: Error) => observer.error(err);
+        events[ev.CLOSE] = events[ev.END] = () => {
+            this.onDisconnected();
+            observer.complete();
+            for (const e in events) {
+                connection.off(e, events[e]);
+            }
+        };
         return events;
     }
+
+    protected onDisconnected(): void { }
+
+    protected onConnected(): void { }
 
     protected connectEventName() {
         return ev.CONNECT;
     }
 
-    /**
-     * create connection.
-     * @param socket 
-     * @param opts 
-     */
-    protected abstract createConnection(socket: EventEmitter, opts?: ConnectionOpts): Connection<TSocket>;
-
-
 }
-

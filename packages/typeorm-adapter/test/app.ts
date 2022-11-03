@@ -140,7 +140,7 @@ export class MockTransBootTest {
         LoggerModule,
         HttpModule.withOption({
             majorVersion: 2,
-            options: {
+            serverOpts: {
                 key,
                 cert
             }

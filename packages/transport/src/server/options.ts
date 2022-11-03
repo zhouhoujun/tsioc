@@ -26,7 +26,7 @@ export abstract class TransportServerOpts<TRequest extends Incoming = Incoming, 
     abstract content?: boolean | ContentOptions;
     abstract session?: boolean | SessionOptions;
     abstract serverOpts?: Record<string, any>;
-    abstract listenOpts: ListenOpts;
+    abstract listenOpts?: ListenOpts;
     abstract connectionOpts?: ConnectionOpts;
 }
 

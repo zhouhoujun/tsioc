@@ -37,7 +37,7 @@ export class TcpClient extends TransportClient<tls.TLSSocket | net.Socket, Reque
         return TCP_CLIENT_OPTS;
     }
 
-    protected override createSocket(opts: TransportClientOpts): tls.TLSSocket | net.Socket {
+    protected override createConnection(opts: TransportClientOpts): tls.TLSSocket | net.Socket {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         return socket;
     }

@@ -1,16 +1,16 @@
-import { Interceptor, ServerOpts, Server, EndpointFilter } from '@tsdi/core';
+import { Interceptor, Server, EndpointFilter } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { ListenOptions } from 'net';
-import { CorsOptions, MimeSource, ContentOptions, SessionOptions, CsrfOptions } from '@tsdi/transport';
+import { CorsOptions, MimeSource, ContentOptions, SessionOptions, CsrfOptions, TransportServerOpts } from '@tsdi/transport';
 import { HttpServRequest, HttpServResponse } from './context';
 
 /**
  * http options.
  */
-export interface HttpOpts extends ServerOpts<HttpServRequest, HttpServResponse> {
+export interface HttpOpts extends TransportServerOpts<HttpServRequest, HttpServResponse> {
     majorVersion?: number;
     cors?: boolean | CorsOptions;
     proxy?: boolean;
@@ -41,12 +41,12 @@ export interface HttpOpts extends ServerOpts<HttpServRequest, HttpServResponse> 
 export interface Http1ServerOpts extends HttpOpts {
     majorVersion: 1,
     protocol?: 'http' | 'https';
-    options?: http.ServerOptions | https.ServerOptions;
+    serverOpts?: http.ServerOptions | https.ServerOptions;
 }
 export interface Http2ServerOpts extends HttpOpts {
     majorVersion: 2,
     protocol?: 'http' | 'https';
-    options?: http2.ServerOptions | http2.SecureServerOptions;
+    serverOpts?: http2.ServerOptions | http2.SecureServerOptions;
 }
 
 /**
