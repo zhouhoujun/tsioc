@@ -7,7 +7,7 @@ import { ConnectionOpts } from '../connection';
  * Transport client options.
  */
 @Abstract()
-export abstract class TransportClientOpts extends ClientOpts {
+export abstract class TransportClientOpts<TRequest = any, TResponse = any> extends ClientOpts<TRequest, TResponse> {
     abstract keepalive?: number;
     /**
      * connect options.
@@ -21,7 +21,7 @@ export abstract class TransportClientOpts extends ClientOpts {
     /**
      * backend.
      */
-    abstract backend?: StaticProvider<EndpointBackend<TransportRequest, TransportEvent>>;
+    abstract backend?: StaticProvider<EndpointBackend<TRequest, TResponse>>;
 }
 
 

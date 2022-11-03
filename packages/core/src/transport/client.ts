@@ -13,7 +13,7 @@ import { TransportEvent, TransportResponse } from './response';
  * client options.
  */
 @Abstract()
-export abstract class ClientOpts<TRequest = TransportRequest, TResponse = TransportEvent> extends TransportOpts<TRequest, TResponse> {
+export abstract class ClientOpts<TRequest = any, TResponse = any> extends TransportOpts<TRequest, TResponse> {
 
 }
 

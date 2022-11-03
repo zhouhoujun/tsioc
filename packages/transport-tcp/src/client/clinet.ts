@@ -1,4 +1,4 @@
-import { OnDispose, RequestOptions } from '@tsdi/core';
+import { OnDispose, Pattern, RequestOptions } from '@tsdi/core';
 import { Injectable, lang, Nullable } from '@tsdi/ioc';
 import { Connection, ev, DuplexConnection, TransportClient } from '@tsdi/transport';
 import * as net from 'net';
@@ -28,7 +28,7 @@ export const TCP_CLIENT_OPTS = {
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends TransportClient<Connection<tls.TLSSocket | net.Socket>, RequestOptions> implements OnDispose {
+export class TcpClient extends TransportClient<Connection<tls.TLSSocket | net.Socket>, Pattern, RequestOptions, TcpClientOpts> implements OnDispose {
 
     constructor(@Nullable() options: TcpClientOpts) {
         super(options);

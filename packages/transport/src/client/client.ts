@@ -1,10 +1,10 @@
 import {
     OnDispose, ClientEndpointContext, Client, RequestOptions,
-    TransportRequest, Pattern, InOutInterceptorFilter
+    TransportRequest, Pattern, InOutInterceptorFilter, TransportEvent
 } from '@tsdi/core';
-import { Abstract, AsyncLike, lang, promisify } from '@tsdi/ioc';
+import { Abstract, AsyncLike, isPromise } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { from, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { defer, from, isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
@@ -31,7 +31,12 @@ const tsptDeftOpts = {
  * Transport Client.
  */
 @Abstract()
-export abstract class TransportClient<TConnection extends EventEmitter = EventEmitter, ReqOpts extends RequestOptions = RequestOptions, TOpts extends TransportClientOpts = TransportClientOpts> extends Client<Pattern, ReqOpts, TOpts> implements OnDispose {
+export abstract class TransportClient<TConnection extends EventEmitter = EventEmitter,
+    TPattern = Pattern,
+    ReqOpts extends RequestOptions = RequestOptions,
+    TOpts extends TransportClientOpts<TRequest, TResponse> = any,
+    TRequest extends TransportRequest = TransportRequest,
+    TResponse extends TransportEvent = TransportEvent> extends Client<TPattern, ReqOpts, TOpts, TRequest, TResponse> implements OnDispose {
 
     private _conn?: TConnection;
     constructor(options: TOpts) {
@@ -40,6 +45,10 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
 
     get connection(): TConnection {
         return this._conn ?? null!;
+    }
+
+    protected set connection(val: TConnection) {
+        this._conn = val;
     }
 
     abstract close(): Promise<void>;
@@ -67,8 +76,8 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
         return opts as TOpts;
     }
 
-    protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: ReqOpts): TransportRequest {
-        return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
+    protected buildRequest(context: ClientEndpointContext, url: TPattern | TRequest, options?: ReqOpts): TRequest {
+        return url instanceof TransportRequest ? url : new TransportRequest(url as Pattern, { context, ...options }) as TRequest;
     }
 
     private $conn?: Observable<TConnection> | null;
@@ -80,7 +89,8 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
         if (this.$conn) return this.$conn;
 
         const opts = this.getOptions();
-        return this.$conn = from(promisify(this.createConnection(opts)))
+        const conn = this.createConnection(opts);
+        return this.$conn = isObservable(conn) ? conn : defer(() => isPromise(conn) ? conn : Promise.resolve(conn))
             .pipe(
                 mergeMap(connection => this.onConnect(connection)),
                 map(connection => {
@@ -157,7 +167,6 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
                 for (const e in events) {
                     connection.off(e, events[e]);
                 }
-                this.close();
             }
         })
     }

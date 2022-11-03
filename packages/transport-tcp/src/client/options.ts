@@ -10,7 +10,7 @@ import { ConnectionOptions } from 'tls';
  * tcp client options.
  */
 @Abstract()
-export abstract class TcpClientOpts extends TransportClientOpts {
+export abstract class TcpClientOpts extends TransportClientOpts<TransportRequest, TransportEvent> {
     /**
      * packet size limit.
      */

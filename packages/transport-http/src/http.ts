@@ -8,7 +8,6 @@ import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
 import { TransportModule } from '@tsdi/transport';
 import { HttpBackend2 } from './client/backend';
 import { HttpExecptionHandlers, HttpExecptionFinalizeFilter } from './server/exception-filter';
-import { HttpHandlerBinding } from './server/binding';
 import { HttpFinalizeFilter } from './server/filter';
 import { HttpStatusFactory } from './status';
 
@@ -28,7 +27,6 @@ import { HttpStatusFactory } from './status';
         HttpExecptionHandlers,
         HttpBackend2,
         HttpFinalizeFilter,
-        HttpHandlerBinding,
         HttpStatusFactory,
         HttpServer,
         Http
