@@ -7,15 +7,16 @@ import {
 } from '@tsdi/core';
 import { Abstract, lang, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Readable } from 'stream';
+import { EventEmitter } from 'events';
 import { Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
 import { isBuffer, pmPipeline, sendbody, toBuffer, XSSI_PREFIX } from '../utils';
-import { Connection } from '../connection';
 import { IncomingMessage } from '../incoming';
 import { OutgoingMessage } from '../outgoing';
 import { ev, hdr } from '../consts';
 import { RequestStauts } from './options';
 import { MimeAdapter, MimeTypes } from '../mime';
+import { TransportClient } from './client';
 
 
 /**
@@ -26,7 +27,6 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
 
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent<any>>) => {
-            const conn = ctx.get(Connection);
             const url = req.url.trim();
             let status: Status<number>;
 
@@ -34,7 +34,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
             let ok = false;
             const factory = ctx.statusFactory as StatusFactory<number>;
 
-            const request = this.createRequest(conn, req);
+            const request = this.createRequest((ctx.target as TransportClient).connection, req);
 
             const onError = (error?: Error | null) => {
                 const res = this.createError({
@@ -299,7 +299,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
         return ev.RESPONSE
     }
 
-    protected abstract createRequest(conn: Connection, req: TransportRequest): OutgoingMessage;
+    protected abstract createRequest(conn: EventEmitter, req: TransportRequest): OutgoingMessage;
 
     protected sendBody(request: OutgoingMessage, body: any, callback: (error?: Error | null) => void) {
         sendbody(body, request, callback);

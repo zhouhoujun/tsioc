@@ -68,8 +68,8 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
         super(options)
     }
 
-    get server(): TServe | null {
-        return this._server;
+    get server(): TServe {
+        return this._server!;
     }
 
     async start(): Promise<void> {
@@ -87,6 +87,10 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                         logger.error(err);
                     },
                     complete: () => {
+                        this._reqSet.forEach(s => {
+                            s && s.unsubscribe();
+                        });
+                        this._reqSet.clear();
                         logger.error('server shutdown');
                     }
                 });
@@ -138,7 +142,6 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
             for (const e in events) {
                 server.on(e, events[e]);
             }
-
             observer.next(server);
             return () => {
                 this._reqSet.forEach(s => {
@@ -163,7 +166,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
 
         events[this.requestEventName()] = (...args: any[]) => {
             const [req, res] = this.parseToReqRes(args);
-            this.requestHandler(observer, req, res);
+            this.requestHandler(req, res);
         };
         events[ev.ERROR] = (err: Error) => observer.error(err);
         events[ev.CLOSE] = () => {
@@ -189,22 +192,21 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      * @param req 
      * @param res 
      */
-    protected requestHandler(observer: Subscriber<any>, req: TRequest, res: TResponse): void {
+    protected requestHandler(req: TRequest, res: TResponse): Subscription {
         const ctx = this.createContext(req, res);
         const sub = this.endpoint.handle(req, ctx)
             .pipe(finalize(() => ctx.destroy()))
             .subscribe({
-                next: (val) => observer.next(val),
-                error: (err) => this.logger.error(err),
+                error: (err) => {
+                    this.logger.error(err)
+                },
                 complete: () => {
-                    this._reqSet.delete(sub);
-                    if (!this._reqSet.size) {
-                        observer.complete();
-                    }
+                    this._reqSet.delete(sub)
                 }
             });
         this.bindRequestEvents(req, ctx, sub);
         this._reqSet.add(sub);
+        return sub;
     }
 
     protected bindRequestEvents(req: TRequest, ctx: TContext, cancel: Subscription) {
@@ -250,7 +252,6 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
 
     protected override initContext(options: TOpts): void {
         this.context.get(ModuleRef).setValue(ListenOpts, options.listenOpts);
-
         if (options.content && !isBoolean(options.content)) {
             this.context.setValue(ContentOptions, options.content)
         }

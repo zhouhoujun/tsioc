@@ -20,10 +20,6 @@ export interface HttpOpts extends TransportServerOpts<HttpServRequest, HttpServR
      * request timeout.
      */
     timeout?: number;
-    /**
-     * delay some time to clean up after request client close.
-     */
-    closeDelay?: number;
     detailError?: boolean;
     mimeDb?: Record<string, MimeSource>;
     content?: boolean | ContentOptions;

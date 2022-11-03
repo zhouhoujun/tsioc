@@ -60,22 +60,28 @@ export const TCP_SERVER_OPTS = {
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TransportServer<net.Server | tls.Server, IncomingMessage, OutgoingMessage, TcpServerOpts> {
+export class TcpServer extends TransportServer<Connection<net.Server | tls.Server>, IncomingMessage, OutgoingMessage, TcpServerOpts> {
+
+    private serv!: net.Server | tls.Server;
+
     constructor(@Nullable() options: TcpServerOpts) {
         super(options)
+    }
+
+    close(): Promise<void> {
+        const defer = lang.defer();
+        this.serv.close(err => err ? defer.reject(err) : defer.resolve())
+        return defer.promise;
     }
 
     protected override getDefaultOptions() {
         return TCP_SERVER_OPTS;
     }
 
-    protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
-        return (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts)
-    }
-
-    protected createConnection(socket: tls.TLSSocket | net.Socket, opts?: ConnectionOpts | undefined): Connection<tls.TLSSocket | net.Socket> {
+    protected createServer(opts: TcpServerOpts): Connection<net.Server | tls.Server> {
+        const serv = this.serv = (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
         const packet = this.context.get(TcpPackFactory);
-        return new DuplexConnection(socket, packet, opts);
+        return new DuplexConnection(serv, packet, { events: [ev.CONNECTION], ...opts.connectionOpts});
     }
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
@@ -83,9 +89,9 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, Incoming
         return new TransportContext(injector, req, res, this, injector.get(TcpVaildator))
     }
 
-    protected listen(server: net.Server | tls.Server, opts: ListenOpts): Promise<void> {
+    protected listen(opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
-        server.listen(opts, defer.resolve);
+        this.serv.listen(opts, defer.resolve);
         return defer.promise;
     }
 

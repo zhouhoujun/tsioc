@@ -1,6 +1,6 @@
 import { OnDispose, RequestOptions } from '@tsdi/core';
-import { Injectable, Nullable } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, ev, DuplexConnection, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Injectable, lang, Nullable } from '@tsdi/ioc';
+import { Connection, ev, DuplexConnection, TransportClient } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
@@ -28,7 +28,8 @@ export const TCP_CLIENT_OPTS = {
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends TransportClient<tls.TLSSocket | net.Socket, RequestOptions> implements OnDispose {
+export class TcpClient extends TransportClient<Connection<tls.TLSSocket | net.Socket>, RequestOptions> implements OnDispose {
+
     constructor(@Nullable() options: TcpClientOpts) {
         super(options);
     }
@@ -37,14 +38,19 @@ export class TcpClient extends TransportClient<tls.TLSSocket | net.Socket, Reque
         return TCP_CLIENT_OPTS;
     }
 
-    protected override createConnection(opts: TransportClientOpts): tls.TLSSocket | net.Socket {
-        const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
-        return socket;
+    close(): Promise<void> {
+        const defer = lang.defer();
+        this.connection.destroy(null, err => err ? defer.reject(err) : defer.resolve());
+        return defer.promise;
+    }
+    protected isValid(connection: Connection<tls.TLSSocket | net.Socket>): boolean {
+        return !connection.destroyed && !connection.closed
     }
 
-    protected createConnection(socket: tls.TLSSocket | net.Socket, opts?: ConnectionOpts | undefined): Connection<tls.TLSSocket | net.Socket> {
+    protected override createConnection(opts: TcpClientOpts): Connection<tls.TLSSocket | net.Socket> {
+        const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         const packet = this.context.get(TcpPackFactory);
-        const conn = new DuplexConnection(socket, packet, opts);
+        const conn = new DuplexConnection(socket, packet, { events: [ev.CONNECT], ...opts.connectionOpts });
         if (opts?.keepalive) {
             conn.setKeepAlive(true, opts.keepalive);
         }

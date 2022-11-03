@@ -2,13 +2,14 @@ import { TransportRequest, ClientContext, Packet } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
 import { Connection, ev, hdr, IncomingMessage, OutgoingMessage, RequestStream, sendbody, TransportBackend } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
-
+import * as net from 'net';
+import * as tls from 'tls';
 
 
 @Injectable()
 export class TcpBackend extends TransportBackend {
 
-    protected createRequest(conn: Connection, req: TransportRequest<any>): OutgoingMessage {
+    protected createRequest(conn: Connection<tls.TLSSocket | net.Socket>, req: TransportRequest<any>): OutgoingMessage {
         const url = `${req.url.trim()}?${req.params.toString()}`;
         req.headers
             .set(hdr.PATH, url)

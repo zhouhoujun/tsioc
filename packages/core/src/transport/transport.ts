@@ -86,6 +86,7 @@ export abstract class TransportEndpoint<
     @Autorun()
     protected onEndpointInit() {
         const opts = this.getOptions();
+        this.validOptions(opts);
         this.initContext(opts);
     }
 
@@ -170,6 +171,25 @@ export abstract class TransportEndpoint<
     protected abstract initOption(options?: Opts): Opts;
 
     /**
+     * valid options.
+     * @param opts
+     * @returns 
+     */
+    protected validOptions(opts: Opts): void {
+        this._iptToken = opts.interceptorsToken!;
+        if (!this._iptToken) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options interceptorsToken is missing.');
+        }
+        if (!opts.backend) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options backend is missing.');
+        }
+        this._expFToken = opts.filtersToken!;
+        if (!this._expFToken) {
+            throw new ArgumentExecption(lang.getClassName(this) + ' options filtersToken is missing.');
+        }
+    }
+
+    /**
      * initialize context with options.
      * @param options 
      */
@@ -181,25 +201,14 @@ export abstract class TransportEndpoint<
             injector.inject(options.providers);
         }
 
-        const iToken = this._iptToken = options.interceptorsToken!;
-        if (!iToken) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options interceptorsToken is missing.');
-        }
         if (options.interceptors && options.interceptors.length) {
-            this.multiReg(iToken, options.interceptors);
+            this.multiReg(this._iptToken, options.interceptors);
         }
 
-        if (!options.backend) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options backend is missing.');
-        }
-        this._bToken = this.regProvider(options.backend);
+        this._bToken = this.regProvider(options.backend!);
 
-        const expfToken = this._expFToken = options.filtersToken!;
-        if (!expfToken) {
-            throw new ArgumentExecption(lang.getClassName(this) + ' options filtersToken is missing.');
-        }
         if (options.filters && options.filters.length) {
-            this.multiReg(expfToken, options.filters);
+            this.multiReg(this._expFToken, options.filters);
         }
         if (!options.filtersBackend) {
             options.filtersBackend = ExecptionHandlerBackend;

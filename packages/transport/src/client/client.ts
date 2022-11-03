@@ -4,7 +4,7 @@ import {
 } from '@tsdi/core';
 import { Abstract, AsyncLike, lang, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { from, isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { from, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import { CLIENT_EXECPTION_FILTERS, CLIENT_INTERCEPTORS, TransportClientOpts } from './options';
 import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
