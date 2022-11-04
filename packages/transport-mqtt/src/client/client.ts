@@ -1,5 +1,5 @@
-import { Abstract, Execption, Injectable, tokenId } from '@tsdi/ioc';
-import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Abstract, Execption, Injectable, promisify, tokenId } from '@tsdi/ioc';
+import { ExecptionFilter, Interceptor, Pattern, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Connection, DuplexConnection, ConnectionOpts, ev, LogInterceptor, TransportClient, TransportClientOpts } from '@tsdi/transport';
 import { IConnectPacket } from 'mqtt-packet';
 import { Observable, Observer } from 'rxjs';
@@ -125,16 +125,24 @@ const defaults = {
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends TransportClient<net.Socket | tls.TLSSocket | ws.WebSocket, MqttReqOptions, MqttClientOpts> {
+export class MqttClient extends TransportClient<MqttConnection, Pattern, MqttReqOptions, MqttClientOpts> {
+
     constructor(options: MqttClientOpts) {
         super(options)
+    }
+
+    close(): Promise<void> {
+        return promisify(this.connection.destroy, this.connection)(null);
+    }
+    protected isValid(connection: MqttConnection): boolean {
+        throw new Error('Method not implemented.');
     }
 
     protected override getDefaultOptions() {
         return defaults;
     }
 
-    protected override createSocket(opts: MqttClientOpts): net.Socket | tls.TLSSocket | ws.WebSocket {
+    protected createSocket(opts: MqttClientOpts): net.Socket | tls.TLSSocket | ws.WebSocket {
         const connOpts = opts.connectOpts;
         switch (connOpts.protocol) {
             case 'mqtt':
@@ -161,43 +169,44 @@ export class MqttClient extends TransportClient<net.Socket | tls.TLSSocket | ws.
     }
 
 
-    protected createConnection(socket: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Connection<net.Socket | tls.TLSSocket | ws.WebSocket> {
+    protected override createConnection(opts: MqttClientOpts): MqttConnection {
+        const socket = this.createSocket(opts);
         const packet = this.context.get(MqttPacketFactory);
-        const conn = new MqttConnection(socket, packet, opts);
-        return conn
+        const conn = new MqttConnection(socket, packet, opts.connectionOpts);
+        return conn;
     }
 
-    protected onConnect(duplex: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Observable<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>> {
-        const logger = this.logger;
-        const packetor = this.context.get(MqttPacketFactory);
-        return new Observable((observer: Observer<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>>) => {
-            const client = new DuplexConnection(duplex, packetor, opts);
-            if (opts?.keepalive) {
-                client.setKeepAlive(true, opts.keepalive);
-            }
+    // protected onConnect(duplex: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Observable<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>> {
+    //     const logger = this.logger;
+    //     const packetor = this.context.get(MqttPacketFactory);
+    //     return new Observable((observer: Observer<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>>) => {
+    //         const client = new DuplexConnection(duplex, packetor, opts);
+    //         if (opts?.keepalive) {
+    //             client.setKeepAlive(true, opts.keepalive);
+    //         }
 
-            const onError = (err: Error) => {
-                logger.error(err);
-                observer.error(err);
-            }
-            const onClose = () => {
-                client.end();
-            };
-            const onConnected = () => {
-                observer.next(client);
-            }
-            client.on(ev.ERROR, onError);
-            client.on(ev.CLOSE, onClose);
-            client.on(ev.END, onClose);
-            client.on(ev.CONNECT, onConnected);
+    //         const onError = (err: Error) => {
+    //             logger.error(err);
+    //             observer.error(err);
+    //         }
+    //         const onClose = () => {
+    //             client.end();
+    //         };
+    //         const onConnected = () => {
+    //             observer.next(client);
+    //         }
+    //         client.on(ev.ERROR, onError);
+    //         client.on(ev.CLOSE, onClose);
+    //         client.on(ev.END, onClose);
+    //         client.on(ev.CONNECT, onConnected);
 
-            return () => {
-                client.off(ev.ERROR, onError);
-                client.off(ev.CLOSE, onClose);
-                client.off(ev.END, onClose);
-                client.off(ev.CONNECT, onConnected);
-            }
-        });
-    }
+    //         return () => {
+    //             client.off(ev.ERROR, onError);
+    //             client.off(ev.CLOSE, onClose);
+    //             client.off(ev.END, onClose);
+    //             client.off(ev.CONNECT, onConnected);
+    //         }
+    //     });
+    // }
 
 }

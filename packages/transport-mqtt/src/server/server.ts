@@ -1,13 +1,11 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest, CatchInterceptor } from '@tsdi/core';
-import { Abstract, Execption, Injectable, lang, tokenId } from '@tsdi/ioc';
+import { Abstract, Execption, Injectable, lang, promisify, tokenId } from '@tsdi/ioc';
 import { LogInterceptor, TransportServer, TransportServerOpts, Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext } from '@tsdi/transport';
-import { Duplex } from 'stream';
 import * as net from 'net';
 import * as tls from 'tls';
 import * as ws from 'ws';
 import { MqttConnection } from '../connection';
 import { MqttPacketFactory, MqttVaildator } from '../transport';
-import { Observable } from 'rxjs';
 
 
 
@@ -74,6 +72,10 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
 
     constructor(options: MqttServerOpts) {
         super(options);
+    }
+
+    close(): Promise<void> {
+        return promisify(this.server.close, this.server)()
     }
 
     protected override getDefaultOptions() {
@@ -154,9 +156,9 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
     }
 
 
-    protected listen(server: net.Server | tls.Server | ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {
+    protected listen(opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
-        if (server instanceof ws.Server) {
+        if (this.server instanceof ws.Server) {
             const sropts = this.getOptions().serverOpts as ws.ServerOptions;
             if (sropts.server) {
                 if (!sropts.server.listening) {
@@ -170,7 +172,7 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
                 defer.resolve();
             }
         } else {
-            server.listen(opts, defer.resolve);
+            this.server.listen(opts, defer.resolve);
         }
         return defer.promise;
     }
