@@ -1,9 +1,9 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    Router, Server, StatusInterceptorFilter, CatchInterceptor, ServerContext
+    Router, Server, StatusInterceptorFilter, CatchInterceptor
 } from '@tsdi/core';
 import { Abstract, AsyncLike, isBoolean, lang, promisify } from '@tsdi/ioc';
-import { finalize, from, merge, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
+import { finalize, from, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { EventEmitter } from 'events';
 import { ev } from '../consts';
 import { MimeDb } from '../mime';
@@ -14,11 +14,9 @@ import { BodyparserMiddleware, ContentMiddleware, ContentOptions, EncodeJsonMidd
 import { TRANSPORT_SERVR_PROVIDERS } from './providers';
 import { ServerFinalizeFilter } from './filter';
 import { ExecptionFinalizeFilter } from './execption-filter';
-import { TransportContext, SERVER_MIDDLEWARES } from './context';
+import { SERVER_MIDDLEWARES } from './context';
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
 import { AssetServerContext } from '../asset.ctx';
-import { map } from 'bluebird';
-
 
 
 const defOpts = {
@@ -92,7 +90,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                             s && s.unsubscribe();
                         });
                         this._reqSet.clear();
-                        logger.info(lang.getClassName(this),'shutdown');
+                        logger.info(lang.getClassName(this), 'shutdown');
                     }
                 });
             this.context.onDestroy(() => sub?.unsubscribe())
@@ -139,14 +137,15 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      * @param server 
      * @param opts 
      */
-    protected bindEvent(server: TServe, opts?: TOpts): Observable<TServe> {
+    protected bindEvent(server: TServe, opts: TOpts): Observable<TServe> {
         return new Observable((observer) => {
             const events = this.createServerEvents(server, observer, opts);
             for (const e in events) {
                 server.on(e, events[e]);
             }
-            observer.next(server);
-            server.emit(ev.READY);
+            this.setupServe(server, opts).then(() => {
+                observer.next(server);
+            })
             return () => {
                 this._reqSet.forEach(s => {
                     s && s.unsubscribe();
@@ -158,6 +157,13 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
             }
         })
     }
+
+    /**
+     * todo setup server with options. default do nothing.
+     * @param server 
+     * @param opts 
+     */
+    protected async setupServe(server: TServe, opts: TOpts): Promise<void> { }
 
     /**
      * create server events

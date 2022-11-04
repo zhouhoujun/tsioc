@@ -125,9 +125,9 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
         }
     }
 
-    protected async listen(opts: ListenOpts): Promise<void> {
+    protected override async setupServe(server: http2.Http2Server | http.Server | https.Server, opts: HttpServerOpts): Promise<void> {
         const injector = this.context.injector;
-        const sharing = this.getOptions().sharing;
+        const sharing = opts.sharing;
         //sharing servers
         if (sharing) {
             const factory = injector.get(RunnableFactory);
@@ -140,9 +140,10 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
                 return runnable.run()
             }))
         }
+    }
 
+    protected async listen(opts: ListenOpts): Promise<void> {
         const isSecure = this.isSecure;
-
         this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host}:${opts?.port}${opts?.path ?? ''}`, '!')
         this.server.listen(opts as ListenOptions)
     }
