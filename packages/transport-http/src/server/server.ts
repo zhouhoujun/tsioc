@@ -1,4 +1,4 @@
-import { Inject, Injectable, isFunction, lang, EMPTY_OBJ } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify } from '@tsdi/ioc';
 import {
     RunnableFactory, Router, ListenOpts, InOutInterceptorFilter,
     PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor
@@ -162,17 +162,13 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
 
     async close(): Promise<void> {
         if (!this.server) return;
-        const defer = lang.defer();
-        this.server.close((err) => {
-            if (err) {
-                this.logger.error(err);
-                defer.reject(err)
-            } else {
+        await promisify(this.server.close, this.server)()
+            .then(()=> {
                 this.logger.info(lang.getClassName(this), this.getOptions().listenOpts, 'closed !');
-                defer.resolve()
-            }
-        });
-        await defer.promise;
+            })
+            .catch(err=> {
+                this.logger.error(err);
+            })
     }
 
 }

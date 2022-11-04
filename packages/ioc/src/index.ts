@@ -19,7 +19,7 @@ export * from './utils/chk';
 export * from './utils/obj';
 export * from './utils/token';
 export * as lang from './utils/lang';
-export { Defer } from './utils/lang';
+export { Defer, pomiseOf, promisify } from './utils/lang';
 
 
 // metadata

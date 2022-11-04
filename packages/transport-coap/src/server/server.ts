@@ -1,15 +1,14 @@
 
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType, Router } from '@tsdi/core';
-import { Abstract, Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, lang, Nullable, promisify, tokenId } from '@tsdi/ioc';
 import {
     LogInterceptor, TransportServer, TransportServerOpts,
-    ConnectionOpts, ev, parseToDuplex, Connection, IncomingMessage, OutgoingMessage, TransportContext,
+    ConnectionOpts, Connection, IncomingMessage, OutgoingMessage, TransportContext,
     ExecptionFinalizeFilter, TransportExecptionHandlers, ContentMiddleware, SessionMiddleware,
-    EncodeJsonMiddleware, BodyparserMiddleware
+    EncodeJsonMiddleware, BodyparserMiddleware, DuplexConnection
 } from '@tsdi/transport';
 import * as net from 'net';
 import * as dgram from 'dgram';
-import { Observable } from 'rxjs';
 import { CoapPacketFactory, CoapVaildator } from '../transport';
 import { Duplex } from 'form-data';
 
@@ -51,7 +50,7 @@ const defOpts = {
     interceptorsToken: COAP_SERV_INTERCEPTORS,
     execptionsToken: COAP_EXECPTION_FILTERS,
     middlewaresToken: COAP_MIDDLEWARES,
-    interceptors:[
+    interceptors: [
         LogInterceptor
     ],
     execptions: [
@@ -79,10 +78,15 @@ const defOpts = {
  * Coap server.
  */
 @Injectable()
-export class CoapServer extends TransportServer<IncomingMessage, OutgoingMessage, net.Server | dgram.Socket, CoapServerOpts> {
+export class CoapServer extends TransportServer<net.Server | dgram.Socket, IncomingMessage, OutgoingMessage, CoapServerOpts> {
+
 
     constructor(@Nullable() options: CoapServerOpts) {
         super(options)
+    }
+
+    async close(): Promise<void> {
+        await promisify(this.server.close, this.server)();
     }
 
     protected override getDefaultOptions() {
@@ -95,7 +99,7 @@ export class CoapServer extends TransportServer<IncomingMessage, OutgoingMessage
 
     protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
         const packet = this.context.get(CoapPacketFactory);
-        return new Connection(socket, packet, opts)
+        return new DuplexConnection(socket, packet, opts)
     }
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
@@ -172,12 +176,12 @@ export class CoapServer extends TransportServer<IncomingMessage, OutgoingMessage
     //     })
     // }
 
-    protected listen(server: dgram.Socket | net.Server, opts: ListenOpts): Promise<void> {
+    protected listen(opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
-        if (server instanceof net.Server) {
-            server.listen(opts, defer.resolve);
+        if (this.server instanceof net.Server) {
+            this.server.listen(opts, defer.resolve);
         } else {
-            server.bind(opts, defer.resolve);
+            this.server.bind(opts, defer.resolve);
         }
         return defer.promise;
     }

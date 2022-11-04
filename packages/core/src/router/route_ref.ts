@@ -1,6 +1,6 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    ReflectiveFactory, TypeDef, ReflectiveRef, DestroyCallback, InvokeOption, isClass, promisify
+    ReflectiveFactory, TypeDef, ReflectiveRef, DestroyCallback, InvokeOption, isClass, pomiseOf
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../transport/guard';
@@ -97,7 +97,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
         if (metadate.guards?.length) {
             if (!(await lang.some(
-                metadate.guards.map(token => () => promisify(this.factory.resolve(token)?.canActivate(ctx))),
+                metadate.guards.map(token => () => pomiseOf(this.factory.resolve(token)?.canActivate(ctx))),
                 vaild => vaild === false))) {
                 throw new ForbiddenExecption();
             }

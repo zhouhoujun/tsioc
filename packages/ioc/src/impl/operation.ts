@@ -5,8 +5,8 @@ import { AsyncLike, OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
 import { from, Observable } from 'rxjs';
 import { Handler, runChain } from '../handler';
-import { Defer, defer, step } from '../utils/lang';
-import { isNil, isObservable, promisify } from '../utils/chk';
+import { Defer, defer, step, pomiseOf } from '../utils/lang';
+import { isNil, isObservable } from '../utils/chk';
 
 
 
@@ -196,7 +196,7 @@ function runHooks(ctx: InvocationContext & Record<string, any>, hooks: ((joinPoi
         if (!ctx.__returnDefer) {
             ctx.__returnDefer = defer()
         }
-        return step(hooks.map(h => (a) => promisify(h(ctx, a ?? arg))), arg)
+        return step(hooks.map(h => (a) => pomiseOf(h(ctx, a ?? arg))), arg)
             .then(value => {
                 if (!isNil(value) && field) {
                     ctx[field] = value;

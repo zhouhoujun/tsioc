@@ -49,22 +49,27 @@ const defaults = {
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends TransportClient<dgram.Socket | net.Socket, RequestOptions, CoapClientOpts> {
+export class CoapClient extends TransportClient<Connection<dgram.Socket | net.Socket>, string, RequestOptions, CoapClientOpts> {
 
     constructor(@Nullable() option: CoapClientOpts) {
         super(option);
+    }
+
+    close(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
+    protected isValid(connection: Connection<dgram.Socket | net.Socket>): boolean {
+        return !connection.isClosed && !connection.destroyed;
     }
 
     protected override getDefaultOptions() {
         return defaults;
     }
 
-    protected override createSocket(opts: CoapClientOpts): dgram.Socket | net.Socket {
-        const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.TcpNetConnectOpts) : dgram.createSocket(opts.connectOpts as dgram.SocketOptions);
-        return socket;
-    }
 
-    protected createConnection(socket: dgram.Socket | net.Socket, opts?: ConnectionOpts | undefined): Connection<dgram.Socket | net.Socket> {
+    protected override createConnection(opts: ConnectionOpts): Connection<dgram.Socket | net.Socket> {
+        const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.TcpNetConnectOpts) : dgram.createSocket(opts.connectOpts as dgram.SocketOptions);
         const packet = this.context.get(CoapPacketFactory);
         return new DuplexConnection(socket, packet, { parseToDuplex, ...opts });
     }

@@ -1,5 +1,5 @@
 
-import { createDecorator, Decors, isClass, isFunction, lang, promisify, ReflectiveFactory, Type } from '@tsdi/ioc';
+import { createDecorator, Decors, isClass, isFunction, lang, pomiseOf, ReflectiveFactory, Type } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 import { CanActivate } from './guard';
@@ -80,7 +80,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                     invoker.before(async (ctx, args) => {
                         const endpCtx = ctx.resolve(ServerEndpointContext);
                         if (!(await lang.some(
-                            guards.map(token => () => promisify(factory.resolve(token)?.canActivate(endpCtx))),
+                            guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
                             vaild => vaild === false))) {
                             throw new ForbiddenExecption();
                         }

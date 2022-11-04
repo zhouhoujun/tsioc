@@ -1,6 +1,7 @@
 // use core-js in browser.
+import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNil } from './chk';
+import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPromise } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -385,4 +386,40 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
  */
 export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | PromiseLike<T>))[], filter: (v: T) => boolean): Promise<T> {
     return step(promises, undefined, (v) => !filter(v));
+}
+
+
+/**
+ * to promise.
+ * @param target promise of the target.
+ * @returns 
+ */
+export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+    if (isObservable(target)) {
+        return lastValueFrom(target)
+    } else if (isPromise(target)) {
+        return target
+    }
+    return Promise.resolve(target)
+}
+
+export function promisify(func: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
+export function promisify<T>(func: (callback: (err: any, result?: T) => void) => void, owner?: any): () => Promise<T>;
+export function promisify<T, A1>(func: (arg1: A1, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
+export function promisify<T, A1, A2>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
+export function promisify<T, A1, A2, A3>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
+export function promisify<T, A1, A2, A3, A4>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
+export function promisify<T, A1, A2, A3, A4, A5>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Promise<T>;
+export function promisify(nodeFunction: (...args: any[]) => void, owner?: any): (...args: any[]) => Promise<any> {
+    if (owner) {
+        nodeFunction = nodeFunction.bind(owner);
+    }
+    return (...args: any[]) => {
+        return new Promise((r, j) => {
+            nodeFunction(...args, (err: any, result: any) => {
+                if (err) j(err);
+                r(result);
+            })
+        })
+    }
 }

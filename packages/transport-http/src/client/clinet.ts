@@ -1,4 +1,4 @@
-import { Injectable, InvocationContext, lang, Nullable, ProviderType } from '@tsdi/ioc';
+import { Injectable, InvocationContext, Nullable, promisify, ProviderType } from '@tsdi/ioc';
 import {
     RequestMethod, OnDispose, RequestOptions, ClientEndpointContext,
     ResponseAs, mths, ReqHeaders, ReqHeadersLike
@@ -2368,9 +2368,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
     async close(): Promise<void> {
         if (this.connection) {
             if (this.connection === NONE) return;
-            const defer = lang.defer();
-            this.connection.close(() => defer.resolve());
-            await defer.promise
+            await promisify(this.connection.close, this.connection)();
         }
     }
 

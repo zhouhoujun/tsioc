@@ -1,4 +1,3 @@
-import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { TypeDef } from '../metadata/type';
 import { AbstractType, AnnotationType, ClassType, Type } from '../types';
 import { clsNameExp } from './exps';
@@ -340,18 +339,3 @@ export function getClass(target: any): Type {
     return target.constructor || target.prototype.constructor
 }
 
-
-
-/**
- * to promise.
- * @param target 
- * @returns 
- */
-export function promisify<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
-    if (isObservable(target)) {
-        return lastValueFrom(target)
-    } else if (isPromise(target)) {
-        return target
-    }
-    return Promise.resolve(target)
-}

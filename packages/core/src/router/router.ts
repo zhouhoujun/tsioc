@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, promisify, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
 import { CanActivate } from '../transport/guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
@@ -93,7 +93,7 @@ export class MappingRoute implements Middleware {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
         if (!this._guards.length) return true;
-        return lang.some(this._guards.map(guard => () => promisify(guard.canActivate(ctx))), vaild => vaild === false)
+        return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
     protected async parse(route: Route & { router?: Router }, ctx: ServerEndpointContext): Promise<Middleware> {

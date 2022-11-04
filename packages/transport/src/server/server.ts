@@ -2,7 +2,7 @@ import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
     Router, Server, StatusInterceptorFilter, CatchInterceptor
 } from '@tsdi/core';
-import { Abstract, AsyncLike, isBoolean, lang, promisify } from '@tsdi/ioc';
+import { Abstract, AsyncLike, isBoolean, lang, pomiseOf } from '@tsdi/ioc';
 import { finalize, from, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { EventEmitter } from 'events';
 import { Cleanup, ev } from '../consts';
@@ -114,7 +114,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      * @returns 
      */
     protected setup(opts: TOpts): Observable<TServe> {
-        return from(promisify(this.createServer(opts)))
+        return from(pomiseOf(this.createServer(opts)))
             .pipe(
                 mergeMap(server => {
                     this._server = server;
