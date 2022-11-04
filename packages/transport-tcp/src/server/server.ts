@@ -9,6 +9,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpVaildator, TcpPackFactory } from '../transport';
+import ts = require('typescript');
 
 
 /**
@@ -60,7 +61,7 @@ export const TCP_SERVER_OPTS = {
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TransportServer<Connection<net.Server | tls.Server>, IncomingMessage, OutgoingMessage, TcpServerOpts> {
+export class TcpServer extends TransportServer<net.Server | tls.Server, IncomingMessage, OutgoingMessage, TcpServerOpts> {
 
     private serv!: net.Server | tls.Server;
 
@@ -78,11 +79,15 @@ export class TcpServer extends TransportServer<Connection<net.Server | tls.Serve
         return TCP_SERVER_OPTS;
     }
 
-    protected createServer(opts: TcpServerOpts): Connection<net.Server | tls.Server> {
+    protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
         const serv = this.serv = (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
-        const packet = this.context.get(TcpPackFactory);
-        return new DuplexConnection(serv, packet, { events: [ev.CONNECTION], ...opts.connectionOpts});
+        return serv;
     }
+
+    // protected parseRequestEventArgs(socket: net.Socket | tls.TLSSocket): [IncomingMessage, OutgoingMessage] {
+    //     const packet = this.context.get(TcpPackFactory);
+    //     const conn = new DuplexConnection(socket, packet, this.getOptions().connectionOpts);
+    // }
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
         const injector = this.context.injector;

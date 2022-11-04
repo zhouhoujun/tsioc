@@ -173,11 +173,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      */
     protected createServerEvents(server: TServe, observer: Subscriber<TServe>, opts?: TOpts): Events {
         const events: Events = {};
-
-        events[this.requestEventName()] = (...args: any[]) => {
-            const [req, res] = this.parseToReqRes(args);
-            this.requestHandler(req, res);
-        };
+        events[this.requestEventName()] = this.onRequest.bind(this);
         events[ev.ERROR] = (err: Error) => observer.error(err);
         events[ev.CLOSE] = events[ev.END] = () => {
             observer.complete();
@@ -188,7 +184,13 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
         return events;
     }
 
-    protected parseToReqRes(args: any[]): [TRequest, TResponse] {
+
+    protected onRequest(...args: []): void {
+        const [req, res] = this.parseRequestEventArgs(...args);
+        this.requestHandler(req, res);
+    }
+
+    protected parseRequestEventArgs(...args: any[]): [TRequest, TResponse] {
         return args as [TRequest, TResponse];
     }
 
@@ -214,12 +216,12 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                     this._reqSet.delete(sub)
                 }
             });
-        this.bindRequestEvents(req, ctx, sub);
+        this.setupRequest(req, ctx, sub);
         this._reqSet.add(sub);
         return sub;
     }
 
-    protected bindRequestEvents(req: TRequest, ctx: TContext, cancel: Subscription) {
+    protected setupRequest(req: TRequest, ctx: TContext, cancel: Subscription) {
         const opts = this.getOptions();
         opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
             req.emit?.(ev.TIMEOUT);
@@ -240,7 +242,6 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      * @param res 
      */
     protected abstract createContext(req: TRequest, res: TResponse): TContext;
-
 
 
     protected override initOption(options: TOpts): TOpts {
