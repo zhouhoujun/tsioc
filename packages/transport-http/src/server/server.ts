@@ -3,6 +3,7 @@ import {
     RunnableFactory, Router, ListenOpts, InOutInterceptorFilter,
     PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor
 } from '@tsdi/core';
+import { Subscriber } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -11,10 +12,9 @@ import * as assert from 'assert';
 import {
     CONTENT_DISPOSITION, ev, LOCALHOST, LogInterceptor,
     CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
-    ContentMiddleware, SessionMiddleware, CsrfMiddleware, TransportServer
+    ContentMiddleware, SessionMiddleware, CsrfMiddleware, TransportServer, Cleanup
 } from '@tsdi/transport';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
-
 import { HttpExecptionFinalizeFilter } from './exception-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
 import { HttpFinalizeFilter } from './filter';
@@ -29,7 +29,7 @@ const httpOpts = {
     majorVersion: 2,
     serverOpts: { allowHTTP1: true },
     listenOpts: { port: 3000, host: LOCALHOST } as ListenOptions,
-    closeDelay: 500,
+    hasRequestEvent: true,
     content: {
         root: 'public'
     },
@@ -106,7 +106,6 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
             this.context.setValue(CONTENT_DISPOSITION, func)
         }
 
-
         if (opts.controllers) {
             await injector.load(opts.controllers);
         }
@@ -125,7 +124,8 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
         }
     }
 
-    protected override async setupServe(server: http2.Http2Server | http.Server | https.Server, opts: HttpServerOpts): Promise<void> {
+    protected override async setupServe(server: http2.Http2Server | http.Server | https.Server, observer: Subscriber<http2.Http2Server | http.Server | https.Server>, opts: HttpServerOpts): Promise<Cleanup> {
+        const cleanup = await super.setupServe(server, observer, opts);
         const injector = this.context.injector;
         const sharing = opts.sharing;
         //sharing servers
@@ -140,6 +140,7 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
                 return runnable.run()
             }))
         }
+        return cleanup;
     }
 
     protected async listen(opts: ListenOpts): Promise<void> {

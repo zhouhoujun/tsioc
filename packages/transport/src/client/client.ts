@@ -10,7 +10,7 @@ import { ClientFinalizeFilter } from './filter';
 import { TRANSPORT_CLIENT_PROVIDERS } from './providers';
 import { BodyContentInterceptor } from './body';
 import { Events } from '../connection';
-import { ev } from '../consts';
+import { Cleanup, ev } from '../consts';
 
 
 
@@ -92,7 +92,7 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
         const conn = this.createConnection(opts);
         return this.$conn = isObservable(conn) ? conn : defer(() => isPromise(conn) ? conn : Promise.resolve(conn))
             .pipe(
-                mergeMap(connection => this.onConnect(connection)),
+                mergeMap(connection => this.onConnect(connection, opts)),
                 map(connection => {
                     this._conn = connection;
                     this.$conn = null;
@@ -158,22 +158,32 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
      * @param connection 
      * @param opts 
      */
-    protected onConnect(connection: TConnection): Observable<TConnection> {
+    protected onConnect(connection: TConnection, opts: TOpts): Observable<TConnection> {
         return new Observable((observer) => {
-            const events = this.createConnectionEvents(connection, observer);
-            for (const e in events) {
-                connection.on(e, events[e]);
-            }
+            let cleanup: Cleanup;
+            this.setupConnection(connection, observer, opts)
+                .then(clean => {
+                    cleanup = clean;
+                })
+                .catch(err => observer.error(err));
+
             return () => {
-                for (const e in events) {
-                    connection.off(e, events[e]);
-                }
+                cleanup?.()
             }
         })
     }
 
-    protected createConnectionEvents(connection: TConnection, observer: Subscriber<TConnection>): Events {
+    protected async setupConnection(connection: TConnection, observer: Subscriber<TConnection>, opts: TOpts): Promise<Cleanup> {
         const events: Events = {};
+        let cleaned = false;
+        const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            for (const e in events) {
+                connection.off(e, events[e]);
+                events[e] = null!;
+            }
+        };
         events[this.connectEventName()] = () => {
             this.onConnected();
             observer.next(connection);
@@ -183,11 +193,11 @@ export abstract class TransportClient<TConnection extends EventEmitter = EventEm
         events[ev.CLOSE] = events[ev.END] = () => {
             this.onDisconnected();
             observer.complete();
-            for (const e in events) {
-                connection.off(e, events[e]);
-            }
         };
-        return events;
+        for (const e in events) {
+            connection.on(e, events[e]);
+        }
+        return cleanup;
     }
 
     protected onDisconnected(): void { }

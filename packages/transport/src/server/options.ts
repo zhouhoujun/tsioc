@@ -17,6 +17,7 @@ export abstract class TransportServerOpts<TRequest extends Incoming = Incoming, 
      * max Connections.
      */
     abstract maxConnections?: number;
+    abstract hasRequestEvent?: boolean;
     /**
      * socket timeout.
      */

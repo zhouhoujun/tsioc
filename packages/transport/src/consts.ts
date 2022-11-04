@@ -6,6 +6,11 @@ export const identity = 'identity';
 export const streamId = 'streamId';
 
 /**
+ * clean up ation.
+ */
+export type Cleanup = () => void;
+
+/**
  * events key.
  */
 export namespace ev {

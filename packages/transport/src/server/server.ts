@@ -5,7 +5,7 @@ import {
 import { Abstract, AsyncLike, isBoolean, lang, promisify } from '@tsdi/ioc';
 import { finalize, from, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
 import { EventEmitter } from 'events';
-import { ev } from '../consts';
+import { Cleanup, ev } from '../consts';
 import { MimeDb } from '../mime';
 import { db } from '../impl/mimedb';
 import { LogInterceptor } from '../interceptors';
@@ -75,6 +75,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
         try {
             const opts = this.getOptions();
             const logger = this.logger;
+            const defer = lang.defer();
             const sub = this.setup(opts)
                 .pipe(
                     mergeMap(ser => {
@@ -82,8 +83,10 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                     })
                 )
                 .subscribe({
+                    next: defer.resolve,
                     error: (err) => {
                         logger.error(err);
+                        defer.reject(err);
                     },
                     complete: () => {
                         this._reqSet.forEach(s => {
@@ -93,7 +96,8 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
                         logger.info(lang.getClassName(this), 'shutdown');
                     }
                 });
-            this.context.onDestroy(() => sub?.unsubscribe())
+            this.context.onDestroy(() => sub?.unsubscribe());
+            await defer.promise;
         } catch (err) {
             this.logger.error(err);
         }
@@ -139,21 +143,19 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
      */
     protected bindEvent(server: TServe, opts: TOpts): Observable<TServe> {
         return new Observable((observer) => {
-            const events = this.createServerEvents(server, observer, opts);
-            for (const e in events) {
-                server.on(e, events[e]);
-            }
-            this.setupServe(server, opts).then(() => {
-                observer.next(server);
-            })
+            let cleanup: Cleanup;
+            this.setupServe(server, observer, opts)
+                .then(clear => {
+                    cleanup = clear;
+                    observer.next(server);
+                })
+                .catch(err => observer.error(err));
             return () => {
                 this._reqSet.forEach(s => {
                     s && s.unsubscribe();
                 });
                 this._reqSet.clear();
-                for (const e in events) {
-                    server.off(e, events[e]);
-                }
+                cleanup?.()
             }
         })
     }
@@ -161,29 +163,33 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
     /**
      * todo setup server with options. default do nothing.
      * @param server 
-     * @param opts 
+     * @param opts
+     * @return clean up action.
      */
-    protected async setupServe(server: TServe, opts: TOpts): Promise<void> { }
-
-    /**
-     * create server events
-     * @param observer 
-     * @param opts 
-     * @returns bound evnets
-     */
-    protected createServerEvents(server: TServe, observer: Subscriber<TServe>, opts?: TOpts): Events {
+    protected async setupServe(server: TServe, observer: Subscriber<TServe>, opts: TOpts): Promise<Cleanup> {
         const events: Events = {};
-        events[this.requestEventName()] = this.onRequest.bind(this);
+        let cleaned = false;
+        const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            for (const e in events) {
+                server.off(e, events[e]);
+                events[e] = null!;
+            }
+        };
+        if (opts.hasRequestEvent) {
+            events[ev.REQUEST] = this.onRequest.bind(this);
+        }
         events[ev.ERROR] = (err: Error) => observer.error(err);
         events[ev.CLOSE] = events[ev.END] = () => {
             observer.complete();
-            for (const e in events) {
-                server.off(e, events[e]);
-            }
         }
-        return events;
-    }
+        for (const e in events) {
+            server.on(e, events[e]);
+        }
+        return cleanup;
 
+    }
 
     protected onRequest(...args: []): void {
         const [req, res] = this.parseRequestEventArgs(...args);
@@ -194,9 +200,6 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
         return args as [TRequest, TResponse];
     }
 
-    protected requestEventName() {
-        return ev.REQUEST;
-    }
 
     /**
      * request handler.

@@ -3,13 +3,13 @@ import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
 import {
     TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware,
     EncodeJsonMiddleware, SessionMiddleware, TransportServer, TransportContext, ExecptionFinalizeFilter,
-    Connection, ConnectionOpts, IncomingMessage, OutgoingMessage, ev, DuplexConnection
+    IncomingMessage, OutgoingMessage, ev, Cleanup, DuplexConnection
 } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
 import { TcpVaildator, TcpPackFactory } from '../transport';
-import ts = require('typescript');
+import { Subscriber } from 'rxjs';
 
 
 /**
@@ -84,10 +84,20 @@ export class TcpServer extends TransportServer<net.Server | tls.Server, Incoming
         return serv;
     }
 
-    // protected parseRequestEventArgs(socket: net.Socket | tls.TLSSocket): [IncomingMessage, OutgoingMessage] {
-    //     const packet = this.context.get(TcpPackFactory);
-    //     const conn = new DuplexConnection(socket, packet, this.getOptions().connectionOpts);
-    // }
+    protected override async setupServe(server: net.Server | tls.Server, observer: Subscriber<net.Server | tls.Server>, opts: TcpServerOpts): Promise<Cleanup> {
+        const clean = await super.setupServe(server, observer, opts);
+        const onRequest = this.onRequest.bind(this);
+        const onConnection = (socket: net.Socket | tls.TLSSocket) => {
+            const packet = this.context.get(TcpPackFactory);
+            const conn = new DuplexConnection(socket, packet, opts.connectionOpts);
+            conn.on(ev.REQUEST, onRequest);
+        }
+        server.on(ev.CONNECTION, onConnection);
+        return ()=> {
+            server.off(ev.CONNECTION, onConnection);
+            clean();
+        };
+    }
 
     protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
         const injector = this.context.injector;
