@@ -312,6 +312,9 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
         return true
     }
 
+    if (Reflect.getMetadataKeys(target)?.length) {
+        return true;
+    }
     const pkeys = Object.getOwnPropertyNames(target);
     // anonymous function
     if (pkeys.length < 3) return false;

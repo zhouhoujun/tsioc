@@ -74,8 +74,4 @@ export class DeviceController {
 
     }
 
-
-
-
-
 }

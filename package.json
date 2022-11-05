@@ -89,7 +89,7 @@
     "ts-node": "^10.2.1",
     "tsconfig-paths": "^3.9.0",
     "tslib": "^2.3.0",
-    "typeorm": "^0.2.45",
+    "typeorm": "^0.3.10",
     "typescript": "~4.8.4",
     "uglify-js": "^3.9.4",
     "zone.js": "~0.11.4"
@@ -112,10 +112,11 @@
     "domino": "^2.1.6",
     "duplexify": "^4.1.2",
     "form-data": "^4.0.0",
+    "ioredis": "^5.2.3",
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",
+    "nats": "^2.9.0",
     "qs": "^6.10.3",
-    "ioredis":"^5.2.3",
     "uuid": "^8.3.2",
     "ws": "^8.5.0"
   }

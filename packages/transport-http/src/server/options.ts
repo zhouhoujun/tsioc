@@ -25,7 +25,7 @@ export interface HttpOpts extends TransportServerOpts<HttpServRequest, HttpServR
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     controllers?: string[] | Type[];
-    listenOpts: ListenOptions;
+    listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
     /**
      * share with thie http server.

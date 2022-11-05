@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
-import { Type, isString, Injector, isFunction, EMPTY, isNil } from '@tsdi/ioc';
+import { Token, Type, isString, Injector, isFunction, EMPTY, isNil, isClass } from '@tsdi/ioc';
 import { ComponentScan, Startup, OnDispose, PipeTransform, ServerEndpointContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
-    getMetadataArgsStorage, getConnectionManager, getManager
+    getMetadataArgsStorage, getConnectionManager, getManager, EntitySchema
 } from 'typeorm';
 import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
@@ -64,7 +64,18 @@ export class TypeormServer implements Startup, OnDispose {
 
             getMetadataArgsStorage().relations.filter(col => col.target === type)
                 .forEach(col => {
-                    const relaModel = isFunction(col.type) ? col.type() as Type : undefined;
+                    let relaModel: Type;
+                    if(isString(col.type)){
+                        relaModel = col.type as any;
+                    } else if(isClass(col.type)){
+                        relaModel = col.type;
+                    } else if(isFunction(col.type)) {
+                        relaModel = col.type();
+                    } else if(col.type instanceof EntitySchema) {
+                        relaModel = EntitySchema;
+                    } else {
+                        relaModel = col.type.type as Type;
+                    }
                     props?.push({
                         name: col.propertyName,
                         provider: relaModel,
