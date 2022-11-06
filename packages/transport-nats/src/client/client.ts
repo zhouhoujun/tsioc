@@ -1,6 +1,6 @@
-import { EndpointBackend, RequestBase, RequstOption, TransportClient } from '@tsdi/core';
+import { EndpointBackend} from '@tsdi/core';
 import { Token } from '@tsdi/ioc';
-import { } from 'nats';
+import { TransportClient } from '@tsdi/transport';
 
 export class NatsClient extends TransportClient {
     
