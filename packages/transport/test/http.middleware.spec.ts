@@ -29,7 +29,7 @@ describe('middleware', () => {
                 ServerModule,
                 HttpModule.withOption({
                     majorVersion: 2,
-                    options: {
+                    serverOpts: {
                         allowHTTP1: true,
                         key,
                         cert

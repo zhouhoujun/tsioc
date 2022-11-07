@@ -21,7 +21,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         LoggerModule,
         HttpModule.withOption({
             majorVersion: 2,
-            options: {
+            serverOpts: {
                 allowHTTP1: true,
                 key,
                 cert
