@@ -1,4 +1,4 @@
-import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status, ListenOpts } from '@tsdi/core';
+import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status, ListenOpts, ServerContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
@@ -18,10 +18,6 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
  * http context for `HttpServer`.
  */
 export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements Throwable {
-
-    protected isSelf(token: Token) {
-        return token === HttpContext || token === AssetServerContext || token === ServerEndpointContext;
-    }
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
@@ -72,7 +68,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
             return new URL(`${this.protocol}://${host}${url}`);
         }
     }
-    
+
     match(protocol: string): boolean {
         return protocol === this.protocol;
     }
@@ -280,6 +276,11 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         }
         return new HttpError((status as HttpError).statusCode ?? 500, status.message ?? statusMessage[(status as HttpError).statusCode ?? 500]);
     }
+
+    protected isSelf(token: Token) {
+        return token === HttpContext || token === AssetServerContext || token == ServerContext || token === ServerEndpointContext;
+    }
+
 
 }
 

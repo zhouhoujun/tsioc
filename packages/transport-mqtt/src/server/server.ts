@@ -1,5 +1,5 @@
 import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest, CatchInterceptor } from '@tsdi/core';
-import { Abstract, Execption, Injectable, lang, promisify, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Execption, Injectable, lang, promisify, tokenId } from '@tsdi/ioc';
 import { LogInterceptor, TransportServer, TransportServerOpts, Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -84,6 +84,7 @@ export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Ser
 
     protected createServer(opts: MqttServerOpts): net.Server | tls.Server | ws.Server<ws.WebSocket> {
         const servOpts = opts.serverOpts;
+        if(!opts.listenOpts) throw new ArgumentExecption('not config listenOpts');
         switch (servOpts.protocol) {
             case 'mqtt':
             case 'tcp':

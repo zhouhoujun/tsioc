@@ -314,17 +314,6 @@ export class Reflective<T = any> {
 
     }
 
-    // private afterInvoke(context: InvocationContext, result: any, hasPointcut: boolean, destroy?: boolean | Function, completed?: (context: InvocationContext, returnning: any) => void) {
-    //     if (completed) completed(context, result);
-    //     if (!hasPointcut && destroy) {
-    //         if (isFunction(destroy)) {
-    //             destroy()
-    //         } else if (!context?.injected) {
-    //             context?.destroy()
-    //         }
-    //     }
-    // }
-
     /**
      * resolve args.
      * 
