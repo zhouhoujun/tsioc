@@ -44,7 +44,7 @@ export class TcpClient extends TransportClient<Connection<tls.TLSSocket | net.So
         return defer.promise;
     }
     protected isValid(connection: Connection<tls.TLSSocket | net.Socket>): boolean {
-        return !connection.destroyed && !connection.closed
+        return !connection.destroyed && !connection.isClosed
     }
 
     protected override createConnection(opts: TcpClientOpts): Connection<tls.TLSSocket | net.Socket> {
