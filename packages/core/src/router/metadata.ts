@@ -1,15 +1,14 @@
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, Execption, isClassType
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, Execption, isClassType, TypeMetadata, PatternMetadata
 } from '@tsdi/ioc';
-import { PipeTransform } from '../../pipes/pipe';
-import { InterceptorType } from '../../transport/endpoint';
-import { Middleware, MiddlewareFn } from '../../transport/middleware';
-import { mths, Protocols, RequestMethod } from '../../transport/packet';
-import { CanActivate } from '../../transport/guard';
-import { joinprefix, normalize, RouteFactoryResolver } from '../route';
-import { MappingDef, ProtocolRouteMappingMetadata, Router } from '../router';
-import { HandleMetadata, HandleMessagePattern } from './meta';
+import { PipeTransform } from '../pipes/pipe';
+import { InterceptorType } from '../transport/endpoint';
+import { Middleware, MiddlewareFn } from '../transport/middleware';
+import { mths, Protocols, RequestMethod } from '../transport/packet';
+import { CanActivate } from '../transport/guard';
+import { joinprefix, normalize, RouteFactoryResolver } from './route';
+import { MappingDef, ProtocolRouteMappingMetadata, Router } from './router';
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
@@ -978,3 +977,59 @@ export interface PutDecorator {
  * @Put
  */
 export const Put: PutDecorator = createRouteDecorator(mths.PUT);
+
+
+
+/**
+ * handle message pattern.
+ */
+export interface HandleMessagePattern {
+    /**
+     * message handle pattern for route mapping.
+     */
+    route?: string | RegExp;
+    /**
+     * message handle command for route mapping.
+     */
+    cmd?: string;
+}
+
+/**
+ * Handle metadata. use to define the class as handle handle register in global handle queue.
+ *
+ * @export
+ * @interface RegisterForMetadata
+ * @extends {TypeMetadata}
+ */
+export interface HandleMetadata extends TypeMetadata, PatternMetadata {
+    /**
+     * handle route
+     */
+    route?: string;
+    /**
+     * version of api.
+     */
+    version?: string;
+    /**
+     * route prefix.
+     */
+    prefix?: string;
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActivate>[];
+    /**
+     * interceptors of route.
+     */
+    interceptors?: InterceptorType[];
+    /**
+     * handle parent.
+     * default register in root handle queue.
+     */
+    parent?: Type<Router>;
+
+    /**
+     * transport protocol
+     */
+    protocol?: Protocols;
+}

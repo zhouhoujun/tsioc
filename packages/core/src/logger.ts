@@ -1,7 +1,7 @@
 import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogConfigure, DebugLogAspect, LOGGER_PROVIDERS } from '@tsdi/logs';
-import { Module } from './metadata/decor';
+import { Module } from './metadata';
 
 
 /**

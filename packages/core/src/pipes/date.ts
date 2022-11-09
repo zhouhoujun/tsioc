@@ -1,5 +1,5 @@
 import { isDate, isNumber, isString } from '@tsdi/ioc';
-import { Pipe } from '../metadata/decor';
+import { Pipe } from '../metadata';
 import { PipeTransform, invalidPipeArgument } from './pipe';
 
 export function formatDate(date: Date, fmt = 'yyyy-MM-dd') {

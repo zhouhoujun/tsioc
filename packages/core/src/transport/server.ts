@@ -1,5 +1,5 @@
 import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, lang, ProviderType, StaticProvider, Token } from '@tsdi/ioc';
-import { Runner } from '../metadata/decor';
+import { Runner } from '../metadata';
 import { OnDispose } from '../lifecycle';
 import { TransportEndpoint, TransportOpts } from './transport';
 import { ServerEndpointContext } from './context';

@@ -1,6 +1,6 @@
 import { isNumber, isString } from '@tsdi/ioc';
 import { invalidPipeArgument } from '@tsdi/core';
-import { Pipe } from '../../metadata/decor';
+import { Pipe } from '../../metadata';
 import { PipeTransform } from '../pipe';
 
 /**

@@ -215,7 +215,7 @@ class MainApp {
 
 }
 
-describe('app message queue', () => {
+describe('app route mapping', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 

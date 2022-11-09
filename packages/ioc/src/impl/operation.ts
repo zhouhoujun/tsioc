@@ -6,7 +6,7 @@ import { isTypeObject } from '../utils/obj';
 import { from, Observable } from 'rxjs';
 import { Handler, runChain } from '../handler';
 import { Defer, defer, step, pomiseOf } from '../utils/lang';
-import { isNil, isObservable } from '../utils/chk';
+import { isFunction, isNil, isObservable } from '../utils/chk';
 
 
 
@@ -20,7 +20,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     constructor(
         private typeRef: TypeDef,
         private method: string,
-        private instance?: any) {
+        private instance?: any | (() => any)) {
     }
 
     get descriptor(): TypedPropertyDescriptor<T> {
@@ -107,8 +107,8 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
         let instance;
         if (arg && isTypeObject(arg)) {
             instance = arg;
-        } else {
-            instance = this.instance;
+        } else if (this.instance) {
+            instance = isFunction(this.instance) ? this.instance() : this.instance;
         }
 
         if (this._befores || this._afters || this._finallies || this._afterReturnnings || this._afterThrowings) {

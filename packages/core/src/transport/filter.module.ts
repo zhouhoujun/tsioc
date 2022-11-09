@@ -1,5 +1,5 @@
 import { EMPTY, getClass, Injectable, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
-import { Module } from '../metadata/decor';
+import { Module } from '../metadata';
 import { ExecptionHandlerBackend } from './execption.filter';
 import { EndpointHandlerMethodResolver, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from './filter';
 

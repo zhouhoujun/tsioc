@@ -1,4 +1,4 @@
-import { Module } from '../metadata/decor';
+import { Module } from '../metadata';
 import { BytesPipe } from './bytes';
 import { LowerCasePipe, UpperCasePipe } from './cases';
 import { DateFormatPipe } from './date';

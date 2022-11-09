@@ -75,7 +75,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
             const factory = injector.get(ReflectiveFactory).create(def, injector);
             decors.forEach(decor => {
                 const { filter, order, guards, response } = decor.metadata;
-                const invoker = factory.createInvoker(decor.propertyKey);
+                const invoker = factory.createInvoker(decor.propertyKey, true);
                 if (guards && guards.length) {
                     invoker.before(async (ctx, args) => {
                         const endpCtx = ctx.resolve(ServerEndpointContext);

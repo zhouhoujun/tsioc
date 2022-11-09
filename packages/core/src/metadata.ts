@@ -1,15 +1,15 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes,
-    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, isString, Parameter
+    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
+    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata
 } from '@tsdi/ioc';
-import { ConfigureService } from '../service';
-import { PipeMetadata, ComponentScanMetadata, ScanDef, BeanMetadata } from './meta';
-import { PipeTransform } from '../pipes/pipe';
-import { Startup } from '../startup';
-import { getModuleType } from '../module.ref';
-import { Runnable, RunnableFactory } from '../runnable';
-import { ApplicationRunners } from '../runners';
+import { ConfigureService } from './service';
+import { PipeTransform } from './pipes/pipe';
+import { Startup } from './startup';
+import { getModuleType } from './module.ref';
+import { Runnable, RunnableFactory } from './runnable';
+import { ApplicationRunners } from './runners';
 
 
 /**
@@ -335,3 +335,81 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
         meta.singleton = true
     }
 });
+
+
+/**
+ * Boot metadata.
+ *
+ * @export
+ * @interface BootMetadata
+ * @extends {ClassMetadata}
+ */
+export interface BootMetadata extends TypeMetadata, PatternMetadata {
+    /**
+     * the startup service dependencies.
+     */
+    deps?: Type<ConfigureService>[];
+    /**
+     * this service startup before the service, or at first
+     */
+    before?: Type<ConfigureService> | 'all';
+    /**
+     * this service startup after the service, or last.
+     */
+    after?: Type<ConfigureService> | 'all';
+}
+
+/**
+ * component scan metadata.
+ */
+export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
+    /**
+     * order in set.
+     */
+    order?: number;
+    /**
+     * is singleton or not.
+     *
+     * @type {boolean}
+     */
+    singleton?: boolean;
+}
+
+/**
+ * scan def.
+ */
+export interface ScanDef extends TypeDef {
+    order?: number;
+}
+
+/**
+ * pipe metadata.
+ *
+ * @export
+ * @interface PipeMetadata
+ * @extends {TypeMetadata}
+ */
+export interface PipeMetadata extends ProviderMetadata {
+    /**
+     * pipe class type.
+     */
+    type?: Type;
+    /**
+     * name of pipe.
+     */
+    name: string;
+    /**
+     * If Pipe is pure (its output depends only on its input.)
+     */
+    pure?: boolean;
+}
+
+/**
+ * bean provider metadata.
+ */
+export interface BeanMetadata {
+    /**
+     * the token bean provider to.
+     */
+    provide: Token;
+}

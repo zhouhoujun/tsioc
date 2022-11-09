@@ -1,6 +1,6 @@
 import { ClassType, Type } from '../types';
 import { TypeDef } from '../metadata/type';
-import { isFunction, isPromise } from '../utils/chk';
+import { isBoolean, isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
@@ -16,6 +16,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
+    private _instance?: T;
     readonly context: InvocationContext;
     constructor(readonly def: TypeDef<T>, readonly injector: Injector, options?: InvokeArguments) {
         super()
@@ -27,6 +28,13 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     get type(): Type<T> {
         return this._type
+    }
+
+    getInstance(): T {
+        if (!this._instance) {
+            this._instance = this.resolve();
+        }
+        return this._instance;
     }
 
     resolve(): T;
@@ -94,8 +102,8 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return [context, key, destroy]
     }
 
-    createInvoker(method: string, instance?: T): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.def, method, instance)
+    createInvoker(method: string, instance?: boolean | T | (() => T)): OperationInvoker {
+        return new ReflectiveOperationInvoker(this.def, method, isBoolean(instance) ? this.getInstance.bind(this) : instance)
     }
 
     createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
@@ -172,7 +180,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
 export class DefaultReflectiveFactory extends ReflectiveFactory {
     create<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
-        return new DefaultReflectiveRef(isFunction(type) ? get(type) : type, injector, option)
+        return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option)
     }
 }
 

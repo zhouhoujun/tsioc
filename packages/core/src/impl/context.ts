@@ -1,10 +1,9 @@
 import {
-    Type, ModuleMetadata, getClass, Injector, ProviderType,
-    DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ, TypeDef
+    Type, ModuleMetadata, getClass, Injector, ProviderType, TypeDef,
+    DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
-import { PROCESS_ROOT } from '../metadata/tk';
-import { ApplicationContext, ApplicationFactory, EnvironmentOption } from '../context';
+import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
 import { RunnableFactory, BootstrapOption, RunnableRef } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';

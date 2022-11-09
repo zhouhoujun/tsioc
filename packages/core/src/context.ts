@@ -1,6 +1,6 @@
 import {
     ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, TypeDef
+    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, TypeDef, Token, tokenId
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { BootstrapOption, RunnableRef } from './runnable';
@@ -27,7 +27,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * create runnable ref.
      * @param type 
      */
-    abstract createRunnable<C>(type: Type<C>|TypeDef<C>): RunnableRef<C>;
+    abstract createRunnable<C>(type: Type<C> | TypeDef<C>): RunnableRef<C>;
     /**
      * bootstrap type
      * @param type bootstrap type.
@@ -90,6 +90,12 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     abstract onDestroy(callback: DestroyCallback): void;
 
 }
+
+
+/**
+ * appliaction boot process root path.
+ */
+export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
 
 /**
