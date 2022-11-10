@@ -1,9 +1,10 @@
 
-import { createDecorator, Decors, isClass, isFunction, lang, pomiseOf, ReflectiveFactory, Type } from '@tsdi/ioc';
+import { createDecorator, Decors, InvocationContext, isClass, isFunction, isObservable, isPromise, lang, pomiseOf, ReflectiveFactory, Type } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 import { CanActivate } from './guard';
 import { ForbiddenExecption } from './execptions';
+import { map } from 'rxjs';
 
 /**
  * Endpoint handler metadata.
@@ -75,33 +76,51 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
             const factory = injector.get(ReflectiveFactory).create(def, injector);
             decors.forEach(decor => {
                 const { filter, order, guards, response } = decor.metadata;
-                const invoker = factory.createInvoker(decor.propertyKey, true);
-                if (guards && guards.length) {
-                    invoker.before(async (ctx, args) => {
+
+
+                let after: (ctx: InvocationContext, endpCtx: ServerEndpointContext, value: any) => void;
+                if (response) {
+                    if (isClass(response)) {
+                        after = (ctx, endpCtx, value) => ctx.resolve(response).respond(endpCtx, value);
+                    } else if (isFunction(response)) {
+                        after = (ctx, endpCtx, value) => response(endpCtx, value);
+                    } else {
+                        after = (ctx, endpCtx, value) => ctx.resolve(TypedRespond).respond(endpCtx, response, value);
+                    }
+                } 
+
+                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, args, runner) => {
+                    const endpCtx = ctx.resolve(ServerEndpointContext);
+                    if (guards && guards.length) {
                         const endpCtx = ctx.resolve(ServerEndpointContext);
                         if (!(await lang.some(
                             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
                             vaild => vaild === false))) {
                             throw new ForbiddenExecption();
                         }
-                    })
-
-                }
-                if (response) {
-                    if (isClass(response)) {
-                        invoker.afterReturnning((ctx, value) => {
-                            ctx.resolve(response).respond(ctx.resolve(ServerEndpointContext), value);
-                        })
-                    } else if (isFunction(response)) {
-                        invoker.afterReturnning((ctx, value) => {
-                            response(ctx.resolve(ServerEndpointContext), value);
-                        })
-                    } else {
-                        invoker.afterReturnning((ctx, value) => {
-                            ctx.resolve(TypedRespond).respond(ctx.resolve(ServerEndpointContext), response, value);
-                        })
                     }
-                }
+                    const value = runner(args);
+
+                    if (after) {
+                        if (isPromise(value)) {
+                            return value.then((v) => {
+                                lang.immediate(after, ctx, endpCtx, v);
+                                return v;
+                            });
+                        }
+                        if (isObservable(value)) {
+                            return value.pipe(
+                                map(v => {
+                                    lang.immediate(after,ctx, endpCtx, v);
+                                    return v;
+                                })
+                            )
+                        }
+                        lang.immediate(after, ctx, endpCtx, value);
+                    }
+                    return value;
+                });
+
                 injector.get(EndpointHandlerMethodResolver).addHandle(filter, invoker, order)
             });
 

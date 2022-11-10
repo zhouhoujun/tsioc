@@ -8,8 +8,9 @@ import { createContext, InvocationContext, InvocationOption, InvokeArguments, In
 import { ReflectiveRef, ReflectiveFactory } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
-import { OperationInvoker } from '../operation';
+import { OperationInvoker, Proceed } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
+import { immediate } from '../utils/lang';
 
 
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
@@ -45,16 +46,17 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.def.class.invoke(key, context, instance ?? this.resolve(), (args, runnable) => {
+        return this.def.class.invoke(key, context, instance ?? this.resolve(), (ctx, args, runnable) => {
             const result = runnable(args);
             if (destroy) {
+                const act = (isFunction(destroy) ? destroy : ()=> !context.injected && context.destroy()) as (()=> void) 
                 if (isPromise(result)) {
                     return result.then(val => {
-                        isFunction(destroy) ? destroy() : !context.injected && context.destroy();
+                        immediate(act);
                         return val;
                     })
                 } else {
-                    isFunction(destroy) ? destroy() : !context.injected && context.destroy();
+                    immediate(act);
                 }
             }
             return result;
@@ -102,8 +104,8 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return [context, key, destroy]
     }
 
-    createInvoker(method: string, instance?: boolean | T | (() => T)): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.def, method, isBoolean(instance) ? this.getInstance.bind(this) : instance)
+    createInvoker(method: string, instance?: boolean | T | (() => T), proceeding?: Proceed<T>): OperationInvoker {
+        return new ReflectiveOperationInvoker(this.def, method, isBoolean(instance) ? this.getInstance.bind(this) : instance, proceeding)
     }
 
     createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {

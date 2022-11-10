@@ -14,6 +14,7 @@ import { isFunction, isString } from '../utils/chk';
 import { forIn } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
+import { Proceed } from '../operation';
 
 /**
  * auto run define.
@@ -287,9 +288,9 @@ export class Reflective<T = any> {
      * Invoke the underlying operation using the given {@code context}.
      * @param method invoke the method named with.
      * @param context the context to use to invoke the operation
-     * @param proceeding proceeding invoke with hooks
+     * @param proceed proceeding invoke with hooks
      */
-    invoke(method: string, context: InvocationContext, instance?: T, proceeding?: (args: any[], runnable: (args: any[]) => any) => any) {
+    invoke(method: string, context: InvocationContext, instance?: T, proceed?: Proceed) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
@@ -298,8 +299,8 @@ export class Reflective<T = any> {
         const hasPointcut = inst[method]['_proxy'] == true;
         const args = this.resolveArguments(method, context);
 
-        if (proceeding) {
-            return proceeding(args, (pars) => {
+        if (proceed) {
+            return proceed(context, args, (pars) => {
                 if (hasPointcut) {
                     pars.push(context)
                 }

@@ -330,19 +330,22 @@ export function defer<T = any>(then?: (val: T) => T | PromiseLike<T>): Defer<T> 
     return Defer.create(then)
 }
 
+
 /**
  * create delay.
  * @param times delay timeout ms.
  */
-export function delay(times: number): Promise<void> {
+export function delay(times: number, work?: (...args: any[])=> void, ...args: any[]): Promise<void> {
     const defer = Defer.create<void>();
     const timout = setTimeout(() => {
         timout && clearTimeout(timout);
         defer.resolve()
+        work?.(...args);
     }, times);
     return defer.promise
 }
 
+export const immediate = typeof setImmediate !== 'undefined'? setImmediate : (callback: (...args: any[])=> void, ...args: any[])=>delay(0, callback, ...args);
 
 /**
  * run promise step by step.

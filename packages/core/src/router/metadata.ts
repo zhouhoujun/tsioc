@@ -8,7 +8,7 @@ import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { mths, Protocols, RequestMethod } from '../transport/packet';
 import { CanActivate } from '../transport/guard';
 import { joinprefix, normalize, RouteFactoryResolver } from './route';
-import { MappingDef, ProtocolRouteMappingMetadata, Router } from './router';
+import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from './router';
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
@@ -27,7 +27,7 @@ export interface Handle {
      * @RegisterFor
      *
      * @param {route} route the route url.
-     * @param [option] route option.
+     * @param options route metedata options.
      */
     (route: string, options?: {
         /**
@@ -154,9 +154,7 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [parent] set parent route.
-     *  [middlewares] the middlewares for the route.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -196,10 +194,7 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Array<Middleware | Type<Middleware>>, contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -266,7 +261,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         design: {
             afterAnnoation: (ctx, next) => {
                 const def = ctx.def as MappingDef;
-                const { parent } = def.annotation;
+                const { parent, version, protocol, guards: clsGuards, interceptors: clsInterceptors } = def.annotation;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
@@ -277,6 +272,26 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
 
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+
+                // const factory = injector.get(ReflectiveFactory).create(def, injector);
+                // const routes = def.class.methodDecors.forEach(d=> {
+                //     if(d.name === 'Route'){
+                //         const { route, method, guards, interceptors, pipes  } = d.metadata as RouteMappingMetadata;
+                //         const invoker =  factory.createInvoker(d.propertyKey, true);
+                //         // if (guards && guards.length) {
+                //         //     invoker.before(async (ctx, args) => {
+                //         //         const endpCtx = ctx.resolve(ServerEndpointContext);
+                //         //         if (!(await lang.some(
+                //         //             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
+                //         //             vaild => vaild === false))) {
+                //         //             throw new ForbiddenExecption();
+                //         //         }
+                //         //     })
+        
+                //         // }
+                //         // router.use(,)
+                //     }
+                // })
                 const routeRef = injector.get(RouteFactoryResolver).resolve(def).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));
@@ -323,7 +338,7 @@ export interface RequsetParameterDecorator {
      * Request Parameter decorator
      *
      * @param {string} field field of request query params or body.
-     * @param option option.
+     * @param options route metedata options.
      */
     (field?: string, option?: {
         /**
@@ -464,9 +479,7 @@ export interface RestController {
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [parent] set parent route.
-     *  [middlewares] the middlewares for the route.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -486,9 +499,9 @@ export interface RestController {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Array<MiddlewareFn | Type<Middleware>>;
+        interceptors?: InterceptorType[];
         /**
         * pipes for the route.
         */
@@ -535,10 +548,7 @@ export interface RouteMethodDecorator {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -546,9 +556,9 @@ export interface RouteMethodDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Array<MiddlewareFn | Type<Middleware>>;
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -574,10 +584,10 @@ export interface RouteMethodDecorator {
  * @param { MetadataExtends<T>} [metaExtends]
  */
 export function createRouteDecorator(method: RequestMethod) {
-    return createDecorator<ProtocolRouteMappingMetadata>('Route', {
+    return createDecorator<RouteMappingMetadata>('Route', {
         props: (
             route: string,
-            arg2?: string | { protocol?: string, middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
+            arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
             return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata
@@ -609,10 +619,7 @@ export interface HeadDecorator {
      * Head decorator. define the controller method as head route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -620,9 +627,9 @@ export interface HeadDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Array<MiddlewareFn | Type<Middleware>>;
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -665,10 +672,7 @@ export interface OptionsDecorator {
      * Options decorator. define the controller method as options route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metadata options.
      */
     (route: string, options: {
         /**
@@ -676,9 +680,9 @@ export interface OptionsDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Middleware[];
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -720,10 +724,7 @@ export interface GetDecorator {
      * Get decorator. define the controller method as get route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metadata options.
      */
     (route: string, options: {
         /**
@@ -731,9 +732,9 @@ export interface GetDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Middleware[];
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -776,10 +777,7 @@ export interface DeleteDecorator {
      * Delete decorator. define the controller method as delete route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metadata options.
      */
     (route: string, options: {
         /**
@@ -787,9 +785,9 @@ export interface DeleteDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Middleware[];
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -832,10 +830,7 @@ export interface PatchDecorator {
      * Patch decorator. define the controller method as patch route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -843,9 +838,9 @@ export interface PatchDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Middleware[];
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -888,10 +883,7 @@ export interface PostDecorator {
      * Post decorator. define the controller method as post route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -899,9 +891,9 @@ export interface PostDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Middleware[];
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
@@ -943,10 +935,7 @@ export interface PutDecorator {
      * Put decorator. define the controller method as put route.
      *
      * @param {string} route route sub path.
-     * @param {{ middlewares?: Middleware[], contentType?: string, method?: string}} options
-     *  [middlewares] the middlewares for the route.
-     *  [contentType] set request contentType.
-     *  [method] set request method.
+     * @param options route metedata options.
      */
     (route: string, options: {
         /**
@@ -954,9 +943,9 @@ export interface PutDecorator {
          */
         guards?: Type<CanActivate>[];
         /**
-         * middlewares for the route.
+         * interceptors of route.
          */
-        middlewares: Middleware[];
+        interceptors?: InterceptorType[];
         /**
          * pipes for the route.
          */
