@@ -58,8 +58,8 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
         if (this.proceed && proceed) {
             const fistProc = this.proceed;
             const secProc = proceed;
-            proceed = (ctx, args, runner) => {
-                return fistProc(ctx, args, (args2) => secProc(ctx, args2, runner));
+            proceed = (ctx, run) => {
+                return fistProc(ctx, (c) => secProc(c, run));
             }
         } else {
             proceed = this.proceed ?? proceed;

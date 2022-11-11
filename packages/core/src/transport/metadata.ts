@@ -87,20 +87,18 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                     } else {
                         after = (ctx, endpCtx, value) => ctx.resolve(TypedRespond).respond(endpCtx, response, value);
                     }
-                } 
+                }
 
-                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, args, runner) => {
-                    const endpCtx = ctx.resolve(ServerEndpointContext);
+                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
+                    const endpCtx = ctx instanceof ServerEndpointContext? ctx: ctx.resolve(ServerEndpointContext);
                     if (guards && guards.length) {
-                        const endpCtx = ctx.resolve(ServerEndpointContext);
                         if (!(await lang.some(
                             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
                             vaild => vaild === false))) {
                             throw new ForbiddenExecption();
                         }
                     }
-                    const value = runner(args);
-
+                    const value = run(ctx);
                     if (after) {
                         if (isPromise(value)) {
                             return value.then((v) => {
@@ -111,7 +109,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                         if (isObservable(value)) {
                             return value.pipe(
                                 map(v => {
-                                    lang.immediate(after,ctx, endpCtx, v);
+                                    lang.immediate(after, ctx, endpCtx, v);
                                     return v;
                                 })
                             )

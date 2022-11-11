@@ -14,7 +14,7 @@ import { isFunction, isString } from '../utils/chk';
 import { forIn } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
-import { Proceed } from '../operation';
+import { AsyncLike, Proceed } from '../operation';
 
 /**
  * auto run define.
@@ -296,17 +296,18 @@ export class Reflective<T = any> {
         if (!inst || !isFunction(inst[method])) {
             throw new Execption(`type: ${type} has no method ${method}.`)
         }
-        const hasPointcut = inst[method]['_proxy'] == true;
-        const args = this.resolveArguments(method, context);
 
+        const hasPointcut = inst[method]['_proxy'] == true;
         if (proceed) {
-            return proceed(context, args, (pars) => {
+            return proceed(context, (ctx) => {
+                const args = this.resolveArguments(method, ctx);
                 if (hasPointcut) {
-                    pars.push(context)
+                    args.push(ctx)
                 }
                 return inst[method](...args);
             })
         } else {
+            const args = this.resolveArguments(method, context);
             if (hasPointcut) {
                 args.push(context)
             }

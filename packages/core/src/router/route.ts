@@ -7,6 +7,7 @@ import { InterceptorLike } from '../transport/endpoint';
 import { ServerEndpointContext } from '../transport/context';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { CanActivate } from '../transport/guard';
+import { Pattern } from '../transport/request';
 
 /**
  * Route.
@@ -78,6 +79,12 @@ export interface Route extends InvokeArguments {
 
 export type LoadChildren = () => any;
 export type Routes = Route[];
+
+
+@Abstract()
+export abstract class PatternFormatter {
+    abstract format(route: Pattern, prefix?: string, version?: string, protocol?: string): string;
+}
 
 /**
  * ROUTES

@@ -5,7 +5,7 @@ import { TypeDef } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from './context';
-import { OperationInvoker } from './operation';
+import { OperationInvoker, Proceed } from './operation';
 
 
 
@@ -66,18 +66,18 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * create method invoker of target type.
      * @param method the method name of target.
      * @param shared shared instance of this type, lazy resolve by factory.
-     * @param proceeding proceeding invoke with hooks
+     * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-     abstract createInvoker(method: string, shared?: boolean, proceeding?: (ctx: InvocationContext, args: any[], runnable: (args: any[]) => any) => any): OperationInvoker;
+     abstract createInvoker(method: string, shared?: boolean, proceed?: Proceed): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
      * @param instance instance or instance factory of target type.
-     * @param proceeding proceeding invoke with hooks
+     * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    abstract createInvoker(method: string, instance?: T | (() => T), proceeding?: (ctx: InvocationContext, args: any[], runnable: (args: any[]) => any) => any): OperationInvoker;
+    abstract createInvoker(method: string, instance?: T | (() => T), proceed?: Proceed): OperationInvoker;
     /**
      * create invocation context of target.
      * @param option ext option. type of {@link InvocationOption}.

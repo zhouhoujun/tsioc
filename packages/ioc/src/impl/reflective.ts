@@ -46,8 +46,8 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.def.class.invoke(key, context, instance ?? this.resolve(), (ctx, args, runnable) => {
-            const result = runnable(args);
+        return this.def.class.invoke(key, context, instance ?? this.resolve(), (ctx, run) => {
+            const result = run(ctx);
             if (destroy) {
                 const act = (isFunction(destroy) ? destroy : ()=> !context.injected && context.destroy()) as (()=> void) 
                 if (isPromise(result)) {
