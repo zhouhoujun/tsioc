@@ -265,7 +265,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         design: {
             afterAnnoation: (ctx, next) => {
                 const def = ctx.def as MappingDef;
-                const { parent, version, protocol, prefix, guards: clsGuards, interceptors: clsInterceptors } = def.annotation;
+                const { parent, version, prefix, guards: clsGuards, interceptors: clsInterceptors } = def.annotation;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
@@ -279,14 +279,19 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
 
                 // const factory = injector.get(ReflectiveFactory).create(def, injector);
                 // const routes: string[] = [];
-                // const formatter =  factory.resolve(PatternFormatter);
+                // const formatter = factory.resolve(PatternFormatter);
                 // def.class.methodDecors.forEach(d => {
                 //     if (d.name === 'Route') {
                 //         const { route, method, guards, interceptors, pipes } = d.metadata as RouteMappingMetadata;
                 //         const allinterceptors = [...clsInterceptors ?? EMPTY, ...interceptors ?? EMPTY];
                 //         const allguards = [...clsGuards ?? EMPTY, ...guards ?? EMPTY] as Type<CanActivate>[];
                 //         const invoker = factory.createInvoker(d.propertyKey, true, async (ctx, run) => {
-                //             const context = ctx as ServerEndpointContext;
+
+                //             const context = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
+
+                //             if (pipes && pipes.length) {
+                //                 context.injector.inject(pipes);
+                //             }
 
                 //             if (allguards.length) {
                 //                 if (!(await lang.some(
@@ -310,24 +315,26 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 //             } else if (isObservable(result)) {
                 //                 result = await lastValueFrom(result)
                 //             }
-                    
+
+
+
                 //             // middleware.
                 //             if (isFunction(result)) {
                 //                 return await result(ctx)
                 //             }
-                    
+
                 //             if (result instanceof ResultValue) {
                 //                 return await result.sendValue(context)
                 //             }
                 //             return result
 
                 //         });
-                //         const pattern = formatter.format(route!, prefix, version, protocol);
+                //         const pattern = formatter.format(route ?? '', method, prefix, version);
                 //         routes.push(pattern);
                 //         router.use(pattern, (c) => invoker.invoke(c))
                 //     }
                 // });
-                // factory.onDestroy(()=> routes.forEach(path => router.unuse(path)));
+                // factory.onDestroy(() => routes.forEach(path => router.unuse(path)));
 
                 const routeRef = injector.get(RouteFactoryResolver).resolve(def).create(injector);
                 const path = routeRef.path;

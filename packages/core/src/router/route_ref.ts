@@ -5,7 +5,6 @@ import {
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../transport/guard';
 import { ResultValue } from './result';
-import { Protocols } from '../transport/packet';
 import { ForbiddenExecption } from '../transport/execptions';
 import { ServerEndpointContext } from '../transport/context';
 import { InterceptorLike, InterceptorType } from '../transport/endpoint';
@@ -37,10 +36,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         this.metadata = factory.def.annotation as ProtocolRouteMappingMetadata
         this._url = joinprefix(this.metadata.prefix, this.metadata.version, this.metadata.route);
         this._endpoints = new Map()
-    }
-
-    get protocol(): Protocols | undefined {
-        return this.metadata.protocol;
     }
 
     get type() {
@@ -84,7 +79,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.sent || (this.protocol && !ctx.match(this.protocol))) return await next();
+        if (ctx.sent) return await next();
 
         const method = this.getRouteMetaData(ctx) as DecorDefine<ProtocolRouteMappingMetadata>;
         if (!method || !method.propertyKey) {
@@ -93,7 +88,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
 
         const metadate = method.metadata;
-        if (metadate.protocol && !ctx.match(metadate.protocol)) return await next();
 
         if (metadate.guards?.length) {
             if (!(await lang.some(

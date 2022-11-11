@@ -69,10 +69,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         }
     }
 
-    match(protocol: string): boolean {
-        return protocol === this.protocol;
-    }
-
     /**
      * When `httpServer.proxy` is `true`, parse
      * the "X-Forwarded-For" ip address list.

@@ -63,9 +63,7 @@ export class TransportContext<TRequest extends Incoming = Incoming, TResponse ex
     get secure(): boolean {
         return this.vaildator.isSecure(this.request)
     }
-    match(protocol: string): boolean {
-        return protocol === this.protocol;
-    }
+
     isAbsoluteUrl(url: string): boolean {
         return this.vaildator.isAbsoluteUrl(url)
     }

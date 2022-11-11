@@ -179,12 +179,6 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
      */
     abstract get secure(): boolean;
     /**
-     * match protocol.
-     * @param protocol 
-     * @returns 
-     */
-    abstract match(protocol: string): boolean;
-    /**
      * the url is absolute url or not.
      * @param url 
      */

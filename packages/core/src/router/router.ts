@@ -73,7 +73,6 @@ export class MappingRoute implements Middleware {
     }
 
     async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
-        if (this.route.protocol && !ctx.match(this.route.protocol)) return next();
         const can = await this.canActive(ctx);
         if (can) {
             if (!this._middleware) {
@@ -278,10 +277,6 @@ export interface RouteMappingMetadata {
  * protocol route mapping metadata.
  */
 export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
-    /**
-     * protocol.
-     */
-    protocol?: Protocols;
     /**
      * version of api.
      */

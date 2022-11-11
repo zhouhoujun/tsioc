@@ -83,7 +83,7 @@ export type Routes = Route[];
 
 @Abstract()
 export abstract class PatternFormatter {
-    abstract format(route: Pattern, prefix?: string, version?: string, protocol?: string): string;
+    abstract format(route: Pattern, method?: string, prefix?: string, version?: string): string;
 }
 
 /**
@@ -100,10 +100,6 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
      * controller type.
      */
     abstract get type(): Type<T>;
-    /**
-     * transport protocol.
-     */
-    abstract get protocol(): Protocols | undefined;
     /**
      * controller type def.
      */
