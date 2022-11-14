@@ -89,12 +89,12 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param value value for the token.
      */
     abstract setValue<T>(token: Token<T>, value: T): this;
-    /**
-     * can resolve the parameter or not.
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @returns 
-     */
-    abstract canResolve(meta: Parameter): boolean;
+    // /**
+    //  * can resolve the parameter or not.
+    //  * @param meta property or parameter metadata type of {@link Parameter}.
+    //  * @returns 
+    //  */
+    // abstract canResolve(meta: Parameter): boolean;
     /**
      * resolve token in context.
      * @param token 
@@ -106,7 +106,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
      */
-    abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType): T | null;
+    abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType, canResolved?: () => void): T | null;
     /**
      * create missing error.
      * @param missings 

@@ -74,10 +74,12 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             meta = metas.find(m => m.type)!
         }
         if (meta && !(ctx as any)[key]) {
-            if (!context.canResolve(meta as Parameter)) {
+
+            let canResolved = false;
+            val = context.resolveArgument(meta as Parameter, ctx.type, () => canResolved = true);
+            if (!canResolved) {
                 throw new ArgumentExecption(`can not autowride property ${propertyKey} of class ${ctx.type}`)
             }
-            val = context.resolveArgument(meta as Parameter, ctx.type);
             if (isDefined(val)) {
                 ctx.instance[propertyKey] = val;
                 (ctx as any)[key] = true

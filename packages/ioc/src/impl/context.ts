@@ -206,16 +206,16 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this
     }
 
-    /**
-     * can resolve the parameter or not.
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @returns 
-     */
-    canResolve(meta: Parameter): boolean {
-        return this.getMetaReolver(meta)?.canResolve(meta, this) === true
-            || this.resolvers.some(r => r.canResolve(meta, this))
-            || this.parent?.canResolve(meta) == true
-    }
+    // /**
+    //  * can resolve the parameter or not.
+    //  * @param meta property or parameter metadata type of {@link Parameter}.
+    //  * @returns 
+    //  */
+    // canResolve(meta: Parameter): boolean {
+    //     return this.getMetaReolver(meta)?.canResolve(meta, this) === true
+    //         || this.resolvers.some(r => r.canResolve(meta, this))
+    //         || this.parent?.canResolve(meta) == true
+    // }
 
     /**
      * get resolver in the property or parameter metadata. configured in class design.
@@ -238,21 +238,29 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>, target?: ClassType): T | null {
-        let result: T | undefined;
+     resolveArgument<T>(meta: Parameter<T>, target?: ClassType, canResolved?: () => void): T | null {
+        let result: T | null | undefined;
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
+            canResolved?.();
             result = metaRvr.resolve(meta, this, target);
-            if (isDefined(result)) return result;
+            if (!isNil(result)) {
+                return result;
+            }
         }
-        this.resolvers.some(r => {
+        if(this.resolvers.some(r => {
             if (r.canResolve(meta, this)) {
+                canResolved?.();
                 result = r.resolve(meta, this, target);
-                return isDefined(result)
+                return !isNil(result);
             }
             return false
-        });
-        return result ?? this.parent?.resolveArgument(meta, target) ?? null
+        })) {
+            return result!;
+        }
+
+        return this.parent?.resolveArgument(meta, target, canResolved) ?? null;
+
     }
 
     missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
