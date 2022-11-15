@@ -316,16 +316,14 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 //                 result = await lastValueFrom(result)
                 //             }
 
+                //             // // middleware.
+                //             // if (isFunction(result)) {
+                //             //     return await result(ctx)
+                //             // }
 
-
-                //             // middleware.
-                //             if (isFunction(result)) {
-                //                 return await result(ctx)
-                //             }
-
-                //             if (result instanceof ResultValue) {
-                //                 return await result.sendValue(context)
-                //             }
+                //             // if (result instanceof ResultValue) {
+                //             //     return await result.sendValue(context)
+                //             // }
                 //             return result
 
                 //         });

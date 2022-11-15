@@ -5,7 +5,7 @@ import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
 import { ModuleRef } from '../module.ref';
 import { NotFoundStatus } from '../transport/status';
 import { InterceptorType } from '../transport/endpoint';
-import { Protocols, RequestMethod } from '../transport/packet';
+import { RequestMethod } from '../transport/packet';
 import { AssetContext, ServerEndpointContext } from '../transport/context';
 import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } from '../transport/middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../transport/execptions';

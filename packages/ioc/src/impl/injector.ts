@@ -20,9 +20,7 @@ import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 import { DefaultReflectiveFactory } from './reflective';
-import { BASE_RESOLVERS } from './context';
 import { createContext, InvocationContext, InvokeOption } from '../context';
-import { DEFAULT_RESOLVERS } from '../resolver';
 import { Execption } from '../execption';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 
@@ -917,7 +915,6 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
-    container.setValue(DEFAULT_RESOLVERS, BASE_RESOLVERS);
     container.setValue(ModuleLoader, new DefaultModuleLoader());
     container.setValue(ReflectiveFactory, new DefaultReflectiveFactory());
     // bing action.

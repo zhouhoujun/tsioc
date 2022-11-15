@@ -134,12 +134,11 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             }
         }
 
+        
 
         let result = this.factory.invoke(
             meta.propertyKey,
-            {
-                context: ctx
-            },
+            ctx,
             this.instance);
 
         if (isPromise(result)) {

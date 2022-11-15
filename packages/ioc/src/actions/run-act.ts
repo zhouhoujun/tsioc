@@ -1,4 +1,4 @@
-import { EMPTY } from '../types';
+import { ClassType, EMPTY } from '../types';
 import { isDefined } from '../utils/chk';
 import { runChain } from '../handler';
 import { ActionSetup } from '../action';
@@ -59,6 +59,9 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
     next()
 };
 
+const onError = (target: ClassType, propertyKey: string) => {
+    throw new ArgumentExecption(`can not autowride property ${propertyKey} of class ${target}`)
+}
 
 /**
  * inject property value action, to inject property value for resolve instance.
@@ -67,6 +70,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
     const context = ctx.context;
     if (!context) throw new Execption('autowride property need InvocationContext');
     let meta: PropertyMetadata, key: string, val;
+
     ctx.def.class.eachProperty((metas, propertyKey) => {
         key = `${propertyKey}_INJECTED`;
         meta = metas.find(m => m.provider)!;
@@ -75,11 +79,8 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
         }
         if (meta && !(ctx as any)[key]) {
 
-            let canResolved = false;
-            val = context.resolveArgument(meta as Parameter, ctx.type, () => canResolved = true);
-            if (!canResolved) {
-                throw new ArgumentExecption(`can not autowride property ${propertyKey} of class ${ctx.type}`)
-            }
+            val = context.resolveArgument(meta as Parameter, ctx.type, onError);
+  
             if (isDefined(val)) {
                 ctx.instance[propertyKey] = val;
                 (ctx as any)[key] = true

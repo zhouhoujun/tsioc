@@ -106,14 +106,14 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
      */
-    abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType, canResolved?: () => void): T | null;
-    /**
-     * create missing error.
-     * @param missings 
-     * @param type 
-     * @param method 
-     */
-    abstract missingExecption(missings: Parameter[], type: ClassType, method: string): Error;
+    abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null;
+    // /**
+    //  * create missing error.
+    //  * @param missings 
+    //  * @param type 
+    //  * @param method 
+    //  */
+    // abstract missingExecption(missings: Parameter[], type: ClassType, method: string): Error;
     /**
      * context destroyed or not.
      */

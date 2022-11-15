@@ -1,6 +1,6 @@
 import {
-    Abstract, Token, Type, ClassType, composeResolver, isArray, isDefined, isPrimitiveType,
-    isString, Injector, InvokeArguments, MissingParameterExecption, Parameter, EMPTY
+    Abstract, Token, Type, ClassType, composeResolver, isArray, isDefined, isPrimitiveType, isString, Injector,
+    InvokeArguments, MissingParameterExecption, Parameter, EMPTY, OperationArgumentResolver, BASE_RESOLVERS
 } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
@@ -27,23 +27,24 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
 
     readonly statusFactory: StatusFactory<string | number>;
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
-        super(injector, {
-            ...options,
-            resolvers: [
-                ...options?.resolvers ?? EMPTY,
-                ...primitiveResolvers,
-                ...injector.get(MODEL_RESOLVERS, EMPTY)
-            ]
-        });
+        super(injector, options);
         this.statusFactory = injector.get(StatusFactory);
+    }
+
+    protected override getDefaultResolvers(): OperationArgumentResolver[] {
+        return [
+            ...primitiveResolvers,
+            ...this.injector.get(MODEL_RESOLVERS, EMPTY),
+            ...BASE_RESOLVERS
+        ];
     }
 
     protected isSelf(token: Token) {
         return token === ServerEndpointContext || token === ServerContext;
     }
 
-    override missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterExecption {
-        return new TransportMissingExecption(missings, type, method)
+    protected override missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterExecption {
+        throw new TransportMissingExecption(missings, type, method)
     }
 
 }
@@ -164,8 +165,8 @@ const primitiveResolvers: TransportArgumentResolver[] = [
                 return parameter.nullable === true
             },
             resolve(parameter, ctx) {
-                return undefined as any
+                return null!
             }
         }
     )
-]
+];

@@ -1,8 +1,9 @@
-import { ClassType } from './types';
+import { ClassType, TypeOf } from './types';
 import { Token, tokenId } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
 import { isDefined } from './utils/chk';
+import { OperationInvoker } from './operation';
 
 /**
  * parameter argument of an {@link OperationArgumentResolver}.
@@ -43,7 +44,7 @@ export interface OperationArgumentResolver<C = any> {
 /**
  * argument resolver type.
  */
-export type ArgumentResolver = OperationArgumentResolver | ClassType<OperationArgumentResolver>;
+export type ArgumentResolver = TypeOf<OperationArgumentResolver>;
 
 /**
  * compose resolver for an argument of an {@link OperationInvoker}.
@@ -69,6 +70,6 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
 }
 
 /**
- * default resolvers {@link OperationArgumentResolver}. 
+ * context resolvers {@link OperationArgumentResolver}. 
  */
-export const DEFAULT_RESOLVERS = tokenId<OperationArgumentResolver[]>('DEFAULT_RESOLVERS');
+export const CONTEXT_RESOLVERS = tokenId<OperationArgumentResolver[]>('CONTEXT_RESOLVERS');

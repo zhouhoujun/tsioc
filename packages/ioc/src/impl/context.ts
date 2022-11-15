@@ -1,11 +1,11 @@
-import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
+import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { forIn, remove, getClassName } from '../utils/lang';
 import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString, isNil } from '../utils/chk';
 import { isPlainObject, isTypeObject } from '../utils/obj'
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
-import { OperationArgumentResolver, Parameter, composeResolver, DEFAULT_RESOLVERS } from '../resolver';
+import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { get } from '../metadata/refl';
 import { isTypeDef } from '../metadata/type';
@@ -28,15 +28,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     private _destroyed = false;
 
     /**
-     * the invocation arguments resolver.
-     */
-    protected resolvers: OperationArgumentResolver[];
-    propertyKey?: string;
-
-    /**
      * parent {@link InvocationContext}.
      */
     readonly parent: InvocationContext | undefined;
+
+    propertyKey?: string;
     /**
      * invocation static injector. 
      */
@@ -59,9 +55,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         super();
         this.parent = options.parent;
         this.isDiff = (options.parent && injector !== options.parent.injector) === true;
+        this._refs = [];
         this.injector = this.createInjector(injector, options.providers);
-        const defsRvs = this.injector.get(DEFAULT_RESOLVERS, EMPTY);
-        this.resolvers = (options.resolvers ? options.resolvers.concat(defsRvs) : defsRvs).map(r => isFunction(r) ? this.injector.get<OperationArgumentResolver>(r) : r);
+        options.resolvers?.length &&  this.injector.inject(options.resolvers?.map(r => this.resolverProvider(r)));
+
 
         if (options.values) {
             options.values.forEach(par => {
@@ -78,7 +75,29 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
-        this._refs = []
+    }
+
+    private _resolvers?: OperationArgumentResolver[];
+    /**
+     * the invocation arguments resolver.
+     */
+    protected getResolvers(): OperationArgumentResolver[] {
+        if (!this._resolvers) {
+            this._resolvers = [...this.injector.get(this.getResolvesToken(), EMPTY), ...this.getDefaultResolvers()];
+        }
+        return this._resolvers;
+    }
+
+    protected getResolvesToken() {
+        return CONTEXT_RESOLVERS
+    }
+
+    protected getDefaultResolvers(): OperationArgumentResolver[] {
+        return BASE_RESOLVERS
+    }
+
+    protected resolverProvider(resolver: TypeOf<OperationArgumentResolver>): ProviderType {
+        return isFunction(resolver) ? { provide: this.getResolvesToken(), useClass: resolver as Type, multi: true } : { provide: this.getResolvesToken(), useValue: resolver, multi: true } as ProviderType
     }
 
 
@@ -238,19 +257,32 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-     resolveArgument<T>(meta: Parameter<T>, target?: ClassType, canResolved?: () => void): T | null {
+    resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
+        let canResolved = false;
+        const result = this.tryResolveArgument(meta, target!, () => canResolved = true);
+        if (!canResolved) {
+            if (failed) {
+                failed(target!, meta.propertyKey!)
+            } else {
+                this.missingExecption([meta], target!, meta.propertyKey!);
+            }
+        }
+        return result;
+    }
+
+    tryResolveArgument<T>(meta: Parameter<T>, target: ClassType, resolved: () => void): T | null {
         let result: T | null | undefined;
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
-            canResolved?.();
+            resolved();
             result = metaRvr.resolve(meta, this, target);
             if (!isNil(result)) {
                 return result;
             }
         }
-        if(this.resolvers.some(r => {
+        if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
-                canResolved?.();
+                resolved();
                 result = r.resolve(meta, this, target);
                 return !isNil(result);
             }
@@ -259,11 +291,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             return result!;
         }
 
-        return this.parent?.resolveArgument(meta, target, canResolved) ?? null;
+        return (this.parent as DefaultInvocationContext)?.tryResolveArgument(meta, target, resolved) ?? null;
 
     }
 
-    missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
+    protected missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
         return new MissingParameterExecption(missings, type, method)
     }
 
@@ -295,7 +327,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected clear() {
         this._args = null!;
-        this.resolvers = null!;
+        this._resolvers = null!;
         this._refs = null!;
     }
 
@@ -432,7 +464,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
             return parameter.nullable === true
         },
         resolve(parameter) {
-            return undefined
+            return null!
         }
     }
 ];

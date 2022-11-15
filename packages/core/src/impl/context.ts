@@ -92,11 +92,9 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._multicaster?.emit(event);
 
         // Publish event via parent context as well...
-        if (this.parent) {
-            if (this.parent instanceof ApplicationContext
-                || this.parent instanceof DefaultApplicationContext) {
-                (this.parent as ApplicationContext).publishEvent(event)
-            }
+        const context = this.get(ApplicationContext);
+        if (context) {
+            context.publishEvent(event)
         }
     }
 
