@@ -27,10 +27,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
 
-    /**
-     * parent {@link InvocationContext}.
-     */
-    readonly parent: InvocationContext | undefined;
+    // /**
+    //  * parent {@link InvocationContext}.
+    //  */
+    // readonly parent: InvocationContext | undefined;
 
     propertyKey?: string;
     /**
@@ -47,18 +47,24 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     readonly methodName: string | undefined;
 
-    private isDiff: boolean;
+    // private isDiff: boolean;
 
     constructor(
         injector: Injector,
         options: InvocationOption = EMPTY_OBJ) {
         super();
-        this.parent = options.parent;
-        this.isDiff = (options.parent && injector !== options.parent.injector) === true;
+        // this.parent = options.parent;
+        // this.isDiff = (options.parent && injector !== options.parent.injector) === true;
         this._refs = [];
         this.injector = this.createInjector(injector, options.providers);
-        options.resolvers?.length &&  this.injector.inject(options.resolvers?.map(r => this.resolverProvider(r)));
-
+        options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => this.resolverProvider(r)));
+        if (options.parent && injector !== options.parent.injector) {
+            const parent = options.parent;
+            this.addRef(parent);
+            parent.onDestroy(() => {
+                this.removeRef(parent);
+            });
+        }
 
         if (options.values) {
             options.values.forEach(par => {
@@ -112,7 +118,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     addRef(...contexts: InvocationContext[]): void {
         contexts.forEach(j => {
             if (!this.hasRef(j)) {
-                this._refs.push(j)
+                this._refs.unshift(j)
             }
         })
     }
@@ -126,8 +132,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     hasRef(ctx: InvocationContext): boolean {
-        if (ctx === this && this._refs.indexOf(ctx) >= 0) return true;
-        return this.parent?.hasRef(ctx) === true
+        return ctx === this && this._refs.indexOf(ctx) >= 0;
+        // if (ctx === this && this._refs.indexOf(ctx) >= 0) return true;
+        // return this.parent?.hasRef(ctx) === true
     }
 
     /**
@@ -170,7 +177,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         if (this.isSelf(token)) return true;
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs.some(i => i.has(token, flags))
-            || (flags != InjectFlags.Self && this.parent?.has(token, this.isDiff ? flags : InjectFlags.HostOnly) === true)
+        // || (flags != InjectFlags.Self && this.parent?.has(token, this.isDiff ? flags : InjectFlags.HostOnly) === true)
     }
 
     /**
@@ -201,8 +208,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             context = contextOrFlag ?? this
         }
         return (flags != InjectFlags.HostOnly ? this.injector.get(token, context, flags, null) : null)
-            ?? this.getFormRef(token, context, flags)
-            ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, this.isDiff ? flags : InjectFlags.HostOnly) : null) as T
+            ?? this.getFormRef(token, context, flags) ?? null as T;
+        // ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, this.isDiff ? flags : InjectFlags.HostOnly) : null) as T
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
@@ -258,23 +265,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns the parameter value in this context.
      */
     resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
-        let canResolved = false;
-        const result = this.tryResolveArgument(meta, target!, () => canResolved = true);
-        if (!canResolved) {
-            if (failed) {
-                failed(target!, meta.propertyKey!)
-            } else {
-                this.missingExecption([meta], target!, meta.propertyKey!);
-            }
-        }
-        return result;
-    }
-
-    tryResolveArgument<T>(meta: Parameter<T>, target: ClassType, resolved: () => void): T | null {
         let result: T | null | undefined;
+        let canResolved = false;
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
-            resolved();
+            canResolved = true;
             result = metaRvr.resolve(meta, this, target);
             if (!isNil(result)) {
                 return result;
@@ -282,7 +277,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         }
         if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
-                resolved();
+                canResolved = true;
                 result = r.resolve(meta, this, target);
                 return !isNil(result);
             }
@@ -291,9 +286,54 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             return result!;
         }
 
-        return (this.parent as DefaultInvocationContext)?.tryResolveArgument(meta, target, resolved) ?? null;
+        if (!canResolved) {
+            if (failed) {
+                failed(target!, meta.propertyKey!)
+            } else {
+                this.missingExecption([meta], target!, meta.propertyKey!);
+            }
+        }
 
+        return null;
     }
+
+    // resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
+        // let canResolved = false;
+        // const result = this.tryResolveArgument(meta, target!, () => canResolved = true);
+        // if (!canResolved) {
+        //     if (failed) {
+        //         failed(target!, meta.propertyKey!)
+        //     } else {
+        //         this.missingExecption([meta], target!, meta.propertyKey!);
+        //     }
+        // }
+        // return result;
+    // }
+
+    // tryResolveArgument<T>(meta: Parameter<T>, target: ClassType, resolved: () => void): T | null {
+    //     let result: T | null | undefined;
+    //     const metaRvr = this.getMetaReolver(meta);
+    //     if (metaRvr?.canResolve(meta, this)) {
+    //         resolved();
+    //         result = metaRvr.resolve(meta, this, target);
+    //         if (!isNil(result)) {
+    //             return result;
+    //         }
+    //     }
+    //     if (this.getResolvers().some(r => {
+    //         if (r.canResolve(meta, this)) {
+    //             resolved();
+    //             result = r.resolve(meta, this, target);
+    //             return !isNil(result);
+    //         }
+    //         return false
+    //     })) {
+    //         return result!;
+    //     }
+
+    //     return (this.parent as DefaultInvocationContext)?.tryResolveArgument(meta, target, resolved) ?? null;
+
+    // }
 
     protected missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
         return new MissingParameterExecption(missings, type, method)
