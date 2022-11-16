@@ -2,15 +2,16 @@ import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { forIn, remove, getClassName } from '../utils/lang';
 import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString, isNil } from '../utils/chk';
-import { isPlainObject, isTypeObject } from '../utils/obj'
-import { InjectFlags, Token } from '../tokens';
-import { Injector, isInjector, Scopes } from '../injector';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
+import { isPlainObject, isTypeObject } from '../utils/obj';
+import { InjectFlags, Token } from '../tokens';
+import { Injector, isInjector, Scopes } from '../injector';
 import { get } from '../metadata/refl';
 import { isTypeDef } from '../metadata/type';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
+import { OperationInvoker } from '../operation';
 
 
 
@@ -27,11 +28,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
 
-    // /**
-    //  * parent {@link InvocationContext}.
-    //  */
-    // readonly parent: InvocationContext | undefined;
-
     propertyKey?: string;
     /**
      * invocation static injector. 
@@ -47,14 +43,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     readonly methodName: string | undefined;
 
-    // private isDiff: boolean;
-
     constructor(
         injector: Injector,
         options: InvocationOption = EMPTY_OBJ) {
         super();
-        // this.parent = options.parent;
-        // this.isDiff = (options.parent && injector !== options.parent.injector) === true;
         this._refs = [];
         this.injector = this.createInjector(injector, options.providers);
         options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => this.resolverProvider(r)));
@@ -232,17 +224,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this
     }
 
-    // /**
-    //  * can resolve the parameter or not.
-    //  * @param meta property or parameter metadata type of {@link Parameter}.
-    //  * @returns 
-    //  */
-    // canResolve(meta: Parameter): boolean {
-    //     return this.getMetaReolver(meta)?.canResolve(meta, this) === true
-    //         || this.resolvers.some(r => r.canResolve(meta, this))
-    //         || this.parent?.canResolve(meta) == true
-    // }
-
     /**
      * get resolver in the property or parameter metadata. configured in class design.
      * @param meta property or parameter metadata type of {@link Parameter}.
@@ -296,44 +277,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
         return null;
     }
-
-    // resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
-        // let canResolved = false;
-        // const result = this.tryResolveArgument(meta, target!, () => canResolved = true);
-        // if (!canResolved) {
-        //     if (failed) {
-        //         failed(target!, meta.propertyKey!)
-        //     } else {
-        //         this.missingExecption([meta], target!, meta.propertyKey!);
-        //     }
-        // }
-        // return result;
-    // }
-
-    // tryResolveArgument<T>(meta: Parameter<T>, target: ClassType, resolved: () => void): T | null {
-    //     let result: T | null | undefined;
-    //     const metaRvr = this.getMetaReolver(meta);
-    //     if (metaRvr?.canResolve(meta, this)) {
-    //         resolved();
-    //         result = metaRvr.resolve(meta, this, target);
-    //         if (!isNil(result)) {
-    //             return result;
-    //         }
-    //     }
-    //     if (this.getResolvers().some(r => {
-    //         if (r.canResolve(meta, this)) {
-    //             resolved();
-    //             result = r.resolve(meta, this, target);
-    //             return !isNil(result);
-    //         }
-    //         return false
-    //     })) {
-    //         return result!;
-    //     }
-
-    //     return (this.parent as DefaultInvocationContext)?.tryResolveArgument(meta, target, resolved) ?? null;
-
-    // }
 
     protected missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
         return new MissingParameterExecption(missings, type, method)
