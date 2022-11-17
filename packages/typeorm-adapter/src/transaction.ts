@@ -1,5 +1,5 @@
 import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
-import { DBRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
+import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
 import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
@@ -34,7 +34,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
             joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {
                 if (dec.propertyKey === joinPoint.methodName) {
-                    if (dec.decor === DBRepository.toString()) {
+                    if (dec.decor === InjectRepository.toString()) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
                     } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
@@ -46,7 +46,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
             const context = {} as any;
             targetRef.class.propDecors.forEach(dec => {
-                if (dec.decor === DBRepository.toString()) {
+                if (dec.decor === InjectRepository.toString()) {
                     context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
                 } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
                     context[dec.propertyKey] = entityManager

@@ -508,14 +508,14 @@ export interface RestController {
      * @param {string} route route sub path.
      * @param {Type<Router>} [parent] the middlewares for the route.
      */
-    (route: string, parent?: Type<Router>): ClassDecorator;
+    (route?: string, parent?: Type<Router>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
      * @param {Type<CanActivate>[]} [guards] the guards for the route.
      */
-    (route: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
+    (route?: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
 
     /**
      * controller decorator. define the controller method as an route.
@@ -655,7 +655,7 @@ export interface HeadDecorator {
      * @param {string} route route sub path.
      * @param {string} [contentType] set request contentType.
      */
-    (route: string, contentType?: string): MethodDecorator;
+    (route?: string, contentType?: string): MethodDecorator;
 
     /**
      * Head decorator. define the controller method as head route.
@@ -708,7 +708,7 @@ export interface OptionsDecorator {
      * @param {string} route route sub path.
      * @param {string} [contentType] set request contentType.
      */
-    (route: string, contentType?: string): MethodDecorator;
+    (route?: string, contentType?: string): MethodDecorator;
 
     /**
      * Options decorator. define the controller method as options route.
@@ -760,7 +760,7 @@ export interface GetDecorator {
      * @param {string} route route sub path.
      * @param {string} [contentType] set request contentType.
      */
-    (route: string, contentType?: string): MethodDecorator;
+    (route?: string, contentType?: string): MethodDecorator;
 
     /**
      * Get decorator. define the controller method as get route.
@@ -919,7 +919,7 @@ export interface PostDecorator {
      * @param {string} route route sub path.
      * @param {string} [contentType] set request contentType.
      */
-    (route: string, contentType?: string): MethodDecorator;
+    (route?: string, contentType?: string): MethodDecorator;
 
     /**
      * Post decorator. define the controller method as post route.
@@ -971,7 +971,7 @@ export interface PutDecorator {
      * @param {string} route route sub path.
      * @param {string} [contentType] set request contentType.
      */
-    (route: string, contentType?: string): MethodDecorator;
+    (route?: string, contentType?: string): MethodDecorator;
 
     /**
      * Put decorator. define the controller method as put route.

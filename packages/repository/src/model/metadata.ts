@@ -42,4 +42,4 @@ export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadat
  * 
  * @alias 
  */
- export const DBRepository: RepositoryDecorator = Repository;
+ export const InjectRepository: RepositoryDecorator = Repository;
