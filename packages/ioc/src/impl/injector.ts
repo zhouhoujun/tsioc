@@ -326,7 +326,7 @@ export class DefaultInjector extends Injector {
             let isnew = false;
             let context = option.context;
             const platform = this.platform();
-            if (option.target || hasItem(option.providers) || hasItem(option.resolvers) || option.arguments || hasItem(option.values)) {
+            if (option.target || option.arguments || hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values)) {
                 let providers = option.providers;
                 if (option.target) {
                     if (isFunction(option.target) || isTypeDef(option.target)) {

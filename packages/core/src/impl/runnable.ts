@@ -71,7 +71,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
         return this._ref.type;
     }
     get context(): InvocationContext<any> {
-        return this._ref.context;
+        return this._ref.getContext();
     }
 
     onDestroy(callback?: DestroyCallback | undefined): void | Promise<void> {

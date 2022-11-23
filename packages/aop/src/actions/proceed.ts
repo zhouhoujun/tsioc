@@ -185,7 +185,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
             joinPoint.setValue(metadata.throwing, joinPoint.throwing)
         }
 
-        const context = advicer.aspect.context;
+        const context = advicer.aspect.getContext();
         if (context) {
             joinPoint.addRef(context)
         }

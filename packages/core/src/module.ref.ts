@@ -32,10 +32,10 @@ export abstract class ModuleRef<T = any> extends Injector implements ModRef<T>, 
      * @type {LifecycleHooks}
      */
     abstract get lifecycle(): ModuleLifecycleHooks;
-    /**
-     * reflective factory.
-     */
-    abstract get reflectiveFactory(): ReflectiveFactory;
+    // /**
+    //  * reflective factory.
+    //  */
+    // abstract get reflectiveFactory(): ReflectiveFactory;
     /**
      * runnable factory.
      */
