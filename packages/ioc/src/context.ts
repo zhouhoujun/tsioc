@@ -144,13 +144,9 @@ export const INVOCATION_CONTEXT_IMPL = {
 export type TokenValue<T = any> = [Token<T>, T];
 
 /**
- * invoke arguments.
+ * invoke options.
  */
-export interface InvokeArguments {
-    /**
-     * parent InvocationContext,
-     */
-    parent?: InvocationContext;
+export interface InvokeOptions {
     /**
      * invocation arguments data.
      */
@@ -170,14 +166,21 @@ export interface InvokeArguments {
 }
 
 /**
- * invoke option.
+ * invoke arguments.
  */
-export interface InvokeOption extends InvokeArguments {
+export interface InvokeArguments extends InvokeOptions {
     /**
-     * main context
+     * parent InvocationContext,
      */
-    context?: InvocationContext;
+    parent?: InvocationContext;
 }
+
+// /**
+//  * invoke option.
+//  */
+// export interface InvokeOption extends InvokeArguments {
+
+// }
 
 /**
  * invocation option.

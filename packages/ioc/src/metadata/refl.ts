@@ -13,6 +13,7 @@ import {
     Reflective, TypeDef
 } from './type';
 import { Platform } from '../injector';
+import { InvokeOptions } from '../context';
 
 
 
@@ -227,7 +228,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
         const def = ctx.def;
         const meta = ctx.metadata as ParameterMetadata;
         const propertyKey = ctx.propertyKey;
-        let params = def.class.hasParameters(propertyKey)? def.class.getParameters(propertyKey) : null;
+        let params = def.class.hasParameters(propertyKey) ? def.class.getParameters(propertyKey) : null;
         if (!params) {
             const names = def.class.getParamNames(propertyKey);
             let paramTypes: any[];
@@ -373,9 +374,9 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.decor]) {
-        const mpdrs = (ctx.metadata as MethodMetadata).providers;
+        const mpdrs = (ctx.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
-            ctx.def.class.setMethodProviders(ctx.propertyKey, mpdrs)
+            ctx.def.class.setMethodOptions(ctx.propertyKey, mpdrs)
         }
     }
     return next()

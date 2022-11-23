@@ -1,16 +1,16 @@
 import { ClassType, Type } from '../types';
 import { TypeDef } from '../metadata/type';
-import { isBoolean, isFunction, isPromise } from '../utils/chk';
+import { isArray, isBoolean, isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { createContext, InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from '../context';
+import { createContext, InvocationContext, InvokeArguments, } from '../context';
 import { ReflectiveRef, ReflectiveFactory } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
 import { OperationInvoker, Proceed } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
-import { immediate } from '../utils/lang';
+import { hasItem, immediate } from '../utils/lang';
 
 
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
@@ -44,12 +44,12 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return this.context.resolveArgument({ provider: token ?? this.type, nullable: true })
     }
 
-    invoke(method: MethodType<T>, option?: InvokeOption | InvocationContext, instance?: T) {
+    invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
         return this.def.class.invoke(key, context, instance ?? this.resolve(), (ctx, run) => {
             const result = run(ctx);
             if (destroy) {
-                const act = (isFunction(destroy) ? destroy : ()=> !context.injected && context.destroy()) as (()=> void) 
+                const act = destroy as (() => void);
                 if (isPromise(result)) {
                     return result.then(val => {
                         immediate(act);
@@ -63,86 +63,102 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         })
     }
 
-    resolveArguments(method: MethodType<T>, option?: InvokeOption | InvocationContext) {
+    resolveArguments(method: MethodType<T>, option?: InvokeArguments | InvocationContext) {
         const [context, key, destroy] = this.createMethodContext(method, option);
         const args = this.def.class.resolveArguments(key, context);
         if (destroy) {
-            if (isFunction(destroy)) {
-                destroy()
-            } else if (!context.injected) {
-                context.destroy()
-            }
+            destroy()
         }
         return args
     }
 
-    protected createMethodContext(method: MethodType<T>, option?: InvokeOption | InvocationContext): [InvocationContext, string, boolean | Function | undefined] {
+    protected createMethodContext(method: MethodType<T>, option?: InvokeArguments | InvocationContext): [InvocationContext, string, Function | undefined] {
         const key = isFunction(method) ? this.def.class.getPropertyName(method(this.def.class.getPropertyDescriptors() as any)) : method;
+        const methodOptions = this.def.class.getMethodOptions(key);
         let context: InvocationContext;
-        let destroy: boolean | Function | undefined;
+        let destroy: Function | undefined;
         if (option instanceof InvocationContext) {
             context = option;
-            const refctx = this.createContext({ methodName: key });
-            context.addRef(refctx);
-            destroy = () => {
-                context.removeRef(refctx);
-                refctx.destroy()
+            const ext = this.context !== context;
+            if (methodOptions) {
+                context = createContext(context, methodOptions);
             }
-        } else {
-            context = option?.context ? option.context : this.createContext({ ...option, methodName: key });
-            if (option?.context) {
-                const refctx = this.createContext({ ...option, methodName: key });
-                context.addRef(refctx);
+            ext && context.addRef(this.context);
+            destroy = () => {
+                if (context.injected) return;
+                ext && context.removeRef(this.context);
+                if (methodOptions) context.destroy()
+            }
+        } else if (option) {
+            if (methodOptions) {
+                if (hasItem(methodOptions.providers)) {
+                    option.providers = option.providers ? [...option.providers, ...methodOptions.providers!] : methodOptions.providers!
+                }
+                if (hasItem(methodOptions.resolvers)) {
+                    option.resolvers = option.resolvers ? [...option.resolvers!, ...methodOptions.resolvers!] : methodOptions.resolvers
+                }
+                if (hasItem(methodOptions.values)) {
+                    option.values = option.values ? [...option.values!, ...methodOptions.values!] : methodOptions.values
+                }
+            }
+            if (this.chkContext(option.parent)) {
+                if (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.arguments) {
+                    context = createContext(option.parent!, option);
+                    context.addRef(this.context);
+                    destroy = () => {
+                        if (context.injected) return;
+                        context.removeRef(this.context);
+                        context.destroy()
+                    }
+                } else {
+                    context = option.parent!;
+                    context.addRef(this.context);
+                    destroy = () => {
+                        if (context.injected) return;
+                        context.removeRef(this.context);
+                    }
+                }
+            } else if (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.arguments) {
+                context = createContext(this.context, option);
                 destroy = () => {
-                    context.removeRef(refctx);
-                    refctx.destroy()
+                    if (context.injected) return;
+                    context.destroy()
                 }
             } else {
-                destroy = true
+                context = this.context;
             }
+        } else if (methodOptions) {
+            context = createContext(this.context, methodOptions);
+            destroy = () => {
+                if (context.injected) return;
+                context.destroy()
+            }
+        } else {
+            context = this.context;
         }
+
         return [context, key, destroy]
+    }
+
+    private chkContext(context?: InvocationContext) {
+        return context && context !== this.context;
     }
 
     createInvoker(method: string, instance?: boolean | T | (() => T), proceeding?: Proceed<T>): OperationInvoker {
         return new ReflectiveOperationInvoker(this.def, method, isBoolean(instance) ? this.getInstance.bind(this) : instance, proceeding)
     }
 
-    createContext(parent?: Injector | InvocationContext | InvocationOption, option?: InvocationOption): InvocationContext<any> {
-        let root: InvocationContext | undefined;
-        let injector: Injector;
-        if (parent instanceof Injector) {
-            injector = parent
-        } else if (parent instanceof InvocationContext) {
-            injector = parent.injector;
-            root = parent
-        } else {
-            injector = this.injector;
-            root = this.context;
-            option = parent
-        }
-
+    protected createContext(injector: Injector, option?: InvokeArguments): InvocationContext<any> {
         if (!this._tagPdrs) {
             this._tagPdrs = injector.platform().getTypeProvider(this.def)
         }
         let providers = option?.providers;
         let resolvers = option?.resolvers;
-        if (!root) {
-            providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
-            resolvers = resolvers ? this.def.class.resolvers.concat(resolvers) : this.def.class.resolvers
-        }
-        const method = option?.methodName;
-        if (method) {
-            const mthpdrs = this.def.class.getMethodProviders(method);
-            providers = (providers && mthpdrs) ? providers.concat(mthpdrs) : (providers ?? mthpdrs);
-
-            const mthrsv = this.def.class.getMethodResolvers(method);
-            resolvers = (resolvers && mthrsv) ? resolvers.concat(mthrsv) : (resolvers ?? mthrsv)
-        }
+        providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
+        resolvers = resolvers ? this.def.class.resolvers.concat(resolvers) : this.def.class.resolvers
 
         return createContext(injector, {
             ...option,
-            parent: root ?? option?.parent,
             targetType: this.def.type,
             providers,
             resolvers

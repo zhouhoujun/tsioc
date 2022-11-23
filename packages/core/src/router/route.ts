@@ -1,6 +1,6 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
-    InvokeOption, OnDestroy, tokenId, Type, TypeDef
+    OnDestroy, tokenId, Type, TypeDef
 } from '@tsdi/ioc';
 import { Protocols } from '../transport/packet';
 import { InterceptorLike } from '../transport/endpoint';
@@ -164,10 +164,10 @@ export abstract class RouteFactory<T = any> {
     /**
      * create {@link RouteRef}
      * @param injector injector.
-     * @param option invoke option. type of {@link InvokeOption}.
+     * @param option invoke arguments. type of {@link InvokeArguments}.
      * @returns instance of {@link RouteRef}
      */
-    abstract create(injector: Injector, option?: InvokeOption): RouteRef<T>;
+    abstract create(injector: Injector, option?: InvokeArguments): RouteRef<T>;
     /**
      * get the last route ref instance.
      */

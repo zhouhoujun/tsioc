@@ -1,6 +1,6 @@
 import { LoadType, Modules, Type, EMPTY } from '../types';
 import { DestroyCallback, OnDestroy } from '../destroy';
-import { cleanObj, deepForEach } from '../utils/lang';
+import { cleanObj, deepForEach, hasItem } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
 import {
@@ -20,7 +20,7 @@ import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 import { DefaultReflectiveFactory } from './reflective';
-import { createContext, InvocationContext, InvokeOption } from '../context';
+import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { Execption } from '../execption';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 
@@ -326,7 +326,7 @@ export class DefaultInjector extends Injector {
             let isnew = false;
             let context = option.context;
             const platform = this.platform();
-            if (option.target || option.providers || option.resolvers || option.arguments || option.values) {
+            if (option.target || hasItem(option.providers) || hasItem(option.resolvers) || option.arguments || hasItem(option.values)) {
                 let providers = option.providers;
                 if (option.target) {
                     if (isFunction(option.target) || isTypeDef(option.target)) {
@@ -413,7 +413,7 @@ export class DefaultInjector extends Injector {
     }
 
     invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
+    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
@@ -458,7 +458,7 @@ export class DefaultInjector extends Injector {
 
         tgRefl = tgRefl ?? get(targetClass);
 
-        const factory = this.get(ReflectiveFactory).create(tgRefl, this, context ?? { ...option, providers });
+        const factory = this.get(ReflectiveFactory).create(tgRefl, this);
         if (!context) {
             return factory.invoke(propertyKey, { ...option, providers }, instance)
         }

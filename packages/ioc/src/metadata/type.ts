@@ -6,15 +6,15 @@ import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
     PropertyMetadata, ParameterMetadata, MethodMetadata
 } from './meta';
-import { InvocationContext, InvokeArguments } from '../context';
+import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
 import { Token } from '../tokens';
-import { ArgumentResolver, Parameter } from '../resolver';
+import { ArgumentResolver } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
-import { forIn } from '../utils/lang';
+import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
-import { AsyncLike, Proceed } from '../operation';
+import { Proceed } from '../operation';
 
 /**
  * auto run define.
@@ -244,15 +244,9 @@ export class Reflective<T = any> {
     /**
      * method providers.
      *
-     * @type {Map<ProviderType[]>}
+     * @type {Map<string, InvokeOptions>}
      */
-    private methodProviders: Map<string, ProviderType[]>;
-    /**
-     * method resolvers.
-     *
-     * @type {Map<ProviderType[]>}
-     */
-    private methodResolvers: Map<string, ArgumentResolver[]>;
+    private methodOptions: Map<string, InvokeOptions>;
     /**
      * runnable defines.
      */
@@ -279,8 +273,7 @@ export class Reflective<T = any> {
         this.runnables = parent ? parent.runnables.slice(0) : [];
         this.propMetadatas = new Map();
         this.methodParams = new Map();
-        this.methodProviders = new Map();
-        this.methodResolvers = new Map();
+        this.methodOptions = new Map();
         this.methodReturns = new Map()
     }
 
@@ -324,21 +317,9 @@ export class Reflective<T = any> {
      */
     resolveArguments(method: string, context: InvocationContext): any[] {
         const parameters = this.getParameters(method) ?? EMPTY;
-        // this.validate(method, context, parameters);
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
     }
-
-    // protected validate(method: string, context: InvocationContext, parameters: Parameter[]) {
-    //     const missings = parameters.filter(p => context.canResolve(p));
-    //     if (missings.length) {
-    //         throw context.missingExecption(missings, this.type, method)
-    //     }
-    // }
-
-    // protected isisMissing(context: InvocationContext, parameter: Parameter) {
-    //     return !context.canResolve(parameter)
-    // }
 
     hasParameters(method: string): boolean {
         return this.methodParams.has(method)
@@ -383,32 +364,34 @@ export class Reflective<T = any> {
         this.parent?.eachProperty(callback)
     }
 
-
-    hasMethodProviders(method: string): boolean {
-        return this.methodProviders.has(method)
+    hasMethodOptions(method: string): boolean {
+        return this.methodOptions.has(method)
     }
-    getMethodProviders(method: string): ProviderType[] | undefined {
-        return this.methodProviders.get(method) ?? this.parent?.getMethodProviders(method)
+    getMethodOptions(method: string): InvokeOptions | undefined {
+        return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodProviders(method: string, providers: ProviderType[]) {
-        if (this.methodProviders.has(method)) {
-            this.methodProviders.get(method)?.push(...providers)
+    setMethodOptions(method: string, options: InvokeOptions) {
+        if (this.methodOptions.has(method)) {
+            const eopt = this.methodOptions.get(method)!;
+            if (hasItem(options.providers)) {
+                if(!eopt.providers) eopt.providers =[];
+                 eopt.providers.push(...options.providers!)
+            }
+            if (hasItem(options.resolvers)) {
+                if(!eopt.resolvers) eopt.resolvers =[];
+                eopt.resolvers.push(...options.resolvers!)
+            }
+            if (hasItem(options.values)) {
+                if(!eopt.values) eopt.values =[];
+                eopt.values.push(...options.values!);
+            }
+            if (options.arguments) {
+                eopt.arguments = eopt.arguments ? { ...eopt.arguments, ...options.arguments } : options.arguments
+            }
         } else {
-            this.methodProviders.set(method, providers)
+            this.methodOptions.set(method, { ...options })
         }
     }
-
-    getMethodResolvers(method: string): ArgumentResolver[] | undefined {
-        return this.methodResolvers.get(method) ?? this.parent?.getMethodResolvers(method)
-    }
-    setMethodResolvers(method: string, metadatas: ArgumentResolver[]) {
-        if (this.methodResolvers.has(method)) {
-            this.methodResolvers.get(method)?.push(...metadatas)
-        } else {
-            this.methodResolvers.set(method, metadatas)
-        }
-    }
-
 
     private currprop: string | undefined;
     private currpropidx!: number;

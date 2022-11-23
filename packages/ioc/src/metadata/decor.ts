@@ -9,7 +9,7 @@ import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamD
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, Scopes } from '../injector';
 import { OperationArgumentResolver } from '../resolver';
-import { InvokeArguments } from '../context';
+import { InvokeArguments, InvokeOptions } from '../context';
 
 
 
@@ -101,12 +101,12 @@ export interface Autowired {
         defaultValue?: any
 
     }): PropParamDecorator;
+
     /**
      * Autowired decorator with providers for method.
-     *
-     * @param {ProviderType[]} [providers] the providers for the method.
+     * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    (providers?: ProviderType[]): MethodDecorator;
+    (options?: InvokeOptions): MethodDecorator;
 }
 
 
@@ -116,10 +116,8 @@ export interface Autowired {
  * @Autowired()
  */
 export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowired', {
-    props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
-        if (isArray(provider)) {
-            return { providers: provider }
-        } else if (alias) {
+    props: (provider: Token, alias?: string | Record<string, any>) => {
+        if (alias) {
             return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
         } else {
             return { provider: provider }
@@ -220,12 +218,12 @@ export interface Inject {
         defaultValue?: any
 
     }): PropParamDecorator;
+
     /**
      * Inject decorator with providers for method.
-     *
-     * @param {ProviderType[]} [providers] the providers for the method.
+     * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    (providers?: ProviderType[]): MethodDecorator;
+    (options?: InvokeOptions): MethodDecorator;
 }
 
 /**
@@ -234,10 +232,8 @@ export interface Inject {
  * @Inject()
  */
 export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
-    props: (provider: ProviderType[] | Token, alias?: string | Record<string, any>) => {
-        if (isArray(provider)) {
-            return { providers: provider }
-        } else if (alias) {
+    props: (provider: Token, alias?: string | Record<string, any>) => {
+        if (alias) {
             return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
         } else {
             return { provider }
@@ -572,7 +568,7 @@ export interface Providers {
      *
      * @param {(Registration | symbol | string)} providers provider reference service to target.
      */
-    (providers: ProviderType[]): ClassMethodDecorator;
+    (providers: ProviderType[]): ClassDecorator;
 
     /**
      * Providers decorator, for class. use to add ref service to the class.
@@ -581,7 +577,7 @@ export interface Providers {
      *
      * @param {ProvidersMetadata} [metadata] metadata map.
      */
-    (metadata: ProvidersMetadata): ClassMethodDecorator;
+    (metadata: ProvidersMetadata): ClassDecorator;
 }
 
 /**

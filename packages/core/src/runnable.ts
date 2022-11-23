@@ -1,4 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeOption, ReflectiveRef, DestroyCallback } from '@tsdi/ioc';
+import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeArguments, ReflectiveRef, DestroyCallback } from '@tsdi/ioc';
 import { ModuleRef } from './module.ref';
 
 /**
@@ -67,7 +67,7 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
 /**
  * bootstrap option for {@link Runnable}.
  */
-export interface BootstrapOption extends InvokeOption {
+export interface BootstrapOption extends InvokeArguments {
     /**
      * set the method as default invoked as runnable.
      * when has no `@Runner` in this class, will run this method as default. default value `run`.

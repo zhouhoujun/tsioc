@@ -125,8 +125,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     hasRef(ctx: InvocationContext): boolean {
         return ctx === this && this._refs.indexOf(ctx) >= 0;
-        // if (ctx === this && this._refs.indexOf(ctx) >= 0) return true;
-        // return this.parent?.hasRef(ctx) === true
     }
 
     /**
@@ -169,7 +167,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         if (this.isSelf(token)) return true;
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs.some(i => i.has(token, flags))
-        // || (flags != InjectFlags.Self && this.parent?.has(token, this.isDiff ? flags : InjectFlags.HostOnly) === true)
     }
 
     /**
@@ -201,7 +198,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         }
         return (flags != InjectFlags.HostOnly ? this.injector.get(token, context, flags, null) : null)
             ?? this.getFormRef(token, context, flags) ?? null as T;
-        // ?? (flags != InjectFlags.Self ? this.parent?.get(token, context, this.isDiff ? flags : InjectFlags.HostOnly) : null) as T
     }
 
     protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {

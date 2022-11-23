@@ -4,7 +4,7 @@ import { Abstract } from './metadata/fac';
 import { TypeDef } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
-import { InvocationContext, InvocationOption, InvokeArguments, InvokeOption } from './context';
+import { InvocationContext, InvokeArguments } from './context';
 import { OperationInvoker, Proceed } from './operation';
 
 
@@ -18,6 +18,11 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * injector.
      */
     abstract get injector(): Injector;
+    /**
+     * the invcation context of target type.
+     */
+    abstract get context(): InvocationContext;
+
     /**
      * instance of this target type.
      */
@@ -39,16 +44,12 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      */
     abstract getInstance(): T;
     /**
-     * the invcation context of target type.
-     */
-    abstract get context(): InvocationContext;
-    /**
      * invoke target method.
      * @param method method name.
      * @param option invoke arguments.
      * @param instance target instance.
      */
-    abstract invoke(method: MethodType<T>, option?: InvokeOption, instance?: T): any;
+    abstract invoke(method: MethodType<T>, option?: InvokeArguments, instance?: T): any;
     /**
      * invoke target method.
      * @param method method name.
@@ -69,7 +70,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-     abstract createInvoker(method: string, shared?: boolean, proceed?: Proceed): OperationInvoker;
+    abstract createInvoker(method: string, shared?: boolean, proceed?: Proceed): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
@@ -78,26 +79,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * @returns instance of {@link OperationInvoker}.
      */
     abstract createInvoker(method: string, instance?: T | (() => T), proceed?: Proceed): OperationInvoker;
-    /**
-     * create invocation context of target.
-     * @param option ext option. type of {@link InvocationOption}.
-     * @returns instance of {@link InvocationContext}.
-     */
-    abstract createContext(option?: InvocationOption): InvocationContext;
-    /**
-     * create invocation context of target.
-     * @param injector to resolver the type. type of {@link Injector}.
-     * @param option ext option. type of {@link InvocationOption}.
-     * @returns instance of {@link InvocationContext}.
-     */
-    abstract createContext(injector: Injector, option?: InvocationOption): InvocationContext;
-    /**
-     * create invocation context of target.
-     * @param parant parent invocation context. type of {@link InvocationContext}.
-     * @param option ext option. type of {@link InvocationOption}.
-     * @returns instance of {@link InvocationContext}.
-     */
-    abstract createContext(parant: InvocationContext, option?: InvocationOption): InvocationContext;
+
     /**
      * context destroyed or not.
      */

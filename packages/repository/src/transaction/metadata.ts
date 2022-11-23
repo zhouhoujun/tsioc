@@ -6,7 +6,7 @@ import { TransactionResolver } from './resolver';
  * 
  * @Transactional
  */
- export interface Transactional {
+export interface Transactional {
     /**
      * Transactional decorator, define transaction propagation behaviors.
      * @param option transactional metadata.
@@ -19,13 +19,13 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
     def: {
         method: [
             (ctx, next) => {
-                ctx.def.class.setMethodResolvers(ctx.propertyKey, [TransactionResolver]);
+                ctx.def.class.setMethodOptions(ctx.propertyKey, { resolvers: [TransactionResolver] });
                 next()
             }
         ]
     },
-    appendProps:(meta)=>{
-        if(!meta.propagation){
+    appendProps: (meta) => {
+        if (!meta.propagation) {
             meta.propagation = 'REQUIRED'
         }
     }
@@ -36,7 +36,7 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
 /**
  * Transactional metadata
  */
- export interface TransactionalMetadata extends MethodMetadata {
+export interface TransactionalMetadata extends MethodMetadata {
     connection?: string;
     /**
      * transaction propagation behaviors for transactional.

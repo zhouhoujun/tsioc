@@ -8,7 +8,7 @@ import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
 import { Handler } from './handler';
 import { Action } from './action';
-import { InvocationContext, InvokeOption } from './context';
+import { InvocationContext, InvokeArguments } from './context';
 import { ModuleLoader } from './module.loader';
 import { LifecycleHooks } from './lifecycle';
 import { Execption } from './execption';
@@ -263,10 +263,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @template T
      * @param {(T | Type<T> | TypeDef<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
-     * @param {InvokeOption} option ivacation context option, type of {@link InvokeOption}.
+     * @param {InvokeArguments} option ivacation arguments, type of {@link InvokeArguments}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, option?: InvokeOption): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
     /**
      * invoke method.
      * 
@@ -608,7 +608,7 @@ export interface FactoryRecord<T = any> {
 /**
  * resovler option.
  */
-export interface ResolverOption extends InvokeOption {
+export interface ResolverOption extends InvokeArguments {
     /**
      * args.
      */

@@ -211,6 +211,14 @@ export function forInClassChain(target: ClassType, express: (token: ClassType) =
 }
 
 /**
+ * check array has item or not.
+ * @param arr 
+ * @returns 
+ */
+export function hasItem(arr: any): boolean {
+    return isArray(arr) && arr.length > 0;
+}
+/**
  * is base class type of.
  * @param target target type
  * @param baseType base class type.
@@ -335,7 +343,7 @@ export function defer<T = any>(then?: (val: T) => T | PromiseLike<T>): Defer<T> 
  * create delay.
  * @param times delay timeout ms.
  */
-export function delay(times: number, work?: (...args: any[])=> void, ...args: any[]): Promise<void> {
+export function delay(times: number, work?: (...args: any[]) => void, ...args: any[]): Promise<void> {
     const defer = Defer.create<void>();
     const timout = setTimeout(() => {
         timout && clearTimeout(timout);
@@ -345,7 +353,7 @@ export function delay(times: number, work?: (...args: any[])=> void, ...args: an
     return defer.promise
 }
 
-export const immediate = typeof setImmediate !== 'undefined'? setImmediate : (callback: (...args: any[])=> void, ...args: any[])=>delay(0, callback, ...args);
+export const immediate = typeof setImmediate !== 'undefined' ? setImmediate : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
 
 /**
  * run promise step by step.
@@ -407,8 +415,8 @@ export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> 
 }
 
 export function promisify(func: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
-export function promisify<T = void>(func: (callback: (err: any, result?: void|T) => void) => void, owner?: any): () => Promise<T>;
-export function promisify<T = void, A1 = any>(func: (arg1: A1, callback: (err: any, result?: void|T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
+export function promisify<T = void>(func: (callback: (err: any, result?: void | T) => void) => void, owner?: any): () => Promise<T>;
+export function promisify<T = void, A1 = any>(func: (arg1: A1, callback: (err: any, result?: void | T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
 export function promisify<T = void, A1 = any, A2 = any>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
 export function promisify<T = void, A1 = any, A2 = any, A3 = any>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
 export function promisify<T = void, A1 = any, A2 = any, A3 = any, A4 = any>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
