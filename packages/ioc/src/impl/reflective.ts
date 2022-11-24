@@ -89,7 +89,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             }
         } else if (option) {
             if (option.parent && option.parent !== ctx) {
-                if (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.arguments) {
+                if (hasContext(option)) {
                     context = createContext(option.parent!, option);
                     context.addRef(ctx);
                     destroy = () => {
@@ -105,7 +105,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
                         context.removeRef(ctx);
                     }
                 }
-            } else if (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.arguments) {
+            } else if (hasContext(option)) {
                 context = createContext(ctx, option);
                 destroy = () => {
                     if (context.injected) return;
@@ -187,6 +187,10 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         }
         this._ctx.onDestroy(callback);
     }
+}
+
+export function hasContext(option: InvokeArguments) {
+    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.arguments)
 }
 
 export class DefaultReflectiveFactory extends ReflectiveFactory {
