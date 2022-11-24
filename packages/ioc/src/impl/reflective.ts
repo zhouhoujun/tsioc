@@ -209,5 +209,12 @@ export class DefaultReflectiveFactory extends ReflectiveFactory {
         }
         return refle
     }
+
+    destroy(): void {
+        this.maps.forEach(ref=> {
+            ref.destroy();
+        });
+        this.maps.clear();
+    }
 }
 

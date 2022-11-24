@@ -338,7 +338,7 @@ export class DefaultInjector extends Injector {
             context = createContext(this, { providers: args });
         }
 
-        const result =  this.get(token, context);
+        const result = this.get(token, context);
 
         if (context && context !== args[0] && !context.injected) {
             immediate(() => context!.destroy());
@@ -873,7 +873,9 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
  */
 function registerCores(container: Container) {
     container.setValue(ModuleLoader, new DefaultModuleLoader());
-    container.setValue(ReflectiveFactory, new DefaultReflectiveFactory());
+    const factory = new DefaultReflectiveFactory();
+    container.setValue(ReflectiveFactory, factory);
+    container.onDestroy(() => factory.destroy())
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

@@ -113,5 +113,7 @@ export abstract class ReflectiveFactory {
      * @returns instance of {@link ReflectiveRef}
      */
     abstract create<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
+
+    abstract destroy(): void;
 }
 
