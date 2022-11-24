@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Reflective, lang, Scopes } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Reflective, lang, Scopes, ReflectiveFactory } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
@@ -23,6 +23,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      * application context.
      */
     protected context!: T;
+
 
     constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
@@ -140,12 +141,14 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(root) as T
+                const modueRef = root.get(ReflectiveFactory).create(target, root);
+                this.context = modueRef.resolve(ApplicationFactory).create(root) as T
             } else {
                 if (target.loads) {
                     this._loads = await this.root.load(target.loads)
                 }
-                this.context = root.resolve({ token: ApplicationFactory, target: target.module }).create(root, target) as T
+                const modueRef = root.get(ReflectiveFactory).create(root.moduleType, root);
+                this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T
             }
         }
         return this.context
@@ -156,7 +159,8 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         if (bootstraps && bootstraps.length) {
             const injector = ctx.injector;
             bootstraps.forEach(type => {
-                const runner = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector);
+                const typeRef = injector.get(ReflectiveFactory).create(type, injector);
+                const runner = typeRef.resolve(RunnableFactory).create(type, injector);
                 ctx.runners.addBootstrap(runner)
             })
         }

@@ -1,13 +1,13 @@
 import { LoadType, Modules, Type, EMPTY } from '../types';
 import { DestroyCallback, OnDestroy } from '../destroy';
-import { cleanObj, deepForEach, hasItem } from '../utils/lang';
+import { cleanObj, deepForEach, immediate } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
 import {
-    ResolveOption, MethodType, FnType, InjectorScope, ResolverOption, RegisterOption, FactoryRecord,
+    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord,
     Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, Scopes
 } from '../injector';
-import { CONTAINER, INJECTOR, ROOT_INJECTOR, TARGET } from '../metadata/tk';
+import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
@@ -19,7 +19,7 @@ import { DefaultModuleLoader } from './loader';
 import { ModuleLoader } from '../module.loader';
 import { DefaultPlatform } from './platform';
 import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
-import { DefaultReflectiveFactory } from './reflective';
+import { DefaultReflectiveFactory, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { Execption } from '../execption';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -313,79 +313,37 @@ export class DefaultInjector extends Injector {
         return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, record?.stic ?? this.isStatic)
     }
 
-    resolve<T>(option: ResolveOption<T>): T;
-    resolve<T>(token: Token<T>, option?: ResolverOption): T;
+
+    resolve<T>(token: Token<T>, option?: InvokeArguments): T;
     resolve<T>(token: Token<T>, context?: InvocationContext): T;
     resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...args: any[]) {
-        this.assertNotDestroyed();
-        const option: ResolveOption<T> | undefined = this.toOption(token, args);
-        let inst: T;
-        if (option) {
-            let isnew = false;
-            let context = option.context;
-            const platform = this.platform();
-            if (option.target || option.arguments || hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values)) {
-                let providers = option.providers;
-                if (option.target) {
-                    if (isFunction(option.target) || isTypeDef(option.target)) {
-                        providers = [...providers || EMPTY, ...platform.getTypeProvider(option.target)];
-                    } else if (isTypeObject(option.target)) {
-                        providers = [...providers || EMPTY, ...platform.getTypeProvider(getClass(option.target))];
-                    }
-                    option.values = [...option.values || EMPTY, [TARGET, option.target]];
-                }
-                context = context ? createContext(this, { parent: context, ...option, providers }) : createContext(this, providers ? { ...option, providers } : option);
-                isnew = true
-            }
-            inst = this.resolveStrategy(platform, option, context);
-            if (isnew && context && !context.injected) {
-                context.destroy()
+    resolve<T>(token: Token<T>, ...args: any[]) {
+        if (!args.length) {
+            return this.get(token);
+        }
+        let context: InvocationContext | undefined;
+        if (args.length === 1) {
+            const arg1 = args[0]
+            if (arg1 instanceof InvocationContext) {
+                context = arg1;
+            } else if (isArray(arg1)) {
+                context = arg1.length ? createContext(this, { providers: arg1 }) : undefined;
+            } else if (arg1.provide) {
+                context = createContext(this, { providers: [arg1] });
+            } else if (hasContext(arg1)) {
+                context = createContext(this, arg1);
             }
         } else {
-            inst = this.get(token as Token)
+            context = createContext(this, { providers: args });
         }
-        return inst
-    }
 
-    protected toOption(token: Token | ResolveOption, args: any[]): ResolveOption | undefined {
-        if (isPlainObject(token)) return token as ResolveOption;
-        if (args.length) {
-            if (args.length > 1 || (args.length === 1 && isArray(args))) return { token, providers: args };
-            if (args[0] instanceof InvocationContext) {
-                return { token, context: args[0] }
-            }
-            args[0].token = token;
-            return args[0]
+        const result =  this.get(token, context);
+
+        if (context && context !== args[0] && !context.injected) {
+            immediate(() => context!.destroy());
         }
-        return
-    }
-
-    protected resolveStrategy<T>(platform: Platform, option: ResolveOption, context?: InvocationContext): T {
-        return context?.resolve(option.token)
-            ?? this.get(option.token!, context, InjectFlags.Default, null)
-            ?? this.resolveFailed(platform, option.token!, context, option.regify, option.defaultToken)
-    }
-
-    protected resolveFailed<T>(platform: Platform, token: Token<T>, context?: InvocationContext, regify?: boolean, defaultToken?: Token): T {
-        if (regify && isFunction(token)) {
-            this.registerType(platform, token as Type);
-            return this.get(token, context)
-        }
-        if (defaultToken) {
-            return this.get(defaultToken, context)
-        }
-        return null!
-    }
-
-    getService<T>(option: ResolveOption<T>): T;
-    getService<T>(token: Token<T>, option?: ResolverOption): T;
-    getService<T>(token: Token<T>, context?: InvocationContext): T;
-    getService<T>(token: Token<T>, providers?: ProviderType[]): T;
-    getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    getService<T>(target: Token<T> | ResolveOption<T>, ...args: any[]): T {
-        return this.resolve<T>(target as any, ...args)
+        return result;
     }
 
     getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): Type<T> {
@@ -440,6 +398,10 @@ export class DefaultInjector extends Injector {
         let targetClass: Type, instance: any;
         let tgRefl: TypeDef | undefined;
 
+        if (!context) {
+            const opts = { ...option, providers };
+            context = hasContext(opts) ? createContext(this, opts) : undefined;
+        }
         if (isTypeObject(target)) {
             targetClass = getClass(target);
             instance = target as T
@@ -448,20 +410,15 @@ export class DefaultInjector extends Injector {
                 tgRefl = target;
                 targetClass = target.type as Type
             } else {
-                instance = this.resolve(target as Token, providers!);
+                instance = this.get(target as Token, context);
                 targetClass = getClass(instance);
                 if (!targetClass) {
                     throw new Execption((target as Token).toString() + ' is not implements by any class.')
                 }
             }
         }
-
         tgRefl = tgRefl ?? get(targetClass);
-
         const factory = this.get(ReflectiveFactory).create(tgRefl, this);
-        if (!context) {
-            return factory.invoke(propertyKey, { ...option, providers }, instance)
-        }
         return factory.invoke(propertyKey, context, instance)
     }
 

@@ -79,19 +79,11 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {ResolveOption<T>} option resolve option {@link ResolveOption}
-     * @returns {T}
-     */
-    abstract resolve<T>(option: ResolveOption<T>): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
      * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
      * @returns {T}
      */
-    abstract resolve<T>(token: Token<T>, option?: ResolverOption): T;
+    abstract resolve<T>(token: Token<T>, option?: InvokeArguments): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -119,50 +111,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {T}
      */
     abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {ResolveOption<T>} option resolve option {@link ResolveOption}.
-     * @returns {T}
-     */
-    abstract getService<T>(option: ResolveOption<T>): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T>} token  the resolve token {@link Token}.
-     * @param {option} option the option of type {@link ResolverOption}, to resolve with token.
-     * @returns {T}
-     */
-    abstract getService<T>(token: Token<T>, option?: ResolverOption): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T>} token  the resolve token {@link Token}.
-     * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
-     * @returns {T}
-     */
-    abstract getService<T>(token: Token<T>, context?: InvocationContext): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T> } token servive token.
-     * @param {ProviderType[]} providers the providers to resolve with token. array of {@link ProviderType}.
-     * @returns {T}
-     */
-    abstract getService<T>(token: Token<T>, providers?: ProviderType[]): T;
-    /**
-     * get service or target reference service in the injector.
-     *
-     * @template T
-     * @param {Token<T> } token servive token.
-     * @param {...ProviderType[]} providers the providers {@link ProviderType} to resolve with token.
-     * @returns {T}
-     */
-    abstract getService<T>(token: Token<T>, ...providers: ProviderType[]): T;
+
     /**
      * set value.
      * @param token provide key
@@ -602,45 +551,6 @@ export interface FactoryRecord<T = any> {
      * unregister callback.
      */
     unreg?: () => void;
-}
-
-
-/**
- * resovler option.
- */
-export interface ResolverOption extends InvokeArguments {
-    /**
-     * args.
-     */
-    args?: any[];
-    /**
-     * resolve token in target context.
-     */
-    target?: Token | TypeDef | Object | (Token | Object)[];
-    /**
-     * all faild use the default token to get instance.
-     */
-    defaultToken?: Token;
-    /**
-     * resolve strategy.
-     */
-    flags?: InjectFlags;
-    /**
-     * register token if has not register.
-     */
-    regify?: boolean;
-
-    context?: InvocationContext;
-}
-
-/**
- * resolve option of {@link Injector}
- */
-export interface ResolveOption<T = any> extends ResolverOption {
-    /**
-     * token.
-     */
-    token: Token<T>;
 }
 
 export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {

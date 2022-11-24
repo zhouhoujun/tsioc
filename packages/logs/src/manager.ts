@@ -25,7 +25,7 @@ export class ConfigureLoggerManager implements LoggerManager {
     get config(): LogConfigure {
         if (!this._config) {
             if (this.injector.has(LogConfigure)) {
-                this._config = this.injector.resolve(LogConfigure)
+                this._config = this.injector.get(LogConfigure)
             } else {
                 this._config = { adapter: 'console' }
             }

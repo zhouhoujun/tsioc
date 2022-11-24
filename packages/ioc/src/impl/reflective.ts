@@ -11,6 +11,7 @@ import { DestroyCallback } from '../destroy';
 import { OperationInvoker, Proceed } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
 import { hasItem, immediate } from '../utils/lang';
+import { ModuleMetadata } from '../metadata/meta';
 
 
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {

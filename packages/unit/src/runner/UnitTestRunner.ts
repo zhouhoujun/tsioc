@@ -18,7 +18,7 @@ export class UnitTestRunner {
         const config = ctx.resolve(UNITTESTCONFIGURE);
         const src = config.src;
         let suites: any[] = [];
-        const oldRunner = injector.resolve(OldTestRunner);
+        const oldRunner = ctx.resolve(OldTestRunner);
         const loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
@@ -35,6 +35,6 @@ export class UnitTestRunner {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         await lang.step(suites.filter(v => v && refl.get<SuiteReflect>(v)?.suite).map(s => () => ctx.bootstrap(s)));
-        await injector.resolve(DefaultTestReport).report()
+        await ctx.resolve(DefaultTestReport).report()
     }
 }

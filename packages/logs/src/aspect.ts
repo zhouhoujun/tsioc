@@ -88,7 +88,7 @@ export abstract class LogAspect extends LogProcess {
             let formater: LogFormater | undefined;
             const format = config.format || LogFormater;
             if (isToken(format)) {
-                formater = this.injector.resolve({ token: format, target: this, defaultToken: DefaultLogFormater })
+                formater = this.injector.get(format, null) ?? this.injector.get(DefaultLogFormater)
             } else if (isFunction(format)) {
                 formater = { format } as LogFormater
             } else if (isObject(format) && isFunction(format.format)) {

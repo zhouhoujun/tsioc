@@ -188,15 +188,16 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
             const { type, injector } = ctx;
             const def = ctx.def as ScanDef;
             const runners = injector.get(ApplicationRunners);
+            const typeRef = injector.get(ReflectiveFactory).create(type, injector);
             if (def.class.runnables.length || def.class.hasMetadata('run')) {
-                const typeRef = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector);
-                runners.addRunnable(typeRef, def.order)
+                const runner = typeRef.resolve(RunnableFactory).create(type, injector);
+                runners.addRunnable(runner, def.order)
             } else if (def.class.hasMethod('startup')) {
-                const typeRef = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector, { defaultInvoke: 'startup' });
-                runners.addStartup(typeRef, def.order)
+                const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'startup' });
+                runners.addStartup(runner, def.order)
             } else if (def.class.hasMethod('configureService')) {
-                const typeRef = injector.resolve({ token: RunnableFactory, target: type }).create(type, injector, { defaultInvoke: 'configureService' });
-                runners.addConfigureService(typeRef, def.order)
+                const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'configureService' });
+                runners.addConfigureService(runner, def.order)
             }
             return next()
         }

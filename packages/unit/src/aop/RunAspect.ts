@@ -16,7 +16,7 @@ export class RunAspect extends LogAspect {
     report!: TestReport;
     getReport(): TestReport {
         if (!this.report) {
-            this.report = this.injector.resolve(DefaultTestReport)
+            this.report = this.injector.get(DefaultTestReport)
         }
         return this.report
     }

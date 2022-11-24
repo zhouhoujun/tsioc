@@ -180,7 +180,7 @@ export class OldTestRunner implements UnitRunner {
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                const assert = this.injector.resolve(Assert);
+                const assert = this.injector.get(Assert);
                 const err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: fn,
