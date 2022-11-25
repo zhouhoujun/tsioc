@@ -63,7 +63,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     }
 
     createRunnable<C>(type: Type<C> | TypeDef<C>, option?: BootstrapOption): RunnableRef<C> {
-        const typeRef = this.injector.get(ReflectiveFactory).create(type, this.injector);
+        const typeRef = this.injector.reflectiveFactory.create(type, this.injector);
         const factory = typeRef.resolve(RunnableFactory);
         return factory.create(type, this.injector, option)
     }

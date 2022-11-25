@@ -141,13 +141,13 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                const modueRef = root.get(ReflectiveFactory).create(target, root);
+                const modueRef = root.reflectiveFactory.create(target, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root) as T
             } else {
                 if (target.loads) {
                     this._loads = await this.root.load(target.loads)
                 }
-                const modueRef = root.get(ReflectiveFactory).create(root.moduleType, root);
+                const modueRef = root.reflectiveFactory.create(root.moduleType, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T
             }
         }
@@ -159,7 +159,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         if (bootstraps && bootstraps.length) {
             const injector = ctx.injector;
             bootstraps.forEach(type => {
-                const typeRef = injector.get(ReflectiveFactory).create(type, injector);
+                const typeRef = injector.reflectiveFactory.create(type, injector);
                 const runner = typeRef.resolve(RunnableFactory).create(type, injector);
                 ctx.runners.addBootstrap(runner)
             })

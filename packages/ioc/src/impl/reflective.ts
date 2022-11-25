@@ -11,7 +11,6 @@ import { DestroyCallback } from '../destroy';
 import { OperationInvoker, Proceed } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
 import { hasItem, immediate } from '../utils/lang';
-import { ModuleMetadata } from '../metadata/meta';
 
 
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
@@ -212,7 +211,10 @@ export class DefaultReflectiveFactory extends ReflectiveFactory {
 
     destroy(): void {
         this.maps.forEach(ref=> {
-            ref.destroy();
+            if(typeof ref?.destroy !== 'function'){
+                console.log(ref);
+            } 
+            ref.destroy?.();
         });
         this.maps.clear();
     }
