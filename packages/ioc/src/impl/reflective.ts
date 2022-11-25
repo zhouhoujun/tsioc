@@ -200,20 +200,18 @@ export class DefaultReflectiveFactory extends ReflectiveFactory {
         this.maps = new Map();
     }
     create<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T> {
-        const [cltype, def] = isFunction(type) ? [type, get(type)] : [type.type, type];
+        const cltype = isFunction(type) ? type : type.type;
         let refle = this.maps.get(cltype);
         if (!refle) {
-            refle = new DefaultReflectiveRef<T>(def, injector, option);
+            refle = new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
+            injector.onDestroy(()=> this.maps.delete(cltype));
             this.maps.set(cltype, refle);
         }
         return refle
     }
 
     destroy(): void {
-        this.maps.forEach(ref=> {
-            if(typeof ref?.destroy !== 'function'){
-                console.log(ref);
-            } 
+        this.maps.forEach(ref => {
             ref.destroy?.();
         });
         this.maps.clear();
