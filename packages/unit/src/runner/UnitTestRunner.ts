@@ -2,7 +2,7 @@ import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
 import { ApplicationContext, Runner } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
-import { SuiteDef } from '../metadata/meta';
+import { SuiteDef } from '../metadata';
 import { UNITTESTCONFIGURE } from '../configure';
 
 

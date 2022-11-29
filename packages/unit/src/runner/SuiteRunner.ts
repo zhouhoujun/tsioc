@@ -1,8 +1,8 @@
-import { lang, Injectable, Decors, TypeDef, refl, Injector, InvokeArguments, Platform, ReflectiveFactory, Class, Type } from '@tsdi/ioc';
+import { lang, Injectable, Decors, refl, Injector, InvokeArguments, Platform, ReflectiveFactory, Class, Type } from '@tsdi/ioc';
 import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableRef } from '@tsdi/core';
 import { Advisor } from '@tsdi/aop';
-import { Before, BeforeEach, Test, After, AfterEach } from '../metadata/decor';
-import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata/meta';
+import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
+import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
