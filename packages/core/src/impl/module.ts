@@ -3,7 +3,7 @@ import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleDef, processInjectorType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks,
-    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Reflective
+    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Class
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
@@ -21,14 +21,14 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _instance!: T;
     private _defs = new Set<Type>();
     private _type: Type;
-    private _typeRefl: Reflective;
+    private _typeRefl: Class;
 
     reflectiveFactory = new DefaultReflectiveFactory();
     runnableFactory: RunnableFactory = new DefaultRunnableFactory(this);
 
     lifecycle!: ModuleLifecycleHooks;
 
-    constructor(moduleType: Reflective, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
+    constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
         this.isStatic = moduleType.annotation.static || option.isStatic;
@@ -103,7 +103,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return types
     }
 
-    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Reflective) {
+    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Class) {
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
@@ -130,7 +130,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 /**
  * create module ref.
  */
-export function createModuleRef<T>(module: Type<T> | Reflective<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
+export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
     if (isFunction(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module), parent, option);
     if (isModuleProviders(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module.module), parent, {
         ...option,

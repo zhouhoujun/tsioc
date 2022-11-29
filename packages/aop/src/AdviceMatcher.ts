@@ -1,4 +1,4 @@
-import { Abstract, Reflective } from '@tsdi/ioc';
+import { Abstract, Class } from '@tsdi/ioc';
 import { AdviceMetadata } from './metadata/meta';
 import { MatchPointcut } from './joinpoints/MatchPointcut';
 
@@ -17,5 +17,5 @@ export abstract class AdviceMatcher {
      * @param {AdviceMetadata[]} [adviceMetas]
      * @returns {MatchPointcut[]}
      */
-    abstract match(aspectType: Reflective, type: Reflective, adviceMetas?: AdviceMetadata[]): MatchPointcut[];
+    abstract match(aspectType: Class, type: Class, adviceMetas?: AdviceMetadata[]): MatchPointcut[];
 }

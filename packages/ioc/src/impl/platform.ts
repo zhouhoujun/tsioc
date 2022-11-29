@@ -4,7 +4,7 @@ import { Handler } from '../handler';
 import { isFunction } from '../utils/chk';
 import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
-import { Reflective } from '../metadata/type';
+import { Class } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, InjectorScope, ModuleRef, Platform, Scopes } from '../injector';
 import { Execption } from '../execption';
@@ -132,7 +132,7 @@ export class DefaultPlatform implements Platform {
      * get type provider.
      * @param type
      */
-    getTypeProvider(type: ClassType | Reflective) {
+    getTypeProvider(type: ClassType | Class) {
         const tyRef = isFunction(type) ? get(type) : type;
         const pdrs = tyRef.providers.slice(0);
         tyRef.extendTypes.forEach(t => {
@@ -149,7 +149,7 @@ export class DefaultPlatform implements Platform {
      * @param type 
      * @param providers 
      */
-    setTypeProvider(type: ClassType | Reflective, providers: StaticProvider[]) {
+    setTypeProvider(type: ClassType | Class, providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
         const prds = this._pdrs.get(ty);
         if (prds) {

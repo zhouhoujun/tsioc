@@ -47,25 +47,25 @@ export const Directive: Directive = createDecorator<DirectiveMetadata>('Directiv
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     def: {
         class: (ctx, next) => {
-            (ctx.typeRef as DirectiveDef).annoType = 'directive';
-            (ctx.typeRef as DirectiveDef).annoDecor = ctx.decor;
-            (ctx.typeRef as DirectiveDef).annotation = ctx.metadata;
+            (ctx.class as DirectiveDef).annoType = 'directive';
+            (ctx.class as DirectiveDef).annoDecor = ctx.decor;
+            (ctx.class as DirectiveDef).annotation = ctx.metadata;
             return next();
         }
     },
     design: {
         class: (ctx, next) => {
-            if ((ctx.typeRef as DirectiveDef).annoType !== 'directive') {
+            if ((ctx.class as DirectiveDef).annoType !== 'directive') {
                 return next();
             }
 
-            if (ctx.typeRef.class.annotation?.def) {
-                (ctx.typeRef as DirectiveDef).def = ctx.typeRef.class.annotation?.def;
+            if (ctx.class.class.annotation?.def) {
+                (ctx.class as DirectiveDef).def = ctx.class.class.annotation?.def;
                 return next();
             }
 
             const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
-            (ctx.typeRef as DirectiveDef).def = compiler.compileDirective((ctx.typeRef as DirectiveDef));
+            (ctx.class as DirectiveDef).def = compiler.compileDirective((ctx.class as DirectiveDef));
 
             next();
         }
@@ -109,21 +109,21 @@ export const Component: Component = createDecorator<ComponentMetadata>('Componen
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     def: {
         class: (ctx, next) => {
-            (ctx.typeRef as ComponentDef).annoType = 'component';
-            (ctx.typeRef as ComponentDef).annoDecor = ctx.decor;
-            (ctx.typeRef as ComponentDef).annotation = ctx.metadata;
+            (ctx.class as ComponentDef).annoType = 'component';
+            (ctx.class as ComponentDef).annoDecor = ctx.decor;
+            (ctx.class as ComponentDef).annotation = ctx.metadata;
             return next();
         }
     },
     design: {
         class: (ctx, next) => {
-            const compRefl = ctx.typeRef as ComponentDef;
+            const compRefl = ctx.class as ComponentDef;
             if (compRefl.annoType !== 'component') {
                 return next();
             }
 
-            if (ctx.typeRef.class.annotation?.def) {
-                (ctx.typeRef as ComponentDef).def = ctx.typeRef.class.annotation?.def;
+            if (ctx.class.class.annotation?.def) {
+                (ctx.class as ComponentDef).def = ctx.class.class.annotation?.def;
                 return next();
             }
 

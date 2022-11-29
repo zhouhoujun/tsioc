@@ -107,8 +107,8 @@ export class DefaultApplicationRunners extends ApplicationRunners {
         runner.onDestroy(() => this._startups.remove(runner))
     }
     addConfigureService(runner: RunnableRef<ConfigureService>, order?: number): void {
-        if (!runner.typeRef.hasParameters('configureService')) {
-            runner.typeRef.setParameters('configureService', [{ provider: ApplicationContext }])
+        if (!runner.class.hasParameters('configureService')) {
+            runner.class.setParameters('configureService', [{ provider: ApplicationContext }])
         }
         this._services.add(runner, order);
         runner.onDestroy(() => this._services.remove(runner))

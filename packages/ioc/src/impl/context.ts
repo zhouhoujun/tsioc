@@ -11,7 +11,7 @@ import { getDef } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
-import { Reflective } from '../metadata/type';
+import { Class } from '../metadata/type';
 
 
 
@@ -341,7 +341,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `"${obj}"`
     } else if (isClassType(obj)) {
         return 'Type<' + getClassName(obj) + '>'
-    } else if (obj instanceof Reflective) {
+    } else if (obj instanceof Class) {
         return `[${obj.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
         const str: string[] = [];

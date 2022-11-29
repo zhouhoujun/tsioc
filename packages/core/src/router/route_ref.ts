@@ -1,6 +1,6 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    ReflectiveFactory, TypeDef, ReflectiveRef, DestroyCallback, isClass, pomiseOf, InvokeArguments, Reflective
+    ReflectiveFactory, TypeDef, ReflectiveRef, DestroyCallback, isClass, pomiseOf, InvokeArguments, Class
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../transport/guard';
@@ -33,7 +33,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
     constructor(private factory: ReflectiveRef<T>) {
         super()
-        this.metadata = factory.typeRef.annotation as ProtocolRouteMappingMetadata
+        this.metadata = factory.class.annotation as ProtocolRouteMappingMetadata
         this._url = joinprefix(this.metadata.prefix, this.metadata.version, this.metadata.route);
         this._endpoints = new Map()
     }
@@ -43,7 +43,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     get typeRef() {
-        return this.factory.typeRef
+        return this.factory.class
     }
 
     get injector() {
@@ -233,7 +233,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
 
 export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
     private routeRef?: RouteRef<T>;
-    constructor(readonly typeRef: Reflective<T>) {
+    constructor(readonly typeRef: Class<T>) {
         super()
     }
     create(injector: Injector, option?: InvokeArguments): RouteRef<T> {
@@ -247,7 +247,7 @@ export class DefaultRouteFactory<T = any> extends RouteFactory<T> {
 }
 
 export class DefaultRouteFactoryResovler extends RouteFactoryResolver {
-    resolve<T>(type: Type<T> | Reflective<T>): RouteFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>): RouteFactory<T> {
         return new DefaultRouteFactory<T>(isFunction(type) ? refl.get(type) : type)
     }
 }

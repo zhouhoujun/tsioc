@@ -1,4 +1,4 @@
-import { Type, RuntimeContext, AnnotationType, Reflective } from '@tsdi/ioc';
+import { Type, RuntimeContext, AnnotationType, Class } from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { AopDef } from '../metadata/ref';
 import { Advisor } from '../Advisor';
@@ -10,12 +10,12 @@ import { Advisor } from '../Advisor';
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     // ctx.type had checked.
-    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.typeRef as Reflective<any, AopDef>)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.class as Class<any, AopDef>)) {
         return next()
     }
 
     const platform = ctx.injector.platform();
-    platform.getActionValue(Advisor).attach(ctx.typeRef, ctx.instance);
+    platform.getActionValue(Advisor).attach(ctx.class, ctx.instance);
 
     next()
 };
@@ -28,7 +28,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
  */
 export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    if (!isValAspectTag(ctx.type, ctx.typeRef as Reflective<any, AopDef>)) {
+    if (!isValAspectTag(ctx.type, ctx.class as Class<any, AopDef>)) {
         return next()
     }
 
@@ -46,7 +46,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
  */
 export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.typeRef)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.class)) {
         return next()
     }
 
@@ -65,13 +65,13 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
  */
 export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    if (!isValAspectTag(ctx.type, ctx.typeRef)) {
+    if (!isValAspectTag(ctx.type, ctx.class)) {
         return next()
     }
 
     const platform = ctx.injector.platform();
     const advisor = platform.getActionValue(Advisor);
-    advisor.register(ctx.typeRef);
+    advisor.register(ctx.class);
 
     next()
 }
@@ -84,9 +84,9 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
  * @param {Type} targetType
  * @returns {boolean}
  */
-function isValAspectTag(targetType: Type, typeRef: Reflective): boolean {
+function isValAspectTag(targetType: Type, clas: Class): boolean {
     if ((targetType as AnnotationType).ƿNPT) {
         return false
     }
-    return !typeRef.getAnnotation<AopDef>().nonePointcut
+    return !clas.getAnnotation<AopDef>().nonePointcut
 }

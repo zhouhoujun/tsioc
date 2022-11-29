@@ -1,4 +1,4 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Reflective, lang, Scopes, ReflectiveFactory } from '@tsdi/ioc';
+import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ReflectiveFactory } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
@@ -120,11 +120,11 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
-    protected moduleify(module: Type | Reflective | ModuleMetadata): Type | Reflective {
+    protected moduleify(module: Type | Class | ModuleMetadata): Type | Class {
         if (isFunction(module)) return module;
-        if (module instanceof Reflective) return module;
+        if (module instanceof Class) return module;
 
-        return new Reflective(DynamicModule, {
+        return new Class(DynamicModule, {
             type: DynamicModule,
             ...module,
             module: true,

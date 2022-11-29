@@ -10,7 +10,7 @@ import {
 } from './meta';
 import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
-    Reflective, TypeDef
+    Class, TypeDef
 } from './type';
 import { Platform } from '../injector';
 import { InvokeOptions } from '../context';
@@ -225,7 +225,7 @@ function regActionType(decor: string, type: ActionType) {
 const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors[ctx.decor]) {
-        const def = ctx.typeRef;
+        const def = ctx.class;
         const meta = ctx.metadata as ParameterMetadata;
         const propertyKey = ctx.propertyKey;
         let params = def.hasParameters(propertyKey) ? def.getParameters(propertyKey) : null;
@@ -271,21 +271,21 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
     if (propInjectDecors[ctx.decor]) {
-        ctx.typeRef.setProperyProviders(ctx.propertyKey, [ctx.metadata])
+        ctx.class.setProperyProviders(ctx.propertyKey, [ctx.metadata])
     }
     return next()
 }
 
 
 export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
-    if (!ctx.typeRef.hasParameters(ctorName)) {
-        let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.typeRef.type);
+    if (!ctx.class.hasParameters(ctorName)) {
+        let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.class.type);
         if (paramTypes) {
-            const names = ctx.typeRef.getParamNames(ctorName);
+            const names = ctx.class.getParamNames(ctorName);
             if (!paramTypes) {
                 paramTypes = []
             }
-            ctx.typeRef.setParameters(ctorName, paramTypes.map((type, index) => {
+            ctx.class.setParameters(ctorName, paramTypes.map((type, index) => {
                 return { type, name: names[index] }
             }))
         }
@@ -296,12 +296,12 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
 const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true };
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors[ctx.decor]) {
-        const def = ctx.typeRef;
+        const def = ctx.class;
         const meta = ctx.metadata as ClassMetadata & InjectableMetadata;
         if (meta.abstract) {
             def.annotation.abstract = true
         }
-        
+
         if (meta.singleton) {
             def.annotation.singleton = true
         }
@@ -336,8 +336,8 @@ export const RunnableAction = (ctx: DecorContext, next: () => void) => {
             method: (ctx.metadata as RunnableMetadata).method ?? ctx.propertyKey,
             order: ctx.decorType === Decors.CLASS ? 0 : (ctx.metadata as RunnableMetadata).order
         }
-        ctx.typeRef.runnables.push(ctx.metadata);
-        ctx.typeRef.runnables.sort((au1, au2) => au1.order! - au2.order!)
+        ctx.class.runnables.push(ctx.metadata);
+        ctx.class.runnables.sort((au1, au2) => au1.order! - au2.order!)
     }
     return next()
 }
@@ -346,14 +346,14 @@ const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Pr
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (typeProvidersDecors[ctx.decor]) {
         if ((ctx.metadata as ProvidersMetadata).providers) {
-            ctx.typeRef.providers.push(...(ctx.metadata as ProvidersMetadata).providers!)
+            ctx.class.providers.push(...(ctx.metadata as ProvidersMetadata).providers!)
         }
     }
     return next()
 }
 
 export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
-    const reflective = ctx.typeRef;
+    const reflective = ctx.class;
     const method = ctx.propertyKey;
     if (!reflective.hasParameters(method)) {
         const names = reflective.getParamNames(method);
@@ -375,7 +375,7 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.decor]) {
         const mpdrs = (ctx.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
-            ctx.typeRef.setMethodOptions(ctx.propertyKey, mpdrs)
+            ctx.class.setMethodOptions(ctx.propertyKey, mpdrs)
         }
     }
     return next()
@@ -437,11 +437,11 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
     const ctx = {
         ...define,
         target,
-        typeRef: get(type)
+        class: get(type)
     } as DecorContext;
     options.init && options.init(ctx);
     actions.handle(ctx, () => {
-        ctx.typeRef.addDefine(define)
+        ctx.class.addDefine(define)
     });
     options.afterInit && options.afterInit(ctx);
     cleanObj(ctx)
@@ -491,17 +491,17 @@ export function getDef<T extends TypeDef>(type: ClassType): T {
  * get type Reflective.
  * @param type class type.
  */
-export function get<TAnn extends TypeDef<T>, T = any>(type: ClassType<T>): Reflective<T, TAnn> {
-    let tagRefl = (type as AnnotationType).ƿRef?.() as Reflective<T, TAnn>;
+export function get<TAnn extends TypeDef<T>, T = any>(type: ClassType<T>): Class<T, TAnn> {
+    let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T, TAnn>;
     if (tagRefl?.type !== type) {
-        let prRef: Reflective = tagRefl;
+        let prRef: Class = tagRefl;
         if (!prRef) {
             const parentType = getParentClass(type);
             if (parentType) {
                 prRef = get(parentType)
             }
         }
-        tagRefl = new Reflective(type, getDef(type) as TAnn, prRef);
+        tagRefl = new Class(type, getDef(type) as TAnn, prRef);
         (type as AnnotationType).ƿRef = () => tagRefl;
 
     }

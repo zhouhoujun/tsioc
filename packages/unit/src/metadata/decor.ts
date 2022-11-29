@@ -37,8 +37,8 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: ActionTypes.annoation,
     def: {
         class: (ctx, next) => {
-            ctx.typeRef.setAnnotation(ctx.metadata);
-            (ctx.typeRef.annotation as SuiteDef).suite = true;
+            ctx.class.setAnnotation(ctx.metadata);
+            (ctx.class.annotation as SuiteDef).suite = true;
             return next()
         }
     },

@@ -16,7 +16,7 @@ import { ViewContainerRef } from './refs/container';
     private _compRef?: ComponentRef<T>;
     get componentRef(): ComponentRef<T> {
         if (!this._compRef) {
-            this._compRef = this.injector.get(ViewContainerRef).createComponent(this.typeRef, {
+            this._compRef = this.injector.get(ViewContainerRef).createComponent(this.class, {
                 injector: this.injector,
                 context: this.context,
                 moduleRef: this.moduleRef

@@ -13,11 +13,11 @@ export abstract class IocRegScope<T extends RegContext = RegContext> extends Ioc
 
 
 export const InitReflectAction = function (ctx: RegContext, next?: () => void): void {
-    if(!ctx.typeRef){
-        ctx.typeRef = get(ctx.type)
+    if(!ctx.class){
+        ctx.class = get(ctx.type)
     }
-    if (ctx.typeRef.annotation.singleton) {
-        ctx.singleton = ctx.typeRef.annotation.singleton
+    if (ctx.class.annotation.singleton) {
+        ctx.singleton = ctx.class.annotation.singleton
     }
 
     if (next) {

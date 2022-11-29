@@ -1,6 +1,6 @@
 import {
     Type, getClass, Injector, ProviderType, DefaultInvocationContext,
-    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Reflective, ModuleDef
+    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
@@ -62,13 +62,13 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._runners
     }
 
-    createRunnable<C>(type: Type<C> | Reflective<C>, option?: BootstrapOption): RunnableRef<C> {
+    createRunnable<C>(type: Type<C> | Class<C>, option?: BootstrapOption): RunnableRef<C> {
         const typeRef = this.injector.reflectiveFactory.create(type, this.injector);
         const factory = typeRef.resolve(RunnableFactory);
         return factory.create(type, this.injector, option)
     }
 
-    bootstrap<C>(type: Type<C> | Reflective<C>, option?: BootstrapOption): any {
+    bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): any {
         return this.createRunnable(type, option).run()
     }
 

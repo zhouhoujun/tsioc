@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, lang, isArray, ClassType, ctorName, Decors, Platform, Reflective } from '@tsdi/ioc';
+import { isString, isRegExp, lang, isArray, ClassType, ctorName, Decors, Platform, Class } from '@tsdi/ioc';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';
@@ -23,7 +23,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     constructor(private platform: Platform) { }
 
-    match(aspref: Reflective, tagref: Reflective, adviceMetas?: AdviceMetadata[]): MatchPointcut[] {
+    match(aspref: Class, tagref: Class, adviceMetas?: AdviceMetadata[]): MatchPointcut[] {
         const aopDef = aspref.getAnnotation<AopDef>();
         const aspectMeta = aopDef.aspect;
         if (aspectMeta) {
@@ -102,7 +102,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return false
     }
 
-    filterPointcut(relfect: Reflective, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
+    filterPointcut(relfect: Class, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
         if (!metadata.pointcut) {
             return []
         }
@@ -118,12 +118,12 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         })
     }
 
-    protected matchTypeFactory(relfect: Reflective, metadata: AdviceMetadata): MatchExpress {
+    protected matchTypeFactory(relfect: Class, metadata: AdviceMetadata): MatchExpress {
         const checks = this.genChecks(relfect, metadata);
         return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
     }
 
-    protected genChecks(relfect: Reflective, metadata: AdviceMetadata): MatchExpress[] {
+    protected genChecks(relfect: Class, metadata: AdviceMetadata): MatchExpress[] {
         const checks: MatchExpress[] = [];
         if (metadata.within) {
             checks.push(() => {
@@ -173,7 +173,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
     }
 
-    protected expressToFunc(def: Reflective, strExp: string): MatchExpress {
+    protected expressToFunc(def: Class, strExp: string): MatchExpress {
 
         if (annContentExp.test(strExp)) {
             return this.toAnnExpress(def, strExp.substring(12, strExp.length - 1))
@@ -197,12 +197,12 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return fasleFn
     }
 
-    protected toAnnExpress(def: Reflective, exp: string): MatchExpress {
+    protected toAnnExpress(def: Class, exp: string): MatchExpress {
         const annotation = aExp.test(exp) ? exp : ('@' + exp);
         return (name?: string, fullName?: string) => def.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
-    protected toExecExpress(def: Reflective, exp: string): MatchExpress {
+    protected toExecExpress(def: Class, exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
             return (name?: string, fullName?: string) => !!name && !def.getAnnotation<AopDef>().aspect
         }
@@ -224,7 +224,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return fasleFn
     }
 
-    protected tranlateExpress(def: Reflective, strExp: string): MatchExpress {
+    protected tranlateExpress(def: Class, strExp: string): MatchExpress {
         if (!boolOper.test(strExp)) return this.expressToFunc(def, strExp);
         const exp = new BoolExpression(strExp, isBoolToken);
         const fns = exp.tokens.map(t => this.expressToFunc(def, t));

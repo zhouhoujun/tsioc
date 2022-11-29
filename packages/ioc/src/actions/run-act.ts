@@ -17,11 +17,11 @@ import { ReflectiveFactory } from '../reflective';
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.params) {
-        ctx.params = ctx.typeRef.getParameters(ctorName)
+        ctx.params = ctx.class.getParameters(ctorName)
     }
 
     const uctx = ctx.context;
-    const providers = ctx.typeRef.providers;
+    const providers = ctx.class.providers;
     let newCtx: InvocationContext | undefined;
     if (!uctx || (uctx.targetType && uctx.targetType !== ctx.type)) {
         newCtx = createContext(ctx.injector, {
@@ -36,7 +36,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
     }
 
     if (!ctx.args) {
-        ctx.args = ctx.typeRef.resolveArguments(ctorName, ctx.context!)
+        ctx.args = ctx.class.resolveArguments(ctorName, ctx.context!)
     }
 
     next();
@@ -71,7 +71,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
     if (!context) throw new Execption('autowride property need InvocationContext');
     let meta: PropertyMetadata, key: string, val;
 
-    ctx.typeRef.eachProperty((metas, propertyKey) => {
+    ctx.class.eachProperty((metas, propertyKey) => {
         key = `${propertyKey}_INJECTED`;
         meta = metas.find(m => m.provider)!;
         if (!meta) {
@@ -107,7 +107,7 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements Acti
  *
  */
 export const BeforeCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
-    ctx.typeRef.classDecors.forEach(d => {
+    ctx.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getRuntimeHandle(Decors.beforeConstructor), ctx)
     });
@@ -138,7 +138,7 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements Actio
  * @extends {RuntimeDecorScope}
  */
 export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
-    ctx.typeRef.classDecors.forEach(d => {
+    ctx.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getRuntimeHandle(Decors.afterConstructor), ctx)
     });
@@ -153,10 +153,10 @@ export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => v
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
-    if (!ctx.instance || ctx.singleton || !ctx.typeRef.annotation.expires || ctx.typeRef.annotation.expires <= 0) {
+    if (!ctx.instance || ctx.singleton || !ctx.class.annotation.expires || ctx.class.annotation.expires <= 0) {
         return next()
     }
-    ctx.injector.cache(ctx.type, ctx.instance, ctx.typeRef.annotation.expires);
+    ctx.injector.cache(ctx.type, ctx.instance, ctx.class.annotation.expires);
     return next()
 }
 
@@ -169,9 +169,9 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    const autos = ctx.typeRef.runnables.filter(c => c.auto && c.decorType === Decors.method)
+    const autos = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
     if (autos.length) {
-        const { injector, typeRef: def, instance, context } = ctx;
+        const { injector, class: def, instance, context } = ctx;
         const factory = injector.get(ReflectiveFactory).create(def, injector, context);
         autos.forEach(aut => {
             factory.invoke(aut.method, context, instance)
@@ -213,7 +213,7 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements Act
  * runtime annoation decorator action scope.
  */
 export const RuntimeAnnoDecorHandle = function (ctx: RuntimeContext, next: () => void) {
-    ctx.typeRef.classDecors.forEach(d => {
+    ctx.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getRuntimeHandle(Decors.CLASS), ctx)
     });
@@ -228,7 +228,7 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements Acti
     }
 }
 export const RuntimeMthDecorHandle = function (ctx: RuntimeContext, next: () => void) {
-    ctx.typeRef.methodDecors.forEach(d => {
+    ctx.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getRuntimeHandle(Decors.method), ctx)
     });
@@ -244,7 +244,7 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements Act
 }
 
 export const RuntimePropDecorHandle = function (ctx: RuntimeContext, next: () => void) {
-    ctx.typeRef.propDecors.forEach(d => {
+    ctx.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
         runChain(d.getRuntimeHandle(Decors.property), ctx)
     });

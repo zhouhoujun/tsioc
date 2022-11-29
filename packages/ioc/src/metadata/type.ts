@@ -126,7 +126,7 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
  */
 export interface DecorContext extends DecorDefine {
     target: any;
-    typeRef: Reflective;
+    class: Class;
 }
 
 /**
@@ -174,9 +174,9 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 }
 
 /**
- * type reflective.
+ * type class reflective.
  */
-export class Reflective<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
+export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
     className: string;
 
     readonly decors: DecorDefine[];
@@ -230,7 +230,7 @@ export class Reflective<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
      */
     readonly runnables: RunableDefine[];
 
-    constructor(public readonly type: ClassType<T>, annotation: TAnn, private parent?: Reflective) {
+    constructor(public readonly type: ClassType<T>, annotation: TAnn, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
