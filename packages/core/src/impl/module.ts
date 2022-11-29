@@ -31,12 +31,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     constructor(moduleType: ModuleDef, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
-        this.isStatic = option.isStatic;
+        this.isStatic = moduleType.static || option.isStatic;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
 
-        // this.reflectiveFactory = this.get(ReflectiveFactory);
-        // this.setValue(ReflectiveFactory, this.reflectiveFactory);
         this.inject(
             { provide: ReflectiveFactory, useValue: this.reflectiveFactory },
             { provide: RunnableFactory, useValue: this.runnableFactory }

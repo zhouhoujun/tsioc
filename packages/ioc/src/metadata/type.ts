@@ -193,7 +193,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 /**
  * type reflective.
  */
-export class Reflective<T = any> {
+export class Reflective<T = any, TAnn extends Annotation = Annotation> {
     className: string;
 
     readonly decors: DecorDefine[];
@@ -202,7 +202,7 @@ export class Reflective<T = any> {
     readonly methodDecors: DecorDefine<MethodMetadata>[];
     readonly paramDecors: DecorDefine<ParameterMetadata>[];
 
-    readonly annotation: Annotation;
+    readonly annotation: TAnn;
     private params!: Map<string, any[]>;
 
     /**
@@ -252,7 +252,7 @@ export class Reflective<T = any> {
      */
     readonly runnables: RunableDefine[];
 
-    constructor(public readonly type: ClassType<T>, annotation?: Annotation, private parent?: Reflective) {
+    constructor(public readonly type: ClassType<T>, annotation?: TAnn, private parent?: Reflective) {
         this.annotation = annotation ?? getClassAnnotation(type)!;
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
