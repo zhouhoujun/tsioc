@@ -1,6 +1,6 @@
 import {
-    Type, ModuleMetadata, getClass, Injector, ProviderType, TypeDef,
-    DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ, ReflectiveFactory
+    Type, getClass, Injector, ProviderType, DefaultInvocationContext,
+    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Reflective, ModuleDef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
@@ -62,13 +62,13 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._runners
     }
 
-    createRunnable<C>(type: Type<C> | TypeDef<C>, option?: BootstrapOption): RunnableRef<C> {
+    createRunnable<C>(type: Type<C> | Reflective<C>, option?: BootstrapOption): RunnableRef<C> {
         const typeRef = this.injector.reflectiveFactory.create(type, this.injector);
         const factory = typeRef.resolve(RunnableFactory);
         return factory.create(type, this.injector, option)
     }
 
-    bootstrap<C>(type: Type<C> | TypeDef<C>, option?: BootstrapOption): any {
+    bootstrap<C>(type: Type<C> | Reflective<C>, option?: BootstrapOption): any {
         return this.createRunnable(type, option).run()
     }
 
@@ -106,9 +106,9 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         // this._multicaster.unsubscribe();
     }
 
-    getAnnoation<TM extends ModuleMetadata>(): TM {
-        return this.injector.moduleReflect?.annotation as TM
-    }
+    // getAnnoation<TM extends ModuleDef>(): TM {
+    //     return this.injector.moduleReflect.annotation as TM
+    // }
 }
 
 export class DefaultEventMulticaster extends ApplicationEventMulticaster {
@@ -141,8 +141,8 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     }
 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {
-        if (root.moduleReflect.annotation?.baseURL) {
-            root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL)
+        if ((root.moduleReflect.annotation as ModuleDef)?.baseURL) {
+            root.setValue(PROCESS_ROOT, (root.moduleReflect.annotation as ModuleDef).baseURL)
         }
         const ctx = this.createInstance(root, option);
         return ctx

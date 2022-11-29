@@ -308,7 +308,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
 
     const ann: TypeDef = getClassAnnotation(target);
     if (ann) {
-        if (isBoolean(abstract) && ann.type === target) return abstract ? ann.class.abstract === true : !ann.class.abstract;
+        if (isBoolean(abstract) && ann.type === target) return abstract ? ann.abstract === true : !ann.abstract;
         return true
     }
 

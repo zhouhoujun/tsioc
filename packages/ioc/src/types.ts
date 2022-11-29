@@ -1,4 +1,3 @@
-
 /**
  * module object.
  */
@@ -66,10 +65,6 @@ export interface Annotation<T = any> {
      */
     readonly type: ClassType<T>;
     /**
-     * class reflective.
-     */
-    class: unknown;
-    /**
      * class params declaration.
      *
      * @type {Record<string, string[]>}
@@ -115,6 +110,10 @@ export interface AnnotationType<T = any> extends Function {
      * class design annotation
      */
     ƿAnn?(): Annotation;
+    /**
+     * class Reflective 
+     */
+    ƿRef?(): any;
     /**
      * class flag. none poincut for aop.
      */

@@ -1,5 +1,5 @@
 import { ClassType } from '../types';
-import { TypeDef } from '../metadata/type';
+import { Reflective } from '../metadata/type';
 import { InvocationContext } from '../context';
 import { OperationInvoker, Proceed } from '../operation';
 import { isTypeObject } from '../utils/obj';
@@ -15,19 +15,19 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
 
     private _returnType!: ClassType;
     constructor(
-        private typeRef: TypeDef,
+        private typeRef: Reflective<T>,
         private method: string,
         private instance?: any | (() => any),
         private proceed?: Proceed<T>) {
     }
 
     get descriptor(): TypedPropertyDescriptor<T> {
-        return this.typeRef.class.getDescriptor(this.method)
+        return this.typeRef.getDescriptor(this.method)
     }
 
     get returnType(): ClassType {
         if (!this._returnType) {
-            this._returnType = this.typeRef.class.getReturnning(this.method) ?? Object
+            this._returnType = this.typeRef.getReturnning(this.method) ?? Object
         }
         return this._returnType
     }
@@ -65,7 +65,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
             proceed = this.proceed ?? proceed;
         }
 
-        return this.typeRef.class.invoke(this.method, context, instance, proceed)
+        return this.typeRef.invoke(this.method, context, instance, proceed)
     }
 
     /**
@@ -73,6 +73,6 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      * @param context 
      */
     resolveArguments(context: InvocationContext): any[] {
-        return this.typeRef.class.resolveArguments(this.method, context)
+        return this.typeRef.resolveArguments(this.method, context)
     }
 }

@@ -127,12 +127,12 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
                 targetType: targetType,
                 methodName: name,
                 fullName,
-                params: targetRef.class.getParameters(name),
+                params: targetRef.getParameters(name),
                 args,
                 target,
                 advices,
                 originMethod: propertyMethod,
-                annotations: targetRef.class.decors.filter(d => d.propertyKey === name),
+                annotations: targetRef.decors.filter(d => d.propertyKey === name),
                 parent
             });
             if (parent) {

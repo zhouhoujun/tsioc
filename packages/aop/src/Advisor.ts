@@ -1,4 +1,4 @@
-import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, ctorName, TypeDef, isFunction } from '@tsdi/ioc';
+import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, ctorName, TypeDef, isFunction, Reflective } from '@tsdi/ioc';
 import { Advicer } from './advices/Advicer';
 import { Advices } from './advices/Advices';
 import { AdviceMatcher } from './AdviceMatcher';
@@ -28,13 +28,13 @@ export class Advisor implements OnDestroy {
         this.aspects = []
     }
 
-    register(type: Type | TypeDef): void {
+    register(type: Type | Reflective): void {
         const matcher = this.platform.getAction(AdviceMatcher);
-        const typeRefl = isFunction(type) ? refl.get<AopDef>(type, true) : type as AopDef;
+        const typeRefl = isFunction(type) ? refl.get<AopDef>(type) : type as Reflective<any, AopDef>;
         const ClassType = typeRefl.type as Type;
         this.aspects.forEach(aspect => {
-            const aopRef = aspect.def as AopDef;
-            const matchpoints = matcher.match(aopRef, typeRefl, aopRef.advices);
+            const aopRef = aspect.typeRef as Reflective<any, AopDef>;
+            const matchpoints = matcher.match(aopRef, typeRefl, aopRef.annotation.advices);
             matchpoints.forEach(mpt => {
                 const name = mpt.name;
                 const advice = mpt.advice;
@@ -109,12 +109,12 @@ export class Advisor implements OnDestroy {
         this.advices.delete(type);
     }
 
-    attach<T>(def: TypeDef<T>, instance: T): void {
-        const type = def.type as Type;
+    attach<T>(typeRef: Reflective<T>, instance: T): void {
+        const type = typeRef.type as Type;
         const advicesMap = this.advices.get(type);
         if (advicesMap && advicesMap.size) {
-            const className = def.class.className;
-            const decorators = def.class.getPropertyDescriptors();
+            const className = typeRef.className;
+            const decorators = typeRef.getPropertyDescriptors();
             const proceeding = this.platform.getAction(Proceeding);
 
             advicesMap.forEach((advices, name) => {
@@ -131,10 +131,10 @@ export class Advisor implements OnDestroy {
         }
     }
 
-    detach<T>(def: TypeDef<T>, instance: T): void {
-        const advicesMap = this.advices.get(def.type as Type);
+    detach<T>(typeRef: Reflective<T>, instance: T): void {
+        const advicesMap = this.advices.get(typeRef.type as Type);
         if (advicesMap && advicesMap.size) {
-            const decorators = def.class.getPropertyDescriptors();
+            const decorators = typeRef.getPropertyDescriptors();
             advicesMap.forEach((advices, name) => {
                 if (name === ctorName) {
                     return

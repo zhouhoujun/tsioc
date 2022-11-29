@@ -1,7 +1,7 @@
 import { ClassType, Type } from './types';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
-import { TypeDef } from './metadata/type';
+import { Reflective } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvokeArguments } from './context';
@@ -36,13 +36,13 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      */
     abstract resolve<R>(token: Token<R>): R;
     /**
-     * target def.
-     */
-    abstract get def(): TypeDef<T>;
-    /**
      * target type.
      */
     abstract get type(): Type<T>;
+    /**
+     * target type Reflective.
+     */
+    abstract get typeRef(): Reflective<T>;
     /**
      * get instance T.
      */
@@ -112,7 +112,7 @@ export abstract class ReflectiveFactory {
      * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link ReflectiveRef}
      */
-    abstract create<T>(type: ClassType<T> | TypeDef<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
+    abstract create<T>(type: ClassType<T> | Reflective<T>, injector: Injector, option?: InvokeArguments): ReflectiveRef<T>;
 
     abstract destroy(): void;
 }

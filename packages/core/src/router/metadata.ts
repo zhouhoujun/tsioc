@@ -92,14 +92,14 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     def: {
         class: (ctx, next) => {
-            ctx.def.annotation = ctx.metadata;
+            ctx.typeRef.setAnnotation(ctx.metadata);
             return next();
         }
     },
     design: {
         afterAnnoation: (ctx, next) => {
-            const def = ctx.def;
-            const metadata = def.class.getMetadata<HandleMetadata>(ctx.currDecor);
+            const def = ctx.typeRef;
+            const metadata = def.getMetadata<HandleMetadata>(ctx.currDecor);
             const { route, prefix, version, parent, protocol, interceptors } = metadata;
             const injector = ctx.injector;
 
@@ -258,14 +258,14 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         },
         def: controllerOnly ? undefined : {
             class: (ctx, next) => {
-                ctx.def.annotation = ctx.metadata;
+                ctx.typeRef.setAnnotation(ctx.metadata);
                 return next();
             }
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const def = ctx.def as MappingDef;
-                const { parent, version, prefix, guards: clsGuards, interceptors: clsInterceptors } = def.annotation;
+                const def = ctx.typeRef.getAnnotation<MappingDef>();
+                const { parent, version, prefix, guards: clsGuards, interceptors: clsInterceptors } = def;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
@@ -334,7 +334,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 // });
                 // factory.onDestroy(() => routes.forEach(path => router.unuse(path)));
 
-                const routeRef = injector.get(RouteFactoryResolver).resolve(def).create(injector);
+                const routeRef = injector.get(RouteFactoryResolver).resolve(ctx.typeRef).create(injector);
                 const path = routeRef.path;
                 routeRef.onDestroy(() => router.unuse(path));
                 router.use(path, routeRef);

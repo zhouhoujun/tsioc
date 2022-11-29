@@ -2,7 +2,7 @@ import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
 import { ApplicationContext, Runner } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
-import { SuiteReflect } from '../metadata/meta';
+import { SuiteDef } from '../metadata/meta';
 import { UNITTESTCONFIGURE } from '../configure';
 
 
@@ -34,7 +34,7 @@ export class UnitTestRunner {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
-        await lang.step(suites.filter(v => v && refl.get<SuiteReflect>(v)?.suite).map(s => () => ctx.bootstrap(s)));
+        await lang.step(suites.filter(v => v && refl.getDef<SuiteDef>(v)?.suite).map(s => () => ctx.bootstrap(s)));
         await ctx.resolve(DefaultTestReport).report()
     }
 }

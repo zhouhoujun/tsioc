@@ -126,31 +126,14 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
  */
 export interface DecorContext extends DecorDefine {
     target: any;
-    def: TypeDef;
+    typeRef: Reflective;
 }
 
 /**
  * type def metadata.
  */
-export interface TypeDef<T = any> extends ProvidedInMetadata, PatternMetadata, Annotation {
-    /**
-     * class reflective.
-     */
-    class: Reflective<T>;
-    /**
-     * annotation metadata.
-     */
-    annotation?: any;
-}
+export interface TypeDef<T = any> extends ProvidedInMetadata, PatternMetadata, Annotation<T> {
 
-
-/**
- * is type def or not.
- * @param target 
- * @returns 
- */
-export function isTypeDef(target: any): target is TypeDef {
-    return target && isFunction(target.type) && target.type === target.class?.type
 }
 
 
@@ -193,7 +176,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 /**
  * type reflective.
  */
-export class Reflective<T = any, TAnn extends Annotation = Annotation> {
+export class Reflective<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
     className: string;
 
     readonly decors: DecorDefine[];
@@ -204,11 +187,6 @@ export class Reflective<T = any, TAnn extends Annotation = Annotation> {
 
     readonly annotation: TAnn;
     private params!: Map<string, any[]>;
-
-    /**
-     * is abstract or not.
-     */
-    abstract = false;
     /**
      * class provides.
      */
@@ -252,8 +230,8 @@ export class Reflective<T = any, TAnn extends Annotation = Annotation> {
      */
     readonly runnables: RunableDefine[];
 
-    constructor(public readonly type: ClassType<T>, annotation?: TAnn, private parent?: Reflective) {
-        this.annotation = annotation ?? getClassAnnotation(type)!;
+    constructor(public readonly type: ClassType<T>, annotation: TAnn, private parent?: Reflective) {
+        this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
         if (parent) {
@@ -275,6 +253,17 @@ export class Reflective<T = any, TAnn extends Annotation = Annotation> {
         this.methodParams = new Map();
         this.methodOptions = new Map();
         this.methodReturns = new Map()
+    }
+
+    getAnnotation<T extends TAnn>(): T {
+        return this.annotation as T;
+    }
+
+    setAnnotation(records: Record<string, any>) {
+        if (!records) return;
+        for (const key in records) {
+            (this.annotation as any)[key] = records[key]
+        }
     }
 
     /**
@@ -374,15 +363,15 @@ export class Reflective<T = any, TAnn extends Annotation = Annotation> {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {
-                if(!eopt.providers) eopt.providers =[];
-                 eopt.providers.push(...options.providers!)
+                if (!eopt.providers) eopt.providers = [];
+                eopt.providers.push(...options.providers!)
             }
             if (hasItem(options.resolvers)) {
-                if(!eopt.resolvers) eopt.resolvers =[];
+                if (!eopt.resolvers) eopt.resolvers = [];
                 eopt.resolvers.push(...options.resolvers!)
             }
             if (hasItem(options.values)) {
-                if(!eopt.values) eopt.values =[];
+                if (!eopt.values) eopt.values = [];
                 eopt.values.push(...options.values!);
             }
             if (options.arguments) {

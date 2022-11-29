@@ -1,6 +1,6 @@
 import {
-    ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments,
-    ModuleLoader, Destroyable, Modules, DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, TypeDef, Token, tokenId
+    ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments, ModuleLoader, Destroyable, Modules,
+    DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Reflective
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { BootstrapOption, RunnableRef } from './runnable';
@@ -27,13 +27,13 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * create runnable ref.
      * @param type 
      */
-    abstract createRunnable<C>(type: Type<C> | TypeDef<C>): RunnableRef<C>;
+    abstract createRunnable<C>(type: Type<C> | Reflective<C>): RunnableRef<C>;
     /**
      * bootstrap type
      * @param type bootstrap type.
      * @param option bootstrap option.
      */
-    abstract bootstrap<C>(type: Type<C> | TypeDef<C>, option?: BootstrapOption): any;
+    abstract bootstrap<C>(type: Type<C> | Reflective<C>, option?: BootstrapOption): any;
     /**
      * get logger.
      * @param name 

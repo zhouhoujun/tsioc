@@ -1,6 +1,6 @@
 import { ActionTypes, createDecorator, DecoratorOption, EMPTY_OBJ } from '@tsdi/ioc';
 import { RunnableFactory } from '@tsdi/core';
-import { SuiteMetadata, SuiteReflect, TestCaseMetadata, TestMetadata } from './meta';
+import { SuiteMetadata, SuiteDef, TestCaseMetadata, TestMetadata } from './meta';
 import { SuiteRunnableFactory } from '../runner/SuiteRunner';
 
 
@@ -37,8 +37,8 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: ActionTypes.annoation,
     def: {
         class: (ctx, next) => {
-            (ctx.def as SuiteReflect).suite = true;
-            ctx.def.annotation = ctx.metadata;
+            ctx.typeRef.setAnnotation(ctx.metadata);
+            (ctx.typeRef.annotation as SuiteDef).suite = true;
             return next()
         }
     },

@@ -290,11 +290,8 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
 /**
  * mapping type def.
  */
-export interface MappingDef<T = any> extends TypeDef<T> {
-    /**
-     * protocol type.
-     */
-    annotation: ProtocolRouteMappingMetadata;
+export interface MappingDef<T = any> extends TypeDef<T>, ProtocolRouteMappingMetadata {
+    
 }
 
 

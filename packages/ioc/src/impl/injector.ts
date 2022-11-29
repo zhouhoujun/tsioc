@@ -12,7 +12,7 @@ import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } fr
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { isTypeDef, ModuleDef, TypeDef } from '../metadata/type';
+import { ModuleDef, Reflective } from '../metadata/type';
 import { get } from '../metadata/refl';
 import { ReflectiveFactory } from '../reflective';
 import { DefaultModuleLoader } from './loader';
@@ -164,29 +164,30 @@ export class DefaultInjector extends Injector {
      * @param [singleton]
      */
     protected registerType(platform: Platform, type: Type, option?: RegOption) {
-        this.registerReflect(platform, get(type, true), option)
+        this.registerReflect(platform, get(type), option)
     }
 
-    protected registerReflect(platform: Platform, def: TypeDef, option?: RegOption) {
-        const providedIn = option?.providedIn ?? def.providedIn;
-        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, def.type as Type, def, option)
+    protected registerReflect(platform: Platform, def: Reflective, option?: RegOption) {
+        const providedIn = option?.providedIn ?? def.annotation.providedIn;
+        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, def, option)
     }
 
-    protected processRegister(platform: Platform, type: Type, def: TypeDef, option?: RegOption) {
+    protected processRegister(platform: Platform, def: Reflective, option?: RegOption) {
         // make sure class register once.
-        if (this.has(type, InjectFlags.Default)) {
+        const type = def.type as Type;
+        if (this.has(def.type, InjectFlags.Default)) {
             return false
         }
 
-        let injectorType: ((type: Type, typeReflect: ModuleDef) => void) | undefined;
+        let injectorType: ((type: Type, typeRef: Reflective) => void) | undefined;
         if (option?.injectorType) {
-            injectorType = (regType, typeReflect) => processInjectorType(
+            injectorType = (regType, typeRef) => processInjectorType(
                 type, [],
                 (pdr, pdrs) => this.processProvider(platform, pdr, pdrs), (tyref, ty) => {
                     if (ty !== regType) {
                         this.registerReflect(platform, tyref)
                     }
-                }, typeReflect)
+                }, typeRef)
         }
 
         const injector = this as Injector;
@@ -196,7 +197,7 @@ export class DefaultInjector extends Injector {
             getRecords,
             ...option,
             injectorType,
-            def,
+            typeRef: def,
             platform,
             type
         } as DesignContext;
@@ -245,7 +246,7 @@ export class DefaultInjector extends Injector {
                 const mdref = get<ModuleDef>(ty);
                 if (mdref) {
                     types.push(ty);
-                    this.registerReflect(platform, mdref, { injectorType: mdref.module })
+                    this.registerReflect(platform, mdref, { injectorType: mdref.annotation.module })
 
                 }
             }
@@ -370,11 +371,11 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
-    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
-    invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+    invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         this.assertNotDestroyed();
         let providers: ProviderType[] | undefined;
         let context: InvocationContext | undefined;
@@ -396,7 +397,7 @@ export class DefaultInjector extends Injector {
         }
 
         let targetClass: Type, instance: any;
-        let tgRefl: TypeDef | undefined;
+        let tgRefl: Reflective | undefined;
 
         if (!context) {
             const opts = { ...option, providers };
@@ -406,7 +407,7 @@ export class DefaultInjector extends Injector {
             targetClass = getClass(target);
             instance = target as T
         } else {
-            if (isTypeDef(target)) {
+            if (target instanceof Reflective) {
                 tgRefl = target;
                 targetClass = target.type as Type
             } else {
@@ -551,7 +552,7 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider, providers?: any[]) => void,
-    regType: (typeRef: ModuleDef, type: Type) => void, moduleRefl?: ModuleDef, imported?: boolean) {
+    regType: (typeRef: Reflective, type: Type) => void, moduleRefl?: Reflective, imported?: boolean) {
     const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
     if (!isFunction(typeOrDef)) {
         deepForEach(
@@ -561,30 +562,31 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
         )
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
-    const typeRef = moduleRefl ?? get<ModuleDef>(type, true);
-    if (typeRef.module && !isDuplicate) {
+    const typeRef = moduleRefl ?? get<ModuleDef>(type);
+    const annotation = typeRef.getAnnotation<ModuleDef>();
+    if (annotation.module && !isDuplicate) {
         dedupStack.push(type);
-        typeRef.imports?.forEach(imp => {
+        annotation.imports?.forEach(imp => {
             processInjectorType(imp, dedupStack, processProvider, regType, undefined, true)
         });
 
-        if (imported && !(typeRef.providedIn === Scopes.root || typeRef.providedIn === Scopes.platform)) {
-            typeRef.exports?.forEach(d => {
+        if (imported && !(annotation.providedIn === Scopes.root || annotation.providedIn === Scopes.platform)) {
+            annotation.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })
         } else {
-            typeRef.declarations?.forEach(d => {
+            annotation.declarations?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             });
-            typeRef.exports?.forEach(d => {
+            annotation.exports?.forEach(d => {
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })
         }
 
-        if (typeRef.providers) {
+        if (annotation.providers) {
             deepForEach(
-                typeRef.providers,
-                pdr => processProvider(pdr, typeRef.providers),
+                annotation.providers,
+                pdr => processProvider(pdr, annotation.providers),
                 v => isPlainObject(v) && !v.provide // && !(isFunction(v.module) && isArray(v.providers))
             )
         }

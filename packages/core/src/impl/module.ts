@@ -3,7 +3,7 @@ import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleDef, processInjectorType, Token, Type, lang,
     LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks,
-    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory
+    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Reflective
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
@@ -21,17 +21,17 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _instance!: T;
     private _defs = new Set<Type>();
     private _type: Type;
-    private _typeRefl: ModuleDef;
+    private _typeRefl: Reflective;
 
     reflectiveFactory = new DefaultReflectiveFactory();
     runnableFactory: RunnableFactory = new DefaultRunnableFactory(this);
 
     lifecycle!: ModuleLifecycleHooks;
 
-    constructor(moduleType: ModuleDef, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
+    constructor(moduleType: Reflective, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
-        this.isStatic = moduleType.static || option.isStatic;
+        this.isStatic = moduleType.annotation.static || option.isStatic;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
 
@@ -58,8 +58,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return this._typeRefl
     }
 
-    protected override createLifecycle(): LifecycleHooks {
-        const platform = this.scope === 'root' ? this.platform() : undefined;
+    protected override createLifecycle(platform?: Platform): LifecycleHooks {
         const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
         (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster, null)!;
         return lifecycle
@@ -104,7 +103,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return types
     }
 
-    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: ModuleDef) {
+    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Reflective) {
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
@@ -131,7 +130,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 /**
  * create module ref.
  */
-export function createModuleRef<T>(module: Type<T> | ModuleDef<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
+export function createModuleRef<T>(module: Type<T> | Reflective<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
     if (isFunction(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module), parent, option);
     if (isModuleProviders(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module.module), parent, {
         ...option,

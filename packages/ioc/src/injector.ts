@@ -3,7 +3,7 @@ import { ClassType, EMPTY, LoadType, Modules, Type } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
-import { TypeDef } from './metadata/type';
+import { Reflective } from './metadata/type';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
 import { Handler } from './handler';
@@ -189,7 +189,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * invoke method.
      * @template T
-     * @param {(T | Type<T> | TypeDef<T>)} target type of class or instance.
+     * @param {(T | Type<T> | Reflective<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {T} [instance] instance of target type.
      * @param {...ProviderType[]} providers ...params of {@link ProviderType}.
@@ -200,32 +200,32 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * invoke method.
      *
      * @template T
-     * @param {(T | Type<T> | TypeDef<T>)} target type of class or instance.
+     * @param {(T | Type<T> | Reflective<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {ProviderType[]} providers array of {@link ProviderType}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     /**
      * invoke method.
      *
      * @template T
-     * @param {(T | Type<T> | TypeDef<T>)} target type of class or instance.
+     * @param {(T | Type<T> | Reflective<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {InvokeArguments} option ivacation arguments, type of {@link InvokeArguments}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
     /**
      * invoke method.
      * 
      * @template T
-     * @param {(T | Type<T> | TypeDef<T>)} target type of class or instance
+     * @param {(T | Type<T> | Reflective<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | TypeDef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | Reflective<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     /**
      * get module loader.
      *
@@ -271,7 +271,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract offDestroy(callback: DestroyCallback): void;
 
 
-    protected abstract processRegister(platform: Platform, type: Type, def: TypeDef, option?: TypeOption): void;
+    protected abstract processRegister(platform: Platform, def: Reflective, option?: TypeOption): void;
 
     /**
      * create injector.
@@ -351,13 +351,13 @@ export abstract class Platform implements OnDestroy {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: ClassType | TypeDef): ProviderType[];
+    abstract getTypeProvider(type: ClassType | Reflective): ProviderType[];
     /**
      * set type providers.
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: ClassType | TypeDef, providers: ProviderType[]): void;
+    abstract setTypeProvider(type: ClassType | Reflective, providers: ProviderType[]): void;
     /**
      * clear type provider.
      * @param type 

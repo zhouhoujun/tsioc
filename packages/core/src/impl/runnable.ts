@@ -1,6 +1,6 @@
 import {
     Type, refl, TypeDef, isFunction, Injector, lang, DestroyCallback,
-    InvocationContext, ReflectiveFactory, ReflectiveRef, InvokeArguments
+    InvocationContext, ReflectiveFactory, ReflectiveRef, InvokeArguments, Reflective
 } from '@tsdi/ioc';
 import { BootstrapOption, RunnableFactory, RunnableRef } from '../runnable';
 import { ModuleRef } from '../module.ref';
@@ -14,9 +14,9 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     private _instance: T | undefined;
     private _ref: ReflectiveRef<T>;
     private _moduleRef?: ModuleRef;
-    constructor(def: TypeDef<T>, injector: Injector, moduleRef?: ModuleRef, options?: InvokeArguments, protected defaultInvoke = 'run') {
+    constructor(ref: ReflectiveRef<T>, moduleRef?: ModuleRef, options?: InvokeArguments, protected defaultInvoke = 'run') {
         super();
-        this._ref = injector.get(ReflectiveFactory).create(def, injector, options);
+        this._ref = ref;
         this._moduleRef = moduleRef;
         this.context.setValue(RunnableRef, this);
     }
@@ -29,7 +29,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     }
 
     run() {
-        const runnables = this.def.class.runnables.filter(r => !r.auto);
+        const runnables = this.ref.typeRef.runnables.filter(r => !r.auto);
         if (runnables.length === 1) {
             const runable = runnables[0];
             return this._ref.invoke(runable.method, runable.args, this.instance)
@@ -64,8 +64,8 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
         return this._moduleRef;
     }
 
-    get def(): TypeDef<T> {
-        return this._ref.def;
+    get typeRef(): Reflective<T> {
+        return this._ref.typeRef;
     }
     get type(): Type<T> {
         return this._ref.type;
@@ -93,7 +93,7 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         super()
     }
 
-    override create(type: Type<T> | TypeDef<T>, injector: Injector, option?: BootstrapOption) {
+    override create(type: Type<T> | Reflective<T>, injector: Injector, option?: BootstrapOption) {
 
         const runnableRef = this.createInstance(isFunction(type) ? refl.get(type) : type, injector ?? this.moduleRef, option, option?.defaultInvoke);
 
@@ -102,8 +102,9 @@ export class DefaultRunnableFactory<T = any> extends RunnableFactory<T> {
         return runnableRef
     }
 
-    protected createInstance(def: TypeDef<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
-        return new DefaultRunnableRef(def, injector, this.moduleRef, options, invokeMethod)
+    protected createInstance(typeRef: Reflective<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
+        const ref = injector.get(ReflectiveFactory).create(typeRef, injector, options);
+        return new DefaultRunnableRef(ref, this.moduleRef, options, invokeMethod)
     }
 
 }

@@ -32,7 +32,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             this.logger.debug('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
             joinPoint.setValue(EntityManager, entityManager);
 
-            joinPoint.params?.length && targetRef.class.paramDecors.filter(dec => {
+            joinPoint.params?.length && targetRef.paramDecors.filter(dec => {
                 if (dec.propertyKey === joinPoint.methodName) {
                     if (dec.decor === InjectRepository.toString()) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
@@ -45,7 +45,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             });
 
             const context = {} as any;
-            targetRef.class.propDecors.forEach(dec => {
+            targetRef.propDecors.forEach(dec => {
                 if (dec.decor === InjectRepository.toString()) {
                     context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
                 } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
@@ -55,7 +55,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 }
             });
 
-            ctorName !== joinPoint.methodName && targetRef.class.getParameters(ctorName)?.forEach(metadata => {
+            ctorName !== joinPoint.methodName && targetRef.getParameters(ctorName)?.forEach(metadata => {
                 const paramName = metadata.name;
                 if (paramName) {
                     const filed = joinPoint.target[paramName];

@@ -1,4 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeArguments, ReflectiveRef, DestroyCallback } from '@tsdi/ioc';
+import { Abstract, Type, Destroyable, OnDestroy, TypeDef, Injector, InvokeArguments, ReflectiveRef, DestroyCallback, Reflective } from '@tsdi/ioc';
 import { ModuleRef } from './module.ref';
 
 /**
@@ -23,7 +23,7 @@ export abstract class RunnableRef<T = any> implements Runnable, Destroyable, OnD
     /**
       * runnable def.
       */
-    abstract get def(): TypeDef<T>;
+    abstract get typeRef(): Reflective<T>;
     /**
      * runnable type.
      */
@@ -86,7 +86,7 @@ export abstract class RunnableFactory<T = any> {
      * @param option bootstrap option.
      * @returns instance of {@link RunnableRef}.
      */
-    abstract create(type: Type<T> | TypeDef<T>, injector: Injector, option?: BootstrapOption): RunnableRef<T>;
+    abstract create(type: Type<T> | Reflective<T>, injector: Injector, option?: BootstrapOption): RunnableRef<T>;
 }
 
 

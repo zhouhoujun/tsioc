@@ -7,11 +7,11 @@ import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '..
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
-import { get } from '../metadata/refl';
-import { isTypeDef } from '../metadata/type';
+import { getDef } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
+import { Reflective } from '../metadata/type';
 
 
 
@@ -341,8 +341,8 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `"${obj}"`
     } else if (isClassType(obj)) {
         return 'Type<' + getClassName(obj) + '>'
-    } else if (isTypeDef(obj)) {
-        return `[${obj.class.className} TypeReflect]`
+    } else if (obj instanceof Reflective) {
+        return `[${obj.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
         const str: string[] = [];
         for (const n in obj) {
@@ -384,7 +384,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         {
             canResolve(parameter, ctx) {
                 if (parameter.mutil || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
-                    || get(parameter.provider)?.class.abstract) return false;
+                    || getDef(parameter.provider).abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true
             },
             resolve(parameter, ctx) {
@@ -418,7 +418,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || get(parameter.type!)?.class.abstract) return false;
+                if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || getDef(parameter.type!).abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true
             },
             resolve(parameter, ctx) {

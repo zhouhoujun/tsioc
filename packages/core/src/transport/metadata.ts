@@ -70,10 +70,10 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
     props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
     design: {
         method: (ctx, next) => {
-            const def = ctx.def;
-            const decors = def.class.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
+            const typeRef = ctx.typeRef;
+            const decors = typeRef.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveFactory).create(def, injector);
+            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
             decors.forEach(decor => {
                 const { filter, order, guards, response } = decor.metadata;
 

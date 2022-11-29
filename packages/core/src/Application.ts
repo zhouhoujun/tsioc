@@ -120,20 +120,18 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
-    protected moduleify(module: Type | ModuleDef | ModuleMetadata): Type | ModuleDef {
+    protected moduleify(module: Type | Reflective | ModuleMetadata): Type | Reflective {
         if (isFunction(module)) return module;
-        if ((module as ModuleDef).class) return module as ModuleDef;
+        if (module instanceof Reflective) return module;
 
-        return {
+        return new Reflective(DynamicModule, {
             type: DynamicModule,
-            class: new Reflective(DynamicModule),
             ...module,
             module: true,
-            annotation: module,
             imports: module.imports ? getModuleType(module.imports) : [],
             exports: module.exports ? lang.getTypes(module.exports) : [],
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
-        } as ModuleDef;
+        } as ModuleDef);
     }
 
     protected async createContext(): Promise<T> {
@@ -155,7 +153,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
     protected prepareContext(ctx: T): any {
-        const bootstraps = this.root.moduleReflect.bootstrap;
+        const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
             const injector = ctx.injector;
             bootstraps.forEach(type => {
@@ -189,5 +187,6 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
 }
+
 
 class DynamicModule { }

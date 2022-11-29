@@ -49,7 +49,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             ...options.def,
             class: [
                 (ctx, next) => {
-                    const def = ctx.def as ModuleDef;
+                    const def = ctx.typeRef.getAnnotation<ModuleDef>();
                     const metadata: ModuleMetadata = def.annotation = ctx.metadata;
                     def.module = true;
                     def.providedIn = metadata.providedIn;
@@ -67,10 +67,10 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
         },
         design: {
             beforeAnnoation: (context: DesignContext, next) => {
-                const { type, def } = context;
+                const { type, typeRef } = context;
                 // use as dependence inject module.
                 if (context.injectorType) {
-                    context.injectorType(type, def)
+                    context.injectorType(type, typeRef)
                 }
                 next()
             }
@@ -133,7 +133,7 @@ export const Runner: Runner = createDecorator('Runner', {
     afterInit: (ctx) => {
         const meta = ctx.metadata as { method: string, args: RunnerOption };
         if (meta.args?.parameters) {
-            ctx.def.class.setParameters(meta.method, meta.args.parameters)
+            ctx.typeRef.setParameters(meta.method, meta.args.parameters)
         }
     }
 });
@@ -179,23 +179,23 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
     actionType: ActionTypes.annoation,
     def: {
         class: (ctx, next) => {
-            (ctx.def as ScanDef).order = (ctx.metadata as ComponentScanMetadata).order;
+            ctx.typeRef.getAnnotation<ScanDef>().order = (ctx.metadata as ComponentScanMetadata).order;
             next()
         }
     },
     design: {
         afterAnnoation: (ctx, next) => {
             const { type, injector } = ctx;
-            const def = ctx.def as ScanDef;
+            const def = ctx.typeRef.getAnnotation<ScanDef>();
             const runners = injector.get(ApplicationRunners);
             const typeRef = injector.get(ReflectiveFactory).create(type, injector);
-            if (def.class.runnables.length || def.class.hasMetadata('run')) {
+            if (ctx.typeRef.runnables.length || ctx.typeRef.hasMetadata('run')) {
                 const runner = typeRef.resolve(RunnableFactory).create(type, injector);
                 runners.addRunnable(runner, def.order)
-            } else if (def.class.hasMethod('startup')) {
+            } else if (ctx.typeRef.hasMethod('startup')) {
                 const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'startup' });
                 runners.addStartup(runner, def.order)
-            } else if (def.class.hasMethod('configureService')) {
+            } else if (ctx.typeRef.hasMethod('configureService')) {
                 const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'configureService' });
                 runners.addConfigureService(runner, def.order)
             }
@@ -249,7 +249,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     def: {
         class: (ctx, next) => {
-            ctx.def.annotation = ctx.metadata;
+            ctx.typeRef.setAnnotation(ctx.metadata);
             return next()
         }
     },
@@ -283,7 +283,7 @@ export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any
             } else {
-                throw new ArgumentExecption(`the property has no design Type, named ${ctx.propertyKey} with @Bean decorator in type ${object2string(ctx.def.type)}`)
+                throw new ArgumentExecption(`the property has no design Type, named ${ctx.propertyKey} with @Bean decorator in type ${object2string(ctx.typeRef.type)}`)
             }
         }
     }
@@ -308,10 +308,10 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
     actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
-            const { def, injector } = ctx;
+            const { typeRef, injector } = ctx;
 
-            const factory = injector.get(ReflectiveFactory).create(def, injector);
-            const pdrs = def.class.decors.filter(d => d.decor === '@Bean')
+            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+            const pdrs = typeRef.decors.filter(d => d.decor === '@Bean')
                 .map(d => {
                     const key = d.propertyKey;
                     const { provide } = d.metadata as BeanMetadata;
