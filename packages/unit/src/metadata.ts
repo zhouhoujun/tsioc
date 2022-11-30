@@ -36,7 +36,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: ActionTypes.annoation,
     def: {
         class: (ctx, next) => {
-            ctx.class.setAnnotation(ctx.metadata);
+            ctx.class.setAnnotation(ctx.define.metadata);
             (ctx.class.annotation as SuiteDef).suite = true;
             return next()
         }
@@ -81,8 +81,8 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
  */
 export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): TestDecorator<T> {
     options = options || EMPTY_OBJ;
-    return createDecorator<TestMetadata>(name, {
-        props: (timeout: number, setp?: number) => ({ timeout, setp }),
+    return createDecorator<T>(name, {
+        props: (timeout: number, setp?: number) => ({ timeout, setp } as TestMetadata as T),
         ...options
     }) as TestDecorator<T>
 }

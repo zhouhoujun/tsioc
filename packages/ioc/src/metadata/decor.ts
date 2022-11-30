@@ -822,9 +822,9 @@ export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
         return { order: arg, args }
     },
     afterInit: (ctx) => {
-        ctx.metadata.auto = true;
-        if (ctx.decorType === 'class') {
-            ctx.metadata.singleton = true
+        ctx.define.metadata.auto = true;
+        if (ctx.define.decorType === 'class') {
+            ctx.define.metadata.singleton = true
         }
     }
 });

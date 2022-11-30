@@ -2,7 +2,7 @@ import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata
+    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, EMPTY
 } from '@tsdi/ioc';
 import { ConfigureService } from './service';
 import { PipeTransform } from './pipes/pipe';
@@ -41,16 +41,16 @@ export interface Module<T extends ModuleMetadata> {
  */
 export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
     options = options || EMPTY_OBJ;
-    const hd = options.def?.class ?? [];
+    const hd = options.def?.class ?? EMPTY;
     const append = options.appendProps;
-    return createDecorator<ModuleMetadata>(name, {
+    return createDecorator<T>(name, {
         ...options,
         def: {
             ...options.def,
             class: [
                 (ctx, next) => {
                     const def = ctx.class.getAnnotation<ModuleDef>();
-                    const metadata: ModuleMetadata = def.annotation = ctx.metadata;
+                    const metadata = def.annotation = ctx.define.metadata;
                     def.module = true;
                     def.providedIn = metadata.providedIn;
                     def.baseURL = metadata.baseURL;
@@ -131,7 +131,7 @@ export const Runner: Runner = createDecorator('Runner', {
         (isString(method) ? { method, args } : { args: method }),
 
     afterInit: (ctx) => {
-        const meta = ctx.metadata as { method: string, args: RunnerOption };
+        const meta = ctx.define.metadata as { method: string, args: RunnerOption };
         if (meta.args?.parameters) {
             ctx.class.setParameters(meta.method, meta.args.parameters)
         }
@@ -179,7 +179,7 @@ export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadat
     actionType: ActionTypes.annoation,
     def: {
         class: (ctx, next) => {
-            ctx.class.getAnnotation<ScanDef>().order = (ctx.metadata as ComponentScanMetadata).order;
+            ctx.class.getAnnotation<ScanDef>().order = (ctx.define.metadata as ComponentScanMetadata).order;
             next()
         }
     },
@@ -249,7 +249,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     def: {
         class: (ctx, next) => {
-            ctx.class.setAnnotation(ctx.metadata);
+            ctx.class.setAnnotation(ctx.define.metadata);
             return next()
         }
     },
@@ -278,12 +278,12 @@ export interface Bean {
 export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token) => ({ provide }),
     afterInit: (ctx) => {
-        const metadata = ctx.metadata as BeanMetadata & PropertyMetadata;
+        const metadata = ctx.define.metadata as BeanMetadata & PropertyMetadata;
         if (!metadata.provide) {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any
             } else {
-                throw new ArgumentExecption(`the property has no design Type, named ${ctx.propertyKey} with @Bean decorator in type ${object2string(ctx.class.type)}`)
+                throw new ArgumentExecption(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.class.type)}`)
             }
         }
     }

@@ -183,13 +183,13 @@ const loggerResolver = {
 export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
     actionType: [ActionTypes.paramInject, ActionTypes.propInject],
     init: (ctx) => {
-        if (ctx.decorType === Decors.parameter || ctx.decorType === Decors.property) {
-            const metadata = ctx.metadata as LogMetadata;
+        if (ctx.define.decorType === Decors.parameter || ctx.define.decorType === Decors.property) {
+            const metadata = ctx.define.metadata as LogMetadata;
             if (!metadata.logname) {
                 metadata.target = ctx.class.type;
                 metadata.resolver = loggerResolver
             }
-            metadata.propertyKey = ctx.propertyKey
+            metadata.propertyKey = ctx.define.propertyKey
         }
     },
     props: (...args: any[]) => {

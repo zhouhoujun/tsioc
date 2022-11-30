@@ -92,7 +92,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
     def: {
         class: (ctx, next) => {
-            ctx.class.setAnnotation(ctx.metadata);
+            ctx.class.setAnnotation(ctx.define.metadata);
             return next();
         }
     },
@@ -258,7 +258,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         },
         def: controllerOnly ? undefined : {
             class: (ctx, next) => {
-                ctx.class.setAnnotation(ctx.metadata);
+                ctx.class.setAnnotation(ctx.define.metadata);
                 return next();
             }
         },

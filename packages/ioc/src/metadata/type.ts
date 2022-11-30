@@ -83,11 +83,11 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
      * decorator name.
      */
-    name: string;
+    readonly name: string;
     /**
      * decorator name with '@'
      */
-    decor: string;
+    readonly decor: string;
     /**
      * get decorator handle.
      * @param type decorator type.
@@ -106,7 +106,7 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
      * decorator type.
      */
-    decorType: DecoratorType;
+    readonly decorType: DecoratorType;
     /**
      * property key.
      */
@@ -114,19 +114,20 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
      * paramter index.
      */
-    parameterIndex?: number;
+    readonly parameterIndex?: number;
     /**
      * decorator metadata.
      */
-    metadata: T;
+    readonly metadata: T;
 }
 
 /**
  * decorator context.
  */
-export interface DecorContext extends DecorDefine {
-    target: any;
-    class: Class;
+export interface DecorContext<T = any> {
+    readonly define: DecorDefine<T>,
+    readonly target: any;
+    readonly class: Class;
 }
 
 /**
@@ -378,7 +379,7 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
                 eopt.arguments = eopt.arguments ? { ...eopt.arguments, ...options.arguments } : options.arguments
             }
         } else {
-            this.methodOptions.set(method, { ...options })
+            this.methodOptions.set(method, options)
         }
     }
 
