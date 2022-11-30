@@ -277,61 +277,64 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
-                // const factory = injector.get(ReflectiveFactory).create(def, injector);
+                // const factory = injector.get(ReflectiveFactory).create(ctx.class, injector);
                 // const routes: string[] = [];
                 // const formatter = factory.resolve(PatternFormatter);
-                // def.class.methodDecors.forEach(d => {
-                //     if (d.name === 'Route') {
-                //         const { route, method, guards, interceptors, pipes } = d.metadata as RouteMappingMetadata;
-                //         const allinterceptors = [...clsInterceptors ?? EMPTY, ...interceptors ?? EMPTY];
-                //         const allguards = [...clsGuards ?? EMPTY, ...guards ?? EMPTY] as Type<CanActivate>[];
-                //         const invoker = factory.createInvoker(d.propertyKey, true, async (ctx, run) => {
+                // ctx.class.methodDecors
+                //     .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
+                //     .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length)
+                //     .forEach(d => {
+                //         if (d.name === 'Route') {
+                //             const { route, method, guards, interceptors, pipes } = d.metadata as RouteMappingMetadata;
+                //             const allinterceptors = [...clsInterceptors ?? EMPTY, ...interceptors ?? EMPTY];
+                //             const allguards = [...clsGuards ?? EMPTY, ...guards ?? EMPTY] as Type<CanActivate>[];
+                //             const invoker = factory.createInvoker(d.propertyKey, true, async (ctx, run) => {
 
-                //             const context = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
+                //                 const context = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
 
-                //             if (pipes && pipes.length) {
-                //                 context.injector.inject(pipes);
-                //             }
-
-                //             if (allguards.length) {
-                //                 if (!(await lang.some(
-                //                     allguards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(context))),
-                //                     vaild => vaild === false))) {
-                //                     throw new ForbiddenExecption();
+                //                 if (pipes && pipes.length) {
+                //                     context.injector.inject(pipes);
                 //                 }
-                //             }
 
-                //             let result;
-                //             if (allinterceptors.length) {
-                //                 const inters = allinterceptors.map(i => ctx.resolve(i) ?? i);
-                //                 await new InterceptorMiddleware(async c => {
-                //                     result = run(c);
-                //                 }, inters).invoke(context, async () => { });
-                //             } else {
-                //                 result = run(context);
-                //             }
-                //             if (isPromise(result)) {
-                //                 result = await result
-                //             } else if (isObservable(result)) {
-                //                 result = await lastValueFrom(result)
-                //             }
+                //                 if (allguards.length) {
+                //                     if (!(await lang.some(
+                //                         allguards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(context))),
+                //                         vaild => vaild === false))) {
+                //                         throw new ForbiddenExecption();
+                //                     }
+                //                 }
 
-                //             // // middleware.
-                //             // if (isFunction(result)) {
-                //             //     return await result(ctx)
-                //             // }
+                //                 let result;
+                //                 if (allinterceptors.length) {
+                //                     const inters = allinterceptors.map(i => ctx.resolve(i) ?? i);
+                //                     await new InterceptorMiddleware(async c => {
+                //                         result = run(c);
+                //                     }, inters).invoke(context, async () => { });
+                //                 } else {
+                //                     result = run(context);
+                //                 }
+                //                 if (isPromise(result)) {
+                //                     result = await result
+                //                 } else if (isObservable(result)) {
+                //                     result = await lastValueFrom(result)
+                //                 }
 
-                //             // if (result instanceof ResultValue) {
-                //             //     return await result.sendValue(context)
-                //             // }
-                //             return result
+                //                 // // middleware.
+                //                 // if (isFunction(result)) {
+                //                 //     return await result(ctx)
+                //                 // }
 
-                //         });
-                //         const pattern = formatter.format(route ?? '', method, prefix, version);
-                //         routes.push(pattern);
-                //         router.use(pattern, (c) => invoker.invoke(c))
-                //     }
-                // });
+                //                 // if (result instanceof ResultValue) {
+                //                 //     return await result.sendValue(context)
+                //                 // }
+                //                 return result
+
+                //             });
+                //             const pattern = formatter.format(route ?? '', method, prefix, version);
+                //             routes.push(pattern);
+                //             router.use(pattern, (c) => invoker.invoke(c))
+                //         }
+                //     });
                 // factory.onDestroy(() => routes.forEach(path => router.unuse(path)));
 
                 const routeRef = injector.get(RouteFactoryResolver).resolve(ctx.class).create(injector);

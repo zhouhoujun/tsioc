@@ -91,6 +91,42 @@ export abstract class PatternFormatter {
  */
 export const ROUTES = tokenId<Routes>('ROUTES');
 
+
+const staExp = /^\//;
+const endExp = /\/$/;
+
+export function joinprefix(...paths: (string | undefined)[]) {
+    const joined = paths.filter(p => p)
+        .map(p => {
+            if (!p) return '';
+            p = p.trim();
+            const start = staExp.test(p) ? 1 : 0;
+            const end = endExp.test(p) ? p.length - 1 : p.length;
+            return p.slice(start, end)
+        })
+        .join('/');
+
+    return '/' + joined
+}
+
+/**
+ * normalize route path.
+ * @param route 
+ * @returns 
+ */
+export function normalize(route: string): string {
+    if (!route) return '/';
+    if (route === '/') return route;
+
+    let path = route.trim();
+    if (endExp.test(route)) {
+        path = path.substring(0, path.length - 1)
+    }
+    return staExp.test(path) ? path : `/${path}`
+}
+
+
+
 /**
  * middleware ref.
  */
@@ -185,37 +221,4 @@ export abstract class RouteFactoryResolver {
      * @returns instance of {@link RouteFactory}.
      */
     abstract resolve<T>(type: Type<T> | Class<T>): RouteFactory<T>;
-}
-
-const staExp = /^\//;
-const endExp = /\/$/;
-
-export function joinprefix(...paths: (string | undefined)[]) {
-    const joined = paths.filter(p => p)
-        .map(p => {
-            if (!p) return '';
-            p = p.trim();
-            const start = staExp.test(p) ? 1 : 0;
-            const end = endExp.test(p) ? p.length - 1 : p.length;
-            return p.slice(start, end)
-        })
-        .join('/');
-
-    return '/' + joined
-}
-
-/**
- * normalize route path.
- * @param route 
- * @returns 
- */
-export function normalize(route: string): string {
-    if (!route) return '/';
-    if (route === '/') return route;
-
-    let path = route.trim();
-    if (endExp.test(route)) {
-        path = path.substring(0, path.length - 1)
-    }
-    return staExp.test(path) ? path : `/${path}`
 }
