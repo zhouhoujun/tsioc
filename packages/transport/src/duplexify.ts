@@ -43,10 +43,10 @@ export class Duplexify extends Duplex {
         this.destroyed = false;
 
         // for node <=17
-        if (isNil((this as Closed).closed)) {
-            (this as Closed).closed = false;
+        if (isNil((this as any).closed)) {
+            (this as any).closed = false;
             this.on(ev.CLOSE, () => {
-                (this as Closed).closed = true;
+                (this as any).closed = true;
             })
         }
 
@@ -61,7 +61,7 @@ export class Duplexify extends Duplex {
      * @since v18.0.0 has `closed` property.
      */
     get isClosed() {
-        return (this as Duplexify & Closed).closed;
+        return (this as any).closed;
     }
 
     static obj(writable: Writable | null | false, readable: Readable | null | false, opts?: DuplexifyOptions) {
@@ -268,14 +268,6 @@ export class Duplexify extends Duplex {
     }
 }
 
-
-/**
- * Readable stream.
- * for node <=17
- */
-interface Closed {
-    closed: boolean;
-}
 
 const noop = () => { };
 export const SIGNAL_FLUSH = Buffer.from([0]);

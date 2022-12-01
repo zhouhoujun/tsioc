@@ -33,6 +33,9 @@ describe('di module', () => {
                 ServerHttpClientModule,
                 HttpModule.withOption({
                     majorVersion: 1,
+                    listenOpts: {
+                        port: 3200
+                    }
                 })
             ]
         });

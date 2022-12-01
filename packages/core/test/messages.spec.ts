@@ -195,6 +195,9 @@ const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
                 // allowHTTP1: true,
                 // key,
                 // cert
+            },
+            listenOpts: {
+                port: 3200
             }
         }),
         HttpClientModule,
