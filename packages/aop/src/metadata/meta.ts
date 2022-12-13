@@ -133,9 +133,18 @@ export interface AspectMetadata extends ClassMetadata {
      * @type {(ClassType | ClassType[])}
      */
     within?: ClassType | ClassType[];
-
+    /**
+     * aspnet with out.
+     */
     without?: ClassType | ClassType[];
-
+    /**
+     *  aspect way for method.
+     *  default static.
+     *  
+     *  invocation: only in OperationInvoker
+     *  class: replace instance method.
+     */
+    way?: 'invocation' | 'class';
     /**
      * set pointcut in the class with the annotation decorator only.
      *
