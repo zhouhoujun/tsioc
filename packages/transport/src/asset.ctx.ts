@@ -1,6 +1,5 @@
 import {
-    OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
-    ServerContextOpts, ServerEndpointContext, Status, RedirectStatus, EmptyStatus
+    OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, ServerContextOpts, ServerEndpointContext
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -20,12 +19,11 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
-    private _status: Status;
+
 
     constructor(injector: Injector, request: TRequest, response: TResponse, target: Server, options?: ServerContextOpts) {
         super(injector, request, response, target, options);
         this.originalUrl = request.url?.toString() ?? '';
-        this._status = this.statusFactory.create('NotFound');
         this._url = request.url ?? '';
 
         if (this.isAbsoluteUrl(this._url)) {
@@ -38,24 +36,12 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         }
     }
 
-    get status(): Status {
-        return this._status;
-    }
+    
 
-    set status(status: Status) {
-        if (this.sent) return;
-        this._explicitStatus = true;
-        const chged = this._status !== status;
-        this._status = status;
-        if (chged) {
-            this.onStatusChanged(status);
-        }
-        if (this.body && status instanceof EmptyStatus) this.body = null;
-    }
-
-    protected onStatusChanged(status: Status) {
-
-    }
+    /**
+     * found status.
+     */
+    abstract get found(): number;
 
     /**
      * Get url path.
@@ -460,7 +446,6 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
 
     protected _body: any;
-    protected _explicitStatus?: boolean;
     /**
      * Get response body.
      *
@@ -486,8 +471,8 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
 
         // no content
         if (null == val) {
-            if (!(this.status instanceof EmptyStatus)) {
-                this.status = this.statusFactory.create('NoContent');
+            if (!this.isEmptyStatus(this.status)) {
+                this.status = this.notFound;
             }
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
@@ -688,7 +673,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!(this.status instanceof RedirectStatus)) this.status = this.statusFactory.create('Found');
+        if (!this.isRedirectStatus(this.status)) this.status = this.found;
 
         // html
         if (this.accepts('html')) {
@@ -702,6 +687,8 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
         this.type = ctype.TEXT_PLAIN_UTF8;
         this.body = `Redirecting to ${url}.`
     }
+
+    protected abstract isRedirectStatus(status: number): boolean;
 
     /**
      * Check if a header has been written to the socket.

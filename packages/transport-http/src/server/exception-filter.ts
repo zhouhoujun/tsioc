@@ -64,7 +64,7 @@ export class HttpExecptionFinalizeFilter implements ExecptionFilter {
                         msg = statusMessage[statusCode]
                     }
 
-                    context.status = context.statusFactory.createByCode(statusCode);
+                    context.status = statusCode;
                     msg = Buffer.from(msg);
                     context.length = Buffer.byteLength(msg);
                     res.end(msg);

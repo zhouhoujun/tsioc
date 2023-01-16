@@ -1,4 +1,4 @@
-import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status, ListenOpts, ServerContext } from '@tsdi/core';
+import { MiddlewareLike, mths, Throwable, ServerEndpointContext, ListenOpts, ServerContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
@@ -49,6 +49,20 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     isAbsoluteUrl(url: string): boolean {
         return httptl.test(url.trim())
     }
+
+    /**
+     * Whether the status code is ok
+     */
+    get ok(): boolean {
+        return this.status === 200;
+    }
+    /**
+     * Whether the status code is ok
+     */
+    set ok(ok: boolean) {
+        this.status = ok ? 200 : 404
+    }
+
 
     parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
         const url = req.url?.trim() ?? '';
@@ -136,7 +150,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
      */
     get fresh(): boolean {
         const method = this.methodName;
-        const s = this.status.status;
+        const s = this.status;
 
         // GET or HEAD for weak freshness validation only
         if (mths.GET !== method && mths.HEAD !== method) return false;
@@ -204,8 +218,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return true
     }
 
-    protected override onStatusChanged(status: Status<number>): void {
-        const code = status.status;
+    protected override onStatusChanged(code: number): void {
         assert(Number.isInteger(code), 'status code must be a number');
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this.response.statusCode = code;
@@ -278,6 +291,24 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
 
+
+    get found(): number {
+        return 302;
+    }
+
+    protected isRedirectStatus(status: number): boolean {
+        return redirect[status] === true;
+    }
+
+    get notFound(): number {
+        return 404;
+    }
+
+    protected isEmptyStatus(status: number): boolean {
+        return empty[status] === true;
+    }
+
+
 }
 
 const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
@@ -295,6 +326,33 @@ function parseStamp(date?: string | number): number {
     }
     return NaN
 }
+
+
+// status codes for redirects
+const redirect: Record<number, boolean> = {
+    300: true,
+    301: true,
+    302: true,
+    303: true,
+    305: true,
+    307: true,
+    308: true
+}
+
+// status codes for empty bodies
+const empty: Record<number, boolean> = {
+    204: true,
+    205: true,
+    304: true
+}
+
+// status codes for when you should retry the request
+const retry: Record<number, boolean> = {
+    502: true,
+    503: true,
+    504: true
+}
+
 
 
 /**

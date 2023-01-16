@@ -9,7 +9,6 @@ import { TransportArgumentExecption } from './execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
 import { Incoming, Outgoing } from './packet';
-import { StatusFactory } from './status';
 
 
 /**
@@ -25,11 +24,44 @@ export interface ServerContextOpts extends InvokeArguments {
 @Abstract()
 export abstract class ServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
 
-    readonly statusFactory: StatusFactory<string | number>;
+    
+    protected _explicitStatus?: boolean;
+    private _status?: number;
+
     constructor(injector: Injector, public request: TRequest, readonly response: TResponse, readonly target: Server, options?: ServerContextOpts) {
         super(injector, options);
-        this.statusFactory = injector.get(StatusFactory);
     }
+
+
+    get status(): number {
+        if (this._status === undefined) {
+            this._status = this.notFound;
+        }
+        return this._status;
+    }
+
+    set status(status: number) {
+        if (this.sent) return;
+        this._explicitStatus = true;
+        const chged = this._status !== status;
+        this._status = status;
+        if (chged) {
+            this.onStatusChanged(status);
+        }
+        if (this.body && this.isEmptyStatus(status)) this.body = null;
+    }
+
+    protected onStatusChanged(status: number) {
+
+    }
+
+    /**
+     * not found status.
+     */
+    abstract get notFound(): number;
+
+    protected abstract isEmptyStatus(status: number): boolean;
+
 
     protected override getDefaultResolvers(): OperationArgumentResolver[] {
         return [

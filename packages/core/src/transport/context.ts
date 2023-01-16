@@ -1,7 +1,6 @@
 import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Incoming, Outgoing } from './packet';
 import { TransportEndpoint } from './transport';
-import { OkStatus, Status, StatusFactory } from './status';
 
 /**
  * endpoint context.
@@ -19,13 +18,11 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     /**
      * Get response status.
      */
-    abstract get status(): Status;
+    abstract get status(): number;
     /**
      * Set response status, defaults to OK.
      */
-    abstract set status(status: Status);
-
-    abstract get statusFactory(): StatusFactory;
+    abstract set status(status: number);
 
     protected override clear(): void {
         super.clear();
@@ -149,16 +146,11 @@ export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming
     /**
      * Whether the status code is ok
      */
-    get ok(): boolean {
-        return this.status instanceof OkStatus;
-    }
+    abstract get ok(): boolean;
     /**
      * Whether the status code is ok
      */
-    set ok(ok: boolean) {
-        const factory = this.get(StatusFactory);
-        this.status = ok ? factory.create('Ok') : factory.create('NotFound')
-    }
+    abstract set ok(ok: boolean);
 
 
     /**

@@ -81,7 +81,7 @@ export class ExecptionHandlerBackend extends ExecptionBackend {
                         return context.execption as TransportExecption;
                     }),
                     catchError((err, caught) => {
-                        const exception = new InternalServerExecption((err as Error).message, context.statusFactory.getStatusCode('InternalServerError'));
+                        const exception = new InternalServerExecption((err as Error).message);
                         context.execption = exception;
                         return of(exception);
                     })
