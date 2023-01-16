@@ -175,13 +175,6 @@ export interface InvokeArguments extends InvokeOptions {
     parent?: InvocationContext;
 }
 
-// /**
-//  * invoke option.
-//  */
-// export interface InvokeOption extends InvokeArguments {
-
-// }
-
 /**
  * invocation option.
  */
