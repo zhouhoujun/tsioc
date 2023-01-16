@@ -381,12 +381,6 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
             })
     }
     return runStep(initVal ?? null!, 0);
-
-    // let result = Promise.resolve<T>(initVal ?? null!);
-    // promises.forEach(p => {
-    //     result = result.then(v => guard && !guard(v)? v : (isFunction(p) ? p(v) : p))
-    // });
-    // return result
 }
 
 /**

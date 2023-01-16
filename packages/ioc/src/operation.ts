@@ -1,6 +1,7 @@
 import { ClassType } from './types';
 import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
+import { ParameterMetadata } from './metadata/meta';
 
 
 export type AsyncLike<T> = T | Promise<T> | Observable<T>;
@@ -46,4 +47,4 @@ export interface OperationInvoker<T = any> {
 /**
  * invoke proceed.
  */
-export type Proceed<T = any> = (ctx: InvocationContext, run: (ctx: InvocationContext) => T) => T;
+export type Proceed<T = any> = (ctx: InvocationContext, backend: (ctx: InvocationContext) => T) => T;

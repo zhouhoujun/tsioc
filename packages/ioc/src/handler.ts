@@ -7,24 +7,12 @@ import { Execption } from './execption';
 export type Handler<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
 
 /**
- * compose async handlers in chain.
+ * compose handlers in chain.
  * @param handlers 
  */
-export function chain<T>(handlers: Handler<T, Promise<void>>[]): Handler<T, Promise<void>> {
-    return async (ctx: T, next: () => Promise<void>) => {
-        await runChain(handlers, ctx);
-        if (next) await next()
-    }
-}
-
-/**
- * compose sync handlers in chain.
- * @param handlers 
- */
-export function syncChain<T>(handlers: Handler<T, void>[]): Handler<T, void> {
-    return (ctx: T, next: () => void) => {
-        runChain(handlers, ctx);
-        if (next) next()
+export function chain<T, TR>(handlers: Handler<T, TR>[]): Handler<T, TR> {
+    return (ctx: T, next: () => TR) => {
+        return runChain(handlers, ctx, next);
     }
 }
 
@@ -41,21 +29,19 @@ export function syncChain<T>(handlers: Handler<T, void>[]): Handler<T, void> {
 export function runChain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR): TR {
     if (!handlers.length) return null!;
     let index = -1;
-    function dispatch(idx: number): TR {
-        if (idx <= index) {
+    function dispatch(i: number): TR {
+        if (i <= index) {
             throw new Execption('next called mutiple times.');
         }
-        index = idx;
-        let handle: Handler<T, TR> | undefined;
-        if (idx < handlers.length) {
-            handle = handlers[idx]
-        } else if (idx === handlers.length) {
+        index = i;
+        let handle = handlers[i];
+        if (i === handlers.length) {
             handle = next!
         }
         if (!handle) {
-            return null!
+            return next?.() as TR;
         }
-        const gnext = dispatch.bind(null, idx + 1);
+        const gnext = dispatch.bind(null, i + 1);
         return handle(ctx, gnext)
     }
     return dispatch(0)

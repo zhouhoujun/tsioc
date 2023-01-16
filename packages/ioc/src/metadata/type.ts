@@ -8,7 +8,7 @@ import {
 } from './meta';
 import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
 import { Token } from '../tokens';
-import { ArgumentResolver } from '../resolver';
+import { ArgumentResolver, Parameter } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { forIn, hasItem } from '../utils/lang';
@@ -280,23 +280,21 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
             throw new Execption(`type: ${type} has no method ${method}.`)
         }
 
-        const hasPointcut = inst[method]['_proxy'] == true;
         if (proceed) {
-            return proceed(context, (ctx) => {
-                const args = this.resolveArguments(method, ctx);
-                if (hasPointcut) {
-                    args.push(ctx)
-                }
-                return inst[method](...args);
-            })
+            return proceed(context, (ctx) => this.invokeMethod(inst, method, ctx))
         } else {
-            const args = this.resolveArguments(method, context);
-            if (hasPointcut) {
-                args.push(context)
-            }
-            return inst[method](...args);
+            return this.invokeMethod(inst, method, context)
         }
 
+    }
+
+    protected invokeMethod(inst: any, method: string, context: InvocationContext) {
+        const args = this.resolveArguments(method, context);
+        const hasPointcut = inst[method]['_proxy'] == true;
+        if (hasPointcut) {
+            args.push(context)
+        }
+        return inst[method](...args);
     }
 
     /**
