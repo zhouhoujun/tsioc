@@ -8,7 +8,7 @@ import {
 } from './meta';
 import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
 import { Token } from '../tokens';
-import { ArgumentResolver } from '../resolver';
+import { ArgumentResolver, Parameter } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { forIn, hasItem } from '../utils/lang';
@@ -290,7 +290,7 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
 
     protected invokeMethod(inst: any, method: string, context: InvocationContext) {
         const args = this.resolveArguments(method, context);
-        const hasPointcut = inst[method]['_proxy'] == true
+        const hasPointcut = inst[method]['_proxy'] == true;
         if (hasPointcut) {
             args.push(context)
         }

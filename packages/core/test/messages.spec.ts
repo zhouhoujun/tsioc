@@ -9,7 +9,7 @@ import * as path from 'path';
 import { HttpClient, HttpClientModule } from '@tsdi/common';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, LoggerModule, Middleware, Chain
+    ServerEndpointContext, LoggerModule, Middleware, Chain, Client
 } from '../src';
 
 
@@ -268,6 +268,8 @@ describe('app route mapping', () => {
     });
 
     it('post route response object', async () => {
+        const client = ctx.resolve(Client);
+        client.send
         const a = await lastValueFrom(ctx.resolve(HttpClient).post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
