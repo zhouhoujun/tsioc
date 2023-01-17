@@ -60,8 +60,6 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
      */
     abstract get notFound(): number;
 
-    protected abstract isEmptyStatus(status: number): boolean;
-
 
     protected override getDefaultResolvers(): OperationArgumentResolver[] {
         return [

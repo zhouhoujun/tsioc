@@ -1,11 +1,10 @@
 /* eslint-disable no-case-declarations */
 import {
     EndpointBackend, TransportEvent, ClientContext, TransportErrorResponse,
-    TransportRequest, ResHeaders, OutgoingHeader, Status, StatusFactory,
-    EmptyStatus, RedirectStatus, TransportHeaderResponse, Redirector, OkStatus, mths,
+    TransportRequest, ResHeaders, OutgoingHeader, TransportHeaderResponse, Redirector, mths,
     ResponseJsonParseError, TransportResponse, ResHeadersLike
 } from '@tsdi/core';
-import { Abstract, lang, _tyundef } from '@tsdi/ioc';
+import { Abstract, isUndefined, lang, _tyundef } from '@tsdi/ioc';
 import { PassThrough, pipeline, Readable } from 'stream';
 import { EventEmitter } from 'events';
 import { Observable, Observer } from 'rxjs';
@@ -28,35 +27,36 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
     handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent<any>>) => {
             const url = req.url.trim();
-            let status: Status<number>;
+            let status: number;
 
             let error: any;
             let ok = false;
-            const factory = ctx.statusFactory as StatusFactory<number>;
 
             const request = this.createRequest((ctx.target as TransportClient).connection, req);
 
             const onError = (error?: Error | null) => {
+                if(isUndefined(status)){
+                    status = (error as any).status;
+                }
                 const res = this.createError({
                     url,
                     error,
                     statusText: 'Unknown Error',
-                    ...status
-
+                    status
                 });
                 observer.error(res)
             };
             const onResponse = async (incoming: IncomingMessage) => {
                 let body: any;
                 const headers = new ResHeaders(incoming.headers);
-                status = factory.createByCode(headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0);
+                status = ctx.parseStatus(headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0);
                 ctx.status = status;
 
-                if (status instanceof EmptyStatus) {
+                if (ctx.isEmptyStatus(status)) {
                     observer.next(this.createHeadResponse({
                         url,
                         headers,
-                        ...status
+                        status
                     }));
                     observer.complete();
                     return;
@@ -68,12 +68,12 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
                     ok = !err;
                 });
 
-                if (status instanceof RedirectStatus) {
-                    // HTTP fetch step 5.2
-                    ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers).subscribe(observer);
-                    return;
-                }
-                ok = status instanceof OkStatus;
+                // if (status instanceof RedirectStatus) {
+                //     // HTTP fetch step 5.2
+                //     ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers).subscribe(observer);
+                //     return;
+                // }
+                ok = ctx.isOkStatus(status);
 
                 if (!ok) {
                     if (!error) {
@@ -83,7 +83,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
                     return observer.error(this.createError({
                         url,
                         error: error ?? body,
-                        ...status
+                        status
                     }));
                 }
 
@@ -214,14 +214,14 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
                         url,
                         body,
                         headers,
-                        ...status
+                        status
                     }));
                     observer.complete();
                 } else {
                     observer.error(this.createError({
                         url,
                         error: error ?? body,
-                        ...status
+                        status
                     }));
                 }
 

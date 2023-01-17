@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, Execption, isNil, ProviderType, _tystr } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, Execption, Injector, InvokeArguments, isNil, ProviderType, _tystr } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { TransportOpts, TransportEndpoint } from './transport';
 import { ClientEndpointContext } from './context';
@@ -16,6 +16,35 @@ export abstract class ClientOpts<TRequest = any, TResponse = any> extends Transp
 
 }
 
+/**
+ * response option for request.
+ */
+export interface ClientInvocationOptions extends InvokeArguments {
+    observe?: 'body' | 'events' | 'response';
+}
+
+/**
+ * clinet context.
+ */
+export abstract class ClientContext extends ClientEndpointContext {
+    /**
+     * instance of TransportClient.
+     */
+    readonly target: Client;
+    readonly observe: 'body' | 'events' | 'response';
+
+    public status: number;
+
+    constructor(injector: Injector, target: Client, options?: ClientInvocationOptions) {
+        super(injector, options);
+        this.target = target;
+        this.observe = options?.observe ?? 'body';
+        this.status = this.getInitStatus();
+    }
+
+    protected abstract getInitStatus(): number;
+
+}
 
 /**
  * abstract client.
@@ -365,6 +394,9 @@ export abstract class Client<
                             }
                             return res.body
                         }));
+
+                    case 'stream':
+                        return res$.pipe(map((res: TransportResponse) => res.body));
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.

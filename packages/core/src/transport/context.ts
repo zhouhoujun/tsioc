@@ -14,6 +14,9 @@ export abstract class EndpointContext extends DefaultInvocationContext {
 
     done?: boolean;
 
+    /**
+     * transport execption.
+     */
     execption?: any;
     /**
      * Get response status.
@@ -28,6 +31,12 @@ export abstract class EndpointContext extends DefaultInvocationContext {
         super.clear();
         (this as any).target = null;
     }
+
+    abstract isEmptyStatus(status: number): boolean;
+
+    abstract isOkStatus(status: number): boolean;
+
+    abstract parseStatus(status: string|number|null): number;
 
 }
 
