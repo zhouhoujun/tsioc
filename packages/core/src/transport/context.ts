@@ -12,7 +12,7 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      */
     abstract get target(): TransportEndpoint;
 
-    // done?: boolean;
+    done?: boolean;
 
     /**
      * transport execption.
