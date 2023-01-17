@@ -35,9 +35,9 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
 
     get status(): number {
         if (this._status === undefined) {
-            this._status = this.notFound;
+            this.notFound = true;
         }
-        return this._status;
+        return this._status!;
     }
 
     set status(status: number) {
@@ -54,11 +54,6 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
     protected onStatusChanged(status: number) {
 
     }
-
-    /**
-     * not found status.
-     */
-    abstract get notFound(): number;
 
 
     protected override getDefaultResolvers(): OperationArgumentResolver[] {

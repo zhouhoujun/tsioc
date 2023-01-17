@@ -33,16 +33,16 @@ export abstract class ClientContext extends ClientEndpointContext {
     readonly target: Client;
     readonly observe: 'body' | 'events' | 'response';
 
-    public status: number;
+    public status!: number;
 
     constructor(injector: Injector, target: Client, options?: ClientInvocationOptions) {
         super(injector, options);
         this.target = target;
         this.observe = options?.observe ?? 'body';
-        this.status = this.getInitStatus();
+        this.initStatus();
     }
 
-    protected abstract getInitStatus(): number;
+    protected abstract initStatus(): void;
 
 }
 

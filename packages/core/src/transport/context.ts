@@ -12,12 +12,13 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      */
     abstract get target(): TransportEndpoint;
 
-    done?: boolean;
+    // done?: boolean;
 
     /**
      * transport execption.
      */
     execption?: any;
+
     /**
      * Get response status.
      */
@@ -32,11 +33,27 @@ export abstract class EndpointContext extends DefaultInvocationContext {
         (this as any).target = null;
     }
 
+
+    abstract get isEmpty(): boolean;
+    abstract get ok(): boolean;
+
+    abstract get notFound(): boolean;
+    abstract set notFound(value: boolean);
+
+    abstract get found(): boolean;
+    abstract set found(value: boolean);
+
+    /**
+     * parse status.
+     * @param status 
+     */
+    abstract parseStatus(status: string | number | null): number;
+
+    /**
+     * is empty status.
+     * @param status 
+     */
     abstract isEmptyStatus(status: number): boolean;
-
-    abstract isOkStatus(status: number): boolean;
-
-    abstract parseStatus(status: string|number|null): number;
 
 }
 
@@ -45,6 +62,7 @@ export abstract class EndpointContext extends DefaultInvocationContext {
  */
 @Abstract()
 export abstract class ClientEndpointContext extends EndpointContext {
+
     /**
      * response observe type
      */

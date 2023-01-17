@@ -198,7 +198,7 @@ export class MappingRouter extends Router implements OnDestroy {
     }
 
     protected getRoute(ctx: ServerEndpointContext): MiddlewareFn | undefined {
-        if (ctx.done) return;
+        if (!ctx.notFound) return;
 
         let url: string;
         if (this.prefix) {
