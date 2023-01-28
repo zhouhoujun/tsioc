@@ -2,7 +2,7 @@ import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
     PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, EMPTY
+    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, EMPTY, InvocationContext, Decors, isPromise, isObservable, pomiseOf
 } from '@tsdi/ioc';
 import { ConfigureService } from './service';
 import { PipeTransform } from './pipes/pipe';
@@ -10,6 +10,9 @@ import { Startup } from './startup';
 import { getModuleType } from './module.ref';
 import { Runnable, RunnableFactory } from './runnable';
 import { ApplicationRunners } from './runners';
+import { CanActivate } from './guard';
+import { map } from 'rxjs';
+import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
 
 
 /**
@@ -336,6 +339,83 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
         meta.singleton = true
     }
 });
+
+export interface EventHandler {
+
+    /**
+     * payload message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {order?: number } option message match option.
+     */
+    (option?: {
+        /**
+         * order.
+         */
+        order?: number;
+    }): MethodDecorator;
+    /**
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {Type} event message match pattern.
+     * @param {order?: number } option message match option.
+     */
+    (event: Type<ApplicationEvent>, option?: {
+        /**
+         * order.
+         */
+        order?: number;
+    }): MethodDecorator;
+}
+
+export const EventHandler: EventHandler = createDecorator('EventHandler', {
+    props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
+    design: {
+        method: (ctx, next) => {
+            const typeRef = ctx.class;
+            const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
+            const injector = ctx.injector;
+            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+            decors.forEach(decor => {
+                const { filter, order, guards } = decor.metadata;
+
+
+                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
+                    if (guards && guards.length) {
+                        if (!(await lang.some(
+                            guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(ctx))),
+                            vaild => vaild === false))) {
+                            return;
+                        }
+                    }
+                    return run(ctx);
+                });
+
+                injector.get(ApplicationEventMulticaster).addListener(filter ?? PayloadApplicationEvent, invoker, order)
+            });
+
+            next()
+        }
+    }
+});
+
+
+/**
+ * event handler metadata.
+ */
+export interface EventHandlerMetadata {
+    /**
+     * execption type.
+     */
+    filter: Type;
+    /**
+     * order.
+     */
+    order?: number;
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActivate>[];
+}
 
 
 /**

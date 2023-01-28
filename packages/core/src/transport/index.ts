@@ -3,7 +3,6 @@ export * from './headers';
 export * from './packet';
 export * from './request';
 export * from './response';
-export * from './endpoint';
 export * from './middleware';
 
 export * from './utils';
@@ -12,9 +11,7 @@ export * from './redirector';
 
 export * from './resolver';
 export * from './model';
-export * from './execptions';
 
-export * from './guard';
 export * from './filter';
 export * from './metadata';
 export * from './execption.filter';

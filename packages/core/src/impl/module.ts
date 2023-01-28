@@ -4,8 +4,8 @@ import {
     Platform, ModuleDef, processInjectorType, Token, Type, lang, DestroyLifecycleHooks, LifecycleHooksResolver, LifecycleHooks,
     isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Class
 } from '@tsdi/ioc';
-import { Subscription } from 'rxjs';
-import { ApplicationEventMulticaster } from '../events';
+import { lastValueFrom, Subscription } from 'rxjs';
+import { ApplicationEventMulticaster, ApplicationShutdownEvent, ApplicationStartEvent } from '../events';
 import { OnDispose, OnApplicationShutdown, ModuleLifecycleHooks, Hooks, OnApplicationStart } from '../lifecycle';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { RunnableFactory } from '../runnable';
@@ -139,10 +139,8 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
 }
 
 
-export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implements ModuleLifecycleHooks {
-    private _starts = new Set<OnApplicationStart>();
+export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implements ModuleLifecycleHooks, OnApplicationStart {
     private _disposes = new Set<OnDispose>();
-    private _shutdowns = new Set<OnApplicationShutdown>();
     private _disposed = true;
     private _shutdowned = true;
     private _appEventSubs: Subscription[] = [];
@@ -153,27 +151,18 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
         super(platform);
     }
 
+    onApplicationStart(): void | Promise<void> {
+        this.applicationStarted = true;
+    }
+
     override init(injector: Injector): void {
         this.eventMulticaster = injector.get(ApplicationEventMulticaster);
+        this.eventMulticaster.addListener(ApplicationStartEvent, () => this.onApplicationStart())
     }
 
     clear(): void {
-        this._starts.clear();
         this._disposes.clear();
-        this._shutdowns.clear();
         super.clear();
-    }
-
-    async refresh(): Promise<void> {
-        if (this.platform) {
-            await Promise.all(Array.from(this.platform.modules.values())
-                .reverse()
-                .map(m => {
-                    return m.lifecycle === this ? this.refresh() : (m.lifecycle as ModuleLifecycleHooks).refresh?.();
-                }));
-        } else {
-            await Promise.all(Array.from(this._starts.values()).map(s => s && s.onApplicationStart()));
-        }
     }
 
     get disposed(): boolean {
@@ -210,11 +199,12 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
         this._appEventSubs = [];
         this._disposed = true;
         await Promise.all(Array.from(this._disposes.values()).map(s => s && s.onDispose()));
+        this.eventMulticaster.clear();
     }
 
     async runShutdown(): Promise<void> {
         this._shutdowned = true;
-        await Promise.all(Array.from(this._shutdowns.values()).map(s => s && s.onApplicationShutdown()));
+        await lastValueFrom(this.eventMulticaster.emit(new ApplicationStartEvent(this)));
     }
 
     runDestroy(): any {
@@ -234,14 +224,11 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
 
 
         if (isFunction(onApplicationStart)) {
-            this._starts.add(target);
-            if (this.applicationStarted) {
-                target.onApplicationStart();
-            }
+            this.eventMulticaster.addListener(ApplicationStartEvent, () => target.onApplicationStart())
         }
 
         if (isFunction(onApplicationShutdown)) {
-            this.regShutdown(target);
+            this.eventMulticaster.addListener(ApplicationShutdownEvent, () => target.onApplicationStart())
         }
 
     }
@@ -249,11 +236,6 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
     protected regDispose(hook: OnDispose): void {
         this._disposed = false;
         this._disposes.add(hook);
-    }
-
-    protected regShutdown(hook: OnApplicationShutdown): void {
-        this._shutdowned = false;
-        this._shutdowns.add(hook);
     }
 }
 

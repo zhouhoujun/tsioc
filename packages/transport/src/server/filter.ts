@@ -1,6 +1,6 @@
 import {
     EmptyStatus, Endpoint, EndpointBackend, EndpointContext, EndpointFilter,
-    mths, Outgoing, ServerEndpointContext, TransportExecption
+    mths, Outgoing, ServerEndpointContext, MessageExecption
 } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
@@ -73,7 +73,7 @@ export class ServerFinalizeFilter extends EndpointFilter {
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
-            if (!(res instanceof Writable)) throw new TransportExecption('response is not writable, no support strem.');
+            if (!(res instanceof Writable)) throw new MessageExecption('response is not writable, no support strem.');
             await pipeStream(body, res);
         }
 

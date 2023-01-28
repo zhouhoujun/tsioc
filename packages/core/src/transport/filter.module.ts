@@ -1,25 +1,25 @@
-import { EMPTY, getClass, Injectable, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
+import { EMPTY, getClass, Injectable, InvokerLike, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { Module } from '../metadata';
 import { ExecptionHandlerBackend } from './execption.filter';
 import { EndpointHandlerMethodResolver, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from './filter';
 
 @Injectable()
 export class DefaultEndpointHandlerMethodResolver extends EndpointHandlerMethodResolver {
-    private maps = new Map<Type | string, OperationInvoker[]>();
+    private maps = new Map<Type | string, InvokerLike[]>();
 
-    resolve<T>(filter: Type<T> | T | string): OperationInvoker[] {
+    resolve<T>(filter: Type<T> | T | string): InvokerLike[] {
         return this.maps.get(isString(filter) ? filter : (isFunction(filter) ? filter : getClass(filter))) ?? EMPTY
     }
 
-    addHandle(filter: Type | string, methodInvoker: OperationInvoker, order?: number): this {
+    addHandle(filter: Type | string, methodInvoker: InvokerLike, order?: number): this {
         let hds = this.maps.get(filter);
-        if (isNumber(order)) {
+        if (!isFunction(methodInvoker) && isNumber(order)) {
             methodInvoker.order = order
         }
         if (!hds) {
             hds = [methodInvoker];
             this.maps.set(filter, hds)
-        } else if (!hds.some(h => h.descriptor === methodInvoker.descriptor)) {
+        } else if (!isFunction(methodInvoker) && !hds.some(h => !isFunction(h) && h.descriptor === methodInvoker.descriptor)) {
             hds.push(methodInvoker)
         }
         return this

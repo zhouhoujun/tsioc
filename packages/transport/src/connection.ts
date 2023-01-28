@@ -1,4 +1,4 @@
-import { TransportExecption } from '@tsdi/core';
+import { MessageExecption } from '@tsdi/core';
 import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Writable, Duplex, Transform } from 'stream';
@@ -240,7 +240,7 @@ export class DuplexConnection<TSocket extends EventEmitter = EventEmitter> exten
 }
 
 
-export class TransportStreamCancel extends TransportExecption {
+export class TransportStreamCancel extends MessageExecption {
     constructor(message?: string | Error) {
         super(message instanceof Error ? message.message : message)
     }

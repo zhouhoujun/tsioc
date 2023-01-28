@@ -3,7 +3,8 @@ import {
     isClass, isClassType, isFunction, lang, ProviderType, StaticProvider, Token, Type, TypeOf
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
-import { Endpoint, EndpointBackend, InterceptorChain, InterceptorLike, InterceptorType } from './endpoint';
+import { Endpoint, EndpointBackend } from '../Endpoint';
+import { InterceptorChain, InterceptorLike, InterceptorType } from '../Interceptor';
 import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterChain, EndpointFilter } from './filter';
 

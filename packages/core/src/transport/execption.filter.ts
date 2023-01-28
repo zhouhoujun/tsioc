@@ -1,38 +1,39 @@
 import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
+import { Endpoint } from '../Endpoint';
+import { Interceptor } from '../Interceptor';
 import { EndpointContext } from './context';
-import { Endpoint, Interceptor } from './endpoint';
-import { InternalServerExecption, TransportExecption } from './execptions';
+import { InternalServerExecption, MessageExecption } from '../execptions';
 import { EndpointFilter, runHandlers } from './filter';
 
 
 @Abstract()
-export abstract class ExecptionEndpoint implements Endpoint<Error, TransportExecption> {
+export abstract class ExecptionEndpoint implements Endpoint<Error, MessageExecption> {
 
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    abstract handle(input: Error, context: EndpointContext): Observable<TransportExecption>;
+    abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
 }
 
 @Abstract()
-export abstract class ExecptionBackend implements Endpoint<Error, TransportExecption> {
+export abstract class ExecptionBackend implements Endpoint<Error, MessageExecption> {
 
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    abstract handle(input: Error, context: EndpointContext): Observable<TransportExecption>;
+    abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
 }
 
 /**
  * execption filter is a chainable behavior modifier for `endpoints`.
  */
 @Abstract()
-export abstract class ExecptionFilter extends EndpointFilter<Error, TransportExecption>  {
+export abstract class ExecptionFilter extends EndpointFilter<Error, MessageExecption>  {
     /**
      * the method to implemet interceptor filter.
      * @param input  request input.
@@ -41,7 +42,7 @@ export abstract class ExecptionFilter extends EndpointFilter<Error, TransportExe
      * @param context request context.
      * @returns An observable of the event stream.
      */
-    abstract intercept(input: Error, next: ExecptionEndpoint, context: EndpointContext): Observable<TransportExecption>;
+    abstract intercept(input: Error, next: ExecptionEndpoint, context: EndpointContext): Observable<MessageExecption>;
 }
 
 
@@ -69,16 +70,16 @@ export class CatchInterceptor<TInput = any, TOutput = any> implements Intercepto
 @Injectable({ static: true })
 export class ExecptionHandlerBackend extends ExecptionBackend {
 
-    handle(input: Error, context: EndpointContext): Observable<TransportExecption> {
+    handle(input: Error, context: EndpointContext): Observable<MessageExecption> {
 
-        return new Observable((observer: Observer<TransportExecption>) => {
+        return new Observable((observer: Observer<MessageExecption>) => {
             return runHandlers(context, input, getClass(input))
                 .pipe(
                     map(r => {
-                        if (!context.execption || !(context.execption instanceof TransportExecption)) {
+                        if (!context.execption || !(context.execption instanceof MessageExecption)) {
                             throw new Execption('can not handle error type');
                         }
-                        return context.execption as TransportExecption;
+                        return context.execption as MessageExecption;
                     }),
                     catchError((err, caught) => {
                         const exception = new InternalServerExecption((err as Error).message, context.statusFactory.getStatusCode('InternalServerError'));

@@ -44,6 +44,11 @@ export interface OperationInvoker<T = any> {
 }
 
 /**
+ * invoker like.
+ */
+export type InvokerLike<T = any> = OperationInvoker<T> | ((ctx: InvocationContext) => T);
+
+/**
  * invoke proceed.
  */
 export type Proceed<T = any> = (ctx: InvocationContext, backend: (ctx: InvocationContext) => T) => T;

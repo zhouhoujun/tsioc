@@ -1,4 +1,4 @@
-import { TransportExecption } from '@tsdi/core';
+import { MessageExecption } from '@tsdi/core';
 import { HttpStatusCode } from '@tsdi/common';
 
 
@@ -6,7 +6,7 @@ import { HttpStatusCode } from '@tsdi/common';
  * http error
  *
  */
-export class HttpError extends TransportExecption {
+export class HttpError extends MessageExecption {
     constructor(readonly status: HttpStatusCode, message?: string | string[]) {
         super(message, status)
     }

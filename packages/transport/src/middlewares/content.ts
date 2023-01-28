@@ -1,4 +1,4 @@
-import { Middleware, mths, AssetContext, TransportExecption } from '@tsdi/core';
+import { Middleware, mths, AssetContext, MessageExecption } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
 
@@ -40,7 +40,7 @@ export class ContentMiddleware implements Middleware {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
-                if ((err as TransportExecption).status !== ctx.statusFactory.getStatusCode('NotFound')) {
+                if ((err as MessageExecption).status !== ctx.statusFactory.getStatusCode('NotFound')) {
                     throw err
                 }
             }

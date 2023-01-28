@@ -13,8 +13,6 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      */
     abstract get target(): TransportEndpoint;
 
-    done?: boolean;
-
     execption?: any;
     /**
      * Get response status.

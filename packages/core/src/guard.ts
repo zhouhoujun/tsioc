@@ -1,10 +1,11 @@
+import { InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { EndpointContext } from './context';
+
 
 /**
  * Guard.
  */
-export interface CanActivate<T extends EndpointContext = EndpointContext> {
+export interface CanActivate<T extends InvocationContext = InvocationContext> {
     /**
      * route guard.
      * @param ctx context of route.

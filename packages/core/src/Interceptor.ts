@@ -1,47 +1,6 @@
-import { Abstract, ClassType, isFunction } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
-import { EndpointContext } from './context';
-
-
-/**
- * Endpoint is the fundamental building block of servers and clients.
- */
-export interface Endpoint<TInput = any, TOutput = any> {
-    /**
-     * transport endpoint handle.
-     * @param input request input.
-     * @param context request context.
-     */
-    handle(input: TInput, context: EndpointContext): Observable<TOutput>;
-}
-
-/**
- * Endpoint funcation.
- */
-export type EndpointFn<TInput, TOutput> = (input: TInput, context: EndpointContext) => Observable<TOutput>;
-
-/**
- * endpoint like.
- */
-export type EndpointLike<TInput, TOutput> = Endpoint<TInput, TOutput> | EndpointFn<TInput, TOutput>;
-
-/**
- * A final {@link Endpoint} which will dispatch the request via browser HTTP APIs to a backend.
- *
- * Middleware sit between the `Client|Server` interface and the `EndpointBackend`.
- *
- * When injected, `EndpointBackend` dispatches requests directly to the backend, without going
- * through the interceptor chain.
- */
-@Abstract()
-export abstract class EndpointBackend<TInput = any, TOutput = any> implements Endpoint<TInput, TOutput> {
-    /**
-     * transport endpoint handle.
-     * @param input request input.
-     * @param context request context.
-     */
-    abstract handle(input: TInput, context: EndpointContext): Observable<TOutput>;
-}
+import { ClassType, InvocationContext, InvokerLike, isFunction, isPromise } from '@tsdi/ioc';
+import { isObservable, mergeMap, Observable, of } from 'rxjs';
+import { Endpoint, EndpointBackend, endpointify, EndpointLike } from './Endpoint';
 
 /**
  * Interceptor is a chainable behavior modifier for `endpoints`.
@@ -55,13 +14,13 @@ export interface Interceptor<TInput = any, TOutput = any> {
      * @param context request context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext): Observable<TOutput>;
+    intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: InvocationContext): Observable<TOutput>;
 }
 
 /**
  * interceptor function.
  */
-export type InterceptorFn<TInput, TOutput> = (input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext) => Observable<TOutput>;
+export type InterceptorFn<TInput, TOutput> = (input: TInput, next: Endpoint<TInput, TOutput>, context: InvocationContext) => Observable<TOutput>;
 
 /**
  * interceptor like.
@@ -80,7 +39,7 @@ export type InterceptorType<TInput = any, TOutput = any> = ClassType<Interceptor
 export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TOutput> {
     constructor(private next: Endpoint<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) { }
 
-    handle(input: TInput, context: EndpointContext): Observable<TOutput> {
+    handle(input: TInput, context: InvocationContext): Observable<TOutput> {
         return this.interceptor.intercept(input, this.next, context)
     }
 }
@@ -100,31 +59,13 @@ export class InterceptorChain<TInput, TOutput> implements Endpoint<TInput, TOutp
         this.interceptors = interceptors.map(i => interceptorify(i))
     }
 
-    handle(input: TInput, context: EndpointContext): Observable<TOutput> {
+    handle(input: TInput, context: InvocationContext): Observable<TOutput> {
         if (!this.chain) {
             this.chain = this.interceptors.reduceRight(
                 (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend)
         }
         return this.chain.handle(input, context)
     }
-}
-
-/**
- * create endpoint by EndpointFn
- * @param handle 
- * @returns 
- */
-export function createEndpoint<TInput, TOutput>(handle: EndpointFn<TInput, TOutput>): Endpoint<TInput, TOutput> {
-    return { handle };
-}
-
-/**
- * parse to Endpoint if not. 
- * @param e type of {@link EndpointLike}
- * @returns 
- */
-export function endpointify<TInput, TOutput>(e: EndpointLike<TInput, TOutput>): Endpoint<TInput, TOutput> {
-    return isFunction(e) ? createEndpoint(e) : e;
 }
 
 /**
@@ -145,3 +86,28 @@ export function interceptorify<TInput, TOutput>(i: InterceptorLike<TInput, TOutp
     return isFunction(i) ? createInterceptor(i) : i;
 }
 
+/**
+ * run invokers.
+ * @param invokders 
+ * @param ctx 
+ * @param input 
+ * @param isDone 
+ * @returns 
+ */
+export function runInvokers(invokders: InvokerLike[] | undefined, ctx: InvocationContext, input: any, isDone: (ctx: InvocationContext) => boolean): Observable<any> {
+    let $obs = of(input);
+    if (!invokders || !invokders.length) {
+        return $obs;
+    }
+
+    invokders.forEach(i => {
+        $obs = $obs.pipe(
+            mergeMap(r => {
+                if (isDone(ctx)) return of(r);
+                const $res = isFunction(i) ? i(ctx) : i.invoke(ctx);
+                if (!isPromise($res) || !isObservable($res)) return of($res);
+                return $res;
+            }));
+    });
+    return $obs;
+}

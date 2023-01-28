@@ -1,4 +1,4 @@
-import { OutgoingHeader, OutgoingHeaders, Outgoing, ResHeaders, TransportExecption } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, Outgoing, ResHeaders, MessageExecption } from '@tsdi/core';
 import { ArgumentExecption, Execption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { HeandersSentExecption, InvalidStreamExecption } from './execptions';
@@ -210,9 +210,9 @@ export class OutgoingMessage extends Writable implements Outgoing {
 
         let err: Execption | undefined;
         if (this.ending) {
-            err = new TransportExecption('write after end');
+            err = new MessageExecption('write after end');
         } else if (this._closed) {
-            err = new TransportExecption('The stream has been destroyed');
+            err = new MessageExecption('The stream has been destroyed');
         } else if (this.destroyed) {
             return;
         }

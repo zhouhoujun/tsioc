@@ -5,7 +5,7 @@ import {
 import { MODEL_RESOLVERS } from './model';
 import { PipeTransform } from '../pipes/pipe';
 import { AssetContext, ServerEndpointContext } from './context';
-import { TransportArgumentExecption } from './execptions';
+import { MessageArgumentExecption, MessageMissingExecption } from '../execptions';
 import { TransportArgumentResolver, TransportParameter } from './resolver';
 import { Server } from './server';
 import { Incoming, Outgoing } from './packet';
@@ -44,21 +44,15 @@ export abstract class ServerContext<TRequest extends Incoming = Incoming, TRespo
     }
 
     protected override missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): MissingParameterExecption {
-        throw new TransportMissingExecption(missings, type, method)
+        throw new MessageMissingExecption(missings, type, method)
     }
 
-}
-
-export class TransportMissingExecption extends MissingParameterExecption {
-    constructor(parameters: Parameter[], type: ClassType, method: string) {
-        super(parameters, type, method)
-    }
 }
 
 
 
 export function missingPipeExecption(parameter: Parameter, type?: ClassType, method?: string) {
-    return new TransportArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
+    return new MessageArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
 }
 
 const primitiveResolvers: TransportArgumentResolver[] = [

@@ -1,8 +1,9 @@
-import { Abstract, getClass, Injectable, isPromise, OperationInvoker, Type } from '@tsdi/ioc';
-import { isObservable, mergeMap, Observable, of } from 'rxjs';
+import { Abstract, getClass, Injectable, InvokerLike, Type } from '@tsdi/ioc';
+import { mergeMap, Observable, of } from 'rxjs';
 import { Incoming, Outgoing } from './packet';
 import { EndpointContext, ServerEndpointContext } from './context';
-import { Endpoint, EndpointBackend, endpointify, EndpointLike, Interceptor, InterceptorEndpoint, interceptorify } from './endpoint';
+import { Interceptor, InterceptorEndpoint, interceptorify, runInvokers } from '../Interceptor';
+import { Endpoint, EndpointBackend, endpointify, EndpointLike } from '../Endpoint';
 
 
 
@@ -56,20 +57,20 @@ export abstract class EndpointHandlerMethodResolver {
      * resolve filter hanlde.
      * @param filter 
      */
-    abstract resolve<T>(filter: Type<T> | T | string): OperationInvoker[];
+    abstract resolve<T>(filter: Type<T> | T | string): InvokerLike[];
     /**
      * add filter handle.
      * @param filter filter type
      * @param methodInvoker filter handle invoker.
      * @param order order.
      */
-    abstract addHandle(filter: Type | string, methodInvoker: OperationInvoker, order?: number): this;
+    abstract addHandle(filter: Type | string, methodInvoker: InvokerLike, order?: number): this;
     /**
      * remove filter handle.
      * @param filter filter type.
      * @param methodInvoker filter handle.
      */
-    abstract removeHandle(filter: Type | string, methodInvoker: OperationInvoker): this;
+    abstract removeHandle(filter: Type | string, methodInvoker: InvokerLike): this;
 }
 
 /**
@@ -79,24 +80,8 @@ export abstract class EndpointHandlerMethodResolver {
  * @returns 
  */
 export function runHandlers(ctx: EndpointContext, input: any, filter: Type | string): Observable<any> {
-
     const handles = ctx.injector.get(EndpointHandlerMethodResolver).resolve(filter);
-    let $obs = of(input);
-    if (!handles || !handles.length) {
-        return $obs;
-    }
-
-    handles.forEach(i => {
-        $obs = $obs.pipe(
-            mergeMap(r => {
-                if (ctx.done) return of(r);
-                const $res = i.invoke(ctx);
-                if (!isPromise($res) || !isObservable($res)) return of($res);
-                return $res;
-            }));
-    });
-    return $obs;
-
+    return runInvokers(handles, ctx, input, c => c.done === true)
 }
 
 @Injectable({ static: true })

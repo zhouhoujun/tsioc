@@ -1,6 +1,6 @@
 import {
-    BadRequestExecption,  ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption,
-    TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, ExecptionEndpoint, TransportExecption
+    BadRequestExecption,  ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption,
+    MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, ExecptionEndpoint, MessageExecption
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
@@ -51,7 +51,7 @@ export class HttpExecptionFinalizeFilter implements ExecptionFilter {
                     context.type = 'text';
                     let statusCode = (err.status || err.statusCode) as HttpStatusCode;
                     let msg;
-                    if (err instanceof TransportExecption) {
+                    if (err instanceof MessageExecption) {
                         msg = err.message
                     } else {
                         // ENOENT support
@@ -110,8 +110,8 @@ export class HttpExecptionHandlers {
         ctx.execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message)
     }
 
-    @ExecptionHandler(TransportArgumentExecption)
-    anguExecption(ctx: HttpContext, execption: TransportArgumentExecption) {
+    @ExecptionHandler(MessageArgumentExecption)
+    anguExecption(ctx: HttpContext, execption: MessageArgumentExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
@@ -120,8 +120,8 @@ export class HttpExecptionHandlers {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
-    @ExecptionHandler(TransportMissingExecption)
-    missExecption(ctx: HttpContext, execption: TransportMissingExecption) {
+    @ExecptionHandler(MessageMissingExecption)
+    missExecption(ctx: HttpContext, execption: MessageMissingExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 

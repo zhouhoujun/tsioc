@@ -48,9 +48,5 @@ export abstract class ModuleLifecycleHooks extends LifecycleHooks {
      * invoked shutdown or not.
      */
     abstract get shutdown(): boolean;
-    
-    /**
-     * refresh context.
-     */
-    abstract refresh(): Promise<void>;
+
 }

@@ -1,12 +1,13 @@
-import { ProviderType, lang, isNumber, Type, LifecycleHooksResolver, isFunction } from '@tsdi/ioc';
+import { ProviderType, lang, isNumber, Type, LifecycleHooksResolver, isFunction, Injector, Injectable } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
 import { ModuleLifecycleHooksResolver } from './impl/module';
-import { DefaultApplicationFactory } from './impl/context';
+import { DefaultApplicationFactory, DefaultEventMulticaster } from './impl/context';
 import { RunnableRef, RunnableSet } from './runnable';
 import { ConfigureService } from './service';
 import { Startup } from './startup';
 import { ApplicationRunners } from './runners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
+import { ApplicationEventMulticaster, ApplicationStartEvent } from './events';
 
 
 export class DefaultScanSet<T> extends RunnableSet<T> {
@@ -67,13 +68,14 @@ export class DefaultScanSet<T> extends RunnableSet<T> {
 
 }
 
+@Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners {
     private _startups: RunnableSet<Startup>;
     private _services: RunnableSet<ConfigureService>;
     private _runnables: RunnableSet;
     private _bootstraps: RunnableRef[];
     private _runners: RunnableRef[];
-    constructor() {
+    constructor(private caster: ApplicationEventMulticaster) {
         super()
         this._startups = new DefaultScanSet();
         this._services = new DefaultScanSet();
@@ -136,6 +138,7 @@ export class DefaultApplicationRunners extends ApplicationRunners {
         if (this._bootstraps.length) {
             await Promise.all(this._bootstraps.map(b => b.run()))
         }
+        this.caster.emit(new ApplicationStartEvent(this));
     }
 
     onDestroy(): void {
@@ -148,6 +151,14 @@ export class DefaultApplicationRunners extends ApplicationRunners {
 
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
+    {
+        provide: ApplicationEventMulticaster,
+        useFactory: (injector: Injector) => {
+            return new DefaultEventMulticaster(injector)
+        },
+        static: true,
+        deps: [Injector]
+    },
     { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }

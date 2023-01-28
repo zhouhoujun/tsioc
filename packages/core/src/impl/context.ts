@@ -1,6 +1,6 @@
 import {
-    Type, getClass, Injector, ProviderType, DefaultInvocationContext,
-    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags, OperationInvoker
+    Type, getClass, Injector, ProviderType, DefaultInvocationContext, createContext, InvokerLike,
+    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
@@ -8,8 +8,9 @@ import { RunnableFactory, BootstrapOption, RunnableRef } from '../runnable';
 import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
-import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
-import { EventEmitter } from '../EventEmitter';
+import { ApplicationContextRefreshEvent, ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from '../events';
+import { Observable } from 'rxjs';
+import { runInvokers } from '../Interceptor';
 
 
 
@@ -35,12 +36,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         if (args && options.arguments !== args) {
             this._args = options.arguments ? { ...options.arguments, ...args } : args
         }
-        let multicaster = injector.get(ApplicationEventMulticaster, null);
-        if (!multicaster) {
-            multicaster = new DefaultEventMulticaster();
-            injector.setValue(ApplicationEventMulticaster, multicaster)
-        }
-        this._multicaster = multicaster;
+        this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
         this.onDestroy(this._runners)
@@ -104,19 +100,19 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
      * refresh context.
      */
     async refresh(): Promise<void> {
-        await this.injector.lifecycle.refresh();
+        this._multicaster.emit(new ApplicationContextRefreshEvent(this))
     }
 
 }
 
 export class DefaultEventMulticaster extends ApplicationEventMulticaster {
-    private maps: Map<Type, OperationInvoker[]>;
-    constructor() {
+    private maps: Map<Type, InvokerLike[]>;
+    constructor(private injector: Injector) {
         super();
         this.maps = new Map();
     }
 
-    addListener(event: Type<ApplicationEvent>, invoker: OperationInvoker<any>, order: number = -1): void {
+    addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): void {
         const handlers = this.maps.get(event);
         if (handlers) {
             order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
@@ -125,20 +121,13 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster {
         }
     }
 
-    emit(value: ApplicationEvent) {
+    emit(value: ApplicationEvent): Observable<any> {
         const handlers = this.maps.get(getClass(value));
-        return;
-    }
-}
-
-export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
-
-    constructor(source: Object, public playload: T) {
-        super(source)
+        return runInvokers(handlers, createContext(this.injector), value, v => v.done === true)
     }
 
-    getPayloadType() {
-        return getClass(this.playload)
+    clear(): void {
+        this.maps.clear();
     }
 }
 

@@ -1,4 +1,4 @@
-import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, TransportExecption } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, MessageExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -151,7 +151,7 @@ export class CorsMiddleware implements Middleware {
                     ...{ vary: varyWithOrigin },
                 };
                 const errCode = ctx.statusFactory.getStatusCode('InternalServerError');
-                ctx.status = ctx.statusFactory.createByCode(err instanceof TransportExecption ? err.status || errCode : errCode, err.message || err.toString() || '');
+                ctx.status = ctx.statusFactory.createByCode(err instanceof MessageExecption ? err.status || errCode : errCode, err.message || err.toString() || '');
                 ctx.get(Logger)?.error(err)
             }
         } else {

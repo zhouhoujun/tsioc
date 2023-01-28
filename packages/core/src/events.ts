@@ -1,5 +1,6 @@
-import { Abstract, OperationInvoker, Type } from '@tsdi/ioc';
+import { Abstract, getClass, InvokerLike, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { ApplicationContext } from './context';
 
 
 
@@ -26,6 +27,45 @@ export abstract class ApplicationEvent {
         return this._timestamp
     }
 }
+
+
+export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
+
+    constructor(source: Object, public playload: T) {
+        super(source)
+    }
+
+    getPayloadType() {
+        return getClass(this.playload)
+    }
+}
+
+/**
+ * Application start event.
+ */
+export class ApplicationStartEvent extends ApplicationEvent {
+
+}
+
+/**
+ * Application context refresh event.
+ */
+export class ApplicationContextRefreshEvent extends ApplicationEvent {
+
+    constructor(readonly context: ApplicationContext) {
+        super(context);
+    }
+}
+
+/**
+ * Application shutdown event.
+ */
+export class ApplicationShutdownEvent extends ApplicationEvent {
+    constructor(source: Object, readonly signls: string) {
+        super(source)
+    }
+}
+
 
 /**
  * Interface that encapsulates event publication functionality.
@@ -59,11 +99,14 @@ export abstract class ApplicationEventMulticaster {
      * @param event 
      * @param invoker 
      */
-    abstract addListener(event: Type<ApplicationEvent>, invoker: OperationInvoker, order?: number): void;
+    abstract addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order?: number): void;
     /**
      * multicast emit event.
      * @param event 
      */
     abstract emit(event: ApplicationEvent): Observable<any>;
+
+
+    abstract clear(): void;
 
 }

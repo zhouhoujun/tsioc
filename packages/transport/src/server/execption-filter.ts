@@ -1,7 +1,7 @@
 import {
     Outgoing, StatusFactory, EndpointFilter, Endpoint, EndpointContext, BadRequestExecption, ExecptionHandler,
-    ForbiddenExecption, InternalServerExecption, NotFoundExecption, TransportArgumentExecption, TransportExecption,
-    ENOENT, TransportMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
+    ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption, MessageExecption,
+    ENOENT, MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
 import { Injectable, isFunction } from '@tsdi/ioc';
 import { MissingModelFieldExecption } from '@tsdi/repository';
@@ -52,7 +52,7 @@ export class ExecptionFinalizeFilter implements EndpointFilter {
                     const code = err.status || err.statusCode;
                     let status = code ? factory.createByCode(code) : factory.create('InternalServerError');
                     let msg;
-                    if (err instanceof TransportExecption) {
+                    if (err instanceof MessageExecption) {
                         msg = err.message
                     } else {
                         // ENOENT support
@@ -114,8 +114,8 @@ export class TransportExecptionHandlers {
         ctx.execption = execption;
     }
 
-    @ExecptionHandler(TransportArgumentExecption)
-    anguExecption(ctx: EndpointContext, execption: TransportArgumentExecption) {
+    @ExecptionHandler(MessageArgumentExecption)
+    anguExecption(ctx: EndpointContext, execption: MessageArgumentExecption) {
         ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
     }
 
@@ -124,8 +124,8 @@ export class TransportExecptionHandlers {
         ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
     }
 
-    @ExecptionHandler(TransportMissingExecption)
-    missExecption(ctx: EndpointContext, execption: TransportMissingExecption) {
+    @ExecptionHandler(MessageMissingExecption)
+    missExecption(ctx: EndpointContext, execption: MessageMissingExecption) {
         ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
     }
 

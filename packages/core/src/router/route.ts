@@ -6,7 +6,7 @@ import { Protocols } from '../transport/packet';
 import { InterceptorLike } from '../transport/endpoint';
 import { ServerEndpointContext } from '../transport/context';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
-import { CanActivate } from '../transport/guard';
+import { CanActivate } from '../guard';
 import { Pattern } from '../transport/request';
 
 /**

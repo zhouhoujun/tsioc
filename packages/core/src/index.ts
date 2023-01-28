@@ -29,6 +29,10 @@ export { DEFAULTA_PROVIDERS as APPLICTION_DEFAULTA_PROVIDERS } from './providers
 export * from './Application';
 export * from './global';
 
+export * from './Endpoint';
+export * from './Interceptor';
+export * from './guard';
+export * from './execptions';
 
 export * from './uuid';
 
