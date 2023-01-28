@@ -1,6 +1,6 @@
 import {
     Type, getClass, Injector, ProviderType, DefaultInvocationContext,
-    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef
+    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags, OperationInvoker
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
@@ -9,6 +9,7 @@ import { ApplicationRunners } from '../runners';
 import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
 import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
+import { EventEmitter } from '../EventEmitter';
 
 
 
@@ -23,7 +24,7 @@ import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
  */
 export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
 
-    private _multicaster: ApplicationEventMulticaster | null;
+    private _multicaster: ApplicationEventMulticaster;
     exit = true;
 
     private _runners: ApplicationRunners;
@@ -34,12 +35,12 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         if (args && options.arguments !== args) {
             this._args = options.arguments ? { ...options.arguments, ...args } : args
         }
-        this._multicaster = injector.get(ApplicationEventMulticaster, null);
-        if (!this._multicaster) {
-            this._multicaster = new DefaultEventMulticaster();
-            injector.setValue(ApplicationEventMulticaster, this._multicaster)
+        let multicaster = injector.get(ApplicationEventMulticaster, null);
+        if (!multicaster) {
+            multicaster = new DefaultEventMulticaster();
+            injector.setValue(ApplicationEventMulticaster, multicaster)
         }
-
+        this._multicaster = multicaster;
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
         this.onDestroy(this._runners)
@@ -93,7 +94,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._multicaster?.emit(event);
 
         // Publish event via parent context as well...
-        const context = this.get(ApplicationContext);
+        const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
         if (context) {
             context.publishEvent(event)
         }
@@ -102,17 +103,32 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     /**
      * refresh context.
      */
-    refresh(): void {
-        // this._multicaster.unsubscribe();
+    async refresh(): Promise<void> {
+        await this.injector.lifecycle.refresh();
     }
 
-    // getAnnoation<TM extends ModuleDef>(): TM {
-    //     return this.injector.moduleReflect.annotation as TM
-    // }
 }
 
 export class DefaultEventMulticaster extends ApplicationEventMulticaster {
-    emit(value: ApplicationEvent) { super.next(value) }
+    private maps: Map<Type, OperationInvoker[]>;
+    constructor() {
+        super();
+        this.maps = new Map();
+    }
+
+    addListener(event: Type<ApplicationEvent>, invoker: OperationInvoker<any>, order: number = -1): void {
+        const handlers = this.maps.get(event);
+        if (handlers) {
+            order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
+        } else {
+            this.maps.set(event, [invoker]);
+        }
+    }
+
+    emit(value: ApplicationEvent) {
+        const handlers = this.maps.get(getClass(value));
+        return;
+    }
 }
 
 export class PayloadApplicationEvent<T = any> extends ApplicationEvent {

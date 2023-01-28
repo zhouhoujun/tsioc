@@ -58,8 +58,10 @@ export class DefaultInjector extends Injector {
         this.inject(providers)
     }
 
-    protected createLifecycle(platform?: Platform): LifecycleHooks {
-        return this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform)
+    protected initLifecycle(platform?: Platform): LifecycleHooks {
+        const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
+        lifecycle.init(this);
+        return lifecycle;
     }
 
     protected initScope(scope?: InjectorScope) {
@@ -69,27 +71,27 @@ export class DefaultInjector extends Injector {
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
                 this._plat = new DefaultPlatform(this);
-                this.lifecycle = this.createLifecycle();
+                this.lifecycle = this.initLifecycle();
                 registerCores(this);
                 break;
             case Scopes.root:
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
-                this.lifecycle = this.createLifecycle(this.platform());
+                this.lifecycle = this.initLifecycle(this.platform());
                 break;
             case Scopes.static:
-                this.lifecycle = this.createLifecycle();
+                this.lifecycle = this.initLifecycle();
                 break;
             case Scopes.configuration:
                 this.platform().setInjector(scope, this);
-                this.lifecycle = this.createLifecycle();
+                this.lifecycle = this.initLifecycle();
                 break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = this.isStatic ? isStaticAlias : isInjectAlias;
-                this.lifecycle = this.createLifecycle();
+                this.lifecycle = this.initLifecycle();
                 break;
         }
         this.inject({ provide: LifecycleHooks, useValue: this.lifecycle })
@@ -723,7 +725,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
-            lifecycle.register(value)
+            lifecycle.register(value, token)
         }
         if (isDef && isStatic) {
             if (rd) {
@@ -825,6 +827,10 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
 export class DestroyLifecycleHooks extends LifecycleHooks {
 
+    init(injector: Injector): void {
+
+    }
+
     get destroyable(): boolean {
         return this.platform ? this.platform.modules.size < 1 : true
     }
@@ -846,7 +852,7 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
         this._destrories = new Set()
     }
 
-    register(target: any): void {
+    register(target: any, token: Token): void {
         const { onDestroy } = (target as OnDestroy);
         if (isFunction(onDestroy)) {
             this.regDestory(target)
@@ -866,6 +872,7 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
         this._destrories.add(hook)
     }
 }
+
 
 /**
  * register core for root.

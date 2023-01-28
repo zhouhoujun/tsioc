@@ -54,7 +54,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     /**
      * refresh context.
      */
-    abstract refresh(): void;
+    abstract refresh(): Promise<void>;
     /**
      * boot base url.
      *

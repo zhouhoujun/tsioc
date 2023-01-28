@@ -1,13 +1,12 @@
 
 import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
-    Platform, ModuleDef, processInjectorType, Token, Type, lang,
-    LifecycleHooksResolver, LifecycleHooks, DestroyLifecycleHooks,
+    Platform, ModuleDef, processInjectorType, Token, Type, lang, DestroyLifecycleHooks, LifecycleHooksResolver, LifecycleHooks,
     isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Class
 } from '@tsdi/ioc';
 import { Subscription } from 'rxjs';
 import { ApplicationEventMulticaster } from '../events';
-import { OnDispose, OnShutdown, ModuleLifecycleHooks, Hooks } from '../lifecycle';
+import { OnDispose, OnApplicationShutdown, ModuleLifecycleHooks, Hooks, OnApplicationStart } from '../lifecycle';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { RunnableFactory } from '../runnable';
 import { DefaultRunnableFactory } from './runnable';
@@ -58,9 +57,9 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return this._typeRefl
     }
 
-    protected override createLifecycle(platform?: Platform): LifecycleHooks {
+    protected override initLifecycle(platform?: Platform): LifecycleHooks {
         const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DefaultModuleLifecycleHooks(platform);
-        (lifecycle as DefaultModuleLifecycleHooks).eventMulticaster = this.get(ApplicationEventMulticaster, null)!;
+        lifecycle.init(this);
         return lifecycle
     }
 
@@ -141,21 +140,40 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
 
 
 export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implements ModuleLifecycleHooks {
+    private _starts = new Set<OnApplicationStart>();
     private _disposes = new Set<OnDispose>();
-    private _shutdowns = new Set<OnShutdown>();
+    private _shutdowns = new Set<OnApplicationShutdown>();
     private _disposed = true;
     private _shutdowned = true;
     private _appEventSubs: Subscription[] = [];
+    applicationStarted = false;
     eventMulticaster!: ApplicationEventMulticaster;
 
     constructor(platform?: Platform) {
         super(platform);
     }
 
+    override init(injector: Injector): void {
+        this.eventMulticaster = injector.get(ApplicationEventMulticaster);
+    }
+
     clear(): void {
+        this._starts.clear();
         this._disposes.clear();
         this._shutdowns.clear();
         super.clear();
+    }
+
+    async refresh(): Promise<void> {
+        if (this.platform) {
+            await Promise.all(Array.from(this.platform.modules.values())
+                .reverse()
+                .map(m => {
+                    return m.lifecycle === this ? this.refresh() : (m.lifecycle as ModuleLifecycleHooks).refresh?.();
+                }));
+        } else {
+            await Promise.all(Array.from(this._starts.values()).map(s => s && s.onApplicationStart()));
+        }
     }
 
     get disposed(): boolean {
@@ -178,16 +196,16 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
                 .map(m => {
                     return m.lifecycle === this ? lang.step([
                         () => this.runShutdown(),
-                        () => this.runDisoise()
+                        () => this.runDispose()
                     ]) : m.lifecycle.dispose();
                 }));
         } else {
             await this.runShutdown();
-            await this.runDisoise();
+            await this.runDispose();
         }
     }
 
-    async runDisoise(): Promise<void> {
+    async runDispose(): Promise<void> {
         this._appEventSubs?.forEach(e => e && e.unsubscribe());
         this._appEventSubs = [];
         this._disposed = true;
@@ -205,17 +223,23 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
         }
     }
 
-    register(target: any): void {
-        const { onDestroy, onDispose, onApplicationEvent, onApplicationShutdown } = (target as Hooks);
+    register(target: any, token: Token): void {
+        const { onDestroy, onDispose, onApplicationStart, onApplicationShutdown } = (target as Hooks);
         if (isFunction(onDestroy)) {
             this.regDestory(target);
         }
         if (isFunction(onDispose)) {
             this.regDispose(target);
         }
-        if (isFunction(onApplicationEvent)) {
-            this._appEventSubs.push(target.onApplicationEvent(this.eventMulticaster));
+
+
+        if (isFunction(onApplicationStart)) {
+            this._starts.add(target);
+            if (this.applicationStarted) {
+                target.onApplicationStart();
+            }
         }
+
         if (isFunction(onApplicationShutdown)) {
             this.regShutdown(target);
         }
@@ -227,7 +251,7 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
         this._disposes.add(hook);
     }
 
-    protected regShutdown(hook: OnShutdown): void {
+    protected regShutdown(hook: OnApplicationShutdown): void {
         this._shutdowned = false;
         this._shutdowns.add(hook);
     }
@@ -237,5 +261,4 @@ export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
     resolve(plaform?: Platform): LifecycleHooks {
         return new DefaultModuleLifecycleHooks(plaform)
     }
-
 }

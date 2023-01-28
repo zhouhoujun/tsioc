@@ -1,5 +1,6 @@
-import { Platform } from './injector';
+import { Injector, Platform } from './injector';
 import { Abstract } from './metadata/fac';
+import { Token } from './tokens';
 
 
 /**
@@ -7,6 +8,11 @@ import { Abstract } from './metadata/fac';
  */
 @Abstract()
 export abstract class LifecycleHooks {
+    /**
+     * init lifecycle
+     * @param injector 
+     */
+    abstract init(injector: Injector): void;
     /**
      * can destroy or not.
      */
@@ -17,9 +23,10 @@ export abstract class LifecycleHooks {
     abstract dispose(): Promise<void>;
     /**
      * register hooks
-     * @param hook 
+     * @param target 
+     * @param token toke of target. 
      */
-    abstract register(target: any): void;
+    abstract register(target: any, token: Token): void;
     /**
      * clear all hooks.
      */

@@ -96,6 +96,14 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
     }
 
+    /**
+     * close application.
+     * @returns 
+     */
+    close() {
+        return this.context.destroy();
+    }
+
     get loadTypes(): Type[] {
         return this._loads ?? EMPTY
     }
@@ -169,7 +177,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         if (exit) {
             exit.register()
         }
-        ctx.refresh()
+        return ctx.refresh()
     }
 
     protected callRunners(ctx: ApplicationContext): Promise<void> {

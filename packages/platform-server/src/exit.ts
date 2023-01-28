@@ -13,9 +13,9 @@ export class ServerApplicationExit extends ApplicationExit {
         if (!usedsignls?.length) return;
 
         const logger = this.context.getLogger();
-        const callback = async (signal: string) => {
+        const cleanup = async (signal: string) => {
             try {
-                usedsignls.forEach(si => process.removeListener(si, callback));
+                usedsignls.forEach(si => process.removeListener(si, cleanup));
                 await this.context.destroy();
                 process.kill(process.pid, signal)
             } catch (err) {
@@ -24,7 +24,7 @@ export class ServerApplicationExit extends ApplicationExit {
             }
         }
         usedsignls.forEach(signl => {
-            process.on(signl, callback)
+            process.on(signl, cleanup)
         });
     }
 

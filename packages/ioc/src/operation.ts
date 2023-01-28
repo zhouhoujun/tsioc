@@ -1,7 +1,6 @@
 import { ClassType } from './types';
 import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
-import { ParameterMetadata } from './metadata/meta';
 
 
 export type AsyncLike<T> = T | Promise<T> | Observable<T>;

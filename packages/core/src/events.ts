@@ -1,5 +1,5 @@
-import { Abstract } from '@tsdi/ioc';
-import { Observable, Subject, Subscription } from 'rxjs';
+import { Abstract, OperationInvoker, Type } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 
 
 
@@ -48,31 +48,22 @@ export interface ApplicationEventPublisher {
 
 }
 
-/**
- * Interface to be implemented by application event listeners.
- */
-export interface ApplicationListener<T extends ApplicationEvent = ApplicationEvent> {
-
-	/**
-	 * Handle an application event.
-	 * @param event the event to respond to,
-     * @returns type of {@link Subcription}, Represents a disposable resource, such as the execution of an Observable. A
-     * Subscription has one important method, `unsubscribe`, that takes no argument
-     * and just disposes the resource held by the subscription.
-	 */
-	onApplicationEvent(event: Observable<T>): Subscription;
-}
-
 
 /**
  * providing the basic listener registration facility.
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster extends Subject<ApplicationEvent> {
+export abstract class ApplicationEventMulticaster {
+    /**
+     * add event listener.
+     * @param event 
+     * @param invoker 
+     */
+    abstract addListener(event: Type<ApplicationEvent>, invoker: OperationInvoker, order?: number): void;
     /**
      * multicast emit event.
      * @param event 
      */
-    abstract emit(event: ApplicationEvent): void;
+    abstract emit(event: ApplicationEvent): Observable<any>;
 
 }
