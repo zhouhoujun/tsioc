@@ -3,7 +3,7 @@ import {
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, Execption, isClassType, TypeMetadata, PatternMetadata, pomiseOf, EMPTY, isPromise, isFunction
 } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { InterceptorType } from '../transport/endpoint';
+import { InterceptorType } from '../Interceptor';
 import { InterceptorMiddleware, Middleware, MiddlewareFn } from '../transport/middleware';
 import { mths, Protocols, RequestMethod } from '../transport/packet';
 import { CanActivate } from '../guard';

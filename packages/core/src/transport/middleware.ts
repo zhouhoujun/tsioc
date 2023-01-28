@@ -1,7 +1,8 @@
 import { chain, Handler, isFunction, lang, Type } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
+import { EndpointBackend } from '../Endpoint';
+import { Interceptor, InterceptorChain, interceptorify, InterceptorLike } from '../Interceptor';
 import { ServerEndpointContext } from './context';
-import { EndpointBackend, Interceptor, InterceptorChain, interceptorify, InterceptorLike } from './endpoint';
 import { Incoming, Outgoing } from './packet';
 
 

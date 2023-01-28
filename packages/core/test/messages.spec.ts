@@ -268,8 +268,6 @@ describe('app route mapping', () => {
     });
 
     it('post route response object', async () => {
-        const client = ctx.resolve(Client);
-        client.send
         const a = await lastValueFrom(ctx.resolve(HttpClient).post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
