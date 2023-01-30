@@ -43,7 +43,7 @@ export class MessageExecption extends Execption {
  * transport about execption.
  */
 export class AboutExecption extends MessageExecption {
-    constructor(message = 'Message About') {
+    constructor(message = 'About') {
         super(message)
     }
 }
@@ -57,23 +57,21 @@ export class InvalidHeaderTokenExecption extends MessageExecption {
     }
 }
 
-const statmsg = 'INVALID_STATE_ERR';
 /**
  * Invalid state execption.
  */
 export class InvalidStateExecption extends MessageExecption {
-    constructor(message?: string) {
-        super(message ? `${statmsg}: ${message}` : statmsg)
+    constructor(message = 'INVALID_STATE_ERR') {
+        super(message)
     }
 }
 
-const sectmsg = 'SecurityExecption';
 /**
  * security execption.
  */
 export class SecurityExecption extends MessageExecption {
-    constructor(message?: string) {
-        super(message ? `${sectmsg}: ${message}` : sectmsg)
+    constructor(message = 'SecurityExecption') {
+        super(message)
     }
 }
 

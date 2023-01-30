@@ -45,7 +45,9 @@ export abstract class ExecptionFilter extends EndpointFilter<Error, MessageExecp
     abstract intercept(input: Error, next: ExecptionEndpoint, context: EndpointContext): Observable<MessageExecption>;
 }
 
-
+/**
+ * catch interceptor.
+ */
 @Injectable({ static: true })
 export class CatchInterceptor<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
 
@@ -67,6 +69,9 @@ export class CatchInterceptor<TInput = any, TOutput = any> implements Intercepto
     }
 }
 
+/**
+ * execption handler banckend.
+ */
 @Injectable({ static: true })
 export class ExecptionHandlerBackend extends ExecptionBackend {
 

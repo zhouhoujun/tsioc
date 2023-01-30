@@ -12,7 +12,9 @@ export abstract class EndpointContext extends DefaultInvocationContext {
      * host transport endpoint. instance of {@link TransportEndpoint}.
      */
     abstract get target(): TransportEndpoint;
-
+    /**
+     * execption.
+     */
     execption?: any;
     /**
      * Get response status.
