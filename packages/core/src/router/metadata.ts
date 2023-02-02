@@ -120,7 +120,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                     path,
                     protocol,
                     interceptors: interceptors?.map(i => isClassType(i) ? factory.resolve(i) : i),
-                    middleware: factory.resolve() as Middleware
+                    middleware: factory.getInstance() as Middleware
                 });
             }
             next();

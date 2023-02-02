@@ -11,7 +11,6 @@ import { ApplicationRunners } from '../runners';
  */
 export class DefaultRunnableRef<T> extends RunnableRef<T> {
 
-    private _instance: T | undefined;
     private _ref: ReflectiveRef<T>;
     private _moduleRef?: ModuleRef;
     constructor(ref: ReflectiveRef<T>, moduleRef?: ModuleRef, protected defaultInvoke = 'run') {
@@ -22,10 +21,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     }
 
     get instance(): T {
-        if (!this._instance) {
-            this._instance = this.createInstance();
-        }
-        return this._instance
+        return this._ref.getInstance()
     }
 
     run() {
@@ -42,7 +38,6 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
 
     override destroy(): void | Promise<void> {
         if (this.destroyed) return;
-        this._instance = null!
         return this._ref.destroy();
     }
 
@@ -80,7 +75,7 @@ export class DefaultRunnableRef<T> extends RunnableRef<T> {
     }
 
     protected createInstance() {
-        return this._ref.resolve();
+        return this._ref.getInstance();
     }
 
 }

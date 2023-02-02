@@ -115,6 +115,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster {
     addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): void {
         const handlers = this.maps.get(event);
         if (handlers) {
+            if (handlers.indexOf(invoker) >= 0) return;
             order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
         } else {
             this.maps.set(event, [invoker]);

@@ -39,20 +39,19 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     getInstance(): T {
         if (!this._instance) {
-            this._instance = this.resolve();
+            this._instance = this.resolve(this.type);
         }
         return this._instance;
     }
 
-    resolve(): T;
-    resolve<R>(token: Token<R>): R;
-    resolve(token?: Token<any>): any {
-        return this._ctx.resolveArgument({ provider: token ?? this.type, nullable: true })
+
+    resolve<R>(token: Token<R>): R {
+        return this._ctx.resolveArgument({ provider: token, nullable: true })!
     }
 
     invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
         const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.class.invoke(key, context, instance ?? this.resolve(), (ctx, run) => {
+        return this.class.invoke(key, context, instance ?? this.getInstance(), (ctx, run) => {
             const result = run(ctx);
             if (destroy) {
                 const act = destroy as (() => void);
@@ -178,6 +177,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._tagPdrs = null!;
         (this as any).injector = null!;
         this._class = null!;
+        this._instance = null!;
         this._destroyed = true;
         return this._ctx.destroy()
     }

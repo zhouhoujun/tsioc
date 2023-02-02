@@ -326,7 +326,7 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
                     } else {
                         return {
                             provide,
-                            useFactory: () => factory.resolve()[key]
+                            useFactory: () => factory.getInstance()[key]
                         } as ProviderType
                     }
                 });

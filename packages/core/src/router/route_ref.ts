@@ -28,7 +28,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     private metadata: ProtocolRouteMappingMetadata;
     protected sortRoutes: DecorDefine<ProtocolRouteMappingMetadata>[] | undefined;
     private _url: string;
-    private _instance: T | undefined;
     private _endpoints: Map<string, MiddlewareFn>;
 
     constructor(private factory: ReflectiveRef<T>) {
@@ -51,10 +50,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
     get instance(): T {
-        if (!this._instance) {
-            this._instance = this.factory.resolve()
-        }
-        return this._instance
+        return this.factory.getInstance()
     }
 
     get path(): string {
@@ -213,7 +209,6 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             this.sortRoutes = null!;
             this.metadata = null!
             this._url = null!;
-            this._instance = null!;
             const factory = this.factory;
             this.factory = null!;
 

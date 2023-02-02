@@ -181,6 +181,7 @@ export class DefaultInjector extends Injector {
             return false
         }
 
+        this.onRegister(def);
         let injectorType: ((type: Type, typeRef: Class) => void) | undefined;
         if (option?.injectorType) {
             injectorType = (regType, typeRef) => processInjectorType(
@@ -205,8 +206,26 @@ export class DefaultInjector extends Injector {
         } as DesignContext;
         platform.getAction(DesignLifeScope).register(ctx);
         cleanObj(ctx);
+        this.onRegistered(def);
         return true
     }
+
+    /**
+     * before register type.
+     * @param def 
+     */
+    protected onRegister(def: Class) {
+
+    }
+
+    /**
+     * after register type.
+     * @param def 
+     */
+    protected onRegistered(def: Class) {
+
+    }
+
 
     protected registerProvider(platfrom: Platform, provider: StaticProviders) {
         if (provider.asDefault && this.has(provider.provide)) {

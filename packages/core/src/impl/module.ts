@@ -2,7 +2,7 @@
 import {
     DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
     Platform, ModuleDef, processInjectorType, Token, Type, lang, DestroyLifecycleHooks, LifecycleHooksResolver, LifecycleHooks,
-    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Class
+    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Class, TypeDef
 } from '@tsdi/ioc';
 import { lastValueFrom, Subscription } from 'rxjs';
 import { ApplicationEventMulticaster, ApplicationShutdownEvent, ApplicationStartEvent } from '../events';
@@ -18,7 +18,6 @@ import { DefaultRunnableFactory } from './runnable';
 export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
 
     private _instance!: T;
-    private _defs = new Set<Type>();
     private _type: Type;
     private _typeRefl: Class;
 
@@ -106,15 +105,17 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
             (tyref, type) => {
-                this._defs.add(type);
                 this.registerReflect(platform, tyref)
             }, moduleRefl)
+    }
+
+    protected override onRegistered(def: Class): void {
+        
     }
 
     protected override destroying() {
         this.platform()?.modules.delete(this._type);
         super.destroying();
-        this._defs.clear();
         this._type = null!;
         this.lifecycle.clear();
         this.lifecycle = null!;
@@ -151,13 +152,13 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
         super(platform);
     }
 
-    onApplicationStart(): void | Promise<void> {
+    onApplicationStart(): void {
         this.applicationStarted = true;
     }
 
     override init(injector: Injector): void {
         this.eventMulticaster = injector.get(ApplicationEventMulticaster);
-        this.eventMulticaster.addListener(ApplicationStartEvent, () => this.onApplicationStart())
+        this.eventMulticaster.addListener(ApplicationStartEvent, this.onApplicationStart.bind(this))
     }
 
     clear(): void {
@@ -228,7 +229,7 @@ export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implement
         }
 
         if (isFunction(onApplicationShutdown)) {
-            this.eventMulticaster.addListener(ApplicationShutdownEvent, () => target.onApplicationStart())
+            this.eventMulticaster.addListener(ApplicationShutdownEvent, () => target.onApplicationShutdown())
         }
 
     }

@@ -26,11 +26,6 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * get the method invcation context of target type.
      */
     abstract getContext(method: string): InvocationContext;
-
-    /**
-     * instance of this target type.
-     */
-    abstract resolve(): T;
     /**
      * resolve token in this invcation context.
      */
