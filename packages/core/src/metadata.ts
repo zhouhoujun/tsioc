@@ -1,8 +1,8 @@
 import {
     isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
-    PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes,
+    PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes, EMPTY,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, EMPTY, InvocationContext, Decors, isPromise, isObservable, pomiseOf
+    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata,  Decors, pomiseOf
 } from '@tsdi/ioc';
 import { ConfigureService } from './service';
 import { PipeTransform } from './pipes/pipe';
@@ -11,7 +11,6 @@ import { getModuleType } from './module.ref';
 import { Runnable, RunnableFactory } from './runnable';
 import { ApplicationRunners } from './runners';
 import { CanActivate } from './guard';
-import { map } from 'rxjs';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
 
 

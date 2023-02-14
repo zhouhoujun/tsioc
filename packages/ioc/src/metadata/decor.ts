@@ -1,17 +1,107 @@
-import { ClassType, Type } from '../types';
+import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
 import { isString, isArray } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
 import { Injector, Scopes } from '../injector';
 import { OperationArgumentResolver } from '../resolver';
 import { InvokeArguments, InvokeOptions } from '../context';
+import { DecoratorOption } from './refl';
+import { ModuleDef } from './type';
+import { getModuleType } from '../module.ref';
+import { getTypes } from '../utils/lang';
+import { DesignContext } from '../actions/ctx';
 
 
+
+/**
+ * Module decorator, use to define class as ioc Module.
+ *
+ * @export
+ * @interface Module
+ * @template T
+ */
+export interface Module<T extends ModuleMetadata> {
+    /**
+     * Module decorator, use to define class as ioc Module.
+     *
+     * @Module
+     *
+     * @param {T} [metadata] bootstrap metadate config.
+     */
+    (metadata: T): ClassDecorator;
+}
+
+/**
+ * create bootstrap decorator.
+ *
+ * @export
+ * @template T
+ * @param {string} name decorator name.
+ * @param {DecoratorOption<T>} [options]
+ * @returns {Module<T>}
+ */
+export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
+    options = options || EMPTY_OBJ;
+    const hd = options.def?.class ?? EMPTY;
+    const append = options.appendProps;
+    return createDecorator<T>(name, {
+        ...options,
+        def: {
+            ...options.def,
+            class: [
+                (ctx, next) => {
+                    const def = ctx.class.getAnnotation<ModuleDef>();
+                    const metadata = def.annotation = ctx.define.metadata;
+                    def.module = true;
+                    def.providedIn = metadata.providedIn;
+                    def.baseURL = metadata.baseURL;
+                    def.debug = metadata.debug;
+                    def.providers = metadata.providers;
+                    if (metadata.imports) def.imports = getModuleType(metadata.imports);
+                    if (metadata.exports) def.exports = getTypes(metadata.exports);
+                    if (metadata.declarations) def.declarations = getTypes(metadata.declarations);
+                    if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
+                    return next()
+                },
+                ...isArray(hd) ? hd : [hd]
+            ]
+        },
+        design: {
+            beforeAnnoation: (context: DesignContext, next) => {
+                const { type, class: typeRef } = context;
+                // use as dependence inject module.
+                if (context.injectorType) {
+                    context.injectorType(type, typeRef)
+                }
+                next()
+            }
+        },
+        appendProps: (meta) => {
+            if (append) {
+                append(meta as T)
+            }
+        }
+    }) as Module<T>;
+}
+
+/**
+ * Module Decorator, definde class as module.
+ *
+ * @Module
+ * @exports {@link Module}
+ */
+export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
+/**
+ * Module Decorator, definde class as module.
+ * alias of @Module
+ * @alias
+ */
+export const DIModule = Module;
 
 /**
  * Autowired decoator.

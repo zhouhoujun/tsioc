@@ -254,7 +254,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
     * destroy this.
     */
-    abstract destroy(): void | Promise<void>;
+    abstract destroy(): void;
     /**
      * destroy hook.
      */

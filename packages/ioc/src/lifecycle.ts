@@ -8,11 +8,19 @@ import { Token } from './tokens';
  */
 @Abstract()
 export abstract class LifecycleHooks {
-    /**
-     * init lifecycle
-     * @param injector 
-     */
-    abstract init(injector: Injector): void;
+    // /**
+    //  * init lifecycle
+    //  * @param injector 
+    //  */
+    // abstract init(injector: Injector): void;
+    // /**
+    //  * invoked dispose or not
+    //  */
+    // abstract get disposed(): boolean;
+    // /**
+    //  * invoked shutdown or not.
+    //  */
+    // abstract get shutdown(): boolean;
     /**
      * can destroy or not.
      */
@@ -35,6 +43,7 @@ export abstract class LifecycleHooks {
      * run all destroy hook hooks.
      */
     abstract runDestroy(): void;
+
 }
 
 @Abstract()

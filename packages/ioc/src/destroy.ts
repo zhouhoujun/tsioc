@@ -6,7 +6,7 @@ export interface OnDestroy {
     /**
      * destroy this.
      */
-    onDestroy(): any;
+    onDestroy(): void;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { LoadType, Modules, Type, EMPTY } from '../types';
-import { DestroyCallback, OnDestroy } from '../destroy';
+import { DestroyCallback } from '../destroy';
 import { cleanObj, deepForEach, immediate } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
@@ -23,6 +23,7 @@ import { DefaultReflectiveFactory, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { Execption } from '../execption';
 import { isPlainObject, isTypeObject } from '../utils/obj';
+import { ModuleLifecycleHooks } from './lifecycle';
 
 
 
@@ -59,8 +60,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected initLifecycle(platform?: Platform): LifecycleHooks {
-        const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
-        lifecycle.init(this);
+        const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new ModuleLifecycleHooks(platform);
         return lifecycle;
     }
 
@@ -842,55 +842,6 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
     }
 }
 
-
-
-export class DestroyLifecycleHooks extends LifecycleHooks {
-
-    init(injector: Injector): void {
-
-    }
-
-    get destroyable(): boolean {
-        return this.platform ? this.platform.modules.size < 1 : true
-    }
-
-    async dispose(): Promise<void> {
-        if (this.destroyable) return;
-        if (this.platform) {
-            const platform = this.platform;
-            this.platform = null!;
-            await Promise.all(Array.from(platform.modules.values())
-                .reverse()
-                .map(m => m.lifecycle.dispose()))
-        }
-    }
-
-    private _destrories: Set<OnDestroy>;
-    constructor(protected platform?: Platform) {
-        super()
-        this._destrories = new Set()
-    }
-
-    register(target: any, token: Token): void {
-        const { onDestroy } = (target as OnDestroy);
-        if (isFunction(onDestroy)) {
-            this.regDestory(target)
-        }
-    }
-
-    clear(): void {
-        this._destrories.clear()
-    }
-
-    runDestroy(): void {
-        this._destrories.forEach(d => d?.onDestroy())
-    }
-
-
-    protected regDestory(hook: OnDestroy): void {
-        this._destrories.add(hook)
-    }
-}
 
 
 /**
