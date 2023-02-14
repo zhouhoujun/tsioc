@@ -17,7 +17,7 @@ export class CompilerBuilder {
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'compiler.umd.js', format: 'umd', uglify: true },
             { input: 'src/index.js', moduleName: ['fesm5', 'esm5'], outputFile: 'compiler.js', format: 'cjs' },
-            { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'compiler.js', format: 'cjs' }
+            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'compiler.js', format: 'cjs' }
         ]
     }
 }

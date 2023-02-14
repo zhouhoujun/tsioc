@@ -105,7 +105,7 @@ export const TranslateElementHandle = async function (ctx: ITemplateContext, nex
         }
     } else {
         let decorators = ctx.getModuleRef()?.reflect.componentDectors ?? actInjector.getValue(DefaultComponets);
-        chain(decorators.map(decor => async (ctx: ITemplateContext, next) => {
+        await chain<ITemplateContext>(decorators.map(decor => async (ctx: ITemplateContext, next) => {
             if (reg.has(decor)) {
                 ctx.remove(CTX_COMPONENT_PROVIDER);
                 ctx.setValue(CTX_COMPONENT_DECTOR, decor);

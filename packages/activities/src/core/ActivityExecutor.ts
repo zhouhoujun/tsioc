@@ -162,7 +162,7 @@ export class ActivityExecutor implements IActivityExecutor {
             isDefined(input) && aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
-            return activity;
+            return activity as AsyncHandler<T>;
         } else if (activity) {
             let md: Type;
             if (!isString(activity) && isClass(activity.activity)) {
