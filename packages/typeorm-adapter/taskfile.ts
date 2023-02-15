@@ -19,7 +19,7 @@ import { AfterInit } from '@tsdi/components';
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'typeorm-adapter.umd.js', format: 'umd', uglify: true },
-            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'typeorm-adapter.js', format: 'cjs' }
+            { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'typeorm-adapter.js', format: 'cjs' }
         ]
     }
 })

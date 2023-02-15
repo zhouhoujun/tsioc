@@ -2,7 +2,7 @@ import { isBoolean, isArray, lang, Inject } from '@tsdi/ioc';
 import { Input, AfterInit, Binding } from '@tsdi/components';
 import { Task, TemplateOption, Src, Activities, ActivityTemplate, IActivityContext, Expression } from '@tsdi/activities';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
-import { CompilerOptions } from 'typescript';
+import { CompilerOptions, ModuleKind } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, GlobalsOption, Plugin, RollupOptions } from 'rollup';
 import { RollupOption } from '../rollups';
 import { PlatformService } from '../PlatformService';
@@ -14,14 +14,34 @@ const commonjs = require('rollup-plugin-commonjs');
 const rename = require('gulp-rename');
 const uglify = require('gulp-uglify-es').default;
 
+/**
+ * target type.
+ */
+export type TargetType = 'es3' | 'es5' | 'es2015' | 'es2016' | 'es2017' | 'es2018' | 'es2019' | 'es2020' | 'es2021' | 'esnext' | 'json' | 'latest';
+
+/**
+ * module type.
+ */
+export type ModuleType = 'commonjs' | 'amd' | 'umd' | 'system' | 'es2015' | 'es2020' | 'es2022' | 'esnext' | 'node12' | 'nodenext';
+
+
+
+/**
+ * lib bundle option.
+ */
 export interface LibBundleOption {
     /**
-     * typescript build target.
+     * typescript Compiler option target.
      *
-     * @type {string}
+     * @type {TargetType}
      * @memberof LibBundleOption
      */
-    target?: string;
+    target?: TargetType;
+
+    /**
+     * typescript Compiler options module.
+     */
+    module?: ModuleType;
 
     targetFolder?: string;
 
@@ -402,7 +422,7 @@ export class LibPackBuilder implements AfterInit {
 
     transCompileOptions(input: LibBundleOption) {
         if (input.target) {
-            return { target: input.target };
+            return { target: input.target, module: input.module };
         }
         return {};
     }
