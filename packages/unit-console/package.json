@@ -44,7 +44,7 @@
     "@tsdi/platform-server-logs": "~6.0.44",
     "@tsdi/platform-server-boot": "~6.0.44",
     "@tsdi/unit": "~6.0.44",
-    "tslib": "^2.1.0",
+    "tslib": "^2.3.0",
     "globby": "^11.0.0"
   },
   "directories": {

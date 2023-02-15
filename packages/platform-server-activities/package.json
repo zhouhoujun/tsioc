@@ -44,7 +44,7 @@
   },
   "peerDependencies": {
     "bluebird": "^3.7.2",
-    "tslib": "^2.1.0",
+    "tslib": "^2.3.0",
     "ts-node": "^9.1.1",
     "tsconfig-paths": "^3.9.0",
     "zone.js": "^0.10.3",

@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/cli#readme",
   "dependencies": {
-    "tslib": "^2.1.0",
+    "tslib": "^2.3.0",
     "shelljs": "^0.8.4",
     "chalk": "^4.0.0",
     "commander": "^4.1.1",

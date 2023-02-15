@@ -33,7 +33,7 @@
   "dependencies": {
   },
   "peerDependencies": {
-    "tslib": "^2.1.0",
+    "tslib": "^2.3.0",
     "globby": "^11.0.0",
     "@tsdi/ioc": "~6.0.44",
     "@tsdi/core": "~6.0.44"

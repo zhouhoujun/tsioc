@@ -41,9 +41,6 @@ export interface IModuleLoader {
 
 }
 
-
-declare let require: any;
-
 const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
 /**
  * default module loader.
@@ -162,19 +159,7 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
     }
 
     protected createLoader(): (modulepath: string) => Promise<Modules[]> {
-        if (typeof require !== 'undefined') {
-            return (modulepath: string) => {
-                return new Promise<Modules[]>((resolve, reject) => {
-                    require(modulepath, (mud) => {
-                        resolve(mud);
-                    }, err => {
-                        reject(err);
-                    })
-                });
-            }
-        } else {
-            throw new Error('has not module loader');
-        }
+        return (modulepath) => import(modulepath);
     }
 
 }
