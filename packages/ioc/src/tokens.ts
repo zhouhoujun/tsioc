@@ -231,7 +231,7 @@ export class InjectReference<T = any> extends Registration<T> {
      */
     toString(): string {
         let key = super.toString();
-        let target = this.format(this.target)
+        let target = this.format(this.target);
         return `Ref ${key} for ${target}`;
     }
 }

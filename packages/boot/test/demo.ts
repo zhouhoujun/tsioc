@@ -158,7 +158,7 @@ export const configurtion = {
                 focas: {
                     type: 'dateFile',
                     pattern: '-yyyyMMdd.log',
-                    filename: 'log-caches/focas',
+                    filename: 'logcaches/focas',
                     backups: 3,
                     alwaysIncludePattern: true,
                     category: 'focas'

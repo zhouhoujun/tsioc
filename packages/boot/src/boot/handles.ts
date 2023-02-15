@@ -275,13 +275,6 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
  */
 export class StatupServiceScope extends BuildHandles<IBootContext> implements IActionSetup {
 
-    async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-        await super.execute(ctx);
-        if (next) {
-            await next();
-        }
-    }
-
     setup() {
         this.use(ConfigureServiceHandle);
     }

@@ -119,8 +119,7 @@ export class PlatformService {
             mapping = filter;
             options = {};
         }
-        const gby = await globby(this.normalizeSrc(express), options)
-        let filePaths = gby?.map(g=> isString(g)? g : g.path);
+        let filePaths: string[] = (await globby(this.normalizeSrc(express), options)).map(e => isString(e) ? e : e.path);
         if (filter) {
             filePaths = filePaths.filter(filter);
         }

@@ -17,7 +17,6 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'aop.umd.js', format: 'umd', uglify: true },
-            { input: 'src/index.js', moduleName: ['fesm5', 'esm5'], outputFile: 'aop.js', format: 'cjs' },
             { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'aop.js', format: 'cjs' }
         ]
     }
