@@ -139,7 +139,7 @@ import * as through from 'through2';
                 activity: 'shell',
                 shell: (ctx: NodeActivityContext) => {
                     let packages = ctx.platform.getFolders('dist');
-                    let cmd = 'npm publish --access=public'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
+                    let cmd = 'npm publish --access=public --registry="https://registry.npmjs.org"'; // envArgs.deploy ? 'npm publish --access=public' : 'npm run build';
 
                     let shells = packages.map(fd => {
                         return `cd ${fd} && ${cmd}`;
