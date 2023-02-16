@@ -15,8 +15,8 @@ import { AfterInit } from '@tsdi/components';
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: true,
-        externalLibs: [
-            'globby'
+        replaces:[
+            [`import * as globby from 'globby';`,  `import  globby from 'globby';`]
         ],
         bundles: [
             { target: 'es5', targetFolder: 'src', moduleName: 'main', moduleFolder: 'src', dtsMain: 'index.d.ts' },
@@ -30,6 +30,3 @@ export class PfServerBuilder implements AfterInit {
     }
 }
 
-if (process.cwd() === __dirname) {
-    Workflow.run(PfServerBuilder);
-}

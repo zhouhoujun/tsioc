@@ -31,6 +31,3 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 export class AnnotationsBuild {
 }
 
-if (process.cwd() === __dirname) {
-    Workflow.run(AnnotationsBuild);
-}

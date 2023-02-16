@@ -24,7 +24,3 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 export class PfBrowserBuilder {
 }
 
-if (process.cwd() === __dirname) {
-    Workflow.run(PfBrowserBuilder);
-}
-

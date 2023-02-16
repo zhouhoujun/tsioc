@@ -20,7 +20,3 @@ export class CompilerBuilder {
         ]
     }
 }
-
-if (process.cwd() === __dirname) {
-    Workflow.run(CompilerBuilder);
-}

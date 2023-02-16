@@ -16,12 +16,12 @@ import { AfterInit } from '@tsdi/components';
         // test: 'test/**/*.ts',
         annotation: true,
         sourcemap: true,
-        externalLibs:[
-            'fs', 'path'
+        replaces:[
+            [`import * as globby from 'globby';`,  `import  globby from 'globby';`]
         ],
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'pack.js', format: 'cjs', uglify: true },
+            { input: 'src/index.js', moduleName:'main', outputFile: 'pack.js', format: 'cjs', uglify: true },
             { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'pack.js', format: 'es' }
         ]
     }
@@ -30,8 +30,4 @@ export class PackBuilder implements AfterInit {
     onAfterInit(): void | Promise<void> {
         console.log('pack build has inited...')
     }
-}
-
-if (process.cwd() === __dirname) {
-    Workflow.run(PackBuilder);
 }

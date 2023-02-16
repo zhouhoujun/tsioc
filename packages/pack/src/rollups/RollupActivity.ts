@@ -6,7 +6,6 @@ import {
 } from 'rollup';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
-import { ILogger, Logger } from '@tsdi/logs';
 
 /**
  * rollup activity template option.
@@ -84,9 +83,6 @@ export interface RollupOption extends TemplateOption {
 @Task('rollup')
 export class RollupActivity extends NodeActivity<void> {
 
-    @Logger()
-    logger: ILogger;
-
     @Input() input: NodeExpression<Src>;
 
     @Input() output: NodeExpression<OutputOptions>;
@@ -130,7 +126,7 @@ export class RollupActivity extends NodeActivity<void> {
             if (isArray(opts.external) && opts.external.length) {
                 opts.external = this.vailfExternal(opts.external as string[]);
                 opts.external.forEach(k => {
-                    if (isString(k) && !output.globals[k]) {
+                    if (output.globals[k]) {
                         output.globals[k] = k;
                     }
                 });
@@ -154,7 +150,7 @@ export class RollupActivity extends NodeActivity<void> {
 
         })).catch(err => {
             console.error(err);
-            this.logger.error(err);
+            throw err;
         });
     }
 

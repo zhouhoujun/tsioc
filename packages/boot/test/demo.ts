@@ -108,13 +108,14 @@ export class SocketService extends StartupService<IBootContext> {
         console.log('SocketService init...')
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();
-        tcpServer.listen(8801);
+        tcpServer.listen(8805);
     }
 
-    protected destroying() {
+    protected async destroying() {
         console.log('SocketService destroying...');
         this.tcpServer.removeAllListeners();
-        this.tcpServer.close();
+
+        await new Promise<void>((r, j) => this.tcpServer.close(e => e ? j(e) : r()));
     }
 
 }

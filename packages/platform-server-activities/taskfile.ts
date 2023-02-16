@@ -17,7 +17,7 @@ import { AfterInit } from '@tsdi/components';
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'platform-server-activities.js', format: 'cjs' },
+            { input: 'src/index.js', moduleName: 'main', outputFile: 'platform-server-activities.js', format: 'cjs' },
             { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'platform-server-activities.js', format: 'es' }
         ]
     }
@@ -28,6 +28,3 @@ export class PfServerActivitiesBuilder implements AfterInit {
     }
 }
 
-if (process.cwd() === __dirname) {
-    Workflow.run(PfServerActivitiesBuilder);
-}

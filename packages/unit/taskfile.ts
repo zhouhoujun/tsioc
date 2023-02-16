@@ -23,7 +23,3 @@ import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
 })
 export class UnitBuilder {
 }
-
-if (process.cwd() === __dirname) {
-    Workflow.run(UnitBuilder);
-}

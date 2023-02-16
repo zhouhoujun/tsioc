@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/pack",
-  "version": "6.0.45",
+  "version": "6.0.46",
   "description": "@tsdi/pack is simple build tasks, base on AOP, Ioc container, via @tsdi. dev build pack activities.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -66,22 +66,23 @@
     "tsconfig-paths": "~3.9.0"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.45",
-    "@tsdi/aop": "~6.0.45",
-    "@tsdi/boot": "~6.0.45",
-    "@tsdi/components": "~6.0.45",
-    "@tsdi/core": "~6.0.45",
-    "@tsdi/unit": "~6.0.45",
-    "@tsdi/unit-console": "~6.0.45",
-    "@tsdi/logs": "~6.0.45",
-    "@tsdi/annotations": "~6.0.45",
-    "@tsdi/activities": "~6.0.45",
-    "@tsdi/platform-server": "~6.0.45",
-    "@tsdi/platform-server-boot": "~6.0.45",
+    "@tsdi/ioc": "~6.0.46",
+    "@tsdi/aop": "~6.0.46",
+    "@tsdi/boot": "~6.0.46",
+    "@tsdi/components": "~6.0.46",
+    "@tsdi/core": "~6.0.46",
+    "@tsdi/unit": "~6.0.46",
+    "@tsdi/unit-console": "~6.0.46",
+    "@tsdi/logs": "~6.0.46",
+    "@tsdi/annotations": "~6.0.46",
+    "@tsdi/activities": "~6.0.46",
+    "@tsdi/platform-server": "~6.0.46",
+    "@tsdi/platform-server-boot": "~6.0.46",
     "rollup-plugin-uglify": "^6.0.3",
     "rollup-plugin-node-builtins": "^2.1.2",
     "tslib": "^2.3.0",
-    "typescript": "~4.0.2"
+    "typescript": "~4.0.2",
+    "through2": "^3.0.0"
   },
   "directories": {
     "lib": "lib",

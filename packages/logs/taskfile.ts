@@ -23,7 +23,3 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 })
 export class LogsBuilder {
 }
-
-if (process.cwd() === __dirname) {
-    Workflow.run(LogsBuilder);
-}

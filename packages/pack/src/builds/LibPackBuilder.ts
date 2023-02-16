@@ -8,6 +8,7 @@ import { RollupOption } from '../rollups';
 import { PlatformService } from '../PlatformService';
 import { join } from 'path';
 import { NodeActivityContext } from '../NodeActivityContext';
+const through = require('through2');
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
@@ -210,6 +211,11 @@ export interface LibPackBuilderOption extends TemplateOption {
      */
     beforeResolve?: Binding<Plugin[]>;
 
+    /**
+     * replaces
+     */
+    replaces?: string[][];
+
 }
 
 @Task({
@@ -242,6 +248,34 @@ export interface LibPackBuilderOption extends TemplateOption {
                         dts: (ctx, bind) => bind.getScope<LibPackBuilder>().getDtsPath(ctx.getInput()),
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
+                        pipes: (ctx, bind) => {
+                            const replaces = bind.getScope<LibPackBuilder>().replaces;
+                            if (ctx.getInput<LibBundleOption>().format == 'es' && replaces && replaces.length) {
+                                return [
+                                    () => through.obj(function (file, encoding, callback) {
+                                        if (file.isNull()) {
+                                            return callback(null, file);
+                                        }
+
+                                        if (file.isStream()) {
+                                            return callback('doesn\'t support Streams');
+                                        }
+
+                                        let contents: string = file.contents.toString('utf8');
+
+                                        replaces.forEach(r => {
+                                            contents = contents.replace(r[0], r[1]);
+                                        });
+
+
+                                        file.contents = new Buffer(contents, 'utf-8');
+                                        this.push(file);
+                                        callback();
+                                    })
+                                ];
+                            }
+                            return [];
+                        },
                         tsconfig: (ctx, bind) => bind.getScope<LibPackBuilder>().transCompileOptions(ctx.getInput())
                     }
                 },
@@ -372,6 +406,9 @@ export class LibPackBuilder implements AfterInit {
     @Input() globals: GlobalsOption;
     @Input() cache?: RollupCache;
     @Input() watch?: WatcherOptions;
+
+
+    @Input() replaces: string[][];
     /**
      * custom setup rollup options.
      *
@@ -422,7 +459,7 @@ export class LibPackBuilder implements AfterInit {
 
     transCompileOptions(input: LibBundleOption) {
         if (input.target) {
-            return { target: input.target, module: input.module };
+            return input.module ? { target: input.target, module: input.module } : { target: input.target };
         }
         return {};
     }

@@ -1,7 +1,7 @@
 import { Modules, isString } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader } from '@tsdi/core';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
-const globby = require('globby');
+import * as globby from 'globby';
 
 
 /**
@@ -28,14 +28,14 @@ export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
         }
         basePath = basePath || runMainPath();
         return globby(files, { cwd: basePath }).then(mflies => {
-            return mflies.map(fp => {
-                return require(toAbsolutePath(basePath, fp));
-            });
+            return Promise.all(mflies.map(fp => {
+                return import(toAbsolutePath(basePath, isString(fp)? fp : (fp as any).path));
+            }));
         });
     }
 
     protected createLoader(): (modulepath: string) => Promise<Modules[]> {
-        return (modulepath: string) => Promise.resolve(require(modulepath));
+        return (modulepath: string) => import(modulepath);
     }
 
 }

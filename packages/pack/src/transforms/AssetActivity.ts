@@ -40,14 +40,14 @@ export interface AssetActivityOption extends TemplateOption {
      * @type {Binding<ActivityType<ITransform>[]>}
      * @memberof ShellActivityOption
      */
-    beforePipes?: Binding<ActivityType<ITransform>[]>;
+    beforePipes?: Binding<ActivityType<ITransform>[] | NodeExpression<ITransform[]>>;
     /**
      *  stream pipe works for asset transform.
      *
      * @type {Binding<ActivityType<ITransform>[]>}
      * @memberof ShellActivityOption
      */
-    pipes?: Binding<ActivityType<ITransform>[]>;
+    pipes?: Binding<ActivityType<ITransform>[] | NodeExpression<ITransform[]>>;
 
     sourceMapFramework?: Binding<any>;
 
@@ -69,7 +69,7 @@ export interface AssetActivityOption extends TemplateOption {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, bind) => {
                     let framework = bind.getScope<AssetActivity>().framework || sourcemaps;
-                    return  ctx.getData<ITransform>().pipe(framework.init())
+                    return ctx.getData<ITransform>().pipe(framework.init())
                 }
             }
         },

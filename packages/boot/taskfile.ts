@@ -24,6 +24,3 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 export class BootBuilder {
 }
 
-if (process.cwd() === __dirname) {
-    Workflow.run(BootBuilder);
-}
