@@ -111,6 +111,7 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
             const ctx = await root.getInstance(BuilderServiceToken).bootApp(this, ...args);
             return ctx as T;
         } catch (err) {
+            console.error(err);
             const appExit = this.context.injector.get(ApplicationExit);
             if (appExit && appExit.enable) {
                 appExit.exit(this.context, err);

@@ -15,9 +15,12 @@ import { AfterInit } from '@tsdi/components';
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: true,
+        externalLibs: [
+            'globby'
+        ],
         bundles: [
             { target: 'es5', targetFolder: 'src', moduleName: 'main', moduleFolder: 'src', dtsMain: 'index.d.ts' },
-            { target: 'es2015', module: 'es2020' }
+            { target: 'es2015', module: 'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'platform-server.js', format: 'es' }
         ]
     }
 })

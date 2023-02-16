@@ -1,7 +1,7 @@
 import { Modules, isString } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader } from '@tsdi/core';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
-import * as globby from 'globby';
+const globby = require('globby');
 
 
 /**

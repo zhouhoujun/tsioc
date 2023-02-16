@@ -6,6 +6,7 @@ import {
 } from 'rollup';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
+import { ILogger, Logger } from '@tsdi/logs';
 
 /**
  * rollup activity template option.
@@ -83,6 +84,9 @@ export interface RollupOption extends TemplateOption {
 @Task('rollup')
 export class RollupActivity extends NodeActivity<void> {
 
+    @Logger()
+    logger: ILogger;
+
     @Input() input: NodeExpression<Src>;
 
     @Input() output: NodeExpression<OutputOptions>;
@@ -147,7 +151,11 @@ export class RollupActivity extends NodeActivity<void> {
 
             let bundle = await rollup(opts);
             await bundle.write(output);
-        }));
+
+        })).catch(err => {
+            console.error(err);
+            this.logger.error(err);
+        });
     }
 
     protected getInputProps(): string[] {
