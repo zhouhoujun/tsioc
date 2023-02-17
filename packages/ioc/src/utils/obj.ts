@@ -4,6 +4,7 @@ import { isString } from './chk';
 
 
 const objTag = '[object Object]';
+const objModule = '[object Module]';
 const objName = 'Object';
 /**
  * is custom class type instance or not.
@@ -28,7 +29,8 @@ export function isTypeObject(target: any): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPlainObject(target: any): target is Record<string, any> {
-    return toString.call(target) === objTag && target.constructor.name === objName
+    const ty = toString.call(target);
+    return (ty === objTag || ty === objModule) && target.constructor.name === objName;
 }
 
 /**
