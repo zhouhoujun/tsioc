@@ -154,5 +154,3 @@ import * as through from 'through2';
 export class BuilderTsIoc {
 
 }
-
-Workflow.run(BuilderTsIoc)

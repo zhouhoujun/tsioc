@@ -7,9 +7,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Activities",
+            "name": "build",
             "args": [
-                "${workspaceRoot}/packages/activities/taskfile.ts" 
+                "${workspaceRoot}/packages/taskfile.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
