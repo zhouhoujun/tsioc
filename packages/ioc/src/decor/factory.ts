@@ -501,8 +501,15 @@ export function getParamerterNames(target: ClassType<any>, propertyKey?: string)
     let metadata = isArray(meta) ? {} : (meta || {});
     if (propertyKey) {
         let paramNames = [];
-        if (metadata && metadata.hasOwnProperty(propertyKey)) {
+        if (metadata && metadata.hasOwnProperty(propertyKey) && isArray(metadata[propertyKey])) {
             paramNames = metadata[propertyKey]
+        } else {
+            paramNames = getDesignNames(target, propertyKey);
+            if (paramNames) {
+                metadata[propertyKey] = paramNames;
+                Reflect.defineMetadata(ParamerterName, metadata, target);
+            }
+
         }
         if (!isArray(paramNames)) {
             paramNames = [];
@@ -513,10 +520,10 @@ export function getParamerterNames(target: ClassType<any>, propertyKey?: string)
     }
 }
 
+const ctor = 'constructor';
+
 export function setParamerterNames(target: ClassType) {
     let meta = { ...getParamerterNames(target) };
-    let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
-    let isUglify = clsUglifyExp.test(target.name);
     let anName = '';
     let classAnnations = lang.getClassAnnations(target);
 
@@ -524,25 +531,37 @@ export function setParamerterNames(target: ClassType) {
         anName = classAnnations.name;
         meta = Object.assign(meta, classAnnations.params);
     }
+    
+    let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
+    let isUglify = clsUglifyExp.test(target.name);
     if (!isUglify && target.name !== anName) {
         lang.forIn(descriptors, (item, name) => {
-            if (name !== 'constructor') {
+            if (name !== ctor) {
                 if (item.value) {
-                    meta[name] = getParamNames(item.value)
+                    meta[name] = classAnnations && classAnnations.params && classAnnations.params[name]? classAnnations.params[name] : getParamNames(item.value)
                 }
                 if (item.set) {
                     meta[name] = getParamNames(item.set);
                 }
             }
         });
-        meta['constructor'] = getParamNames(target.prototype.constructor);
+        meta[ctor] = classAnnations && classAnnations.params && classAnnations.params[ctor]? classAnnations.params[ctor] : getParamNames(target.prototype.constructor);
     }
+
     // fix bug inherit with no constructor
-    if (meta['constructor'].length === 0) {
+    if (meta[ctor].length === 0) {
         lang.forInClassChain(target, child => {
             let names = getParamNames(child.prototype.constructor);
+            let classAnn = lang.getClassAnnations(child);
+            if (classAnn && classAnn.params) {
+                const args = classAnn.params[ctor];
+                if (isArray(args) && args.length == names.lang) {
+                    names = args;
+                }
+            }
+
             if (names.length) {
-                meta['constructor'] = names;
+                meta[ctor] = names;
                 return false;
             }
             return true;
@@ -550,6 +569,34 @@ export function setParamerterNames(target: ClassType) {
     }
 
     Reflect.defineMetadata(ParamerterName, meta, target);
+}
+
+function getDesignNames(target, propertyKey: string) {
+    let names: string[] | undefined;
+    let mnames: string[] | undefined;
+    lang.forInClassChain(target, cls => {
+        const classAnnations = lang.getClassAnnations(cls);
+        if (!mnames) {
+            let descriptor = Object.getOwnPropertyDescriptor(target.prototype, propertyKey);
+            if (!descriptor.value) {
+                return
+            }
+            mnames = getParamNames(descriptor.value);
+        }
+
+        if (classAnnations && classAnnations.params && isArray(classAnnations.params[propertyKey])) {
+            names = classAnnations.params[propertyKey];
+            if (names.length !== mnames.length) {
+                names = null;
+            }
+        }
+        if (isArray(names)) return false;
+    });
+    if (!names) {
+        names = mnames;
+    }
+
+    return names;
 }
 
 function getParamNames(func) {

@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, lang } from '../utils/lang';
+import { isClass, isFunction, lang } from '../utils/lang';
 import { Token, isToken } from '../tokens';
 import { IActionSetup, Action, IActionInjector } from './Action';
 import { Injector } from '../Injector';
@@ -50,7 +50,7 @@ export class ActionInjector extends Injector implements IActionInjector {
             return target.toAction() as T;
         } else if (isToken(target)) {
             let act = this.get(target);
-            return act ? act.toAction() as T : null;
+            return (act ? act.toAction() : (isFunction(target)? target : null)) as T;
         } else if (isFunction(target)) {
             return target as T
         }

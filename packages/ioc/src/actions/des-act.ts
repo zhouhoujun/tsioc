@@ -137,11 +137,11 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         return instance;
     };
 
-    if (provide && provide !== type) {
+    if (provide) {
         injector.set(provide, factory, type);
-    } else {
-        injector.set(type, factory);
     }
+    injector.set(type, factory);
+
 
     ctx.targetReflect.getInjector = () => injector;
 

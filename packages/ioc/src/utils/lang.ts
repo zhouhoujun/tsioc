@@ -256,42 +256,38 @@ export namespace lang {
      * @returns {Type[]}
      * @memberof DefaultModuleLoader
      */
+
     export function getTypes(...modules: Modules[]): Type[] {
-        if (!modules.length) {
-            return [];
-        } else if (modules.length === 1) {
-            return getContentTypes(modules[0])
-        }
-        let types = [];
-        modules.forEach(m => {
-            types = types.concat(getContentTypes(m));
-        })
-        return types;
+        const types: Type[] = [];
+        modules.length && deepForEach(isArray(modules) ? modules : isPlainObject(modules) ? Object.values(modules) : [modules], ty => {
+            isClass(ty) && types.push(ty)
+        }, v => isPlainObject(v));
+        return types
     }
 
-
-    const exportKey = 'exports';
-    const esModuleKey = '__esModule';
-
-    function getContentTypes(regModule: Modules): Type[] {
-        let regModules: Type[] = [];
-        if (isClass(regModule)) {
-            regModules.push(regModule);
-        } else if (isPlainObject(regModule)) {
-            let rmodules = regModule[exportKey] ? regModule[exportKey] : regModule;
-            if (isPlainObject(rmodules)) {
-                if (rmodules[esModuleKey]) {
-                    for (let p in rmodules) {
-                        let type = rmodules[p];
-                        regModules.push(...getContentTypes(type));
-                    }
-                }
-            } else if (isClass(rmodules)) {
-                regModules.push(rmodules);
+    /**
+     * deep for each.
+     * @param input 
+     * @param fn iterator callback.
+     * @param isRecord is item record or not.
+     * @param getRecord get record values.
+     */
+    export function deepForEach<T>(
+        input: (T | Record<string, T> | any[])[],
+        fn: (value: T) => void,
+        isRecord?: (value: any) => boolean,
+        getRecord?: (value: any) => T[]): void {
+        input.forEach(value => {
+            if (isArray(value)) {
+                deepForEach(value, fn, isRecord, getRecord)
+            } else if (value && isRecord && isRecord(value)) {
+                deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord)
+            } else {
+                fn(value as T)
             }
-        }
-        return regModules;
+        })
     }
+
 
     /**
      * async clean object.
@@ -399,6 +395,8 @@ export function isClassType(target: any): target is ClassType {
 
 const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
 
+const clify = /^class\s+\{/;
+
 function classCheck(target: any, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) return false;
 
@@ -416,10 +414,11 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
 
     if (isPrimitiveType(target)) return false;
 
-    if (!clsStartExp.test(target.name)) return false;
-
     const str = target.toString();
+    if (clify.test(str)) return true;
     if (anon.test(str)) return false;
+
+    if (!clsStartExp.test(target.name)) return false;
 
     return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
 }
@@ -465,7 +464,8 @@ export function isObservable(target: any): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPlainObject(target: any): target is ObjectMap {
-    return toString.call(target) === '[object Object]' && target.constructor.name === 'Object';
+    const ty = toString.call(target);
+    return (ty === '[object Object]' || ty === '[object Module]') && target.constructor.name === 'Object';
 }
 
 /**

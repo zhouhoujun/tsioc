@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit-console",
-  "version": "6.0.47",
+  "version": "6.0.48",
   "description": "unit testing console reporter",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -35,15 +35,15 @@
     "chalk": "^2.4.2"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.47",
-    "@tsdi/core": "~6.0.47",
-    "@tsdi/aop": "~6.0.47",
-    "@tsdi/boot": "~6.0.47",
-    "@tsdi/logs": "~6.0.47",
-    "@tsdi/platform-server": "~6.0.47",
-    "@tsdi/platform-server-logs": "~6.0.47",
-    "@tsdi/platform-server-boot": "~6.0.47",
-    "@tsdi/unit": "~6.0.47",
+    "@tsdi/ioc": "~6.0.48",
+    "@tsdi/core": "~6.0.48",
+    "@tsdi/aop": "~6.0.48",
+    "@tsdi/boot": "~6.0.48",
+    "@tsdi/logs": "~6.0.48",
+    "@tsdi/platform-server": "~6.0.48",
+    "@tsdi/platform-server-logs": "~6.0.48",
+    "@tsdi/platform-server-boot": "~6.0.48",
+    "@tsdi/unit": "~6.0.48",
     "tslib": "^2.3.0",
     "globby": "^11.0.0"
   },
