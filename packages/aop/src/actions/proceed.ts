@@ -376,6 +376,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
 
 export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
     if (!ctx.throwing) return next();
+    console.error(ctx.throwing);
     ctx.state = JoinpointState.AfterThrowing;
     const advices = ctx.advices;
     const invoker = ctx.invokeHandle;

@@ -14,10 +14,12 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: false,
+        clean: ['../../dist/aop/src/**/*.js', '../../dist/aop/es2015'],
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'aop.umd.js', format: 'umd', uglify: true },
-            { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'aop.js', format: 'es' }
+            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundles', outputFile: 'aop.umd.js', format: 'umd', uglify: true },
+            { target: 'es2015', module: 'es2020', moduleName: ['fesm2015'], outputFile: 'aop.js', format: 'es', exportAs: 'node' },
+            { target: 'es2020', module: 'es2020', moduleName: ['fesm2020', 'esm2020'], outputFile: 'aop.js', format: 'es', exportAs: 'default' }
         ]
     }
 })

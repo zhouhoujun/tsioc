@@ -33,6 +33,7 @@
   "dependencies": {
   },
   "peerDependencies": {
+    "reflect-metadata": "^0.1.13",
     "tslib": "^2.3.0",
     "globby": "^11.0.0",
     "@tsdi/ioc": "~6.0.48",

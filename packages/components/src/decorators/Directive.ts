@@ -9,7 +9,7 @@ import { IDirectiveMetadata } from './IComponentMetadata';
  */
 export interface IDirectiveDecorator {
     /**
-     * Directive decorator, , use to define class as directive element.
+     * Directive decorator, use to define class as directive element.
      *
      * @Directive
      *

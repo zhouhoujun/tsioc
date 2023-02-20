@@ -13,11 +13,13 @@ import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
         src: 'src/**/*.ts',
         outDir: '../../dist/unit',
         test: 'test/**/*.ts',
+        clean: ['../../dist/unit/src/**/*.js', '../../dist/unit/es2015'],
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'unit.umd.js', format: 'umd', uglify: true },
-            { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'unit.js', format: 'es' }
+            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundles', outputFile: 'unit.umd.js', format: 'umd', uglify: true },
+            { target: 'es2015', module: 'es2020', moduleName: ['fesm2015'], outputFile: 'unit.js', format: 'es', exportAs: 'node' },
+            { target: 'es2020', module: 'es2020', moduleName: ['fesm2020', 'esm2020'], outputFile: 'unit.js', format: 'es', exportAs: 'default' }
         ]
     }
 })

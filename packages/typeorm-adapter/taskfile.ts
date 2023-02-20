@@ -14,12 +14,14 @@ import { AfterInit } from '@tsdi/components';
         outDir: '../../dist/typeorm-adapter',
         src: 'src/**/*.ts',
         test: false,
+        clean: ['../../dist/typeorm-adapter/src/**/*.js', '../../dist/typeorm-adapter/es2015'],
         annotation: true,
-        externalLibs: [ 'buffer'],
+        externalLibs: ['buffer'],
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'typeorm-adapter.umd.js', format: 'umd', uglify: true },
-            { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'typeorm-adapter.js', format: 'cjs' }
+            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundles', outputFile: 'typeorm-adapter.umd.js', format: 'umd', uglify: true },
+            { target: 'es2015', module: 'es2020', moduleName: ['fesm2015'], outputFile: 'typeorm-adapter.js', format: 'es', exportAs: 'node' },
+            { target: 'es2020', module: 'es2020', moduleName: ['fesm2020', 'esm2020'], outputFile: 'typeorm-adapter.js', format: 'es', exportAs: 'default' }
         ]
     }
 })

@@ -1,4 +1,4 @@
-import { isBoolean, isArray, lang, Inject } from '@tsdi/ioc';
+import { isBoolean, isArray, lang, Inject, isString } from '@tsdi/ioc';
 import { Input, AfterInit, Binding } from '@tsdi/components';
 import { Task, TemplateOption, Src, Activities, ActivityTemplate, IActivityContext, Expression } from '@tsdi/activities';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
@@ -8,6 +8,7 @@ import { RollupOption } from '../rollups';
 import { PlatformService } from '../PlatformService';
 import { join } from 'path';
 import { NodeActivityContext } from '../NodeActivityContext';
+import { CleanActivityOption } from '../tasks';
 const through = require('through2');
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
@@ -83,14 +84,14 @@ export interface LibBundleOption {
     /**
      * rollup input.
      *
-     * @type {Src>>}
+     * @type {Src}
      * @memberof LibTaskOption
      */
     input?: Src;
     /**
      * the file name (with out dir path) rollup to write, or main file name.
      *
-     * @type {string>}
+     * @type {string}
      * @memberof LibTaskOption
      */
     outputFile?: string;
@@ -98,10 +99,16 @@ export interface LibBundleOption {
     /**
      * rollup format option.
      *
-     * @type {string>}
+     * @type {string}
      * @memberof LibTaskOption
      */
     format?: string;
+
+    /**
+     * exports alis 'default' | 'node', as in package.json
+     */
+    exportAs?: 'default' | 'node';
+
 }
 
 export interface LibPackBuilderOption extends TemplateOption {
@@ -216,6 +223,19 @@ export interface LibPackBuilderOption extends TemplateOption {
      */
     replaces?: string[][];
 
+    /**
+     * build after clean.
+     */
+    clean?: Binding<Src>;
+
+}
+
+export function hasRollup(moduleName: Src) {
+    if (!moduleName) return false;
+    if (isString(moduleName)) {
+        return moduleName.startsWith('f');
+    }
+    return moduleName.some(n => n.startsWith('f'));
 }
 
 @Task({
@@ -281,7 +301,26 @@ export interface LibPackBuilderOption extends TemplateOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.getInput<LibBundleOption>().input,
+                    condition: ctx => ctx.getInput<LibBundleOption>()?.format === 'es',
+                    body:[
+                        <AssetActivityOption>{
+                            activity: 'asset',
+                            src: (ctx, bind) => bind.getScope<LibPackBuilder>().getTargetPath(ctx.getInput()) + '/**/*.js',
+                            dist: (ctx, bind) => bind.getScope<LibPackBuilder>().getTargetPath(ctx.getInput()),
+                            pipes: [
+                                ()=> rename({extname: '.mjs'})
+                            ]
+                        },
+                        <CleanActivityOption>{
+                            activity: 'clean',
+                            clean: (ctx, bind)=> bind.getScope<LibPackBuilder>().getTargetPath(ctx.getInput()) + '/**/*.js'
+                        }
+                        
+                    ]
+                },
+                {
+                    activity: Activities.if,
+                    condition: ctx => ctx.getInput<LibBundleOption>().input || hasRollup(ctx.getInput<LibBundleOption>().moduleName),
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
@@ -322,20 +361,57 @@ export interface LibPackBuilderOption extends TemplateOption {
                                 json: (json, bind) => {
                                     let input = bind.getInput<LibBundleOption>();
                                     let scope = bind.getScope<LibPackBuilder>();
-                                    // to replace module export.
-                                    if (input.target) {
-                                        json[input.target] = ['.', scope.getTargetFolder(input), input.main || 'index.js'].join('/');
+
+                                    if (!json.exports) {
+                                        json.exports = {
+                                            './package.json': {
+                                                'default': './package.json'
+                                            },
+                                            '.': {}
+                                        }
                                     }
-                                    let outmain = ['.', scope.getModuleFolder(input), input.outputFile || 'index.js'].join('/');
+                                    if (!json.exports['.']) {
+                                        json.exports['.'] = {};
+                                    }
+                                    // to replace module export.
+
+                                    const outmain = ['.', scope.getModuleFolder(input), input.outputFile || 'index.js'].join('/');
+                                    const outidx = ['.', scope.getTargetFolder(input), input.main || 'index.js'].join('/');
+
                                     if (isArray(input.moduleName)) {
                                         input.moduleName.forEach(n => {
-                                            json[n] = outmain;
+                                            if (n === 'main') {
+                                                json[n] = outmain;
+                                            } else if (n.startsWith('f')) {
+                                                json.exports['.'][input.target] = json[input.target] = json[n] = outmain;
+                                                if (input.exportAs) {
+                                                    json.exports['.'][input.exportAs] = outmain;
+                                                    if (input.exportAs === 'node') {
+                                                        json['module'] = outmain
+                                                    }
+                                                }
+                                            } else {
+                                                json.exports['.'][n] = json[n] = outidx;
+                                            }
                                         })
                                     } else if (input.moduleName) {
-                                        json[input.moduleName] = outmain;
+                                        const n = input.moduleName;
+                                        if (n === 'main') {
+                                            json[n] = outmain;
+                                        } else if (n.startsWith('f')) {
+                                            json.exports['.'][input.target] = json[n] = outmain;
+                                            if (input.exportAs) {
+                                                json.exports['.'][input.exportAs] = outmain;
+                                                if (input.exportAs === 'node') {
+                                                    json['module'] = outmain
+                                                }
+                                            }
+                                        } else {
+                                            json.exports['.'][n] = json[n] = outidx;
+                                        }
                                     }
                                     if (input.dtsMain) {
-                                        json['typings'] = ['.', scope.getTargetFolder(input), input.dtsMain].join('/');
+                                        json.exports['.']['types'] = json['typings'] = ['.', scope.getTargetFolder(input), input.dtsMain].join('/');
                                     }
                                     return json;
                                 }
@@ -344,6 +420,10 @@ export interface LibPackBuilderOption extends TemplateOption {
                     }
                 }
             ]
+        },
+        {
+            activity: 'clean',
+            clean: 'binding: clean'
         }
     ]
 
@@ -375,6 +455,7 @@ export class LibPackBuilder implements AfterInit {
     }
 
     @Input() src: Src;
+    @Input() clean: Src;
     @Input() test: Src;
     /**
      * tasks
@@ -446,6 +527,9 @@ export class LibPackBuilder implements AfterInit {
 
     transRollupInput(input: LibBundleOption) {
         let inputs = input.input;
+        if (!inputs) {
+            inputs = input.target + '/index' + (input.format === 'es' ? '.mjs' : '.js')
+        }
         return isArray(inputs) ? inputs.map(i => this.toOutputPath(i)) : this.toOutputPath(inputs);
     }
 
@@ -459,7 +543,11 @@ export class LibPackBuilder implements AfterInit {
 
     transCompileOptions(input: LibBundleOption) {
         if (input.target) {
-            return input.module ? { target: input.target, module: input.module } : { target: input.target };
+            const options = input.module ? { target: input.target, module: input.module } : { target: input.target };
+            // if(input.format === 'es') {
+            //     options['type'] = 'module'
+            // }
+            return options;
         }
         return {};
     }
@@ -536,19 +624,6 @@ export class LibPackBuilder implements AfterInit {
             }
         }
 
-        // if (!this.plugins) {
-        //     this.plugins = async (ctx: NodeActivityContext, bind) => {
-        //         let beforeResolve = this.beforeResolve;
-        //         let sourcemap = this.sourcemap;
-        //         let input = bind.getInput<LibBundleOption>();
-        //         return [
-        //             ...(beforeResolve || []),
-        //             resolve({ browser: input.format === 'umd' }),
-        //             commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
-        //             sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
-        //         ];
-        //     };
-        // }
     }
 
 }

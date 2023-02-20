@@ -13,11 +13,13 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         outDir: '../../dist/components',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
+        clean: ['../../dist/components/src/**/*.js', '../../dist/components/es2015'],
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'components.umd.js', format: 'umd', uglify: true },
-            { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'components.js', format: 'es' }
+            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundles', outputFile: 'components.umd.js', format: 'umd', uglify: true },
+            { target: 'es2015', module: 'es2020', moduleName: ['fesm2015'], outputFile: 'components.js', format: 'es', exportAs: 'node' },
+            { target: 'es2020', module: 'es2020', moduleName: ['fesm2020', 'esm2020'], outputFile: 'components.js', format: 'es', exportAs: 'default' }
         ]
     }
 })

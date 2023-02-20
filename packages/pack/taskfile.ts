@@ -14,15 +14,17 @@ import { AfterInit } from '@tsdi/components';
         outDir: '../../dist/pack',
         src: 'src/**/*.ts',
         // test: 'test/**/*.ts',
+        clean: ['../../dist/pack/src/**/*.js', '../../dist/pack/es2015'],
         annotation: true,
         sourcemap: true,
-        replaces:[
-            [`import * as globby from 'globby';`,  `import  globby from 'globby';`]
+        replaces: [
+            [`import * as globby from 'globby';`, `import  globby from 'globby';`]
         ],
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName:'main', outputFile: 'pack.js', format: 'cjs', uglify: true },
-            { target: 'es2015', module:'es2020', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'pack.js', format: 'es' }
+            { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundles', outputFile: 'pack.js', format: 'cjs', uglify: true },
+            { target: 'es2015', module: 'es2020', moduleName: ['fesm2015'], outputFile: 'pack.js', format: 'es', exportAs: 'node' },
+            { target: 'es2020', module: 'es2020', moduleName: ['fesm2020', 'esm2020'], outputFile: 'pack.js', format: 'es', exportAs: 'default' }
         ]
     }
 })
