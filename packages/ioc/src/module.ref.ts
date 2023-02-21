@@ -1,7 +1,6 @@
 
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector } from './injector';
-import { LifecycleHooks } from './lifecycle';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ModuleWithProviders, ProviderType } from './providers';
@@ -30,13 +29,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * module type
      */
     abstract get moduleReflect(): Class<T>;
-    /**
-     * shudown handlers.
-     * @readonly
-     * @abstract
-     * @type {LifecycleHooks}
-     */
-    abstract get lifecycle(): LifecycleHooks;
     /**
      * reflective factory.
      */

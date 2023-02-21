@@ -1,25 +1,31 @@
 
-import {
-    DefaultInjector, Injector, InjectorScope, ModuleWithProviders, refl, isFunction,
-    Platform, ModuleDef, processInjectorType, Token, Type, lang, LifecycleHooksResolver, LifecycleHooks,
-    isPlainObject, isArray, EMPTY_OBJ, isClass, isModuleProviders, EMPTY, ReflectiveFactory, DefaultReflectiveFactory, Class, TypeDef
-} from '@tsdi/ioc';
+
 import { lastValueFrom, Subscription } from 'rxjs';
+import { Injector, InjectorScope } from '../injector';
+import { get } from '../metadata/refl';
+import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
+import { Platform } from '../platform';
+import { isModuleProviders, ModuleWithProviders } from '../providers';
+import { ReflectiveFactory } from '../reflective';
+import { Token } from '../tokens';
+import { EMPTY, EMPTY_OBJ, Type } from '../types';
+import { isArray, isFunction } from '../utils/chk';
+import { deepForEach } from '../utils/lang';
+import { isPlainObject } from '../utils/obj';
+import { DefaultInjector, processInjectorType } from './injector';
+import { DefaultReflectiveFactory } from './reflective';
 
 
 /**
  * default modeuleRef implements {@link ModuleRef}
  */
 export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
-
     private _instance!: T;
     private _type: Type;
     private _typeRefl: Class;
 
     reflectiveFactory = new DefaultReflectiveFactory();
-
-    lifecycle!: LifecycleHooks;
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
@@ -77,8 +83,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const types: Type[] = [];
         const platform = this.platform();
         const stk: Type[] = [];
-        lang.deepForEach(args, ty => {
-            if (isClass(ty)) {
+        deepForEach(args, ty => {
+            if (isFunction(ty)) {
                 types.push(ty);
                 this.processInjectorType(platform, ty, stk)
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
@@ -98,15 +104,13 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
     protected override onRegistered(def: Class): void {
-        
+
     }
 
     protected override destroying() {
         this.platform()?.modules.delete(this._type);
         super.destroying();
         this._type = null!;
-        this.lifecycle.clear();
-        this.lifecycle = null!;
         this.reflectiveFactory = null!;
         this._typeRefl = null!;
         this._instance = null!
@@ -118,8 +122,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
  * create module ref.
  */
 export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
-    if (isFunction(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module), parent, option);
-    if (isModuleProviders(module)) return new DefaultModuleRef(refl.get<ModuleDef>(module.module), parent, {
+    if (isFunction(module)) return new DefaultModuleRef(get<ModuleDef>(module), parent, option);
+    if (isModuleProviders(module)) return new DefaultModuleRef(get<ModuleDef>(module.module), parent, {
         ...option,
         providers: [...module.providers ?? EMPTY, ...option?.providers ?? EMPTY]
     });

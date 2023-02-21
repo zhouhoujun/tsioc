@@ -1,5 +1,5 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
-import { isString, isArray } from '../utils/chk';
+import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
