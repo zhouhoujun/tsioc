@@ -1,6 +1,4 @@
-import { TypeDef } from '../metadata/type';
-import { AbstractType, AnnotationType, ClassType, Type } from '../types';
-import { getClassAnnotation } from './util';
+import { AnnotationType, Type } from '../types';
 
 
 declare let process: any;
@@ -28,7 +26,14 @@ export function isFunction(target: any): target is Function {
     return typeof target === _tyfunc
 }
 
-
+/**
+ * is type or not.
+ * @param v 
+ * @returns 
+ */
+export function isType(v: any): v is Type<any> {
+    return typeof v === _tyfunc;
+}
 
 /**
  * is run in nodejs or not.
@@ -229,7 +234,7 @@ export function isPrimitiveType(target: any): boolean {
     return isFunction(target) && isPrimitive(target)
 }
 
-function isPrimitive(target: Function): boolean {
+export function isPrimitive(target: Function): boolean {
     return target === Function
         || target === Object
         || target === String
@@ -249,28 +254,28 @@ function isPrimitive(target: Function): boolean {
 export const isBaseType = isPrimitiveType;
 
 
-/**
- * check abstract class with @Abstract or not
- *
- * @export
- * @param {*} target
- * @returns {target is AbstractType}
- */
-export function isAbstractClass(target: any): target is AbstractType {
-    return isClassType(target, true)
-}
+// /**
+//  * check abstract class with @Abstract or not
+//  *
+//  * @export
+//  * @param {*} target
+//  * @returns {target is AbstractType}
+//  */
+// export function isAbstractClass(target: any): target is AbstractType {
+//     return isClassType(target, true)
+// }
 
 
-/**
- * check target is class or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Type}
- */
-export function isClass(target: any): target is Type {
-    return isClassType(target, false)
-}
+// /**
+//  * check target is class or not.
+//  *
+//  * @export
+//  * @param {*} target
+//  * @returns {target is Type}
+//  */
+// export function isClass(target: any): target is Type {
+//     return isClassType(target, false)
+// }
 
 export function isAnnotation(target: any): target is AnnotationType {
     if (!isFunction(target)) return false;
@@ -280,35 +285,35 @@ export function isAnnotation(target: any): target is AnnotationType {
     return (target as AnnotationType).ƿAnn?.()?.type === target
 }
 
-/**
- * is annotation class type or not.
- *
- * @export
- * @param {*} target
- * @returns {target is ClassType}
- */
-export function isClassType(target: any, abstract?: boolean): target is ClassType {
-    if (!isFunction(target)) return false;
-    if (!target.name || !target.prototype) return false;
-    if (target.prototype.constructor !== target) return false;
+// /**
+//  * is annotation class type or not.
+//  *
+//  * @export
+//  * @param {*} target
+//  * @returns {target is ClassType}
+//  */
+// export function isClassType(target: any, abstract?: boolean): target is ClassType {
+//     if (!isFunction(target)) return false;
+//     if (!target.name || !target.prototype) return false;
+//     if (target.prototype.constructor !== target) return false;
 
-    const ann: TypeDef = getClassAnnotation(target);
-    if (ann) {
-        if (isBoolean(abstract) && ann.type === target) return abstract ? ann.abstract === true : !ann.abstract;
-        return true
-    }
+//     const ann: TypeDef = getClassAnnotation(target);
+//     if (ann) {
+//         if (isBoolean(abstract) && ann.type === target) return abstract ? ann.abstract === true : !ann.abstract;
+//         return true
+//     }
 
-    if (Reflect.getMetadataKeys(target)?.length) {
-        return true;
-    }
-    const pkeys = Object.getOwnPropertyNames(target);
-    // anonymous function
-    if (pkeys.length < 3) return false;
-    // not es5 prototype class define.
-    if (pkeys.indexOf('caller') >= 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
+//     if (Reflect.getMetadataKeys(target)?.length) {
+//         return true;
+//     }
+//     const pkeys = Object.getOwnPropertyNames(target);
+//     // anonymous function
+//     if (pkeys.length < 3) return false;
+//     // not es5 prototype class define.
+//     if (pkeys.indexOf('caller') >= 0 && Object.getOwnPropertyNames(target.prototype).length < 2) return false;
 
-    return !isPrimitive(target)
-}
+//     return !isPrimitive(target)
+// }
 
 /**
  * get class of object.
@@ -321,7 +326,7 @@ export function getClass(target: any): Type {
     if (!target) {
         return null!
     }
-    if (isClassType(target)) {
+    if (isType(target)) {
         return target as Type
     }
     return target.constructor || target.prototype.constructor

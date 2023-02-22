@@ -1,5 +1,4 @@
-import { Abstract, Type, Destroyable, OnDestroy, Injector, InvokeArguments, ReflectiveRef, DestroyCallback, Class } from '@tsdi/ioc';
-import { ModuleRef } from './module.ref';
+import { Abstract, Type, Destroyable, OnDestroy, Injector, InvokeArguments, ReflectiveRef, DestroyCallback, Class, ModuleRef } from '@tsdi/ioc';
 
 /**
  * runnable

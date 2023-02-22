@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPromise } from './chk';
+import { getClass, isArray, isFunction, isNil, isPrimitive, isPrimitiveType, isPromise, isType } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -237,8 +237,8 @@ export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is Type
  */
 export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
-    if (isClassType(target) && baseClass) {
-        const isCls = isClassType(baseClass);
+    if (isType(target) && baseClass) {
+        const isCls = isType(baseClass) && !isPrimitive(baseClass);
         forInClassChain(target, t => {
             if (isCls) {
                 isExtnds = t === baseClass
@@ -261,7 +261,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
 export function getTypes(mds: Modules | Modules[]): Type[] {
     const types: Type[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
-        isClass(ty) && types.push(ty)
+        isType(ty) && types.push(ty)
     }, v => isPlainObject(v));
     return types
 }

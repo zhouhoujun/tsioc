@@ -4,15 +4,13 @@ export * from './tokens';
 export * from './handler';
 export * from './action';
 export * from './destroy';
-export * from './lifecycle';
 export * from './injector';
 export * from './context';
 export * from './resolver';
 export * from './operation';
 export * from './reflective';
 
-// module
-export * from './module.loader';
+export * from './platform';
 
 // utils
 export * from './utils/chk';
@@ -48,6 +46,9 @@ export * from './actions/runtime';
 // design time action.
 export * as designs from './actions/des-act';
 export * from './actions/design';
+
+// module
+export * from './module.ref';
 
 // ioc default implmenents.
 export * from './impl';

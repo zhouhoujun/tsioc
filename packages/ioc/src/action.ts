@@ -2,7 +2,7 @@ import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
 import { runChain, Handler } from './handler';
 import { isBaseOf } from './utils/lang';
-import { Platform } from './injector';
+import { Platform } from './platform';
 
 
 /**

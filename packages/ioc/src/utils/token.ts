@@ -1,5 +1,5 @@
 import { isInjectToken, Token } from '../tokens';
-import { isClassType, _tyfunc, _tystr, _tysymbol } from './chk';
+import { _tyfunc, _tystr, _tysymbol } from './chk';
 
 
 /**
@@ -16,7 +16,7 @@ import { isClassType, _tyfunc, _tystr, _tysymbol } from './chk';
     const type = typeof target;
     switch (type) {
         case _tyfunc:
-            return isClassType(target)
+            return true;
         case _tystr:
             return true
         case _tysymbol:

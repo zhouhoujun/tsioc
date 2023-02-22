@@ -1,13 +1,13 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    ReflectiveFactory, ReflectiveRef, DestroyCallback, isClass, pomiseOf, InvokeArguments, Class
+    ReflectiveFactory, ReflectiveRef, DestroyCallback, pomiseOf, InvokeArguments, Class
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../guard';
 import { ResultValue } from './result';
 import { ForbiddenExecption } from '../execptions';
 import { ServerEndpointContext } from '../transport/context';
-import { InterceptorLike, InterceptorType } from '../Interceptor';
+import { Interceptor, InterceptorType } from '../Interceptor';
 import { Middleware, MiddlewareFn, InterceptorMiddleware } from '../transport/middleware';
 import { RouteRef, RouteFactory, RouteFactoryResolver, joinprefix } from './route';
 import { ProtocolRouteMappingMetadata, RouteMappingMetadata } from './router';
@@ -66,10 +66,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
     }
 
 
-    private _intptors?: InterceptorLike[];
-    get interceptors(): InterceptorLike[] {
+    private _intptors?: Interceptor[];
+    get interceptors(): Interceptor[] {
         if (!this._intptors) {
-            this._intptors = this.metadata.interceptors?.map(i => isClass(i) ? this.factory.resolve(i) : i) ?? EMPTY;
+            this._intptors = this.metadata.interceptors?.map(i => isFunction(i) ? this.factory.resolve(i) : i) ?? EMPTY;
         }
         return this._intptors;
     }
@@ -97,7 +97,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
         let endpoint = this._endpoints.get(key);
         if (!endpoint) {
-            const inptors = this.getRouteInterceptors(ctx, method)?.map(c => (this.injector.get(c as Type, null) ?? c) as InterceptorLike) ?? [];
+            const inptors = this.getRouteInterceptors(ctx, method)?.map(c => isFunction(c) ? this.injector.get(c as Type) : c) ?? [];
             endpoint = inptors.length ? this.parse(new InterceptorMiddleware(c => this.response(c, method), inptors)) : (ctx, next) => this.response(ctx, method);
             this._endpoints.set(key, endpoint)
         }
@@ -130,7 +130,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
             }
         }
 
-        
+
 
         let result = this.factory.invoke(
             meta.propertyKey,

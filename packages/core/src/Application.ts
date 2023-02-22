@@ -1,10 +1,8 @@
-import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes } from '@tsdi/ioc';
+import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
-import { getModuleType, ModuleRef } from './module.ref';
 import { RunnableFactory } from './runnable';
-import { createModuleRef } from './impl/module';
 
 /**
  * application.

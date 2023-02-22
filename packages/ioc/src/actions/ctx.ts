@@ -1,9 +1,10 @@
 import { Token } from '../tokens';
 import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
-import { Class, TypeDef } from '../metadata/type';
-import { FactoryRecord, Injector, Platform } from '../injector';
+import { Class } from '../metadata/type';
+import { FactoryRecord, Injector } from '../injector';
 import { InvocationContext } from '../context';
+import { Platform } from '../platform';
 
 
 

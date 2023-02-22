@@ -1,5 +1,4 @@
-import { ModuleWithProviders } from '@tsdi/ioc';
-import { Module } from '../metadata';
+import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouter, Router } from './router';

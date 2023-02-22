@@ -20,17 +20,7 @@ export interface Interceptor<TInput = any, TOutput = any> {
 /**
  * interceptor function.
  */
-export type InterceptorFn<TInput, TOutput> = (input: TInput, next: Endpoint<TInput, TOutput>, context: InvocationContext) => Observable<TOutput>;
-
-/**
- * interceptor like.
- */
-export type InterceptorLike<TInput = any, TOutput = any> = Interceptor<TInput, TOutput> | InterceptorFn<TInput, TOutput>;
-
-/**
- * interceptor function.
- */
-export type InterceptorType<TInput = any, TOutput = any> = ClassType<Interceptor<TInput, TOutput>> | InterceptorLike<TInput, TOutput>;
+export type InterceptorType<TInput = any, TOutput = any> = ClassType<Interceptor<TInput, TOutput>> | Interceptor<TInput, TOutput>;
 
 
 /**
@@ -54,9 +44,9 @@ export class InterceptorChain<TInput, TOutput> implements Endpoint<TInput, TOutp
     private chain!: Endpoint<TInput, TOutput>;
     private backend: EndpointBackend<TInput, TOutput>;
     private interceptors: Interceptor<TInput, TOutput>[];
-    constructor(backend: EndpointLike<TInput, TOutput>, interceptors: InterceptorLike<TInput, TOutput>[]) {
+    constructor(backend: EndpointLike<TInput, TOutput>, interceptors: Interceptor<TInput, TOutput>[]) {
         this.backend = endpointify(backend);
-        this.interceptors = interceptors.map(i => interceptorify(i))
+        this.interceptors = interceptors;
     }
 
     handle(input: TInput, context: InvocationContext): Observable<TOutput> {
@@ -68,23 +58,6 @@ export class InterceptorChain<TInput, TOutput> implements Endpoint<TInput, TOutp
     }
 }
 
-/**
- * create interceptor
- * @param intercept 
- * @returns 
- */
-export function createInterceptor<TInput, TOutput>(intercept: InterceptorFn<TInput, TOutput>): Interceptor<TInput, TOutput> {
-    return { intercept };
-}
-
-/**
- * parse to Interceptor if not. 
- * @param i type of {@link InterceptorLike}
- * @returns 
- */
-export function interceptorify<TInput, TOutput>(i: InterceptorLike<TInput, TOutput>): Interceptor<TInput, TOutput> {
-    return isFunction(i) ? createInterceptor(i) : i;
-}
 
 /**
  * run invokers.

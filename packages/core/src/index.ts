@@ -17,11 +17,7 @@ export * from './logger';
 export * from './pipes';
 
 
-// modules
-export * from './module.ref';
 
-// impl
-export * from './impl/module';
 export * from './impl/runnable';
 export * from './impl/context';
 

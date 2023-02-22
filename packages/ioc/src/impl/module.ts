@@ -1,16 +1,13 @@
-
-
-import { lastValueFrom, Subscription } from 'rxjs';
+import { Token } from '../tokens';
+import { Platform } from '../platform';
 import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
-import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { ReflectiveFactory } from '../reflective';
-import { Token } from '../tokens';
 import { EMPTY, EMPTY_OBJ, Type } from '../types';
-import { isArray, isFunction } from '../utils/chk';
+import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { isPlainObject } from '../utils/obj';
 import { DefaultInjector, processInjectorType } from './injector';
@@ -84,14 +81,14 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const platform = this.platform();
         const stk: Type[] = [];
         deepForEach(args, ty => {
-            if (isFunction(ty)) {
+            if (isType(ty)) {
                 types.push(ty);
                 this.processInjectorType(platform, ty, stk)
-            } else if (isFunction(ty.module) && isArray(ty.providers)) {
+            } else if (isType(ty.module) && isArray(ty.providers)) {
                 types.push(ty.module);
                 this.processInjectorType(platform, ty, stk)
             }
-        }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
+        }, v => isPlainObject(v) && !(isType(v.module) && isArray(v.providers)));
         return types
     }
 
@@ -122,7 +119,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
  * create module ref.
  */
 export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
-    if (isFunction(module)) return new DefaultModuleRef(get<ModuleDef>(module), parent, option);
+    if (isType(module)) return new DefaultModuleRef(get<ModuleDef>(module), parent, option);
     if (isModuleProviders(module)) return new DefaultModuleRef(get<ModuleDef>(module.module), parent, {
         ...option,
         providers: [...module.providers ?? EMPTY, ...option?.providers ?? EMPTY]
@@ -130,109 +127,3 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
     return new DefaultModuleRef(module, parent, option)
 }
 
-
-// export class DefaultModuleLifecycleHooks extends DestroyLifecycleHooks implements LifecycleHooks {
-//     private _disposes = new Set<OnDispose>();
-//     private _disposed = true;
-//     private _shutdowned = true;
-//     private _appEventSubs: Subscription[] = [];
-//     applicationStarted = false;
-//     eventMulticaster!: ApplicationEventMulticaster;
-
-//     constructor(platform?: Platform) {
-//         super(platform);
-//     }
-
-//     onApplicationStart(): void {
-//         this.applicationStarted = true;
-//     }
-
-//     override init(injector: Injector): void {
-//         this.eventMulticaster = injector.get(ApplicationEventMulticaster);
-//         this.eventMulticaster.addListener(ApplicationStartEvent, this.onApplicationStart.bind(this))
-//     }
-
-//     clear(): void {
-//         this._disposes.clear();
-//         super.clear();
-//     }
-
-//     get disposed(): boolean {
-//         return this._disposed
-//     }
-
-//     get shutdown(): boolean {
-//         return this._shutdowned
-//     }
-
-//     get destroyable(): boolean {
-//         return this._shutdowned && this._disposed
-//     }
-
-//     override async dispose(): Promise<void> {
-//         if (this.destroyable) return;
-//         if (this.platform) {
-//             await Promise.all(Array.from(this.platform.modules.values())
-//                 .reverse()
-//                 .map(m => {
-//                     return m.lifecycle === this ? lang.step([
-//                         () => this.runShutdown(),
-//                         () => this.runDispose()
-//                     ]) : m.lifecycle.dispose();
-//                 }));
-//         } else {
-//             await this.runShutdown();
-//             await this.runDispose();
-//         }
-//     }
-
-//     async runDispose(): Promise<void> {
-//         this._appEventSubs?.forEach(e => e && e.unsubscribe());
-//         this._appEventSubs = [];
-//         this._disposed = true;
-//         await Promise.all(Array.from(this._disposes.values()).map(s => s && s.onDispose()));
-//         this.eventMulticaster.clear();
-//     }
-
-//     async runShutdown(): Promise<void> {
-//         this._shutdowned = true;
-//         await lastValueFrom(this.eventMulticaster.emit(new ApplicationStartEvent(this)));
-//     }
-
-//     runDestroy(): any {
-//         if (this.destroyable) {
-//             super.runDestroy();
-//         }
-//     }
-
-//     register(target: any, token: Token): void {
-//         const { onDestroy, onDispose, onApplicationStart, onApplicationShutdown } = (target as Hooks);
-//         if (isFunction(onDestroy)) {
-//             this.regDestory(target);
-//         }
-//         if (isFunction(onDispose)) {
-//             this.regDispose(target);
-//         }
-
-
-//         if (isFunction(onApplicationStart)) {
-//             this.eventMulticaster.addListener(ApplicationStartEvent, () => target.onApplicationStart())
-//         }
-
-//         if (isFunction(onApplicationShutdown)) {
-//             this.eventMulticaster.addListener(ApplicationShutdownEvent, () => target.onApplicationShutdown())
-//         }
-
-//     }
-
-//     protected regDispose(hook: OnDispose): void {
-//         this._disposed = false;
-//         this._disposes.add(hook);
-//     }
-// }
-
-// export class ModuleLifecycleHooksResolver implements LifecycleHooksResolver {
-//     resolve(plaform?: Platform): LifecycleHooks {
-//         return new DefaultModuleLifecycleHooks(plaform)
-//     }
-// }

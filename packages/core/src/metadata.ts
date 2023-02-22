@@ -1,103 +1,16 @@
 import {
-    isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
-    PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes, EMPTY,
+    isUndefined, lang, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata,  Decors, pomiseOf
 } from '@tsdi/ioc';
 import { ConfigureService } from './service';
 import { PipeTransform } from './pipes/pipe';
 import { Startup } from './startup';
-import { getModuleType } from './module.ref';
 import { Runnable, RunnableFactory } from './runnable';
 import { ApplicationRunners } from './runners';
 import { CanActivate } from './guard';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
 
-
-/**
- * Module decorator, use to define class as ioc Module.
- *
- * @export
- * @interface Module
- * @template T
- */
-export interface Module<T extends ModuleMetadata> {
-    /**
-     * Module decorator, use to define class as ioc Module.
-     *
-     * @Module
-     *
-     * @param {T} [metadata] bootstrap metadate config.
-     */
-    (metadata: T): ClassDecorator;
-}
-
-/**
- * create bootstrap decorator.
- *
- * @export
- * @template T
- * @param {string} name decorator name.
- * @param {DecoratorOption<T>} [options]
- * @returns {Module<T>}
- */
-export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
-    options = options || EMPTY_OBJ;
-    const hd = options.def?.class ?? EMPTY;
-    const append = options.appendProps;
-    return createDecorator<T>(name, {
-        ...options,
-        def: {
-            ...options.def,
-            class: [
-                (ctx, next) => {
-                    const def = ctx.class.getAnnotation<ModuleDef>();
-                    const metadata = def.annotation = ctx.define.metadata;
-                    def.module = true;
-                    def.providedIn = metadata.providedIn;
-                    def.baseURL = metadata.baseURL;
-                    def.debug = metadata.debug;
-                    def.providers = metadata.providers;
-                    if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = lang.getTypes(metadata.exports);
-                    if (metadata.declarations) def.declarations = lang.getTypes(metadata.declarations);
-                    if (metadata.bootstrap) def.bootstrap = lang.getTypes(metadata.bootstrap);
-                    return next()
-                },
-                ...isArray(hd) ? hd : [hd]
-            ]
-        },
-        design: {
-            beforeAnnoation: (context: DesignContext, next) => {
-                const { type, class: typeRef } = context;
-                // use as dependence inject module.
-                if (context.injectorType) {
-                    context.injectorType(type, typeRef)
-                }
-                next()
-            }
-        },
-        appendProps: (meta) => {
-            if (append) {
-                append(meta as T)
-            }
-        }
-    }) as Module<T>;
-}
-
-/**
- * Module Decorator, definde class as module.
- *
- * @Module
- * @exports {@link Module}
- */
-export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
-/**
- * Module Decorator, definde class as module.
- * alias of @Module
- * @alias
- */
-export const DIModule = Module;
 
 export interface RunnerOption extends InvokeArguments {
     /**

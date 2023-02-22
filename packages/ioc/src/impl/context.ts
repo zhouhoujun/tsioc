@@ -1,7 +1,7 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { forIn, remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString, isNil } from '../utils/chk';
+import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -339,7 +339,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `[${obj.map(v => object2string(v, options)).join(', ')}]`
     } else if (isString(obj)) {
         return `"${obj}"`
-    } else if (isClassType(obj)) {
+    } else if (isType(obj)) {
         return 'Type<' + getClassName(obj) + '>'
     } else if (obj instanceof Class) {
         return `[${obj.className} TypeReflect]`

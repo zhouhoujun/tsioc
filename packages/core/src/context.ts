@@ -1,12 +1,11 @@
 import {
-    ProviderType, LoadType, Injector, Abstract, Type, InvokeArguments, ModuleLoader, Destroyable, Modules,
+    ProviderType, Injector, Abstract, Type, InvokeArguments, Destroyable, Modules, ModuleOption, ModuleRef,
     DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { BootstrapOption, RunnableRef } from './runnable';
 import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
-import { ModuleOption, ModuleRef } from './module.ref';
 import { ApplicationArguments } from './args';
 
 /**
@@ -112,18 +111,6 @@ export interface EnvironmentOption extends ModuleOption, InvokeArguments {
      * injector.
      */
     injector?: Injector;
-    /**
-     * module loader
-     *
-     * @type {ModuleLoader}
-     */
-    loader?: ModuleLoader;
-    /**
-     * application dependencies.
-     *
-     * @type {LoadType[]}
-     */
-    loads?: LoadType[];
     /**
      * application deps.
      */

@@ -6,10 +6,11 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { ActionSetup } from '../action';
 import { IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { FactoryRecord, FnType, Injector, Platform } from '../injector';
+import { FactoryRecord, FnType, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Decors } from '../metadata/type';
 import { ReflectiveFactory } from '../reflective';
+import { Platform } from '../platform';
 
 
 /**

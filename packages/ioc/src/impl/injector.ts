@@ -2,10 +2,10 @@ import { Modules, Type, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
 import { cleanObj, deepForEach, immediate } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
-import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
+import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
 import {
-    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, Scopes
+    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes,
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Platform } from '../platform';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
@@ -209,7 +209,7 @@ export class DefaultInjector extends Injector {
 
     }
 
-    
+
     protected onResolved(value: any, token?: Token): void {
     }
 
@@ -533,7 +533,7 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean) {
-    const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
+    const type = isType(typeOrDef) ? typeOrDef : typeOrDef.module;
     if (!isFunction(typeOrDef)) {
         deepForEach(
             typeOrDef.providers,

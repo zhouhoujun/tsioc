@@ -1,10 +1,10 @@
 import {
     Abstract, ArgumentExecption, Autorun, AutoWired, EMPTY, InvocationContext,
-    isClass, isClassType, isFunction, lang, ProviderType, StaticProvider, Token, Type, TypeOf
+    isFunction, isType, lang, ProviderType, StaticProvider, Token, Type, TypeOf
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Endpoint, EndpointBackend } from '../Endpoint';
-import { InterceptorChain, InterceptorLike, InterceptorType } from '../Interceptor';
+import { InterceptorChain, InterceptorType, Interceptor } from '../Interceptor';
 import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterChain, EndpointFilter } from './filter';
 
@@ -24,7 +24,7 @@ export abstract class TransportOpts<TInput, TOutput> {
     /**
      * the mutil token to register intereptors in the endpoint context.
      */
-    abstract interceptorsToken?: Token<InterceptorLike<TInput, TOutput>[]>;
+    abstract interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>;
     /**
      * backend.
      */
@@ -70,7 +70,7 @@ export abstract class TransportEndpoint<
     readonly context!: InvocationContext;
 
     private _chain?: Endpoint<TInput, TOutput>;
-    private _iptToken!: Token<InterceptorLike<TInput, TOutput>[]>;
+    private _iptToken!: Token<Interceptor<TInput, TOutput>[]>;
     private _bToken!: Token<EndpointBackend<TInput, TOutput>>;
     private _expFToken!: Token<ExecptionFilter[]>;
     private _expFilter?: ExecptionBackend;
@@ -220,8 +220,8 @@ export abstract class TransportEndpoint<
 
     protected multiReg<T>(provide: Token, types: (Type<T> | T)[]): void {
         const providers = types.map(m => {
-            if (isClassType(m)) {
-                return isClass(m) ? { provide, useClass: m, multi: true } : { provide, useExisting: m, multi: true };
+            if (isType(m)) {
+                return { provide, useClass: m, multi: true }
             } else {
                 return { provide, useValue: m, multi: true }
             }
@@ -230,17 +230,16 @@ export abstract class TransportEndpoint<
     }
 
     protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
-        if (isClassType(target)) {
-            const pdr = isClass(target) ? { provide, useClass: target, multi: true, multiOrder } : { provide, useExisting: target, multi: true, multiOrder }
-            this.context.injector.inject(pdr)
+        if (isType(target)) {
+            this.context.injector.inject({ provide, useClass: target, multi: true, multiOrder })
         } else {
             this.context.injector.inject({ provide, useValue: target, multi: true, multiOrder })
         }
     }
 
     protected regProvider(provider: StaticProvider): Token {
-        const prvoide = isFunction(provider) ? provider : provider.provide;
-        if (!isFunction(provider) || isClass(provider)) this.context.injector.register(provider as Type);
+        const prvoide = isType(provider) ? provider : provider.provide;
+        this.context.injector.inject(provider);
         return prvoide;
     }
 }

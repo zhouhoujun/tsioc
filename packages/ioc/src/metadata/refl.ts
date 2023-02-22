@@ -12,7 +12,7 @@ import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
     Class, TypeDef
 } from './type';
-import { Platform } from '../injector';
+import { Platform } from '../platform';
 import { InvokeOptions } from '../context';
 
 

@@ -1,8 +1,7 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, isClass, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
-import { ModuleRef } from '../module.ref';
 import { NotFoundStatus } from '../transport/status';
 import { InterceptorType } from '../Interceptor';
 import { RequestMethod } from '../transport/packet';
@@ -78,7 +77,7 @@ export class MappingRoute implements Middleware {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx);
                 if (this.route.interceptors?.length) {
-                    this._middleware = new InterceptorMiddleware(this._middleware, this.route.interceptors.map(i => isClass(i) ? ctx.resolve(i) : i));
+                    this._middleware = new InterceptorMiddleware(this._middleware, this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i));
                 }
             }
             return this._middleware.invoke(ctx, next);

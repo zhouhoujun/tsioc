@@ -1,6 +1,5 @@
-import { ProviderType, lang, isNumber, Type, LifecycleHooksResolver, isFunction, Injector, Injectable } from '@tsdi/ioc';
+import { ProviderType, lang, isNumber, Type, isFunction, Injector, Injectable } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory } from './context';
-import { ModuleLifecycleHooksResolver } from './impl/module';
 import { DefaultApplicationFactory, DefaultEventMulticaster } from './impl/context';
 import { RunnableRef, RunnableSet } from './runnable';
 import { ConfigureService } from './service';
@@ -159,7 +158,6 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
         static: true,
         deps: [Injector]
     },
-    { provide: LifecycleHooksResolver, useValue: new ModuleLifecycleHooksResolver() },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
 ]
