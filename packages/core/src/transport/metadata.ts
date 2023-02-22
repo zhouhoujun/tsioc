@@ -1,5 +1,5 @@
 
-import { createDecorator, Decors, InvocationContext, isClass, isFunction, isObservable, isPromise, lang, pomiseOf, ReflectiveFactory, Type } from '@tsdi/ioc';
+import { createDecorator, Decors, InvocationContext, isFunction, isObservable, isPromise, isString, isType, lang, pomiseOf, ReflectiveFactory, Type, TypeOf } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 import { CanActivate } from '../guard';
@@ -25,7 +25,7 @@ export interface EndpointHandlerMetadata {
     /**
      * handle expection as response type.
      */
-    response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: ServerEndpointContext, returnning: any) => void)
+    response?: 'body' | 'header' | 'response' | TypeOf<Respond>
 }
 
 
@@ -80,17 +80,17 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
 
                 let after: (ctx: InvocationContext, endpCtx: ServerEndpointContext, value: any) => void;
                 if (response) {
-                    if (isClass(response)) {
+                    if (isType(response)) {
                         after = (ctx, endpCtx, value) => ctx.resolve(response).respond(endpCtx, value);
-                    } else if (isFunction(response)) {
-                        after = (ctx, endpCtx, value) => response(endpCtx, value);
-                    } else {
+                    } else if (isString(response)) {
                         after = (ctx, endpCtx, value) => ctx.resolve(TypedRespond).respond(endpCtx, response, value);
+                    } else if (response instanceof Respond) {
+                        after = (ctx, endpCtx, value) => response.respond(endpCtx, value)
                     }
                 }
 
                 const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
-                    const endpCtx = ctx instanceof ServerEndpointContext? ctx: ctx.resolve(ServerEndpointContext);
+                    const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
                     if (guards && guards.length) {
                         if (!(await lang.some(
                             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),

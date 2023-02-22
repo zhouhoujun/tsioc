@@ -1,7 +1,6 @@
-import { invalidPipeArgument } from '@tsdi/core';
 import { isString, isUndefined } from '@tsdi/ioc';
 import { Pipe } from '../../metadata';
-import { PipeTransform } from '../pipe';
+import { invalidPipeArgument, PipeTransform } from '../pipe';
 
 /**
  * parse enum.

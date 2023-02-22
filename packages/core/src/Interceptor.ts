@@ -1,6 +1,6 @@
 import { ClassType, InvocationContext, InvokerLike, isFunction, isPromise } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
-import { Endpoint, EndpointBackend, endpointify, EndpointLike } from './Endpoint';
+import { Endpoint, EndpointBackend } from './Endpoint';
 
 /**
  * Interceptor is a chainable behavior modifier for `endpoints`.
@@ -42,11 +42,8 @@ export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TO
 export class InterceptorChain<TInput, TOutput> implements Endpoint<TInput, TOutput> {
 
     private chain!: Endpoint<TInput, TOutput>;
-    private backend: EndpointBackend<TInput, TOutput>;
-    private interceptors: Interceptor<TInput, TOutput>[];
-    constructor(backend: EndpointLike<TInput, TOutput>, interceptors: Interceptor<TInput, TOutput>[]) {
-        this.backend = endpointify(backend);
-        this.interceptors = interceptors;
+    constructor(protected readonly backend: EndpointBackend<TInput, TOutput>, protected readonly interceptors: Interceptor<TInput, TOutput>[]) {
+
     }
 
     handle(input: TInput, context: InvocationContext): Observable<TOutput> {

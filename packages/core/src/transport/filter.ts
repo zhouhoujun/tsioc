@@ -2,8 +2,8 @@ import { Abstract, getClass, Injectable, InvokerLike, Type } from '@tsdi/ioc';
 import { mergeMap, Observable, of } from 'rxjs';
 import { Incoming, Outgoing } from './packet';
 import { EndpointContext, ServerEndpointContext } from './context';
-import { Interceptor, InterceptorEndpoint, interceptorify, runInvokers } from '../Interceptor';
-import { Endpoint, EndpointBackend, endpointify, EndpointLike } from '../Endpoint';
+import { Interceptor, InterceptorEndpoint, runInvokers } from '../Interceptor';
+import { Endpoint, EndpointBackend } from '../Endpoint';
 
 
 
@@ -30,11 +30,8 @@ export abstract class EndpointFilter<TInput = any, TOutput = any> implements Int
 export class FilterChain<TInput = any, TOutput = any> implements EndpointBackend<TInput, TOutput> {
 
     private chain!: Endpoint<TInput, TOutput>;
-    private backend: EndpointBackend<TInput, TOutput>;
-    private filters: EndpointFilter[];
-    constructor(backend: EndpointLike<TInput, TOutput>, filters: EndpointFilter[]) {
-        this.backend = endpointify(backend);
-        this.filters = filters.map(i => interceptorify(i))
+    constructor(protected readonly backend: EndpointBackend<TInput, TOutput>, protected readonly filters: EndpointFilter[]) {
+
     }
 
     handle(input: TInput, ctx: EndpointContext): Observable<TOutput> {

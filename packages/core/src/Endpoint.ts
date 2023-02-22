@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext, isFunction } from '@tsdi/ioc';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 
@@ -14,15 +14,6 @@ export interface Endpoint<TInput = any, TOutput = any> {
     handle(input: TInput, context: InvocationContext): Observable<TOutput>;
 }
 
-/**
- * Endpoint funcation.
- */
-export type EndpointFn<TInput, TOutput> = (input: TInput, context: InvocationContext) => Observable<TOutput>;
-
-/**
- * endpoint like.
- */
-export type EndpointLike<TInput, TOutput> = Endpoint<TInput, TOutput> | EndpointFn<TInput, TOutput>;
 
 /**
  * A final {@link Endpoint} which will dispatch the request via browser HTTP APIs to a backend.
@@ -40,23 +31,4 @@ export abstract class EndpointBackend<TInput = any, TOutput = any> implements En
      * @param context request context.
      */
     abstract handle(input: TInput, context: InvocationContext): Observable<TOutput>;
-}
-
-
-/**
- * create endpoint by EndpointFn
- * @param handle 
- * @returns 
- */
-export function createEndpoint<TInput, TOutput>(handle: EndpointFn<TInput, TOutput>): Endpoint<TInput, TOutput> {
-    return { handle };
-}
-
-/**
- * parse to Endpoint if not. 
- * @param e type of {@link EndpointLike}
- * @returns 
- */
-export function endpointify<TInput, TOutput>(e: EndpointLike<TInput, TOutput>): Endpoint<TInput, TOutput> {
-    return isFunction(e) ? createEndpoint(e) : e;
 }

@@ -1,4 +1,4 @@
-import { Module } from '../metadata';
+import { Module } from '@tsdi/ioc';
 import { BytesPipe } from './bytes';
 import { LowerCasePipe, UpperCasePipe } from './cases';
 import { DateFormatPipe } from './date';

@@ -1,7 +1,7 @@
 import { chain, Handler, isFunction, lang, Type } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
 import { EndpointBackend } from '../Endpoint';
-import { Interceptor, InterceptorChain, interceptorify, InterceptorLike } from '../Interceptor';
+import { Interceptor, InterceptorChain } from '../Interceptor';
 import { ServerEndpointContext } from './context';
 import { Incoming, Outgoing } from './packet';
 
@@ -125,11 +125,8 @@ export class MiddlewareBackend<TRequest extends Incoming = Incoming, TResponse e
 export class InterceptorMiddleware<TRequest extends Incoming, TResponse extends Outgoing> implements Middleware {
 
     private _chainFn?: MiddlewareFn;
-    private interceptors: Interceptor<TRequest, TResponse>[];
-    private middleware: Middleware;
-    constructor(middleware: MiddlewareLike, interceptors: InterceptorLike<TRequest, TResponse>[]) {
-        this.middleware = middlewareify(middleware);
-        this.interceptors = interceptors.map(i => interceptorify(i));
+    constructor(private readonly middleware: Middleware, private readonly interceptors: Interceptor<TRequest, TResponse>[]) {
+
     }
 
     invoke<T extends ServerEndpointContext>(ctx: T, next: () => Promise<void>): Promise<void> {
