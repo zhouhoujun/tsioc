@@ -3,6 +3,9 @@ import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
 
 
+/**
+ * asyc like
+ */
 export type AsyncLike<T> = T | Promise<T> | Observable<T>;
 
 

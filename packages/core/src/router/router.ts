@@ -1,9 +1,9 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef, TypeOf } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
 import { NotFoundStatus } from '../transport/status';
-import { InterceptorType } from '../Interceptor';
+import { Interceptor } from '../Interceptor';
 import { RequestMethod } from '../transport/packet';
 import { AssetContext, ServerEndpointContext } from '../transport/context';
 import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } from '../transport/middleware';
@@ -261,15 +261,15 @@ export interface RouteMappingMetadata {
     /**
      * interceptors of route.
      */
-    interceptors?: InterceptorType[];
+    interceptors?: TypeOf<Interceptor>[];
     /**
      * pipes for the route.
      */
-    pipes?: Type<PipeTransform>[];
+    pipes?: TypeOf<PipeTransform>[];
     /**
      * route guards.
      */
-    guards?: Type<CanActivate>[];
+    guards?: TypeOf<CanActivate>[];
 }
 
 /**
@@ -290,7 +290,7 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
  * mapping type def.
  */
 export interface MappingDef<T = any> extends TypeDef<T>, ProtocolRouteMappingMetadata {
-    
+
 }
 
 

@@ -1,12 +1,11 @@
 import {
     Type, getClass, Injector, ProviderType, DefaultInvocationContext, createContext, InvokerLike,
-    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags
+    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags, ModuleRef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
 import { RunnableFactory, BootstrapOption, RunnableRef } from '../runnable';
 import { ApplicationRunners } from '../runners';
-import { ModuleRef } from '../module.ref';
 import { ApplicationArguments } from '../args';
 import { ApplicationContextRefreshEvent, ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from '../events';
 import { Observable } from 'rxjs';

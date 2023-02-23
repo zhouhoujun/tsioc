@@ -379,7 +379,6 @@ export interface FactoryRecord<T = any> {
      * @type {*}
      */
     value?: any;
-
     /**
      * factory.
      */
@@ -388,19 +387,18 @@ export interface FactoryRecord<T = any> {
      * fn type.
      */
     fy?: FnType;
-
+    /**
+     * deps.
+     */
     deps?: DependencyRecord[];
-
     /**
      * token provider type.
      */
     type?: Type<T>;
-
     /**
      * is static for fn create once.
      */
     stic?: boolean;
-
     /**
      * cache value.
      */
@@ -413,7 +411,6 @@ export interface FactoryRecord<T = any> {
      * cache expires.
      */
     expires?: number;
-
     /**
      * unregister callback.
      */

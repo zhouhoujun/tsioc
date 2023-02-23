@@ -1,9 +1,8 @@
 import {
-    Type, refl, isFunction, Injector, Class, lang, DestroyCallback,
+    Type, refl, isFunction, Injector, Class, lang, DestroyCallback, ModuleRef,
     InvocationContext, ReflectiveFactory, ReflectiveRef, InvokeArguments
 } from '@tsdi/ioc';
 import { BootstrapOption, RunnableFactory, RunnableRef } from '../runnable';
-import { ModuleRef } from '../module.ref';
 import { ApplicationRunners } from '../runners';
 
 /**

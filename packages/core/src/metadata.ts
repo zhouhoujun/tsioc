@@ -12,12 +12,16 @@ import { CanActivate } from './guard';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
 
 
+/**
+ * Runner option.
+ */
 export interface RunnerOption extends InvokeArguments {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
     parameters?: Parameter[];
 }
+
 /**
  * Runner decorator, use to define the method of class as application Runner.
  */
@@ -40,6 +44,9 @@ export interface Runner {
     (args?: InvokeArguments): MethodDecorator;
 }
 
+/**
+ * @Runner decorator.
+ */
 export const Runner: Runner = createDecorator('Runner', {
     actionType: 'runnable',
     props: (method: string | RunnerOption, args?: RunnerOption) =>

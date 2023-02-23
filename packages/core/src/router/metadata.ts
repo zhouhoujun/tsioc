@@ -1,18 +1,14 @@
 import {
-    isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, Execption, isClassType, TypeMetadata, PatternMetadata, pomiseOf, EMPTY, isPromise, isFunction
+    isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes, Execption,
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, TypeMetadata, PatternMetadata, isType, TypeOf
 } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { InterceptorType } from '../Interceptor';
-import { InterceptorMiddleware, Middleware, MiddlewareFn } from '../transport/middleware';
+import { Interceptor } from '../Interceptor';
+import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { mths, Protocols, RequestMethod } from '../transport/packet';
 import { CanActivate } from '../guard';
-import { joinprefix, normalize, PatternFormatter, RouteFactoryResolver } from './route';
+import { joinprefix, normalize, RouteFactoryResolver } from './route';
 import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from './router';
-import { ForbiddenExecption } from '../execptions';
-import { ServerEndpointContext } from '../transport/context';
-import { isObservable, lastValueFrom, mergeMap, of } from 'rxjs';
-import { ResultValue } from './result';
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
@@ -49,11 +45,11 @@ export interface Handle {
         /**
         * route guards.
         */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
     }): HandleDecorator;
 
     /**
@@ -119,7 +115,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
                 router.use({
                     path,
                     protocol,
-                    interceptors: interceptors?.map(i => isClassType(i) ? factory.resolve(i) : i),
+                    interceptors: interceptors?.map(i => isType(i) ? factory.resolve(i) : i),
                     middleware: factory.getInstance() as Middleware
                 });
             }
@@ -145,14 +141,14 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param {Type<Router>} [parent] the middlewares for the route.
      */
-    (route: string, parent?: Type<Router>): ClassDecorator;
+    (route: string, parent?: TypeOf<Router>): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
      * @param {Type<CanActivate>[]} [guards] the guards for the route.
      */
-    (route: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
+    (route: string, guards?: TypeOf<CanActivate>[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -172,19 +168,19 @@ export interface RouteMapping {
         /**
          * parent router.
          */
-        parent?: Type<Router>;
+        parent?: TypeOf<Router>;
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
         * pipes for the route.
         */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
     }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
@@ -204,15 +200,15 @@ export interface RouteMapping {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * request contentType
          */
@@ -509,16 +505,16 @@ export interface RestController {
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<Router>} [parent] the middlewares for the route.
+     * @param {TypeOf<Router>} [parent] the middlewares for the route.
      */
-    (route?: string, parent?: Type<Router>): ClassDecorator;
+    (route?: string, parent?: TypeOf<Router>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<CanActivate>[]} [guards] the guards for the route.
+     * @param {TypeOf<CanActivate>[]} [guards] the guards for the route.
      */
-    (route?: string, guards?: Type<CanActivate>[]): ClassMethodDecorator;
+    (route?: string, guards?: TypeOf<CanActivate>[]): ClassMethodDecorator;
 
     /**
      * controller decorator. define the controller method as an route.
@@ -538,19 +534,19 @@ export interface RestController {
         /**
          * parent router.
          */
-        parent?: Type<Router>;
+        parent?: TypeOf<Router>;
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
         * pipes for the route.
         */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -599,15 +595,15 @@ export interface RouteMethodDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -670,15 +666,15 @@ export interface HeadDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -723,15 +719,15 @@ export interface OptionsDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -775,15 +771,15 @@ export interface GetDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -828,15 +824,15 @@ export interface DeleteDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -881,15 +877,15 @@ export interface PatchDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -934,15 +930,15 @@ export interface PostDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -986,15 +982,15 @@ export interface PutDecorator {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */
-        interceptors?: InterceptorType[];
+        interceptors?: TypeOf<Interceptor>[];
         /**
          * pipes for the route.
          */
-        pipes?: Type<PipeTransform>[];
+        pipes?: TypeOf<PipeTransform>[];
         /**
          * pipe extends args.
          */
@@ -1051,11 +1047,11 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
      * route guards.
      */
-    guards?: Type<CanActivate>[];
+    guards?: TypeOf<CanActivate>[];
     /**
      * interceptors of route.
      */
-    interceptors?: InterceptorType[];
+    interceptors?: TypeOf<Interceptor>[];
     /**
      * handle parent.
      * default register in root handle queue.

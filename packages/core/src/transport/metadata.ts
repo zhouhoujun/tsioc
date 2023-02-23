@@ -1,5 +1,5 @@
 
-import { createDecorator, Decors, InvocationContext, isFunction, isObservable, isPromise, isString, isType, lang, pomiseOf, ReflectiveFactory, Type, TypeOf } from '@tsdi/ioc';
+import { createDecorator, Decors, InvocationContext, isObservable, isPromise, isString, isType, lang, pomiseOf, ReflectiveFactory, Type, TypeOf } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
 import { ServerEndpointContext } from './context';
 import { CanActivate } from '../guard';

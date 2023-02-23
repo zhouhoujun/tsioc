@@ -1,9 +1,9 @@
 import {
     Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
-    OnDestroy, Class, tokenId, Type, TypeDef
+    OnDestroy, Class, tokenId, Type, TypeOf
 } from '@tsdi/ioc';
 import { Protocols } from '../transport/packet';
-import { InterceptorType } from '../Interceptor';
+import { Interceptor } from '../Interceptor';
 import { ServerEndpointContext } from '../transport/context';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { CanActivate } from '../guard';
@@ -35,11 +35,11 @@ export interface Route extends InvokeArguments {
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */
-    guards?: (CanActivate | Type<CanActivate>)[];
+    guards?: TypeOf<CanActivate>[];
     /**
      * interceptors of route.
      */
-    interceptors?: InterceptorType[];
+    interceptors?: TypeOf<Interceptor>[];
     /**
      * transport protocol
      */
@@ -63,7 +63,7 @@ export interface Route extends InvokeArguments {
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
      */
-    middleware?: Type<Middleware> | Middleware;
+    middleware?: TypeOf<Middleware>;
     /**
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
@@ -159,7 +159,7 @@ export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDe
     /**
      * interceptors of route.
      */
-    abstract get interceptors(): InterceptorType[];
+    abstract get interceptors(): Interceptor[];
     /**
      * route handle.
      *

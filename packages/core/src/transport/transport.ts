@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Endpoint, EndpointBackend } from '../Endpoint';
-import { InterceptorChain, InterceptorType, Interceptor } from '../Interceptor';
+import { InterceptorChain, Interceptor } from '../Interceptor';
 import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterChain, EndpointFilter } from './filter';
 
@@ -20,7 +20,7 @@ export abstract class TransportOpts<TInput, TOutput> {
     /**
      * interceptors or filter of endpoint.
      */
-    abstract interceptors?: InterceptorType<TInput, TOutput>[];
+    abstract interceptors?: TypeOf<Interceptor<TInput, TOutput>>[];
     /**
      * the mutil token to register intereptors in the endpoint context.
      */
@@ -101,7 +101,7 @@ export abstract class TransportEndpoint<
      * @param order 
      * @returns 
      */
-    intercept(interceptor: InterceptorType<TInput, TOutput>, order?: number): this {
+    intercept(interceptor: TypeOf<Interceptor<TInput, TOutput>>, order?: number): this {
         this.multiOrder(this._iptToken, interceptor, order);
         this.resetEndpoint();
         return this

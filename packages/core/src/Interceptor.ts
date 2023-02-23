@@ -18,12 +18,6 @@ export interface Interceptor<TInput = any, TOutput = any> {
 }
 
 /**
- * interceptor function.
- */
-export type InterceptorType<TInput = any, TOutput = any> = ClassType<Interceptor<TInput, TOutput>> | Interceptor<TInput, TOutput>;
-
-
-/**
  * Interceptor Endpoint.
  */
 export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TOutput> {
