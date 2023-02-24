@@ -1,6 +1,6 @@
 import {
-    isArray, isString, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes, Execption,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, TypeMetadata, PatternMetadata, isType, TypeOf
+    isArray, isString, isType, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes, Execption,
+    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, TypeMetadata, PatternMetadata, TypeOf
 } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
@@ -261,7 +261,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         design: {
             afterAnnoation: (ctx, next) => {
                 const def = ctx.class.getAnnotation<MappingDef>();
-                const { parent, version, prefix, guards: clsGuards, interceptors: clsInterceptors } = def;
+                const { parent, version, prefix, guards, interceptors } = def;
                 const injector = ctx.injector;
                 let router: Router;
                 if (parent) {
@@ -282,7 +282,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 //     .forEach(d => {
                 //         if (d.name === 'Route') {
                 //             const { route, method, guards, interceptors, pipes } = d.metadata as RouteMappingMetadata;
-                //             const allinterceptors = [...clsInterceptors ?? EMPTY, ...interceptors ?? EMPTY];
+                //             const allinterceptors = [...interceptors ?? EMPTY, ...interceptors ?? EMPTY];
                 //             const allguards = [...clsGuards ?? EMPTY, ...guards ?? EMPTY] as Type<CanActivate>[];
                 //             const invoker = factory.createInvoker(d.propertyKey, true, async (ctx, run) => {
 

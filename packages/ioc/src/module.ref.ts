@@ -6,7 +6,7 @@ import { Class } from './metadata/type';
 import { ModuleWithProviders, ProviderType } from './providers';
 import { ReflectiveFactory } from './reflective';
 import { Modules, Type } from './types';
-import { isFunction } from './utils/chk';
+import { isFunction, isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';
 
@@ -104,7 +104,7 @@ export interface ModuleOption {
 export function getModuleType(input: any[]): (Type | ModuleWithProviders)[] {
     const types: (Type | ModuleWithProviders)[] = [];
     deepForEach<Type | ModuleWithProviders>(input, ty => {
-        if (isFunction(ty) || (ty as ModuleWithProviders).module) {
+        if (isType(ty) || (ty as ModuleWithProviders).module) {
             types.push(ty)
         }
     }, v => isPlainObject(v) && !(v as ModuleWithProviders).module);

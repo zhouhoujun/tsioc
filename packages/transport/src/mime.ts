@@ -46,6 +46,9 @@ export abstract class MimeAdapter {
     abstract match(types: string[], target: string): string | false;
 }
 
+/**
+ * split type
+ */
 export interface SplitType {
     type: string;
     subtype: string;
@@ -53,6 +56,9 @@ export interface SplitType {
     parameters?: Record<string, any>;
 }
 
+/**
+ * mime source.
+ */
 export interface MimeSource {
     source?: string;
     charset?: string;
@@ -60,6 +66,9 @@ export interface MimeSource {
     extensions?: string[];
 }
 
+/**
+ * mime db.
+ */
 @Abstract()
 export abstract class MimeDb {
     abstract from(db: Record<string, MimeSource>): void;
