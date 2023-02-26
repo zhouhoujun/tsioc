@@ -1,5 +1,4 @@
-import { ModuleWithProviders } from '@tsdi/ioc';
-import { Module } from '@tsdi/core';
+import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ConnectionOptions, CONNECTIONS, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeOrmHelper } from './helper';

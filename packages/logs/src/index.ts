@@ -9,4 +9,4 @@ export * from './aspect';
 export * from './metadata/log';
 export * from './LogModule';
 export * from './debugs/aspect';
-
+export { LoggerModule as LogModule } from './LogModule';

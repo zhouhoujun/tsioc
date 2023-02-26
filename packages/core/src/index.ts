@@ -13,7 +13,6 @@ export * from './runners';
 // metadata
 export * from './metadata';
 
-export * from './logger';
 export * from './pipes';
 
 

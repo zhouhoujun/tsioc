@@ -1,5 +1,6 @@
 import { Module, Modules, ProviderType, Type } from '@tsdi/ioc';
-import { ApplicationOption, Application, LoggerModule, PROCESS_ROOT } from '@tsdi/core';
+import { ApplicationOption, Application, PROCESS_ROOT } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestRunner } from './runner/UnitTestRunner';

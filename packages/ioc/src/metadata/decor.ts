@@ -821,50 +821,6 @@ export const Singleton: Singleton = createDecorator<ClassMetadata>('Singleton', 
 
 
 /**
- *  ioc extend inteface.
- */
-export interface IocExtentd {
-    setup(Injector: Injector): void;
-}
-
-/**
- * Ioc Extentd decorator.
- */
-export type IocExtentdDecorator = <TFunction extends Type<IocExtentd>>(target: TFunction) => TFunction | void;
-
-/**
- * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
- *
- * @IocExt()
- */
-export interface IocExt {
-    /**
-     * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-     *
-     * @IocExt()
-     *
-     * @param {string} [autorun] auto run special method.
-     */
-    (): IocExtentdDecorator;
-}
-
-/**
- * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
- *
- * @IocExt()
- */
-export const IocExt: IocExt = createDecorator<RunnableMetadata>('IocExt', {
-    appendProps: (metadata) => {
-        metadata.method = 'setup';
-        metadata.singleton = true;
-        metadata.auto = true;
-        metadata.providedIn = Scopes.platform;
-    }
-});
-
-
-
-/**
  * autorun decorator inteface
  *
  * @export

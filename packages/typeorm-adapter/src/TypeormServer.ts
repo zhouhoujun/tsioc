@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
-import { Type, isString, Injector, EMPTY, isNil, isClass } from '@tsdi/ioc';
+import { Type, isString, Injector, EMPTY, isNil, isType } from '@tsdi/ioc';
 import { ComponentScan, Startup, OnDispose, PipeTransform, ServerEndpointContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {
@@ -67,7 +67,7 @@ export class TypeormServer implements Startup, OnDispose {
                     let relaModel: Type;
                     if (isString(col.type)) {
                         relaModel = col.type as any;
-                    } else if (isClass(col.type)) {
+                    } else if (isType(col.type)) {
                         relaModel = col.type;
                     } else {
                         relaModel = col.type();
