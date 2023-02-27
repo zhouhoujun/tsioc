@@ -1,5 +1,5 @@
-import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { ApplicationContext, Runner } from '@tsdi/core';
+import { Injectable, isString, isType, isArray, lang, refl } from '@tsdi/ioc';
+import { ApplicationContext, ModuleLoader, Runner } from '@tsdi/core';
 import { OldTestRunner } from './OldTestRunner';
 import { DefaultTestReport } from '../reports/TestReport';
 import { SuiteDef } from '../metadata';
@@ -19,14 +19,14 @@ export class UnitTestRunner {
         const src = config.src;
         let suites: any[] = [];
         const oldRunner = ctx.resolve(OldTestRunner);
-        const loader = injector.getLoader();
+        const loader = injector.get(ModuleLoader);
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             suites = await loader.loadType({ files: [src], basePath: ctx.baseURL })
-        } else if (isClass(src)) {
+        } else if (isType(src)) {
             suites = [src]
         } else if (isArray(src)) {
-            if (src.some(t => isClass(t))) {
+            if (src.some(t => isType(t))) {
                 suites = src
             } else {
                 suites = await loader.loadType({ files: src as string | string[], basePath: ctx.baseURL })

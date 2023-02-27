@@ -1,5 +1,5 @@
 
-
+export * from './loader';
 export * from './args';
 export * from './context';
 export * from './EventEmitter';
@@ -19,6 +19,7 @@ export * from './pipes';
 
 export * from './impl/runnable';
 export * from './impl/context';
+export * from './impl/loader';
 
 export { DEFAULTA_PROVIDERS as APPLICTION_DEFAULTA_PROVIDERS } from './providers';
 export * from './Application';

@@ -1,5 +1,5 @@
-import { ModuleLoader } from '@tsdi/ioc';
-import { Module, PROCESS_ROOT, ApplicationExit, ApplicationArguments } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
+import { PROCESS_ROOT, ApplicationExit, ApplicationArguments, ModuleLoader } from '@tsdi/core';
 import { HeaderFormater } from '@tsdi/logs';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';

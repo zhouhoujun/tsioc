@@ -13,6 +13,9 @@ import { ReflectiveOperationInvoker } from './operation';
 import { hasItem, immediate } from '../utils/lang';
 
 
+/**
+ * reflective
+ */
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     private _tagPdrs: ProviderType[] | undefined;

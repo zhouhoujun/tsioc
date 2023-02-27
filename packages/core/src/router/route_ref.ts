@@ -1,6 +1,6 @@
 import {
     DecorDefine, Type, Injector, lang, EMPTY, refl, isPromise, isString, isFunction, isDefined, OnDestroy,
-    ReflectiveFactory, ReflectiveRef, DestroyCallback, pomiseOf, InvokeArguments, Class, isType
+    ReflectiveFactory, ReflectiveRef, DestroyCallback, pomiseOf, InvokeArguments, Class, isType, TypeOf
 } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { CanActivate } from '../guard';
@@ -97,8 +97,10 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         const key = `${metadate.method ?? ctx.method} ${method.propertyKey}`;
         let endpoint = this._endpoints.get(key);
         if (!endpoint) {
-            const inptors = this.getRouteInterceptors(ctx, method)?.map(c => isType(c) ? this.injector.get(c as Type) : c) ?? [];
-            endpoint = inptors.length ? this.parse(new InterceptorMiddleware(c => this.response(c, method), inptors)) : (ctx, next) => this.response(ctx, method);
+            const inptors: Interceptor[] = this.getRouteInterceptors(ctx, method)?.map(c => isType(c) ? this.injector.get(c as Type) : c) ?? [];
+            endpoint = inptors.length ? this.parse(new InterceptorMiddleware({
+                invoke: c => this.response(c, method)
+            }, inptors)) : (ctx, next) => this.response(ctx, method);
             this._endpoints.set(key, endpoint)
         }
         return await endpoint(ctx, next)
@@ -160,7 +162,7 @@ export class RouteMappingRef<T> extends RouteRef<T> implements OnDestroy {
         }
     }
 
-    protected getRouteInterceptors(ctx: ServerEndpointContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): Interceptor[] {
+    protected getRouteInterceptors(ctx: ServerEndpointContext, meta: DecorDefine<ProtocolRouteMappingMetadata>): TypeOf<Interceptor>[] {
         if (meta.metadata.interceptors?.length) {
             return [...meta.metadata.interceptors || EMPTY]
         }

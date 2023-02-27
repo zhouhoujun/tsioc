@@ -1,4 +1,4 @@
-import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
+import { ClassType, EMPTY, EMPTY_OBJ } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
@@ -7,7 +7,6 @@ import {
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
-import { Injector, Scopes } from '../injector';
 import { OperationArgumentResolver } from '../resolver';
 import { InvokeArguments, InvokeOptions } from '../context';
 import { DecoratorOption } from './refl';

@@ -1,5 +1,5 @@
-import { Module, Modules, ProviderType, Type } from '@tsdi/ioc';
-import { ApplicationOption, Application, PROCESS_ROOT } from '@tsdi/core';
+import { Module, ProviderType, Type } from '@tsdi/ioc';
+import { ApplicationOption, Application, PROCESS_ROOT, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
@@ -35,7 +35,7 @@ export class UnitTest { }
  * @param {...LoadType[]} deps custom set unit test dependencies.
  * @returns {Promise<any>}
  */
-export async function runTest(src: string | Type | (string | Type)[], config?: UnitTestConfigure, ...loads: Modules[]): Promise<any> {
+export async function runTest(src: string | Type | (string | Type)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
    const providers: ProviderType[] = [
       {
          provide: UNITTESTCONFIGURE,

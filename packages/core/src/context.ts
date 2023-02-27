@@ -7,6 +7,7 @@ import { BootstrapOption, RunnableRef } from './runnable';
 import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
 import { ApplicationArguments } from './args';
+import { LoadType, ModuleLoader } from './loader';
 
 /**
  * application context for global.
@@ -111,6 +112,18 @@ export interface EnvironmentOption extends ModuleOption, InvokeArguments {
      * injector.
      */
     injector?: Injector;
+    /**
+     * module loader
+     *
+     * @type {ModuleLoader}
+     */
+    loader?: ModuleLoader;
+    /**
+     * application dependencies.
+     *
+     * @type {LoadType[]}
+     */
+    loads?: LoadType[];
     /**
      * application deps.
      */

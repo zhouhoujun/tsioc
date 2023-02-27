@@ -2,6 +2,9 @@ import { Module, EMPTY, getClass, Injectable, InvokerLike, isFunction, isNumber,
 import { ExecptionHandlerBackend } from './execption.filter';
 import { EndpointHandlerMethodResolver, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from './filter';
 
+/**
+ * endpoint hanlders resolver.
+ */
 @Injectable()
 export class DefaultEndpointHandlerMethodResolver extends EndpointHandlerMethodResolver {
     private maps = new Map<Type | string, InvokerLike[]>();
@@ -32,7 +35,10 @@ export class DefaultEndpointHandlerMethodResolver extends EndpointHandlerMethodR
 }
 
 
-export const RESPOND_PROVIDERS: ProviderType[] = [
+/**
+ * filter providers.
+ */
+export const FILTER_PROVIDERS: ProviderType[] = [
     PathHanlderFilter,
     StatusInterceptorFilter,
     ExecptionHandlerBackend,
@@ -42,7 +48,7 @@ export const RESPOND_PROVIDERS: ProviderType[] = [
 
 @Module({
     providers: [
-        ...RESPOND_PROVIDERS
+        ...FILTER_PROVIDERS
     ]
 })
 export class FilterMoudle {

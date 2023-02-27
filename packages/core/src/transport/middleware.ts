@@ -131,10 +131,12 @@ export class InterceptorMiddleware<TRequest extends Incoming, TResponse extends 
 
     invoke<T extends ServerEndpointContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
-            const chain = new InterceptorChain<TRequest, TResponse>((req, ctx) => defer(async () => {
-                await this.middleware.invoke(ctx as T, next);
-                return (ctx as T).response as TResponse;
-            }), this.interceptors);
+            const chain = new InterceptorChain<TRequest, TResponse>({
+                handle: (req, ctx) => defer(async () => {
+                    await this.middleware.invoke(ctx as T, next);
+                    return (ctx as T).response as TResponse;
+                })
+            }, this.interceptors);
             this._chainFn = (ctx: ServerEndpointContext) => {
                 const defer = lang.defer<void>();
                 const cancel = chain.handle(ctx.request as TRequest, ctx)

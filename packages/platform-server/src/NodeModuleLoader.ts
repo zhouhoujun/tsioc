@@ -1,4 +1,5 @@
-import { Modules, isString, ModuleLoader, DefaultModuleLoader } from '@tsdi/ioc';
+import { Modules, isString } from '@tsdi/ioc';
+import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
 import * as globby from 'globby';
 

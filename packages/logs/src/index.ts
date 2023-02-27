@@ -7,6 +7,6 @@ export * from './formater';
 export * from './LogProcess';
 export * from './aspect';
 export * from './metadata/log';
-export * from './LogModule';
+export * from './logger.module';
 export * from './debugs/aspect';
-export { LoggerModule as LogModule } from './LogModule';
+export { LoggerModule as LogModule } from './logger.module';

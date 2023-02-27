@@ -1,11 +1,11 @@
-import { Module } from '@tsdi/core';
-import { BrowserBootstrapModule } from '@tsdi/platform-browser';
+import { Module } from '@tsdi/ioc';
+import { BrowserModule } from '@tsdi/platform-browser';
 import { TaskLogAspect } from './aop/TaskLogAspect';
 import { RunnerLogAspect } from './aop/RunnerLogAspect';
 
 @Module({
     imports: [
-        BrowserBootstrapModule
+        BrowserModule
     ],
     providers: [
         TaskLogAspect,

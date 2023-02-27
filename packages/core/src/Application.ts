@@ -3,6 +3,7 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentO
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
 import { RunnableFactory } from './runnable';
+import { ModuleLoader } from './loader';
 
 /**
  * application.
@@ -23,8 +24,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     protected context!: T;
 
 
-    constructor(protected target: Type | ApplicationOption) {
+    constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
+            if (!this.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = Scopes.root;
@@ -114,6 +116,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL)
         }
+        if (this.loader) {
+            container.setValue(ModuleLoader, this.loader)
+        }
         option.platformDeps && container.use(...option.platformDeps);
         return this.createModuleRef(container, option);
     }
@@ -144,6 +149,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
                 const modueRef = root.reflectiveFactory.create(target, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root) as T
             } else {
+                if (target.loads) {
+                    this._loads = await this.root.get(ModuleLoader).register(this.root, target.loads);
+                }
                 const modueRef = root.reflectiveFactory.create(root.moduleType, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T
             }

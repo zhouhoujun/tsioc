@@ -21,7 +21,7 @@ export * from './Proceeding';
 export * from './Advisor';
 
 export * from './DefaultAdviceMatcher';
-export * from './AopModule';
+export * from './aop.module';
 
 
 // actions

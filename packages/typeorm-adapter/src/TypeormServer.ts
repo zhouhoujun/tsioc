@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, EMPTY, isNil, isType } from '@tsdi/ioc';
-import { ComponentScan, Startup, OnDispose, PipeTransform, ServerEndpointContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS } from '@tsdi/core';
+import { ComponentScan, Startup, OnDispose, PipeTransform, ServerEndpointContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -95,7 +95,7 @@ export class TypeormServer implements Startup, OnDispose {
 
     async statupConnection(injector: Injector, options: ConnectionOptions, config: ConnectionOptions[]) {
         if (options.type == 'mongodb') {
-            const mgd = await injector.getLoader().require('mongodb');
+            const mgd = await injector.get(ModuleLoader).require('mongodb');
             if (mgd.ObjectID) {
                 injector.setValue(ObjectIDToken, mgd.ObjectID)
             }
@@ -141,9 +141,9 @@ export class TypeormServer implements Startup, OnDispose {
      */
     async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
 
+        const loader = this.injector.get(ModuleLoader);
         if (options.entities?.some(m => isString(m))) {
             const entities: Type[] = options.entities.filter(e => !isString(e)) as Type[];
-            const loader = this.injector.getLoader();
             const models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.injector.get(PROCESS_ROOT) });
             models.forEach(mdl => {
                 if (mdl && entities.indexOf(mdl) < 0) {
@@ -154,7 +154,6 @@ export class TypeormServer implements Startup, OnDispose {
         }
 
         if (options.repositories && options.repositories.some(r => isString(r))) {
-            const loader = this.injector.getLoader();
             // preload repositories for typeorm.
             await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) })
         }

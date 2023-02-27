@@ -6,7 +6,7 @@ import { Class } from './metadata/type';
 import { ModuleWithProviders, ProviderType } from './providers';
 import { ReflectiveFactory } from './reflective';
 import { Modules, Type } from './types';
-import { isFunction, isType } from './utils/chk';
+import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';
 

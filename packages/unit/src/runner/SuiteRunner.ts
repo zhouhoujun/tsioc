@@ -1,5 +1,5 @@
-import { lang, Injectable, Decors, refl, Injector, InvokeArguments, Platform, ReflectiveFactory, Class, Type } from '@tsdi/ioc';
-import { DefaultRunnableFactory, DefaultRunnableRef, ModuleRef, RunnableRef } from '@tsdi/core';
+import { Class, Type, lang, Injectable, Decors, refl, Injector, InvokeArguments, Platform, ReflectiveFactory, ModuleRef } from '@tsdi/ioc';
+import { DefaultRunnableFactory, DefaultRunnableRef, RunnableRef } from '@tsdi/core';
 import { Advisor } from '@tsdi/aop';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
@@ -173,7 +173,7 @@ export class SuiteRunnableFactory<T> extends DefaultRunnableFactory<T> {
         super(moduleRef)
         platform.getAction(Advisor).register(SuiteRunner);
     }
-    protected override createInstance(def: Type<T>| Class<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
+    protected override createInstance(def: Type<T> | Class<T>, injector: Injector, options?: InvokeArguments, invokeMethod?: string): RunnableRef<T> {
         const ref = injector.get(ReflectiveFactory).create(def, injector, options);
         const runnableRef = new SuiteRunner(ref, this.moduleRef, invokeMethod);
         injector.platform().getAction(Advisor).attach(refl.get(SuiteRunner), runnableRef)

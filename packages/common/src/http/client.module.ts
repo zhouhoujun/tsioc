@@ -1,5 +1,4 @@
-import { ModuleWithProviders, _tyobj } from '@tsdi/ioc';
-import { Module } from '@tsdi/core';
+import { Module, ModuleWithProviders, _tyobj } from '@tsdi/ioc';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpClient } from './client';
 import { HttpXhrBackend } from './xhr';
