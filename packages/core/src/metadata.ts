@@ -3,11 +3,7 @@ import {
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata,  Decors, pomiseOf
 } from '@tsdi/ioc';
-import { ConfigureService } from './service';
 import { PipeTransform } from './pipes/pipe';
-import { Startup } from './startup';
-import { Runnable, RunnableFactory } from './runnable';
-import { ApplicationRunners } from './runners';
 import { CanActivate } from './guard';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
 
@@ -57,76 +53,6 @@ export const Runner: Runner = createDecorator('Runner', {
         if (meta.args?.parameters) {
             ctx.class.setParameters(meta.method, meta.args.parameters)
         }
-    }
-});
-
-
-/**
- * ComponentScan decorator.
- */
-export type ComponentScanDecorator = <TFunction extends Type<Startup | ConfigureService | Runnable>>(target: TFunction) => TFunction | void;
-
-/**
- * ComponentScan decorator, use to auto scan server or client for application.
- *
- * @export
- * @interface Configure
- */
-export interface ComponentScan {
-    /**
-     * Configure decorator, use to auto scan server or client for application.
-     *
-     * @Configure()
-     */
-    (option?: {
-        /**
-         * order in set.
-         */
-        order?: number;
-        /**
-         * provider services of the class.
-         *
-         * @type {KeyValue<Token, Token>}
-         */
-        providers?: ProviderType[];
-    }): ComponentScanDecorator;
-}
-
-/**
- * Configure decorator, use to auto scan server or client for application.
- * 
- * @exports {@link ComponentScan}
- */
-export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadata>('ComponentScan', {
-    actionType: ActionTypes.annoation,
-    def: {
-        class: (ctx, next) => {
-            ctx.class.getAnnotation<ScanDef>().order = (ctx.define.metadata as ComponentScanMetadata).order;
-            next()
-        }
-    },
-    design: {
-        afterAnnoation: (ctx, next) => {
-            const { type, injector } = ctx;
-            const def = ctx.class.getAnnotation<ScanDef>();
-            const runners = injector.get(ApplicationRunners);
-            const typeRef = injector.get(ReflectiveFactory).create(type, injector);
-            if (ctx.class.runnables.length || ctx.class.hasMetadata('run')) {
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector);
-                runners.addRunnable(runner, def.order)
-            } else if (ctx.class.hasMethod('startup')) {
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'startup' });
-                runners.addStartup(runner, def.order)
-            } else if (ctx.class.hasMethod('configureService')) {
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'configureService' });
-                runners.addConfigureService(runner, def.order)
-            }
-            return next()
-        }
-    },
-    appendProps: (meta) => {
-        meta.singleton = true;
-        return meta
     }
 });
 
@@ -336,44 +262,6 @@ export interface EventHandlerMetadata {
     guards?: Type<CanActivate>[];
 }
 
-
-/**
- * Boot metadata.
- *
- * @export
- * @interface BootMetadata
- * @extends {ClassMetadata}
- */
-export interface BootMetadata extends TypeMetadata, PatternMetadata {
-    /**
-     * the startup service dependencies.
-     */
-    deps?: Type<ConfigureService>[];
-    /**
-     * this service startup before the service, or at first
-     */
-    before?: Type<ConfigureService> | 'all';
-    /**
-     * this service startup after the service, or last.
-     */
-    after?: Type<ConfigureService> | 'all';
-}
-
-/**
- * component scan metadata.
- */
-export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
-    /**
-     * order in set.
-     */
-    order?: number;
-    /**
-     * is singleton or not.
-     *
-     * @type {boolean}
-     */
-    singleton?: boolean;
-}
 
 /**
  * scan def.

@@ -3,7 +3,7 @@ import {
     DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
-import { BootstrapOption, RunnableRef } from './runnable';
+// import { BootstrapOption, RunnableRef } from './runnable';
 import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
 import { ApplicationArguments } from './args';
@@ -23,11 +23,6 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * module instance.
      */
     abstract get instance(): any;
-    /**
-     * create runnable ref.
-     * @param type 
-     */
-    abstract createRunnable<C>(type: Type<C> | Class<C>): RunnableRef<C>;
     /**
      * bootstrap type
      * @param type bootstrap type.
@@ -97,6 +92,16 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
  */
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
+/**
+ * bootstrap option for {@link Runnable}.
+ */
+export interface BootstrapOption extends InvokeArguments {
+    /**
+     * set the method as default invoked as runnable.
+     * when has no `@Runner` in this class, will run this method as default. default value `run`.
+     */
+    defaultInvoke?: string;
+}
 
 /**
  * Environment option.

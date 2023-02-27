@@ -104,6 +104,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     }
 
+    protected override onResolved(value: any, token?: Token): void {
+        
+    }
+
     protected override destroying() {
         this.platform()?.modules.delete(this._type);
         super.destroying();

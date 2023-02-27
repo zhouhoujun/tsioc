@@ -237,12 +237,13 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param callback destroy callback
      */
     abstract onDestroy(callback: DestroyCallback): void;
-    /**
-     * unregister destroy callback.
-     * @param callback 
-     */
-    abstract offDestroy(callback: DestroyCallback): void;
 
+    /**
+     * register provider.
+     * @param platfrom 
+     * @param provider 
+     * @returns 
+     */
     protected abstract processRegister(platform: Platform, def: Class, option?: TypeOption): void;
 
     /**

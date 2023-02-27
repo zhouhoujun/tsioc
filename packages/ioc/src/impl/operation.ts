@@ -4,6 +4,7 @@ import { InvocationContext } from '../context';
 import { OperationInvoker, Proceed } from '../operation';
 import { isTypeObject } from '../utils/obj';
 import { isFunction } from '../utils/chk';
+import { ReflectiveRef } from '../reflective';
 
 
 
@@ -15,19 +16,19 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
 
     private _returnType!: ClassType;
     constructor(
-        private typeRef: Class<T>,
+        private typeRef: ReflectiveRef<T>,
         private method: string,
         private instance?: any | (() => any),
         private proceed?: Proceed<T>) {
     }
 
     get descriptor(): TypedPropertyDescriptor<T> {
-        return this.typeRef.getDescriptor(this.method)
+        return this.typeRef.class.getDescriptor(this.method)
     }
 
     get returnType(): ClassType {
         if (!this._returnType) {
-            this._returnType = this.typeRef.getReturnning(this.method) ?? Object
+            this._returnType = this.typeRef.class.getReturnning(this.method) ?? Object
         }
         return this._returnType
     }
@@ -37,15 +38,25 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      * @param context the context to use to invoke the operation
      * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, proceed?: Proceed<T>): T
+    invoke(): T;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     * @param proceed proceed invoke with hooks
+     */
+    invoke(context: InvocationContext, proceed?: Proceed<T>): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param proceed proceed invoke with hooks
      */
     invoke(context: InvocationContext, instance: object, proceed?: Proceed<T>): T;
-    invoke(context: InvocationContext, arg?: object | Function, proceed?: Proceed<T>): T {
+    invoke(context?: InvocationContext, arg?: object | Proceed<T>, proceed?: Proceed<T>): T {
         let instance;
+        if(!context){
+            return this.typeRef.invoke(this.method)
+        } 
+        
         if (arg && isTypeObject(arg)) {
             instance = arg;
         } else {
@@ -65,7 +76,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
             proceed = this.proceed ?? proceed;
         }
 
-        return this.typeRef.invoke(this.method, context, instance, proceed)
+        return this.typeRef.class.invoke(this.method, context, instance, proceed)
     }
 
     /**

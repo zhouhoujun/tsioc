@@ -1,5 +1,6 @@
 import { Modules, Type, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
+import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, immediate } from '../utils/lang';
 import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
@@ -7,20 +8,19 @@ import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes,
     Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
+import { Execption } from '../execption';
 import { Platform } from '../platform';
+import { get } from '../metadata/refl';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ModuleDef, Class } from '../metadata/type';
-import { get } from '../metadata/refl';
 import { ReflectiveFactory } from '../reflective';
+import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { DefaultPlatform } from './platform';
 import { DefaultReflectiveFactory, hasContext } from './reflective';
-import { createContext, InvocationContext, InvokeArguments } from '../context';
-import { Execption } from '../execption';
-import { isPlainObject, isTypeObject } from '../utils/obj';
 
 /**
  * Default Injector
@@ -209,12 +209,21 @@ export class DefaultInjector extends Injector {
 
     }
 
-
+    /**
+     * on token resolved.
+     * @param value 
+     * @param token 
+     */
     protected onResolved(value: any, token?: Token): void {
+
     }
 
-
-
+    /**
+     * register provider.
+     * @param platfrom 
+     * @param provider 
+     * @returns 
+     */
     protected registerProvider(platfrom: Platform, provider: StaticProviders) {
         if (provider.asDefault && this.has(provider.provide)) {
             return
@@ -251,7 +260,7 @@ export class DefaultInjector extends Injector {
         const types: Type[] = [];
         const platform = this.platform();
         deepForEach(args, ty => {
-            if (isFunction(ty)) {
+            if (isType(ty)) {
                 const mdref = get<ModuleDef>(ty);
                 if (mdref) {
                     types.push(ty);
@@ -497,7 +506,7 @@ export class DefaultInjector extends Injector {
         this.records.clear();
         this.records = null!;
         if (this.parent) {
-            !this.parent.destroyed && this.parent.offDestroy(this)
+            !this.parent.destroyed && (this.parent as DefaultInjector).offDestroy?.(this)
         }
         this._plat = null!;
         this.isAlias = null!;

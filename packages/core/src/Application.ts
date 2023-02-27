@@ -2,7 +2,6 @@ import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, Mo
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './context';
 import { DEFAULTA_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
-import { RunnableFactory } from './runnable';
 import { ModuleLoader } from './loader';
 
 /**
@@ -163,10 +162,11 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
             const injector = ctx.injector;
-            bootstraps.forEach(type => {
+            bootstraps.forEach((type, idx) => {
                 const typeRef = injector.reflectiveFactory.create(type, injector);
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector);
-                ctx.runners.addBootstrap(runner)
+                ctx.runners.attach(typeRef);
+                // const runner = typeRef.resolve(RunnableFactory).create(type, injector);
+                // ctx.runners.addBootstrap(runner)
             })
         }
     }

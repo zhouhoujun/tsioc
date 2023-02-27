@@ -25,6 +25,12 @@ export interface OperationInvoker<T = any> {
      * origin method descriptor.
      */
     get descriptor(): TypedPropertyDescriptor<T>;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     * @param proceed proceed invoke with hooks
+     */
+    invoke(proceed?: Proceed<T>): T;
 
     /**
      * Invoke the underlying operation using the given {@code context}.

@@ -143,8 +143,24 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return ctx ?? this._ctx;
     }
 
+    /**
+     * create method invoker of target type.
+     * @param method the method name of target.
+     * @param shared shared instance of this type, lazy resolve by factory.
+     * @param proceed proceeding invoke with hooks
+     * @returns instance of {@link OperationInvoker}.
+     */
+    createInvoker(method: string, shared?: boolean, proceed?: Proceed): OperationInvoker;
+    /**
+     * create method invoker of target type.
+     * @param method the method name of target.
+     * @param instance instance or instance factory of target type.
+     * @param proceed proceeding invoke with hooks
+     * @returns instance of {@link OperationInvoker}.
+     */
+    createInvoker(method: string, instance?: T | (() => T), proceed?: Proceed): OperationInvoker;
     createInvoker(method: string, instance?: boolean | T | (() => T), proceeding?: Proceed<T>): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.class, method, isBoolean(instance) ? this.getInstance.bind(this) : instance, proceeding)
+        return new ReflectiveOperationInvoker(this, method, isBoolean(instance) ? this.getInstance.bind(this) : instance, proceeding)
     }
 
     protected createContext(injector: Injector, option?: InvokeArguments): InvocationContext<any> {
@@ -171,6 +187,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     get destroyed(): boolean {
         return this._destroyed;
     }
+
     /**
      * destroy this.
      */
@@ -184,6 +201,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._destroyed = true;
         return this._ctx.destroy()
     }
+
     /**
      * register callback on destroy.
      * @param callback destroy callback
