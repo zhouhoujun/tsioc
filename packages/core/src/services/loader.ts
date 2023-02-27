@@ -4,6 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { LoadType, PathModules } from '../types';
 
+declare let require: any;
 
 /**
  * module loader interface for ioc.
@@ -159,7 +160,19 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
     }
 
     protected createLoader(): (modulepath: string) => Promise<Modules[]> {
-        return (modulepath) => import(modulepath);
+        if (typeof require !== 'undefined') {
+            return (modulepath: string) => {
+                return new Promise<Modules[]>((resolve, reject) => {
+                    require(modulepath, (mud) => {
+                        resolve(mud);
+                    }, err => {
+                        reject(err);
+                    })
+                });
+            }
+        } else {
+            throw new Error('has not module loader');
+        }
     }
 
 }
