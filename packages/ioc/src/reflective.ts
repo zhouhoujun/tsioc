@@ -5,7 +5,7 @@ import { Class } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvokeArguments } from './context';
-import { OperationInvoker, Proceed } from './operation';
+import { OperationInvoker } from './operation';
 
 
 
@@ -69,7 +69,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    abstract createInvoker(method: string, shared?: boolean, proceed?: Proceed): OperationInvoker;
+    abstract createInvoker(method: string, shared?: boolean): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
@@ -77,7 +77,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    abstract createInvoker(method: string, instance?: T | (() => T), proceed?: Proceed): OperationInvoker;
+    abstract createInvoker(method: string, instance?: T | (() => T)): OperationInvoker;
 
     /**
      * context destroyed or not.

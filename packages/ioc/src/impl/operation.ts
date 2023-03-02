@@ -1,7 +1,6 @@
 import { ClassType } from '../types';
-import { Class } from '../metadata/type';
-import { InvocationContext } from '../context';
-import { OperationInvoker, Proceed } from '../operation';
+import { InvocationContext, InvokeArguments } from '../context';
+import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
 import { isFunction } from '../utils/chk';
 import { ReflectiveRef } from '../reflective';
@@ -18,8 +17,8 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     constructor(
         private typeRef: ReflectiveRef<T>,
         private method: string,
-        private instance?: any | (() => any),
-        private proceed?: Proceed<T>) {
+        private instance?: any | (() => any)) {
+
     }
 
     get descriptor(): TypedPropertyDescriptor<T> {
@@ -36,54 +35,46 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param proceed proceed invoke with hooks
      */
     invoke(): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, proceed?: Proceed<T>): T;
+    invoke(context: InvocationContext): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, instance: object, proceed?: Proceed<T>): T;
-    invoke(context?: InvocationContext, arg?: object | Proceed<T>, proceed?: Proceed<T>): T {
+    invoke(context: InvocationContext, instance: object): T;
+    invoke(context?: any, arg?: object): T {
         let instance;
-        if(!context){
-            return this.typeRef.invoke(this.method)
-        } 
-        
-        if (arg && isTypeObject(arg)) {
-            instance = arg;
-        } else {
-            proceed = arg as any;
-            if (this.instance) {
-                instance = isFunction(this.instance) ? this.instance() : this.instance;
-            }
-        }
 
-        if (this.proceed && proceed) {
-            const fistProc = this.proceed;
-            const secProc = proceed;
-            proceed = (ctx, returnning) => {
-                return fistProc(ctx, (c) => secProc(c, returnning));
+        if (context) {
+            if (isFunction(context)) {
+                context = null;
+            } else if (arg && isTypeObject(arg)) {
+                instance = arg;
+            } else {
+                if (this.instance) {
+                    instance = isFunction(this.instance) ? this.instance() : this.instance;
+                }
             }
         } else {
-            proceed = this.proceed ?? proceed;
+            context = this.typeRef.getContext(this.method);
         }
 
-        return this.typeRef.class.invoke(this.method, context, instance, proceed)
+        const args = this.resolveArguments(context);
+
+        return this.typeRef.class.invoke(this.method, context, instance, args);
     }
 
     /**
      * resolve args.
      * @param context 
      */
-    resolveArguments(context: InvocationContext): any[] {
-        return this.typeRef.resolveArguments(this.method, context)
+    resolveArguments(context?: InvocationContext): any[] {
+        return this.typeRef.resolveArguments(this.method, context ?? this.typeRef.getContext(this.method))
     }
 }

@@ -1,4 +1,4 @@
-import { Abstract, OperationInvoker, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Abstract, OnDestroy, OperationInvoker, ReflectiveRef, Type } from '@tsdi/ioc';
 
 // /**
 //  * application runners. for runners run in step.
@@ -66,7 +66,7 @@ import { Abstract, OperationInvoker, ReflectiveRef, Type } from '@tsdi/ioc';
 
 
 @Abstract()
-export abstract class ApplicationRunners {
+export abstract class ApplicationRunners implements OnDestroy {
   /**
    * attach runner
    * @param runner 
@@ -103,5 +103,8 @@ export abstract class ApplicationRunners {
    * run all runners.
    */
   abstract run(): Promise<void>;
+
+  
+  abstract onDestroy(): void;
 
 }

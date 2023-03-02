@@ -215,6 +215,11 @@ export class DefaultApplicationRunners extends ApplicationRunners {
             }
         }
     }
+
+    onDestroy(): void {
+        this._maps.clear();
+        this._runners = null!;
+    }
 }
 
 

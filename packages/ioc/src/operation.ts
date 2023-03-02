@@ -28,23 +28,26 @@ export interface OperationInvoker<T = any> {
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param proceed proceed invoke with hooks
      */
-    invoke(proceed?: Proceed<T>): T;
+    invoke(): T;
 
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, proceed?: Proceed<T>): T;
+    invoke(context: InvocationContext): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param instance instance of the method to invoke.
-     * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, instance: object, proceed?: Proceed<T>): T;
+    invoke(context: InvocationContext, instance: object): T;
+
+    /**
+     * resolve args. 
+     * @param context 
+     */
+    resolveArguments(): any[];
     /**
      * resolve args. 
      * @param context 
@@ -56,8 +59,3 @@ export interface OperationInvoker<T = any> {
  * invoker like.
  */
 export type InvokerLike<T = any> = OperationInvoker<T> | ((ctx: InvocationContext) => T);
-
-/**
- * invoke proceed.
- */
-export type Proceed<T = any> = (ctx: InvocationContext, backend: (ctx: InvocationContext) => T) => T;

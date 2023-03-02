@@ -8,7 +8,7 @@ import { createContext, InvocationContext, InvokeArguments, } from '../context';
 import { ReflectiveRef, ReflectiveFactory } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
-import { OperationInvoker, Proceed } from '../operation';
+import { OperationInvoker } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
 import { hasItem, immediate } from '../utils/lang';
 
@@ -53,36 +53,38 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 
     invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
-        const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.class.invoke(key, context, instance ?? this.getInstance(), (ctx, run) => {
-            const result = run(ctx);
-            if (destroy) {
-                const act = destroy as (() => void);
-                if (isPromise(result)) {
-                    return result.then(val => {
-                        immediate(act);
-                        return val;
-                    })
-                } else {
+        const name = this.class.getMethodName(method);
+        const [context, destroy] = this.createMethodContext(name, option);
+        const args = this.class.resolveArguments(name, context);
+        const result = this.class.invoke(name, context, instance ?? this.getInstance(), args);
+
+        if (destroy) {
+            const act = destroy as (() => void);
+            if (isPromise(result)) {
+                return result.then(val => {
                     immediate(act);
-                }
+                    return val;
+                })
+            } else {
+                immediate(act);
             }
-            return result;
-        })
+        }
+        return result;
+
     }
 
     resolveArguments(method: MethodType<T>, option?: InvokeArguments | InvocationContext) {
-        const [context, key, destroy] = this.createMethodContext(method, option);
-        const args = this.class.resolveArguments(key, context);
+        const name = this.class.getMethodName(method);
+        const [context, destroy] = this.createMethodContext(name, option);
+        const args = this.class.resolveArguments(name, context);
         if (destroy) {
             destroy()
         }
         return args
     }
 
-    protected createMethodContext(method: MethodType<T>, option?: InvokeArguments | InvocationContext): [InvocationContext, string, Function | undefined] {
-        const key = isFunction(method) ? this.class.getPropertyName(method(this.class.getPropertyDescriptors() as any)) : method;
-        const ctx = this.getContext(key);
+    protected createMethodContext(method: string, option?: InvokeArguments | InvocationContext): [InvocationContext, Function | undefined] {
+        const ctx = this.getContext(method);
         let context: InvocationContext;
         let destroy: Function | undefined;
         if (option instanceof InvocationContext) {
@@ -124,7 +126,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             context = ctx;
         }
 
-        return [context, key, destroy]
+        return [context, destroy]
     }
 
     getContext(method?: string) {
@@ -150,7 +152,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    createInvoker(method: string, shared?: boolean, proceed?: Proceed): OperationInvoker;
+    createInvoker(method: string, shared?: boolean): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
@@ -158,9 +160,9 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    createInvoker(method: string, instance?: T | (() => T), proceed?: Proceed): OperationInvoker;
-    createInvoker(method: string, instance?: boolean | T | (() => T), proceeding?: Proceed<T>): OperationInvoker {
-        return new ReflectiveOperationInvoker(this, method, isBoolean(instance) ? this.getInstance.bind(this) : instance, proceeding)
+    createInvoker(method: string, instance?: T | (() => T)): OperationInvoker;
+    createInvoker(method: string, instance?: boolean | T | (() => T)): OperationInvoker {
+        return new ReflectiveOperationInvoker(this, method, isBoolean(instance) ? this.getInstance.bind(this) : instance)
     }
 
     protected createContext(injector: Injector, option?: InvokeArguments): InvocationContext<any> {

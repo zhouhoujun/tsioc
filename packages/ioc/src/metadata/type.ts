@@ -8,13 +8,13 @@ import {
 } from './meta';
 import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
 import { Token } from '../tokens';
-import { ArgumentResolver, Parameter } from '../resolver';
+import { ArgumentResolver } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
-import { Proceed } from '../operation';
+import { MethodType } from '../injector';
 
 /**
  * auto run define.
@@ -271,31 +271,25 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
      * Invoke the underlying operation using the given {@code context}.
      * @param method invoke the method named with.
      * @param context the context to use to invoke the operation
-     * @param proceed proceeding invoke with hooks
+     * @param instance the method of instance 
+     * @param args invoke with args
      */
-    invoke(method: string, context: InvocationContext, instance?: T, proceed?: Proceed) {
+    invoke(method: string, context: InvocationContext, instance?: T, args?: any[]) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
             throw new Execption(`type: ${type} has no method ${method}.`)
         }
-
-        if (proceed) {
-            return proceed(context, (ctx) => this.invokeMethod(inst, method, ctx))
-        } else {
-            return this.invokeMethod(inst, method, context)
+        if (!args) {
+            args = this.resolveArguments(method, context);
         }
-
-    }
-
-    protected invokeMethod(inst: any, method: string, context: InvocationContext) {
-        const args = this.resolveArguments(method, context);
         const hasPointcut = inst[method]['_proxy'] == true;
         if (hasPointcut) {
             args.push(context)
         }
         return inst[method](...args);
     }
+
 
     /**
      * resolve args.
@@ -599,6 +593,10 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
     hasMethod(...names: string[]): boolean {
         const descs = this.getPropertyDescriptors();
         return !names.some(name => !isFunction(descs[name]?.value))
+    }
+
+    getMethodName(method: MethodType<T>) {
+        return isFunction(method) ? this.getPropertyName(method(this.getPropertyDescriptors() as any)) : method;
     }
 
     getDescriptor(name: string): TypedPropertyDescriptor<any> {
