@@ -165,8 +165,6 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             bootstraps.forEach((type, idx) => {
                 const typeRef = injector.reflectiveFactory.create(type, injector);
                 ctx.runners.attach(typeRef);
-                // const runner = typeRef.resolve(RunnableFactory).create(type, injector);
-                // ctx.runners.addBootstrap(runner)
             })
         }
     }

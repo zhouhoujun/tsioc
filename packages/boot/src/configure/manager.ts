@@ -1,4 +1,4 @@
-import { PROCESS_ROOT } from '@tsdi/core';
+import { ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
 import { isUndefined, Singleton, isString, isPlainObject, lang, isMetadataObject, Injector, Static } from '@tsdi/ioc';
 import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger, DEFAULT_CONFIG } from './config';
 
@@ -94,7 +94,7 @@ export class DefaultConfigureManager extends ConfigureManager {
         if (this.configLoader) {
             return await this.configLoader.load(src)
         } else if (src) {
-            const cfg = await this.injector.getLoader().load([src])
+            const cfg = await this.injector.get(ModuleLoader).load([src])
             return lang.first(cfg) as ApplicationConfiguration
         } else {
             return null!

@@ -1,11 +1,12 @@
-import { ModuleLoader, Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
-import { Application, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, LoggerModule, PROCESS_ROOT } from '@tsdi/core';
+import { Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
+import { Application, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
 import { BootApplicationFactory } from './impl/context';
 import { ConfigureFileLoader } from './configure/loader';
 import { MvcModule } from './mvc/mvc.module';
+import { LoggerModule } from '@tsdi/logs';
 
 
 const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
@@ -46,8 +47,9 @@ export class BootApplication extends Application<BootApplicationContext> {
         await mgr.load();
         const config = mgr.getConfig();
 
+        const loader = injector.get(ModuleLoader);
         if (config.deps && config.deps.length) {
-            await injector.load(config.deps)
+            await loader.register(injector, config.deps)
         }
 
         if (config.providers && config.providers.length) {

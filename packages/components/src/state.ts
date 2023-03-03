@@ -1,9 +1,8 @@
-import { Injectable, Injector, InvocationContext, isFunction, lang, Type, TypeDef } from '@tsdi/ioc';
+import { Injectable, Injector, InvocationContext, ModuleRef, isFunction, lang, Type, TypeDef } from '@tsdi/ioc';
 import { OnDestroy } from './lifecycle';
 import { ComponentRef } from './refs/component';
 import { ViewRef, InternalViewRef } from './refs/view';
 import { ViewContainerRef } from './refs/container';
-import { ModuleRef } from '@tsdi/core';
 
 @Injectable()
 export class ComponentState implements OnDestroy {

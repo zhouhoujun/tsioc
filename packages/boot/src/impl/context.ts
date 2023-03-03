@@ -1,5 +1,5 @@
-import { InvokeArguments } from '@tsdi/ioc';
-import { ApplicationFactory, DefaultApplicationContext, ModuleRef, PROCESS_ROOT } from '@tsdi/core';
+import { InvokeArguments, ModuleRef } from '@tsdi/ioc';
+import { ApplicationFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
 import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
 

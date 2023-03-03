@@ -4,7 +4,7 @@ import { isBoolean, isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { createContext, InvocationContext, InvokeArguments, } from '../context';
+import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { ReflectiveRef, ReflectiveFactory } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
