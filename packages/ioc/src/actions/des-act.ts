@@ -1,16 +1,16 @@
-import { cleanObj } from '../utils/lang';
-import { runChain } from '../handler';
 import { Type } from '../types';
 import { Token } from '../tokens';
-import { DesignContext, RuntimeContext } from './ctx';
+import { runChain } from '../handler';
 import { ActionSetup } from '../action';
-import { IocRegScope } from './reg';
-import { RuntimeLifeScope } from './runtime';
+import { cleanObj } from '../utils/lang';
 import { FactoryRecord, FnType, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Decors } from '../metadata/type';
 import { ReflectiveFactory } from '../reflective';
 import { Platform } from '../platform';
+import { IocRegScope } from './reg';
+import { RuntimeLifeScope } from './runtime';
+import { DesignContext, RuntimeContext } from './ctx';
 
 
 /**

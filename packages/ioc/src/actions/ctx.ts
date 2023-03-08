@@ -28,7 +28,6 @@ export interface IocContext {
 export interface RegContext extends IocContext {
     /**
      * resolve token.
-     *
      */
     provide?: Token;
     /**
@@ -49,7 +48,6 @@ export interface RegContext extends IocContext {
     currDecor: string;
     /**
      * custom set singleton or not.
-     *
      */
     singleton: boolean;
 }
