@@ -2,20 +2,15 @@ import { Abstract, DefaultInvocationContext } from '@tsdi/ioc';
 import { Incoming, Outgoing } from './packet';
 import { TransportEndpoint } from './transport';
 import { OkStatus, Status, StatusFactory } from './status';
+import { EndpointContext } from '../filters/context';
+
 
 /**
- * endpoint context.
+ * client endpoint context.
  */
 @Abstract()
-export abstract class EndpointContext extends DefaultInvocationContext {
-    /**
-     * host transport endpoint. instance of {@link TransportEndpoint}.
-     */
-    abstract get target(): TransportEndpoint;
-    /**
-     * execption.
-     */
-    execption?: any;
+export abstract class ClientEndpointContext extends EndpointContext {
+    
     /**
      * Get response status.
      */
@@ -26,19 +21,6 @@ export abstract class EndpointContext extends DefaultInvocationContext {
     abstract set status(status: Status);
 
     abstract get statusFactory(): StatusFactory;
-
-    protected override clear(): void {
-        super.clear();
-        (this as any).target = null;
-    }
-
-}
-
-/**
- * client endpoint context.
- */
-@Abstract()
-export abstract class ClientEndpointContext extends EndpointContext {
     /**
      * response observe type
      */
@@ -78,6 +60,18 @@ export abstract class ListenOpts {
  */
 @Abstract()
 export abstract class ServerEndpointContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends EndpointContext {
+    
+    /**
+     * Get response status.
+     */
+    abstract get status(): Status;
+    /**
+     * Set response status, defaults to OK.
+     */
+    abstract set status(status: Status);
+
+    abstract get statusFactory(): StatusFactory;
+
     /**
      * transport request.
      */

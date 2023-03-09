@@ -3,7 +3,7 @@ import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
 import { EndpointContext } from  './context';
-import { InternalServerExecption, MessageExecption } from '../execptions';
+import { MessageExecption } from '../execptions';
 import { EndpointFilter, runHandlers } from './filter';
 
 

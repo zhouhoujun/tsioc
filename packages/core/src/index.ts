@@ -28,5 +28,7 @@ export * from './execptions';
 
 export * from './uuid';
 
+export * from './filters';
+
 export * from './transport';
 export * from './router';

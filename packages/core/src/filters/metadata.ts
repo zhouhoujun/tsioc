@@ -90,35 +90,36 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                     }
                 }
 
-                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
-                    const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(EndpointContext);
-                    if (guards && guards.length) {
-                        if (!(await lang.some(
-                            guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
-                            vaild => vaild === false))) {
-                            throw new ForbiddenExecption();
-                        }
-                    }
-                    const value = run(ctx);
-                    if (after) {
-                        if (isPromise(value)) {
-                            return value.then((v) => {
-                                lang.immediate(after, ctx, endpCtx, v);
-                                return v;
-                            });
-                        }
-                        if (isObservable(value)) {
-                            return value.pipe(
-                                map(v => {
-                                    lang.immediate(after, ctx, endpCtx, v);
-                                    return v;
-                                })
-                            )
-                        }
-                        lang.immediate(after, ctx, endpCtx, value);
-                    }
-                    return value;
-                });
+                const invoker = factory.createInvoker(decor.propertyKey, true);
+                // const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
+                //     const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(EndpointContext);
+                //     if (guards && guards.length) {
+                //         if (!(await lang.some(
+                //             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
+                //             vaild => vaild === false))) {
+                //             throw new ForbiddenExecption();
+                //         }
+                //     }
+                //     const value = run(ctx);
+                //     if (after) {
+                //         if (isPromise(value)) {
+                //             return value.then((v) => {
+                //                 lang.immediate(after, ctx, endpCtx, v);
+                //                 return v;
+                //             });
+                //         }
+                //         if (isObservable(value)) {
+                //             return value.pipe(
+                //                 map(v => {
+                //                     lang.immediate(after, ctx, endpCtx, v);
+                //                     return v;
+                //                 })
+                //             )
+                //         }
+                //         lang.immediate(after, ctx, endpCtx, value);
+                //     }
+                //     return value;
+                // });
 
                 injector.get(EndpointHandlerMethodResolver).addHandle(filter, invoker, order)
             });
