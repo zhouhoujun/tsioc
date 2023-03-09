@@ -41,6 +41,13 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
 }
 
 /**
+ * Application starting event.
+ */
+export class ApplicationStartingEvent extends ApplicationEvent {
+
+}
+
+/**
  * Application start event.
  */
 export class ApplicationStartEvent extends ApplicationEvent {
@@ -61,10 +68,21 @@ export class ApplicationContextRefreshEvent extends ApplicationEvent {
  * Application shutdown event.
  */
 export class ApplicationShutdownEvent extends ApplicationEvent {
-    constructor(source: Object, readonly signls: string) {
+    constructor(source: Object, readonly signls?: string) {
         super(source)
     }
 }
+
+
+/**
+ * Application dispose event.
+ */
+export class ApplicationDisposeEvent extends ApplicationEvent {
+    constructor(source: Object) {
+        super(source)
+    }
+}
+
 
 
 /**

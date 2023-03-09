@@ -1,6 +1,6 @@
 import { Module, EMPTY, getClass, Injectable, InvokerLike, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { ExecptionHandlerBackend } from './execption.filter';
-import { EndpointHandlerMethodResolver, InOutInterceptorFilter, PathHanlderFilter, StatusInterceptorFilter } from './filter';
+import { EndpointHandlerMethodResolver, InOutInterceptorFilter } from './filter';
 
 /**
  * endpoint hanlders resolver.
@@ -39,8 +39,8 @@ export class DefaultEndpointHandlerMethodResolver extends EndpointHandlerMethodR
  * filter providers.
  */
 export const FILTER_PROVIDERS: ProviderType[] = [
-    PathHanlderFilter,
-    StatusInterceptorFilter,
+    // PathHanlderFilter,
+    // StatusInterceptorFilter,
     ExecptionHandlerBackend,
     InOutInterceptorFilter,
     { provide: EndpointHandlerMethodResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }

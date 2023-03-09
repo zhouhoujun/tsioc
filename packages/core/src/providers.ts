@@ -4,7 +4,8 @@ import { ApplicationRunners } from './runners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
 import { ApplicationEventMulticaster } from './events';
 import { DefaultApplicationRunners } from './impl/runners';
-import { DefaultApplicationFactory, DefaultEventMulticaster } from './impl/context';
+import { DefaultApplicationFactory } from './impl/context';
+import { DefaultEventMulticaster } from './impl/events';
 
 
 

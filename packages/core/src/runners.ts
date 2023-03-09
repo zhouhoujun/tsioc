@@ -40,7 +40,14 @@ export abstract class ApplicationRunners implements OnDestroy {
    */
   abstract run(): Promise<void>;
 
-  
+  /**
+   * stop all runners.
+   */
+  abstract stop(): Promise<void>;
+
+  /**
+   * destroy.
+   */
   abstract onDestroy(): void;
 
 }

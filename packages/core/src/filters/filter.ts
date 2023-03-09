@@ -1,7 +1,7 @@
 import { Abstract, getClass, Injectable, InvokerLike, Type } from '@tsdi/ioc';
 import { mergeMap, Observable, of } from 'rxjs';
-import { Incoming, Outgoing } from './packet';
-import { EndpointContext, ServerEndpointContext } from './context';
+// import { Incoming, Outgoing } from './packet';
+import { EndpointContext } from './context';
 import { Interceptor, InterceptorEndpoint, runInvokers } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
 
@@ -81,35 +81,35 @@ export function runHandlers(ctx: EndpointContext, input: any, filter: Type | str
     return runInvokers(handles, ctx, input, c => c.done === true)
 }
 
-@Injectable({ static: true })
-export class PathHanlderFilter implements EndpointFilter<Incoming, Outgoing> {
+// @Injectable({ static: true })
+// export class PathHanlderFilter implements EndpointFilter<Incoming, Outgoing> {
 
-    intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
-        if (!input.url) return next.handle(input, ctx);
+//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
+//         if (!input.url) return next.handle(input, ctx);
 
-        return runHandlers(ctx, input, input.url)
-            .pipe(
-                mergeMap(r => {
-                    if (ctx.done) return of(r);
-                    return next.handle(input, ctx);
-                }))
-    }
+//         return runHandlers(ctx, input, input.url)
+//             .pipe(
+//                 mergeMap(r => {
+//                     if (ctx.done) return of(r);
+//                     return next.handle(input, ctx);
+//                 }))
+//     }
 
-}
+// }
 
-@Injectable({ static: true })
-export class StatusInterceptorFilter implements EndpointFilter<Incoming, Outgoing> {
+// @Injectable({ static: true })
+// export class StatusInterceptorFilter implements EndpointFilter<Incoming, Outgoing> {
 
-    intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
-        return next.handle(input, ctx)
-            .pipe(
-                mergeMap(res => {
-                    return runHandlers(ctx, res, getClass(ctx.status))
-                })
-            )
-    }
+//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
+//         return next.handle(input, ctx)
+//             .pipe(
+//                 mergeMap(res => {
+//                     return runHandlers(ctx, res, getClass(ctx.status))
+//                 })
+//             )
+//     }
 
-}
+// }
 
 
 
@@ -140,7 +140,7 @@ export abstract class Respond {
      * @param ctx transport context. instance of {@link ServerEndpointContext}.
      * @param value execption handled returnning value
      */
-    abstract respond<T>(ctx: ServerEndpointContext, value: T): void;
+    abstract respond<T>(ctx: EndpointContext, value: T): void;
 }
 
 /**
@@ -154,6 +154,6 @@ export abstract class TypedRespond {
      * @param responseType response type
      * @param value execption handled returnning value
      */
-    abstract respond<T>(ctx: ServerEndpointContext, responseType: 'body' | 'header' | 'response', value: T): void;
+    abstract respond<T>(ctx: EndpointContext, responseType: 'body' | 'header' | 'response', value: T): void;
 }
 

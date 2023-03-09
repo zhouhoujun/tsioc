@@ -3,7 +3,6 @@ import {
     DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
-// import { BootstrapOption, RunnableRef } from './runnable';
 import { ApplicationEvent, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
 import { ApplicationArguments } from './args';
@@ -75,7 +74,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     /**
      * Destroys the component instance and all of the data structures associated with it.
      */
-    abstract destroy(): void | Promise<void>;
+    abstract destroy(): Promise<void>;
     /**
      * A lifecycle hook that provides additional developer-defined cleanup
      * functionality for the component.

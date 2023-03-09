@@ -1,14 +1,18 @@
-import { ProviderType, lang, Injector, Injectable, OperationInvoker, isNumber, ReflectiveRef, Type } from '@tsdi/ioc';
+import { lang, OperationInvoker, isNumber, ReflectiveRef, Type, Injectable } from '@tsdi/ioc';
+import { lastValueFrom } from 'rxjs';
 import { ApplicationRunners } from '../runners';
-import { ApplicationEventMulticaster, ApplicationStartEvent } from '../events';
+import {
+    ApplicationDisposeEvent, ApplicationEventMulticaster, ApplicationShutdownEvent,
+    ApplicationStartEvent, ApplicationStartingEvent
+} from '../events';
 
 
-
+@Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners {
     private _runners: OperationInvoker[];
     private _maps: Map<Type, OperationInvoker[]>;
     private order = false;
-    constructor() {
+    constructor(protected readonly multicaster: ApplicationEventMulticaster) {
         super()
         this._runners = [];
         this._maps = new Map();
@@ -66,6 +70,7 @@ export class DefaultApplicationRunners extends ApplicationRunners {
     }
 
     async run(): Promise<void> {
+        await this.beforeRun();
         if (this._runners.length) {
             if (this.order) {
                 await lang.step(Array.from(this._runners).map(svr => () => svr.invoke()))
@@ -73,10 +78,34 @@ export class DefaultApplicationRunners extends ApplicationRunners {
                 await Promise.all(this._runners.map(svr => svr.invoke()))
             }
         }
+        await this.afterRun();
+    }
+
+    async stop(signls?: string): Promise<void> {
+        await this.onShuwdown(signls);
+        await this.onDispose();
+        this.onDestroy();
     }
 
     onDestroy(): void {
         this._maps.clear();
         this._runners = null!;
     }
+
+    protected beforeRun(): Promise<void> {
+        return lastValueFrom(this.multicaster.emit(new ApplicationStartingEvent(this)));
+    }
+
+    protected afterRun(): Promise<void> {
+        return lastValueFrom(this.multicaster.emit(new ApplicationStartEvent(this)));
+    }
+
+    protected onShuwdown(signls?: string) {
+        return lastValueFrom(this.multicaster.emit(new ApplicationShutdownEvent(this, signls)));
+    }
+
+    protected onDispose() {
+        return lastValueFrom(this.multicaster.emit(new ApplicationDisposeEvent(this)));
+    }
+
 }

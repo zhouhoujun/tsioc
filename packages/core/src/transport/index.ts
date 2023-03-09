@@ -12,11 +12,6 @@ export * from './redirector';
 export * from './resolver';
 export * from './model';
 
-export * from './filter';
-export * from './metadata';
-export * from './execption.filter';
-export * from './filter.module';
-
 
 export * from './middleware';
 

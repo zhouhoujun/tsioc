@@ -1,11 +1,9 @@
 import {
-    Type, getClass, Injector, ProviderType, DefaultInvocationContext, createContext, InvokerLike,
-    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags, ModuleRef, ReflectiveFactory
+    Type, Injector, ProviderType, DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ,
+    Class, ModuleDef, InjectFlags, ModuleRef, ReflectiveFactory
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
-import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../args';
-import { runInvokers } from '../Interceptor';
 import { ApplicationRunners } from '../runners';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../context';
 import { ApplicationContextRefreshEvent, ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from '../events';
@@ -95,35 +93,12 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._multicaster.emit(new ApplicationContextRefreshEvent(this))
     }
 
+    async destroy(): Promise<void> {
+        await this.runners.stop();
+        await super.destroy();
+    }
+
 }
-
-export class DefaultEventMulticaster extends ApplicationEventMulticaster {
-    private maps: Map<Type, InvokerLike[]>;
-    constructor(private injector: Injector) {
-        super();
-        this.maps = new Map();
-    }
-
-    addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): void {
-        const handlers = this.maps.get(event);
-        if (handlers) {
-            if (handlers.indexOf(invoker) >= 0) return;
-            order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
-        } else {
-            this.maps.set(event, [invoker]);
-        }
-    }
-
-    emit(value: ApplicationEvent): Observable<any> {
-        const handlers = this.maps.get(getClass(value));
-        return runInvokers(handlers, createContext(this.injector), value, v => v.done === true)
-    }
-
-    clear(): void {
-        this.maps.clear();
-    }
-}
-
 
 /**
  * default application factory.

@@ -1,10 +1,11 @@
 
 import { createDecorator, Decors, InvocationContext, isObservable, isPromise, isString, isType, lang, pomiseOf, ReflectiveFactory, Type, TypeOf } from '@tsdi/ioc';
 import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
-import { ServerEndpointContext } from './context';
 import { CanActivate } from '../guard';
 import { ForbiddenExecption } from '../execptions';
 import { map } from 'rxjs';
+import { ServerEndpointContext } from '../transport/context';
+import { EndpointContext } from './context';
 
 /**
  * Endpoint handler metadata.
@@ -78,7 +79,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                 const { filter, order, guards, response } = decor.metadata;
 
 
-                let after: (ctx: InvocationContext, endpCtx: ServerEndpointContext, value: any) => void;
+                let after: (ctx: InvocationContext, endpCtx: EndpointContext, value: any) => void;
                 if (response) {
                     if (isType(response)) {
                         after = (ctx, endpCtx, value) => ctx.resolve(response).respond(endpCtx, value);
@@ -90,7 +91,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                 }
 
                 const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
-                    const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
+                    const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(EndpointContext);
                     if (guards && guards.length) {
                         if (!(await lang.some(
                             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),

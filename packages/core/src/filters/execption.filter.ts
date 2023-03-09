@@ -2,7 +2,7 @@ import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
-import { EndpointContext } from './context';
+import { EndpointContext } from  './context';
 import { InternalServerExecption, MessageExecption } from '../execptions';
 import { EndpointFilter, runHandlers } from './filter';
 
@@ -87,9 +87,9 @@ export class ExecptionHandlerBackend extends ExecptionBackend {
                         return context.execption as MessageExecption;
                     }),
                     catchError((err, caught) => {
-                        const exception = new InternalServerExecption((err as Error).message, context.statusFactory.getStatusCode('InternalServerError'));
-                        context.execption = exception;
-                        return of(exception);
+                        // const exception = new InternalServerExecption((err as Error).message, context.statusFactory.getStatusCode('InternalServerError'));
+                        context.execption = err;
+                        return of(err);
                     })
                 ).subscribe(observer)
         })
