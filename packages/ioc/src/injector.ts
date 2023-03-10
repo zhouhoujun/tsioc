@@ -286,6 +286,11 @@ export function isInjector(target: any): target is Injector {
 @Abstract()
 export abstract class Container extends Injector { }
 
+@Abstract()
+export abstract class InjectorEvent {
+    abstract emit(event: 'register' | 'registered' | 'resolved', ...data: any[]): any;
+}
+
 
 /**
  * injector factory implement.

@@ -1,6 +1,6 @@
 
 import { createDecorator, Decors, InvocationContext, isObservable, isPromise, isString, isType, lang, pomiseOf, ReflectiveFactory, Type, TypeOf } from '@tsdi/ioc';
-import { Respond, EndpointHandlerMethodResolver, TypedRespond } from './filter';
+import { Respond, FilterHandlerResolver, TypedRespond } from './filter';
 import { CanActivate } from '../guard';
 import { ForbiddenExecption } from '../execptions';
 import { map } from 'rxjs';
@@ -121,7 +121,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                 //     return value;
                 // });
 
-                injector.get(EndpointHandlerMethodResolver).addHandle(filter, invoker, order)
+                injector.get(FilterHandlerResolver).addHandle(filter, invoker, order)
             });
 
             next()

@@ -1,9 +1,8 @@
-import { Abstract, getClass, Injectable, InvokerLike, Type } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, Injector, InvokerLike, isFunction, isType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { mergeMap, Observable, of } from 'rxjs';
-// import { Incoming, Outgoing } from './packet';
 import { EndpointContext } from './context';
-import { Interceptor, InterceptorEndpoint, runInvokers } from '../Interceptor';
-import { Endpoint, EndpointBackend } from '../Endpoint';
+import { Interceptor } from '../Interceptor';
+import { AbstractEndpoint, Endpoint, EndpointBackend, runInvokers } from '../Endpoint';
 
 
 
@@ -11,11 +10,12 @@ import { Endpoint, EndpointBackend } from '../Endpoint';
  * endpoint filter is a chainable behavior modifier for `endpoints`.
  */
 @Abstract()
-export abstract class EndpointFilter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
+export abstract class Filter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
     /**
      * the method to implemet interceptor filter.
      * @param input  request input.
      * @param next The next interceptor in the chain, or the backend
+     * if no interceptors remain in the chain.
      * if no interceptors remain in the chain.
      * @param context request context.
      * @returns An observable of the event stream.
@@ -24,22 +24,42 @@ export abstract class EndpointFilter<TInput = any, TOutput = any> implements Int
 }
 
 
+
 /**
  * Filter chain.
  */
-export class FilterChain<TInput = any, TOutput = any> implements EndpointBackend<TInput, TOutput> {
+export class FilterChain<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
 
-    private chain!: Endpoint<TInput, TOutput>;
-    constructor(protected readonly backend: EndpointBackend<TInput, TOutput>, protected readonly filters: EndpointFilter[]) {
-
+    constructor(
+        protected injector: Injector,
+        private token: Token<Filter<TInput, TOutput>[]>,
+        private backend: TypeOf<EndpointBackend<TInput, TOutput>>) {
+        super();
     }
 
-    handle(input: TInput, ctx: EndpointContext): Observable<TOutput> {
-        if (!this.chain) {
-            this.chain = this.filters.reduceRight(
-                (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.backend)
+    use(filter: TypeOf<Filter<TInput, TOutput>>, order?: number): this {
+        this.multiOrder(this.token, filter, order);
+        this.reset();
+        return this;
+    }
+
+    /**
+     *  get backend endpoint. 
+     */
+    protected getBackend(): EndpointBackend<TInput, TOutput> {
+        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
+    }
+
+    protected getInterceptors(): Filter<TInput, TOutput>[] {
+        return this.injector.get(this.token, EMPTY)
+    }
+
+    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
+        if (isType(target)) {
+            this.injector.inject({ provide, useClass: target, multi: true, multiOrder })
+        } else {
+            this.injector.inject({ provide, useValue: target, multi: true, multiOrder })
         }
-        return this.chain.handle(input, ctx)
     }
 }
 
@@ -49,7 +69,7 @@ export class FilterChain<TInput = any, TOutput = any> implements EndpointBackend
  * Endpoint handler method resolver.
  */
 @Abstract()
-export abstract class EndpointHandlerMethodResolver {
+export abstract class FilterHandlerResolver {
     /**
      * resolve filter hanlde.
      * @param filter 
@@ -70,6 +90,7 @@ export abstract class EndpointHandlerMethodResolver {
     abstract removeHandle(filter: Type | string, methodInvoker: InvokerLike): this;
 }
 
+
 /**
  * run handlers.
  * @param ctx 
@@ -77,7 +98,7 @@ export abstract class EndpointHandlerMethodResolver {
  * @returns 
  */
 export function runHandlers(ctx: EndpointContext, input: any, filter: Type | string): Observable<any> {
-    const handles = ctx.injector.get(EndpointHandlerMethodResolver).resolve(filter);
+    const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
     return runInvokers(handles, ctx, input, c => c.done === true)
 }
 
@@ -114,7 +135,7 @@ export function runHandlers(ctx: EndpointContext, input: any, filter: Type | str
 
 
 @Injectable({ static: true })
-export class InOutInterceptorFilter implements EndpointFilter {
+export class InOutInterceptorFilter implements Interceptor {
 
     intercept(input: any, next: Endpoint<any, any>, ctx: EndpointContext): Observable<any> {
         return runHandlers(ctx, input, input)

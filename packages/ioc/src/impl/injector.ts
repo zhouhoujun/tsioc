@@ -6,7 +6,7 @@ import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, InjectorEvent
 } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';
@@ -198,7 +198,7 @@ export class DefaultInjector extends Injector {
      * @param def 
      */
     protected onRegister(def: Class) {
-
+        this.get(InjectorEvent, null)?.emit('register', def);
     }
 
     /**
@@ -206,6 +206,7 @@ export class DefaultInjector extends Injector {
      * @param def 
      */
     protected onRegistered(def: Class) {
+        this.get(InjectorEvent, null)?.emit('registered', def);
 
     }
 
@@ -215,7 +216,7 @@ export class DefaultInjector extends Injector {
      * @param token 
      */
     protected onResolved(value: any, token?: Token): void {
-
+        this.get(InjectorEvent, null)?.emit('resolved', value, token);
     }
 
     /**

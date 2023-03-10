@@ -27,7 +27,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
-        this.isStatic = moduleType.annotation.static || option.isStatic;
+        this.isStatic = (moduleType.annotation.static || option.isStatic) !== false;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
 
@@ -105,7 +105,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     }
 
     protected override onResolved(value: any, token?: Token): void {
-        
+
     }
 
     protected override destroying() {

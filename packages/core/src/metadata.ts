@@ -6,6 +6,7 @@ import {
 import { PipeTransform } from './pipes/pipe';
 import { CanActivate } from './guard';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
+import { FilterEndpoint } from './filters/endpoint';
 
 
 /**
@@ -194,6 +195,10 @@ export interface EventHandler {
      */
     (option?: {
         /**
+         * route guards.
+         */
+        guards?: Type<CanActivate>[];
+        /**
          * order.
          */
         order?: number;
@@ -205,6 +210,10 @@ export interface EventHandler {
      * @param {order?: number } option message match option.
      */
     (event: Type<ApplicationEvent>, option?: {
+        /**
+         * route guards.
+         */
+        guards?: Type<CanActivate>[];
         /**
          * order.
          */
@@ -223,17 +232,18 @@ export const EventHandler: EventHandler = createDecorator('EventHandler', {
             decors.forEach(decor => {
                 const { filter, order, guards } = decor.metadata;
 
-
-                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
-                    if (guards && guards.length) {
-                        if (!(await lang.some(
-                            guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(ctx))),
-                            vaild => vaild === false))) {
-                            return;
-                        }
-                    }
-                    return run(ctx);
-                });
+                const invoker = factory.createInvoker(decor.propertyKey, true);
+                // const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
+                //     if (guards && guards.length) {
+                //         if (!(await lang.some(
+                //             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(ctx))),
+                //             vaild => vaild === false))) {
+                //             return;
+                //         }
+                //     }
+                //     return run(ctx);
+                // });
+                const endpoint = new FilterEndpoint(factory.injector, )
 
                 injector.get(ApplicationEventMulticaster).addListener(filter ?? PayloadApplicationEvent, invoker, order)
             });

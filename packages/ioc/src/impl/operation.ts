@@ -1,5 +1,5 @@
 import { ClassType } from '../types';
-import { InvocationContext, InvokeArguments } from '../context';
+import { InvocationContext } from '../context';
 import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
 import { isFunction } from '../utils/chk';
@@ -65,9 +65,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
             context = this.typeRef.getContext(this.method);
         }
 
-        const args = this.resolveArguments(context);
-
-        return this.typeRef.class.invoke(this.method, context, instance, args);
+        return this.typeRef.class.invoke(this.method, context, instance);
     }
 
     /**

@@ -2,13 +2,13 @@ import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
-import { EndpointContext } from  './context';
 import { MessageExecption } from '../execptions';
-import { EndpointFilter, runHandlers } from './filter';
+import { EndpointContext } from './context';
+import { Filter, runHandlers } from './filter';
 
 
 @Abstract()
-export abstract class ExecptionEndpoint implements Endpoint<Error, MessageExecption> {
+export abstract class ExecptionFilter extends Filter<Error, MessageExecption> {
 
     /**
      * transport endpoint handle.
@@ -29,21 +29,6 @@ export abstract class ExecptionBackend implements Endpoint<Error, MessageExecpti
     abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
 }
 
-/**
- * execption filter is a chainable behavior modifier for `endpoints`.
- */
-@Abstract()
-export abstract class ExecptionFilter extends EndpointFilter<Error, MessageExecption>  {
-    /**
-     * the method to implemet interceptor filter.
-     * @param input  request input.
-     * @param next The next interceptor in the chain, or the backend
-     * if no interceptors remain in the chain.
-     * @param context request context.
-     * @returns An observable of the event stream.
-     */
-    abstract intercept(input: Error, next: ExecptionEndpoint, context: EndpointContext): Observable<MessageExecption>;
-}
 
 /**
  * catch interceptor.
@@ -56,9 +41,13 @@ export class CatchInterceptor<TInput = any, TOutput = any> implements Intercepto
             .pipe(
                 catchError((err, caught) => {
                     ctx.execption = err;
+                    const endpoint = ctx.get(ExecptionFilter);
+                    if (!endpoint) {
+                        return of(err);
+                    }
                     const token = getClass(err);
                     ctx.setValue(token, err);
-                    return ctx.target.execptionfilter().handle(err, ctx)
+                    return endpoint.handle(err, ctx)
                         .pipe(
                             finalize(() => {
                                 ctx.setValue(token, null);

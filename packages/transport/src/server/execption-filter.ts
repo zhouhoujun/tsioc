@@ -1,5 +1,5 @@
 import {
-    Outgoing, StatusFactory, EndpointFilter, Endpoint, EndpointContext, BadRequestExecption, ExecptionHandler,
+    Outgoing, StatusFactory, Filter, Endpoint, EndpointContext, BadRequestExecption, ExecptionHandler,
     ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption, MessageExecption,
     ENOENT, MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
@@ -11,7 +11,7 @@ import { TransportContext } from './context';
 
 
 @Injectable({ static: true })
-export class ExecptionFinalizeFilter implements EndpointFilter {
+export class ExecptionFinalizeFilter implements Filter {
     intercept(input: any, next: Endpoint<any, any>, context: TransportContext): Observable<any> {
 
         return next.handle(input, context)

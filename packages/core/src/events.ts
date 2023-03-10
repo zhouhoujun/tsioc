@@ -1,6 +1,8 @@
-import { Abstract, getClass, InvokerLike, Type } from '@tsdi/ioc';
+import { Abstract, getClass, InvokerLike, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationContext } from './context';
+import { Filter } from './filters';
+import { Interceptor } from './Interceptor';
 
 
 
@@ -112,12 +114,25 @@ export interface ApplicationEventPublisher {
  */
 @Abstract()
 export abstract class ApplicationEventMulticaster {
+
+    /**
+     * use interceptor
+     * @param interceptor 
+     * @param order 
+     */
+    abstract useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>>, order?: number): this;
+    /**
+     * use filter
+     * @param filter 
+     * @param order 
+     */
+    abstract useFilter(filter: TypeOf<Filter>, order?: number): this;
     /**
      * add event listener.
      * @param event 
      * @param invoker 
      */
-    abstract addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order?: number): void;
+    abstract addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order?: number): this;
     /**
      * multicast emit event.
      * @param event 

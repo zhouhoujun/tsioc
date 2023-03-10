@@ -72,7 +72,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
     abstract onDestroy(callback: DestroyCallback): void
 }
 
-
 /**
  * module option.
  */

@@ -1,12 +1,12 @@
 import { Module, EMPTY, getClass, Injectable, InvokerLike, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
 import { ExecptionHandlerBackend } from './execption.filter';
-import { EndpointHandlerMethodResolver, InOutInterceptorFilter } from './filter';
+import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
 
 /**
  * endpoint hanlders resolver.
  */
 @Injectable()
-export class DefaultEndpointHandlerMethodResolver extends EndpointHandlerMethodResolver {
+export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver {
     private maps = new Map<Type | string, InvokerLike[]>();
 
     resolve<T>(filter: Type<T> | T | string): InvokerLike[] {
@@ -43,7 +43,7 @@ export const FILTER_PROVIDERS: ProviderType[] = [
     // StatusInterceptorFilter,
     ExecptionHandlerBackend,
     InOutInterceptorFilter,
-    { provide: EndpointHandlerMethodResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
+    { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
 ]
 
 @Module({

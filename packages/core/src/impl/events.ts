@@ -1,58 +1,70 @@
-import { createContext, getClass, Injector, InvokerLike, isType, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { createContext, getClass, Injector, InvocationContext, InvokerLike, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Interceptor, runInvokers } from '../Interceptor';
+import { Interceptor } from '../Interceptor';
+import { Endpoint, runInvokers } from '../Endpoint';
 import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
-import { Endpoint } from '../Endpoint';
+import { Filter } from '../filters/filter';
+import { FilterEndpoint } from '../filters/endpoint';
 
+
+/**
+ *  event multicaster interceptors
+ */
 export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
-export class DefaultEventMulticaster extends ApplicationEventMulticaster {
+/**
+ *  event multicaster filters
+ */
+export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FILTERS');
 
-    private _chain?: Endpoint<ApplicationEvent, any>;
+
+export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEvent> {
+
+    private _endpoint: FilterEndpoint<ApplicationEvent, any>;
     private maps: Map<Type, InvokerLike[]>;
 
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
+        this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_FILTERS);
     }
 
-    // get endpoint(): Endpoint<ApplicationEvent, any> {
-    //     if (!this._chain) {
-    //         this._chain = this.buildEndpoint();
-    //     }
-    //     return this._chain
-    // }
+    get endpoint(): Endpoint<ApplicationEvent, any> {
+        return this._endpoint
+    }
 
-    use(interceptor: TypeOf<Interceptor<ApplicationEvent, any>>, order?: number): this {
-        this.multiOrder(EVENT_MULTICASTER_INTERCEPTORS, interceptor, order);
+    useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>>, order?: number): this {
+        this._endpoint.use(interceptor, order);
         return this;
     }
 
-    addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): void {
+    useFilter(filter: TypeOf<Filter>, order?: number | undefined): this {
+        this._endpoint.useFilter(filter, order);
+        return this;
+    }
+
+    addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): this {
         const handlers = this.maps.get(event);
         if (handlers) {
-            if (handlers.indexOf(invoker) >= 0) return;
+            if (handlers.indexOf(invoker) >= 0) return this;
             order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
         } else {
             this.maps.set(event, [invoker]);
         }
+        return this;
     }
 
     emit(value: ApplicationEvent): Observable<any> {
-        const handlers = this.maps.get(getClass(value));
-        return runInvokers(handlers, createContext(this.injector), value, v => v.done === true)
+        return this.endpoint.handle(value, createContext(this.injector));
+    }
+
+    handle(input: ApplicationEvent, context: InvocationContext<any>): Observable<any> {
+        const handlers = this.maps.get(getClass(input));
+        return runInvokers(handlers, context, input, v => v.done === true);
     }
 
     clear(): void {
         this.maps.clear();
-    }
-
-    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
-        if (isType(target)) {
-            this.injector.inject({ provide, useClass: target, multi: true, multiOrder })
-        } else {
-            this.injector.inject({ provide, useValue: target, multi: true, multiOrder })
-        }
     }
 }
 
