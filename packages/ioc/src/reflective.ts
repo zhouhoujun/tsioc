@@ -65,11 +65,10 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     /**
      * create method invoker of target type.
      * @param method the method name of target.
-     * @param shared shared instance of this type, lazy resolve by factory.
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    abstract createInvoker(method: string, shared?: boolean): OperationInvoker;
+    abstract createInvoker(method: string): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.

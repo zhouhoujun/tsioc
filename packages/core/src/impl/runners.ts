@@ -25,7 +25,7 @@ export class DefaultApplicationRunners extends ApplicationRunners {
                 const invokers: OperationInvoker[] = [];
                 this._maps.set(runner.type, invokers);
                 runnables.forEach(r => {
-                    const invoker = runner.createInvoker(r.method, true);
+                    const invoker = runner.createInvoker(r.method);
                     invokers.push(invoker);
                     this.attachOperation(invoker, r.order);
                 });

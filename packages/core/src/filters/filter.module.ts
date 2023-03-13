@@ -1,4 +1,5 @@
-import { Module, EMPTY, getClass, Injectable, InvokerLike, isFunction, isNumber, isString, lang, OperationInvoker, ProviderType, Type } from '@tsdi/ioc';
+import { Module, EMPTY, getClass, Injectable, isFunction, isString, lang, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
+import { Endpoint } from '../Endpoint';
 import { ExecptionHandlerBackend } from './execption.filter';
 import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
 
@@ -7,29 +8,29 @@ import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
  */
 @Injectable()
 export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver {
-    private maps = new Map<Type | string, InvokerLike[]>();
+    private maps = new Map<Type | string, Endpoint[]>();
 
-    resolve<T>(filter: Type<T> | T | string): InvokerLike[] {
+    resolve<T>(filter: Type<T> | T | string): Endpoint[] {
         return this.maps.get(isString(filter) ? filter : (isFunction(filter) ? filter : getClass(filter))) ?? EMPTY
     }
 
-    addHandle(filter: Type | string, methodInvoker: InvokerLike, order?: number): this {
-        let hds = this.maps.get(filter);
-        if (!isFunction(methodInvoker) && isNumber(order)) {
-            methodInvoker.order = order
+    addHandle(filter: Type | string, endpoint: Endpoint, order?: number): this {
+        if (!endpoint) {
+            throw new ArgumentExecption('endpoint missing');
         }
+        let hds = this.maps.get(filter);
         if (!hds) {
-            hds = [methodInvoker];
+            hds = [endpoint];
             this.maps.set(filter, hds)
-        } else if (!isFunction(methodInvoker) && !hds.some(h => !isFunction(h) && h.descriptor === methodInvoker.descriptor)) {
-            hds.push(methodInvoker)
+        } else if (!hds.some(h => h && h.equals(endpoint))) {
+            hds.push(endpoint)
         }
         return this
     }
 
-    removeHandle(filter: Type | string, methodInvoker: OperationInvoker): this {
+    removeHandle(filter: Type | string, endpoint: Endpoint): this {
         const hds = this.maps.get(filter);
-        if (hds) lang.remove(hds, methodInvoker);
+        if (hds) lang.remove(hds, endpoint);
         return this
     }
 }

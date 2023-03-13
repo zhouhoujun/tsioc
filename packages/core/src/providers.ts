@@ -6,11 +6,14 @@ import { ApplicationEventMulticaster } from './events';
 import { DefaultApplicationRunners } from './impl/runners';
 import { DefaultApplicationFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
+import { EndpointFactoryResolver } from './filters/endpoint.factory';
+import { EndpointFactoryResolverImpl } from './impl/endpoint';
 
 
 
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
+    { provide: EndpointFactoryResolver, useClass: EndpointFactoryResolverImpl, static: true },
     {
         provide: ApplicationEventMulticaster,
         useFactory: (injector: Injector) => {

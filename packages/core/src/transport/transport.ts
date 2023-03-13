@@ -3,10 +3,10 @@ import {
     isFunction, isType, lang, ProviderType, StaticProvider, Token, Type, TypeOf
 } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
-import { Endpoint, EndpointBackend, EndpointChain } from '../Endpoint';
+import { Endpoint, EndpointBackend, Endpoints } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
 import { ExecptionBackend, ExecptionFilter, ExecptionHandlerBackend } from '../filters/execption.filter';
-import { FilterChain, Filter } from '../filters/filter';
+import { Filter } from '../filters/filter';
 
 /**
  * transport endpoint options.
@@ -125,7 +125,7 @@ export abstract class TransportEndpoint<
      */
     execptionfilter(): Endpoint {
         if (!this._expFilter) {
-            this._expFilter = new FilterChain(this.getExecptionBackend(), this.context.injector.get(this._expFToken, EMPTY));
+            this._expFilter = new Endpoints(this.getExecptionBackend(), this.context.injector.get(this._expFToken, EMPTY));
         }
         return this._expFilter;
     }
@@ -141,7 +141,7 @@ export abstract class TransportEndpoint<
     }
 
     protected buildEndpoint(): Endpoint<TInput, TOutput> {
-        return new EndpointChain(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
+        return new Endpoints(this.getBackend(), this.context.injector.get(this._iptToken, EMPTY));
     }
 
     /**

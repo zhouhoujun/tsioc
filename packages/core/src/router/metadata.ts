@@ -284,7 +284,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 //             const { route, method, guards, interceptors, pipes } = d.metadata as RouteMappingMetadata;
                 //             const allinterceptors = [...interceptors ?? EMPTY, ...interceptors ?? EMPTY];
                 //             const allguards = [...clsGuards ?? EMPTY, ...guards ?? EMPTY] as Type<CanActivate>[];
-                //             const invoker = factory.createInvoker(d.propertyKey, true, async (ctx, run) => {
+                //             const invoker = factory.createInvoker(d.propertyKey, async (ctx, run) => {
 
                 //                 const context = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
 

@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injector, InvocationContext, InvokerLike, isFunction, isPromise, isType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, InvocationContext, isFunction, isPromise, isType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Interceptor } from './Interceptor';
 
@@ -13,6 +13,12 @@ export interface Endpoint<TInput = any, TOutput = any> {
      * @param context request context.
      */
     handle(input: TInput, context: InvocationContext): Observable<TOutput>;
+
+    /**
+     * is this equals to target or not
+     * @param target 
+     */
+    equals(target: any): boolean;
 }
 
 
@@ -32,6 +38,25 @@ export abstract class EndpointBackend<TInput = any, TOutput = any> implements En
      * @param context request context.
      */
     abstract handle(input: TInput, context: InvocationContext): Observable<TOutput>;
+
+    equals(target: any): boolean {
+        return this === target;
+    }
+}
+
+/**
+ * funcation Endpoint.
+ */
+export class FnEndpoint<TInput, TOutput, TCtx extends InvocationContext> implements Endpoint<TInput, TOutput> {
+    constructor(private dowork: (input: TInput, context: TCtx) => Observable<TOutput>) { }
+
+    handle(input: TInput, context: TCtx): Observable<TOutput> {
+        return this.dowork(input, context);
+    }
+
+    equals(target: any): boolean {
+        return this.dowork === target?.dowork;
+    }
 }
 
 /**
@@ -42,6 +67,10 @@ export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TO
 
     handle(input: TInput, context: InvocationContext): Observable<TOutput> {
         return this.interceptor.intercept(input, this.next, context)
+    }
+
+    equals(target: any): boolean {
+        return this === target;
     }
 }
 
@@ -58,6 +87,10 @@ export abstract class AbstractEndpoint<TInput = any, TOutput = any> implements E
             this.chain = this.compose();
         }
         return this.chain.handle(input, context)
+    }
+
+    equals(target: any): boolean {
+        return this === target;
     }
 
     protected reset() {
@@ -78,54 +111,15 @@ export abstract class AbstractEndpoint<TInput = any, TOutput = any> implements E
      *  get interceptors. 
      */
     protected abstract getInterceptors(): Interceptor<TInput, TOutput>[];
-
-}
-
-/**
- * Dynamic endpoint.
- */
-export class DynamicEndpoint<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
-
-    constructor(
-        protected injector: Injector,
-        private token: Token<Interceptor<TInput, TOutput>[]>,
-        private backend: TypeOf<EndpointBackend<TInput, TOutput>>) {
-        super();
-    }
-
-    use(interceptor: TypeOf<Interceptor<TInput, TOutput>>, order?: number): this {
-        this.multiOrder(this.token, interceptor, order);
-        this.reset();
-        return this;
-    }
-
-    /**
-     *  get backend endpoint. 
-     */
-    protected getBackend(): EndpointBackend<TInput, TOutput> {
-        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
-    }
-
-    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
-        return this.injector.get(this.token, EMPTY)
-    }
-
-    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
-        if (isType(target)) {
-            this.injector.inject({ provide, useClass: target, multi: true, multiOrder })
-        } else {
-            this.injector.inject({ provide, useValue: target, multi: true, multiOrder })
-        }
-    }
 }
 
 
 /**
- * Endpoint chain. for composing interceptors. Requests will
+ * Simple Endpoint chain. for composing interceptors. Requests will
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
+export class Endpoints<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
 
     constructor(
         protected readonly backend: EndpointBackend<TInput, TOutput>,
@@ -145,6 +139,47 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
 
 
 /**
+ * Endpoint chain. for composing interceptors. Requests will
+ * traverse them in the order they're declared. That is, the first endpoint
+ * is treated as the outermost interceptor.
+ */
+export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
+
+    constructor(
+        protected injector: Injector,
+        private token: Token<Interceptor<TInput, TOutput>[]>,
+        private backend: TypeOf<EndpointBackend<TInput, TOutput>>) {
+        super();
+    }
+
+    use(interceptor: TypeOf<Interceptor<TInput, TOutput>>, order?: number): this {
+        this.multiOrder(this.token, interceptor, order);
+        this.reset();
+        return this;
+    }
+
+    /**
+     *  get backend endpoint. 
+     */
+    protected getBackend(): Endpoint<TInput, TOutput> {
+        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
+    }
+
+    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
+        return this.injector.get(this.token, EMPTY)
+    }
+
+    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
+        if (isType(target)) {
+            this.injector.inject({ provide, useClass: target, multi: true, multiOrder })
+        } else {
+            this.injector.inject({ provide, useValue: target, multi: true, multiOrder })
+        }
+    }
+}
+
+
+/**
  * run invokers.
  * @param invokders 
  * @param ctx 
@@ -152,7 +187,7 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
  * @param isDone 
  * @returns 
  */
-export function runInvokers(invokders: InvokerLike[] | undefined, ctx: InvocationContext, input: any, isDone: (ctx: InvocationContext) => boolean): Observable<any> {
+export function runInvokers(invokders: Endpoint[] | undefined, ctx: InvocationContext, input: any, isDone: (ctx: InvocationContext) => boolean): Observable<any> {
     let $obs = of(input);
     if (!invokders || !invokders.length) {
         return $obs;
@@ -162,7 +197,7 @@ export function runInvokers(invokders: InvokerLike[] | undefined, ctx: Invocatio
         $obs = $obs.pipe(
             mergeMap(r => {
                 if (isDone(ctx)) return of(r);
-                const $res = isFunction(i) ? i(ctx) : i.invoke(ctx);
+                const $res = isFunction(i) ? i(ctx) : i.handle(r, ctx);
                 if (!isPromise($res) || !isObservable($res)) return of($res);
                 return $res;
             }));

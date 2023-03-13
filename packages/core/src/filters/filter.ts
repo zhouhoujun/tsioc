@@ -1,8 +1,8 @@
-import { Abstract, EMPTY, Injectable, Injector, InvokerLike, isFunction, isType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, Injectable, Type } from '@tsdi/ioc';
 import { mergeMap, Observable, of } from 'rxjs';
 import { EndpointContext } from './context';
 import { Interceptor } from '../Interceptor';
-import { AbstractEndpoint, Endpoint, EndpointBackend, runInvokers } from '../Endpoint';
+import { Endpoint, runInvokers } from '../Endpoint';
 
 
 
@@ -23,48 +23,6 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
     abstract intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext): Observable<TOutput>;
 }
 
-
-
-/**
- * Filter chain.
- */
-export class FilterChain<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
-
-    constructor(
-        protected injector: Injector,
-        private token: Token<Filter<TInput, TOutput>[]>,
-        private backend: TypeOf<EndpointBackend<TInput, TOutput>>) {
-        super();
-    }
-
-    use(filter: TypeOf<Filter<TInput, TOutput>>, order?: number): this {
-        this.multiOrder(this.token, filter, order);
-        this.reset();
-        return this;
-    }
-
-    /**
-     *  get backend endpoint. 
-     */
-    protected getBackend(): EndpointBackend<TInput, TOutput> {
-        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
-    }
-
-    protected getInterceptors(): Filter<TInput, TOutput>[] {
-        return this.injector.get(this.token, EMPTY)
-    }
-
-    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
-        if (isType(target)) {
-            this.injector.inject({ provide, useClass: target, multi: true, multiOrder })
-        } else {
-            this.injector.inject({ provide, useValue: target, multi: true, multiOrder })
-        }
-    }
-}
-
-
-
 /**
  * Endpoint handler method resolver.
  */
@@ -74,20 +32,20 @@ export abstract class FilterHandlerResolver {
      * resolve filter hanlde.
      * @param filter 
      */
-    abstract resolve<T>(filter: Type<T> | T | string): InvokerLike[];
+    abstract resolve<T>(filter: Type<T> | T | string): Endpoint[];
     /**
      * add filter handle.
      * @param filter filter type
-     * @param methodInvoker filter handle invoker.
+     * @param endpoint filter endpoint.
      * @param order order.
      */
-    abstract addHandle(filter: Type | string, methodInvoker: InvokerLike, order?: number): this;
+    abstract addHandle(filter: Type | string, endpoint: Endpoint, order?: number): this;
     /**
      * remove filter handle.
      * @param filter filter type.
-     * @param methodInvoker filter handle.
+     * @param endpoint filter endpoint.
      */
-    abstract removeHandle(filter: Type | string, methodInvoker: InvokerLike): this;
+    abstract removeHandle(filter: Type | string, endpoint: Endpoint): this;
 }
 
 

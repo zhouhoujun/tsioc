@@ -1,6 +1,6 @@
 import { chain, Handler, isFunction, lang, Type } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
-import { EndpointChain, EndpointBackend } from '../Endpoint';
+import { Endpoints, EndpointBackend } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
 import { ServerEndpointContext } from './context';
 import { Incoming, Outgoing } from './packet';
@@ -131,7 +131,7 @@ export class InterceptorMiddleware<TRequest extends Incoming, TResponse extends 
 
     invoke<T extends ServerEndpointContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
-            const chain = new EndpointChain<TRequest, TResponse>({
+            const chain = new Endpoints<TRequest, TResponse>({
                 handle: (req, ctx) => defer(async () => {
                     await this.middleware.invoke(ctx as T, next);
                     return (ctx as T).response as TResponse;

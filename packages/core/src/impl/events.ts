@@ -1,4 +1,4 @@
-import { createContext, getClass, Injector, InvocationContext, InvokerLike, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { createContext, getClass, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runInvokers } from '../Endpoint';
@@ -21,7 +21,7 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEvent> {
 
     private _endpoint: FilterEndpoint<ApplicationEvent, any>;
-    private maps: Map<Type, InvokerLike[]>;
+    private maps: Map<Type, Endpoint[]>;
 
     constructor(private injector: Injector) {
         super();
@@ -43,13 +43,13 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): this {
-        const handlers = this.maps.get(event);
-        if (handlers) {
-            if (handlers.indexOf(invoker) >= 0) return this;
-            order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
+    addListener(event: Type<ApplicationEvent>, endpoint: Endpoint, order = -1): this {
+        const endpoints = this.maps.get(event);
+        if (endpoints) {
+            if (endpoints.some(i => i.equals(endpoint))) return this;
+            order >= 0 ? endpoints.splice(order, 0, endpoint) : endpoints.push(endpoint);
         } else {
-            this.maps.set(event, [invoker]);
+            this.maps.set(event, [endpoint]);
         }
         return this;
     }
@@ -65,6 +65,10 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     clear(): void {
         this.maps.clear();
+    }
+
+    equals(target: any): boolean {
+        return this === target;
     }
 }
 

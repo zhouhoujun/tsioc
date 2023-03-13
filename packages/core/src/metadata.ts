@@ -1,12 +1,15 @@
 import {
     isUndefined, lang, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata,  Decors, pomiseOf
+    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata,  Decors, pomiseOf, TypeOf, InvocationContext, isType
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import { CanActivate } from './guard';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
-import { FilterEndpoint } from './filters/endpoint';
+import { FilterHandlerResolver, Respond } from './filters/filter';
+import { EndpointContext } from './filters/context';
+import { EndpointFactoryResolver } from './filters/endpoint.factory';
+import { Interceptor } from './Interceptor';
 
 
 /**
@@ -228,24 +231,13 @@ export const EventHandler: EventHandler = createDecorator('EventHandler', {
             const typeRef = ctx.class;
             const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
             decors.forEach(decor => {
-                const { filter, order, guards } = decor.metadata;
+                const { filter, order, ...options } = decor.metadata;
 
-                const invoker = factory.createInvoker(decor.propertyKey, true);
-                // const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
-                //     if (guards && guards.length) {
-                //         if (!(await lang.some(
-                //             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(ctx))),
-                //             vaild => vaild === false))) {
-                //             return;
-                //         }
-                //     }
-                //     return run(ctx);
-                // });
-                const endpoint = new FilterEndpoint(factory.injector, )
+                const endpoint = factory.create(decor.propertyKey, options);
 
-                injector.get(ApplicationEventMulticaster).addListener(filter ?? PayloadApplicationEvent, invoker, order)
+                injector.get(ApplicationEventMulticaster).addListener(filter ?? PayloadApplicationEvent, endpoint, order)
             });
 
             next()
@@ -271,6 +263,191 @@ export interface EventHandlerMetadata {
      */
     guards?: Type<CanActivate>[];
 }
+
+
+
+/**
+ * Endpoint handler metadata.
+ */
+export interface EndpointHandlerMetadata {
+    /**
+     * execption type.
+     */
+    filter: Type | string;
+    /**
+     * order.
+     */
+    order?: number;
+    /**
+     * route guards.
+     */
+    guards?: Type<CanActivate>[];
+    /**
+     * interceptors of route.
+     */
+    interceptors?: TypeOf<Interceptor>[];
+    /**
+     * pipes for the route.
+     */
+    pipes?: TypeOf<PipeTransform>[];
+    /**
+     * handle expection as response type.
+     */
+    response?: 'body' | 'header' | 'response' | TypeOf<Respond>
+}
+
+
+
+/**
+ * EndpointHanlder decorator, for class. use to define the class as response handle register in global Endpoint filter.
+ *
+ * @export
+ * @interface EndpointHanlder
+ */
+export interface EndpointHanlder {
+    /**
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {Type} filter message match pattern.
+     * @param {order?: number } option message match option.
+     */
+    (filter: Type | string, option?: {
+
+        /**
+         * route guards.
+         */
+        guards?: Type<CanActivate>[];
+        /**
+         * interceptors of route.
+         */
+        interceptors?: TypeOf<Interceptor>[];
+        /**
+         * pipes for the route.
+         */
+        pipes?: TypeOf<PipeTransform>[];
+        /**
+         * order.
+         */
+        order?: number;
+        /**
+         * handle expection as response type.
+         */
+        response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: EndpointContext, returnning: any) => void)
+    }): MethodDecorator;
+}
+
+/**
+ * EndpointHanlder decorator, for class. use to define the class as Endpoint handle register in global Endpoint filter.
+ * @EndpointHanlder
+ * 
+ * @exports {@link EndpointHanlder}
+ */
+export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder', {
+    props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
+    design: {
+        method: (ctx, next) => {
+            const typeRef = ctx.class;
+            const decors = typeRef.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
+            const injector = ctx.injector;
+            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+
+            decors.forEach(decor => {
+                const { filter, order, ...options } = decor.metadata;
+                const endpoint = factory.create(decor.propertyKey, options);
+                injector.get(FilterHandlerResolver).addHandle(filter, endpoint, order)
+
+                // let after: (ctx: InvocationContext, endpCtx: EndpointContext, value: any) => void;
+                // if (response) {
+                //     if (isType(response)) {
+                //         after = (ctx, endpCtx, value) => ctx.resolve(response).respond(endpCtx, value);
+                //     } else if (isString(response)) {
+                //         after = (ctx, endpCtx, value) => ctx.resolve(TypedRespond).respond(endpCtx, response, value);
+                //     } else if (response instanceof Respond) {
+                //         after = (ctx, endpCtx, value) => response.respond(endpCtx, value)
+                //     }
+                // }
+
+                // const invoker = factory.create(decor.propertyKey, options);
+                // const invoker = factory.createInvoker(decor.propertyKey, async (ctx, run) => {
+                //     const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(EndpointContext);
+                //     if (guards && guards.length) {
+                //         if (!(await lang.some(
+                //             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
+                //             vaild => vaild === false))) {
+                //             throw new ForbiddenExecption();
+                //         }
+                //     }
+                //     const value = run(ctx);
+                //     if (after) {
+                //         if (isPromise(value)) {
+                //             return value.then((v) => {
+                //                 lang.immediate(after, ctx, endpCtx, v);
+                //                 return v;
+                //             });
+                //         }
+                //         if (isObservable(value)) {
+                //             return value.pipe(
+                //                 map(v => {
+                //                     lang.immediate(after, ctx, endpCtx, v);
+                //                     return v;
+                //                 })
+                //             )
+                //         }
+                //         lang.immediate(after, ctx, endpCtx, value);
+                //     }
+                //     return value;
+                // });
+
+                // injector.get(FilterHandlerResolver).addHandle(filter, invoker, order)
+            });
+
+            next()
+        }
+    }
+});
+
+
+/**
+ * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ *
+ * @export
+ * @interface ExecptionHandler
+ */
+export interface ExecptionHandler {
+    /**
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {string} pattern message match pattern.
+     * @param {order?: number } option message match option.
+     */
+    (execption: Type<Error>, option?: {
+        /**
+         * order.
+         */
+        order?: number;
+        /**
+         * interceptors of route.
+         */
+        interceptors?: TypeOf<Interceptor>[];
+        /**
+         * pipes for the route.
+         */
+        pipes?: TypeOf<PipeTransform>[];
+        /**
+         * handle expection as response type.
+         */
+        response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: EndpointContext, returnning: any) => void)
+    }): MethodDecorator;
+}
+
+/**
+ * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ * @ExecptionHandler
+ * 
+ * @exports {@link ExecptionHandler}
+ */
+export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
+
 
 
 /**

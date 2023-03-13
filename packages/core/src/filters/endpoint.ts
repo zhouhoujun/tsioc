@@ -1,17 +1,17 @@
 import { EMPTY, Execption, Injector, isFunction, lang, pomiseOf, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
-import { Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
+import { EndpointChain, Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { EndpointContext } from './context';
-import { Filter, FilterChain } from './filter';
+import { Filter } from './filter';
 
 
 /**
  * filter endpoint.
  */
-export class FilterEndpoint<TInput = any, TOutput = any> extends FilterChain<TInput, TOutput> {
+export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<TInput, TOutput> {
 
     constructor(
         injector: Injector,

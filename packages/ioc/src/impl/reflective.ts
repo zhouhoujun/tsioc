@@ -148,11 +148,10 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     /**
      * create method invoker of target type.
      * @param method the method name of target.
-     * @param shared shared instance of this type, lazy resolve by factory.
      * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
-    createInvoker(method: string, shared?: boolean): OperationInvoker;
+    createInvoker(method: string): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
@@ -162,7 +161,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
      */
     createInvoker(method: string, instance?: T | (() => T)): OperationInvoker;
     createInvoker(method: string, instance?: boolean | T | (() => T)): OperationInvoker {
-        return new ReflectiveOperationInvoker(this, method, isBoolean(instance) ? this.getInstance.bind(this) : instance)
+        return new ReflectiveOperationInvoker(this, method, instance ?? this.getInstance.bind(this))
     }
 
     protected createContext(injector: Injector, option?: InvokeArguments): InvocationContext<any> {

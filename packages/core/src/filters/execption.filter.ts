@@ -27,6 +27,10 @@ export abstract class ExecptionBackend implements Endpoint<Error, MessageExecpti
      * @param context request context.
      */
     abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
+
+    equals(target: any): boolean {
+        return this === target;
+    }
 }
 
 
