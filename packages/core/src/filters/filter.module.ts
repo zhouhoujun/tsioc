@@ -1,4 +1,4 @@
-import { Module, EMPTY, getClass, Injectable, isFunction, isString, lang, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
+import { Module, EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { ExecptionHandlerBackend } from './execption.filter';
 import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
@@ -30,7 +30,9 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
 
     removeHandle(filter: Type | string, endpoint: Endpoint): this {
         const hds = this.maps.get(filter);
-        if (hds) lang.remove(hds, endpoint);
+        if (!hds) return this;
+        const idx = hds.findIndex(e => e.equals(endpoint));
+        if (idx > 0) hds.splice(idx, 1);
         return this
     }
 }
