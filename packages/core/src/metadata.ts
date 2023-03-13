@@ -231,7 +231,7 @@ export const EventHandler: EventHandler = createDecorator('EventHandler', {
             const typeRef = ctx.class;
             const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'event');
             decors.forEach(decor => {
                 const { filter, order, ...options } = decor.metadata;
 
@@ -349,7 +349,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
             const typeRef = ctx.class;
             const decors = typeRef.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'filter');
 
             decors.forEach(decor => {
                 const { filter, order, ...options } = decor.metadata;

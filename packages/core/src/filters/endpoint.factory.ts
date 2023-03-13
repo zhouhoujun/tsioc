@@ -26,7 +26,10 @@ export abstract class EndpointFactory<T> {
  */
 export abstract class EndpointFactoryResolver {
     /**
-     * resolve endpoint.
+     * resolve endpoint factory.
+     * @param type factory type
+     * @param injector injector
+     * @param categare factory categare
      */
-    abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector): EndpointFactory<T>;
+    abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector, categare?: 'event' | 'filter' | 'route'): EndpointFactory<T>;
 }

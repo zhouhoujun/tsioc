@@ -1,5 +1,5 @@
-import { Class, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeDef, TypeOf } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeDef, TypeOf, isPromise } from '@tsdi/ioc';
+import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Endpoint, FnEndpoint } from '../Endpoint';
 import { EndpointContext } from '../filters';
 import { FilterEndpoint } from '../filters/endpoint';
@@ -10,7 +10,7 @@ import { Interceptor } from '../Interceptor';
 
 export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoint<TInput, TOutput> {
 
-    constructor( injector: Injector,
+    constructor(injector: Injector,
         token: Token<Interceptor<TInput, TOutput>[]>,
         private invoker: OperationInvoker,
         filteToken: Token<Interceptor<TInput, TOutput>[]>,
@@ -23,10 +23,21 @@ export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoi
     }
 
     protected invoke(input: TInput, context: EndpointContext): Observable<TOutput> {
-        return this.invoker.invoke(context);
+        return of(input)
+            .pipe(
+                mergeMap(value => {
+                    const result = this.invoker.invoke(context);
+
+                    if (isPromise(result) || isObservable(result)) return result;
+
+                    return of(result);
+
+                })
+            )
     }
 }
 
+@Injectable()
 export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
 
     constructor(readonly typeRef: ReflectiveRef<T>) {
@@ -34,15 +45,28 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
     }
 
     create(propertyKey: string, options: EndpointOptions): Endpoint<any, any> {
-        this.typeRef.createInvoker(propertyKey);
-        return new OperationEndpoint(this.typeRef.injector, '', this.typeRef.createInvoker(propertyKey), '', );
+        return new OperationEndpoint(this.typeRef.injector, '', this.typeRef.createInvoker(propertyKey), '',);
     }
 
 }
 
 export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
-    resolve<T>(type: Type<T> | Class<T, TypeDef<T>>, injector: Injector): EndpointFactory<T> {
+    resolve<T>(type: Type<T> | Class<T, TypeDef<T>>, injector: Injector, categare?: 'event' | 'filter' | 'route'): EndpointFactory<T> {
         const tyref = injector.get(ReflectiveFactory).create(type, injector);
+
+        switch (categare) {
+            case 'event':
+                break;
+
+            case 'filter':
+                break;
+
+            case 'route':
+                break;
+
+            default:
+                break;
+        }
         return new EndpointFactoryImpl(tyref);
     }
 
