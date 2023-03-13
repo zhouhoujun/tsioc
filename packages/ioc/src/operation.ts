@@ -1,6 +1,7 @@
 import { ClassType } from './types';
 import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
+import { ReflectiveRef } from './reflective';
 
 
 /**
@@ -13,6 +14,10 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  * Interface to perform an operation invocation.
  */
 export interface OperationInvoker<T = any> {
+    /**
+     * type ref.
+     */
+    get typeRef(): ReflectiveRef;
     /**
      * invoker order.
      */

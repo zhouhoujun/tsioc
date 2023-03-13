@@ -1,6 +1,8 @@
 import { Abstract, OnDestroy, OperationInvoker, ReflectiveRef } from '@tsdi/ioc';
 
-
+/**
+ * Application runner.
+ */
 @Abstract()
 export abstract class ApplicationRunners implements OnDestroy {
   /**
@@ -51,3 +53,20 @@ export abstract class ApplicationRunners implements OnDestroy {
   abstract onDestroy(): void;
 
 }
+
+
+/**
+ * Runnable
+ */
+@Abstract()
+export abstract class Runnable<T> {
+  /**
+   * type ReflectiveRef
+   */
+  abstract get typeRef(): ReflectiveRef<T>;
+  /**
+   * invoke.
+   */
+  abstract invoke(): any;
+}
+

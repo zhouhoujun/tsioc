@@ -15,7 +15,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
 
     private _returnType!: ClassType;
     constructor(
-        private typeRef: ReflectiveRef<T>,
+        readonly typeRef: ReflectiveRef<T>,
         private method: string,
         private instance?: any | (() => any)) {
 

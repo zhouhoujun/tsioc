@@ -1,16 +1,16 @@
 import { lang, OperationInvoker, isNumber, ReflectiveRef, Type, Injectable } from '@tsdi/ioc';
-import { lastValueFrom } from 'rxjs';
+import { finalize, lastValueFrom, mergeMap, Observable } from 'rxjs';
 import { ApplicationRunners } from '../runners';
 import {
     ApplicationDisposeEvent, ApplicationEventMulticaster, ApplicationShutdownEvent,
-    ApplicationStartEvent, ApplicationStartingEvent
+    ApplicationStartedEvent, ApplicationStartingEvent
 } from '../events';
 
 
 @Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners {
-    private _runners: OperationInvoker[];
-    private _maps: Map<Type, OperationInvoker[]>;
+    private _runners: (OperationInvoker | ReflectiveRef)[];
+    private _maps: Map<Type, (OperationInvoker | ReflectiveRef)[]>;
     private order = false;
     constructor(protected readonly multicaster: ApplicationEventMulticaster) {
         super()
@@ -19,23 +19,13 @@ export class DefaultApplicationRunners extends ApplicationRunners {
     }
 
     attach(runner: OperationInvoker<any> | ReflectiveRef<any>, order?: number | undefined): void {
-        if (runner instanceof ReflectiveRef) {
-            if (!this._maps.has(runner.type)) {
-                const runnables = runner.class.runnables.filter(r => !r.auto);
-                const invokers: OperationInvoker[] = [];
-                this._maps.set(runner.type, invokers);
-                runnables.forEach(r => {
-                    const invoker = runner.createInvoker(r.method);
-                    invokers.push(invoker);
-                    this.attachOperation(invoker, r.order);
-                });
-            }
-        } else if (!this.has(runner)) {
-            this.attachOperation(runner, order);
+        const tgref = runner instanceof ReflectiveRef ? runner : runner.typeRef;
+        if (!this._maps.has(tgref.type)) {
+            this._maps.set(tgref.type, [runner]);
+        } else {
+            this._maps.get(tgref.type)?.push(runner);
         }
-    }
 
-    attachOperation(runner: OperationInvoker, order?: number): void {
         if (isNumber(order)) {
             this.order = true;
             this._runners.splice(order, 0, runner)
@@ -46,45 +36,41 @@ export class DefaultApplicationRunners extends ApplicationRunners {
 
 
     detach(runner: OperationInvoker | ReflectiveRef): void {
-        if (runner instanceof ReflectiveRef) {
-            const operations = this._maps.get(runner.type);
-            operations?.forEach(r => {
-                const idx = this._runners.indexOf(r);
-                if (idx >= 0) {
-                    this._runners.splice(idx, 1);
-                }
-            });
-            this._maps.delete(runner.type);
-        } else {
-            const idx = this._runners.findIndex(o => o.descriptor === runner.descriptor);
-            if (idx >= 0) {
-                this._runners.splice(idx, 1);
-            }
+        const idx = this._runners.findIndex(o => o === runner);
+        if (idx >= 0) {
+            this._runners.splice(idx, 1);
         }
     }
 
 
     has(runner: OperationInvoker | ReflectiveRef): boolean {
-        if (runner instanceof ReflectiveRef) return this._maps.has(runner.type);
-        return this._runners.some(o => o.descriptor === runner.descriptor);
+        const tgref = runner instanceof ReflectiveRef ? runner : runner.typeRef;
+        return this._maps.has(tgref.type);
     }
 
-    async run(): Promise<void> {
-        await this.beforeRun();
-        if (this._runners.length) {
-            if (this.order) {
-                await lang.step(Array.from(this._runners).map(svr => () => svr.invoke()))
-            } else {
-                await Promise.all(this._runners.map(svr => svr.invoke()))
-            }
-        }
-        await this.afterRun();
+    run(): Promise<void> {
+        return lastValueFrom(this.beforeRun()
+            .pipe(
+                mergeMap(v => this.onDispose()),
+                // mergeMap(v => {
+                //     if (this._runners.length) {
+                //         if (this.order) {
+                //             await lang.step(Array.from(this._runners).map(svr => () => svr.invoke()))
+                //         } else {
+                //             await Promise.all(this._runners.map(svr => svr.invoke()))
+                //         }
+                //     }
+                // }),
+                mergeMap(v => this.afterRun())
+            ));
     }
 
-    async stop(signls?: string): Promise<void> {
-        await this.onShuwdown(signls);
-        await this.onDispose();
-        this.onDestroy();
+    stop(signls?: string): Promise<void> {
+        return lastValueFrom(this.onShuwdown()
+            .pipe(
+                mergeMap(v => this.onDispose()),
+                finalize(() => this.onDestroy())
+            ))
     }
 
     onDestroy(): void {
@@ -92,20 +78,20 @@ export class DefaultApplicationRunners extends ApplicationRunners {
         this._runners = null!;
     }
 
-    protected beforeRun(): Promise<void> {
-        return lastValueFrom(this.multicaster.emit(new ApplicationStartingEvent(this)));
+    protected beforeRun(): Observable<any> {
+        return this.multicaster.emit(new ApplicationStartingEvent(this));
     }
 
-    protected afterRun(): Promise<void> {
-        return lastValueFrom(this.multicaster.emit(new ApplicationStartEvent(this)));
+    protected afterRun(): Observable<any> {
+        return this.multicaster.emit(new ApplicationStartedEvent(this));
     }
 
-    protected onShuwdown(signls?: string) {
-        return lastValueFrom(this.multicaster.emit(new ApplicationShutdownEvent(this, signls)));
+    protected onShuwdown(signls?: string): Observable<any> {
+        return this.multicaster.emit(new ApplicationShutdownEvent(this, signls));
     }
 
-    protected onDispose() {
-        return lastValueFrom(this.multicaster.emit(new ApplicationDisposeEvent(this)));
+    protected onDispose(): Observable<any> {
+        return this.multicaster.emit(new ApplicationDisposeEvent(this));
     }
 
 }

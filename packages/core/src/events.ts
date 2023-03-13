@@ -58,6 +58,13 @@ export class ApplicationStartEvent extends ApplicationEvent {
 }
 
 /**
+ * Application start event.
+ */
+export class ApplicationStartedEvent extends ApplicationEvent {
+
+}
+
+/**
  * Application context refresh event.
  */
 export class ApplicationContextRefreshEvent extends ApplicationEvent {
