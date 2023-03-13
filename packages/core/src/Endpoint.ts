@@ -180,20 +180,20 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
 
 
 /**
- * run invokers.
- * @param invokders 
+ * run endpoints.
+ * @param endpoints 
  * @param ctx 
  * @param input 
  * @param isDone 
  * @returns 
  */
-export function runInvokers(invokders: Endpoint[] | undefined, ctx: InvocationContext, input: any, isDone: (ctx: InvocationContext) => boolean): Observable<any> {
+export function runEndpoints(endpoints: Endpoint[] | undefined, ctx: InvocationContext, input: any, isDone: (ctx: InvocationContext) => boolean): Observable<any> {
     let $obs = of(input);
-    if (!invokders || !invokders.length) {
+    if (!endpoints || !endpoints.length) {
         return $obs;
     }
 
-    invokders.forEach(i => {
+    endpoints.forEach(i => {
         $obs = $obs.pipe(
             mergeMap(r => {
                 if (isDone(ctx)) return of(r);

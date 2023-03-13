@@ -1,7 +1,7 @@
 import { createContext, getClass, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Interceptor } from '../Interceptor';
-import { Endpoint, runInvokers } from '../Endpoint';
+import { Endpoint, runEndpoints } from '../Endpoint';
 import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
 import { Filter } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
@@ -59,8 +59,8 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     handle(input: ApplicationEvent, context: InvocationContext<any>): Observable<any> {
-        const handlers = this.maps.get(getClass(input));
-        return runInvokers(handlers, context, input, v => v.done === true);
+        const endpoints = this.maps.get(getClass(input));
+        return runEndpoints(endpoints, context, input, v => v.done === true);
     }
 
     clear(): void {

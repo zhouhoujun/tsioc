@@ -2,7 +2,7 @@ import { Abstract, Injectable, Type } from '@tsdi/ioc';
 import { mergeMap, Observable, of } from 'rxjs';
 import { EndpointContext } from './context';
 import { Interceptor } from '../Interceptor';
-import { Endpoint, runInvokers } from '../Endpoint';
+import { Endpoint, runEndpoints } from '../Endpoint';
 
 
 
@@ -57,7 +57,7 @@ export abstract class FilterHandlerResolver {
  */
 export function runHandlers(ctx: EndpointContext, input: any, filter: Type | string): Observable<any> {
     const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
-    return runInvokers(handles, ctx, input, c => c.done === true)
+    return runEndpoints(handles, ctx, input, c => c.done === true)
 }
 
 // @Injectable({ static: true })

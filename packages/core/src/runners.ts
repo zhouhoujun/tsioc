@@ -1,4 +1,6 @@
-import { Abstract, OnDestroy, OperationInvoker, ReflectiveRef } from '@tsdi/ioc';
+import { Abstract, InvocationContext, OnDestroy, OperationInvoker, ReflectiveRef, TypeOf } from '@tsdi/ioc';
+import { Filter } from './filters';
+import { Interceptor } from './Interceptor';
 
 /**
  * Application runner.
@@ -40,12 +42,26 @@ export abstract class ApplicationRunners implements OnDestroy {
   /**
    * run all runners.
    */
-  abstract run(): Promise<void>;
+  abstract run(context: InvocationContext): Promise<void>;
 
   /**
    * stop all runners.
    */
   abstract stop(): Promise<void>;
+
+  /**
+    * use interceptor
+    * @param interceptor 
+    * @param order 
+    */
+  abstract useInterceptor(interceptor: TypeOf<Interceptor>, order?: number): this;
+  /**
+   * use filter
+   * @param filter 
+   * @param order 
+   */
+  abstract useFilter(filter: TypeOf<Filter>, order?: number): this;
+
 
   /**
    * destroy.
@@ -59,7 +75,7 @@ export abstract class ApplicationRunners implements OnDestroy {
  * Runnable
  */
 @Abstract()
-export abstract class Runnable<T> {
+export abstract class Runnable<T = any> {
   /**
    * type ReflectiveRef
    */

@@ -178,7 +178,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
     protected callRunners(ctx: ApplicationContext): Promise<void> {
-        return ctx.runners.run()
+        return ctx.runners.run(ctx)
     }
 
     protected async handleRunFailure(ctx: ApplicationContext, error: Error | any): Promise<void> {
