@@ -204,7 +204,7 @@ export function runEndpoints(endpoints: Endpoint[] | undefined, ctx: InvocationC
         $obs = $obs.pipe(
             mergeMap(r => {
                 if (isDone(ctx)) return of(r);
-                const $res = isFunction(i) ? i(ctx) : i.handle(r, ctx);
+                const $res = i.handle(r, ctx);
                 if (!isPromise($res) || !isObservable($res)) return of($res);
                 return $res;
             }));

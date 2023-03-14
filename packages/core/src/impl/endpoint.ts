@@ -1,7 +1,8 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeDef, TypeOf, isPromise } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeDef, TypeOf, isPromise, getToken } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Endpoint, FnEndpoint } from '../Endpoint';
-import { EndpointContext } from '../filters';
+import { Filter } from '../filters/filter';
+import { EndpointContext } from '../filters/context';
 import { FilterEndpoint } from '../filters/endpoint';
 import { EndpointFactory, EndpointFactoryResolver, EndpointOptions } from '../filters/endpoint.factory';
 import { CanActivate } from '../guard';
@@ -13,7 +14,7 @@ export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoi
     constructor(injector: Injector,
         token: Token<Interceptor<TInput, TOutput>[]>,
         private invoker: OperationInvoker,
-        filteToken: Token<Interceptor<TInput, TOutput>[]>,
+        filteToken: Token<Filter<TInput, TOutput>[]>,
         guards?: TypeOf<CanActivate>[]) {
         super(injector, token, null!, filteToken, guards)
     }
@@ -45,7 +46,7 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
     }
 
     create(propertyKey: string, options: EndpointOptions): Endpoint<any, any> {
-        return new OperationEndpoint(this.typeRef.injector, '', this.typeRef.createInvoker(propertyKey), '',);
+        return new OperationEndpoint(this.typeRef.injector, getToken<Interceptor[]>(this.typeRef.type, propertyKey + '_INTERCEPTORS'), this.typeRef.createInvoker(propertyKey), getToken<Filter[]>(this.typeRef.type, propertyKey + '_FILTERS'));
     }
 
 }
