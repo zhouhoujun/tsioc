@@ -1,4 +1,4 @@
-import { Inject, runtimes, RuntimeLifeScope, Injector, Autorun, Injectable, Module } from '@tsdi/ioc';
+import { Inject, runtimes, RuntimeLifeScope, Injector, Autorun, Module } from '@tsdi/ioc';
 import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, MatchPointcutAction } from './actions/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './DefaultAdviceMatcher';
@@ -7,16 +7,16 @@ import { Proceeding } from './Proceeding';
 import { AdviceMatcher } from './AdviceMatcher';
 
 
-@Injectable({
+
+@Autorun({
     providedIn: 'root',
-    singleton: true
+    method: 'setup'
 })
 export class AopProvider {
 
     /**
      * register aop for container.
      */
-    @Autorun()
     setup(@Inject() injector: Injector) {
 
         const platform = injector.platform();

@@ -48,10 +48,19 @@ export abstract class EndpointBackend<TInput = any, TOutput = any> implements En
  * funcation Endpoint.
  */
 export class FnEndpoint<TInput, TOutput, TCtx extends InvocationContext> implements Endpoint<TInput, TOutput> {
-    constructor(private dowork: (input: TInput, context: TCtx) => Observable<TOutput>) { }
+    constructor(private dowork: (input: TInput, context: TCtx) => TOutput | Observable<TOutput> | Promise<TOutput>) {
+
+    }
 
     handle(input: TInput, context: TCtx): Observable<TOutput> {
-        return this.dowork(input, context);
+        return of(input)
+            .pipe(
+                mergeMap(i => {
+                    const $res = this.dowork(i, context);
+                    if (isPromise($res) || isObservable($res)) return $res;
+                    return of($res);
+                })
+            )
     }
 
     equals(target: any): boolean {
@@ -63,7 +72,9 @@ export class FnEndpoint<TInput, TOutput, TCtx extends InvocationContext> impleme
  * Interceptor Endpoint.
  */
 export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TOutput> {
-    constructor(private next: Endpoint<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) { }
+    constructor(private next: Endpoint<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) {
+
+    }
 
     handle(input: TInput, context: InvocationContext): Observable<TOutput> {
         return this.interceptor.intercept(input, this.next, context)
@@ -205,8 +216,8 @@ export function runEndpoints(endpoints: Endpoint[] | undefined, ctx: InvocationC
             mergeMap(r => {
                 if (isDone(ctx)) return of(r);
                 const $res = i.handle(r, ctx);
-                if (!isPromise($res) || !isObservable($res)) return of($res);
-                return $res;
+                if (isPromise($res) || isObservable($res)) return $res;
+                return of($res);
             }));
     });
 

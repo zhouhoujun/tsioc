@@ -1,5 +1,5 @@
 import { lang, Injectable, Decors, InvocationContext, ReflectiveRef, Type } from '@tsdi/ioc';
-import { Runnable } from '@tsdi/core';
+import { RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -14,7 +14,7 @@ import { UnitRunner } from './Runner';
  * @implements {UnitRunner<T>}
  */
 @Injectable()
-export class SuiteRunner<T = any> extends Runnable<T> implements UnitRunner {
+export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
 
     constructor(readonly typeRef: ReflectiveRef) {
         super()

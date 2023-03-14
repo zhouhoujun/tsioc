@@ -4,7 +4,7 @@ import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
 import { ModuleLoader } from './loader';
 import { DefaultModuleLoader } from './impl/loader';
-import { FilterMoudle } from './filters';
+
 
 /**
  * application.

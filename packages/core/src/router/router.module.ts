@@ -2,15 +2,11 @@ import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { RouteFactoryResolver, ROUTES, Routes } from './route';
 import { DefaultRouteFactoryResovler } from './route_ref';
 import { MappingRouter, Router } from './router';
-import { FilterMoudle } from '../filters/filter.module';
 
 /*
  * Middleware module.
  */
 @Module({
-    imports: [
-        FilterMoudle
-    ],
     providers: [
         { provide: Router, useClass: MappingRouter, static: true },
         { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },

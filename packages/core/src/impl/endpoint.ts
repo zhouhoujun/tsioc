@@ -1,8 +1,6 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeDef, TypeOf, isPromise, getToken } from '@tsdi/ioc';
-import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Endpoint, FnEndpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
-import { EndpointContext } from '../filters/context';
 import { FilterEndpoint } from '../filters/endpoint';
 import { EndpointFactory, EndpointFactoryResolver, EndpointOptions } from '../filters/endpoint.factory';
 import { CanActivate } from '../guard';
@@ -20,22 +18,9 @@ export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoi
     }
 
     protected override getBackend(): Endpoint<TInput, TOutput> {
-        return new FnEndpoint(this.invoke.bind(this))
+        return new FnEndpoint((input, ctx) => this.invoker.invoke(ctx))
     }
 
-    protected invoke(input: TInput, context: EndpointContext): Observable<TOutput> {
-        return of(input)
-            .pipe(
-                mergeMap(value => {
-                    const result = this.invoker.invoke(context);
-
-                    if (isPromise(result) || isObservable(result)) return result;
-
-                    return of(result);
-
-                })
-            )
-    }
 }
 
 @Injectable()
@@ -76,19 +61,19 @@ export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
             tyref = injector.get(ReflectiveFactory).create(type, injector);
         }
 
-        switch (categare) {
-            case 'event':
-                break;
+        // switch (categare) {
+        //     case 'event':
+        //         break;
 
-            case 'filter':
-                break;
+        //     case 'filter':
+        //         break;
 
-            case 'route':
-                break;
+        //     case 'route':
+        //         break;
 
-            default:
-                break;
-        }
+        //     default:
+        //         break;
+        // }
         return new EndpointFactoryImpl(tyref);
     }
 

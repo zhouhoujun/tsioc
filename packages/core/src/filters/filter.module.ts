@@ -8,6 +8,7 @@ import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
  */
 @Injectable()
 export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver {
+
     private maps = new Map<Type | string, Endpoint[]>();
 
     resolve<T>(filter: Type<T> | T | string): Endpoint[] {
@@ -49,11 +50,11 @@ export const FILTER_PROVIDERS: ProviderType[] = [
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
 ]
 
-@Module({
-    providers: [
-        ...FILTER_PROVIDERS
-    ]
-})
-export class FilterMoudle {
+// @Module({
+//     providers: [
+//         ...FILTER_PROVIDERS
+//     ]
+// })
+// export class FilterMoudle {
 
-}
+// }

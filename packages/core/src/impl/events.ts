@@ -1,4 +1,4 @@
-import { createContext, getClass, Injector, InvocationContext, isArray, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { createContext, getClass, Injectable, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable, of } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
@@ -19,7 +19,7 @@ export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEve
  */
 export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FILTERS');
 
-
+@Injectable()
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEvent> {
 
     private _endpoint: FilterEndpoint<ApplicationEvent, any>;

@@ -1,6 +1,6 @@
 import {
     Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    Runnable, Bean, LoggerModule
+    RunnableRef, Bean
 } from '../src';
 import { Injectable, Inject, lang, Abstract } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
@@ -43,7 +43,7 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice implements Runnable {
+export class ClassSevice implements RunnableRef {
 
     @Log() logger!: Logger;
 

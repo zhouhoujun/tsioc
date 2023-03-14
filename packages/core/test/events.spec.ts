@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import expect = require('expect');
-import { Application, ApplicationContext, LoggerModule, Module, OnApplicationShutdown, OnApplicationStart, Runnable, RunnableRef, Runner } from '../src';
+import { Application, ApplicationContext, LoggerModule, Module, OnApplicationShutdown, OnApplicationStart, RunnableRef, RunnableRef, Runner } from '../src';
 
 
 @Injectable()

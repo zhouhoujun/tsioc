@@ -1,6 +1,6 @@
 import { isNumber, Type, Injectable, InvocationContext, tokenId, Injector, TypeOf, Class, isFunction, ClassType, lang, refl, isPlainObject, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef } from '@tsdi/ioc';
 import { catchError, finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { ApplicationRunners, Runnable } from '../runners';
+import { ApplicationRunners, RunnableRef } from '../runners';
 import {
     ApplicationDisposeEvent, ApplicationEventMulticaster, ApplicationShutdownEvent,
     ApplicationStartedEvent, ApplicationStartEvent
@@ -41,10 +41,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
     }
 
     usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
-        
+
         return this;
     }
-    
+
     useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this {
         this._endpoint.useGuards(guards);
         return this;
@@ -66,19 +66,20 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
             return this._refs.get(target.type) || null;
         }
 
-        const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
 
-        const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === Runnable);
+        const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
         if (hasAdapter) {
-            const endpoint = new FnEndpoint((input, ctx) => targetRef.resolve(Runnable).invoke(ctx));
+            const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
+            const endpoint = new FnEndpoint((input, ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
             return targetRef;
         }
 
-        const facResolver = targetRef.resolve(EndpointFactoryResolver);
         const runnables = target.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
+            const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
+            const facResolver = targetRef.resolve(EndpointFactoryResolver);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 const factory = facResolver.resolve(targetRef, 'runnable');
                 return factory.create(runnable.method, options)
@@ -122,7 +123,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
                 .pipe(
                     mergeMap(v => this._endpoint.handle(this._types, createContext(this.injector))),
                     mergeMap(v => this.afterRun()),
-                    catchError((err, caught)=> {
+                    catchError((err, caught) => {
                         console.error(err);
                         return of(err);
                     })

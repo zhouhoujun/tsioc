@@ -1,4 +1,4 @@
-import { Runnable } from '@tsdi/core';
+import { RunnableRef } from '@tsdi/core';
 import { Abstract, Type } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 

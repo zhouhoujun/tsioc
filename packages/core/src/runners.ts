@@ -70,10 +70,10 @@ export abstract class ApplicationRunners implements OnDestroy {
 
 
 /**
- * Runnable
+ * Runnable Ref
  */
 @Abstract()
-export abstract class Runnable<T = any> {
+export abstract class RunnableRef<T = any> {
   /**
    * type ReflectiveRef
    */
