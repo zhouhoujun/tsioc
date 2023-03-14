@@ -232,12 +232,13 @@ export const EventHandler: EventHandler = createDecorator('EventHandler', {
             const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'event');
+            const multicaster = injector.get(ApplicationEventMulticaster);
             decors.forEach(decor => {
                 const { filter, order, ...options } = decor.metadata;
 
                 const endpoint = factory.create(decor.propertyKey, options);
 
-                injector.get(ApplicationEventMulticaster).addListener(filter ?? PayloadApplicationEvent, endpoint, order)
+                multicaster.addListener(filter ?? PayloadApplicationEvent, endpoint, order)
             });
 
             next()

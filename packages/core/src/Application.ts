@@ -4,6 +4,7 @@ import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
 import { ModuleLoader } from './loader';
 import { DefaultModuleLoader } from './impl/loader';
+import { FilterMoudle } from './filters';
 
 /**
  * application.
@@ -126,7 +127,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
-        option.providers = [...this.getRootDefaultProviders(), ...option.providers || []];
+        option.providers = [...this.getRootDefaultProviders(), ...option.providers || EMPTY];
         return this.createModuleRef(container, option);
     }
 

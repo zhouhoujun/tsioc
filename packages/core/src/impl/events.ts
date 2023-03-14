@@ -1,5 +1,5 @@
 import { createContext, getClass, Injector, InvocationContext, isArray, tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
 import { Filter } from '../filters/filter';
