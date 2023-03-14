@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injector, InvocationContext, isFunction, isPromise, isType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, isPromise, isType, Token, Type, TypeOf } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Interceptor } from './Interceptor';
 
@@ -152,8 +152,15 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
         super();
     }
 
-    use(interceptor: TypeOf<Interceptor<TInput, TOutput>>, order?: number): this {
-        this.multiOrder(this.token, interceptor, order);
+    use(interceptor: TypeOf<Interceptor<TInput, TOutput>> | TypeOf<Interceptor<TInput, TOutput>>[], order?: number): this {
+        if (isArray(interceptor)) {
+            const hasOrder = isNumber(order);
+            interceptor.forEach((i, idx) => {
+                this.multiOrder(this.token, i, hasOrder ? order + idx : undefined);
+            });
+        } else {
+            this.multiOrder(this.token, interceptor, order);
+        }
         this.reset();
         return this;
     }
@@ -202,5 +209,6 @@ export function runEndpoints(endpoints: Endpoint[] | undefined, ctx: InvocationC
                 return $res;
             }));
     });
+
     return $obs;
 }

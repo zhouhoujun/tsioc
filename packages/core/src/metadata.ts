@@ -8,14 +8,14 @@ import { CanActivate } from './guard';
 import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
 import { FilterHandlerResolver, Respond } from './filters/filter';
 import { EndpointContext } from './filters/context';
-import { EndpointFactoryResolver } from './filters/endpoint.factory';
+import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
 import { Interceptor } from './Interceptor';
 
 
 /**
  * Runner option.
  */
-export interface RunnerOption extends InvokeArguments {
+export interface RunnerOption extends BootstrapOption {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
@@ -41,7 +41,7 @@ export interface Runner {
      * 
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
-    (args?: InvokeArguments): MethodDecorator;
+    (args?: BootstrapOption): MethodDecorator;
 }
 
 /**
@@ -281,7 +281,7 @@ export interface EndpointHandlerMetadata {
     /**
      * route guards.
      */
-    guards?: Type<CanActivate>[];
+    guards?: TypeOf<CanActivate>[];
     /**
      * interceptors of route.
      */
@@ -316,7 +316,7 @@ export interface EndpointHanlder {
         /**
          * route guards.
          */
-        guards?: Type<CanActivate>[];
+        guards?: TypeOf<CanActivate>[];
         /**
          * interceptors of route.
          */

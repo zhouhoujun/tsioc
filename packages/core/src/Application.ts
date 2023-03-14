@@ -1,8 +1,9 @@
 import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './context';
-import { DEFAULTA_PROVIDERS } from './providers';
+import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ApplicationExit } from './exit';
 import { ModuleLoader } from './loader';
+import { DefaultModuleLoader } from './impl/loader';
 
 /**
  * application.
@@ -26,19 +27,23 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
+            const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = Scopes.root;
             this.root = this.createInjector(providers, target)
         } else {
             const option = { module: target, deps: this.getDeps(), scope: Scopes.root };
-            this.root = this.createInjector(this.getDefaultProviders(), option)
+            this.root = this.createInjector(this.getPlatformDefaultProviders(), option)
         }
         this.initRoot()
     }
 
-    protected getDefaultProviders(): ProviderType[] {
+    protected getPlatformDefaultProviders(): ProviderType[] {
         return DEFAULTA_PROVIDERS
+    }
+
+    protected getRootDefaultProviders(): ProviderType[] {
+        return ROOT_DEFAULT_PROVIDERS;
     }
 
     protected initRoot() {
@@ -117,8 +122,11 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
         if (this.loader) {
             container.setValue(ModuleLoader, this.loader)
+        } else {
+            this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
+        option.providers = [...this.getRootDefaultProviders(), ...option.providers || []];
         return this.createModuleRef(container, option);
     }
 
@@ -148,23 +156,34 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
                 const modueRef = root.reflectiveFactory.create(target, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root) as T
             } else {
-                if (target.loads) {
-                    this._loads = await this.root.get(ModuleLoader).register(this.root, target.loads);
-                }
                 const modueRef = root.reflectiveFactory.create(root.moduleType, root);
-                this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T
+                if (target.loads) {
+                    this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
+                }
+                this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T;
             }
         }
         return this.context
     }
 
     protected prepareContext(ctx: T): any {
+        const target = this.target;
+        if (!isFunction(target)) {
+            if (target.events) {
+                target.events.pipes && this.context.eventMulticaster.usePipes(target.events.pipes);
+                target.events.filters && this.context.eventMulticaster.useFilter(target.events.filters);
+                target.events.guards && this.context.eventMulticaster.useGuards(target.events.guards);
+                target.events.interceptors && this.context.eventMulticaster.useInterceptor(target.events.interceptors);
+            }
+            target.pipes && this.context.runners.usePipes(target.pipes);
+            target.filters && this.context.runners.useFilter(target.filters);
+            target.guards && this.context.runners.useGuards(target.guards);
+            target.interceptors && this.context.eventMulticaster.useInterceptor(target.interceptors);
+        }
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
-            const injector = ctx.injector;
-            bootstraps.forEach((type, idx) => {
-                const typeRef = injector.reflectiveFactory.create(type, injector);
-                ctx.runners.attach(typeRef);
+            bootstraps.forEach((type, order) => {
+                ctx.runners.attach(type, { order });
             })
         }
     }
@@ -178,7 +197,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
     protected callRunners(ctx: ApplicationContext): Promise<void> {
-        return ctx.runners.run(ctx)
+        return ctx.runners.run()
     }
 
     protected async handleRunFailure(ctx: ApplicationContext, error: Error | any): Promise<void> {

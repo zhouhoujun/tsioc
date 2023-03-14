@@ -1,6 +1,9 @@
-import { Abstract, InvocationContext, OnDestroy, OperationInvoker, ReflectiveRef, TypeOf } from '@tsdi/ioc';
-import { Filter } from './filters';
+import { Abstract, Class, InvocationContext, OnDestroy, ReflectiveRef, Type, TypeOf } from '@tsdi/ioc';
+import { BootstrapOption } from './filters/endpoint.factory';
+import { Filter } from './filters/filter';
+import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
+import { PipeTransform } from './pipes/pipe';
 
 /**
  * Application runner.
@@ -9,40 +12,25 @@ import { Interceptor } from './Interceptor';
 export abstract class ApplicationRunners implements OnDestroy {
   /**
    * attach runner
-   * @param runner 
+   * @param type 
    */
-  abstract attach(type: ReflectiveRef): void;
-  /**
-   * attach runner
-   * @param runner 
-   */
-  abstract attach(runner: OperationInvoker, order?: number): void;
+  abstract attach<T>(type: Type<T> | Class<T>, options?: BootstrapOption): ReflectiveRef<T> | null;
 
   /**
    * detach runner
-   * @param runner 
+   * @param type 
    */
-  abstract detach(runner: OperationInvoker): void;
-  /**
-   * detach runner
-   * @param runner 
-   */
-  abstract detach(type: ReflectiveRef): void;
+  abstract detach<T>(type: Type<T> | Class<T>): void;
 
   /**
    * has operation or not.
-   * @param runner 
+   * @param type 
    */
-  abstract has(runner: ReflectiveRef): boolean;
-  /**
-   * has operation or not.
-   * @param runner 
-   */
-  abstract has(runner: OperationInvoker): boolean;
+  abstract has<T>(type: Type<T>): boolean;
   /**
    * run all runners.
    */
-  abstract run(context: InvocationContext): Promise<void>;
+  abstract run(type?: Type): Promise<void>;
 
   /**
    * stop all runners.
@@ -50,18 +38,28 @@ export abstract class ApplicationRunners implements OnDestroy {
   abstract stop(): Promise<void>;
 
   /**
+   * use pipes.
+   * @param guards 
+   */
+  abstract usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this;
+
+  /**
+   * use guards.
+   * @param guards 
+   */
+  abstract useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this;
+  /**
     * use interceptor
     * @param interceptor 
     * @param order 
     */
-  abstract useInterceptor(interceptor: TypeOf<Interceptor>, order?: number): this;
+  abstract useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this;
   /**
    * use filter
    * @param filter 
    * @param order 
    */
-  abstract useFilter(filter: TypeOf<Filter>, order?: number): this;
-
+  abstract useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number): this;
 
   /**
    * destroy.
@@ -83,6 +81,6 @@ export abstract class Runnable<T = any> {
   /**
    * invoke.
    */
-  abstract invoke(): any;
+  abstract invoke(context: InvocationContext): any;
 }
 

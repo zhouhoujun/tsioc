@@ -1,4 +1,4 @@
-import { ProviderType, Injector } from '@tsdi/ioc';
+import { ProviderType, Injector, ModuleRef } from '@tsdi/ioc';
 import { ApplicationFactory } from './context';
 import { ApplicationRunners } from './runners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
@@ -12,16 +12,19 @@ import { EndpointFactoryResolverImpl } from './impl/endpoint';
 
 
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
-    { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
     { provide: EndpointFactoryResolver, useClass: EndpointFactoryResolverImpl, static: true },
+    { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
+    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
+]
+
+export const ROOT_DEFAULT_PROVIDERS: ProviderType[] = [
     {
         provide: ApplicationEventMulticaster,
         useFactory: (injector: Injector) => {
             return new DefaultEventMulticaster(injector)
         },
         static: true,
-        deps: [Injector]
+        deps: [ModuleRef]
     },
-    { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
-    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
+    { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true }
 ]

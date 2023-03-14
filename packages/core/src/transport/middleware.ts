@@ -1,6 +1,6 @@
 import { chain, Handler, isFunction, lang, Type } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
-import { Endpoints, EndpointBackend } from '../Endpoint';
+import { Endpoints, EndpointBackend, FnEndpoint } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
 import { ServerEndpointContext } from './context';
 import { Incoming, Outgoing } from './packet';
@@ -106,6 +106,9 @@ export class MiddlewareBackend<TRequest extends Incoming = Incoming, TResponse e
     constructor(private middlewares: MiddlewareLike<Tx>[]) {
 
     }
+    equals(target: any): boolean {
+        return this === target;
+    }
 
     handle(req: TRequest, context: Tx): Observable<TResponse> {
         return defer(async () => {
@@ -131,12 +134,10 @@ export class InterceptorMiddleware<TRequest extends Incoming, TResponse extends 
 
     invoke<T extends ServerEndpointContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
-            const chain = new Endpoints<TRequest, TResponse>({
-                handle: (req, ctx) => defer(async () => {
-                    await this.middleware.invoke(ctx as T, next);
-                    return (ctx as T).response as TResponse;
-                })
-            }, this.interceptors);
+            const chain = new Endpoints(new FnEndpoint((req, ctx) => defer(async () => {
+                await this.middleware.invoke(ctx as T, next);
+                return (ctx as T).response as TResponse;
+            })), this.interceptors);
             this._chainFn = (ctx: ServerEndpointContext) => {
                 const defer = lang.defer<void>();
                 const cancel = chain.handle(ctx.request as TRequest, ctx)

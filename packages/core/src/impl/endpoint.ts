@@ -51,8 +51,29 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
 }
 
 export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
-    resolve<T>(type: Type<T> | Class<T, TypeDef<T>>, injector: Injector, categare?: 'event' | 'filter' | 'route'): EndpointFactory<T> {
-        const tyref = injector.get(ReflectiveFactory).create(type, injector);
+    /**
+     * resolve endpoint factory.
+     * @param type factory type
+     * @param injector injector
+     * @param categare factory categare
+     */
+    resolve<T>(type: ReflectiveRef<T>, categare?: 'event' | 'filter' | 'runnable' | 'route'): EndpointFactory<T>;
+    /**
+     * resolve endpoint factory.
+     * @param type factory type
+     * @param injector injector
+     * @param categare factory categare
+     */
+    resolve<T>(type: Type<T> | Class<T>, injector: Injector, categare?: 'event' | 'filter' | 'runnable' | 'route'): EndpointFactory<T>;
+    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2: any, categare?: 'event' | 'filter' | 'route'): EndpointFactory<T> {
+        let tyref: ReflectiveRef<T>;
+        if (type instanceof ReflectiveRef) {
+            tyref = type;
+            categare = arg2;
+        } else {
+            const injector = arg2 as Injector;
+            tyref = injector.get(ReflectiveFactory).create(type, injector);
+        }
 
         switch (categare) {
             case 'event':

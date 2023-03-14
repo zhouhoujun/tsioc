@@ -27,7 +27,7 @@ export class BootApplication extends Application<BootApplicationContext> {
         super(target, loader)
     }
 
-    protected override getDefaultProviders(): ProviderType[] {
+    protected override getPlatformDefaultProviders(): ProviderType[] {
         return BOOT_DEFAULTA_PROVIDERS
     }
 

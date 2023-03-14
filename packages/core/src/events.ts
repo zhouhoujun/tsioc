@@ -1,9 +1,11 @@
-import { Abstract, getClass, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getClass, InvocationContext, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationContext } from './context';
 import { Endpoint } from './Endpoint';
-import { Filter } from './filters';
+import { Filter, Filterable } from './filters';
+import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
+import { PipeTransform } from './pipes/pipe';
 
 
 
@@ -121,20 +123,29 @@ export interface ApplicationEventPublisher {
  * providing the basic listener registration facility.
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster {
-
+export abstract class ApplicationEventMulticaster implements Filterable {
+    /**
+     * use pipes.
+     * @param guards 
+     */
+    abstract usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this;
+    /**
+     * use guards.
+     * @param guards 
+     */
+    abstract useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this;
     /**
      * use interceptor
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>>, order?: number): this;
+    abstract useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>>|TypeOf<Interceptor<ApplicationEvent, any>>[], order?: number): this;
     /**
      * use filter
      * @param filter 
      * @param order 
      */
-    abstract useFilter(filter: TypeOf<Filter>, order?: number): this;
+    abstract useFilter(filter: TypeOf<Filter>|TypeOf<Filter>[], order?: number): this;
     /**
      * add event endpoint.
      * @param event 

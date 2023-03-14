@@ -1,12 +1,13 @@
 import {
-    ProviderType, Injector, Abstract, Type, InvokeArguments, Destroyable, Modules, ModuleOption, ModuleRef,
-    DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class
+    ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
+    DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, TypeOf
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
-import { ApplicationEvent, ApplicationEventPublisher } from './events';
+import { ApplicationEvent, ApplicationEventMulticaster, ApplicationEventPublisher } from './events';
 import { ApplicationRunners } from './runners';
 import { ApplicationArguments } from './args';
 import { LoadType, ModuleLoader } from './loader';
+import { BootstrapOption, EndpointOptions, FilterOptions } from './filters/endpoint.factory';
 
 /**
  * application context for global.
@@ -68,6 +69,10 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      */
     abstract get runners(): ApplicationRunners;
     /**
+     * Application Event Multicaster
+     */
+    abstract get eventMulticaster(): ApplicationEventMulticaster;
+    /**
      * destroyed or not.
      */
     abstract get destroyed(): boolean;
@@ -92,20 +97,9 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
 export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
 /**
- * bootstrap option for {@link Runnable}.
- */
-export interface BootstrapOption extends InvokeArguments {
-    /**
-     * set the method as default invoked as runnable.
-     * when has no `@Runner` in this class, will run this method as default. default value `run`.
-     */
-    defaultInvoke?: string;
-}
-
-/**
  * Environment option.
  */
-export interface EnvironmentOption extends ModuleOption, InvokeArguments {
+export interface EnvironmentOption extends ModuleOption, EndpointOptions {
     /**
      * boot base url.
      *
@@ -136,6 +130,11 @@ export interface EnvironmentOption extends ModuleOption, InvokeArguments {
      * application providers.
      */
     platformProviders?: ProviderType[];
+
+    /**
+     * event endpoint options.
+     */
+    events?: FilterOptions;
 }
 
 /**

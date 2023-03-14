@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { EndpointContext } from './context';
+import { EndpointContext } from '../filters/context';
 import { ResHeaders } from './headers';
 import { Message } from './packet';
 import { RedirectStatus } from './status';

@@ -1,16 +1,16 @@
 import { Injectable, isString, isType, isArray, lang, refl } from '@tsdi/ioc';
 import { ApplicationContext, ModuleLoader, Runner } from '@tsdi/core';
-import { OldTestRunner } from './OldTestRunner';
-import { DefaultTestReport } from '../reports/TestReport';
-import { SuiteDef } from '../metadata';
-import { UNITTESTCONFIGURE } from '../configure';
+import { OldTestRunner } from './runner/OldTestRunner';
+import { DefaultTestReport } from './reports/TestReport';
+import { SuiteDef } from './metadata';
+import { UNITTESTCONFIGURE } from './configure';
 
 
 /**
  * Suite runner.
  */
 @Injectable()
-export class UnitTestRunner {
+export class UnitTestService {
 
     @Runner()
     async run(ctx: ApplicationContext): Promise<void> {

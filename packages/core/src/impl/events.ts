@@ -1,10 +1,12 @@
-import { createContext, getClass, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { createContext, getClass, Injector, InvocationContext, isArray, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
-import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
 import { Filter } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
+import { ApplicationEvent, ApplicationEventMulticaster } from '../events';
+import { CanActivate } from '../guard';
+import { PipeTransform } from '../pipes';
 
 
 /**
@@ -33,12 +35,22 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this._endpoint
     }
 
-    useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>>, order?: number): this {
+    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
+        
+        return this;
+    }
+
+    useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this {
+        this._endpoint.useGuards(guards);
+        return this;
+    }
+    
+    useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>> | TypeOf<Interceptor<ApplicationEvent, any>>[], order?: number): this {
         this._endpoint.use(interceptor, order);
         return this;
     }
 
-    useFilter(filter: TypeOf<Filter>, order?: number | undefined): this {
+    useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number | undefined): this {
         this._endpoint.useFilter(filter, order);
         return this;
     }

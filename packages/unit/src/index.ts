@@ -7,7 +7,7 @@ export * from './assert/expects';
 export * from './runner/Runner';
 export * from './runner/SuiteRunner';
 export * from './runner/OldTestRunner';
-export * from './runner/UnitTestRunner';
+export * from './UnitTestService';
 
 export * from './reports/interface';
 export * from './reports/TestReport';

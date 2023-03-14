@@ -1,12 +1,13 @@
 import {
-    Type, Injector, ProviderType, DefaultInvocationContext, InvokeArguments, ArgumentExecption, EMPTY_OBJ,
-    Class, ModuleDef, InjectFlags, ModuleRef, ReflectiveFactory
+    Type, Injector, ProviderType, InvokeArguments, ArgumentExecption, EMPTY_OBJ,
+    Class, ModuleDef, InjectFlags, ModuleRef, DefaultInvocationContext
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationArguments } from '../args';
 import { ApplicationRunners } from '../runners';
-import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../context';
+import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
 import { ApplicationContextRefreshEvent, ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from '../events';
+import { BootstrapOption } from '../filters/endpoint.factory';
 
 
 
@@ -54,9 +55,15 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._runners
     }
 
-    bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): any {
-        const typeRef = this.injector.get(ReflectiveFactory).create(type, this.injector, option);
-        this.runners.attach(typeRef);
+    get eventMulticaster(): ApplicationEventMulticaster {
+        return this._multicaster;
+    }
+
+    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<any> {
+        const typeRef = this.runners.attach(type, option);
+        if (typeRef) {
+            return await this.runners.run(typeRef.type);
+        }
     }
 
     getLogger(name?: string): Logger {

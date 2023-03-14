@@ -5,7 +5,6 @@ import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';
 
 @Module({
-    providedIn: 'root',
     imports: [
         ServerModule,
         ServerLogsModule
