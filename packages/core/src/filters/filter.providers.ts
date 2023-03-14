@@ -1,4 +1,4 @@
-import { Module, EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
+import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { ExecptionHandlerBackend } from './execption.filter';
 import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
@@ -49,12 +49,3 @@ export const FILTER_PROVIDERS: ProviderType[] = [
     InOutInterceptorFilter,
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
 ]
-
-// @Module({
-//     providers: [
-//         ...FILTER_PROVIDERS
-//     ]
-// })
-// export class FilterMoudle {
-
-// }

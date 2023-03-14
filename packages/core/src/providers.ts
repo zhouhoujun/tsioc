@@ -7,7 +7,7 @@ import { DefaultApplicationRunners } from './impl/runners';
 import { DefaultApplicationFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
 import { EndpointFactoryResolver } from './filters/endpoint.factory';
-import { FILTER_PROVIDERS } from './filters/filter.module';
+import { FILTER_PROVIDERS } from './filters/filter.providers';
 import { EndpointFactoryResolverImpl } from './impl/endpoint';
 
 
