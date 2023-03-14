@@ -1,11 +1,11 @@
 import {
     isUndefined, lang, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata,  Decors, pomiseOf, TypeOf, InvocationContext, isType
+    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, Decors, pomiseOf, TypeOf, InvocationContext, isType
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import { CanActivate } from './guard';
-import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
+import { ApplicationDisposeEvent, ApplicationEvent, ApplicationEventMulticaster, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent } from './events';
 import { FilterHandlerResolver, Respond } from './filters/filter';
 import { EndpointContext } from './filters/context';
 import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
@@ -189,6 +189,10 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
     }
 });
 
+/**
+ * event hander.
+ * @EventHandler
+ */
 export interface EventHandler {
 
     /**
@@ -196,75 +200,138 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    (option?: {
-        /**
-         * route guards.
-         */
-        guards?: Type<CanActivate>[];
-        /**
-         * order.
-         */
-        order?: number;
-    }): MethodDecorator;
+    (option?: BootstrapOption): MethodDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    (event: Type<ApplicationEvent>, option?: {
-        /**
-         * route guards.
-         */
-        guards?: Type<CanActivate>[];
-        /**
-         * order.
-         */
-        order?: number;
-    }): MethodDecorator;
+    (event: Type<ApplicationEvent>, option?: BootstrapOption): MethodDecorator;
 }
 
-export const EventHandler: EventHandler = createDecorator('EventHandler', {
-    props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
-    design: {
-        method: (ctx, next) => {
-            const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
-            const injector = ctx.injector;
-            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'event');
-            const multicaster = injector.get(ApplicationEventMulticaster);
-            decors.forEach(decor => {
-                const { filter, order, ...options } = decor.metadata;
+function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler') {
+    return createDecorator(name, {
+        props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
+        design: {
+            method: (ctx, next) => {
+                const typeRef = ctx.class;
+                const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
+                const injector = ctx.injector;
+                const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'event');
+                const multicaster = injector.get(ApplicationEventMulticaster);
+                decors.forEach(decor => {
+                    const { filter, order, ...options } = decor.metadata;
 
-                const endpoint = factory.create(decor.propertyKey, options);
+                    const endpoint = factory.create(decor.propertyKey, options);
 
-                multicaster.addListener(filter ?? PayloadApplicationEvent, endpoint, order)
-            });
+                    multicaster.addListener(filter ?? defaultFilter, endpoint, order)
+                });
 
-            next()
+                next()
+            }
         }
-    }
-});
+    })
+}
+
+/**
+ * event hander.
+ * @EventHandler
+ */
+export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent);
 
 
 /**
  * event handler metadata.
  */
-export interface EventHandlerMetadata {
+export interface EventHandlerMetadata extends BootstrapOption {
     /**
      * execption type.
      */
     filter: Type;
-    /**
-     * order.
-     */
-    order?: number;
-    /**
-     * route guards.
-     */
-    guards?: Type<CanActivate>[];
 }
 
+/**
+ * Application start event hander.
+ * @Start
+ */
+export interface StartEventHandler {
+
+    /**
+     * Application start event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application start event hander.
+ * @Start
+ */
+export const Start: StartEventHandler = createEventHandler(ApplicationStartEvent, 'Start');
+
+/**
+ * Application started event hander.
+ * @Started
+ */
+export interface StartedEventHandler {
+
+    /**
+     * Application started event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application Started event hander.
+ * @Start
+ */
+export const Started: StartedEventHandler = createEventHandler(ApplicationStartedEvent, 'Started');
+
+
+/**
+ * Application Shutdown event hander.
+ * @Shutdown
+ */
+export interface ShutdownEventHandler {
+
+    /**
+     * Application Shutdown event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application Shutdown event hander.
+ * @Shutdown
+ */
+export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown');
+
+
+/**
+ * Application Dispose event hander.
+ * @Dispose
+ */
+export interface DisposeEventHandler {
+
+    /**
+     * Application Dispose event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application Shutdown event hander.
+ * @Dispose
+ */
+export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose');
 
 
 /**

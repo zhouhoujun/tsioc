@@ -1,10 +1,10 @@
 import {
-    Module, ConfigureService, ApplicationContext, Configuration, ComponentScan, OnDispose,
-    RunnableRef, Bean
+    ApplicationContext, Configuration, OnDispose,
+    RunnableRef, Bean, Runner, OnApplicationStart, Start, Dispose
 } from '../src';
-import { Injectable, Inject, lang, Abstract } from '@tsdi/ioc';
+import { Injectable, Inject, lang, Abstract, Module } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
-import { Logger, LogConfigure, Log } from '@tsdi/logs';
+import { Logger, LogConfigure, Log, LoggerModule } from '@tsdi/logs';
 import * as net from 'net';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 
@@ -43,7 +43,7 @@ export class ModuleA {
 }
 
 @Injectable()
-export class ClassSevice implements RunnableRef {
+export class ClassSevice {
 
     @Log() logger!: Logger;
 
@@ -52,6 +52,7 @@ export class ClassSevice implements RunnableRef {
 
     state!: string;
 
+    @Runner()
     async run(): Promise<any> {
         this.logger.info('ClassSevice running.....');
         // console.log(refs.get(ClassSevice));
@@ -105,15 +106,17 @@ export class SharedModule {
 export class ModuleB { }
 
 
-@ComponentScan()
-export class SocketService implements ConfigureService, OnDispose {
+@Injectable()
+export class SocketService implements OnApplicationStart {
+
 
     @Log() logger!: Logger;
 
     public tcpServer!: net.Server;
     private init_times = 0;
 
-    async configureService(ctx: ApplicationContext): Promise<void> {
+    @Start()
+    async onApplicationStart(): Promise<void> {
         this.logger.info('init...');
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
@@ -121,6 +124,7 @@ export class SocketService implements ConfigureService, OnDispose {
         this.logger.info('destroyed state', 'init', this.init_times);
     }
 
+    @Dispose()
     async onDispose() {
         this.logger.info('destroying...');
         this.tcpServer.removeAllListeners();

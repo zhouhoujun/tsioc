@@ -14,7 +14,7 @@ export abstract class ApplicationRunners implements OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T>(type: Type<T> | Class<T>, options?: BootstrapOption): ReflectiveRef<T> | null;
+  abstract attach<T>(type: Type<T> | Class<T>, options?: BootstrapOption): ReflectiveRef<T>;
 
   /**
    * detach runner
@@ -27,6 +27,13 @@ export abstract class ApplicationRunners implements OnDestroy {
    * @param type 
    */
   abstract has<T>(type: Type<T>): boolean;
+
+  /**
+   * get reflectiveRef of type.
+   * @param type 
+   */
+  abstract getRef<T>(type: Type<T>): ReflectiveRef<T> | null;
+
   /**
    * run all runners.
    */

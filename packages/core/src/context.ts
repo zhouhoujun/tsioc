@@ -1,6 +1,6 @@
 import {
     ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, TypeOf
+    DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, TypeOf, ReflectiveRef
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { ApplicationEvent, ApplicationEventMulticaster, ApplicationEventPublisher } from './events';
@@ -28,7 +28,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * @param type bootstrap type.
      * @param option bootstrap option.
      */
-    abstract bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): any;
+    abstract bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<ReflectiveRef<C>>;
     /**
      * get logger.
      * @param name 

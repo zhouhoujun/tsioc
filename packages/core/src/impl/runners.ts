@@ -1,5 +1,5 @@
 import { isNumber, Type, Injectable, InvocationContext, tokenId, Injector, TypeOf, Class, isFunction, ClassType, lang, refl, isPlainObject, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef } from '@tsdi/ioc';
-import { catchError, finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../runners';
 import {
     ApplicationDisposeEvent, ApplicationEventMulticaster, ApplicationShutdownEvent,
@@ -60,10 +60,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         return this;
     }
 
-    attach<T>(type: Type<T> | Class<T>, options: BootstrapOption = {}): ReflectiveRef<T> | null {
+    attach<T>(type: Type<T> | Class<T>, options: BootstrapOption = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
         if (this._maps.has(target.type)) {
-            return this._refs.get(target.type) || null;
+            return this._refs.get(target.type)!;
         }
 
 
@@ -114,6 +114,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         return this._maps.has(type);
     }
 
+    getRef<T>(type: Type<T>): ReflectiveRef<T> | null {
+        return this._refs.get(type) || null;
+    }
+
     run(type?: Type): Promise<void> {
         if (type) {
             return lastValueFrom(this._endpoint.handle(type, createContext(this.injector)));
@@ -122,11 +126,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
             this.beforeRun()
                 .pipe(
                     mergeMap(v => this._endpoint.handle(this._types, createContext(this.injector))),
-                    mergeMap(v => this.afterRun()),
-                    catchError((err, caught) => {
-                        console.error(err);
-                        return of(err);
-                    })
+                    mergeMap(v => this.afterRun())
                 )
         );
     }

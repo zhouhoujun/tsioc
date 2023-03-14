@@ -3,6 +3,7 @@ import { Endpoint } from '../Endpoint';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
+import { RunnableRef } from '../runners';
 import { Filter } from './filter';
 
 
@@ -34,7 +35,7 @@ export interface EndpointOptions extends InvokeArguments, FilterOptions {
 
 
 /**
- * bootstrap option for {@link Runnable}.
+ * bootstrap option for {@link RunnableRef}.
  */
 export interface BootstrapOption extends EndpointOptions {
     /**

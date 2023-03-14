@@ -20,10 +20,10 @@ describe('module metadata', () => {
             }
         });
         expect(ctx.instance).not.toBeNull();
-        expect(ctx.runners.bootstraps[0]).not.toBeNull();
-        const runner = ctx.runners.bootstraps[0];
+        const serRef = ctx.runners.getRef(ClassSevice);
+        expect(serRef).not.toBeNull();
         // console.log(runner.instance);
-        expect(runner.instance.mark).toEqual('marked');
+        expect(serRef!.getInstance().mark).toEqual('marked');
         await ctx.destroy();
 
     });

@@ -1,5 +1,5 @@
 import { Injectable, lang, ProviderType, tokenId } from '@tsdi/ioc';
-import { Application, ApplicationContext, ApplicationStartEvent, EventHandler } from '@tsdi/core';
+import { Application, ApplicationContext, Start } from '@tsdi/core';
 import * as assert from 'assert';
 import * as expect from 'expect';
 import { UnitTestConfigure } from './UnitTestConfigure';
@@ -19,7 +19,7 @@ export const UNITTESTCONFIGURE = tokenId<UnitTestConfigure>('UNITTESTCONFIGURE')
 @Injectable()
 export class UnitTestConfigureService {
 
-    @EventHandler(ApplicationStartEvent)
+    @Start()
     async configureService(ctx: ApplicationContext): Promise<void> {
         const config = ctx.get(UNITTESTCONFIGURE);
         const inj = ctx.injector;

@@ -46,13 +46,6 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
 }
 
 /**
- * Application starting event.
- */
-export class ApplicationStartingEvent extends ApplicationEvent {
-
-}
-
-/**
  * Application start event.
  */
 export class ApplicationStartEvent extends ApplicationEvent {

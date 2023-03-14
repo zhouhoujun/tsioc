@@ -1,6 +1,6 @@
 import {
     Type, Injector, ProviderType, InvokeArguments, ArgumentExecption, EMPTY_OBJ,
-    Class, ModuleDef, InjectFlags, ModuleRef, DefaultInvocationContext
+    Class, ModuleDef, InjectFlags, ModuleRef, DefaultInvocationContext, ReflectiveRef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { ApplicationArguments } from '../args';
@@ -59,11 +59,12 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._multicaster;
     }
 
-    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<any> {
+    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<ReflectiveRef<C>> {
         const typeRef = this.runners.attach(type, option);
         if (typeRef) {
-            return await this.runners.run(typeRef.type);
+            await this.runners.run(typeRef.type);
         }
+        return typeRef;
     }
 
     getLogger(name?: string): Logger {

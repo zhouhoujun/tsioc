@@ -1,4 +1,4 @@
-import { Injector, Injectable, lang, tokenId, isArray } from '@tsdi/ioc';
+import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { ServerModule } from '@tsdi/platform-server';
@@ -8,9 +8,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { HttpClient, HttpClientModule } from '@tsdi/common';
 import {
-    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, LoggerModule, Middleware, Chain, Client
+    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
+    ServerEndpointContext, Middleware, Chain, Client
 } from '../src';
+import { LoggerModule } from '@tsdi/logs';
 
 
 @RouteMapping('/device')

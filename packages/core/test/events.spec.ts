@@ -1,6 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Module } from '@tsdi/ioc';
 import expect = require('expect');
-import { Application, ApplicationContext, LoggerModule, Module, OnApplicationShutdown, OnApplicationStart, RunnableRef, RunnableRef, Runner } from '../src';
+import { Application, ApplicationContext, OnApplicationShutdown, OnApplicationStart, RunnableRef, Runner } from '../src';
 
 
 @Injectable()
@@ -53,17 +53,17 @@ describe('Application Event', () => {
     it('onApplicationStart called', async () => {
 
         expect(ctx.instance).not.toBeNull();
-        expect(ctx.runners.bootstraps[0]).not.toBeNull();
-        const runner = ctx.runners.bootstraps[0] as RunnableRef<TestService>;
+        const testServiceRef = ctx.runners.getRef(TestService);
+        expect(testServiceRef).not.toBeNull();
         // console.log(runner.instance);
-        expect(runner.instance.started).toBeTruthy();
+        expect(testServiceRef!.getInstance().started).toBeTruthy();
 
     });
 
 
     it('OnApplicationShutdown called.', async () => {
-        const runner = ctx.runners.bootstraps[0] as RunnableRef<TestService>;
-        const service = runner.instance as TestService;
+        const runner = ctx.runners.getRef(TestService);
+        const service = runner!.getInstance() as TestService;
         await ctx.destroy();
         expect(service.shutdown).toBeTruthy();
     })
