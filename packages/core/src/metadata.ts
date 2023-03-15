@@ -1,11 +1,14 @@
 import {
-    isUndefined, lang, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
+    isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, Decors, pomiseOf, TypeOf, InvocationContext, isType
+    isString, Parameter, ProviderMetadata, Decors, TypeOf
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import { CanActivate } from './guard';
-import { ApplicationDisposeEvent, ApplicationEvent, ApplicationEventMulticaster, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent } from './events';
+import {
+    ApplicationDisposeEvent, ApplicationEvent, ApplicationEventMulticaster, ApplicationShutdownEvent,
+    ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
+} from './events';
 import { FilterHandlerResolver, Respond } from './filters/filter';
 import { EndpointContext } from './filters/context';
 import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
@@ -423,50 +426,6 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
                 const { filter, order, ...options } = decor.metadata;
                 const endpoint = factory.create(decor.propertyKey, options);
                 injector.get(FilterHandlerResolver).addHandle(filter, endpoint, order)
-
-                // let after: (ctx: InvocationContext, endpCtx: EndpointContext, value: any) => void;
-                // if (response) {
-                //     if (isType(response)) {
-                //         after = (ctx, endpCtx, value) => ctx.resolve(response).respond(endpCtx, value);
-                //     } else if (isString(response)) {
-                //         after = (ctx, endpCtx, value) => ctx.resolve(TypedRespond).respond(endpCtx, response, value);
-                //     } else if (response instanceof Respond) {
-                //         after = (ctx, endpCtx, value) => response.respond(endpCtx, value)
-                //     }
-                // }
-
-                // const invoker = factory.create(decor.propertyKey, options);
-                // const invoker = factory.createInvoker(decor.propertyKey, async (ctx, run) => {
-                //     const endpCtx = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(EndpointContext);
-                //     if (guards && guards.length) {
-                //         if (!(await lang.some(
-                //             guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(endpCtx))),
-                //             vaild => vaild === false))) {
-                //             throw new ForbiddenExecption();
-                //         }
-                //     }
-                //     const value = run(ctx);
-                //     if (after) {
-                //         if (isPromise(value)) {
-                //             return value.then((v) => {
-                //                 lang.immediate(after, ctx, endpCtx, v);
-                //                 return v;
-                //             });
-                //         }
-                //         if (isObservable(value)) {
-                //             return value.pipe(
-                //                 map(v => {
-                //                     lang.immediate(after, ctx, endpCtx, v);
-                //                     return v;
-                //                 })
-                //             )
-                //         }
-                //         lang.immediate(after, ctx, endpCtx, value);
-                //     }
-                //     return value;
-                // });
-
-                // injector.get(FilterHandlerResolver).addHandle(filter, invoker, order)
             });
 
             next()
@@ -516,14 +475,6 @@ export interface ExecptionHandler {
  */
 export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
 
-
-
-/**
- * scan def.
- */
-export interface ScanDef extends TypeDef {
-    order?: number;
-}
 
 /**
  * pipe metadata.

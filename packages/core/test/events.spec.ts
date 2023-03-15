@@ -1,29 +1,36 @@
 import { Injectable, Module } from '@tsdi/ioc';
 import expect = require('expect');
-import { Application, ApplicationContext, OnApplicationShutdown, OnApplicationStart, RunnableRef, Runner } from '../src';
+import { Application, ApplicationContext, Dispose, Runner, Shutdown, Start } from '../src';
 
 
 @Injectable()
-class TestService implements OnApplicationStart, OnApplicationShutdown {
+class TestService  {
 
-    
+
     started = false;
     shutdown = false;
+    dispose = false;
 
     @Runner()
     runService() {
         console.log('test running.')
     }
 
-    onApplicationShutdown(): void {
-        this.shutdown = true;
-    }
 
+    @Start()
     onApplicationStart(): void {
         this.started = true;
     }
 
+    @Shutdown()
+    onApplicationShutdown(): void {
+        this.shutdown = true;
+    }
 
+    @Dispose()
+    onApplicationDispose(): void {
+        this.dispose = true;
+    }
 }
 
 @Module({

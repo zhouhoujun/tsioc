@@ -1,7 +1,7 @@
 import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
-import { ExecptionHandlerBackend } from './execption.filter';
-import { FilterHandlerResolver, InOutInterceptorFilter } from './filter';
+import { CatchInterceptor, ExecptionHandlerBackend } from './execption.filter';
+import { FilterHandlerResolver } from './filter';
 
 /**
  * endpoint hanlders resolver.
@@ -45,7 +45,56 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
 export const FILTER_PROVIDERS: ProviderType[] = [
     // PathHanlderFilter,
     // StatusInterceptorFilter,
+    CatchInterceptor,
     ExecptionHandlerBackend,
-    InOutInterceptorFilter,
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
 ]
+
+
+// @Injectable({ static: true })
+// export class PathHanlderFilter implements EndpointFilter<Incoming, Outgoing> {
+
+//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
+//         if (!input.url) return next.handle(input, ctx);
+
+//         return runHandlers(ctx, input, input.url)
+//             .pipe(
+//                 mergeMap(r => {
+//                     if (ctx.done) return of(r);
+//                     return next.handle(input, ctx);
+//                 }))
+//     }
+
+// }
+
+// @Injectable({ static: true })
+// export class StatusInterceptorFilter implements EndpointFilter<Incoming, Outgoing> {
+
+//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
+//         return next.handle(input, ctx)
+//             .pipe(
+//                 mergeMap(res => {
+//                     return runHandlers(ctx, res, getClass(ctx.status))
+//                 })
+//             )
+//     }
+
+// }
+
+// @Injectable({ static: true })
+// export class InOutInterceptorFilter implements Interceptor {
+
+//     intercept(input: any, next: Endpoint<any, any>, ctx: EndpointContext): Observable<any> {
+//         return runHandlers(ctx, input, input)
+//             .pipe(
+//                 mergeMap(r => {
+//                     if (ctx.done) return of(r);
+//                     return next.handle(input, ctx);
+//                 }),
+//                 mergeMap(res => {
+//                     return runHandlers(ctx, res, res);
+//                 })
+//             )
+//     }
+
+// }

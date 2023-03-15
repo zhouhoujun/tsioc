@@ -1,4 +1,4 @@
-import { Injector, Injectable, lang, tokenId, isArray } from '@tsdi/ioc';
+import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
@@ -8,10 +8,11 @@ import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    LoggerModule, Middleware, Chain, BadRequestExecption, ServerEndpointContext
+    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
+    Middleware, Chain, BadRequestExecption, ServerEndpointContext
 } from '@tsdi/core';
 import { HttpClient, HttpClientModule } from '../src';
+import { LoggerModule } from '@tsdi/logs';
 
 
 @RouteMapping('/device')

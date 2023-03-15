@@ -1,4 +1,4 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeDef, TypeOf, isPromise, getToken } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeOf, getToken } from '@tsdi/ioc';
 import { Endpoint, FnEndpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';

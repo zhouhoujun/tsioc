@@ -1,5 +1,5 @@
-import { Abstract, Injectable, Type, TypeOf } from '@tsdi/ioc';
-import { mergeMap, Observable, of } from 'rxjs';
+import { Abstract, Type, TypeOf } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
@@ -88,56 +88,6 @@ export abstract class FilterHandlerResolver {
 export function runHandlers(ctx: EndpointContext, input: any, filter: Type | string): Observable<any> {
     const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
     return runEndpoints(handles, ctx, input, c => c.done === true)
-}
-
-// @Injectable({ static: true })
-// export class PathHanlderFilter implements EndpointFilter<Incoming, Outgoing> {
-
-//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
-//         if (!input.url) return next.handle(input, ctx);
-
-//         return runHandlers(ctx, input, input.url)
-//             .pipe(
-//                 mergeMap(r => {
-//                     if (ctx.done) return of(r);
-//                     return next.handle(input, ctx);
-//                 }))
-//     }
-
-// }
-
-// @Injectable({ static: true })
-// export class StatusInterceptorFilter implements EndpointFilter<Incoming, Outgoing> {
-
-//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
-//         return next.handle(input, ctx)
-//             .pipe(
-//                 mergeMap(res => {
-//                     return runHandlers(ctx, res, getClass(ctx.status))
-//                 })
-//             )
-//     }
-
-// }
-
-
-
-@Injectable({ static: true })
-export class InOutInterceptorFilter implements Interceptor {
-
-    intercept(input: any, next: Endpoint<any, any>, ctx: EndpointContext): Observable<any> {
-        return runHandlers(ctx, input, input)
-            .pipe(
-                mergeMap(r => {
-                    if (ctx.done) return of(r);
-                    return next.handle(input, ctx);
-                }),
-                mergeMap(res => {
-                    return runHandlers(ctx, res, res);
-                })
-            )
-    }
-
 }
 
 

@@ -18,7 +18,7 @@ export interface OnApplicationStart {
     /**
      * start hooks
      */
-    onApplicationStart(): void | Promise<void>;
+    onApplicationStart(): void;
 }
 
 /**
@@ -28,7 +28,7 @@ export interface OnApplicationShutdown {
     /**
      * shutdown hooks
      */
-    onApplicationShutdown(): void | Promise<void>;
+    onApplicationShutdown(): void;
 }
 
 

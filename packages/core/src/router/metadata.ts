@@ -2,11 +2,11 @@ import {
     isArray, isString, isType, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes, Execption,
     ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, TypeMetadata, PatternMetadata, TypeOf
 } from '@tsdi/ioc';
+import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { mths, Protocols, RequestMethod } from '../transport/packet';
-import { CanActivate } from '../guard';
 import { joinprefix, normalize, RouteFactoryResolver } from './route';
 import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from './router';
 
