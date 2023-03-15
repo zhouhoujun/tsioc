@@ -163,10 +163,6 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         return throwError(() => new ArgumentExecption('input type unknow'))
     }
 
-    equals(target: any): boolean {
-        return this === target;
-    }
-
     protected beforeRun(): Observable<any> {
         return this.multicaster.emit(new ApplicationStartEvent(this));
     }

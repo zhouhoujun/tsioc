@@ -25,7 +25,6 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
         this.useFilter(this.guardsFilter);
     }
 
-
     /**
      * use guards.
      * @param guards 
@@ -55,7 +54,6 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
         return this.getFilters().reduceRight(
             (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), chain);
     }
-
 
     /**
      *  get filters. 

@@ -23,7 +23,7 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
         if (!hds) {
             hds = [endpoint];
             this.maps.set(filter, hds)
-        } else if (!hds.some(h => h && h.equals(endpoint))) {
+        } else if (!hds.some(h => h.equals ? h.equals(endpoint) : h === endpoint)) {
             hds.push(endpoint)
         }
         return this
@@ -32,7 +32,7 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
     removeHandle(filter: Type | string, endpoint: Endpoint): this {
         const hds = this.maps.get(filter);
         if (!hds) return this;
-        const idx = hds.findIndex(e => e.equals(endpoint));
+        const idx = hds.findIndex(h => h.equals ? h.equals(endpoint) : h === endpoint);
         if (idx > 0) hds.splice(idx, 1);
         return this
     }

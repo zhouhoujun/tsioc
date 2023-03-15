@@ -83,9 +83,7 @@ export const NEXT = () => Promise.resolve();
 export class Chain implements Middleware {
 
     private _chainFn?: MiddlewareFn;
-    constructor(private middlewares: (Middleware | MiddlewareFn)[]) {
-
-    }
+    constructor(private middlewares: (Middleware | MiddlewareFn)[]) { }
 
     invoke<T extends ServerEndpointContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
@@ -103,12 +101,7 @@ export class Chain implements Middleware {
 export class MiddlewareBackend<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, Tx extends ServerEndpointContext = ServerEndpointContext> implements EndpointBackend<TRequest, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
-    constructor(private middlewares: MiddlewareLike<Tx>[]) {
-
-    }
-    equals(target: any): boolean {
-        return this === target;
-    }
+    constructor(private middlewares: MiddlewareLike<Tx>[]) { }
 
     handle(req: TRequest, context: Tx): Observable<TResponse> {
         return defer(async () => {
@@ -120,6 +113,9 @@ export class MiddlewareBackend<TRequest extends Incoming = Incoming, TResponse e
         })
     }
 
+    equals(target: any): boolean {
+        return this.middlewares === target?.middlewares;
+    }
 }
 
 /**
@@ -128,9 +124,7 @@ export class MiddlewareBackend<TRequest extends Incoming = Incoming, TResponse e
 export class InterceptorMiddleware<TRequest extends Incoming, TResponse extends Outgoing> implements Middleware {
 
     private _chainFn?: MiddlewareFn;
-    constructor(private readonly middleware: Middleware, private readonly interceptors: Interceptor<TRequest, TResponse>[]) {
-
-    }
+    constructor(private readonly middleware: Middleware, private readonly interceptors: Interceptor<TRequest, TResponse>[]) { }
 
     invoke<T extends ServerEndpointContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {

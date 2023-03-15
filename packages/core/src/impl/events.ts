@@ -36,7 +36,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
-        
+
         return this;
     }
 
@@ -44,7 +44,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         this._endpoint.useGuards(guards);
         return this;
     }
-    
+
     useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>> | TypeOf<Interceptor<ApplicationEvent, any>>[], order?: number): this {
         this._endpoint.use(interceptor, order);
         return this;
@@ -58,7 +58,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     addListener(event: Type<ApplicationEvent>, endpoint: Endpoint, order = -1): this {
         const endpoints = this.maps.get(event);
         if (endpoints) {
-            if (endpoints.some(i => i.equals(endpoint))) return this;
+            if (endpoints.some(i => i.equals ? i.equals(endpoint) : i === endpoint)) return this;
             order >= 0 ? endpoints.splice(order, 0, endpoint) : endpoints.push(endpoint);
         } else {
             this.maps.set(event, [endpoint]);
@@ -78,9 +78,6 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     clear(): void {
         this.maps.clear();
     }
-
-    equals(target: any): boolean {
-        return this === target;
-    }
+    
 }
 

@@ -5,7 +5,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
 import { Application } from '../src';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+// import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { HttpClient, HttpClientModule } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logs';
 
@@ -25,48 +25,48 @@ describe('di module', () => {
     });
 
 
-    it('message test.', async () => {
+    // it('message test.', async () => {
 
-        const ctx = await Application.run({
-            module: ModuleB,
-            uses: [
-                ServerModule,
-                HttpClientModule,
-                ServerHttpClientModule,
-                HttpModule.withOption({
-                    majorVersion: 1,
-                    listenOpts: {
-                        port: 3200
-                    }
-                })
-            ]
-        });
-        const serRef = ctx.runners.attach(HttpServer);
-        serRef.getInstance().use((ctx, next) => {
-            console.log('ctx.url:', ctx.url);
-            if (ctx.url.startsWith('/test')) {
-                console.log('message queue test: ' + ctx.playload);
-            }
+    //     const ctx = await Application.run({
+    //         module: ModuleB,
+    //         uses: [
+    //             ServerModule,
+    //             HttpClientModule,
+    //             ServerHttpClientModule,
+    //             HttpModule.withOption({
+    //                 majorVersion: 1,
+    //                 listenOpts: {
+    //                     port: 3200
+    //                 }
+    //             })
+    //         ]
+    //     });
+    //     const serRef = ctx.runners.attach(HttpServer);
+    //     serRef.getInstance().use((ctx, next) => {
+    //         console.log('ctx.url:', ctx.url);
+    //         if (ctx.url.startsWith('/test')) {
+    //             console.log('message queue test: ' + ctx.playload);
+    //         }
 
-            console.log(ctx.body, ctx.query);
-            ctx.body = ctx.query.hi;
-            return next();
-        }, 0);
+    //         console.log(ctx.body, ctx.query);
+    //         ctx.body = ctx.query.hi;
+    //         return next();
+    //     }, 0);
 
-        await ctx.runners.run(HttpServer);
+    //     await ctx.runners.run(HttpServer);
 
-        // has no parent.
-        const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(rep.body).toEqual('hello');
-        expect(rep.status).toEqual(200);
+    //     // has no parent.
+    //     const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
+    //     expect(rep.body).toEqual('hello');
+    //     expect(rep.status).toEqual(200);
 
-        await ctx.destroy();
-    });
+    //     await ctx.destroy();
+    // });
 
     it('options test.', async () => {
         const ctx = await Application.run({

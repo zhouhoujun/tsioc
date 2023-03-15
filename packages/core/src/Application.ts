@@ -179,7 +179,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             target.pipes && this.context.runners.usePipes(target.pipes);
             target.filters && this.context.runners.useFilter(target.filters);
             target.guards && this.context.runners.useGuards(target.guards);
-            target.interceptors && this.context.eventMulticaster.useInterceptor(target.interceptors);
+            target.interceptors && this.context.runners.useInterceptor(target.interceptors);
         }
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {

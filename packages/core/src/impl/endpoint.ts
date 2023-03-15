@@ -36,6 +36,9 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
 
 }
 
+/**
+ * factory resolver implements
+ */
 export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
     /**
      * resolve endpoint factory.

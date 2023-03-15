@@ -18,7 +18,7 @@ export interface Endpoint<TInput = any, TOutput = any> {
      * is this equals to target or not
      * @param target 
      */
-    equals(target: any): boolean;
+    equals?(target: any): boolean;
 }
 
 
@@ -38,19 +38,14 @@ export abstract class EndpointBackend<TInput = any, TOutput = any> implements En
      * @param context request context.
      */
     abstract handle(input: TInput, context: InvocationContext): Observable<TOutput>;
-
-    equals(target: any): boolean {
-        return this === target;
-    }
 }
 
 /**
  * funcation Endpoint.
  */
 export class FnEndpoint<TInput, TOutput, TCtx extends InvocationContext> implements Endpoint<TInput, TOutput> {
-    constructor(private dowork: (input: TInput, context: TCtx) => TOutput | Observable<TOutput> | Promise<TOutput>) {
 
-    }
+    constructor(private dowork: (input: TInput, context: TCtx) => TOutput | Observable<TOutput> | Promise<TOutput>) { }
 
     handle(input: TInput, context: TCtx): Observable<TOutput> {
         return of(input)
@@ -72,16 +67,11 @@ export class FnEndpoint<TInput, TOutput, TCtx extends InvocationContext> impleme
  * Interceptor Endpoint.
  */
 export class InterceptorEndpoint<TInput, TOutput> implements Endpoint<TInput, TOutput> {
-    constructor(private next: Endpoint<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) {
 
-    }
+    constructor(private next: Endpoint<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) { }
 
     handle(input: TInput, context: InvocationContext): Observable<TOutput> {
         return this.interceptor.intercept(input, this.next, context)
-    }
-
-    equals(target: any): boolean {
-        return this === target;
     }
 }
 
@@ -100,10 +90,6 @@ export abstract class AbstractEndpoint<TInput = any, TOutput = any> implements E
         return this.chain.handle(input, context)
     }
 
-    equals(target: any): boolean {
-        return this === target;
-    }
-
     protected reset() {
         this.chain = null;
     }
@@ -116,7 +102,7 @@ export abstract class AbstractEndpoint<TInput = any, TOutput = any> implements E
     /**
      *  get backend endpoint. 
      */
-    protected abstract getBackend(): EndpointBackend<TInput, TOutput>;
+    protected abstract getBackend(): Endpoint<TInput, TOutput>;
 
     /**
      *  get interceptors. 
