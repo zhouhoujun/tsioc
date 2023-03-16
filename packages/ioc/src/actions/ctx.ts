@@ -1,7 +1,7 @@
 import { Token } from '../tokens';
 import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
-import { Class } from '../metadata/type';
+import { Class, DecoratorFn } from '../metadata/type';
 import { FactoryRecord, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Platform } from '../platform';
@@ -45,7 +45,7 @@ export interface RegContext extends IocContext {
     /**
      * current decoractor.
      */
-    currDecor: string;
+    currDecor: DecoratorFn;
     /**
      * custom set singleton or not.
      */

@@ -81,9 +81,9 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 }
 
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
-    ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.beforeAnnoation), ctx)
+    ctx.class.classDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.beforeAnnoation), ctx)
     });
 
     return next()
@@ -92,8 +92,8 @@ export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => v
 
 export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.CLASS), ctx)
+        ctx.currDecor = d;
+        d.getDesignHandle && runChain(d.getDesignHandle(Decors.CLASS), ctx)
     });
 
     return next()
@@ -109,8 +109,8 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements Actio
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.class.propDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.property), ctx)
+        ctx.currDecor = d;
+        d.getDesignHandle && runChain(d.getDesignHandle(Decors.property), ctx)
     });
 
     return next()
@@ -151,9 +151,9 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements Action
 }
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.class.methodDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.method), ctx)
+    ctx.class.methodDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.method), ctx)
     });
 
     return next()
@@ -170,18 +170,18 @@ export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup
 }
 
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.annoation), ctx)
+    ctx.class.classDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.annoation), ctx)
     });
 
     return next()
 }
 
 export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.afterAnnoation), ctx)
+    ctx.class.classDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.afterAnnoation), ctx)
     });
 
     return next()

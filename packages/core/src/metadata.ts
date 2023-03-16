@@ -116,7 +116,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
 /**
  * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
  */
-export interface Bean {
+export interface BeanDecorator {
     /**
      * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
      * @param {Token} provide the value of the method or property for the provide token.
@@ -127,7 +127,7 @@ export interface Bean {
 /**
  * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
  */
-export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
+export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token) => ({ provide }),
     afterInit: (ctx) => {
         const metadata = ctx.define.metadata as BeanMetadata & PropertyMetadata;
@@ -144,7 +144,7 @@ export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
 /**
  * Configuartion decorator, define the class as auto Configuration provider.
  */
-export interface Configuration {
+export interface ConfigurationDecorator {
     /**
      * Configuartion decorator, define the class as auto Configuration provider.
      * @Configuartion
@@ -156,14 +156,14 @@ export interface Configuration {
  * Configuartion decorator, define the class as auto Configuration provider.
  * @Configuartion
  */
-export const Configuration: Configuration = createDecorator<InjectableMetadata>('Configuration', {
+export const Configuration: ConfigurationDecorator = createDecorator<InjectableMetadata>('Configuration', {
     actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
 
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
-            const pdrs = typeRef.decors.filter(d => d.decor === '@Bean')
+            const pdrs = typeRef.defs.filter(d => d.decor === Bean)
                 .map(d => {
                     const key = d.propertyKey;
                     const { provide } = d.metadata as BeanMetadata;

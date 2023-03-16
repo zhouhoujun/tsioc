@@ -1,8 +1,8 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { AnnotationType, ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
+import { AnnotationType, ClassType, EMPTY_OBJ, Type } from '../types';
 import { assign, cleanObj, getParentClass } from '../utils/lang';
-import { isArray, isFunction } from '../utils/chk';
+import { isFunction } from '../utils/chk';
 import { runChain, Handler } from '../handler';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
@@ -10,7 +10,7 @@ import {
 } from './meta';
 import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
-    Class, TypeDef
+    Class, TypeDef, DecoratorFn
 } from './type';
 import { Platform } from '../platform';
 import { InvokeOptions } from '../context';
@@ -96,7 +96,7 @@ export interface DecorScopeHandles<T> {
 /**
  * decorator register options.
  */
-export interface DecorRegisterOption<T = any> extends ProvidersMetadata {
+export interface DecorRegisterOption<T = any> {
     /**
      * decorator basic action type.
      */
@@ -118,7 +118,7 @@ export interface DecorRegisterOption<T = any> extends ProvidersMetadata {
 /**
  * metadata factory. parse args to metadata.
  */
-export interface MetadataFactory<T = any> {
+export interface MetadataFactory<T = any> extends ProvidersMetadata {
     /**
      * parse args as metadata props.
      * @param args
@@ -156,48 +156,23 @@ export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOpt
  * @param parameterIndex 
  * @returns decorator define
  */
-export function toDefine<T>(name: string, decor: string, metadata: T, decorType: DecoratorType, options: DecoratorOption<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
-    if (options.actionType) {
-        isArray(options.actionType) ?
-            options.actionType.forEach(a => regActionType(decor, a))
-            : regActionType(decor, options.actionType)
-    }
+export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: DecoratorType, options: MetadataFactory<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
 
     const providers = options.providers || [];
 
     return {
-        name,
         decor,
         propertyKey: propertyKey!,
         parameterIndex,
         decorType,
         metadata,
-        providers,
-        getHandle: options.def ? mapToFac(options.def as Record<string, Handler | Handler[]>) : emptyHd,
-        getDesignHandle: options.design ? mapToFac(options.design as Record<string, Handler | Handler[]>) : emptyHd,
-        getRuntimeHandle: options.runtime ? mapToFac(options.runtime as Record<string, Handler | Handler[]>) : emptyHd
+        providers
     }
 }
 
 
 
-const emptyHd = (type: any) => EMPTY;
-
-function mapToFac(maps: Record<string, Handler | Handler[]>): (type: DecoratorType) => Handler[] {
-    const mapHd = new Map();
-    for (const type in maps) {
-        let rged: Handler[] = mapHd.get(type);
-        if (!rged) {
-            rged = [];
-            mapHd.set(type, rged);
-        }
-        const handle = maps[type];
-        isArray(handle) ? rged.push(...handle) : rged.push(handle)
-    }
-    return (type: DecoratorType) => mapHd.get(type) ?? EMPTY
-}
-
-function regActionType(decor: string, type: ActionType) {
+export function regActionType(decor: string, type: ActionType) {
     switch (type) {
         case ActionTypes.annoation:
             typeAnnoDecors[decor] = true;
@@ -224,7 +199,7 @@ function regActionType(decor: string, type: ActionType) {
 
 const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
-    if (paramInjectDecors[ctx.define.decor]) {
+    if (paramInjectDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
         const meta = ctx.define.metadata as ParameterMetadata;
         const propertyKey = ctx.define.propertyKey;
@@ -269,7 +244,7 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
 
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
-    if (propInjectDecors[ctx.define.decor]) {
+    if (propInjectDecors[ctx.define.decor.toString()]) {
         ctx.class.setProperyProviders(ctx.define.propertyKey, [ctx.define.metadata])
     }
     return next()
@@ -294,7 +269,7 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
 
 const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true };
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
-    if (typeAnnoDecors[ctx.define.decor]) {
+    if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
         const meta = ctx.define.metadata as ClassMetadata & InjectableMetadata;
         if (meta.abstract) {
@@ -327,7 +302,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
 
 const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
 export const RunnableAction = (ctx: DecorContext, next: () => void) => {
-    if (runnableDecors[ctx.define.decor]) {
+    if (runnableDecors[ctx.define.decor.toString()]) {
         const metadata = ctx.define.metadata as RunnableMetadata;
         (metadata as any).decorType = ctx.define.decorType,
             metadata.method = metadata.method ?? ctx.define.propertyKey,
@@ -340,7 +315,7 @@ export const RunnableAction = (ctx: DecorContext, next: () => void) => {
 
 const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
-    if (typeProvidersDecors[ctx.define.decor]) {
+    if (typeProvidersDecors[ctx.define.decor.toString()]) {
         if ((ctx.define.metadata as ProvidersMetadata).providers) {
             ctx.class.providers.push(...(ctx.define.metadata as ProvidersMetadata).providers!)
         }
@@ -368,7 +343,7 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
-    if (methodProvidersDecors[ctx.define.decor]) {
+    if (methodProvidersDecors[ctx.define.decor.toString()]) {
         const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
             ctx.class.setMethodOptions(ctx.define.propertyKey, mpdrs)
@@ -378,8 +353,8 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
 }
 
 export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
-    if (ctx.define.getHandle) {
-        const handles = ctx.define.getHandle(ctx.define.decorType);
+    if (ctx.define.decor.getHandle) {
+        const handles = ctx.define.decor.getHandle(ctx.define.decorType);
         runChain(handles, ctx)
     }
     return next()

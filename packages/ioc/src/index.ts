@@ -24,7 +24,7 @@ export { Defer, pomiseOf, promisify } from './utils/lang';
 export * from './metadata/meta';
 export * from './metadata/type';
 export * as refl from './metadata/refl';
-export { DecoratorOption } from './metadata/refl';
+export { DecoratorOption, MetadataFactory } from './metadata/refl';
 export * from './metadata/fac';
 export * from './metadata/decor';
 export * from './metadata/tk';

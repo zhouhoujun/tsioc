@@ -1,13 +1,16 @@
 import 'reflect-metadata';
-import { isUndefined, isNumber, isString } from '../utils/chk';
+import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { AbstractMetadata, ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
 import { getToken, Token } from '../tokens';
-import { DecoratorOption } from './refl';
-import * as refl from './refl';
-import { Decors, ActionTypes } from './type';
-import { Type } from '../types';
+import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPorpDecor, dispatchTypeDecor, MetadataFactory, regActionType, toDefine } from './refl';
+import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './type';
+import { EMPTY, Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Execption } from '../execption';
+import { Handler } from '../handler';
+
+
+
 
 /**
  * create dectorator for class params props methods.
@@ -32,15 +35,38 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
         }
 
         return (...pms: any[]) => {
-            return storeMetadata(name, decor, pms, metadata, option)
+            return storeMetadata(factory, pms, metadata, option)
         }
     }
 
+    if (option.actionType) {
+        isArray(option.actionType) ?
+            option.actionType.forEach(a => regActionType(decor, a))
+            : regActionType(decor, option.actionType)
+    }
+    if (option.def) factory.getHandle = mapToFac(option.def as Record<string, Handler | Handler[]>);
+    if (option.design) factory.getDesignHandle = mapToFac(option.design as Record<string, Handler | Handler[]>);
+    if (option.runtime) factory.getRuntimeHandle = mapToFac(option.runtime as Record<string, Handler | Handler[]>);
     factory.toString = () => decor;
     return factory
 }
 
-function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, option: DecoratorOption<T>): any {
+
+function mapToFac(maps: Record<string, Handler | Handler[]>): (type: DecoratorType) => Handler[] {
+    const mapHd = new Map();
+    for (const type in maps) {
+        let rged: Handler[] = mapHd.get(type);
+        if (!rged) {
+            rged = [];
+            mapHd.set(type, rged);
+        }
+        const handle = maps[type];
+        isArray(handle) ? rged.push(...handle) : rged.push(handle)
+    }
+    return (type: DecoratorType) => mapHd.get(type) ?? EMPTY
+}
+
+function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option: MetadataFactory<T>): any {
     let target, propertyKey;
     if (!metadata) {
         metadata = {}
@@ -52,25 +78,25 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
         case 1:
             target = args[0];
             if (target) {
-                refl.dispatchTypeDecor(target, refl.toDefine(name, decor, metadata, Decors.CLASS, option), option)
+                dispatchTypeDecor(target, toDefine(decor, metadata, Decors.CLASS, option), option)
                 return target
             }
             break;
         case 2:
             target = args[0];
             propertyKey = args[1];
-            refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option)
+            dispatchPorpDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
             break;
         case 3:
             if (isNumber(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
                 const parameterIndex = args[2];
-                refl.dispatchParamDecor(target, refl.toDefine(name, decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option)
+                dispatchParamDecor(target, toDefine(decor, metadata, Decors.parameter, option, propertyKey, parameterIndex), option)
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
-                refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option)
+                dispatchPorpDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
             } else {
                 target = args[0];
                 propertyKey = args[1];
@@ -80,9 +106,9 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
                 }
                 // is set get or not.
                 if (descriptor.set || descriptor.get) {
-                    refl.dispatchPorpDecor(target, refl.toDefine(name, decor, metadata, Decors.property, option, propertyKey), option)
+                    dispatchPorpDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
                 } else {
-                    refl.dispatchMethodDecor(target, refl.toDefine(name, decor, metadata, Decors.method, option, propertyKey), option)
+                    dispatchMethodDecor(target, toDefine(decor, metadata, Decors.method, option, propertyKey), option)
                 }
                 return descriptor
             }

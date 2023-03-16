@@ -1,6 +1,4 @@
 import { ClassType, Annotation, EMPTY, Type } from '../types';
-import { Handler } from '../handler';
-import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
@@ -15,6 +13,37 @@ import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
 import { MethodType } from '../injector';
+import { Handler } from '../handler';
+import { DesignContext, RuntimeContext } from '../actions/ctx';
+
+
+
+
+/**
+ * decorator funcation.
+ */
+export interface DecoratorFn extends Function {
+    /**
+     * decorator name
+     */
+    toString(): string;
+    /**
+     * get decorator handle.
+     * @param type decorator type.
+     */
+    getHandle?(type: DecoratorType): Handler<DecorContext>[];
+    /**
+     * get decorator runtime handle.
+     * @param type decorator type.
+     */
+    getRuntimeHandle?(type: DecoratorScope): Handler<RuntimeContext>[];
+    /**
+     * get decorator design handle.
+     * @param type decorator type.
+     */
+    getDesignHandle?(type: DecoratorScope): Handler<DesignContext>[];
+}
+
 
 /**
  * auto run define.
@@ -81,30 +110,11 @@ export namespace ActionTypes {
  */
 export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
-     * decorator name.
+     * decorator Fn
      */
-    readonly name: string;
+    readonly decor: DecoratorFn;
     /**
-     * decorator name with '@'
-     */
-    readonly decor: string;
-    /**
-     * get decorator handle.
-     * @param type decorator type.
-     */
-    getHandle(type: DecoratorType): Handler<DecorContext>[];
-    /**
-     * get decorator runtime handle.
-     * @param type decorator type.
-     */
-    getRuntimeHandle(type: DecoratorScope): Handler<RuntimeContext>[];
-    /**
-     * get decorator design handle.
-     * @param type decorator type.
-     */
-    getDesignHandle(type: DecoratorScope): Handler<DesignContext>[];
-    /**
-     * decorator type.
+     * current decorator type.
      */
     readonly decorType: DecoratorType;
     /**
@@ -180,11 +190,16 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
     className: string;
 
-    readonly decors: DecorDefine[];
-    readonly classDecors: DecorDefine[];
-    readonly propDecors: DecorDefine<PropertyMetadata>[];
-    readonly methodDecors: DecorDefine<MethodMetadata>[];
-    readonly paramDecors: DecorDefine<ParameterMetadata>[];
+    readonly defs: DecorDefine[];
+    readonly classDefs: DecorDefine[];
+    readonly propDefs: DecorDefine<PropertyMetadata>[];
+    readonly methodDefs: DecorDefine<MethodMetadata>[];
+    readonly paramDefs: DecorDefine<ParameterMetadata>[];
+
+    readonly classDecors: DecoratorFn[];
+    readonly propDecors: DecoratorFn[];
+    readonly methodDecors: DecoratorFn[];
+    readonly paramDecors: DecoratorFn[];
 
     readonly annotation: TAnn;
     private params!: Map<string, any[]>;
@@ -234,14 +249,21 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
     constructor(public readonly type: ClassType<T>, annotation: TAnn, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
+        this.classDefs = [];
         this.classDecors = [];
         if (parent) {
-            this.decors = parent.decors.filter(d => d.decorType !== 'class');
+            this.defs = parent.defs.filter(d => d.decorType !== 'class');
+            this.propDefs = parent.propDefs.slice(0);
+            this.methodDefs = parent.methodDefs.slice(0);
+            this.paramDefs = parent.paramDefs.slice(0);
             this.propDecors = parent.propDecors.slice(0);
             this.methodDecors = parent.methodDecors.slice(0);
             this.paramDecors = parent.paramDecors.slice(0)
         } else {
-            this.decors = [];
+            this.defs = [];
+            this.propDefs = [];
+            this.methodDefs = [];
+            this.paramDefs = [];
             this.propDecors = [];
             this.methodDecors = [];
             this.paramDecors = []
@@ -380,31 +402,43 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
     addDefine(define: DecorDefine) {
         switch (define.decorType) {
             case Decors.CLASS:
-                this.classDecors.unshift(define);
+                if (this.classDecors.indexOf(define.decor) < 0) {
+                    this.classDecors.push(define.decor);
+                }
+                this.classDefs.unshift(define);
                 break;
             case Decors.method:
+                if (this.methodDecors.indexOf(define.decor) < 0) {
+                    this.methodDecors.push(define.decor);
+                }
                 if (this.currprop === define.propertyKey) {
-                    this.methodDecors.splice(this.currpropidx, 0, define)
+                    this.methodDefs.splice(this.currpropidx, 0, define)
                 } else {
-                    this.currpropidx = this.methodDecors.length;
+                    this.currpropidx = this.methodDefs.length;
                     this.currprop = define.propertyKey;
-                    this.methodDecors.push(define)
+                    this.methodDefs.push(define)
                 }
                 break;
             case Decors.property:
+                if (this.propDecors.indexOf(define.decor) < 0) {
+                    this.propDecors.push(define.decor);
+                }
                 if (this.currprop === define.propertyKey) {
-                    this.propDecors.splice(this.currpropidx, 0, define)
+                    this.propDefs.splice(this.currpropidx, 0, define)
                 } else {
-                    this.currpropidx = this.propDecors.length;
+                    this.currpropidx = this.propDefs.length;
                     this.currprop = define.propertyKey;
-                    this.propDecors.push(define)
+                    this.propDefs.push(define)
                 }
                 break;
             case Decors.parameter:
-                this.paramDecors.unshift(define);
+                if (this.paramDecors.indexOf(define.decor) < 0) {
+                    this.paramDecors.push(define.decor);
+                }
+                this.paramDefs.unshift(define);
                 break;
         }
-        this.decors.unshift(define)
+        this.defs.unshift(define)
     }
 
     /**
@@ -412,47 +446,55 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
      * @param decor
      * @param type
      */
-    hasMetadata(decor: string | Function): boolean;
+    hasMetadata(decor: string | DecoratorFn): boolean;
     /**
      * has decorator metadata.
      * @param decor
      * @param type
      */
-    hasMetadata(decor: string | Function, type: DecoratorType, propertyKey?: string): boolean;
-    hasMetadata(decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
+    hasMetadata(decor: string | DecoratorFn, type: DecoratorType, propertyKey?: string): boolean;
+    hasMetadata(decor: string | DecoratorFn, type?: DecoratorType, propertyKey?: string): boolean {
         type = type || Decors.CLASS;
-        decor = getDectorId(decor);
-        const filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
+        let filter: (value: any, index?: number) => any;
+        if (isString(decor)) {
+            filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor.toString() === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor.toString() === decor;
+        } else {
+            filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
+        }
         switch (type) {
             case Decors.CLASS:
-                return this.classDecors.some(filter)
+                return this.classDefs.some(filter)
             case Decors.method:
-                return this.methodDecors.some(filter)
+                return this.methodDefs.some(filter)
             case Decors.property:
-                return this.propDecors.some(filter)
+                return this.propDefs.some(filter)
             case Decors.parameter:
-                return this.paramDecors.some(filter)
+                return this.paramDefs.some(filter)
             default:
                 return false
         }
     }
 
-    getDecorDefine<T = any>(decor: string | Function): DecorDefine<T> | undefined;
-    getDecorDefine<T = any>(decor: string | Function, type: DecorMemberType): DecorDefine<T> | undefined;
-    getDecorDefine<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): DecorDefine<T> | undefined;
-    getDecorDefine(decor: string | Function, type?: DecoratorType | string, propertyKey?: string | DecorMemberType): DecorDefine | undefined {
+    getDecorDefine<T = any>(decor: string | DecoratorFn): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn, type: DecorMemberType): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn, propertyKey: string, type: DecorMemberType): DecorDefine<T> | undefined;
+    getDecorDefine(decor: string | DecoratorFn, type?: DecoratorType | string, propertyKey?: string | DecorMemberType): DecorDefine | undefined {
         type = type || Decors.CLASS;
-        decor = getDectorId(decor);
-        const filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
+        let filter: (value: any, index?: number) => any;
+        if (isString(decor)) {
+            filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor.toString() === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor.toString()  === decor;
+        } else {
+            filter = (propertyKey && type !== Decors.CLASS) ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
+        }
         switch (type) {
             case Decors.CLASS:
-                return this.classDecors.find(filter)
+                return this.classDefs.find(filter)
             case Decors.method:
-                return this.methodDecors.find(filter)
+                return this.methodDefs.find(filter)
             case Decors.property:
-                return this.propDecors.find(filter)
+                return this.propDefs.find(filter)
             case Decors.parameter:
-                return this.paramDecors.find(filter)
+                return this.paramDefs.find(filter)
             default:
                 return
         }
@@ -462,28 +504,28 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
      * get all class decorator defines.
      * @param decor
      */
-    getDecorDefines(decor: string | Function): DecorDefine[];
+    getDecorDefines(decor: string | DecoratorFn): DecorDefine[];
     /**
      * get all decorator defines.
      * @param decor decorator.
      * @param type  decorator type.
      */
-    getDecorDefines<T = any>(decor: string | Function, type: DecorMemberType): DecorDefine<T>[];
-    getDecorDefines(decor: string | Function, type?: DecoratorType): DecorDefine[] {
+    getDecorDefines<T = any>(decor: string | DecoratorFn, type: DecorMemberType): DecorDefine<T>[];
+    getDecorDefines(decor: string | DecoratorFn, type?: DecoratorType): DecorDefine[] {
         decor = getDectorId(decor);
         if (!type) {
             type = Decors.CLASS;
         }
-        const filter = (d: DecorDefine) => d.decor === decor;
+        const filter =  isString(decor)? ((d: DecorDefine) => d.decor.toString() === decor) : ((d: DecorDefine) => d.decor === decor);
         switch (type) {
             case Decors.CLASS:
-                return this.classDecors.filter(filter)
+                return this.classDefs.filter(filter)
             case Decors.method:
-                return this.methodDecors.filter(filter)
+                return this.methodDefs.filter(filter)
             case Decors.property:
-                return this.propDecors.filter(filter)
+                return this.propDefs.filter(filter)
             case Decors.parameter:
-                return this.paramDecors.filter(filter)
+                return this.paramDefs.filter(filter)
             default:
                 return EMPTY;
         }
@@ -493,15 +535,15 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
      * get class metadata.
      * @param decor decoractor or decoractor name.
      */
-    getMetadata<T = any>(decor: string | Function): T;
+    getMetadata<T = any>(decor: string | DecoratorFn): T;
     /**
      * get property or method metadta.
      * @param decor decoractor or decoractor name.
      * @param propertyKey property name.
      * @param type decoractor type.
      */
-    getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
-    getMetadata<T = any>(decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {
+    getMetadata<T = any>(decor: string | DecoratorFn, propertyKey: string, type: DecorMemberType): T;
+    getMetadata<T = any>(decor: string | DecoratorFn, propertyKey?: string, type?: DecorMemberType): T {
         return this.getDecorDefine(decor, propertyKey!, type!)?.metadata
     }
 
@@ -509,14 +551,14 @@ export class Class<T = any, TAnn extends TypeDef<T> = TypeDef<T>> {
      * get all metadata of class decorator.
      * @param decor the class decorator.
      */
-    getMetadatas<T = any>(decor: string | Function): T[];
+    getMetadatas<T = any>(decor: string | DecoratorFn): T[];
     /**
      * get all metadata of the decorator.
      * @param decor the decorator.
      * @param type decorator type.
      */
-    getMetadatas<T = any>(decor: string | Function, type: DecorMemberType): T[];
-    getMetadatas<T = any>(decor: string | Function, type?: DecorMemberType): T[] {
+    getMetadatas<T = any>(decor: string | DecoratorFn, type: DecorMemberType): T[];
+    getMetadatas<T = any>(decor: string | DecoratorFn, type?: DecorMemberType): T[] {
         return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d)
     }
 
