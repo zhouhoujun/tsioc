@@ -4,12 +4,18 @@ import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { RunnableRef } from '../runners';
-import { Filter } from './filter';
+import { EndpointContext } from './context';
+import { Filter, Respond } from './filter';
 
 
+/**
+ * Filter options.
+ */
 export interface FilterOptions {
     /**
-     * bootstrap guards.
+     * An array of dependency-injection tokens used to look up `CanActivate()`
+     * handlers, in order to determine if the current user is allowed to
+     * activate the component. By default, any user can activate.
      */
     guards?: TypeOf<CanActivate>[];
     /**
@@ -42,6 +48,10 @@ export interface BootstrapOption extends EndpointOptions {
      * bootstrap order
      */
     order?: number;
+    /**
+     * handle expection as response type.
+     */
+    response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: EndpointContext, returnning: any) => void)
 }
 
 

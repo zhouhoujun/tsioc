@@ -1,18 +1,15 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, ProviderMetadata, Decors, TypeOf
+    isString, Parameter, ProviderMetadata, Decors
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
-import { CanActivate } from './guard';
 import {
     ApplicationDisposeEvent, ApplicationEvent, ApplicationEventMulticaster, ApplicationShutdownEvent,
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
-import { FilterHandlerResolver, Respond } from './filters/filter';
-import { EndpointContext } from './filters/context';
+import { FilterHandlerResolver } from './filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
-import { Interceptor } from './Interceptor';
 
 
 /**
@@ -340,31 +337,11 @@ export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDispos
 /**
  * Endpoint handler metadata.
  */
-export interface EndpointHandlerMetadata {
+export interface EndpointHandlerMetadata extends BootstrapOption {
     /**
      * execption type.
      */
     filter: Type | string;
-    /**
-     * order.
-     */
-    order?: number;
-    /**
-     * route guards.
-     */
-    guards?: TypeOf<CanActivate>[];
-    /**
-     * interceptors of route.
-     */
-    interceptors?: TypeOf<Interceptor>[];
-    /**
-     * pipes for the route.
-     */
-    pipes?: TypeOf<PipeTransform>[];
-    /**
-     * handle expection as response type.
-     */
-    response?: 'body' | 'header' | 'response' | TypeOf<Respond>
 }
 
 
@@ -382,29 +359,7 @@ export interface EndpointHanlder {
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    (filter: Type | string, option?: {
-
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * order.
-         */
-        order?: number;
-        /**
-         * handle expection as response type.
-         */
-        response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: EndpointContext, returnning: any) => void)
-    }): MethodDecorator;
+    (filter: Type | string, option?: BootstrapOption): MethodDecorator;
 }
 
 /**
@@ -447,24 +402,7 @@ export interface ExecptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: {
-        /**
-         * order.
-         */
-        order?: number;
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * handle expection as response type.
-         */
-        response?: 'body' | 'header' | 'response' | Type<Respond> | ((ctx: EndpointContext, returnning: any) => void)
-    }): MethodDecorator;
+    (execption: Type<Error>, option?: BootstrapOption): MethodDecorator;
 }
 
 /**

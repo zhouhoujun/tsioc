@@ -1,6 +1,5 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
-import { RouteFactoryResolver, ROUTES, Routes } from './route';
-import { DefaultRouteFactoryResovler } from './route_ref';
+import { ROUTES, Routes } from './route';
 import { MappingRouter, Router } from './router';
 
 /*
@@ -8,8 +7,7 @@ import { MappingRouter, Router } from './router';
  */
 @Module({
     providers: [
-        { provide: Router, useClass: MappingRouter, static: true },
-        { provide: RouteFactoryResolver, useValue: new DefaultRouteFactoryResovler() },
+        { provide: Router, useClass: MappingRouter, static: true }
     ]
 })
 export class RouterModule {

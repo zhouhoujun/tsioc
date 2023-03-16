@@ -1,8 +1,8 @@
 import { Modules, Type, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
+import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, immediate } from '../utils/lang';
-import { InjectFlags, Token } from '../tokens';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes,
@@ -11,16 +11,16 @@ import {
 import { Execption } from '../execption';
 import { Platform } from '../platform';
 import { get } from '../metadata/refl';
+import { ModuleDef, Class } from '../metadata/type';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { ModuleDef, Class } from '../metadata/type';
 import { ReflectiveFactory } from '../reflective';
+import { DefaultReflectiveFactory, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { DefaultPlatform } from './platform';
-import { DefaultReflectiveFactory, hasContext } from './reflective';
 
 /**
  * Default Injector

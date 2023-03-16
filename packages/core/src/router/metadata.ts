@@ -6,9 +6,10 @@ import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
-import { mths, Protocols, RequestMethod } from '../transport/packet';
-import { joinprefix, normalize, RouteFactoryResolver } from './route';
-import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, Router } from './router';
+import { joinprefix, normalize } from './route';
+import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, RouteOptions, Router } from './router';
+import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
+
 
 
 export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
@@ -29,28 +30,7 @@ export interface Handle {
      * @param {route} route the route url.
      * @param options route metedata options.
      */
-    (route: string, options?: {
-        /**
-         * route prefix.
-         */
-        prefix?: string;
-        /**
-         * version of route api.
-         */
-        version?: string;
-        /**
-         * parent router.
-         */
-        parent?: Router;
-        /**
-        * route guards.
-        */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-    }): HandleDecorator;
+    (route: string, options?: RouteOptions): HandleDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
@@ -58,7 +38,7 @@ export interface Handle {
      * @param {string} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: string | RegExp, protocol?: Protocols, option?: Record<string, any>): MethodDecorator;
+    (pattern: string | RegExp, protocol?: Protocols, option?: RouteOptions): MethodDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
@@ -66,7 +46,7 @@ export interface Handle {
      * @param {string} pattern message match pattern.
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    (pattern: string | RegExp, option?: Record<string, any> & { protocol?: Protocols }): MethodDecorator;
+    (pattern: string | RegExp, option?: RouteOptions): MethodDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
@@ -96,7 +76,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         afterAnnoation: (ctx, next) => {
             const def = ctx.class;
             const metadata = def.getMetadata<HandleMetadata>(ctx.currDecor);
-            const { route, prefix, version, parent, protocol, interceptors } = metadata;
+            const { route, prefix, version, router, protocol, interceptors } = metadata;
             const injector = ctx.injector;
 
             if (!isString(route) && !parent) {
@@ -105,7 +85,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
 
             if (isString(route)) {
                 const path = joinprefix(prefix, version, route);
-                const router = parent ? injector.get(parent) : injector.get(Router);
+                const routerInst = router ? injector.get(router) : injector.get(Router);
                 if (!(router instanceof Router)) {
                     throw new Execption(lang.getClassName(router) + 'is not message router!');
                 }
@@ -247,7 +227,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
             } else if (!controllerOnly && isString(arg2)) {
                 return { route, method: arg2 as RequestMethod } as T;
             } else if (lang.isBaseOf(arg2, Router)) {
-                return { route, parent: arg2 } as T;
+                return { route, router: arg2 } as T;
             } else {
                 return { ...arg2 as T, route };
             }
@@ -261,11 +241,11 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
         design: {
             afterAnnoation: (ctx, next) => {
                 const def = ctx.class.getAnnotation<MappingDef>();
-                const { parent, version, prefix, guards, interceptors } = def;
+                const { router: CustomRouter, version, prefix, guards, interceptors } = def;
                 const injector = ctx.injector;
                 let router: Router;
-                if (parent) {
-                    router = injector.get(parent);
+                if (CustomRouter) {
+                    router = injector.get(CustomRouter);
                 } else {
                     router = injector.get(Router);
                 }
@@ -333,10 +313,10 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
                 //     });
                 // factory.onDestroy(() => routes.forEach(path => router.unuse(path)));
 
-                const routeRef = injector.get(RouteFactoryResolver).resolve(ctx.class).create(injector);
-                const path = routeRef.path;
-                routeRef.onDestroy(() => router.unuse(path));
-                router.use(path, routeRef);
+                // const routeRef = injector.get(RouteFactoryResolver).resolve(ctx.class).create(injector);
+                // const path = routeRef.path;
+                // routeRef.onDestroy(() => router.unuse(path));
+                // router.use(path, routeRef);
 
                 next();
             }
@@ -498,9 +478,9 @@ export const RequestBody: RequsetParameterDecorator = createParamDecorator('Requ
  * decorator used to define Request restful route mapping.
  *
  * @export
- * @interface RestController
+ * @interface Controller
  */
-export interface RestController {
+export interface Controller {
     /**
      * controller decorator. define the controller method as an route.
      *
@@ -562,15 +542,15 @@ export interface RestController {
 
 
 /**
- * RestController decorator
+ * Controller decorator
  */
-export const RestController: RestController = createMappingDecorator('RestController');
+export const Controller: Controller = createMappingDecorator('Controller');
 
 /**
- * Controller decorator
- * @alias of RestController
+ * RestController decorator
+ * @alias of Controller
  */
-export const Controller = RestController;
+export const RestController = Controller;
 
 /**
  * custom define Request method. route decorator type define.
@@ -692,7 +672,7 @@ export interface HeadDecorator {
  *
  * @Head
  */
-export const Head: HeadDecorator = createRouteDecorator(mths.HEAD);
+export const Head: HeadDecorator = createRouteDecorator(HEAD);
 
 
 /**
@@ -796,7 +776,7 @@ export interface GetDecorator {
  *
  * @Get
  */
-export const Get: GetDecorator = createRouteDecorator(mths.GET);
+export const Get: GetDecorator = createRouteDecorator(GET);
 
 
 
@@ -849,7 +829,7 @@ export interface DeleteDecorator {
  *
  * @Delete
  */
-export const Delete: DeleteDecorator = createRouteDecorator(mths.DELETE);
+export const Delete: DeleteDecorator = createRouteDecorator(DELETE);
 
 
 
@@ -901,7 +881,7 @@ export interface PatchDecorator {
  *
  * @Patch
  */
-export const Patch: PatchDecorator = createRouteDecorator(mths.PATCH);
+export const Patch: PatchDecorator = createRouteDecorator(PATCH);
 
 
 
@@ -954,7 +934,7 @@ export interface PostDecorator {
  *
  * @Post
  */
-export const Post: PostDecorator = createRouteDecorator(mths.POST);
+export const Post: PostDecorator = createRouteDecorator(POST);
 
 
 
@@ -1006,7 +986,7 @@ export interface PutDecorator {
  *
  * @Put
  */
-export const Put: PutDecorator = createRouteDecorator(mths.PUT);
+export const Put: PutDecorator = createRouteDecorator(PUT);
 
 
 
@@ -1024,6 +1004,7 @@ export interface HandleMessagePattern {
     cmd?: string;
 }
 
+
 /**
  * Handle metadata. use to define the class as handle handle register in global handle queue.
  *
@@ -1031,11 +1012,12 @@ export interface HandleMessagePattern {
  * @interface RegisterForMetadata
  * @extends {TypeMetadata}
  */
-export interface HandleMetadata extends TypeMetadata, PatternMetadata {
+export interface HandleMetadata extends TypeMetadata, PatternMetadata, RouteOptions {
     /**
      * handle route
      */
     route?: string;
+
     /**
      * version of api.
      */
@@ -1044,22 +1026,9 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      * route prefix.
      */
     prefix?: string;
-    /**
-     * route guards.
-     */
-    guards?: TypeOf<CanActivate>[];
-    /**
-     * interceptors of route.
-     */
-    interceptors?: TypeOf<Interceptor>[];
-    /**
-     * handle parent.
-     * default register in root handle queue.
-     */
-    parent?: Type<Router>;
 
     /**
-     * transport protocol
+     * protocol
      */
-    protocol?: Protocols;
+    protocol?: string;
 }

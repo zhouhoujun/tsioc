@@ -159,30 +159,9 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
     return next()
 }
 
-
 /**
- * method auto run action.
- *
- * @export
- * @class SetPropAction
- * @extends {IocDesignAction}
+ * Annoaction
  */
-export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
-    if (runs.length < 1) {
-        return next()
-    }
-
-    const injector = ctx.injector;
-    const instance = injector.get(ctx.provide || ctx.type);
-    if (!instance) return;
-    const factory = injector.get(ReflectiveFactory).create(ctx.class, injector);
-    runs.forEach(meta => {
-        factory.invoke(meta.method, undefined, instance);
-    });
-    return next()
-};
-
 export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup {
 
     setup() {
@@ -207,3 +186,26 @@ export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => voi
 
     return next()
 }
+
+/**
+ * method auto run action.
+ *
+ * @export
+ * @class SetPropAction
+ * @extends {IocDesignAction}
+ */
+export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
+    const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
+    if (runs.length < 1) {
+        return next()
+    }
+
+    const injector = ctx.injector;
+    const instance = injector.get(ctx.provide || ctx.type);
+    if (!instance) return;
+    const factory = injector.get(ReflectiveFactory).create(ctx.class, injector);
+    runs.forEach(meta => {
+        factory.invoke(meta.method, undefined, instance);
+    });
+    return next()
+};

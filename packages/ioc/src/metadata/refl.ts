@@ -2,7 +2,7 @@ import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
 import { assign, cleanObj, getParentClass } from '../utils/lang';
-import { isArray, isFunction, isNil } from '../utils/chk';
+import { isArray, isFunction } from '../utils/chk';
 import { runChain, Handler } from '../handler';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,

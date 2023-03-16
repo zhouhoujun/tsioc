@@ -1,15 +1,11 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef, TypeOf } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
-import { PipeTransform } from '../pipes/pipe';
-import { Route, RouteFactoryResolver, RouteRef, ROUTES, Routes } from './route';
-import { NotFoundStatus } from '../transport/status';
-import { Interceptor } from '../Interceptor';
-import { RequestMethod } from '../transport/packet';
-import { AssetContext, ServerEndpointContext } from '../transport/context';
-import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } from '../transport/middleware';
+import { Route, ROUTES, Routes } from './route';
+import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } from './middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
-
-
+import { MiddlewareContext } from './middleware';
+import { Protocols, RequestMethod } from './protocols';
+import { EndpointOptions } from '../filters/endpoint.factory';
 
 
 
@@ -29,11 +25,11 @@ export abstract class Router implements Middleware {
     /**
      * invoke middleware.
      *
-     * @param {ServerEndpointContext} ctx context.
+     * @param {MiddlewareContext} ctx context.
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
-    abstract invoke(ctx: ServerEndpointContext<any, any>, next: () => Promise<void>): Promise<void>;
+    abstract invoke(ctx: MiddlewareContext, next: () => Promise<void>): Promise<void>;
     /**
      * has route or not.
      * @param route route
@@ -71,7 +67,7 @@ export class MappingRoute implements Middleware {
         return this.route.path
     }
 
-    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: MiddlewareContext, next: () => Promise<void>): Promise<void> {
         const can = await this.canActive(ctx);
         if (can) {
             if (!this._middleware) {
@@ -86,7 +82,7 @@ export class MappingRoute implements Middleware {
         }
     }
 
-    protected canActive(ctx: ServerEndpointContext) {
+    protected canActive(ctx: MiddlewareContext) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
@@ -94,7 +90,7 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
-    protected async parse(route: Route & { router?: Router }, ctx: ServerEndpointContext): Promise<Middleware> {
+    protected async parse(route: Route & { router?: Router }, ctx: MiddlewareContext): Promise<Middleware> {
         if (route.invoke) {
             return route as Middleware;
         } else if (route.middleware) {
@@ -105,7 +101,8 @@ export class MappingRoute implements Middleware {
             const to = route.redirectTo
             return createMiddleware((c, n) => this.redirect(c, to))
         } else if (route.controller) {
-            return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundExecption() })
+            return null!;
+            // return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundExecption() })
         } else if (route.children) {
             const router = new MappingRouter(route.path);
             route.children.forEach(route => router.use(route));
@@ -128,12 +125,11 @@ export class MappingRoute implements Middleware {
     }
 
 
-    protected async redirect(ctx: ServerEndpointContext, url: string, alt?: string): Promise<void> {
-        const hctx = ctx as AssetContext;
-        if (!isFunction(hctx.redirect)) {
+    protected async redirect(ctx: MiddlewareContext, url: string, alt?: string): Promise<void> {
+        if (!isFunction(ctx.redirect)) {
             throw new BadRequestExecption();
         }
-        hctx.redirect(url, alt)
+        ctx.redirect(url, alt)
     }
 
 }
@@ -174,7 +170,7 @@ export class MappingRouter extends Router implements OnDestroy {
             this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware))
         } else {
             if (this.has(route.path)) return this;
-            this.routes.set(route.path, this.parse(route instanceof RouteRef ? route : new MappingRoute(route)))
+            this.routes.set(route.path, this.parse(new MappingRoute(route)))
         }
         return this
     }
@@ -188,7 +184,7 @@ export class MappingRouter extends Router implements OnDestroy {
         return this
     }
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: MiddlewareContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
             return route(ctx, next)
@@ -197,8 +193,8 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected getRoute(ctx: ServerEndpointContext): MiddlewareFn | undefined {
-        if (!(ctx.status instanceof NotFoundStatus)) return;
+    protected getRoute(ctx: MiddlewareContext): MiddlewareFn | undefined {
+        // if (!(ctx.status instanceof NotFoundStatus)) return;
 
         let url: string;
         if (this.prefix) {
@@ -209,9 +205,6 @@ export class MappingRouter extends Router implements OnDestroy {
         }
 
         const route = this.getRouteByUrl(ctx.url);
-        if (route) {
-            ctx.url = url
-        }
         return route
     }
 
@@ -231,11 +224,25 @@ export class MappingRouter extends Router implements OnDestroy {
 }
 
 
+/**
+ * route options
+ */
+export interface RouteOptions extends EndpointOptions {
+    /**
+     * parent router.
+     * default register in root handle queue.
+     */
+    router?: Type<Router>;
+    /**
+     * protocol
+     */
+    protocol?: Protocols | string;
+}
 
 /**
  * route mapping metadata.
  */
-export interface RouteMappingMetadata {
+export interface RouteMappingMetadata extends RouteOptions {
     /**
      * route.
      *
@@ -243,10 +250,6 @@ export interface RouteMappingMetadata {
      * @memberof RouteMetadata
      */
     route?: string;
-    /**
-     * parent router.
-     */
-    parent?: Type<Router>;
     /**
      * request method.
      */
@@ -258,18 +261,6 @@ export interface RouteMappingMetadata {
      * @memberof RouteMetadata
      */
     contentType?: string;
-    /**
-     * interceptors of route.
-     */
-    interceptors?: TypeOf<Interceptor>[];
-    /**
-     * pipes for the route.
-     */
-    pipes?: TypeOf<PipeTransform>[];
-    /**
-     * route guards.
-     */
-    guards?: TypeOf<CanActivate>[];
 }
 
 /**

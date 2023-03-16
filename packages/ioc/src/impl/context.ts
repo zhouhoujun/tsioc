@@ -7,11 +7,11 @@ import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '..
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
+import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
-import { Class } from '../metadata/type';
 
 
 

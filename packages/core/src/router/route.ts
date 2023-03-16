@@ -1,18 +1,12 @@
-import {
-    Abstract, Destroyable, DestroyCallback, Injector, InvokeArguments,
-    OnDestroy, Class, tokenId, Type, TypeOf
-} from '@tsdi/ioc';
-import { Protocols } from '../transport/packet';
-import { Interceptor } from '../Interceptor';
-import { ServerEndpointContext } from '../transport/context';
+import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Middleware, MiddlewareFn } from '../transport/middleware';
-import { CanActivate } from '../guard';
-import { Pattern } from '../transport/request';
+import { EndpointOptions } from '../filters/endpoint.factory';
+import { Pattern } from './protocols';
 
 /**
  * Route.
  */
-export interface Route extends InvokeArguments {
+export interface Route extends EndpointOptions {
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.
@@ -31,19 +25,9 @@ export interface Route extends InvokeArguments {
      */
     redirectTo?: string;
     /**
-     * An array of dependency-injection tokens used to look up `CanActivate()`
-     * handlers, in order to determine if the current user is allowed to
-     * activate the component. By default, any user can activate.
-     */
-    guards?: TypeOf<CanActivate>[];
-    /**
-     * interceptors of route.
-     */
-    interceptors?: TypeOf<Interceptor>[];
-    /**
      * transport protocol
      */
-    protocol?: Protocols;
+    protocol?: string;
 
     /**
      * An array of child `Route` objects that specifies a nested route
@@ -123,102 +107,4 @@ export function normalize(route: string): string {
         path = path.substring(0, path.length - 1)
     }
     return staExp.test(path) ? path : `/${path}`
-}
-
-
-
-/**
- * middleware ref.
- */
-@Abstract()
-export abstract class RouteRef<T = any> implements Middleware, Destroyable, OnDestroy {
-    /**
-     * controller type.
-     */
-    abstract get type(): Type<T>;
-    /**
-     * controller type reflective.
-     */
-    abstract get typeRef(): Class<T>;
-    /**
-     * controller injector. the controller registered in.
-     */
-    abstract get injector(): Injector;
-    /**
-     * controller instance.
-     */
-    abstract get instance(): T;
-    /**
-     * route path.
-     */
-    abstract get path(): string;
-    /**
-     * route guards.
-     */
-    abstract get guards(): CanActivate[];
-    /**
-     * interceptors of route.
-     */
-    abstract get interceptors(): Interceptor[];
-    /**
-     * route handle.
-     *
-     * @abstract
-     * @param {ServerEndpointContext} ctx
-     * @param {() => Promise<void>} next
-     * @returns {Promise<void>}
-     */
-    abstract invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void>;
-    /**
-     * is destroyed or not.
-     */
-    abstract get destroyed(): boolean;
-    /**
-     * Destroys the component instance and all of the data structures associated with it.
-     */
-    abstract destroy(): void | Promise<void>;
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
-     */
-    abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
-}
-
-
-
-/**
- * route factory.
- */
-@Abstract()
-export abstract class RouteFactory<T = any> {
-    /**
-     * type reflective.
-     */
-    abstract get typeRef(): Class<T>;
-    /**
-     * create {@link RouteRef}
-     * @param injector injector.
-     * @param option invoke arguments. type of {@link InvokeArguments}.
-     * @returns instance of {@link RouteRef}
-     */
-    abstract create(injector: Injector, option?: InvokeArguments): RouteRef<T>;
-    /**
-     * get the last route ref instance.
-     */
-    abstract last(): RouteRef<T> | undefined;
-}
-
-/**
- * routeRef factory resovler.
- */
-@Abstract()
-export abstract class RouteFactoryResolver {
-    /**
-     * resolve {@link RouteFactory}
-     * @param type route class type.
-     * @returns instance of {@link RouteFactory}.
-     */
-    abstract resolve<T>(type: Type<T> | Class<T>): RouteFactory<T>;
 }
