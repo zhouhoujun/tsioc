@@ -43,7 +43,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
      * @returns {SuiteDescribe}
      */
     getSuiteDescribe(): SuiteDescribe {
-        const meta = this.typeRef.class.annotation as SuiteMetadata;
+        const meta = this.typeRef.class.getAnnotation() as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = meta.describe || this.typeRef.class.className;
         return {

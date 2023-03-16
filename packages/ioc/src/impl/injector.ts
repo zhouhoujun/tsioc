@@ -153,7 +153,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected registerReflect(platform: Platform, def: Class, option?: RegOption) {
-        const providedIn = option?.providedIn ?? def.annotation.providedIn;
+        const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
         (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, def, option)
     }
 
@@ -262,10 +262,10 @@ export class DefaultInjector extends Injector {
         const platform = this.platform();
         deepForEach(args, ty => {
             if (isType(ty)) {
-                const mdref = get<ModuleDef>(ty);
+                const mdref = get(ty);
                 if (mdref) {
                     types.push(ty);
-                    this.registerReflect(platform, mdref, { injectorType: mdref.annotation.module })
+                    this.registerReflect(platform, mdref, { injectorType: mdref.getAnnotation<ModuleDef>().module })
 
                 }
             }

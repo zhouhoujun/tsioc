@@ -122,8 +122,9 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     }
 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {
-        if ((root.moduleReflect.annotation as ModuleDef)?.baseURL) {
-            root.setValue(PROCESS_ROOT, (root.moduleReflect.annotation as ModuleDef).baseURL)
+        const ann = root.moduleReflect.getAnnotation<ModuleDef>();
+        if (ann?.baseURL) {
+            root.setValue(PROCESS_ROOT, ann.baseURL)
         }
         const ctx = this.createInstance(root, option);
         return ctx

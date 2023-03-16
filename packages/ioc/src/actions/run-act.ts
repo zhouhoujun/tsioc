@@ -153,10 +153,10 @@ export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => v
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
-    if (!ctx.instance || ctx.singleton || !ctx.class.annotation.expires || ctx.class.annotation.expires <= 0) {
+    if (!ctx.instance || ctx.singleton || !ctx.class.getAnnotation().expires || ctx.class.getAnnotation().expires! <= 0) {
         return next()
     }
-    ctx.injector.cache(ctx.type, ctx.instance, ctx.class.annotation.expires);
+    ctx.injector.cache(ctx.type, ctx.instance, ctx.class.getAnnotation().expires!);
     return next()
 }
 
@@ -213,9 +213,9 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements Act
  * runtime annoation decorator action scope.
  */
 export const RuntimeAnnoDecorHandle = function (ctx: RuntimeContext, next: () => void) {
-    ctx.class.classDefs.forEach(d => {
-        ctx.currDecor = d.decor;
-        d.decor.getRuntimeHandle && runChain(d.decor.getRuntimeHandle(Decors.CLASS), ctx)
+    ctx.class.classDecors.forEach(d => {
+        ctx.currDecor = d;
+        d.getRuntimeHandle && runChain(d.getRuntimeHandle(Decors.CLASS), ctx)
     });
 
     return next()

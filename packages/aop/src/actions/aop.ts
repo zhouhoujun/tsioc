@@ -10,7 +10,7 @@ import { Advisor } from '../Advisor';
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     // ctx.type had checked.
-    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.class as Class<any, AopDef>)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.class)) {
         return next()
     }
 
@@ -28,7 +28,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
  */
 export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    if (!isValAspectTag(ctx.type, ctx.class as Class<any, AopDef>)) {
+    if (!isValAspectTag(ctx.type, ctx.class)) {
         return next()
     }
 

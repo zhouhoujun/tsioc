@@ -273,20 +273,20 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         const def = ctx.class;
         const meta = ctx.define.metadata as ClassMetadata & InjectableMetadata;
         if (meta.abstract) {
-            def.annotation.abstract = true
+            def.getAnnotation().abstract = true
         }
 
         if (meta.singleton) {
-            def.annotation.singleton = true
+            def.getAnnotation().singleton = true
         }
         if (meta.static) {
-            def.annotation.static = true
+            def.getAnnotation().static = true
         }
         if (meta.provide && def.provides.indexOf(meta.provide) < 0) {
             def.provides.push(meta.provide)
         }
         if (meta.expires) {
-            def.annotation.expires = meta.expires
+            def.getAnnotation().expires = meta.expires
         }
 
         if (ctx.define.providers) {
@@ -294,7 +294,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         }
 
         if (meta.providedIn) {
-            def.annotation.providedIn = meta.providedIn
+            def.getAnnotation().providedIn = meta.providedIn
         }
     }
     return next()
@@ -462,8 +462,8 @@ export function getDef<T extends TypeDef>(type: ClassType): T {
  * get type Reflective.
  * @param type class type.
  */
-export function get<TAnn extends TypeDef<T>, T = any>(type: ClassType<T>): Class<T, TAnn> {
-    let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T, TAnn>;
+export function get<T = any>(type: ClassType<T>): Class<T> {
+    let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T>;
     if (tagRefl?.type !== type) {
         let prRef: Class = tagRefl;
         if (!prRef) {
@@ -472,7 +472,7 @@ export function get<TAnn extends TypeDef<T>, T = any>(type: ClassType<T>): Class
                 prRef = get(parentType)
             }
         }
-        tagRefl = new Class(type, getDef(type) as TAnn, prRef);
+        tagRefl = new Class(type, getDef(type), prRef);
         (type as AnnotationType).ƿRef = () => tagRefl;
 
     }

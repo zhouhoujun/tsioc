@@ -30,11 +30,11 @@ export class Advisor implements OnDestroy {
 
     register(type: Type | Class): void {
         const matcher = this.platform.getAction(AdviceMatcher);
-        const typeRefl = isFunction(type) ? refl.get<AopDef>(type) : type as Class<any, AopDef>;
+        const typeRefl = isFunction(type) ? refl.get(type) : type as Class;
         const ClassType = typeRefl.type as Type;
         this.aspects.forEach(aspect => {
-            const aopRef = aspect.class as Class<any, AopDef>;
-            const matchpoints = matcher.match(aopRef, typeRefl, aopRef.annotation.advices);
+            const aopRef = aspect.class as Class;
+            const matchpoints = matcher.match(aopRef, typeRefl, aopRef.getAnnotation<AopDef>().advices);
             matchpoints.forEach(mpt => {
                 const name = mpt.name;
                 const advice = mpt.advice;

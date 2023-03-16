@@ -29,7 +29,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements Acti
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.class.annotation.singleton === true, ctx.class.annotation.static);
+    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.class.getAnnotation().singleton === true, ctx.class.getAnnotation().static);
     next()
 };
 
