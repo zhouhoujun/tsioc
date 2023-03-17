@@ -8,7 +8,7 @@ import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
 import { Token } from '../tokens';
 import { ArgumentResolver } from '../resolver';
 import { getClassAnnotation } from '../utils/util';
-import { isFunction, isString } from '../utils/chk';
+import { isArray, isFunction, isString } from '../utils/chk';
 import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
@@ -253,9 +253,9 @@ export class Class<T = any> {
         this.classDecors = [];
         if (parent) {
             this.defs = parent.defs.filter(d => d.decorType !== 'class');
-            this.propDefs = new Map(parent.propDefs);
-            this.methodDefs = new Map(parent.methodDefs);
-            this.paramDefs = new Map(parent.paramDefs);
+            this.propDefs = cloneMap(parent.propDefs);
+            this.methodDefs = cloneMap(parent.methodDefs);
+            this.paramDefs = cloneMap(parent.paramDefs);
             this.propDecors = parent.propDecors.slice(0);
             this.methodDecors = parent.methodDecors.slice(0);
             this.paramDecors = parent.paramDecors.slice(0)
@@ -661,6 +661,14 @@ export class Class<T = any> {
 
 interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
     __name: string;
+}
+
+function cloneMap(map: Map<string, any>){
+    const cloned = new Map<string, any>();
+    map.forEach((v, k)=> {
+        cloned.set(k, isArray(v)? v.slice(0): v);
+    });
+    return cloned;
 }
 
 function getParamNames(func: Function) {
