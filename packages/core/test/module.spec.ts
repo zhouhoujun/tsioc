@@ -2,7 +2,7 @@ import { Application } from '../src';
 import { ClassSevice, LoggerAspect, ModuleA, SharedModule } from './demo';
 import expect = require('expect');
 
-describe('module metadata', () => {
+describe('Application run with module options', () => {
 
     it('boot with module metadata.', async () => {
         const v = 1;

@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isFunction, isNil, isPrimitive, isPrimitiveType, isPromise, isType } from './chk';
+import { getClass, isArray, isFunction, isNil, isPrimitive, isPromise, isType } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -366,7 +366,7 @@ export const immediate = typeof setImmediate !== 'undefined' ? setImmediate : (c
  * @returns
  */
 export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], initVal?: T, guard?: (val: T) => boolean): Promise<T> {
-    function runStep(val: T, idx: number): Promise<T> {
+    function stepFn(val: T, idx: number): Promise<T> {
         let handle: T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>);
         if (idx < promises.length) {
             handle = promises[idx]
@@ -377,10 +377,10 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
         return Promise.resolve(isFunction(handle) ? handle(val) : handle)
             .then(v => {
                 if (guard && !guard(v)) return v;
-                return runStep(v, idx + 1)
+                return stepFn(v, idx + 1)
             })
     }
-    return runStep(initVal ?? null!, 0);
+    return stepFn(initVal ?? null!, 0);
 }
 
 /**
