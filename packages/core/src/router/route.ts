@@ -1,5 +1,5 @@
 import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { Middleware, MiddlewareFn } from '../transport/middleware';
+import { Middleware, MiddlewareFn } from './middleware';
 import { EndpointOptions } from '../filters/endpoint.factory';
 import { Pattern } from './protocols';
 

@@ -5,10 +5,10 @@ import {
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
-import { Middleware, MiddlewareFn } from '../transport/middleware';
 import { joinprefix, normalize } from './route';
 import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, RouteOptions, Router } from './router';
 import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
+import { Middleware, MiddlewareFn } from './middleware';
 
 
 

@@ -1,7 +1,8 @@
-import { HttpRequestMethod, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { HttpRequestMethod } from '@tsdi/core';
 import { Injectable, InvocationContext, _tystr } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
+import { ReqHeaders, ReqHeadersLike } from './headers';
 import { HttpParams } from './params';
 import { HttpRequest } from './request';
 import { HttpEvent, HttpResponse } from './response';

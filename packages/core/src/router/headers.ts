@@ -4,8 +4,7 @@ import { Abstract, isArray, isNil, isString } from '@tsdi/ioc';
 export type IncomingHeader = string | readonly string[] | undefined;
 export type OutgoingHeader = IncomingHeader | number;
 
-@Abstract()
-export abstract class IncomingHeaders implements Record<string, IncomingHeader>, NodeJS.Dict<IncomingHeader> {
+export interface IncomingHeaders extends Record<string, IncomingHeader> {
     [x: string]: IncomingHeader;
     'content-type'?: string;
     'Content-Type'?: string;
@@ -24,8 +23,7 @@ export interface IncomingStatusHeaders {
     ':status'?: number | string | undefined;
 }
 
-@Abstract()
-export abstract class OutgoingHeaders implements Record<string, OutgoingHeader>, NodeJS.Dict<OutgoingHeader> {
+export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
     [x: string]: OutgoingHeader;
     'content-type'?: string;
     'Content-Type'?: string;

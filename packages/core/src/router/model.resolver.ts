@@ -1,5 +1,5 @@
 import { Parameter, tokenId, OperationInvoker } from '@tsdi/ioc';
-import { ServerEndpointContext } from './context';
+import { EndpointContext } from '../filters/context';
 
 
 /**
@@ -11,13 +11,13 @@ import { ServerEndpointContext } from './context';
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: Parameter, ctx: ServerEndpointContext): boolean;
+    canResolve(parameter: Parameter, ctx: EndpointContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: Parameter<T>, ctx: ServerEndpointContext): T;
+    resolve<T>(parameter: Parameter<T>, ctx: EndpointContext): T;
 }
 
 /**
