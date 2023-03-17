@@ -68,12 +68,15 @@ describe('Application Event', () => {
     });
 
 
-    it('OnApplicationShutdown called.', async () => {
+    it('OnApplicationShutdown and onApplicationDispose had called.', async () => {
         const runner = ctx.runners.getRef(TestService);
         const service = runner!.getInstance() as TestService;
-        await ctx.destroy();
+        await ctx.close();
         expect(service.shutdown).toBeTruthy();
+        expect(service.dispose).toBeTruthy();
     })
+
+
 
 
 });

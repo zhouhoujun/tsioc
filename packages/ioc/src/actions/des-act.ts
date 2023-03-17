@@ -66,7 +66,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 
             platform.getAction(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
-            if (singleton) {
+            if (singleton || isStatic) {
                 recd.value = instance
             }
             // clean context

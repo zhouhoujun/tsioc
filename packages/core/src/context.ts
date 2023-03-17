@@ -1,6 +1,6 @@
 import {
     ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    DestroyCallback, InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, TypeOf, ReflectiveRef
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { ApplicationEvent, ApplicationEventMulticaster, ApplicationEventPublisher } from './events';
@@ -23,6 +23,28 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * module instance.
      */
     abstract get instance(): any;
+    /**
+     * boot base url.
+     *
+     * @type {string}
+     */
+    abstract get baseURL(): string;
+    /**
+     * application args of type {@link ApplicationArguments}.
+     *
+     * @type {ApplicationArguments}
+     */
+    abstract get arguments(): ApplicationArguments;
+    /**
+     * application runners.
+     *
+     * type of {@link ApplicationRunners}
+     */
+    abstract get runners(): ApplicationRunners;
+    /**
+     * Application Event Multicaster
+     */
+    abstract get eventMulticaster(): ApplicationEventMulticaster;
     /**
      * bootstrap type
      * @param type bootstrap type.
@@ -51,42 +73,13 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      */
     abstract refresh(): Promise<void>;
     /**
-     * boot base url.
-     *
-     * @type {string}
+     * close application.
      */
-    abstract get baseURL(): string;
+    abstract close(): Promise<void>;
     /**
-     * application args of type {@link ApplicationArguments}.
-     *
-     * @type {ApplicationArguments}
-     */
-    abstract get arguments(): ApplicationArguments;
-    /**
-     * application runners.
-     *
-     * type of {@link ApplicationRunners}
-     */
-    abstract get runners(): ApplicationRunners;
-    /**
-     * Application Event Multicaster
-     */
-    abstract get eventMulticaster(): ApplicationEventMulticaster;
-    /**
-     * destroyed or not.
-     */
-    abstract get destroyed(): boolean;
-    /**
-     * Destroys the component instance and all of the data structures associated with it.
+     * destroy application
      */
     abstract destroy(): Promise<void>;
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
-     */
-    abstract onDestroy(callback: DestroyCallback): void;
 
 }
 

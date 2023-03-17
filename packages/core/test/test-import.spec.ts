@@ -20,7 +20,7 @@ describe('di module', () => {
         
         // console.log(runner.instance);
         expect(typeRef!.getInstance().mark).toEqual('marked');
-        await ctx.destroy();
+        await ctx.close();
 
     });
 
@@ -65,7 +65,7 @@ describe('di module', () => {
     //     expect(rep.body).toEqual('hello');
     //     expect(rep.status).toEqual(200);
 
-    //     await ctx.destroy();
+    //     await ctx.close();
     // });
 
     it('options test.', async () => {
@@ -81,7 +81,7 @@ describe('di module', () => {
 
         expect(ctx.runners.getRef(ClassSevice)?.getInstance()).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
-        await ctx.destroy();
+        await ctx.close();
     });
 
 
@@ -97,7 +97,7 @@ describe('di module', () => {
         const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -106,7 +106,7 @@ describe('di module', () => {
         const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -127,7 +127,7 @@ describe('di module', () => {
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         expect(ctx.destroyed).toBeFalsy();
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -145,7 +145,7 @@ describe('di module', () => {
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         expect(ctx.destroyed).toBeFalsy();
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 

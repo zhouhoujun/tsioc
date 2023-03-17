@@ -146,6 +146,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
 
     onDestroy(): void {
         this._maps.clear();
+        this.multicaster.clear();
         this._types = null!;
     }
 

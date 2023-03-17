@@ -1,9 +1,9 @@
-import { createContext, Injectable, Injector, lang, Module } from '@tsdi/ioc';
+import { createContext, Injectable, Injector, lang, Module, Singleton, Static } from '@tsdi/ioc';
 import expect = require('expect');
 import { Application, ApplicationContext, Start } from '../src';
 import { ConfiguraionManger, Settings } from './demo';
 
-@Injectable()
+@Injectable({ static: true })
 export class MyStartupService {
 
     @Start()
@@ -18,7 +18,7 @@ export class MyStartupService {
     }
 }
 
-@Injectable()
+@Singleton()
 export class MyStartupService1 {
 
     @Start({ order: 0 })
@@ -28,7 +28,7 @@ export class MyStartupService1 {
 }
 
 
-@Injectable()
+@Static()
 export class DeviceConnectionService {
 
     connention: any;
@@ -41,7 +41,7 @@ export class DeviceConnectionService {
 
 }
 
-@Injectable()
+@Static()
 export class DeviceInitService {
 
     connid!: string;
@@ -55,7 +55,7 @@ export class DeviceInitService {
 
 }
 
-@Injectable()
+@Static()
 export class DeviceAService {
 
     data: any;
@@ -156,7 +156,7 @@ describe('app message queue', () => {
     })
 
 
-    after(() => {
-        ctx.destroy();
+    after(async () => {
+        await ctx.close();
     })
 });

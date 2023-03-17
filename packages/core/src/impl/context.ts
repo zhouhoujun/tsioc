@@ -101,9 +101,13 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._multicaster.emit(new ApplicationContextRefreshEvent(this))
     }
 
+    close(): Promise<void> {
+        return this.destroy();
+    }
+
     async destroy(): Promise<void> {
         await this.runners.stop();
-        await super.destroy();
+        super.destroy();
     }
 
 }

@@ -24,7 +24,7 @@ describe('module metadata', () => {
         expect(serRef).not.toBeNull();
         // console.log(runner.instance);
         expect(serRef!.getInstance().mark).toEqual('marked');
-        await ctx.destroy();
+        await ctx.close();
 
     });
 

@@ -455,27 +455,12 @@ export class DefaultInjector extends Injector {
         return this._destroyed
     }
     /**
-    * destroy this.
-    */
-    destroy(): void | Promise<void> {
-
-        this.tryDestroy();
-        if (this.scope === 'root') {
-            return this.parent?.destroy()
-        }
-
+     * destroy this.
+     */
+    destroy(): void {
+        return this._destroying()
     }
 
-    private tryDestroy() {
-        if (this._destroyed) return;
-        this._destroyed = true;
-        try {
-            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
-        } finally {
-            this._dsryCbs.clear();
-            this.destroying()
-        }
-    }
 
     /**
      * destroy hook.
@@ -488,7 +473,7 @@ export class DefaultInjector extends Injector {
     onDestroy(callback: DestroyCallback): void;
     onDestroy(callback?: DestroyCallback): void {
         if (!callback) {
-            this.destroy()
+            this._destroying()
         } else {
             this._dsryCbs.add(callback)
         }
@@ -499,7 +484,22 @@ export class DefaultInjector extends Injector {
     }
 
 
-    protected destroying() {
+    private _destroying() {
+        if (this._destroyed) return;
+        this._destroyed = true;
+        try {
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+        } finally {
+            this._dsryCbs.clear();
+            this.clear()
+        }
+        if (this.scope === 'root') {
+            return this.parent?.destroy()
+        }
+    }
+
+
+    protected clear() {
         this.scope && this.platform()?.removeInjector(this.scope);
         this.records.forEach(r => {
             r.unreg && r.unreg()

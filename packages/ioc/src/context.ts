@@ -102,14 +102,14 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract get destroyed(): boolean;
     /**
-     * destroy this.
-     */
-    abstract destroy(): void | Promise<void>;
-    /**
      * register callback on destroy.
      * @param callback destroy callback
      */
-    abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
+    abstract onDestroy(callback?: DestroyCallback): void;
+    /**
+     * destroy this.
+     */
+    abstract destroy(): void;
 }
 
 

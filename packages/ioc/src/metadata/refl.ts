@@ -267,7 +267,7 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
     return next()
 }
 
-const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true };
+const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true, '@Static': true };
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;

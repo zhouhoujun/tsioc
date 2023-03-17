@@ -54,7 +54,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             const parent = options.parent;
             this.addRef(parent);
             parent.onDestroy(() => {
-                this.removeRef(parent);
+                !this.destroyed && this.removeRef(parent);
             });
         }
 
@@ -108,6 +108,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
      */
     addRef(...contexts: InvocationContext[]): void {
+        this.assertNotDestroyed();
         contexts.forEach(j => {
             if (!this.hasRef(j)) {
                 this._refs.unshift(j)
@@ -120,10 +121,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param context instance of {@link InvocationContext}.
      */
     removeRef(context: InvocationContext): void {
+        this.assertNotDestroyed();
         remove(this._refs, context)
     }
 
     hasRef(ctx: InvocationContext): boolean {
+        this.assertNotDestroyed();
         return ctx === this && this._refs.indexOf(ctx) >= 0;
     }
 
@@ -149,6 +152,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns the instance of token.
      */
     getValueify<T>(token: Token<T>, factory: () => T): T {
+        this.assertNotDestroyed();
         let value = this.get(token);
         if (isNil(value)) {
             value = factory();
@@ -164,6 +168,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns boolean.
      */
     has(token: Token, flags?: InjectFlags): boolean {
+        this.assertNotDestroyed();
         if (this.isSelf(token)) return true;
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs.some(i => i.has(token, flags))
@@ -185,6 +190,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
+        this.assertNotDestroyed();
         if (this.isSelf(token)) {
             this._injected = true;
             return this as any
@@ -216,6 +222,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param value value for the token.
      */
     setValue<T>(token: Token<T>, value: T) {
+        this.assertNotDestroyed();
         this.injector.setValue(token, value);
         return this
     }
@@ -242,6 +249,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns the parameter value in this context.
      */
     resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
+        this.assertNotDestroyed();
         let result: T | null | undefined;
         let canResolved = false;
         const metaRvr = this.getMetaReolver(meta);
@@ -282,7 +290,24 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this._destroyed
     }
 
-    destroy(): void | Promise<void> {
+    protected assertNotDestroyed(): void {
+        if (this.destroyed) {
+            throw new Execption('Context has already been destroyed.')
+        }
+    }
+
+    destroy(): void {
+        return this._destroying()
+    }
+
+    onDestroy(callback?: DestroyCallback): void {
+        if (!callback) {
+            return this._destroying()
+        }
+        this._dsryCbs.add(callback)
+    }
+
+    private _destroying() {
         if (!this._destroyed) {
             this._destroyed = true;
 
@@ -295,13 +320,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             (this as any).injector = null;
             return injector.destroy();
         }
-    }
-
-    onDestroy(callback?: DestroyCallback): void | Promise<void> {
-        if (!callback) {
-            return this.destroy()
-        }
-        this._dsryCbs.add(callback)
     }
 
     protected clear() {
