@@ -2,9 +2,10 @@ import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, Refle
 import { Endpoint, FnEndpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
-import { EndpointFactory, EndpointFactoryResolver, EndpointOptions } from '../filters/endpoint.factory';
+import { EndpointFactory, EndpointFactoryResolver } from '../filters/endpoint.factory';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
+import { EndpointOptions } from '../EndpointService';
 
 
 export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoint<TInput, TOutput> {

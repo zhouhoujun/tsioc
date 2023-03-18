@@ -6,10 +6,11 @@ import { Logger } from '@tsdi/logs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { BootstrapOption, EndpointOptions, FilterOptions } from './filters/endpoint.factory';
+import { BootstrapOption } from './filters/endpoint.factory';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';
+import { EndpointOptions, EndpointServiceOptions } from './EndpointService';
 
 /**
  * application context for global.
@@ -129,7 +130,7 @@ export interface EnvironmentOption extends ModuleOption, EndpointOptions {
     /**
      * event endpoint options.
      */
-    events?: FilterOptions;
+    events?: EndpointServiceOptions;
 }
 
 /**

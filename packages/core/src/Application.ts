@@ -4,6 +4,7 @@ import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ApplicationExit } from './ApplicationExit';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
+import { setOptions } from './EndpointService';
 
 
 /**
@@ -171,15 +172,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         const target = this.target;
         if (!isFunction(target)) {
             if (target.events) {
-                target.events.pipes && this.context.eventMulticaster.usePipes(target.events.pipes);
-                target.events.filters && this.context.eventMulticaster.useFilter(target.events.filters);
-                target.events.guards && this.context.eventMulticaster.useGuards(target.events.guards);
-                target.events.interceptors && this.context.eventMulticaster.useInterceptor(target.events.interceptors);
+                setOptions(this.context.eventMulticaster, target.events);
             }
-            target.pipes && this.context.runners.usePipes(target.pipes);
-            target.filters && this.context.runners.useFilter(target.filters);
-            target.guards && this.context.runners.useGuards(target.guards);
-            target.interceptors && this.context.runners.useInterceptor(target.interceptors);
+            setOptions(this.context.runners, target);
         }
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {

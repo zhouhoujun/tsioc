@@ -1,43 +1,10 @@
-import { Abstract, InvokeArguments, Type, Class, ReflectiveRef, TypeOf, Injector } from '@tsdi/ioc';
+import { Abstract, Type, Class, ReflectiveRef, Injector } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
-import { CanActivate } from '../guard';
-import { Interceptor } from '../Interceptor';
-import { PipeTransform } from '../pipes/pipe';
 import { RunnableRef } from '../ApplicationRunners';
+import { EndpointOptions } from '../EndpointService';
 import { EndpointContext } from './context';
-import { Filter, Respond } from './filter';
+import { Respond } from './filter';
 
-
-/**
- * Filter options.
- */
-export interface FilterOptions {
-    /**
-     * An array of dependency-injection tokens used to look up `CanActivate()`
-     * handlers, in order to determine if the current user is allowed to
-     * activate the component. By default, any user can activate.
-     */
-    guards?: TypeOf<CanActivate>[];
-    /**
-     * interceptors of bootstrap.
-     */
-    interceptors?: TypeOf<Interceptor>[];
-    /**
-     * pipes for the bootstrap.
-     */
-    pipes?: TypeOf<PipeTransform>[];
-    /**
-     * filters of bootstrap.
-     */
-    filters?: TypeOf<Filter>[];
-}
-
-/**
- * endpoint options.
- */
-export interface EndpointOptions extends InvokeArguments, FilterOptions {
-
-}
 
 
 /**

@@ -5,7 +5,7 @@ import { Middleware, MiddlewareFn} from './middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
 import { MiddlewareContext } from './middleware';
 import { Protocols, RequestMethod } from './protocols';
-import { EndpointOptions } from '../filters/endpoint.factory';
+import { EndpointOptions } from '../EndpointService';
 import { FnMiddleware, InterceptorMiddleware } from './middleware.compose';
 
 
