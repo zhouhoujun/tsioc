@@ -7,7 +7,7 @@ import { invalidPipeArgument, PipeTransform } from '../pipe';
  * parse double.
  */
 @Pipe('double')
-export class ParseDoublePipe implements PipeTransform<number> {
+export class DoublePipe implements PipeTransform<number> {
 
     transform(value: any, precision?: number): number {
         let ret: number;

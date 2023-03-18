@@ -3,21 +3,17 @@ import { Pipe } from '../../metadata';
 import { PipeTransform, invalidPipeArgument } from '../pipe';
 
 /**
- * parse number.
+ * parse int.
  */
-@Pipe('number')
-export class ParseNumberPipe implements PipeTransform<number> {
+@Pipe('int')
+export class IntPipe implements PipeTransform<number> {
 
-    transform(value: any, ...args: any[]): number {
+    transform(value: any, radix = 10): number {
         let ret: number;
         if (isString(value)) {
-            try {
-                ret = Number(value)
-            } catch {
-                throw invalidPipeArgument(this, value)
-            }
+            ret = parseInt(value, radix)
         } else if (isNumber(value)) {
-            ret = value
+            ret = parseInt(value.toString(), radix)
         } else {
             ret = NaN
         }

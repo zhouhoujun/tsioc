@@ -6,7 +6,7 @@ import { invalidPipeArgument, PipeTransform } from '../pipe';
  * parse enum.
  */
 @Pipe('enum')
-export class ParseEnumPipe<T> implements PipeTransform<T> {
+export class EnumPipe<T> implements PipeTransform<T> {
 
     transform(value: any, enumType: T): T {
         if (!enumType || Object.keys(enumType).length < 1) {

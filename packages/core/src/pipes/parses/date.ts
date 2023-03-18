@@ -3,7 +3,7 @@ import { Pipe } from '../../metadata';
 import { PipeTransform, invalidPipeArgument } from '../pipe';
 
 /**
- * date format pipe.
+ * date parse pipe.
  */
 @Pipe('date')
 export class DatePipe implements PipeTransform<Date> {

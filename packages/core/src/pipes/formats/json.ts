@@ -1,11 +1,11 @@
-import { Pipe } from '../metadata';
-import { PipeTransform } from './pipe';
+import { Pipe } from '../../metadata';
+import { PipeTransform } from '../pipe';
 
 /**
  * json stringify.
  */
 @Pipe('json-format')
-export class ParseJsonPipe implements PipeTransform {
+export class JsonFormatPipe implements PipeTransform {
   /**
    * @param value A value of any type to convert into a JSON-format string.
    */

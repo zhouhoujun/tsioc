@@ -6,7 +6,7 @@ import { PipeTransform, invalidPipeArgument } from '../pipe';
  * parse boolean.
  */
 @Pipe('boolean')
-export class ParseBoolPipe implements PipeTransform<boolean> {
+export class BoolPipe implements PipeTransform<boolean> {
 
     transform(value: any, ...args: any[]): boolean {
         if (value === true || value === 'true') {

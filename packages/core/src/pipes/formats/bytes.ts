@@ -1,12 +1,12 @@
 import { isNumber, isString } from '@tsdi/ioc';
-import { Pipe } from '../metadata';
-import { invalidPipeArgument, PipeTransform } from './pipe';
+import { Pipe } from '../../metadata';
+import { invalidPipeArgument, PipeTransform } from '../pipe';
 
 /**
  * format bytes with unit b kb mb gb tb... 
  */
-@Pipe('bytes')
-export class BytesPipe implements PipeTransform<string> {
+@Pipe('bytes-format')
+export class BytesFormatPipe implements PipeTransform<string> {
 
     transform(value: any, precise = 2): string {
         let size: number;

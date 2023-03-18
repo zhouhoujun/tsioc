@@ -1,12 +1,12 @@
 import { isNumber, isString } from '@tsdi/ioc';
-import { Pipe } from '../metadata';
-import { invalidPipeArgument, PipeTransform } from './pipe';
+import { Pipe } from '../../metadata';
+import { invalidPipeArgument, PipeTransform } from '../pipe';
 
 /**
  * format times with unit us, ns, ms, s, min, h... 
  */
-@Pipe('bytes')
-export class TimesPipe implements PipeTransform<string> {
+@Pipe('times')
+export class TimeFormatPipe implements PipeTransform<string> {
 
     transform(ms: number, precise = 2): string {
         let total: number;

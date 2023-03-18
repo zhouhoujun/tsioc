@@ -1,19 +1,19 @@
 import { isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata';
-import { PipeTransform, invalidPipeArgument } from '../pipe';
+import { invalidPipeArgument, PipeTransform } from '../pipe';
 
 /**
- * parse int.
+ * parse float.
  */
-@Pipe('int')
-export class ParseIntPipe implements PipeTransform<number> {
+@Pipe('float')
+export class FloatPipe implements PipeTransform<number> {
 
-    transform(value: any, radix = 10): number {
+    transform(value: any, precision?: number): number {
         let ret: number;
         if (isString(value)) {
-            ret = parseInt(value, radix)
+            ret = parseFloat(value);
         } else if (isNumber(value)) {
-            ret = parseInt(value.toString(), radix)
+            ret = value
         } else {
             ret = NaN
         }
@@ -22,5 +22,4 @@ export class ParseIntPipe implements PipeTransform<number> {
         }
         return ret
     }
-
 }

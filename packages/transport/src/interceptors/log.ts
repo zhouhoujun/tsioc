@@ -1,4 +1,4 @@
-import { BytesPipe, Endpoint, EndpointContext, Interceptor, TimesPipe, Message } from '@tsdi/core';
+import { BytesFormatPipe, Endpoint, EndpointContext, Interceptor, TimeFormatPipe, Message } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -14,9 +14,9 @@ import { hrtime } from 'process';
 export abstract class ResponseStatusFormater {
 
     @Inject()
-    protected bytes!: BytesPipe;
+    protected bytes!: BytesFormatPipe;
     @Inject()
-    protected times!: TimesPipe;
+    protected times!: TimeFormatPipe;
 
     constructor() {
 

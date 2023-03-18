@@ -8,7 +8,7 @@ import { PipeTransform, invalidPipeArgument } from '../pipe';
  * parse string.
  */
 @Pipe('string')
-export class ParseStringPipe implements PipeTransform<string> {
+export class StringPipe implements PipeTransform<string> {
 
     transform(value: any, length?: number): string {
         if (isNil(value)) throw invalidPipeArgument(this, value);
