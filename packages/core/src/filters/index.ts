@@ -4,3 +4,4 @@ export * from './endpoint';
 export * from './endpoint.factory';
 export * from './execption.filter';
 export * from './filter.providers';
+export * from './filter.service';

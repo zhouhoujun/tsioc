@@ -3,7 +3,7 @@ import { Endpoint } from '../Endpoint';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
-import { RunnableRef } from '../runners';
+import { RunnableRef } from '../ApplicationRunners';
 import { EndpointContext } from './context';
 import { Filter, Respond } from './filter';
 

@@ -1,5 +1,5 @@
 import { Injector, isArray, isMetadataObject, isString, lang, Modules, Type } from '@tsdi/ioc';
-import { LoadType, ModuleLoader, PathModules } from '../loader';
+import { LoadType, ModuleLoader, PathModules } from '../ModuleLoader';
 
 /**
  * default module loader for {@link ModuleLoader}.

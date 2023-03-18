@@ -1,4 +1,5 @@
 import { Abstract, Class, InvocationContext, OnDestroy, ReflectiveRef, Type, TypeOf } from '@tsdi/ioc';
+import { EndpointService } from './EndpointService';
 import { BootstrapOption } from './filters/endpoint.factory';
 import { Filter } from './filters/filter';
 import { CanActivate } from './guard';
@@ -9,7 +10,7 @@ import { PipeTransform } from './pipes/pipe';
  * Application runner.
  */
 @Abstract()
-export abstract class ApplicationRunners implements OnDestroy {
+export abstract class ApplicationRunners implements EndpointService, OnDestroy {
   /**
    * attach runner
    * @param type 

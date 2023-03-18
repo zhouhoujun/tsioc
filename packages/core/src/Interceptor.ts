@@ -1,4 +1,4 @@
-import { InvocationContext } from '@tsdi/ioc';
+import { InvocationContext, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Endpoint } from './Endpoint';
 
@@ -15,4 +15,16 @@ export interface Interceptor<TInput = any, TOutput = any> {
      * @returns An observable of the event stream.
      */
     intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: InvocationContext): Observable<TOutput>;
+}
+
+/**
+ * interceptor service.
+ */
+export interface InterceptorService {
+    /**
+     * use interceptor
+     * @param interceptor 
+     * @param order 
+     */
+    useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this;
 }

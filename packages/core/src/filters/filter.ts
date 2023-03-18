@@ -1,11 +1,8 @@
-import { Abstract, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
-import { CanActivate } from '../guard';
-import { PipeTransform } from '../pipes/pipe';
-
 
 
 /**
@@ -23,34 +20,6 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
      * @returns An observable of the event stream.
      */
     abstract intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext): Observable<TOutput>;
-}
-
-/**
- * filter service.
- */
-export interface FilterService {
-    /**
-     * use pipes.
-     * @param guards 
-     */
-    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this;
-    /**
-     * use guards.
-     * @param guards 
-     */
-    useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this;
-    /**
-     * use interceptor
-     * @param interceptor 
-     * @param order 
-     */
-    useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this;
-    /**
-     * use filter
-     * @param filter 
-     * @param order 
-     */
-    useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number): this;
 }
 
 /**

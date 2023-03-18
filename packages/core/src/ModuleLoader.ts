@@ -2,40 +2,6 @@ import { Injector, Modules, Type, Abstract } from '@tsdi/ioc';
 
 
 /**
- * load modules in base on an path.
- *
- * @export
- * @interface PathModules
- */
-export interface PathModules {
-    /**
-     * fire express base on the root path.
-     *
-     * @type {string}
-     */
-    basePath?: string;
-    /**
-     * in nodejs:
-     * script files match express.
-     * see: https://github.com/isaacs/node-glob
-     *
-     * in browser:
-     * script file url.
-     * @type {(string | string[])}
-     */
-    files?: string | string[];
-    /**
-     * modules
-     *
-     * @type {((Modules | string)[])}
-     */
-    modules?: (Modules | string)[];
-}
-
-export type LoadType =  Modules | string | PathModules;
-
-
-/**
  * module loader for {@link Injector}.
  *
  * @export
@@ -81,3 +47,36 @@ export abstract class ModuleLoader {
      */
     abstract loadTypes(modules: LoadType[]): Promise<Type[][]>;
 }
+
+/**
+ * load modules in base on an path.
+ *
+ * @export
+ * @interface PathModules
+ */
+export interface PathModules {
+    /**
+     * fire express base on the root path.
+     *
+     * @type {string}
+     */
+    basePath?: string;
+    /**
+     * in nodejs:
+     * script files match express.
+     * see: https://github.com/isaacs/node-glob
+     *
+     * in browser:
+     * script file url.
+     * @type {(string | string[])}
+     */
+    files?: string | string[];
+    /**
+     * modules
+     *
+     * @type {((Modules | string)[])}
+     */
+    modules?: (Modules | string)[];
+}
+
+export type LoadType = Modules | string | PathModules;
