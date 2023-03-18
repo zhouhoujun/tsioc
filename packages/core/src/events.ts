@@ -2,7 +2,7 @@ import { Abstract, getClass, InvocationContext, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationContext } from './context';
 import { Endpoint } from './Endpoint';
-import { Filter, Filterable } from './filters';
+import { Filter, FilterService } from './filters';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
@@ -116,7 +116,7 @@ export interface ApplicationEventPublisher {
  * providing the basic listener registration facility.
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster implements Filterable {
+export abstract class ApplicationEventMulticaster implements FilterService {
     /**
      * use pipes.
      * @param guards 

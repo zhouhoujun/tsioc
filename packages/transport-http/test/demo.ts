@@ -1,7 +1,7 @@
 import { Injectable, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, Middleware, Chain, BadRequestExecption, EndpointFilter, BadRequestStatus, OkStatus, EndpointHanlder
+    ServerEndpointContext, Middleware, MiddlewareChain, BadRequestExecption, EndpointFilter, BadRequestStatus, OkStatus, EndpointHanlder
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
 
@@ -112,7 +112,7 @@ export class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        await new MiddlewareChain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');

@@ -26,9 +26,9 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
 }
 
 /**
- * filterable.
+ * filter service.
  */
-export interface Filterable {
+export interface FilterService {
     /**
      * use pipes.
      * @param guards 

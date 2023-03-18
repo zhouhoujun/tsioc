@@ -1,11 +1,12 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef, TypeOf } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
-import { Middleware, MiddlewareFn, createMiddleware, InterceptorMiddleware } from './middleware';
+import { Middleware, MiddlewareFn} from './middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
 import { MiddlewareContext } from './middleware';
 import { Protocols, RequestMethod } from './protocols';
 import { EndpointOptions } from '../filters/endpoint.factory';
+import { FnMiddleware, InterceptorMiddleware } from './middleware.compose';
 
 
 
@@ -96,10 +97,10 @@ export class MappingRoute implements Middleware {
         } else if (route.middleware) {
             return isFunction(route.middleware) ? ctx.get(route.middleware) : route.middleware
         } else if (route.middlewareFn) {
-            return createMiddleware(route.middlewareFn);
+            return new FnMiddleware(route.middlewareFn);
         } else if (route.redirectTo) {
             const to = route.redirectTo
-            return createMiddleware((c, n) => this.redirect(c, to))
+            return new FnMiddleware((c, n) => this.redirect(c, to))
         } else if (route.controller) {
             return null!;
             // return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundExecption() })
@@ -118,9 +119,9 @@ export class MappingRoute implements Middleware {
                 router.prefix = route.path ?? '';
                 return router
             }
-            return createMiddleware((c, n) => { throw new NotFoundExecption() })
+            return new FnMiddleware((c, n) => { throw new NotFoundExecption() })
         } else {
-            return createMiddleware((c, n) => { throw new NotFoundExecption() })
+            return new FnMiddleware((c, n) => { throw new NotFoundExecption() })
         }
     }
 
