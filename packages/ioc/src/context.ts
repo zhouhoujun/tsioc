@@ -1,4 +1,4 @@
-import { ClassType } from './types';
+import { ClassType, TypeOf } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
@@ -146,11 +146,11 @@ export type TokenValue<T = any> = [Token<T>, T];
 /**
  * invoke options.
  */
-export interface InvokeOptions {
+export interface InvokeOptions<TArg = any> {
     /**
      * invocation arguments data.
      */
-    arguments?: any;
+    arguments?: TypeOf<TArg>;
     /**
      * token values.
      */
@@ -168,7 +168,7 @@ export interface InvokeOptions {
 /**
  * invoke arguments.
  */
-export interface InvokeArguments extends InvokeOptions {
+export interface InvokeArguments<TArg = any> extends InvokeOptions<TArg> {
     /**
      * parent InvocationContext,
      */
@@ -178,7 +178,7 @@ export interface InvokeArguments extends InvokeOptions {
 /**
  * invocation option.
  */
-export interface InvocationOption extends InvokeArguments {
+export interface InvocationOption<TArg = any> extends InvokeArguments<TArg> {
     /**
      * invocation invoke target type.
      */

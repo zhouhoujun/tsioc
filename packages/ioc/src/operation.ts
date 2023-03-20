@@ -35,7 +35,6 @@ export interface OperationInvoker<T = any> {
      * @param context the context to use to invoke the operation
      */
     invoke(): T;
-
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
@@ -47,7 +46,6 @@ export interface OperationInvoker<T = any> {
      * @param instance instance of the method to invoke.
      */
     invoke(context: InvocationContext, instance: object): T;
-
     /**
      * resolve args. 
      * @param context 

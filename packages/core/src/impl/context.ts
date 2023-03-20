@@ -30,10 +30,6 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
-        const args = injector.get(ApplicationArguments, null);
-        if (args && options.arguments !== args) {
-            this._args = options.arguments ? { ...options.arguments, ...args } : args
-        }
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
@@ -131,6 +127,12 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
+        }
+        if(!option) {
+            option = {};
+        }
+        if(!option.arguments) {
+            option.arguments = ApplicationArguments;
         }
         const ctx = this.createInstance(root, option);
         return ctx

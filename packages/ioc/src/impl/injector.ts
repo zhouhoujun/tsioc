@@ -5,8 +5,8 @@ import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
 import {
-    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, InjectorEvent
+    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes, InjectorEvent,
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';

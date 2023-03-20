@@ -1,11 +1,11 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { forIn, remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType } from '../utils/chk';
+import { remove, getClassName } from '../utils/lang';
+import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass, isPrimitive } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { InjectFlags, Token } from '../tokens';
+import { InjectFlags, Token, tokenId } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
@@ -20,7 +20,6 @@ import { OperationInvoker } from '../operation';
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
 
-    protected _args: T;
     protected _refs: InvocationContext[];
     protected _methodName?: string;
     private _injected = false;
@@ -45,7 +44,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     constructor(
         injector: Injector,
-        options: InvocationOption = EMPTY_OBJ) {
+        options: InvocationOption<T> = EMPTY_OBJ) {
         super();
         this._refs = [];
         this.injector = this.createInjector(injector, options.providers);
@@ -63,16 +62,31 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
                 this.injector.setValue(par[0], par[1]);
             })
         }
-        this._args = options.arguments;
-        if (this._args) {
-            forIn(this._args, (v, k) => {
-                this.injector.setValue(k, v)
-            })
+
+        const args = options.arguments;
+        if (args) {
+            if (isType(args)) {
+                this.injector.inject({ provide: CONTEXT_ARGS, useExisting: args });
+            } else {
+                this.injector.setValue(CONTEXT_ARGS, args);
+                const argType = getClass(args);
+                if (!isPrimitive(argType)) {
+                    this.injector.setValue(argType, args);
+                }
+            }
         }
 
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
+    }
+
+    /**
+     * get context arguments resolvers.
+     * @returns 
+     */
+    protected getArgumentResolver(): OperationArgumentResolver[] {
+        return EMPTY;
     }
 
     private _resolvers?: OperationArgumentResolver[];
@@ -81,7 +95,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     protected getResolvers(): OperationArgumentResolver[] {
         if (!this._resolvers) {
-            this._resolvers = [...this.injector.get(this.getResolvesToken(), EMPTY), ...this.getDefaultResolvers()];
+            this._resolvers = [
+                ...this.getArgumentResolver(),
+                ...this.injector.get(this.getResolvesToken(), EMPTY),
+                ...this.getDefaultResolvers()
+            ];
         }
         return this._resolvers;
     }
@@ -97,7 +115,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     protected resolverProvider(resolver: TypeOf<OperationArgumentResolver>): ProviderType {
         return isFunction(resolver) ? { provide: this.getResolvesToken(), useClass: resolver as Type, multi: true } : { provide: this.getResolvesToken(), useValue: resolver, multi: true } as ProviderType
     }
-
 
     protected createInjector(injector: Injector, providers?: ProviderType[]) {
         return Injector.create(providers, injector, Scopes.static)
@@ -134,7 +151,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * the invocation arguments.
      */
     get arguments(): T {
-        return this._args
+        return this.injector.get<T>(CONTEXT_ARGS);
     }
 
     get injected(): boolean {
@@ -323,13 +340,16 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected clear() {
-        this._args = null!;
         this._resolvers = null!;
         this._refs = null!;
     }
 
 }
 
+/**
+ * context arguments token.
+ */
+export const CONTEXT_ARGS = tokenId('CONTEXT_ARGS');
 
 /**
  * Missing argument execption.

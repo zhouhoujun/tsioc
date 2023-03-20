@@ -7,6 +7,9 @@ import { EndpointContext } from './context';
 import { Filter, runHandlers } from './filter';
 
 
+/**
+ * execption filter
+ */
 @Abstract()
 export abstract class ExecptionFilter extends Filter<Error, MessageExecption> {
 
@@ -18,6 +21,9 @@ export abstract class ExecptionFilter extends Filter<Error, MessageExecption> {
     abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
 }
 
+/**
+ * execption backend.
+ */
 @Abstract()
 export abstract class ExecptionBackend implements Endpoint<Error, MessageExecption> {
 

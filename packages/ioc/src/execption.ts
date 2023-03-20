@@ -37,6 +37,9 @@ export class ArgumentExecption extends Execption {
 }
 
 const tymgs = 'TypeExecption';
+/**
+ * Type execption.
+ */
 export class TypeExecption extends Execption {
     constructor(message?: string) {
         super(message ? `${tymgs}: ${message}` : tymgs)

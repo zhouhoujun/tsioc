@@ -3,7 +3,8 @@ import { DefaultInvocationContext } from '@tsdi/ioc';
 /**
  * endpoint context.
  */
-export class EndpointContext extends DefaultInvocationContext {
+export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
+
     /**
      * execption.
      */

@@ -5,19 +5,19 @@ import { EndpointContext } from '../filters/context';
 /**
  * model parameter argument of an {@link OperationInvoker}.
  */
- export interface ModelArgumentResolver<C = any> {
+ export interface ModelArgumentResolver<TInput = any> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: Parameter, ctx: EndpointContext): boolean;
+    canResolve(parameter: Parameter, ctx: EndpointContext<TInput>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: Parameter<T>, ctx: EndpointContext): T;
+    resolve<T>(parameter: Parameter<T>, ctx: EndpointContext<TInput>): T;
 }
 
 /**

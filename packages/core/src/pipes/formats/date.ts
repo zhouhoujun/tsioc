@@ -2,6 +2,12 @@ import { isDate, isNumber, isString } from '@tsdi/ioc';
 import { Pipe } from '../../metadata';
 import { PipeTransform, invalidPipeArgument } from './../pipe';
 
+/**
+ * format date.
+ * @param date 
+ * @param fmt 
+ * @returns 
+ */
 export function formatDate(date: Date, fmt = 'yyyy-MM-dd') {
     const o = {
         "M+": date.getMonth() + 1, //月份
