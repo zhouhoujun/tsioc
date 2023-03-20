@@ -1,6 +1,6 @@
-import { OperationArgumentResolver, Parameter, Type, OperationInvoker } from '@tsdi/ioc';
+import { OperationArgumentResolver, Parameter, Type, OperationInvoker, TypeOf, Token, getToken, getClassName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { EndpointContext } from '../filters/context';
+import { EndpointContext } from './context';
 
 /**
  * transport parameter argument of an {@link TransportArgumentResolver}.
@@ -40,4 +40,13 @@ export interface TransportArgumentResolver<T = any> extends OperationArgumentRes
      * @param ctx InvocationContext
      */
     resolve<T>(parameter: TransportParameter<T>, ctx: EndpointContext): T;
+}
+
+/**
+ * get transport argument resolvers token.
+ * @param type 
+ * @returns 
+ */
+export function getResolversToken(type: TypeOf<any>, propertyKey?: string): Token<TransportArgumentResolver[]> {
+    return getToken(getClassName(type), propertyKey ? `${propertyKey}_RESOLVERS` : 'RESOLVERS')
 }

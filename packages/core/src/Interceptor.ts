@@ -1,4 +1,4 @@
-import { InvocationContext, TypeOf } from '@tsdi/ioc';
+import { getClassName, getToken, InvocationContext, Token, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Endpoint } from './Endpoint';
 
@@ -28,3 +28,14 @@ export interface InterceptorService {
      */
     useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this;
 }
+
+
+/**
+ * get target filters token.
+ * @param request 
+ * @returns 
+ */
+export function getInterceptorsToken(type: TypeOf<any>, propertyKey?: string): Token<Interceptor[]> {
+    return getToken(getClassName(type), propertyKey ? `${propertyKey}_INTERCEPTORS` : 'INTERCEPTORS')
+}
+

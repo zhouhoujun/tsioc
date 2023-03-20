@@ -1,10 +1,10 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeOf, getToken } from '@tsdi/ioc';
 import { Endpoint, FnEndpoint } from '../Endpoint';
-import { Filter } from '../filters/filter';
+import { Filter, getFiltersToken } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
 import { EndpointFactory, EndpointFactoryResolver } from '../filters/endpoint.factory';
 import { CanActivate } from '../guard';
-import { Interceptor } from '../Interceptor';
+import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointOptions } from '../EndpointService';
 
 
@@ -32,7 +32,7 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
     }
 
     create(propertyKey: string, options: EndpointOptions): Endpoint<any, any> {
-        return new OperationEndpoint(this.typeRef.injector, getToken<Interceptor[]>(this.typeRef.type, propertyKey + '_INTERCEPTORS'), this.typeRef.createInvoker(propertyKey), getToken<Filter[]>(this.typeRef.type, propertyKey + '_FILTERS'));
+        return new OperationEndpoint(this.typeRef.injector, getInterceptorsToken(this.typeRef.type, propertyKey), this.typeRef.createInvoker(propertyKey), getFiltersToken(this.typeRef.type, propertyKey));
     }
 
 }

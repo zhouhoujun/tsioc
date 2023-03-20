@@ -9,6 +9,4 @@ export * from './headers';
 export * from './metadata';
 export * from './router.module';
 
-export * from './resolver';
-export * from './model.resolver';
 export * from './utils';
