@@ -403,7 +403,7 @@ export class Class<T = any> {
                 if (this.classDecors.indexOf(define.decor) < 0) {
                     this.classDecors.push(define.decor);
                 }
-                this.setToMap(this.classDefs, define.decor.toString(), define);
+                this.setToMap(this.classDefs, define.decor.toString(), define, true);
                 break;
             case Decors.method:
                 if (this.methodDecors.indexOf(define.decor) < 0) {
@@ -421,19 +421,19 @@ export class Class<T = any> {
                 if (this.paramDecors.indexOf(define.decor) < 0) {
                     this.paramDecors.push(define.decor);
                 }
-                this.setToMap(this.paramDefs, define.decor.toString(), define);
+                this.setToMap(this.paramDefs, define.decor.toString(), define, true);
                 break;
         }
         this.defs.unshift(define)
     }
 
-    private setToMap(maps: Map<string, DecorDefine[]>, decorName: string, define: DecorDefine) {
+    private setToMap(maps: Map<string, DecorDefine[]>, decorName: string, define: DecorDefine, unshift?: boolean) {
         let lst = maps.get(decorName);
         if (!lst) {
             lst = [];
             maps.set(decorName, lst)
         }
-        lst.unshift(define);
+        unshift ? lst.unshift(define) : lst.push(define);
     }
 
     /**
@@ -663,10 +663,10 @@ interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
     __name: string;
 }
 
-function cloneMap(map: Map<string, any>){
+function cloneMap(map: Map<string, any>) {
     const cloned = new Map<string, any>();
-    map.forEach((v, k)=> {
-        cloned.set(k, isArray(v)? v.slice(0): v);
+    map.forEach((v, k) => {
+        cloned.set(k, isArray(v) ? v.slice(0) : v);
     });
     return cloned;
 }
