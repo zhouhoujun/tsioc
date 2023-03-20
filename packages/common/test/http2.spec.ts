@@ -134,8 +134,8 @@
 
 //     invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
 
-//         console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
-//         if (ctx.playload.type === 'startup') {
+//         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
+//         if (ctx.payload.type === 'startup') {
 //             // todo sth.
 //             const ret = ctx.injector.get(MyService).dosth();
 //             ctx.setValue('deviceB_state', ret);
@@ -148,8 +148,8 @@
 // class DeviceAStartupHandle implements Middleware {
 
 //     invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
-//         console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
-//         if (ctx.playload.type === 'startup') {
+//         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
+//         if (ctx.payload.type === 'startup') {
 //             // todo sth.
 //             const ret = ctx.get(MyService).dosth();
 //             ctx.setValue('deviceA_state', ret);

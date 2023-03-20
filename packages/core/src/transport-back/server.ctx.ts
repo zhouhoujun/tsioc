@@ -82,24 +82,24 @@
 //             },
 //             {
 //                 canResolve(parameter, ctx) {
-//                     return parameter.scope === 'body' && isDefined(ctx.playload[parameter.field ?? parameter.name!]);
+//                     return parameter.scope === 'body' && isDefined(ctx.payload[parameter.field ?? parameter.name!]);
 //                 },
 //                 resolve(parameter, ctx) {
 //                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.type as Type)?.name.toLowerCase());
 //                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
-//                     return pipe.transform(ctx.playload[parameter.field ?? parameter.name!], ...parameter.args || EMPTY)
+//                     return pipe.transform(ctx.payload[parameter.field ?? parameter.name!], ...parameter.args || EMPTY)
 //                 }
 //             },
 //             {
 //                 canResolve(parameter, ctx) {
 //                     const field = parameter.field ?? parameter.name!;
-//                     return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload?.[field])
+//                     return !parameter.scope && isDefined(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.payload?.[field])
 //                 },
 //                 resolve(parameter, ctx) {
 //                     const field = parameter.field ?? parameter.name!;
 //                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.type as Type)?.name.toLowerCase());
 //                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
-//                     return pipe.transform(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.playload[field], ...parameter.args || EMPTY)
+//                     return pipe.transform(ctx.query[field] ?? ctx.restfulParams?.[field] ?? ctx.payload[field], ...parameter.args || EMPTY)
 //                 }
 //             }
 //         ),
@@ -111,7 +111,7 @@
 //                     return parameter.scope === 'query' && (isArray(ctx.query[field]) || isString(ctx.query[field]))
 //                 },
 //                 resolve(parameter, ctx) {
-//                     const value = ctx.playload[parameter.field ?? parameter.name!];
+//                     const value = ctx.payload[parameter.field ?? parameter.name!];
 //                     const values: any[] = isString(value) ? value.split(',') : value;
 //                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase())!;
 //                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
@@ -131,10 +131,10 @@
 //             },
 //             {
 //                 canResolve(parameter, ctx) {
-//                     return isArray(ctx.playload[parameter.field ?? parameter.name!])
+//                     return isArray(ctx.payload[parameter.field ?? parameter.name!])
 //                 },
 //                 resolve(parameter, ctx) {
-//                     const value: any[] = ctx.playload[parameter.field ?? parameter.name!];
+//                     const value: any[] = ctx.payload[parameter.field ?? parameter.name!];
 //                     const pipe = ctx.get<PipeTransform>(parameter.pipe ?? (parameter.provider as Type).name.toLowerCase());
 //                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
 //                     return value.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any
@@ -145,10 +145,10 @@
 
 //             canResolve(parameter, ctx) {
 //                 return isDefined(parameter.pipe) && parameter.scope === 'body'
-//                     && (parameter.field ? ctx.playload[parameter.field] : Object.keys(ctx.playload).length > 0)
+//                     && (parameter.field ? ctx.payload[parameter.field] : Object.keys(ctx.payload).length > 0)
 //             },
 //             resolve(parameter, ctx) {
-//                 const value = parameter.field ? ctx.playload[parameter.field] : ctx.playload;
+//                 const value = parameter.field ? ctx.payload[parameter.field] : ctx.payload;
 //                 const pipe = ctx.get<PipeTransform>(parameter.pipe!);
 //                 if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
 //                 return pipe.transform(value, ...parameter.args || EMPTY)

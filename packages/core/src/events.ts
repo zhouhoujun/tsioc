@@ -3,15 +3,17 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationContext } from './ApplicationContext';
 
 
-
+/**
+ * payload application event.
+ */
 export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
 
-    constructor(source: Object, public playload: T) {
+    constructor(source: Object, public payload: T) {
         super(source)
     }
 
     getPayloadType() {
-        return getClass(this.playload)
+        return getClass(this.payload)
     }
 }
 

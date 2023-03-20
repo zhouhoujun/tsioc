@@ -9,7 +9,7 @@ export interface TransportParameter<T = any> extends Parameter<T> {
     /**
      * field scope.
      */
-    scope?: 'body' | 'playload' | 'query' | 'restful';
+    scope?: 'body' | 'payload' | 'query' | 'restful';
     /**
      * field of request query params or body.
      */

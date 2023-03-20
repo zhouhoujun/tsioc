@@ -45,7 +45,7 @@ describe('di module', () => {
     //     serRef.getInstance().use((ctx, next) => {
     //         console.log('ctx.url:', ctx.url);
     //         if (ctx.url.startsWith('/test')) {
-    //             console.log('message queue test: ' + ctx.playload);
+    //             console.log('message queue test: ' + ctx.payload);
     //         }
 
     //         console.log(ctx.body, ctx.query);

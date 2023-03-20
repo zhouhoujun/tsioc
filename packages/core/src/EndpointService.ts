@@ -43,6 +43,11 @@ export interface EndpointServiceOptions {
     filters?: TypeOf<Filter>[];
 }
 
+/**
+ * set endpoint service with options.
+ * @param service 
+ * @param options 
+ */
 export function setOptions(service: EndpointService, options: EndpointServiceOptions) {
     options.pipes && service.usePipes(options.pipes);
     options.filters && service.useFilter(options.filters);

@@ -246,7 +246,7 @@
 //         this.responseType = options.responseType ?? 'json';
 //         this.reportProgress = !!options.reportProgress;
 //         this.withCredentials = !!options.withCredentials;
-//         this.body = options.body ?? options.playload ?? null;
+//         this.body = options.body ?? options.payload ?? null;
 //         this.headers = new ReqHeaders(options.headers ?? options.options);
 //     }
 
@@ -302,7 +302,7 @@
 //     /**
 //      * alias name of body
 //      */
-//     playload?: any;
+//     payload?: any;
 //     /**
 //      * alias name of headers
 //      */

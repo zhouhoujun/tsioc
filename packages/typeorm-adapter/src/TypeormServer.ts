@@ -106,8 +106,8 @@ export class TypeormServer implements Startup, OnDispose {
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
-            hasField: (parameter, ctx) => ctx.playload,
-            getFields: (parameter: TransportParameter, ctx: ServerEndpointContext) => parameter.field ? ctx.playload[parameter.field] : ctx.playload,
+            hasField: (parameter, ctx) => ctx.payload,
+            getFields: (parameter: TransportParameter, ctx: ServerEndpointContext) => parameter.field ? ctx.payload[parameter.field] : ctx.payload,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',

@@ -108,9 +108,9 @@
 //      */
 //     abstract get query(): Record<string, string | string[] | number | any>;
 //     /**
-//      * request body, playload.
+//      * request body, payload.
 //      */
-//     get playload(): any {
+//     get payload(): any {
 //         return this.request.body;
 //     }
 //     /**
