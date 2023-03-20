@@ -1,4 +1,4 @@
-import { Abstract, getClassName, getToken, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { EndpointContext } from './context';
 import { Interceptor } from '../Interceptor';
@@ -22,14 +22,14 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
     abstract intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext): Observable<TOutput>;
 }
 
-
+const FILTERS = 'FILTERS';
 /**
  * get target filters token.
  * @param request 
  * @returns 
  */
 export function getFiltersToken(type: TypeOf<any>, propertyKey?: string): Token<Filter[]> {
-    return getToken(getClassName(type), propertyKey ? `${propertyKey}_FILTERS` : 'FILTERS')
+    return getTokenOf(type, FILTERS, propertyKey)
 }
 
 

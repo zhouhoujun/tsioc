@@ -65,6 +65,17 @@ export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
 }
 
 /**
+ * get token of type
+ * @param type target type
+ * @param alias token alias
+ * @param propertyKey target propertyKey
+ * @returns 
+ */
+export function getTokenOf<T>(type: TypeOf<any>, alias: string, propertyKey?: string): Token<T> {
+    return propertyKey ? `${getClassName(type)}_${propertyKey}_${alias}` : `${getClassName(type)}_${alias}`;
+}
+
+/**
  * is target instance of {@link InjectToken} or not.
  * @param target 
  * @returns 
