@@ -761,6 +761,8 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata, RouteOpti
      */
     route?: string;
 
+    router?: Type<Router>;
+
     /**
      * version of api.
      */

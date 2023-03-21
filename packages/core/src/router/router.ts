@@ -1,7 +1,7 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
-import { Middleware, MiddlewareFn} from './middleware';
+import { Middleware, MiddlewareFn } from './middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
 import { MiddlewareContext } from './middleware';
 import { Protocols, RequestMethod } from './protocols';
@@ -244,13 +244,6 @@ export interface RouteOptions extends EndpointOptions {
  */
 export interface RouteMappingMetadata extends RouteOptions {
     /**
-     * route.
-     *
-     * @type {string}
-     * @memberof RouteMetadata
-     */
-    route?: string;
-    /**
      * request method.
      */
     method?: RequestMethod;
@@ -287,7 +280,18 @@ export interface ProtocolRouteMappingOptions extends RouteOptions {
  * protocol route mapping metadata.
  */
 export interface ProtocolRouteMappingMetadata extends ProtocolRouteMappingOptions {
-    
+    /**
+     * route.
+     *
+     * @type {string}
+     * @memberof RouteMetadata
+     */
+    route?: string;
+
+    /**
+     * request method.
+     */
+    method?: RequestMethod;
 }
 
 /**
