@@ -4,9 +4,8 @@ import {
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
-import { Interceptor } from '../Interceptor';
 import { joinprefix, normalize } from './route';
-import { MappingDef, ProtocolRouteMappingMetadata, RouteMappingMetadata, RouteOptions, Router } from './router';
+import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, RouteMappingMetadata, RouteOptions, Router } from './router';
 import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
 import { Middleware, MiddlewareFn } from './middleware';
 
@@ -22,16 +21,6 @@ export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunc
  * @interface Handle
  */
 export interface Handle {
-    /**
-     * Handle decorator, for class. use to define the class as route.
-     *
-     * @RegisterFor
-     *
-     * @param {route} route the route url.
-     * @param options route metedata options.
-     */
-    (route: string, options?: RouteOptions): HandleDecorator;
-
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -73,13 +62,13 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
         }
     },
     design: {
-        afterAnnoation: (ctx, next) => {
+        method: (ctx, next) => {
             const def = ctx.class;
             const metadata = def.getMetadata<HandleMetadata>(ctx.currDecor);
             const { route, prefix, version, router, protocol, interceptors } = metadata;
             const injector = ctx.injector;
 
-            if (!isString(route) && !parent) {
+            if (!isString(route) && !router) {
                 return next();
             }
 
@@ -136,32 +125,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * version of api.
-         */
-        version?: string;
-        /**
-         * route prefix.
-         */
-        prefix?: string;
-        /**
-         * parent router.
-         */
-        parent?: TypeOf<Router>;
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-        * pipes for the route.
-        */
-        pipes?: TypeOf<PipeTransform>[];
-    }): ClassDecorator;
+    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -176,32 +140,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-        /**
-         * protocol.
-         */
-        protocol?: Protocols;
-        /**
-         * request method.
-         */
-        method?: RequestMethod;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 
     /**
      * route decorator. define the controller as an route.
@@ -214,7 +153,7 @@ export interface RouteMapping {
      *
      * @param {RouteMappingMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMappingMetadata): MethodDecorator;
+    (metadata: RouteMappingMetadata): MethodDecorator;
 }
 
 
@@ -502,36 +441,7 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * version of api.
-         */
-        version?: string;
-        /**
-         * route prefix.
-         */
-        prefix?: string;
-        /**
-         * parent router.
-         */
-        parent?: TypeOf<Router>;
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-        * pipes for the route.
-        */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-    }): ClassDecorator;
+    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
@@ -571,28 +481,7 @@ export interface RouteMethodDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 
@@ -642,28 +531,7 @@ export interface HeadDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 
@@ -695,28 +563,7 @@ export interface OptionsDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -747,28 +594,7 @@ export interface GetDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -800,28 +626,7 @@ export interface DeleteDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 
 }
 /**
@@ -853,29 +658,9 @@ export interface PatchDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
+
 /**
  * Patch decorator. define the route method as patch.
  *
@@ -906,28 +691,7 @@ export interface PostDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 /**
  * Post decorator. define the route method as post.
@@ -958,28 +722,7 @@ export interface PutDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: {
-        /**
-         * route guards.
-         */
-        guards?: TypeOf<CanActivate>[];
-        /**
-         * interceptors of route.
-         */
-        interceptors?: TypeOf<Interceptor>[];
-        /**
-         * pipes for the route.
-         */
-        pipes?: TypeOf<PipeTransform>[];
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-         * request contentType
-         */
-        contentType?: string;
-    }): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 /**
  * Put decorator. define the route method as put.

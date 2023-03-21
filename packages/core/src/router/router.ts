@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn} from './middleware';
@@ -230,14 +230,13 @@ export class MappingRouter extends Router implements OnDestroy {
  */
 export interface RouteOptions extends EndpointOptions {
     /**
-     * parent router.
-     * default register in root handle queue.
-     */
-    router?: Type<Router>;
-    /**
      * protocol
      */
     protocol?: Protocols | string;
+    /**
+     * pipe extends args.
+     */
+    args?: any[];
 }
 
 /**
@@ -265,9 +264,14 @@ export interface RouteMappingMetadata extends RouteOptions {
 }
 
 /**
- * protocol route mapping metadata.
+ * Protocol route mapping options.
  */
-export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
+export interface ProtocolRouteMappingOptions extends RouteOptions {
+    /**
+     * parent router.
+     * default register in root handle queue.
+     */
+    router?: Type<Router>;
     /**
      * version of api.
      */
@@ -276,6 +280,14 @@ export interface ProtocolRouteMappingMetadata extends RouteMappingMetadata {
      * route prefix.
      */
     prefix?: string;
+
+}
+
+/**
+ * protocol route mapping metadata.
+ */
+export interface ProtocolRouteMappingMetadata extends ProtocolRouteMappingOptions {
+    
 }
 
 /**

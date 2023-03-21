@@ -7,6 +7,8 @@ export * from './middleware.service';
 export * from './protocols';
 export * from './headers';
 export * from './metadata';
+export * from './params';
+
 export * from './router.module';
 
 export * from './utils';

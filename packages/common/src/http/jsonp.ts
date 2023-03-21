@@ -12,7 +12,7 @@ import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpErrorResponse, HttpEvent, HttpEventType, HttpResponse } from './response';
 import { DOCUMENT } from '../platform';
-import { mths } from '@tsdi/core';
+import { JSONP } from '@tsdi/core';
 
 
 // Every request made through JSONP needs a callback name that's unique across the
@@ -74,7 +74,7 @@ export class JsonpClientBackend implements HttpBackend {
     handle(req: HttpRequest<never>, context: InvocationContext): Observable<HttpEvent<any>> {
         // Firstly, check both the method and response type. If either doesn't match
         // then the request was improperly routed here and cannot be handled.
-        if (req.method !== mths.JSONP) {
+        if (req.method !== JSONP) {
             throw new Error(JSONP_ERR_WRONG_METHOD)
         } else if (req.responseType !== 'json') {
             throw new Error(JSONP_ERR_WRONG_RESPONSE_TYPE)
@@ -244,7 +244,7 @@ export class JsonpInterceptor {
      * @returns An observable of the event stream.
      */
     intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent<any>> {
-        if (req.method === mths.JSONP) {
+        if (req.method === JSONP) {
             return this.jsonp.handle(req as HttpRequest<never>, context)
         }
         // Fall through for normal HTTP requests.

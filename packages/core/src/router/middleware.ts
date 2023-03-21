@@ -53,6 +53,7 @@ export interface Middleware<T extends MiddlewareContext = MiddlewareContext> {
      */
     invoke(ctx: T, next: () => Promise<void>): Promise<void>;
 }
+
 /**
  * middleware function
  */
