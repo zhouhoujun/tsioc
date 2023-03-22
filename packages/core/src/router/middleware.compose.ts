@@ -7,27 +7,6 @@ import { Middleware, MiddlewareContext, MiddlewareFn, MiddlewareLike } from './m
 
 
 /**
- * fn middleware.
- */
-export class FnMiddleware<T extends MiddlewareContext> implements Middleware<T>{
-    constructor(private fn: MiddlewareFn<T>) { }
-
-    invoke(ctx: T, next: () => Promise<void>): Promise<void> {
-        return this.fn(ctx, next);
-    }
-
-}
-
-/**
- * parse to Middeware if not. 
- * @param m type of {@link MiddlewareLike}
- * @returns 
- */
-export function middlewareify<T extends MiddlewareContext>(m: MiddlewareLike<T>): Middleware<T> {
-    return isFunction(m) ? new FnMiddleware(m) : m;
-}
-
-/**
  * parse to MiddewareFn if not. 
  * @param m type of {@link MiddlewareLike}
  * @returns 
@@ -98,12 +77,12 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends MiddlewareContext
 export class InterceptorMiddleware<TRequest = any, TResponse = any> implements Middleware {
 
     private _chainFn?: MiddlewareFn;
-    constructor(private readonly middleware: Middleware, private readonly interceptors: Interceptor<TRequest, TResponse>[]) { }
+    constructor(private readonly middleware: MiddlewareLike, private readonly interceptors: Interceptor<TRequest, TResponse>[]) { }
 
     invoke<T extends MiddlewareContext>(ctx: T, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
             const chain = new Endpoints(new FnEndpoint((req, ctx) => defer(async () => {
-                await this.middleware.invoke(ctx as T, next);
+                await (isFunction(this.middleware)? this.middleware(ctx as T, next) :  this.middleware.invoke(ctx as T, next));
                 return (ctx as T).response as TResponse;
             })), this.interceptors);
             this._chainFn = (ctx: MiddlewareContext) => {

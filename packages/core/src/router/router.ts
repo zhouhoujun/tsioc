@@ -1,12 +1,12 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
-import { Middleware, MiddlewareFn } from './middleware';
+import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
 import { MiddlewareContext } from './middleware';
 import { Protocols, RequestMethod } from './protocols';
 import { EndpointOptions } from '../EndpointService';
-import { FnMiddleware, InterceptorMiddleware } from './middleware.compose';
+import { InterceptorMiddleware } from './middleware.compose';
 
 
 
@@ -72,10 +72,8 @@ export class MappingRoute implements Middleware {
         const can = await this.canActive(ctx);
         if (can) {
             if (!this._middleware) {
-                this._middleware = await this.parse(this.route, ctx);
-                if (this.route.interceptors?.length) {
-                    this._middleware = new InterceptorMiddleware(this._middleware, this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i));
-                }
+                const middleware = await this.parse(this.route, ctx);
+                this._middleware = new InterceptorMiddleware(middleware, this.route.interceptors? this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i) : EMPTY);
             }
             return this._middleware.invoke(ctx, next);
         } else {
@@ -91,16 +89,16 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
-    protected async parse(route: Route & { router?: Router }, ctx: MiddlewareContext): Promise<Middleware> {
+    protected async parse(route: Route & { router?: Router }, ctx: MiddlewareContext): Promise<MiddlewareLike> {
         if (route.invoke) {
             return route as Middleware;
         } else if (route.middleware) {
             return isFunction(route.middleware) ? ctx.get(route.middleware) : route.middleware
         } else if (route.middlewareFn) {
-            return new FnMiddleware(route.middlewareFn);
+            return route.middlewareFn;
         } else if (route.redirectTo) {
             const to = route.redirectTo
-            return new FnMiddleware((c, n) => this.redirect(c, to))
+            return (c, n) => this.redirect(c, to)
         } else if (route.controller) {
             return null!;
             // return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundExecption() })
@@ -119,9 +117,9 @@ export class MappingRoute implements Middleware {
                 router.prefix = route.path ?? '';
                 return router
             }
-            return new FnMiddleware((c, n) => { throw new NotFoundExecption() })
+            return (c, n) => { throw new NotFoundExecption() }
         } else {
-            return new FnMiddleware((c, n) => { throw new NotFoundExecption() })
+            return (c, n) => { throw new NotFoundExecption() }
         }
     }
 

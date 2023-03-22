@@ -1,7 +1,12 @@
-import { Abstract, isArray, isNil, isString } from '@tsdi/ioc';
+import { isArray, isNil, isString } from '@tsdi/ioc';
 
-
+/**
+ * incoming header.
+ */
 export type IncomingHeader = string | readonly string[] | undefined;
+/**
+ * outgoing header.
+ */
 export type OutgoingHeader = IncomingHeader | number;
 
 export interface IncomingHeaders extends Record<string, IncomingHeader> {
