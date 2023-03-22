@@ -1,11 +1,11 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type, TypeOf, getToken } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type } from '@tsdi/ioc';
 import { Endpoint, FnEndpoint } from '../Endpoint';
 import { Filter, getFiltersToken } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
 import { EndpointFactory, EndpointFactoryResolver } from '../filters/endpoint.factory';
 import { CanActivate } from '../guard';
 import { getInterceptorsToken, Interceptor } from '../Interceptor';
-import { EndpointOptions } from '../EndpointService';
+import { EndpointOptions, getGuardsToken } from '../EndpointService';
 
 
 export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoint<TInput, TOutput> {
@@ -13,9 +13,9 @@ export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoi
     constructor(injector: Injector,
         token: Token<Interceptor<TInput, TOutput>[]>,
         private invoker: OperationInvoker,
-        filteToken: Token<Filter<TInput, TOutput>[]>,
-        guards?: TypeOf<CanActivate>[]) {
-        super(injector, token, null!, filteToken, guards)
+        filterToken: Token<Filter<TInput, TOutput>[]>,
+        guardsToken: Token<CanActivate[]>) {
+        super(injector, token, null!, filterToken, guardsToken)
     }
 
     protected override getBackend(): Endpoint<TInput, TOutput> {
@@ -32,7 +32,11 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
     }
 
     create(propertyKey: string, options: EndpointOptions): Endpoint<any, any> {
-        return new OperationEndpoint(this.typeRef.injector, getInterceptorsToken(this.typeRef.type, propertyKey), this.typeRef.createInvoker(propertyKey), getFiltersToken(this.typeRef.type, propertyKey));
+        return new OperationEndpoint(this.typeRef.injector,
+            getInterceptorsToken(this.typeRef.type, propertyKey),
+            this.typeRef.createInvoker(propertyKey),
+            getFiltersToken(this.typeRef.type, propertyKey),
+            getGuardsToken(this.typeRef.type, propertyKey));
     }
 
 }

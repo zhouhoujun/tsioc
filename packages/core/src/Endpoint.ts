@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, isPromise, isType, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, isPromise, ProvdierOf, Token, toProvider, Type, TypeOf } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Interceptor } from './Interceptor';
 
@@ -149,15 +149,8 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
         super();
     }
 
-    use(interceptor: TypeOf<Interceptor<TInput, TOutput>> | TypeOf<Interceptor<TInput, TOutput>>[], order?: number): this {
-        if (isArray(interceptor)) {
-            const hasOrder = isNumber(order);
-            interceptor.forEach((i, idx) => {
-                this.multiOrder(this.token, i, hasOrder ? order + idx : undefined);
-            });
-        } else {
-            this.multiOrder(this.token, interceptor, order);
-        }
+    use(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
+        this.regMulti(this.token, interceptor, order);
         this.reset();
         return this;
     }
@@ -173,13 +166,16 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
         return this.injector.get(this.token, EMPTY)
     }
 
-    protected multiOrder<T>(provide: Token, target: Type<T> | T, multiOrder?: number) {
-        if (isType(target)) {
-            this.injector.inject({ provide, useClass: target, multi: true, multiOrder })
+
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], order?: number) {
+        if (isArray(providers)) {
+            const hasOrder = isNumber(order);
+            this.injector.inject(providers.map((r, i) => toProvider(token, r, true, hasOrder ? order + i : undefined)))
         } else {
-            this.injector.inject({ provide, useValue: target, multi: true, multiOrder })
+            this.injector.inject(toProvider(token, providers, true, order));
         }
     }
+
 }
 
 

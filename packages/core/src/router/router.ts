@@ -74,7 +74,7 @@ export class MappingRoute implements Middleware {
             if (!this._middleware) {
                 this._middleware = await this.parse(this.route, ctx);
                 if (this.route.interceptors?.length) {
-                    this._middleware = new InterceptorMiddleware(this._middleware, this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i));
+                    // this._middleware = new InterceptorMiddleware(this._middleware, this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i));
                 }
             }
             return this._middleware.invoke(ctx, next);

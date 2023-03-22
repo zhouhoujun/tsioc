@@ -1,4 +1,4 @@
-import { Handler, Type } from '@tsdi/ioc';
+import { Handler } from '@tsdi/ioc';
 import { EndpointContext } from '../filters/context';
 
 /**
@@ -62,8 +62,5 @@ export type MiddlewareFn<T extends MiddlewareContext = MiddlewareContext> = Hand
  * middleware like.
  */
 export type MiddlewareLike<T extends MiddlewareContext = MiddlewareContext> = Middleware<T> | MiddlewareFn<T>;
-/**
- * middleware type.
- */
-export type MiddlewareType<T extends MiddlewareContext = MiddlewareContext> = Type<Middleware<T>> | MiddlewareLike<T>;
+
 

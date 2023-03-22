@@ -1,12 +1,13 @@
-import { Modules, Type } from './types';
+import { Modules, Type, TypeOf } from './types';
 import { Token } from './tokens';
 import { Injector } from './injector';
-import { isArray, isType } from './utils/chk';
+import { isArray, isDefined, isType } from './utils/chk';
+import { isPlainObject } from './utils/obj';
 
 /**
- * provider for {@link Injector }.
+ * provide for {@link Injector }.
  */
-export interface ProvideProvider<T = any> {
+export interface Provide<T = any> {
     /**
      * this type provider to.
      *
@@ -14,10 +15,19 @@ export interface ProvideProvider<T = any> {
      * @memberof Provider
      */
     provide: Token<T>;
+}
+
+export interface UseAsStatic {
     /**
      * is static value for provide.
      */
     static?: boolean;
+}
+
+/**
+ * provider exts options.
+ */
+export interface ProviderExts {
     /**
      * provide multi or not.
      */
@@ -33,21 +43,9 @@ export interface ProvideProvider<T = any> {
 }
 
 /**
- * class provider for {@link Injector }.
- * 
- * example:
- * ```typescript
- * @Injectable()
- * class MyService {}
- *
- * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
- * ```
- *
- * @description
- * Configures the `Injector` to return an instance of `useClass` for a token.
- *
+ * Use class as provider.
  */
-export interface ClassProvider<T = any> extends ProvideProvider<T> {
+export interface UseClass<T> extends ProviderExts, UseAsStatic {
     /**
      * use class for provide.
      *
@@ -68,6 +66,37 @@ export interface ClassProvider<T = any> extends ProvideProvider<T> {
 }
 
 /**
+ * class provider for {@link Injector }.
+ * 
+ * example:
+ * ```typescript
+ * @Injectable()
+ * class MyService {}
+ *
+ * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
+ * ```
+ *
+ * @description
+ * Configures the `Injector` to return an instance of `useClass` for a token.
+ *
+ */
+export interface ClassProvider<T = any> extends Provide<T>, UseClass<T> {
+}
+
+/**
+ * Use value as provider
+ */
+export interface UseValue<T> extends ProviderExts {
+
+    /**
+     * use value for provide.
+     *
+     * @type {*}
+     */
+    useValue: T;
+}
+
+/**
  * value provider.
  *
  * @usageNotes
@@ -81,13 +110,22 @@ export interface ClassProvider<T = any> extends ProvideProvider<T> {
  * @interface ValueProvider
  * @extends {ProvideProvider}
  */
-export interface ValueProvider<T = any> extends ProvideProvider<T> {
+export interface ValueProvider<T = any> extends Provide<T>, UseValue<T> { }
+
+/**
+ * Use factory  as provider.
+ */
+export interface UseFactory<T> extends ProviderExts, UseAsStatic {
     /**
-     * use value for provide.
-     *
-     * @type {*}
+    * A function to invoke to create a value for this `token`. The function is invoked with
+    * resolved values of `token`s in the `deps` field.
+    */
+    useFactory: (...args: any[]) => T;
+    /**
+     * A list of `token`s which need to be resolved by the injector. The list of values is then
+     * used as arguments to the `useFactory` function.
      */
-    useValue: T;
+    deps?: any[];
 }
 
 /**
@@ -102,18 +140,7 @@ export interface ValueProvider<T = any> extends ProvideProvider<T> {
  * Configures the `Injector` to return a value by invoking a `useFactory` function.
  *
  */
-export interface FactoryProvider<T = any> extends ProvideProvider<T> {
-    /**
-    * A function to invoke to create a value for this `token`. The function is invoked with
-    * resolved values of `token`s in the `deps` field.
-    */
-    useFactory: (...args: any[]) => T;
-    /**
-     * A list of `token`s which need to be resolved by the injector. The list of values is then
-     * used as arguments to the `useFactory` function.
-     */
-    deps?: any[];
-}
+export interface FactoryProvider<T = any> extends Provide<T>, UseFactory<T> { }
 
 /**
  * constructor provider.
@@ -129,6 +156,20 @@ export interface ConstructorProvider<T = any> {
     deps?: any[];
 }
 
+
+/**
+ * Use existing as provider.
+ */
+export interface UseExisting<T> extends ProviderExts, UseAsStatic {
+    /**
+     * use existing registered token for provide.
+     *
+     * @type {Token}
+     * @memberof ExistingProvider
+     */
+    useExisting: Token<T>;
+}
+
 /**
  * existing provider.
  *
@@ -140,20 +181,17 @@ export interface ConstructorProvider<T = any> {
  * @interface ExistingProvider
  * @extends {ProvideProvider}
  */
-export interface ExistingProvider<T = any> extends ProvideProvider<T> {
-    /**
-     * use existing registered token for provide.
-     *
-     * @type {Token}
-     * @memberof ExistingProvider
-     */
-    useExisting: Token<T>;
-}
+export interface ExistingProvider<T = any> extends Provide<T>, UseExisting<T> { }
 
 /**
  * type provider.
  */
 export type TypeProvider<T = any> = Type<T>;
+
+/**
+ * use static provider of.
+ */
+export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | TypeOf<T>;
 
 /**
  * static providers.
@@ -194,4 +232,17 @@ export interface ModuleWithProviders<T = any> {
  */
 export function isModuleProviders(target: any): target is ModuleWithProviders {
     return target && isType(target.module) && isArray(target.providers)
+}
+
+export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number): StaticProvider<T> {
+    if (isType(useOf)) {
+        return { provide, useClass: useOf, multi, multiOrder };
+    } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
+        || isDefined((useOf as UseValue<T>).useValue)
+        || isDefined((useOf as UseFactory<T>).useFactory)
+        || isDefined((useOf as UseExisting<T>).useExisting))) {
+        return { multiOrder, multi, ...useOf, provide } as StaticProvider;
+    }
+
+    return { provide, useValue: useOf as T, multi, multiOrder }
 }
