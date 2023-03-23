@@ -1,5 +1,5 @@
-import { createContext, getClass, Injectable, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { Observable, of } from 'rxjs';
+import { ArgumentExecption, createContext, getClass, Injectable, InjectFlags, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
 import { Filter } from '../filters/filter';
@@ -8,6 +8,7 @@ import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
+import { PayloadApplicationEvent } from '../events';
 
 
 /**
@@ -52,7 +53,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>> | TypeOf<Interceptor<ApplicationEvent, any>>[], order?: number): this {
-        this._endpoint.use(interceptor, order);
+        this._endpoint.useInterceptor(interceptor, order);
         return this;
     }
 
@@ -73,7 +74,50 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     emit(value: ApplicationEvent): Observable<any> {
-        return this.endpoint.handle(value, createContext(this.injector));
+        const ctx = createContext(this.injector);
+        ctx.setValue(getClass(value), value);
+        return this.endpoint.handle(value, ctx)
+            .pipe(
+                finalize(() => {
+                    ctx.destroy();
+                })
+            );
+    }
+
+
+    publishEvent(event: ApplicationEvent): Observable<any>;
+    publishEvent(event: Object): Observable<any>;
+    publishEvent(obj: ApplicationEvent | Object): Observable<any> {
+        if (!obj) throwError(() => new ArgumentExecption('Event must not be null'));
+
+        // Decorate event as an ApplicationEvent if necessary
+        let event: ApplicationEvent;
+        if (obj instanceof ApplicationEvent) {
+            event = obj
+        }
+        else {
+            event = new PayloadApplicationEvent(this, obj)
+        }
+
+        return this.emit(event)
+            .pipe(
+                mergeMap(res => {
+                    const multicaster = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
+                    if (multicaster) {
+                        // Publish event via parent multicaster as well...
+                        return multicaster.publishEvent(event)
+                            .pipe(
+                                map(() => {
+                                    return res;
+                                })
+                            )
+                    } else {
+                        return of(res);
+                    }
+                })
+            );
+
+
     }
 
     handle(input: ApplicationEvent, context: InvocationContext<any>): Observable<any> {

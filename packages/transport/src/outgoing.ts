@@ -251,8 +251,8 @@ export class OutgoingMessage extends Writable implements Outgoing {
         const id = this.id;
         this.write({ id, headers }, () => {
             const len = headers[hdr.CONTENT_LENGTH];
-            const hasPlayload = len ? true : false;
-            if (opts.endStream == true || !hasPlayload) {
+            const hasPayload = len ? true : false;
+            if (opts.endStream == true || !hasPayload) {
                 opts.endStream = true;
                 this.end();
             }

@@ -1,6 +1,7 @@
 import { Abstract, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
+import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Endpoint } from './Endpoint';
 import { EndpointService } from './EndpointService';
 import { Filter } from './filters/filter';
@@ -12,7 +13,7 @@ import { PipeTransform } from './pipes/pipe';
  * providing the basic listener registration facility.
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster implements EndpointService {
+export abstract class ApplicationEventMulticaster implements EndpointService, ApplicationEventPublisher {
     /**
      * use pipes.
      * @param guards 
@@ -46,6 +47,19 @@ export abstract class ApplicationEventMulticaster implements EndpointService {
      * @param event 
      */
     abstract emit(event: ApplicationEvent): Observable<any>;
+
+    /**
+     * Notify all <strong>matching</strong> listeners registered with this
+     * application of an application event. Events may be framework events
+     * (such as ContextRefreshedEvent) or application-specific events.
+     * <p>Such an event publication step is effectively a hand-off to the
+     * multicaster and does not imply synchronous/asynchronous execution
+     * or even immediate execution at all. Event listeners are encouraged
+     * to be as efficient as possible, individually using asynchronous
+     * execution for longer-running and potentially blocking operations.
+     * @param event the event to publish
+     */
+    abstract publishEvent(event: ApplicationEvent | Object): Observable<any>;
 
 
     abstract clear(): void;

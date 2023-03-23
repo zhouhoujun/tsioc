@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, isPromise, ProvdierOf, Token, toProvider, Type, TypeOf } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
-import { Interceptor } from './Interceptor';
+import { Interceptor, InterceptorService } from './Interceptor';
 
 
 /**
@@ -140,7 +140,7 @@ export class Endpoints<TInput = any, TOutput = any> extends AbstractEndpoint<TIn
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> {
+export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint<TInput, TOutput> implements InterceptorService {
 
     constructor(
         protected injector: Injector,
@@ -149,7 +149,7 @@ export class EndpointChain<TInput = any, TOutput = any> extends AbstractEndpoint
         super();
     }
 
-    use(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
+    useInterceptor(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
         this.regMulti(this.token, interceptor, order);
         this.reset();
         return this;

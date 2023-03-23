@@ -1,14 +1,15 @@
 import {
-    Type, Injector, ProviderType, InvokeArguments, ArgumentExecption, EMPTY_OBJ,
-    Class, ModuleDef, InjectFlags, ModuleRef, DefaultInvocationContext, ReflectiveRef
+    Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
+    Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
+import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
-import { ApplicationContextRefreshEvent, PayloadApplicationEvent } from '../events';
+import { ApplicationContextRefreshEvent } from '../events';
 import { BootstrapOption } from '../filters/endpoint.factory';
 
 
@@ -69,27 +70,28 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this.injector.get(LoggerManager, null)?.getLogger(name) ?? null!;
     }
 
-    publishEvent(event: ApplicationEvent): void;
-    publishEvent(event: Object): void;
-    publishEvent(obj: ApplicationEvent | Object): void {
-        if (!obj) throw new ArgumentExecption('Event must not be null');
+    publishEvent(event: ApplicationEvent): Observable<any>;
+    publishEvent(event: Object): Observable<any>;
+    publishEvent(obj: ApplicationEvent | Object): Observable<any> {
+        return this.eventMulticaster.publishEvent(obj);
+        // if (!obj) throw new ArgumentExecption('Event must not be null');
 
-        // Decorate event as an ApplicationEvent if necessary
-        let event: ApplicationEvent;
-        if (obj instanceof ApplicationEvent) {
-            event = obj
-        }
-        else {
-            event = new PayloadApplicationEvent(this, obj)
-        }
+        // // Decorate event as an ApplicationEvent if necessary
+        // let event: ApplicationEvent;
+        // if (obj instanceof ApplicationEvent) {
+        //     event = obj
+        // }
+        // else {
+        //     event = new PayloadApplicationEvent(this, obj)
+        // }
 
-        this._multicaster?.emit(event);
+        // this._multicaster?.emit(event);
 
-        // Publish event via parent context as well...
-        const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
-        if (context) {
-            context.publishEvent(event)
-        }
+        // // Publish event via parent context as well...
+        // const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
+        // if (context) {
+        //     context.publishEvent(event)
+        // }
     }
 
     /**

@@ -3,6 +3,7 @@ import {
     InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
+import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
@@ -70,7 +71,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object): void;
+    abstract publishEvent(event: ApplicationEvent | Object): Observable<any>;
     /**
      * refresh context.
      */

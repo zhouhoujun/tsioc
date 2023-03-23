@@ -1,6 +1,6 @@
 import {
-    isNumber, Type, Injectable, InvocationContext, tokenId, Injector, TypeOf, Class, isFunction, refl,
-    ClassType, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef, ProvdierOf
+    isNumber, Type, Injectable, InvocationContext, tokenId, Injector, Class, isFunction, refl, ProvdierOf,
+    ClassType, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -47,7 +47,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
     }
 
     usePipes(pipes: ProvdierOf<PipeTransform> | ProvdierOf<PipeTransform>[]): this {
-        
+
         return this;
     }
 
@@ -57,7 +57,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
     }
 
     useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
-        this._endpoint.use(interceptor, order);
+        this._endpoint.useInterceptor(interceptor, order);
         return this;
     }
 

@@ -1,16 +1,30 @@
-import { Injectable, Module } from '@tsdi/ioc';
+import { Injectable, InvocationContext, isString, Module } from '@tsdi/ioc';
 import expect = require('expect');
-import { Application, ApplicationContext, Dispose, Runner, Shutdown, Start } from '../src';
+import { lastValueFrom, Observable } from 'rxjs';
+import { Application, ApplicationContext, Dispose, Endpoint, EventHandler, Interceptor, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+
 
 
 @Injectable()
-class TestService  {
+export class PayloadInterceptor implements Interceptor {
+    intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: InvocationContext<any>): Observable<any> {
+        if (isString(input.payload)) {
+            input.payload = 'hi ' + input.payload;
+        }
+        return next.handle(input, context);
+    }
+
+}
+
+
+@Injectable()
+class TestService {
 
 
     started = false;
     shutdown = false;
     dispose = false;
-
+    payload!: PayloadApplicationEvent;
     @Runner()
     runService() {
         console.log('test running.')
@@ -20,6 +34,15 @@ class TestService  {
     @Start()
     onApplicationStart(): void {
         this.started = true;
+    }
+
+    @EventHandler({
+        interceptors: [
+            PayloadInterceptor
+        ]
+    })
+    async handleEvent(payload: PayloadApplicationEvent) {
+        this.payload = payload;
     }
 
     @Shutdown()
@@ -64,6 +87,16 @@ describe('Application Event', () => {
         expect(testServiceRef).not.toBeNull();
         // console.log(runner.instance);
         expect(testServiceRef!.getInstance().started).toBeTruthy();
+
+    });
+
+    it('publish payload event', async () => {
+
+        await lastValueFrom(ctx.publishEvent('payload message'));
+        const testServiceRef = ctx.runners.getRef(TestService);
+        expect(testServiceRef).not.toBeNull();
+        expect(testServiceRef!.getInstance().payload).toBeInstanceOf(PayloadApplicationEvent);
+        expect(testServiceRef?.getInstance().payload.payload).toEqual('hi payload message');
 
     });
 

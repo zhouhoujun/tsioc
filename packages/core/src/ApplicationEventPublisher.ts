@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 
 
@@ -18,6 +19,6 @@ export interface ApplicationEventPublisher {
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    publishEvent(event: ApplicationEvent | Object): void;
+    publishEvent(event: ApplicationEvent | Object): Observable<any>;
 
 }

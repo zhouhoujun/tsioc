@@ -1,9 +1,11 @@
 import { EMPTY, Execption, Injector, isFunction, lang, pomiseOf, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { EndpointChain, Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
+import { EndpointService } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
+import { PipeTransform } from '../pipes';
 import { EndpointContext } from './context';
 import { Filter } from './filter';
 
@@ -12,7 +14,7 @@ import { Filter } from './filter';
 /**
  * filter endpoint.
  */
-export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<TInput, TOutput> {
+export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<TInput, TOutput> implements EndpointService {
 
 
     constructor(
@@ -24,6 +26,11 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
         super(injector, token, backend);
         // this.guardsFilter = new GuardsFilter(guards?.map(g => isFunction(g) ? injector.get(g) : g));
         // this.useFilter(this.guardsFilter);
+    }
+
+
+    usePipes(pipes: ProvdierOf<PipeTransform<any, any>> | ProvdierOf<PipeTransform<any, any>>[]): this {
+        throw new Error('Method not implemented.');
     }
 
     /**
