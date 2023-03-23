@@ -11,14 +11,19 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 
 
 /**
- *  event multicaster interceptors
+ *  event multicaster interceptors mutil token.
  */
 export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
- *  event multicaster filters
+ *  event multicaster filters mutil token.
  */
 export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FILTERS');
+
+/**
+ *  event multicaster guards mutil token.
+ */
+export const EVENT_MULTICASTER_GUARDS = tokenId<CanActivate[]>('EVENT_MULTICASTER_GUARDS');
 
 @Injectable()
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEvent> {
@@ -29,7 +34,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
-        this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_FILTERS);
+        this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_FILTERS, EVENT_MULTICASTER_GUARDS);
     }
 
     get endpoint(): Endpoint<ApplicationEvent, any> {
@@ -79,6 +84,6 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     clear(): void {
         this.maps.clear();
     }
-    
+
 }
 

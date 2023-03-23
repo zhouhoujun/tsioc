@@ -1,3 +1,4 @@
+import { ProvdierOf } from '@tsdi/ioc';
 import { MiddlewareLike } from './middleware';
 
 /**
@@ -8,5 +9,5 @@ export interface MiddlewareService {
      * use middleware.
      * @param middlewares 
      */
-    use(middlewares: MiddlewareLike[]): this;
+    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number): this;
 }

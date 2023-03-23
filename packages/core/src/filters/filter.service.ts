@@ -1,4 +1,4 @@
-import { TypeOf } from '@tsdi/ioc';
+import { ProvdierOf } from '@tsdi/ioc';
 import { Filter } from './filter';
 
 /**
@@ -10,5 +10,5 @@ export interface FilterService {
      * @param filter 
      * @param order 
      */
-    useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number): this;
+    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 }

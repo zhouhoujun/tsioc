@@ -1,4 +1,4 @@
-import { InvokeArguments, TypeOf } from '@tsdi/ioc';
+import { getTokenOf, InvokeArguments, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
 import { PipeService } from './pipes/pipe.service';
 import { FilterService } from './filters/filter.service';
 import { CanActivate } from './guard';
@@ -13,9 +13,10 @@ import { Filter } from './filters/filter';
 export interface EndpointService extends FilterService, PipeService, InterceptorService {
     /**
      * use guards.
-     * @param guards 
+     * @param guards
+     * @param order 
      */
-    useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this;
+    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
 }
 
 
@@ -28,19 +29,19 @@ export interface EndpointServiceOptions {
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */
-    guards?: TypeOf<CanActivate>[];
+    guards?: ProvdierOf<CanActivate>[];
     /**
      * interceptors of bootstrap.
      */
-    interceptors?: TypeOf<Interceptor>[];
+    interceptors?: ProvdierOf<Interceptor>[];
     /**
      * pipes for the bootstrap.
      */
-    pipes?: TypeOf<PipeTransform>[];
+    pipes?: ProvdierOf<PipeTransform>[];
     /**
      * filters of bootstrap.
      */
-    filters?: TypeOf<Filter>[];
+    filters?: ProvdierOf<Filter>[];
 }
 
 /**
@@ -53,6 +54,16 @@ export function setOptions(service: EndpointService, options: EndpointServiceOpt
     options.filters && service.useFilter(options.filters);
     options.guards && service.useGuards(options.guards);
     options.interceptors && service.useInterceptor(options.interceptors);
+}
+
+const GUARDS = 'GUARDS';
+/**
+ * get target guards token.
+ * @param request 
+ * @returns 
+ */
+export function getGuardsToken(type: TypeOf<any>, propertyKey?: string): Token<CanActivate[]> {
+    return getTokenOf(type, GUARDS, propertyKey)
 }
 
 /**

@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, InvocationContext, tokenId, Injector, TypeOf, Class, isFunction, refl,
-    ClassType, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef
+    ClassType, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -17,14 +17,19 @@ import { PipeTransform } from '../pipes/pipe';
 
 
 /**
- *  Appplication runner interceptors
+ *  Appplication runner interceptors mutil token
  */
 export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
- *  Appplication runner filters
+ *  Appplication runner filters mutil token
  */
 export const APP_RUNNERS_FILTERS = tokenId<Filter[]>('APP_RUNNERS_FILTERS');
+
+/**
+ *  Appplication runner guards mutil token
+ */
+export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 
 
 @Injectable()
@@ -38,25 +43,25 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_FILTERS);
+        this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_FILTERS, APP_RUNNERS_GUARDS);
     }
 
-    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
-
+    usePipes(pipes: ProvdierOf<PipeTransform> | ProvdierOf<PipeTransform>[]): this {
+        
         return this;
     }
 
-    useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this {
-        this._endpoint.useGuards(guards);
+    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+        this._endpoint.useGuards(guards, order);
         return this;
     }
 
-    useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this {
+    useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
         this._endpoint.use(interceptor, order);
         return this;
     }
 
-    useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number | undefined): this {
+    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this._endpoint.useFilter(filter, order);
         return this;
     }

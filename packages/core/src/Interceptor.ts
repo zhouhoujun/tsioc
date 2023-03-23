@@ -1,4 +1,4 @@
-import { getTokenOf, InvocationContext, Token, TypeOf } from '@tsdi/ioc';
+import { getTokenOf, InvocationContext, Token, ProvdierOf, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Endpoint } from './Endpoint';
 
@@ -26,7 +26,7 @@ export interface InterceptorService {
      * @param interceptor 
      * @param order 
      */
-    useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this;
+    useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
 }
 
 
