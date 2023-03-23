@@ -1,4 +1,4 @@
-import { ProvdierOf } from '@tsdi/ioc';
+import { TypeOf } from '@tsdi/ioc';
 import { PipeTransform } from './pipe';
 
 
@@ -10,5 +10,5 @@ export interface PipeService {
      * use pipes.
      * @param guards 
      */
-    usePipes(pipes: ProvdierOf<PipeTransform> | ProvdierOf<PipeTransform>[]): this;
+    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this;
 }

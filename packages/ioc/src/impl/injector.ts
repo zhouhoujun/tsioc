@@ -360,7 +360,7 @@ export class DefaultInjector extends Injector {
 
         const result = this.get(token, context);
 
-        if (context && context !== args[0] && !context.injected) {
+        if (context && context !== args[0] && !context.used) {
             immediate(() => context!.destroy());
         }
         return result;

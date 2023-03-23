@@ -1,15 +1,11 @@
-import { OperationArgumentResolver, Parameter, Type, OperationInvoker, TypeOf, Token, getTokenOf } from '@tsdi/ioc';
+import { OperationArgumentResolver, Parameter, OperationInvoker, TypeOf, Token, getTokenOf } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { EndpointContext } from './context';
 
 /**
- * transport parameter argument of an {@link TransportArgumentResolver}.
+ * transport parameter options.
  */
-export interface TransportParameter<T = any> extends Parameter<T> {
-    /**
-     * field scope.
-     */
-    scope?: 'body' | 'payload' | 'query' | 'param' | 'path';
+export interface TransportParameterOptions<T = any> extends Parameter<T> {
     /**
      * field of request query params or body.
      */
@@ -17,11 +13,26 @@ export interface TransportParameter<T = any> extends Parameter<T> {
     /**
      * pipe
      */
-    pipe?: string | Type<PipeTransform>;
+    pipe?: string | TypeOf<PipeTransform>;
+    /**
+     * custom resolver to resolve the value for the property or parameter.
+     */
+    resolver?: TypeOf<OperationArgumentResolver>;
     /**
      * pipe extends args
      */
     args?: any[];
+}
+
+
+/**
+ * transport parameter argument of an {@link TransportArgumentResolver}.
+ */
+export interface TransportParameter<T = any> extends TransportParameterOptions<T> {
+    /**
+     * field scope.
+     */
+    scope?: 'body' | 'payload' | 'query' | 'param' | 'path';
 }
 
 /**

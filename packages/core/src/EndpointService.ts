@@ -37,7 +37,7 @@ export interface EndpointServiceOptions {
     /**
      * pipes for the bootstrap.
      */
-    pipes?: ProvdierOf<PipeTransform>[];
+    pipes?: TypeOf<PipeTransform>[];
     /**
      * filters of bootstrap.
      */

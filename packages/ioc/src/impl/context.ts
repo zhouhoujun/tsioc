@@ -154,7 +154,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this.injector.get<T>(CONTEXT_ARGS);
     }
 
-    get injected(): boolean {
+    get used(): boolean {
         return this._injected
     }
 

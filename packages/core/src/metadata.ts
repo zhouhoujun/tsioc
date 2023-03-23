@@ -1,7 +1,7 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, ProviderMetadata, Decors
+    isString, Parameter, ProviderMetadata, Decors, OperationArgumentResolver, ParameterMetadata, createParamDecorator, TypeOf
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -12,6 +12,7 @@ import { FilterHandlerResolver } from './filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
+import { TransportParameter, TransportParameterOptions } from './filters';
 
 
 /**
@@ -447,3 +448,31 @@ export interface BeanMetadata {
      */
     provide: Token;
 }
+
+
+export interface TransportParameterDecorator {
+    /**
+     * Request Parameter decorator
+     *
+     * @param {string} field field of request query params or body.
+     * @param options route metedata options.
+     */
+    (field?: string, option?: TransportParameterOptions): ParameterDecorator;
+    /**
+     * Transport Parameter decorator
+     * @param meta.
+     */
+    (meta: TransportParameter): ParameterDecorator;
+}
+
+/**
+ * Request body param decorator.
+ * 
+ * @exports {@link TransportParameterDecorator}
+ */
+export const Payload: TransportParameterDecorator = createParamDecorator('Payload', {
+    props: (field: string, pipe?: { pipe: string | TypeOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    appendProps: meta => {
+        meta.scope = 'payload'
+    }
+});

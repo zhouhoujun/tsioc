@@ -220,7 +220,7 @@ const native = /\[native code\]/;
  * @returns {boolean}
  */
 export function isNative(target: any): boolean {
-    return isFunction(target) && native.test(target.toString())
+    return isFunction(target)? native.test(target.toString()) : native.test(getClass(target).toString())
 }
 
 /**

@@ -41,7 +41,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
 
     next();
     // after create.
-    if (newCtx && !newCtx.injected) {
+    if (newCtx && !newCtx.used) {
         newCtx.destroy()
     }
 };

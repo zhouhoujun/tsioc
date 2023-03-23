@@ -1,4 +1,4 @@
-import { ArgumentExecption, createContext, getClass, Injectable, InjectFlags, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
@@ -9,6 +9,7 @@ import { PipeTransform } from '../pipes';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
+import { createEndpointContext } from '../filters';
 
 
 /**
@@ -43,7 +44,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
-
+        this._endpoint.usePipes(pipes);
         return this;
     }
 
@@ -74,7 +75,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     emit(value: ApplicationEvent): Observable<any> {
-        const ctx = createContext(this.injector);
+        const ctx = createEndpointContext(this.injector, { arguments: value });
         ctx.setValue(getClass(value), value);
         return this.endpoint.handle(value, ctx)
             .pipe(

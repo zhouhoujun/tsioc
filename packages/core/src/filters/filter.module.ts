@@ -1,5 +1,6 @@
-import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption } from '@tsdi/ioc';
+import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
+import { TransformModule } from '../pipes/transform.module';
 import { CatchInterceptor, ExecptionHandlerBackend } from './execption.filter';
 import { FilterHandlerResolver } from './filter';
 
@@ -49,6 +50,22 @@ export const FILTER_PROVIDERS: ProviderType[] = [
     ExecptionHandlerBackend,
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
 ]
+
+
+@Module({
+    imports: [
+        TransformModule,
+    ],
+    providers: [
+        ...FILTER_PROVIDERS
+    ],
+    exports: [
+        TransformModule
+    ]
+})
+export class FilterModule {
+
+}
 
 
 // @Injectable({ static: true })

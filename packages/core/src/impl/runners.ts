@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, InvocationContext, tokenId, Injector, Class, isFunction, refl, ProvdierOf,
-    ClassType, StaticProviders, ReflectiveFactory, createContext, isArray, ArgumentExecption, ReflectiveRef
+    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, TypeOf
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -14,6 +14,8 @@ import { BootstrapOption, EndpointFactoryResolver } from '../filters/endpoint.fa
 import { getClassName } from 'packages/ioc/src/utils/lang';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
+import { createEndpointContext } from '../filters';
+import { ApplicationArguments } from '../ApplicationArguments';
 
 
 /**
@@ -46,8 +48,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_FILTERS, APP_RUNNERS_GUARDS);
     }
 
-    usePipes(pipes: ProvdierOf<PipeTransform> | ProvdierOf<PipeTransform>[]): this {
-
+    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
+        this._endpoint.usePipes(pipes);
         return this;
     }
 
@@ -126,12 +128,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._endpoint.handle(type, createContext(this.injector)));
+            return lastValueFrom(this._endpoint.handle(type, createEndpointContext(this.injector)));
         }
         return lastValueFrom(
             this.beforeRun()
                 .pipe(
-                    mergeMap(v => this._endpoint.handle(this._types, createContext(this.injector))),
+                    mergeMap(v => this._endpoint.handle(this._types, createEndpointContext(this.injector))),
                     mergeMap(v => this.afterRun())
                 )
         );

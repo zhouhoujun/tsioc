@@ -18,7 +18,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     /**
      * is this context injected in object or not.
      */
-    abstract get injected(): boolean;
+    abstract get used(): boolean;
     /**
      * invocation static injector. 
      */

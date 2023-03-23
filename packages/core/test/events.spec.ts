@@ -1,7 +1,7 @@
 import { Injectable, InvocationContext, isString, Module } from '@tsdi/ioc';
 import expect = require('expect');
 import { lastValueFrom, Observable } from 'rxjs';
-import { Application, ApplicationContext, Dispose, Endpoint, EventHandler, Interceptor, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+import { Application, ApplicationContext, Dispose, Endpoint, EventHandler, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
 
 
@@ -25,6 +25,9 @@ class TestService {
     shutdown = false;
     dispose = false;
     payload!: PayloadApplicationEvent;
+    message!: string;
+
+
     @Runner()
     runService() {
         console.log('test running.')
@@ -41,9 +44,20 @@ class TestService {
             PayloadInterceptor
         ]
     })
-    async handleEvent(payload: PayloadApplicationEvent) {
+    async handleEvent1(@Payload() payload: string) {
+        this.message = payload;
+    }
+
+    @EventHandler({
+        interceptors: [
+            PayloadInterceptor
+        ]
+    })
+    async handleEvent2(payload: PayloadApplicationEvent) {
         this.payload = payload;
     }
+
+
 
     @Shutdown()
     onApplicationShutdown(): void {
@@ -96,7 +110,9 @@ describe('Application Event', () => {
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
         expect(testServiceRef!.getInstance().payload).toBeInstanceOf(PayloadApplicationEvent);
-        expect(testServiceRef?.getInstance().payload.payload).toEqual('hi payload message');
+        
+        expect(testServiceRef?.getInstance().message).toEqual('hi payload message');
+        expect(testServiceRef?.getInstance().payload.payload).toEqual('hi hi payload message');
 
     });
 

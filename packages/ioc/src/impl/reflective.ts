@@ -99,7 +99,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             const ext = ctx !== context;
             ext && context.addRef(ctx);
             destroy = () => {
-                if (context.injected) return;
+                if (context.used) return;
                 ext && context.removeRef(ctx);
             }
         } else if (option) {
@@ -108,7 +108,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
                     context = createContext(option.parent!, option);
                     context.addRef(ctx);
                     destroy = () => {
-                        if (context.injected) return;
+                        if (context.used) return;
                         context.removeRef(ctx);
                         context.destroy()
                     }
@@ -116,14 +116,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
                     context = option.parent!;
                     context.addRef(ctx);
                     destroy = () => {
-                        if (context.injected) return;
+                        if (context.used) return;
                         context.removeRef(ctx);
                     }
                 }
             } else if (hasContext(option)) {
                 context = createContext(ctx, option);
                 destroy = () => {
-                    if (context.injected) return;
+                    if (context.used) return;
                     context.destroy()
                 }
             } else {

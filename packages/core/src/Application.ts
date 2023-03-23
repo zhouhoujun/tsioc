@@ -5,6 +5,7 @@ import { ApplicationExit } from './ApplicationExit';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
 import { setOptions } from './EndpointService';
+import { FilterModule } from './filters/filter.module';
 
 
 /**
@@ -128,6 +129,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
+        option.uses = [FilterModule, ...option.uses || EMPTY]
         option.providers = [...this.getRootDefaultProviders(), ...option.providers || EMPTY];
         return this.createModuleRef(container, option);
     }

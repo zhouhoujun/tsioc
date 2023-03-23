@@ -1,6 +1,6 @@
 import {
-    isArray, isString, isType, lang, Type, isRegExp, createDecorator, OperationArgumentResolver, ActionTypes, Execption,
-    ClassMethodDecorator, createParamDecorator, ParameterMetadata, ReflectiveFactory, TypeMetadata, PatternMetadata, TypeOf
+    isArray, isString, isType, lang, Type, isRegExp, createDecorator, ActionTypes, Execption,
+    ClassMethodDecorator, createParamDecorator, ReflectiveFactory, TypeMetadata, PatternMetadata, TypeOf
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -8,6 +8,8 @@ import { joinprefix, normalize } from './route';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, RouteMappingMetadata, RouteOptions, Router } from './router';
 import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
 import { Middleware, MiddlewareFn } from './middleware';
+import { TransportParameterDecorator } from '../metadata';
+import { TransportParameter } from '../filters';
 
 
 
@@ -270,130 +272,26 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(n
  */
 export const RouteMapping: RouteMapping = createMappingDecorator('RouteMapping');
 
-/**
- * request parameter metadata.
- */
-export interface RequsetParameterMetadata extends ParameterMetadata {
-    /**
-     * field scope.
-     */
-    scope?: 'body' | 'query' | 'restful';
-    /**
-     * field of request query params or body.
-     */
-    field?: string;
-    /**
-     * pipe
-     */
-    pipe?: string | Type<PipeTransform>;
-    /**
-     * pipe extends args
-     */
-    args?: any[];
-
-}
-
-export interface RequsetParameterDecorator {
-    /**
-     * Request Parameter decorator
-     *
-     * @param {string} field field of request query params or body.
-     * @param options route metedata options.
-     */
-    (field?: string, option?: {
-        /**
-         * define provider to resolve value to the parameter or property.
-         */
-        provider?: Type;
-        /**
-         * pipes
-         */
-        pipe?: string | Type<PipeTransform>;
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-        * custom resolver to resolve the value for the property or parameter.
-        */
-        resolver?: OperationArgumentResolver;
-        /**
-         * is mutil provider or not
-         */
-        mutil?: boolean;
-        /**
-         * null able or not.
-         */
-        nullable?: boolean;
-        /**
-         * default value
-         *
-         * @type {any}
-         */
-        defaultValue?: any;
-
-    }): ParameterDecorator;
-    /**
-     * Request Parameter decorator
-     * @param meta.
-     */
-    (meta: {
-        /**
-         * field of request query params or body.
-         */
-        field?: string;
-        /**
-         * define provider to resolve value to the parameter or property.
-         */
-        provider?: Type;
-        /**
-         * pipes
-         */
-        pipe?: string | Type<PipeTransform>;
-        /**
-         * pipe extends args.
-         */
-        args?: any[];
-        /**
-        * custom resolver to resolve the value for the property or parameter.
-        */
-        resolver?: OperationArgumentResolver;
-        /**
-         * is mutil provider or not
-         */
-        mutil?: boolean;
-        /**
-         * null able or not.
-         */
-        nullable?: boolean;
-        /**
-         * default value
-         *
-         * @type {any}
-         */
-        defaultValue?: any;
-    }): ParameterDecorator;
-}
 
 /**
  * Request path param decorator.
  * 
- * @exports {@link RequsetParameterDecorator}
+ * @exports {@link TransportParameterDecorator}
  */
-export const RequestPath: RequsetParameterDecorator = createParamDecorator('RequestPath', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
+export const RequestPath: TransportParameterDecorator = createParamDecorator('RequestPath', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
-        meta.scope = 'restful'
+        meta.scope = 'param'
     }
 });
 
 /**
  * Request query param decorator.
  * 
- * @exports {@link RequsetParameterDecorator}
+ * @exports {@link TransportParameterDecorator}
  */
-export const RequestParam: RequsetParameterDecorator = createParamDecorator('RequestParam', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
+export const RequestParam: TransportParameterDecorator = createParamDecorator('RequestParam', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         meta.scope = 'query';
     }
@@ -402,10 +300,10 @@ export const RequestParam: RequsetParameterDecorator = createParamDecorator('Req
 /**
  * Request body param decorator.
  * 
- * @exports {@link RequsetParameterDecorator}
+ * @exports {@link TransportParameterDecorator}
  */
-export const RequestBody: RequsetParameterDecorator = createParamDecorator('RequestBody', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as RequsetParameterMetadata),
+export const RequestBody: TransportParameterDecorator = createParamDecorator('RequestBody', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         meta.scope = 'body'
     }

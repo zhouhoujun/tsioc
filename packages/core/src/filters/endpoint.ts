@@ -1,4 +1,4 @@
-import { EMPTY, Execption, Injector, isFunction, lang, pomiseOf, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
+import { EMPTY, Execption, getClass, Injector, isArray, isFunction, isType, lang, pomiseOf, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { EndpointChain, Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
 import { EndpointService } from '../EndpointService';
@@ -24,13 +24,16 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
         private filterToken: Token<Interceptor<TInput, TOutput>[]>,
         private guardsToken: Token<CanActivate[]>) {
         super(injector, token, backend);
-        // this.guardsFilter = new GuardsFilter(guards?.map(g => isFunction(g) ? injector.get(g) : g));
-        // this.useFilter(this.guardsFilter);
     }
 
 
-    usePipes(pipes: ProvdierOf<PipeTransform<any, any>> | ProvdierOf<PipeTransform<any, any>>[]): this {
-        throw new Error('Method not implemented.');
+    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
+        if (isArray(pipes)) {
+            this.injector.inject(pipes.map(p => isType(p) ? p : { provide: getClass(p), useValue: p }));
+        } else {
+            this.injector.inject(isType(pipes) ? pipes : { provide: getClass(pipes), useValue: pipes })
+        }
+        return this;
     }
 
     /**
@@ -38,14 +41,12 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
      * @param guards 
      */
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
-        // const gds = (isArray(guards) ? guards : [guards]).map(g => isFunction(g) ? this.injector.get(g) : g)
-        // this.guardsFilter.useGuards(gds);
         this.regMulti(this.guardsToken, guards, order);
         this.reset();
         return this;
     }
 
-    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number ): this {
+    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
         this.regMulti(this.filterToken, filter, order);
         this.reset();
         return this;
