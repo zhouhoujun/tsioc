@@ -1,8 +1,19 @@
 import { Injectable, InvocationContext, isString, Module } from '@tsdi/ioc';
 import expect = require('expect');
-import { lastValueFrom, Observable } from 'rxjs';
-import { Application, ApplicationContext, Dispose, Endpoint, EventHandler, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+import { lastValueFrom, Observable, of } from 'rxjs';
+import { Application, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
+@Injectable()
+export class StringFilter implements Filter  {
+
+    intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: EndpointContext<any>): Observable<any> {
+        if(isString(input.payload)){
+            return next.handle(input, context);
+        }
+        return of(input);
+    }
+
+}
 
 
 @Injectable()
@@ -40,6 +51,9 @@ class TestService {
     }
 
     @EventHandler({
+        filters:[
+            StringFilter
+        ],
         interceptors: [
             PayloadInterceptor
         ]
@@ -49,6 +63,9 @@ class TestService {
     }
 
     @EventHandler({
+        filters:[
+            StringFilter
+        ],
         interceptors: [
             PayloadInterceptor
         ]
