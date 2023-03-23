@@ -121,7 +121,7 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    inject(providers: ProviderType[]): this;
+    inject(providers: ProviderType | ProviderType[]): this;
     inject(...providers: ProviderType[]): this;
     inject(...args: any[]): this {
         this.assertNotDestroyed();

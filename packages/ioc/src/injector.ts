@@ -1,6 +1,6 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { ClassType, EMPTY, Modules, Type } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
@@ -136,10 +136,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     abstract cache<T>(token: Token<T>, instance: T, expires: number): this;
     /**
-     * parse
+     * inject providers
      * @param providers
      */
-    abstract inject(providers: ProviderType[]): this;
+    abstract inject(providers: ProviderType | ProviderType[]): this;
     /**
      * inject providers.
      *

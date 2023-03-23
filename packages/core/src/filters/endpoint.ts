@@ -1,4 +1,4 @@
-import { EMPTY, Execption, getClass, Injector, isArray, isFunction, isType, lang, pomiseOf, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
+import { EMPTY, Execption, getClass, Injector, isArray, isFunction, isType, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { EndpointChain, Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
 import { EndpointService } from '../EndpointService';
@@ -27,12 +27,8 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
     }
 
 
-    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
-        if (isArray(pipes)) {
-            this.injector.inject(pipes.map(p => isType(p) ? p : { provide: getClass(p), useValue: p }));
-        } else {
-            this.injector.inject(isType(pipes) ? pipes : { provide: getClass(pipes), useValue: pipes })
-        }
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
+        this.injector.inject(pipes);
         return this;
     }
 

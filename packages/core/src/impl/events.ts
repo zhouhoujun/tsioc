@@ -1,4 +1,4 @@
-import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, InvocationContext, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, InvocationContext, StaticProvider, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, runEndpoints } from '../Endpoint';
@@ -43,7 +43,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this._endpoint
     }
 
-    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
         this._endpoint.usePipes(pipes);
         return this;
     }

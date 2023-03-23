@@ -1,4 +1,4 @@
-import { getTokenOf, InvokeArguments, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
+import { getTokenOf, InvokeArguments, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { PipeService } from './pipes/pipe.service';
 import { FilterService } from './filters/filter.service';
 import { CanActivate } from './guard';
@@ -37,7 +37,7 @@ export interface EndpointServiceOptions {
     /**
      * pipes for the bootstrap.
      */
-    pipes?: TypeOf<PipeTransform>[];
+    pipes?: StaticProvider<PipeTransform>[];
     /**
      * filters of bootstrap.
      */

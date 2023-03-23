@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, InvocationContext, tokenId, Injector, Class, isFunction, refl, ProvdierOf,
-    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, TypeOf
+    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, TypeOf, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -15,7 +15,6 @@ import { getClassName } from 'packages/ioc/src/utils/lang';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { createEndpointContext } from '../filters';
-import { ApplicationArguments } from '../ApplicationArguments';
 
 
 /**
@@ -48,7 +47,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_FILTERS, APP_RUNNERS_GUARDS);
     }
 
-    usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this {
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
         this._endpoint.usePipes(pipes);
         return this;
     }

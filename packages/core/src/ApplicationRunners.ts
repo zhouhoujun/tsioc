@@ -1,4 +1,4 @@
-import { Abstract, Class, InvocationContext, OnDestroy, ReflectiveRef, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, Class, InvocationContext, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
 import { EndpointService } from './EndpointService';
 import { BootstrapOption } from './filters/endpoint.factory';
 import { Filter } from './filters/filter';
@@ -49,25 +49,25 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
    * use pipes.
    * @param guards 
    */
-  abstract usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this;
+  abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 
   /**
    * use guards.
    * @param guards 
    */
-  abstract useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this;
+  abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
   /**
     * use interceptor
     * @param interceptor 
     * @param order 
     */
-  abstract useInterceptor(interceptor: TypeOf<Interceptor> | TypeOf<Interceptor>[], order?: number): this;
+  abstract useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
   /**
    * use filter
    * @param filter 
    * @param order 
    */
-  abstract useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number): this;
+  abstract useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 
   /**
    * destroy.

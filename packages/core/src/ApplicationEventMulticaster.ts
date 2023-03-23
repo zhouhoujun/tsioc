@@ -1,4 +1,4 @@
-import { Abstract, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, StaticProvider, Type, ProvdierOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -18,24 +18,24 @@ export abstract class ApplicationEventMulticaster implements EndpointService, Ap
      * use pipes.
      * @param guards 
      */
-    abstract usePipes(pipes: TypeOf<PipeTransform> | TypeOf<PipeTransform>[]): this;
+    abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
     /**
      * use guards.
      * @param guards 
      */
-    abstract useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this;
+    abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
     /**
      * use interceptor
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>> | TypeOf<Interceptor<ApplicationEvent, any>>[], order?: number): this;
+    abstract useInterceptor(interceptor: ProvdierOf<Interceptor<ApplicationEvent, any>> | ProvdierOf<Interceptor<ApplicationEvent, any>>[], order?: number): this;
     /**
      * use filter
      * @param filter 
      * @param order 
      */
-    abstract useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number): this;
+    abstract useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
     /**
      * add event endpoint.
      * @param event 
