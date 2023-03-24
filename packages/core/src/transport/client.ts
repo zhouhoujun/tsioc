@@ -337,7 +337,6 @@ export abstract class Client {
     }
 
     protected onError(err: Error): Error {
-        // this.logger.error(err);
         return err;
     }
 

@@ -10,7 +10,8 @@ import {
     EndpointContext,
     Client,
     POST,
-    GET
+    GET,
+    RouterModule
 } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
@@ -191,6 +192,7 @@ const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
     imports: [
         ServerModule,
         LoggerModule,
+        RouterModule,
         // TcpModule,
         DeviceManageModule,
         DeviceAModule

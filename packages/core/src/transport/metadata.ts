@@ -66,30 +66,34 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
     design: {
         method: (ctx, next) => {
             const def = ctx.class;
-            const metadata = def.getMetadata<HandleMetadata>(ctx.currDecor);
-            const { route, prefix, version, router, protocol, interceptors } = metadata;
+            const metadatas = def.getMetadatas<HandleMetadata>(ctx.currDecor);
+
             const injector = ctx.injector;
+            const factory = injector.get(ReflectiveFactory).create(def, injector);
 
-            if (!isString(route) && !router) {
-                return next();
-            }
+            metadatas.forEach(metadata => {
 
-            if (isString(route)) {
-                const path = joinprefix(prefix, version, route);
-                const routerInst = router ? injector.get(router) : injector.get(Router);
-                if (!(router instanceof Router)) {
-                    throw new Execption(lang.getClassName(router) + 'is not message router!');
+                const { route, prefix, version, router, protocol, interceptors } = metadata;
+
+                if (!isString(route) && !router) {
+                    return next();
                 }
-                const factory = injector.get(ReflectiveFactory).create(def, injector);
-                factory.onDestroy(() => router.unuse(path));
 
-                router.use({
-                    path,
-                    protocol,
-                    interceptors: interceptors?.map(i => isType(i) ? factory.resolve(i) : i),
-                    middleware: factory.getInstance() as Middleware
-                });
-            }
+                if (isString(route)) {
+                    const path = joinprefix(prefix, version, route);
+                    const routerInst = router ? injector.get(router) : injector.get(Router);
+                    if (!(router instanceof Router)) {
+                        throw new Execption(lang.getClassName(router) + 'is not message router!');
+                    }
+                    factory.onDestroy(() => router.unuse(path));
+                    routerInst.use({
+                        path,
+                        protocol,
+                        interceptors: interceptors?.map(i => isType(i) ? factory.resolve(i) : i),
+                        middleware: factory.getInstance() as Middleware
+                    });
+                }
+            })
             next();
         }
     },
