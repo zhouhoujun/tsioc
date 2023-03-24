@@ -1,4 +1,4 @@
-import { ClassType, composeResolver, EMPTY, isArray, isDefined, isNative, isPrimitiveType, isString, isToken, Token, Parameter, Type } from '@tsdi/ioc';
+import { ClassType, composeResolver, EMPTY, isArray, isDefined, isNative, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
 import { MessageArgumentExecption } from '../execptions';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 

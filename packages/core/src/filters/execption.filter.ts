@@ -1,7 +1,6 @@
 import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
-import { Interceptor } from '../Interceptor';
 import { MessageExecption } from '../execptions';
 import { EndpointContext } from './context';
 import { Filter, runHandlers } from './filter';
@@ -40,7 +39,7 @@ export abstract class ExecptionBackend implements Endpoint<Error, MessageExecpti
  * catch interceptor.
  */
 @Injectable({ static: true })
-export class CatchInterceptor<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
+export class CatchFilter<TInput = any, TOutput = any> implements Filter<TInput, TOutput> {
 
     intercept(input: TInput, next: Endpoint<TInput, TOutput>, ctx: EndpointContext): Observable<TOutput> {
         return next.handle(input, ctx)

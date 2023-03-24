@@ -379,11 +379,11 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
             const decors = typeRef.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'filter');
-
+            const handlerResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
                 const { filter, order, ...options } = decor.metadata;
                 const endpoint = factory.create(decor.propertyKey, options);
-                injector.get(FilterHandlerResolver).addHandle(filter, endpoint, order)
+                handlerResolver.addHandle(filter, endpoint, order)
             });
 
             next()

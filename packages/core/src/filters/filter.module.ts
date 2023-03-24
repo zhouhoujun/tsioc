@@ -1,7 +1,7 @@
 import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { TransformModule } from '../pipes/transform.module';
-import { CatchInterceptor, ExecptionHandlerBackend } from './execption.filter';
+import { CatchFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterHandlerResolver } from './filter';
 
 /**
@@ -46,13 +46,14 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
 export const FILTER_PROVIDERS: ProviderType[] = [
     // PathHanlderFilter,
     // StatusInterceptorFilter,
-    CatchInterceptor,
-    ExecptionHandlerBackend,
-    { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true }
+    { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true },
+    CatchFilter,
+    ExecptionHandlerBackend
 ]
 
 
 @Module({
+    providedIn: 'root',
     imports: [
         TransformModule,
     ],

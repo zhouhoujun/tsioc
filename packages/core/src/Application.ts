@@ -129,7 +129,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
-        option.uses = [FilterModule, ...option.uses || EMPTY]
+        option.deps = [FilterModule, ...option.deps || EMPTY]
         option.providers = [...this.getRootDefaultProviders(), ...option.providers || EMPTY];
         return this.createModuleRef(container, option);
     }

@@ -1,4 +1,4 @@
-import { EMPTY, Execption, getClass, Injector, isArray, isFunction, isType, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { EMPTY, Execption, Injector, isFunction, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { EndpointChain, Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
 import { EndpointService } from '../EndpointService';
@@ -7,6 +7,7 @@ import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes';
 import { EndpointContext } from './context';
+import { CatchFilter } from './execption.filter';
 import { Filter } from './filter';
 
 
@@ -24,6 +25,7 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
         private filterToken: Token<Interceptor<TInput, TOutput>[]>,
         private guardsToken: Token<CanActivate[]>) {
         super(injector, token, backend);
+        this.useFilter(CatchFilter);
     }
 
 

@@ -7,10 +7,6 @@ import { primitiveResolvers } from './resolvers';
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
 
-    protected getDefaultResolvers(): OperationArgumentResolver[] {
-        return [...primitiveResolvers, ... super.getDefaultResolvers()];
-    }
-
     private _args?: TInput;
     override get arguments(): TInput {
         if(!this._args) {
@@ -31,7 +27,7 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.arguments) return EMPTY;
-        return this.injector.get(getResolversToken(this.arguments), EMPTY);
+        return this.injector.get(getResolversToken(this.arguments), primitiveResolvers);
     }
 
     protected override clear(): void {
