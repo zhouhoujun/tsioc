@@ -1,9 +1,9 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type } from '@tsdi/ioc';
+import { CanActivate } from '../guard';
 import { Endpoint, FnEndpoint } from '../Endpoint';
 import { Filter, getFiltersToken } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
 import { EndpointFactory, EndpointFactoryResolver } from '../filters/endpoint.factory';
-import { CanActivate } from '../guard';
 import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';
 
@@ -13,9 +13,9 @@ export class OperationEndpoint<TInput = any, TOutput = any> extends FilterEndpoi
     constructor(injector: Injector,
         token: Token<Interceptor<TInput, TOutput>[]>,
         private invoker: OperationInvoker,
-        filterToken: Token<Filter<TInput, TOutput>[]>,
-        guardsToken: Token<CanActivate[]>) {
-        super(injector, token, null!, filterToken, guardsToken)
+        guardsToken: Token<CanActivate[]>,
+        filterToken?: Token<Filter<TInput, TOutput>[]>) {
+        super(injector, token, null!, guardsToken, filterToken)
     }
 
     protected override getBackend(): Endpoint<TInput, TOutput> {
@@ -35,8 +35,8 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
         const endpoint = new OperationEndpoint(this.typeRef.injector,
             getInterceptorsToken(this.typeRef.type, propertyKey),
             this.typeRef.createInvoker(propertyKey),
-            getFiltersToken(this.typeRef.type, propertyKey),
-            getGuardsToken(this.typeRef.type, propertyKey));
+            getGuardsToken(this.typeRef.type, propertyKey),
+            getFiltersToken(this.typeRef.type, propertyKey));
         
         setOptions(endpoint, options);
         return endpoint;

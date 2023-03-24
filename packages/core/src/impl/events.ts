@@ -9,7 +9,7 @@ import { PipeTransform } from '../pipes';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
-import { createEndpointContext } from '../filters';
+import { CatchFilter, createEndpointContext } from '../filters';
 
 
 /**
@@ -36,7 +36,8 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
-        this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_FILTERS, EVENT_MULTICASTER_GUARDS);
+        this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
+        this._endpoint.useFilter(CatchFilter)
     }
 
     get endpoint(): Endpoint<ApplicationEvent, any> {

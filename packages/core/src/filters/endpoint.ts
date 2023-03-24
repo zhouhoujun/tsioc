@@ -1,4 +1,4 @@
-import { EMPTY, Execption, Injector, isFunction, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { EndpointChain, Endpoint, EndpointBackend, InterceptorEndpoint } from '../Endpoint';
 import { EndpointService } from '../EndpointService';
@@ -6,8 +6,6 @@ import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes';
-import { EndpointContext } from './context';
-import { CatchFilter } from './execption.filter';
 import { Filter } from './filter';
 
 
@@ -18,14 +16,18 @@ import { Filter } from './filter';
 export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<TInput, TOutput> implements EndpointService {
 
 
+    private guards: CanActivate[] | null | undefined;
+
     constructor(
         injector: Injector,
         token: Token<Interceptor<TInput, TOutput>[]>,
         backend: TypeOf<EndpointBackend<TInput, TOutput>>,
-        private filterToken: Token<Interceptor<TInput, TOutput>[]>,
-        private guardsToken: Token<CanActivate[]>) {
+        private guardsToken?: Token<CanActivate[]>,
+        private filtersToken?: Token<Interceptor<TInput, TOutput>[]>) {
         super(injector, token, backend);
-        this.useFilter(CatchFilter);
+        if (!guardsToken) {
+            this.guards = null;
+        }
     }
 
 
@@ -39,56 +41,25 @@ export class FilterEndpoint<TInput = any, TOutput = any> extends EndpointChain<T
      * @param guards 
      */
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+        if (!this.guardsToken) throw new ArgumentExecption('no guards token');
         this.regMulti(this.guardsToken, guards, order);
-        this.reset();
+        this.guards = undefined;
         return this;
     }
 
     useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
-        this.regMulti(this.filterToken, filter, order);
+        if (!this.filtersToken) throw new ArgumentExecption('no filters token');
+        this.regMulti(this.filtersToken, filter, order);
         this.reset();
         return this;
     }
 
-    protected override compose(): Endpoint<TInput, TOutput> {
-        const chain = this.getInterceptors().reduceRight(
-            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.getBackend());
-        return this.getFilters().reduceRight(
-            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), chain);
-    }
-
-    /**
-     *  get filters. 
-     */
-    protected getFilters(): Filter<TInput, TOutput>[] {
-        let filters = this.injector.get(this.filterToken, EMPTY);
-        const guards = this.injector.get(this.guardsToken, EMPTY);
-        if (guards && guards.length) {
-            filters = [new GuardsFilter(guards), ...filters];
+    override handle(input: TInput, context: InvocationContext): Observable<TOutput> {
+        if (this.guards === undefined && this.guardsToken) {
+            this.guards = this.injector.get(this.guardsToken, null);
         }
-        return filters;
-    }
 
-}
-
-export class GuardsFilter<TInput = any, TOutput = any> implements Filter<TInput, TOutput> {
-    constructor(private guards?: CanActivate[] | null, private throwExecption?: (() => Execption) | boolean) {
-
-    }
-
-    useGuards(guards: CanActivate[]) {
-        if (!this.guards) {
-            this.guards = [];
-        }
-        this.guards.push(...guards);
-    }
-
-    reset(guards?: CanActivate[]) {
-        this.guards = guards ?? [];
-    }
-
-    intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: EndpointContext): Observable<TOutput> {
-        if (!this.guards || !this.guards.length) return next.handle(input, context);
+        if (!this.guards || !this.guards.length) return this.getChain().handle(input, context);
         const guards = this.guards;
         return defer(async () => {
             if (!(await lang.some(
@@ -99,12 +70,24 @@ export class GuardsFilter<TInput = any, TOutput = any> implements Filter<TInput,
             return true;
         }).pipe(
             mergeMap(r => {
-                if (r === true) return next.handle(input, context);
-                if (this.throwExecption) {
-                    return throwError(isFunction(this.throwExecption) ? this.throwExecption : () => new ForbiddenExecption())
-                }
-                return null!;
+                if (r === true) return this.getChain().handle(input, context);
+                return throwError(() => new ForbiddenExecption())
             })
         )
     }
+
+    protected override compose(): Endpoint<TInput, TOutput> {
+        const chain = this.getInterceptors().reduceRight(
+            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.getBackend());
+        return this.filtersToken ? this.getFilters(this.filtersToken).reduceRight(
+            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), chain) : chain;
+    }
+
+    /**
+     *  get filters. 
+     */
+    protected getFilters(token: Token<Filter[]>): Filter<TInput, TOutput>[] {
+        return this.injector.get(token, EMPTY);
+    }
+
 }

@@ -85,10 +85,14 @@ export abstract class AbstractEndpoint<TInput = any, TOutput = any> implements E
     private chain: Endpoint<TInput, TOutput> | null = null;
 
     handle(input: TInput, context: InvocationContext): Observable<TOutput> {
+        return this.getChain().handle(input, context);
+    }
+
+    protected getChain(): Endpoint<TInput, TOutput> {
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return this.chain.handle(input, context)
+        return this.chain;
     }
 
     protected reset() {
