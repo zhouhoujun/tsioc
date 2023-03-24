@@ -4,38 +4,38 @@ import { Execption } from './execption';
 /**
  * dispatch handle function.
  */
-export type Handler<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
+export type Handle<T = any, TR = any> = (ctx: T, next: () => TR) => TR;
 
 /**
  * compose handlers in chain.
  * @param handlers 
  */
-export function chain<T, TR>(handlers: Handler<T, TR>[]): Handler<T, TR> {
+export function chain<T, TR>(handlers: Handle<T, TR>[]): Handle<T, TR> {
     return (ctx: T, next: () => TR) => {
         return runChain(handlers, ctx, next);
     }
 }
 
 /**
- * run handlers in chain.
+ * run handles in chain.
  *
  * @export
  * @template T input context type.
  * @template TR returnning type.
- * @param {Handler<T>[]} handlers to run handlers in chain. array of {@link Handler}.
+ * @param {Handle<T>[]} handles to run handles in chain. array of {@link Handle}.
  * @param {T} ctx input context.
  * @param {() => TR} [next] the next step.
  */
-export function runChain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR): TR {
-    if (!handlers.length) return null!;
+export function runChain<T, TR = void>(handles: Handle<T, TR>[], ctx: T, next?: () => TR): TR {
+    if (!handles.length) return null!;
     let index = -1;
     function dispatch(i: number): TR {
         if (i <= index) {
             throw new Execption('next called mutiple times.');
         }
         index = i;
-        let handle = handlers[i];
-        if (i === handlers.length) {
+        let handle = handles[i];
+        if (i === handles.length) {
             handle = next!
         }
         if (!handle) {

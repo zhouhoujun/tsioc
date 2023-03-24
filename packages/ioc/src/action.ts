@@ -1,6 +1,6 @@
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
-import { runChain, Handler } from './handler';
+import { runChain, Handle } from './handle';
 import { isBaseOf } from './utils/lang';
 import { Platform } from './platform';
 
@@ -18,7 +18,7 @@ export interface ActionSetup {
 /**
  * ioc action type.
  */
-export type ActionType<T = any> = Token<Action<T>> | Handler<T, void>;
+export type ActionType<T = any> = Token<Action<T>> | Handle<T, void>;
 
 /**
  * action.
@@ -30,7 +30,7 @@ export abstract class Action<T = any> {
     /**
      * action handle.
      */
-    abstract getHandler(): Handler<T, void>;
+    abstract getHandle(): Handle<T, void>;
 }
 
 /**
@@ -46,9 +46,9 @@ export abstract class Actions<T> extends Action<T> {
     private _acts: ActionType[];
     private _befs: ActionType[];
     private _afts: ActionType[];
-    private _hdlrs: Handler[] | undefined;
+    private _hdlrs: Handle[] | undefined;
 
-    private _handler?: Handler;
+    private _handler?: Handle;
 
     constructor() {
         super()
@@ -74,7 +74,7 @@ export abstract class Actions<T> extends Action<T> {
             if (this.has(action)) return;
             this._acts.push(action)
         });
-        if (this._acts.length !== len) this.resetHandler()
+        if (this._acts.length !== len) this.resetHandle()
         return this
     }
 
@@ -94,7 +94,7 @@ export abstract class Actions<T> extends Action<T> {
         } else {
             this._acts.unshift(action)
         }
-        this.resetHandler();
+        this.resetHandle();
         return this
     }
 
@@ -114,7 +114,7 @@ export abstract class Actions<T> extends Action<T> {
         } else {
             this._acts.push(action)
         }
-        this.resetHandler();
+        this.resetHandle();
         return this
     }
 
@@ -126,7 +126,7 @@ export abstract class Actions<T> extends Action<T> {
     before(action: ActionType): this {
         if (this._befs.indexOf(action) < 0) {
             this._befs.push(action);
-            this.resetHandler()
+            this.resetHandle()
         }
         return this
     }
@@ -139,7 +139,7 @@ export abstract class Actions<T> extends Action<T> {
     after(action: ActionType): this {
         if (this._afts.indexOf(action) < 0) {
             this._afts.push(action);
-            this.resetHandler()
+            this.resetHandle()
         }
         return this
     }
@@ -147,13 +147,13 @@ export abstract class Actions<T> extends Action<T> {
     handle(ctx: T, next?: () => void): void {
         if (!this._hdlrs) {
             const pdr = this.getPlatform(ctx);
-            this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f)
+            this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandle(pdr, ac)).filter(f => f)
         }
         runChain(this._hdlrs, ctx);
         next && next()
     }
 
-    getHandler(): Handler<T, void> {
+    getHandle(): Handle<T, void> {
         if (!this._handler) {
             this._handler = (ctx, next) => this.handle(ctx, next)
         }
@@ -172,7 +172,7 @@ export abstract class Actions<T> extends Action<T> {
      * @param provider action provider
      * @param ac action.
      */
-    protected parseHandler(provider: Platform, ac: any): Handler {
+    protected parseHandle(provider: Platform, ac: any): Handle {
         if (isBaseOf(ac, Action)) {
             if (!provider.hasAction(ac)) {
                 provider.registerAction(ac)
@@ -181,10 +181,10 @@ export abstract class Actions<T> extends Action<T> {
         } else if (isFunction(ac)) {
             return ac
         }
-        return ac instanceof Action ? ac.getHandler() : null!
+        return ac instanceof Action ? ac.getHandle() : null!
     }
 
-    protected resetHandler() {
+    protected resetHandle() {
         this._hdlrs = null!
     }
 

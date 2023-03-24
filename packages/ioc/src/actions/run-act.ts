@@ -1,6 +1,6 @@
 import { ClassType, EMPTY } from '../types';
 import { isDefined } from '../utils/chk';
-import { runChain } from '../handler';
+import { runChain } from '../handle';
 import { ActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegScope } from './reg';

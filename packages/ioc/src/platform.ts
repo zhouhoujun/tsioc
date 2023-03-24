@@ -1,5 +1,5 @@
 import { Abstract } from './metadata/fac';
-import { Handler } from './handler';
+import { Handle } from './handle';
 import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
@@ -94,7 +94,7 @@ export abstract class Platform implements OnDestroy {
      * get action handle.
      * @param target target.
      */
-    abstract getHandle<T extends Handler>(target: Token<Action>): T;
+    abstract getHandle<T extends Handle>(target: Token<Action>): T;
     /**
      * set value.
      * @param token 

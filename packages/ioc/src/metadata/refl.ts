@@ -3,7 +3,7 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, EMPTY_OBJ, Type } from '../types';
 import { assign, cleanObj, getParentClass } from '../utils/lang';
 import { isFunction } from '../utils/chk';
-import { runChain, Handler } from '../handler';
+import { runChain, Handle } from '../handle';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
     RunnableMetadata, InjectableMetadata, MethodMetadata
@@ -28,19 +28,19 @@ export interface DecorDefHandles<T = any> {
     /**
      * class decorator def handle.
      */
-    class?: Handler<DecorContext<T>> | Handler<DecorContext<T>>[];
+    class?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
     /**
      * method decorator def handle.
      */
-    method?: Handler<DecorContext<T>> | Handler<DecorContext<T>>[];
+    method?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
     /**
      * property decorator def handle.
      */
-    property?: Handler<DecorContext<T>> | Handler<DecorContext<T>>[];
+    property?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
     /**
      * parameter decorator def handle.
      */
-    parameter?: Handler<DecorContext<T>> | Handler<DecorContext<T>>[];
+    parameter?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
 }
 
 /**
@@ -50,47 +50,47 @@ export interface DecorScopeHandles<T> {
     /**
      * decorator BeforeAnnoation action handles.
      */
-    beforeAnnoation?: Handler<T> | Handler<T>[];
+    beforeAnnoation?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Class action handles.
      */
-    class?: Handler<T> | Handler<T>[];
+    class?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Parameter action handles.
      */
-    parameter?: Handler<T> | Handler<T>[];
+    parameter?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Property action handles.
      */
-    property?: Handler<T> | Handler<T>[];
+    property?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Method action handles.
      */
-    method?: Handler<T> | Handler<T>[];
+    method?: Handle<T> | Handle<T>[];
 
     /**
      * decorator BeforeConstructor action handles.
      */
-    beforeConstructor?: Handler<T> | Handler<T>[];
+    beforeConstructor?: Handle<T> | Handle<T>[];
 
     /**
      * decorator AfterConstructor action handles.
      */
-    afterConstructor?: Handler<T> | Handler<T>[];
+    afterConstructor?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Annoation action handles.
      */
-    annoation?: Handler<T> | Handler<T>[];
+    annoation?: Handle<T> | Handle<T>[];
 
     /**
      * decorator AfterAnnoation action handles.
      */
-    afterAnnoation?: Handler<T> | Handler<T>[];
+    afterAnnoation?: Handle<T> | Handle<T>[];
 }
 
 /**
@@ -363,11 +363,11 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 
 class DecorActions extends Actions<DecorContext> {
     protected override getPlatform(ctx: DecorContext): Platform { return null!; }
-    protected override parseHandler(provider: Platform, ac: any): Handler {
+    protected override parseHandle(provider: Platform, ac: any): Handle {
         if (isFunction(ac)) {
             return ac
         } else if (ac instanceof Action) {
-            return ac.getHandler()
+            return ac.getHandle()
         }
         return null!
     }

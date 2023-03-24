@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { Token } from '../tokens';
-import { runChain } from '../handler';
+import { runChain } from '../handle';
 import { ActionSetup } from '../action';
 import { cleanObj } from '../utils/lang';
 import { FactoryRecord, FnType, Injector } from '../injector';

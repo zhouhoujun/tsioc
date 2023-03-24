@@ -1,4 +1,4 @@
-import { Handler } from '@tsdi/ioc';
+import { Handle } from '@tsdi/ioc';
 import { EndpointContext } from '../filters/context';
 
 /**
@@ -57,7 +57,7 @@ export interface Middleware<T extends MiddlewareContext = MiddlewareContext> {
 /**
  * middleware function
  */
-export type MiddlewareFn<T extends MiddlewareContext = MiddlewareContext> = Handler<T, Promise<void>>;
+export type MiddlewareFn<T extends MiddlewareContext = MiddlewareContext> = Handle<T, Promise<void>>;
 /**
  * middleware like.
  */

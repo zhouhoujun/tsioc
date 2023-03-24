@@ -1,6 +1,6 @@
 import { Token } from '../tokens';
 import { ClassType, Type } from '../types';
-import { Handler } from '../handler';
+import { Handle } from '../handle';
 import { isFunction } from '../utils/chk';
 import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
@@ -107,9 +107,9 @@ export class DefaultPlatform implements Platform {
         return this
     }
 
-    getHandle<T extends Handler>(target: Token<Action>): T {
+    getHandle<T extends Handle>(target: Token<Action>): T {
         const action = this._actions.get(target) as Action;
-        return (action?.getHandler() ?? null)  as T
+        return (action?.getHandle() ?? null)  as T
     }
 
     setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {

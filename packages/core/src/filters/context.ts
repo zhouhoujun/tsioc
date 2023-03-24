@@ -7,14 +7,10 @@ import { primitiveResolvers } from './resolvers';
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
 
-    private _args?: TInput;
-    override get arguments(): TInput {
-        if(!this._args) {
-            this._args = this.injector.get(CONTEXT_ARGS);
-        }
-        return this._args!;
-    }
 
+    /**
+     * set arguments.
+     */
     set arguments(val: TInput) {
         this._args = val;
         this.injector.setValue(CONTEXT_ARGS, this._args);

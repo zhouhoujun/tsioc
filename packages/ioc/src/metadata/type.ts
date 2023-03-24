@@ -13,7 +13,7 @@ import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
 import { MethodType } from '../injector';
-import { Handler } from '../handler';
+import { Handle } from '../handle';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 
 
@@ -31,17 +31,17 @@ export interface DecoratorFn extends Function {
      * get decorator handle.
      * @param type decorator type.
      */
-    getHandle?(type: DecoratorType): Handler<DecorContext>[];
+    getHandle?(type: DecoratorType): Handle<DecorContext>[];
     /**
      * get decorator runtime handle.
      * @param type decorator type.
      */
-    getRuntimeHandle?(type: DecoratorScope): Handler<RuntimeContext>[];
+    getRuntimeHandle?(type: DecoratorScope): Handle<RuntimeContext>[];
     /**
      * get decorator design handle.
      * @param type decorator type.
      */
-    getDesignHandle?(type: DecoratorScope): Handler<DesignContext>[];
+    getDesignHandle?(type: DecoratorScope): Handle<DesignContext>[];
 }
 
 

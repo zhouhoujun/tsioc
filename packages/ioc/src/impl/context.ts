@@ -1,7 +1,7 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass, isPrimitive } from '../utils/chk';
+import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass, isPrimitive, isClassType } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -65,9 +65,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
         const args = options.arguments;
         if (args) {
-            if (isType(args)) {
+            if (isClassType(args)) {
                 this.injector.inject({ provide: CONTEXT_ARGS, useExisting: args });
             } else {
+                this._args = args;
                 this.injector.setValue(CONTEXT_ARGS, args);
                 const argType = getClass(args);
                 if (!isPrimitive(argType)) {
@@ -147,11 +148,16 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return ctx === this && this._refs.indexOf(ctx) >= 0;
     }
 
+
+    protected _args?: T;
     /**
      * the invocation arguments.
      */
     get arguments(): T {
-        return this.injector.get<T>(CONTEXT_ARGS);
+        if(!this._args) {
+            this._args = this.injector.get(CONTEXT_ARGS);
+        }
+        return this._args!;
     }
 
     get used(): boolean {

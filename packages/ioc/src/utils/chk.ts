@@ -1,4 +1,4 @@
-import { AnnotationType, Type } from '../types';
+import { AnnotationType, ClassType, Type } from '../types';
 
 
 declare let process: any;
@@ -32,6 +32,14 @@ export function isFunction(target: any): target is Function {
  * @returns 
  */
 export function isType(v: any): v is Type<any> {
+    return typeof v === _tyfunc;
+}
+/**
+ * is class type or not.
+ * @param v 
+ * @returns 
+ */
+export function isClassType(v: any): v is ClassType<any> {
     return typeof v === _tyfunc;
 }
 
