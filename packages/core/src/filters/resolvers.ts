@@ -1,7 +1,6 @@
 import { ClassType, composeResolver, EMPTY, isArray, isDefined, isNative, isPrimitiveType, isString, isToken, Token, Parameter, Type } from '@tsdi/ioc';
 import { MessageArgumentExecption } from '../execptions';
-import { PipeTransform } from '../pipes/pipe';
-import { TransportArgumentResolver, TransportParameter } from './resolver';
+import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 
 export function missingPipeExecption(parameter: Parameter, type?: ClassType, method?: string) {
     return new MessageArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
@@ -18,7 +17,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
                 },
                 resolve(parameter, ctx) {
                     const scope = ctx.arguments[parameter.scope!];
-                    const pipe = (isToken(parameter.pipe) || parameter.type) ? ctx.get<PipeTransform>(parameter.pipe as Token ?? (parameter.type as Type).name.toLowerCase()) : parameter.pipe;
+                    const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(scope[parameter.field ?? parameter.name!], ...parameter.args || EMPTY)
                 }
@@ -29,7 +28,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
                 },
                 resolve(parameter, ctx) {
                     const value = ctx.arguments[parameter.scope!];
-                    const pipe = (isToken(parameter.pipe) || parameter.type) ? ctx.get<PipeTransform>(parameter.pipe as Token ?? (parameter.type as Type).name.toLowerCase()) : parameter.pipe;
+                    const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(value, ...parameter.args || EMPTY)
                 }
@@ -45,7 +44,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
                 resolve(parameter, ctx) {
                     const value = ctx.arguments[parameter.scope!][parameter.field ?? parameter.name!];
                     const values: any[] = isString(value) ? value.split(',') : value;
-                    const pipe = (isToken(parameter.pipe) || parameter.type) ? ctx.get<PipeTransform>(parameter.pipe as Token ?? (parameter.provider as Type).name.toLowerCase()) : parameter.pipe;
+                    const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return values.map(val => pipe.transform(val, ...parameter.args || EMPTY)) as any
                 }
@@ -59,7 +58,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             },
             resolve(parameter, ctx) {
                 const value = parameter.field ? ctx.arguments[parameter.scope!][parameter.field] : ctx.arguments[parameter.scope!];
-                const pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
+                const pipe = getPipe(parameter, ctx);
                 if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                 return pipe.transform(value, ...parameter.args || EMPTY)
             }
@@ -76,6 +75,11 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
 ];
 
 
+/**
+ * is list or not.
+ * @param target 
+ * @returns 
+ */
 export function isList(target: any) {
     return isArray(target) || isString(target);
 }

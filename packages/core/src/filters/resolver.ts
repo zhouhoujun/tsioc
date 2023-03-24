@@ -1,4 +1,4 @@
-import { OperationArgumentResolver, Parameter, OperationInvoker, TypeOf, Token, getTokenOf } from '@tsdi/ioc';
+import { OperationArgumentResolver, Parameter, OperationInvoker, TypeOf, Token, getTokenOf, isToken, getClassName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { EndpointContext } from './context';
 
@@ -62,4 +62,18 @@ const RESOLVERS = 'RESOLVERS';
  */
 export function getResolversToken(type: TypeOf<any>, propertyKey?: string): Token<TransportArgumentResolver[]> {
     return getTokenOf(type, RESOLVERS, propertyKey);
+}
+
+/**
+ * get pipe of transport parameter.
+ * @param parameter 
+ * @param ctx 
+ * @returns 
+ */
+export function getPipe(parameter: TransportParameter, ctx: EndpointContext, isPrimitive?: boolean): PipeTransform | null {
+    if (parameter.pipe) {
+        if (isToken(parameter.pipe)) return ctx.get<PipeTransform>(parameter.pipe);
+        return parameter.pipe;
+    }
+    return parameter.type ? ctx.get<PipeTransform>(isPrimitive ? parameter.type.name.toLowerCase() : getClassName(parameter.type)) : null;
 }

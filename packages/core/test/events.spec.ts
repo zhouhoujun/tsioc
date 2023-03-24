@@ -1,19 +1,30 @@
-import { Injectable, InvocationContext, isString, Module } from '@tsdi/ioc';
+import { Injectable, InvocationContext, isPlainObject, isString, Module } from '@tsdi/ioc';
 import expect = require('expect');
 import { lastValueFrom, Observable, of } from 'rxjs';
 import { Application, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
-
     intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: EndpointContext<any>): Observable<any> {
         if(isString(input.payload)){
             return next.handle(input, context);
         }
         return of(input);
     }
+}
+
+@Injectable()
+export class JsonFilter implements Filter  {
+
+    intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: EndpointContext<any>): Observable<any> {
+        if(isPlainObject(input.payload)){
+            return next.handle(input, context);
+        }
+        return of(input);
+    }
 
 }
+
 
 
 @Injectable()
@@ -74,7 +85,16 @@ class TestService {
         this.payload = payload;
     }
 
+    name?: string;
+    age?: number;
 
+    @EventHandler({
+        filters: [JsonFilter]
+    })
+    async jsonFiledMessage(@Payload('name') name: string, @Payload() age: number ) {
+        this.name = name;
+        this.age = age;
+    }
 
     @Shutdown()
     onApplicationShutdown(): void {
@@ -133,6 +153,16 @@ describe('Application Event', () => {
 
     });
 
+
+    it('payload filed transport parameter arguments', async () => {
+
+        await lastValueFrom(ctx.publishEvent({name: 'name', age: 20}));
+        const testServiceRef = ctx.runners.getRef(TestService);
+        expect(testServiceRef).not.toBeNull();
+        
+        expect(testServiceRef?.getInstance().name).toEqual('name');
+        expect(testServiceRef?.getInstance().age).toEqual(20);
+    })
 
     it('OnApplicationShutdown and onApplicationDispose had called.', async () => {
         const runner = ctx.runners.getRef(TestService);
