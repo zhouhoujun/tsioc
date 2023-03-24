@@ -9,6 +9,11 @@ export * from './headers';
 export * from './metadata';
 export * from './params';
 
+export * from './request';
+export * from './response';
+export * from './client';
+
+
 export * from './router.module';
 
 export * from './utils';

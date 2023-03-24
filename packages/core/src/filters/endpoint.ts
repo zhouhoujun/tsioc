@@ -104,8 +104,5 @@ export class GuardsFilter<TInput = any, TOutput = any> implements Filter<TInput,
                 return null!;
             })
         )
-
-
     }
-
 }

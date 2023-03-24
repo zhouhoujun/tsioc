@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, isPromise, ProvdierOf, Token, toProvider, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, isPromise, ProvdierOf, Token, toProvider, TypeOf } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
 import { Interceptor, InterceptorService } from './Interceptor';
 
@@ -6,19 +6,20 @@ import { Interceptor, InterceptorService } from './Interceptor';
 /**
  * Endpoint is the fundamental building block of servers and clients.
  */
-export interface Endpoint<TInput = any, TOutput = any> {
+@Abstract()
+export abstract class Endpoint<TInput = any, TOutput = any> {
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    handle(input: TInput, context: InvocationContext): Observable<TOutput>;
+    abstract handle(input: TInput, context: InvocationContext): Observable<TOutput>;
 
     /**
      * is this equals to target or not
      * @param target 
      */
-    equals?(target: any): boolean;
+    abstract equals?(target: any): boolean;
 }
 
 
