@@ -1,10 +1,10 @@
-import { ClassType, TypeOf } from './types';
+import { ClassType } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector } from './injector';
 import { ArgumentResolver, Parameter } from './resolver';
-import { ProviderType } from './providers';
+import { ProvdierOf, ProviderType } from './providers';
 import { Execption } from './execption';
 import { OperationInvoker } from './operation';
 
@@ -163,7 +163,7 @@ export interface InvokeOptions<TArg = any> {
     /**
      * custom resolvers.
      */
-    resolvers?: ArgumentResolver[];
+    resolvers?: ProvdierOf<ArgumentResolver>[];
     /**
      * custom providers.
      */

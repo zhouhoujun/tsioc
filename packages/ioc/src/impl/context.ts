@@ -1,4 +1,4 @@
-import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
+import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName } from '../utils/lang';
 import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
@@ -9,7 +9,7 @@ import { InjectFlags, Token, tokenId } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
-import { ProviderType } from '../providers';
+import { ProviderType, toProvider } from '../providers';
 import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
 
@@ -48,7 +48,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         super();
         this._refs = [];
         this.injector = this.createInjector(injector, options.providers);
-        options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => this.resolverProvider(r)));
+        options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => toProvider(this.getResolvesToken(), r)));
         if (options.parent && injector !== options.parent.injector) {
             const parent = options.parent;
             this.addRef(parent);
@@ -107,10 +107,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected getDefaultResolvers(): OperationArgumentResolver[] {
         return BASE_RESOLVERS
-    }
-
-    protected resolverProvider(resolver: TypeOf<OperationArgumentResolver>): ProviderType {
-        return isFunction(resolver) ? { provide: this.getResolvesToken(), useClass: resolver as Type, multi: true } : { provide: this.getResolvesToken(), useValue: resolver, multi: true } as ProviderType
     }
 
     protected createInjector(injector: Injector, providers?: ProviderType[]) {

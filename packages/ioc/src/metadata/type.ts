@@ -1,5 +1,5 @@
 import { ClassType, Annotation, EMPTY, Type } from '../types';
-import { ModuleWithProviders, ProviderType } from '../providers';
+import { ModuleWithProviders, ProvdierOf, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
     PropertyMetadata, ParameterMetadata, MethodMetadata
@@ -216,7 +216,7 @@ export class Class<T = any> {
      *
      * @type {ArgumentResolver[]}
      */
-    readonly resolvers: ArgumentResolver[];
+    readonly resolvers: ProvdierOf<ArgumentResolver>[];
     /**
      * property metadata.
      *
