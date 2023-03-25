@@ -1,17 +1,16 @@
 import {
-    Type, getClass, Injector, ProviderType, DefaultInvocationContext, createContext, InvokerLike,
-    InvokeArguments, ArgumentExecption, EMPTY_OBJ, Class, ModuleDef, InjectFlags
+    Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
+    Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
-import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../context';
-import { RunnableFactory, BootstrapOption, RunnableRef } from '../runnable';
-import { ApplicationRunners } from '../runners';
-import { ModuleRef } from '../module.ref';
-import { ApplicationArguments } from '../args';
-import { ApplicationContextRefreshEvent, ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from '../events';
 import { Observable } from 'rxjs';
-import { runInvokers } from '../Interceptor';
-
+import { ApplicationArguments } from '../ApplicationArguments';
+import { ApplicationEvent } from '../ApplicationEvent';
+import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
+import { ApplicationRunners } from '../ApplicationRunners';
+import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
+import { ApplicationContextRefreshEvent } from '../events';
+import { BootstrapOption } from '../filters/endpoint.factory';
 
 
 
@@ -32,10 +31,6 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
         super(injector, options);
-        const args = injector.get(ApplicationArguments, null);
-        if (args && options.arguments !== args) {
-            this._args = options.arguments ? { ...options.arguments, ...args } : args
-        }
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
@@ -59,41 +54,44 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._runners
     }
 
-    createRunnable<C>(type: Type<C> | Class<C>, option?: BootstrapOption): RunnableRef<C> {
-        const typeRef = this.injector.reflectiveFactory.create(type, this.injector);
-        const factory = typeRef.resolve(RunnableFactory);
-        return factory.create(type, this.injector, option)
+    get eventMulticaster(): ApplicationEventMulticaster {
+        return this._multicaster;
     }
 
-    bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): any {
-        return this.createRunnable(type, option).run()
+    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<ReflectiveRef<C>> {
+        const typeRef = this.runners.attach(type, option);
+        if (typeRef) {
+            await this.runners.run(typeRef.type);
+        }
+        return typeRef;
     }
 
     getLogger(name?: string): Logger {
         return this.injector.get(LoggerManager, null)?.getLogger(name) ?? null!;
     }
 
-    publishEvent(event: ApplicationEvent): void;
-    publishEvent(event: Object): void;
-    publishEvent(obj: ApplicationEvent | Object): void {
-        if (!obj) throw new ArgumentExecption('Event must not be null');
+    publishEvent(event: ApplicationEvent): Observable<any>;
+    publishEvent(event: Object): Observable<any>;
+    publishEvent(obj: ApplicationEvent | Object): Observable<any> {
+        return this.eventMulticaster.publishEvent(obj);
+        // if (!obj) throw new ArgumentExecption('Event must not be null');
 
-        // Decorate event as an ApplicationEvent if necessary
-        let event: ApplicationEvent;
-        if (obj instanceof ApplicationEvent) {
-            event = obj
-        }
-        else {
-            event = new PayloadApplicationEvent(this, obj)
-        }
+        // // Decorate event as an ApplicationEvent if necessary
+        // let event: ApplicationEvent;
+        // if (obj instanceof ApplicationEvent) {
+        //     event = obj
+        // }
+        // else {
+        //     event = new PayloadApplicationEvent(this, obj)
+        // }
 
-        this._multicaster?.emit(event);
+        // this._multicaster?.emit(event);
 
-        // Publish event via parent context as well...
-        const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
-        if (context) {
-            context.publishEvent(event)
-        }
+        // // Publish event via parent context as well...
+        // const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
+        // if (context) {
+        //     context.publishEvent(event)
+        // }
     }
 
     /**
@@ -103,35 +101,16 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         this._multicaster.emit(new ApplicationContextRefreshEvent(this))
     }
 
+    close(): Promise<void> {
+        return this.destroy();
+    }
+
+    async destroy(): Promise<void> {
+        await this.runners.stop();
+        super.destroy();
+    }
+
 }
-
-export class DefaultEventMulticaster extends ApplicationEventMulticaster {
-    private maps: Map<Type, InvokerLike[]>;
-    constructor(private injector: Injector) {
-        super();
-        this.maps = new Map();
-    }
-
-    addListener(event: Type<ApplicationEvent>, invoker: InvokerLike, order = -1): void {
-        const handlers = this.maps.get(event);
-        if (handlers) {
-            if (handlers.indexOf(invoker) >= 0) return;
-            order >= 0 ? handlers.splice(order, 0, invoker) : handlers.push(invoker);
-        } else {
-            this.maps.set(event, [invoker]);
-        }
-    }
-
-    emit(value: ApplicationEvent): Observable<any> {
-        const handlers = this.maps.get(getClass(value));
-        return runInvokers(handlers, createContext(this.injector), value, v => v.done === true)
-    }
-
-    clear(): void {
-        this.maps.clear();
-    }
-}
-
 
 /**
  * default application factory.
@@ -147,8 +126,15 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     }
 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {
-        if ((root.moduleReflect.annotation as ModuleDef)?.baseURL) {
-            root.setValue(PROCESS_ROOT, (root.moduleReflect.annotation as ModuleDef).baseURL)
+        const ann = root.moduleReflect.getAnnotation<ModuleDef>();
+        if (ann?.baseURL) {
+            root.setValue(PROCESS_ROOT, ann.baseURL)
+        }
+        if(!option) {
+            option = {};
+        }
+        if(!option.arguments) {
+            option.arguments = ApplicationArguments;
         }
         const ctx = this.createInstance(root, option);
         return ctx

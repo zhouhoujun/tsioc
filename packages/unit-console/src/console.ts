@@ -1,11 +1,10 @@
-import { Token, lang } from '@tsdi/ioc';
-import { Module, TimesPipe } from '@tsdi/core';
+import { Token, lang, Module } from '@tsdi/ioc';
+import { TimeFormatPipe } from '@tsdi/core';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 import * as chalk from 'chalk';
 
 @Module({
-    providedIn: 'root',
     imports: [
         ServerModule,
         ServerLogsModule
@@ -13,7 +12,7 @@ import * as chalk from 'chalk';
 })
 export class ConsoleReporter extends RealtimeReporter {
 
-    constructor(private timesPipe: TimesPipe) {
+    constructor(private timesPipe: TimeFormatPipe) {
         super();
     }
 

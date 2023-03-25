@@ -1,10 +1,12 @@
-import { ModuleLoader, isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes } from '@tsdi/ioc';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './context';
-import { DEFAULTA_PROVIDERS } from './providers';
-import { ApplicationExit } from './exit';
-import { getModuleType, ModuleRef } from './module.ref';
-import { RunnableFactory } from './runnable';
-import { createModuleRef } from './impl/module';
+import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
+import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
+import { ApplicationExit } from './ApplicationExit';
+import { ModuleLoader } from './ModuleLoader';
+import { DefaultModuleLoader } from './impl/loader';
+import { setOptions } from './EndpointService';
+import { FilterModule } from './filters/filter.module';
+
 
 /**
  * application.
@@ -28,19 +30,23 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getDefaultProviders(), ...target.platformProviders] : this.getDefaultProviders();
+            const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = Scopes.root;
             this.root = this.createInjector(providers, target)
         } else {
             const option = { module: target, deps: this.getDeps(), scope: Scopes.root };
-            this.root = this.createInjector(this.getDefaultProviders(), option)
+            this.root = this.createInjector(this.getPlatformDefaultProviders(), option)
         }
         this.initRoot()
     }
 
-    protected getDefaultProviders(): ProviderType[] {
+    protected getPlatformDefaultProviders(): ProviderType[] {
         return DEFAULTA_PROVIDERS
+    }
+
+    protected getRootDefaultProviders(): ProviderType[] {
+        return ROOT_DEFAULT_PROVIDERS;
     }
 
     protected initRoot() {
@@ -119,8 +125,12 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
         if (this.loader) {
             container.setValue(ModuleLoader, this.loader)
+        } else {
+            this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
+        option.deps = [FilterModule, ...option.deps || EMPTY]
+        option.providers = [...this.getRootDefaultProviders(), ...option.providers || EMPTY];
         return this.createModuleRef(container, option);
     }
 
@@ -150,24 +160,28 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
                 const modueRef = root.reflectiveFactory.create(target, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root) as T
             } else {
-                if (target.loads) {
-                    this._loads = await this.root.load(target.loads)
-                }
                 const modueRef = root.reflectiveFactory.create(root.moduleType, root);
-                this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T
+                if (target.loads) {
+                    this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
+                }
+                this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T;
             }
         }
         return this.context
     }
 
     protected prepareContext(ctx: T): any {
+        const target = this.target;
+        if (!isFunction(target)) {
+            if (target.events) {
+                setOptions(this.context.eventMulticaster, target.events);
+            }
+            setOptions(this.context.runners, target);
+        }
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
-            const injector = ctx.injector;
-            bootstraps.forEach(type => {
-                const typeRef = injector.reflectiveFactory.create(type, injector);
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector);
-                ctx.runners.addBootstrap(runner)
+            bootstraps.forEach((type, order) => {
+                ctx.runners.attach(type, { order });
             })
         }
     }

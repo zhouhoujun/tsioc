@@ -1,30 +1,26 @@
-import { LoadType, Modules, Type, EMPTY } from '../types';
-import { DestroyCallback, OnDestroy } from '../destroy';
-import { cleanObj, deepForEach, immediate } from '../utils/lang';
+import { Modules, Type, EMPTY } from '../types';
+import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
-import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil } from '../utils/chk';
+import { isPlainObject, isTypeObject } from '../utils/obj';
+import { cleanObj, deepForEach, immediate } from '../utils/lang';
+import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
 import {
-    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord,
-    Platform, Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, Scopes
+    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes, InjectorEvent,
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
+import { Execption } from '../execption';
+import { Platform } from '../platform';
+import { get } from '../metadata/refl';
+import { ModuleDef, Class } from '../metadata/type';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { ModuleDef, Class } from '../metadata/type';
-import { get } from '../metadata/refl';
 import { ReflectiveFactory } from '../reflective';
-import { DefaultModuleLoader } from './loader';
-import { ModuleLoader } from '../module.loader';
-import { DefaultPlatform } from './platform';
-import { LifecycleHooks, LifecycleHooksResolver } from '../lifecycle';
 import { DefaultReflectiveFactory, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
-import { Execption } from '../execption';
-import { isPlainObject, isTypeObject } from '../utils/obj';
-
-
+import { DefaultPlatform } from './platform';
 
 /**
  * Default Injector
@@ -44,7 +40,6 @@ export class DefaultInjector extends Injector {
      */
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
-    lifecycle!: LifecycleHooks;
 
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
@@ -58,12 +53,6 @@ export class DefaultInjector extends Injector {
         this.inject(providers)
     }
 
-    protected initLifecycle(platform?: Platform): LifecycleHooks {
-        const lifecycle = this.get(LifecycleHooksResolver, null)?.resolve(platform) ?? new DestroyLifecycleHooks(platform);
-        lifecycle.init(this);
-        return lifecycle;
-    }
-
     protected initScope(scope?: InjectorScope) {
         const val = { value: this };
         switch (scope) {
@@ -71,30 +60,24 @@ export class DefaultInjector extends Injector {
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
                 this._plat = new DefaultPlatform(this);
-                this.lifecycle = this.initLifecycle();
                 registerCores(this);
                 break;
             case Scopes.root:
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
-                this.lifecycle = this.initLifecycle(this.platform());
                 break;
             case Scopes.static:
-                this.lifecycle = this.initLifecycle();
                 break;
             case Scopes.configuration:
                 this.platform().setInjector(scope, this);
-                this.lifecycle = this.initLifecycle();
                 break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = this.isStatic ? isStaticAlias : isInjectAlias;
-                this.lifecycle = this.initLifecycle();
                 break;
         }
-        this.inject({ provide: LifecycleHooks, useValue: this.lifecycle })
     }
 
     protected initParent(parent: Injector) {
@@ -138,7 +121,7 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    inject(providers: ProviderType[]): this;
+    inject(providers: ProviderType | ProviderType[]): this;
     inject(...providers: ProviderType[]): this;
     inject(...args: any[]): this {
         this.assertNotDestroyed();
@@ -170,7 +153,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected registerReflect(platform: Platform, def: Class, option?: RegOption) {
-        const providedIn = option?.providedIn ?? def.annotation.providedIn;
+        const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
         (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, def, option)
     }
 
@@ -215,7 +198,7 @@ export class DefaultInjector extends Injector {
      * @param def 
      */
     protected onRegister(def: Class) {
-
+        this.get(InjectorEvent, null)?.emit('register', def);
     }
 
     /**
@@ -223,10 +206,25 @@ export class DefaultInjector extends Injector {
      * @param def 
      */
     protected onRegistered(def: Class) {
+        this.get(InjectorEvent, null)?.emit('registered', def);
 
     }
 
+    /**
+     * on token resolved.
+     * @param value 
+     * @param token 
+     */
+    protected onResolved(value: any, token?: Token): void {
+        this.get(InjectorEvent, null)?.emit('resolved', value, token);
+    }
 
+    /**
+     * register provider.
+     * @param platfrom 
+     * @param provider 
+     * @returns 
+     */
     protected registerProvider(platfrom: Platform, provider: StaticProviders) {
         if (provider.asDefault && this.has(provider.provide)) {
             return
@@ -263,11 +261,11 @@ export class DefaultInjector extends Injector {
         const types: Type[] = [];
         const platform = this.platform();
         deepForEach(args, ty => {
-            if (isFunction(ty)) {
-                const mdref = get<ModuleDef>(ty);
+            if (isType(ty)) {
+                const mdref = get(ty);
                 if (mdref) {
                     types.push(ty);
-                    this.registerReflect(platform, mdref, { injectorType: mdref.annotation.module })
+                    this.registerReflect(platform, mdref, { injectorType: mdref.getAnnotation<ModuleDef>().module })
 
                 }
             }
@@ -327,11 +325,11 @@ export class DefaultInjector extends Injector {
             notFoundValue = (isUndefined(arg1) ? THROW_FLAGE : arg1) as T
         }
         if (platform.hasSingleton(token)) return platform.getSingleton(token);
-        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.lifecycle)
+        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.onResolved.bind(this))
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks) {
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: (value: any, token: Token) => void) {
         return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, record?.stic ?? this.isStatic)
     }
 
@@ -362,7 +360,7 @@ export class DefaultInjector extends Injector {
 
         const result = this.get(token, context);
 
-        if (context && context !== args[0] && !context.injected) {
+        if (context && context !== args[0] && !context.used) {
             immediate(() => context!.destroy());
         }
         return result;
@@ -444,24 +442,6 @@ export class DefaultInjector extends Injector {
         return factory.invoke(propertyKey, context, instance)
     }
 
-
-    getLoader(): ModuleLoader {
-        return this.get(ModuleLoader)
-    }
-
-    load(modules: LoadType[]): Promise<Type[]>;
-    load(...modules: LoadType[]): Promise<Type[]>;
-    load(...args: any[]): Promise<Type[]> {
-        this.assertNotDestroyed();
-        let modules: LoadType[];
-        if (args.length === 1 && isArray(args[0])) {
-            modules = args[0]
-        } else {
-            modules = args
-        }
-        return this.getLoader().register(this, modules)
-    }
-
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
             throw new Execption('Injector has already been destroyed.')
@@ -475,37 +455,12 @@ export class DefaultInjector extends Injector {
         return this._destroyed
     }
     /**
-    * destroy this.
-    */
-    destroy(): void | Promise<void> {
-        if (!this.lifecycle.destroyable) {
-            return this.lifecycle.dispose()
-                .finally(() => {
-                    this.tryDestroy();
-                    if (this.scope === 'root') {
-                        return this.parent?.destroy()
-                    }
-                })
-        } else {
-            this.tryDestroy();
-            if (this.scope === 'root') {
-                return this.parent?.destroy()
-            }
-        }
-
+     * destroy this.
+     */
+    destroy(): void {
+        return this._destroying()
     }
 
-    private tryDestroy() {
-        if (this._destroyed) return;
-        this._destroyed = true;
-        try {
-            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
-            this.lifecycle?.runDestroy()
-        } finally {
-            this._dsryCbs.clear();
-            this.destroying()
-        }
-    }
 
     /**
      * destroy hook.
@@ -518,7 +473,7 @@ export class DefaultInjector extends Injector {
     onDestroy(callback: DestroyCallback): void;
     onDestroy(callback?: DestroyCallback): void {
         if (!callback) {
-            this.destroy()
+            this._destroying()
         } else {
             this._dsryCbs.add(callback)
         }
@@ -529,7 +484,22 @@ export class DefaultInjector extends Injector {
     }
 
 
-    protected destroying() {
+    private _destroying() {
+        if (this._destroyed) return;
+        this._destroyed = true;
+        try {
+            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+        } finally {
+            this._dsryCbs.clear();
+            this.clear()
+        }
+        if (this.scope === 'root') {
+            return this.parent?.destroy()
+        }
+    }
+
+
+    protected clear() {
         this.scope && this.platform()?.removeInjector(this.scope);
         this.records.forEach(r => {
             r.unreg && r.unreg()
@@ -537,11 +507,10 @@ export class DefaultInjector extends Injector {
         this.records.clear();
         this.records = null!;
         if (this.parent) {
-            !this.parent.destroyed && this.parent.offDestroy(this)
+            !this.parent.destroyed && (this.parent as DefaultInjector).offDestroy?.(this)
         }
         this._plat = null!;
         this.isAlias = null!;
-        this.lifecycle.clear();
         (this as any).parent = null!;
     }
 }
@@ -574,7 +543,7 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean) {
-    const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
+    const type = isType(typeOrDef) ? typeOrDef : typeOrDef.module;
     if (!isFunction(typeOrDef)) {
         deepForEach(
             typeOrDef.providers,
@@ -739,12 +708,12 @@ export class NullInjectorExecption extends Execption {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: (value: any, token: Token) => void, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, lifecycle, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
-            lifecycle.register(value, token)
+            lifecycle(value, token)
         }
         if (isDef && isStatic) {
             if (rd) {
@@ -773,7 +742,7 @@ const THROW_FLAGE = {};
  * @returns 
  */
 export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: LifecycleHooks, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: (value: any, token: Token) => void, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -844,55 +813,6 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
 
 
-export class DestroyLifecycleHooks extends LifecycleHooks {
-
-    init(injector: Injector): void {
-
-    }
-
-    get destroyable(): boolean {
-        return this.platform ? this.platform.modules.size < 1 : true
-    }
-
-    async dispose(): Promise<void> {
-        if (this.destroyable) return;
-        if (this.platform) {
-            const platform = this.platform;
-            this.platform = null!;
-            await Promise.all(Array.from(platform.modules.values())
-                .reverse()
-                .map(m => m.lifecycle.dispose()))
-        }
-    }
-
-    private _destrories: Set<OnDestroy>;
-    constructor(protected platform?: Platform) {
-        super()
-        this._destrories = new Set()
-    }
-
-    register(target: any, token: Token): void {
-        const { onDestroy } = (target as OnDestroy);
-        if (isFunction(onDestroy)) {
-            this.regDestory(target)
-        }
-    }
-
-    clear(): void {
-        this._destrories.clear()
-    }
-
-    runDestroy(): void {
-        this._destrories.forEach(d => d?.onDestroy())
-    }
-
-
-    protected regDestory(hook: OnDestroy): void {
-        this._destrories.add(hook)
-    }
-}
-
-
 /**
  * register core for root.
  *
@@ -900,7 +820,6 @@ export class DestroyLifecycleHooks extends LifecycleHooks {
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
-    container.setValue(ModuleLoader, new DefaultModuleLoader());
     const factory = new DefaultReflectiveFactory();
     container.setValue(ReflectiveFactory, factory);
     container.onDestroy(() => factory.destroy())

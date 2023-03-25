@@ -106,8 +106,8 @@ export class ServerStream extends TransportStream {
 
         let headRequest = false;
         const len = headers[hdr.CONTENT_LENGTH];
-        const hasPlayload = len ? true : false;
-        if (hasPlayload) {
+        const hasPayload = len ? true : false;
+        if (hasPayload) {
             headRequest = options.endStream = true;
         }
 
@@ -178,8 +178,8 @@ export class ServerStream extends TransportStream {
 
         this.write({ id: this.id, headers }, () => {
             const len = headers[hdr.CONTENT_LENGTH];
-            const hasPlayload = len ? true : false;
-            if (opts.endStream == true || !hasPlayload) {
+            const hasPayload = len ? true : false;
+            if (opts.endStream == true || !hasPayload) {
                 opts.endStream = true;
                 this.end();
             }

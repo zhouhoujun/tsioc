@@ -1,8 +1,8 @@
-
-import { Application, ApplicationContext, Module } from '@tsdi/core';
-import { ServerModule } from '../src';
+import { Module } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
+import { ServerModule } from '../src';
 
 
 @Module({

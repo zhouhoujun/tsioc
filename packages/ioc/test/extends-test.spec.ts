@@ -8,7 +8,7 @@ describe('extends test', () => {
     
     before(async () => {
         injector = Injector.create();
-        await injector.load(testModules);
+        injector.use(testModules);
     });
 
     it('should auto wried base class property', () => {

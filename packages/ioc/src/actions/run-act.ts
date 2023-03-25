@@ -41,7 +41,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
 
     next();
     // after create.
-    if (newCtx && !newCtx.injected) {
+    if (newCtx && !newCtx.used) {
         newCtx.destroy()
     }
 };
@@ -108,8 +108,8 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements Acti
  */
 export const BeforeCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getRuntimeHandle(Decors.beforeConstructor), ctx)
+        ctx.currDecor = d;
+        d.getRuntimeHandle && runChain(d.getRuntimeHandle(Decors.beforeConstructor), ctx)
     });
 
     return next()
@@ -139,8 +139,8 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements Actio
  */
 export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getRuntimeHandle(Decors.afterConstructor), ctx)
+        ctx.currDecor = d;
+        d.getRuntimeHandle && runChain(d.getRuntimeHandle(Decors.afterConstructor), ctx)
     });
 
     return next()
@@ -153,10 +153,10 @@ export const AfterCtorDecorHandle = function (ctx: RuntimeContext, next: () => v
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
-    if (!ctx.instance || ctx.singleton || !ctx.class.annotation.expires || ctx.class.annotation.expires <= 0) {
+    if (!ctx.instance || ctx.singleton || !ctx.class.getAnnotation().expires || ctx.class.getAnnotation().expires! <= 0) {
         return next()
     }
-    ctx.injector.cache(ctx.type, ctx.instance, ctx.class.annotation.expires);
+    ctx.injector.cache(ctx.type, ctx.instance, ctx.class.getAnnotation().expires!);
     return next()
 }
 
@@ -214,8 +214,8 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements Act
  */
 export const RuntimeAnnoDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getRuntimeHandle(Decors.CLASS), ctx)
+        ctx.currDecor = d;
+        d.getRuntimeHandle && runChain(d.getRuntimeHandle(Decors.CLASS), ctx)
     });
 
     return next()
@@ -229,8 +229,8 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements Acti
 }
 export const RuntimeMthDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.class.methodDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getRuntimeHandle(Decors.method), ctx)
+        ctx.currDecor = d;
+        d.getRuntimeHandle && runChain(d.getRuntimeHandle(Decors.method), ctx)
     });
 
     return next()
@@ -245,8 +245,8 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements Act
 
 export const RuntimePropDecorHandle = function (ctx: RuntimeContext, next: () => void) {
     ctx.class.propDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getRuntimeHandle(Decors.property), ctx)
+        ctx.currDecor = d;
+        d.getRuntimeHandle && runChain(d.getRuntimeHandle(Decors.property), ctx)
     });
 
     return next()

@@ -1,111 +1,30 @@
 import {
-    isUndefined, EMPTY_OBJ, isArray, lang, Type, createDecorator, ProviderType, InjectableMetadata,
-    PropertyMetadata, ModuleMetadata, DesignContext, ModuleDef, DecoratorOption, ActionTypes,
+    isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, TypeDef, ProviderMetadata, TypeMetadata, ProvidersMetadata, PatternMetadata, EMPTY, InvocationContext, Decors, isPromise, isObservable, pomiseOf
+    isString, Parameter, ProviderMetadata, Decors, OperationArgumentResolver, ParameterMetadata, createParamDecorator, TypeOf
 } from '@tsdi/ioc';
-import { ConfigureService } from './service';
 import { PipeTransform } from './pipes/pipe';
-import { Startup } from './startup';
-import { getModuleType } from './module.ref';
-import { Runnable, RunnableFactory } from './runnable';
-import { ApplicationRunners } from './runners';
-import { CanActivate } from './guard';
-import { map } from 'rxjs';
-import { ApplicationEvent, ApplicationEventMulticaster, PayloadApplicationEvent } from './events';
+import {
+    ApplicationDisposeEvent, ApplicationShutdownEvent,
+    ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
+} from './events';
+import { FilterHandlerResolver } from './filters/filter';
+import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
+import { ApplicationEvent } from './ApplicationEvent';
+import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
+import { TransportParameter, TransportParameterOptions } from './filters';
 
 
 /**
- * Module decorator, use to define class as ioc Module.
- *
- * @export
- * @interface Module
- * @template T
+ * Runner option.
  */
-export interface Module<T extends ModuleMetadata> {
-    /**
-     * Module decorator, use to define class as ioc Module.
-     *
-     * @Module
-     *
-     * @param {T} [metadata] bootstrap metadate config.
-     */
-    (metadata: T): ClassDecorator;
-}
-
-/**
- * create bootstrap decorator.
- *
- * @export
- * @template T
- * @param {string} name decorator name.
- * @param {DecoratorOption<T>} [options]
- * @returns {Module<T>}
- */
-export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
-    options = options || EMPTY_OBJ;
-    const hd = options.def?.class ?? EMPTY;
-    const append = options.appendProps;
-    return createDecorator<T>(name, {
-        ...options,
-        def: {
-            ...options.def,
-            class: [
-                (ctx, next) => {
-                    const def = ctx.class.getAnnotation<ModuleDef>();
-                    const metadata = def.annotation = ctx.define.metadata;
-                    def.module = true;
-                    def.providedIn = metadata.providedIn;
-                    def.baseURL = metadata.baseURL;
-                    def.debug = metadata.debug;
-                    def.providers = metadata.providers;
-                    if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = lang.getTypes(metadata.exports);
-                    if (metadata.declarations) def.declarations = lang.getTypes(metadata.declarations);
-                    if (metadata.bootstrap) def.bootstrap = lang.getTypes(metadata.bootstrap);
-                    return next()
-                },
-                ...isArray(hd) ? hd : [hd]
-            ]
-        },
-        design: {
-            beforeAnnoation: (context: DesignContext, next) => {
-                const { type, class: typeRef } = context;
-                // use as dependence inject module.
-                if (context.injectorType) {
-                    context.injectorType(type, typeRef)
-                }
-                next()
-            }
-        },
-        appendProps: (meta) => {
-            if (append) {
-                append(meta as T)
-            }
-        }
-    }) as Module<T>;
-}
-
-/**
- * Module Decorator, definde class as module.
- *
- * @Module
- * @exports {@link Module}
- */
-export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
-/**
- * Module Decorator, definde class as module.
- * alias of @Module
- * @alias
- */
-export const DIModule = Module;
-
-export interface RunnerOption extends InvokeArguments {
+export interface RunnerOption extends BootstrapOption {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
     parameters?: Parameter[];
 }
+
 /**
  * Runner decorator, use to define the method of class as application Runner.
  */
@@ -125,9 +44,12 @@ export interface Runner {
      * 
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
-    (args?: InvokeArguments): MethodDecorator;
+    (args?: BootstrapOption): MethodDecorator;
 }
 
+/**
+ * @Runner decorator.
+ */
 export const Runner: Runner = createDecorator('Runner', {
     actionType: 'runnable',
     props: (method: string | RunnerOption, args?: RunnerOption) =>
@@ -138,76 +60,6 @@ export const Runner: Runner = createDecorator('Runner', {
         if (meta.args?.parameters) {
             ctx.class.setParameters(meta.method, meta.args.parameters)
         }
-    }
-});
-
-
-/**
- * ComponentScan decorator.
- */
-export type ComponentScanDecorator = <TFunction extends Type<Startup | ConfigureService | Runnable>>(target: TFunction) => TFunction | void;
-
-/**
- * ComponentScan decorator, use to auto scan server or client for application.
- *
- * @export
- * @interface Configure
- */
-export interface ComponentScan {
-    /**
-     * Configure decorator, use to auto scan server or client for application.
-     *
-     * @Configure()
-     */
-    (option?: {
-        /**
-         * order in set.
-         */
-        order?: number;
-        /**
-         * provider services of the class.
-         *
-         * @type {KeyValue<Token, Token>}
-         */
-        providers?: ProviderType[];
-    }): ComponentScanDecorator;
-}
-
-/**
- * Configure decorator, use to auto scan server or client for application.
- * 
- * @exports {@link ComponentScan}
- */
-export const ComponentScan: ComponentScan = createDecorator<ComponentScanMetadata>('ComponentScan', {
-    actionType: ActionTypes.annoation,
-    def: {
-        class: (ctx, next) => {
-            ctx.class.getAnnotation<ScanDef>().order = (ctx.define.metadata as ComponentScanMetadata).order;
-            next()
-        }
-    },
-    design: {
-        afterAnnoation: (ctx, next) => {
-            const { type, injector } = ctx;
-            const def = ctx.class.getAnnotation<ScanDef>();
-            const runners = injector.get(ApplicationRunners);
-            const typeRef = injector.get(ReflectiveFactory).create(type, injector);
-            if (ctx.class.runnables.length || ctx.class.hasMetadata('run')) {
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector);
-                runners.addRunnable(runner, def.order)
-            } else if (ctx.class.hasMethod('startup')) {
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'startup' });
-                runners.addStartup(runner, def.order)
-            } else if (ctx.class.hasMethod('configureService')) {
-                const runner = typeRef.resolve(RunnableFactory).create(type, injector, { defaultInvoke: 'configureService' });
-                runners.addConfigureService(runner, def.order)
-            }
-            return next()
-        }
-    },
-    appendProps: (meta) => {
-        meta.singleton = true;
-        return meta
     }
 });
 
@@ -267,7 +119,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
 /**
  * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
  */
-export interface Bean {
+export interface BeanDecorator {
     /**
      * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
      * @param {Token} provide the value of the method or property for the provide token.
@@ -278,7 +130,7 @@ export interface Bean {
 /**
  * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
  */
-export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
+export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token) => ({ provide }),
     afterInit: (ctx) => {
         const metadata = ctx.define.metadata as BeanMetadata & PropertyMetadata;
@@ -295,7 +147,7 @@ export const Bean: Bean = createDecorator<BeanMetadata>('Bean', {
 /**
  * Configuartion decorator, define the class as auto Configuration provider.
  */
-export interface Configuration {
+export interface ConfigurationDecorator {
     /**
      * Configuartion decorator, define the class as auto Configuration provider.
      * @Configuartion
@@ -307,14 +159,14 @@ export interface Configuration {
  * Configuartion decorator, define the class as auto Configuration provider.
  * @Configuartion
  */
-export const Configuration: Configuration = createDecorator<InjectableMetadata>('Configuration', {
+export const Configuration: ConfigurationDecorator = createDecorator<InjectableMetadata>('Configuration', {
     actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
 
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
-            const pdrs = typeRef.decors.filter(d => d.decor === '@Bean')
+            const pdrs = typeRef.defs.filter(d => d.decor === Bean)
                 .map(d => {
                     const key = d.propertyKey;
                     const { provide } = d.metadata as BeanMetadata;
@@ -340,6 +192,10 @@ export const Configuration: Configuration = createDecorator<InjectableMetadata>(
     }
 });
 
+/**
+ * event hander.
+ * @EventHandler
+ */
 export interface EventHandler {
 
     /**
@@ -347,50 +203,187 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    (option?: {
-        /**
-         * order.
-         */
-        order?: number;
-    }): MethodDecorator;
+    (option?: BootstrapOption): MethodDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    (event: Type<ApplicationEvent>, option?: {
-        /**
-         * order.
-         */
-        order?: number;
-    }): MethodDecorator;
+    (event: Type<ApplicationEvent>, option?: BootstrapOption): MethodDecorator;
 }
 
-export const EventHandler: EventHandler = createDecorator('EventHandler', {
+function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler') {
+    return createDecorator(name, {
+        props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
+        design: {
+            method: (ctx, next) => {
+                const typeRef = ctx.class;
+                const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
+                const injector = ctx.injector;
+                const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'event');
+                const multicaster = injector.get(ApplicationEventMulticaster);
+                decors.forEach(decor => {
+                    const { filter, order, ...options } = decor.metadata;
+
+                    const endpoint = factory.create(decor.propertyKey, options);
+
+                    multicaster.addListener(filter ?? defaultFilter, endpoint, order)
+                });
+
+                next()
+            }
+        }
+    })
+}
+
+/**
+ * event hander.
+ * @EventHandler
+ */
+export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent);
+
+
+/**
+ * event handler metadata.
+ */
+export interface EventHandlerMetadata extends BootstrapOption {
+    /**
+     * execption type.
+     */
+    filter: Type;
+}
+
+/**
+ * Application start event hander.
+ * @Start
+ */
+export interface StartEventHandler {
+
+    /**
+     * Application start event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application start event hander.
+ * @Start
+ */
+export const Start: StartEventHandler = createEventHandler(ApplicationStartEvent, 'Start');
+
+/**
+ * Application started event hander.
+ * @Started
+ */
+export interface StartedEventHandler {
+
+    /**
+     * Application started event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application Started event hander.
+ * @Start
+ */
+export const Started: StartedEventHandler = createEventHandler(ApplicationStartedEvent, 'Started');
+
+
+/**
+ * Application Shutdown event hander.
+ * @Shutdown
+ */
+export interface ShutdownEventHandler {
+
+    /**
+     * Application Shutdown event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application Shutdown event hander.
+ * @Shutdown
+ */
+export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown');
+
+
+/**
+ * Application Dispose event hander.
+ * @Dispose
+ */
+export interface DisposeEventHandler {
+
+    /**
+     * Application Dispose event handle.
+     *
+     * @param {BootstrapOption} option message match option.
+     */
+    (option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * Application Shutdown event hander.
+ * @Dispose
+ */
+export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose');
+
+
+/**
+ * Endpoint handler metadata.
+ */
+export interface EndpointHandlerMetadata extends BootstrapOption {
+    /**
+     * execption type.
+     */
+    filter: Type | string;
+}
+
+
+
+/**
+ * EndpointHanlder decorator, for class. use to define the class as response handle register in global Endpoint filter.
+ *
+ * @export
+ * @interface EndpointHanlder
+ */
+export interface EndpointHanlder {
+    /**
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     *
+     * @param {Type} filter message match pattern.
+     * @param {order?: number } option message match option.
+     */
+    (filter: Type | string, option?: BootstrapOption): MethodDecorator;
+}
+
+/**
+ * EndpointHanlder decorator, for class. use to define the class as Endpoint handle register in global Endpoint filter.
+ * @EndpointHanlder
+ * 
+ * @exports {@link EndpointHanlder}
+ */
+export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder', {
     props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
+            const decors = typeRef.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'filter');
+            const handlerResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
-                const { filter, order, guards } = decor.metadata;
-
-
-                const invoker = factory.createInvoker(decor.propertyKey, true, async (ctx, run) => {
-                    if (guards && guards.length) {
-                        if (!(await lang.some(
-                            guards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(ctx))),
-                            vaild => vaild === false))) {
-                            return;
-                        }
-                    }
-                    return run(ctx);
-                });
-
-                injector.get(ApplicationEventMulticaster).addListener(filter ?? PayloadApplicationEvent, invoker, order)
+                const { filter, order, ...options } = decor.metadata;
+                const endpoint = factory.create(decor.propertyKey, options);
+                handlerResolver.addHandle(filter, endpoint, order)
             });
 
             next()
@@ -400,68 +393,29 @@ export const EventHandler: EventHandler = createDecorator('EventHandler', {
 
 
 /**
- * event handler metadata.
- */
-export interface EventHandlerMetadata {
-    /**
-     * execption type.
-     */
-    filter: Type;
-    /**
-     * order.
-     */
-    order?: number;
-    /**
-     * route guards.
-     */
-    guards?: Type<CanActivate>[];
-}
-
-
-/**
- * Boot metadata.
+ * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
  *
  * @export
- * @interface BootMetadata
- * @extends {ClassMetadata}
+ * @interface ExecptionHandler
  */
-export interface BootMetadata extends TypeMetadata, PatternMetadata {
+export interface ExecptionHandler {
     /**
-     * the startup service dependencies.
-     */
-    deps?: Type<ConfigureService>[];
-    /**
-     * this service startup before the service, or at first
-     */
-    before?: Type<ConfigureService> | 'all';
-    /**
-     * this service startup after the service, or last.
-     */
-    after?: Type<ConfigureService> | 'all';
-}
-
-/**
- * component scan metadata.
- */
-export interface ComponentScanMetadata extends TypeMetadata, ProvidersMetadata {
-    /**
-     * order in set.
-     */
-    order?: number;
-    /**
-     * is singleton or not.
+     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @type {boolean}
+     * @param {string} pattern message match pattern.
+     * @param {order?: number } option message match option.
      */
-    singleton?: boolean;
+    (execption: Type<Error>, option?: BootstrapOption): MethodDecorator;
 }
 
 /**
- * scan def.
+ * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ * @ExecptionHandler
+ * 
+ * @exports {@link ExecptionHandler}
  */
-export interface ScanDef extends TypeDef {
-    order?: number;
-}
+export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
+
 
 /**
  * pipe metadata.
@@ -494,3 +448,31 @@ export interface BeanMetadata {
      */
     provide: Token;
 }
+
+
+export interface TransportParameterDecorator {
+    /**
+     * Request Parameter decorator
+     *
+     * @param {string} field field of request query params or body.
+     * @param options route metedata options.
+     */
+    (field?: string, option?: TransportParameterOptions): ParameterDecorator;
+    /**
+     * Transport Parameter decorator
+     * @param meta.
+     */
+    (meta: TransportParameter): ParameterDecorator;
+}
+
+/**
+ * Request body param decorator.
+ * 
+ * @exports {@link TransportParameterDecorator}
+ */
+export const Payload: TransportParameterDecorator = createParamDecorator('Payload', {
+    props: (field: string, pipe?: { pipe: string | TypeOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    appendProps: meta => {
+        meta.scope = 'payload'
+    }
+});

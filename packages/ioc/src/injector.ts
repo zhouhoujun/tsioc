@@ -1,17 +1,14 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { ClassType, EMPTY, LoadType, Modules, Type } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
+import { ClassType, EMPTY, Modules, Type } from './types';
+import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, StaticProvider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
-import { Handler } from './handler';
-import { Action } from './action';
 import { InvocationContext, InvokeArguments } from './context';
-import { ModuleLoader } from './module.loader';
-import { LifecycleHooks } from './lifecycle';
 import { Execption } from './execption';
+import { Platform } from './platform';
 
 /**
  * injector.
@@ -33,10 +30,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * platform.
      */
     abstract platform(): Platform;
-    /**
-     * lifecycle hooks.
-     */
-    abstract get lifecycle(): LifecycleHooks;
     /**
      * registered tokens.
      */
@@ -143,10 +136,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     abstract cache<T>(token: Token<T>, instance: T, expires: number): this;
     /**
-     * parse
+     * inject providers
      * @param providers
      */
-    abstract inject(providers: ProviderType[]): this;
+    abstract inject(providers: ProviderType | ProviderType[]): this;
     /**
      * inject providers.
      *
@@ -226,26 +219,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {TR} the returnning of invoked method.
      */
     abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    /**
-     * get module loader.
-     *
-     * @returns instance of {@link ModuleLoader}.
-     */
-    abstract getLoader(): ModuleLoader;
-    /**
-    * load modules.
-    *
-    * @param {LoadType[]} modules load modules, array of {@link LoadType}.
-    * @returns {Promise<Type[]>} async returnning array of class type.
-    */
-    abstract load(modules: LoadType[]): Promise<Type[]>;
-    /**
-     * load modules.
-     *
-     * @param {...LoadType[]} modules load modules, ...params of {@link LoadType}.
-     * @returns {Promise<Type[]>} async returnning array of class type.
-     */
-    abstract load(...modules: LoadType[]): Promise<Type[]>;
 
     /**
      * injector has destoryed or not.
@@ -254,7 +227,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
     * destroy this.
     */
-    abstract destroy(): void | Promise<void>;
+    abstract destroy(): void;
     /**
      * destroy hook.
      */
@@ -264,13 +237,13 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param callback destroy callback
      */
     abstract onDestroy(callback: DestroyCallback): void;
+
     /**
-     * unregister destroy callback.
-     * @param callback 
+     * register provider.
+     * @param platfrom 
+     * @param provider 
+     * @returns 
      */
-    abstract offDestroy(callback: DestroyCallback): void;
-
-
     protected abstract processRegister(platform: Platform, def: Class, option?: TypeOption): void;
 
     /**
@@ -295,111 +268,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
     }
 }
 
-export interface ModuleRef<T = any> extends Destroyable {
-    get lifecycle(): LifecycleHooks;
-    get injector(): Injector;
-    get moduleType(): Type<T>;
-    get instance(): T;
-}
-
-/**
- * platform of {@link Container}.
- */
-@Abstract()
-export abstract class Platform implements OnDestroy {
-    /**
-     * registered modules.
-     */
-    abstract get modules(): Map<Type, ModuleRef>;
-    /**
-     * platform injector.
-     */
-    abstract get injector(): Injector;
-    /**
-     * set singleton value
-     * @param token 
-     * @param value 
-     */
-    abstract registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this;
-    /**
-     * get singleton instance.
-     * @param token 
-     */
-    abstract getSingleton<T>(token: Token<T>): T;
-    /**
-     * has singleton or not.
-     * @param token 
-     */
-    abstract hasSingleton(token: Token): boolean;
-    /**
-     * set injector scope.
-     * @param scope 
-     * @param injector 
-     */
-    abstract setInjector(scope: InjectorScope, injector: Injector): void;
-    /**
-     * get injector the type registered in.
-     * @param scope
-     */
-    abstract getInjector(scope: InjectorScope): Injector;
-    /**
-     * remove injector of scope.
-     * @param scope 
-     */
-    abstract removeInjector(scope: InjectorScope): void;
-    /**
-     * get the type private providers.
-     * @param type
-     */
-    abstract getTypeProvider(type: ClassType | Class): ProviderType[];
-    /**
-     * set type providers.
-     * @param type
-     * @param providers
-     */
-    abstract setTypeProvider(type: ClassType | Class, providers: ProviderType[]): void;
-    /**
-     * clear type provider.
-     * @param type 
-     */
-    abstract clearTypeProvider(type: ClassType): void;
-    /**
-    * register action, simple create instance via `new type(this)`.
-    * @param types
-    */
-    abstract registerAction(...types: Type<Action>[]): this;
-    /**
-     * has action.
-     * @param token action token.
-     */
-    abstract hasAction(token: Token): boolean;
-    /**
-     * get action instace in current .
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Injector} provider
-     * @returns {T}
-     */
-    abstract getAction<T>(token: Token<T>, notFoundValue?: T): T
-    /**
-     * get action handle.
-     * @param target target.
-     */
-    abstract getHandle<T extends Handler>(target: Token<Action>): T;
-    /**
-     * set value.
-     * @param token 
-     * @param value 
-     * @param provider 
-     */
-    abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
-    /**
-     * destroy hook.
-     */
-    abstract onDestroy(): void;
-}
 
 /**
  * object is provider map or not.
@@ -417,6 +285,11 @@ export function isInjector(target: any): target is Injector {
 */
 @Abstract()
 export abstract class Container extends Injector { }
+
+@Abstract()
+export abstract class InjectorEvent {
+    abstract emit(event: 'register' | 'registered' | 'resolved', ...data: any[]): any;
+}
 
 
 /**
@@ -512,7 +385,6 @@ export interface FactoryRecord<T = any> {
      * @type {*}
      */
     value?: any;
-
     /**
      * factory.
      */
@@ -521,19 +393,18 @@ export interface FactoryRecord<T = any> {
      * fn type.
      */
     fy?: FnType;
-
+    /**
+     * deps.
+     */
     deps?: DependencyRecord[];
-
     /**
      * token provider type.
      */
     type?: Type<T>;
-
     /**
      * is static for fn create once.
      */
     stic?: boolean;
-
     /**
      * cache value.
      */
@@ -546,7 +417,6 @@ export interface FactoryRecord<T = any> {
      * cache expires.
      */
     expires?: number;
-
     /**
      * unregister callback.
      */

@@ -1,28 +1,34 @@
 import { ClassType, Type } from '../types';
 import { Class } from '../metadata/type';
-import { isBoolean, isFunction, isPromise } from '../utils/chk';
+import { isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { createContext, InvocationContext, InvokeArguments, } from '../context';
+import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { ReflectiveRef, ReflectiveFactory } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
-import { OperationInvoker, Proceed } from '../operation';
+import { OperationInvoker } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
-import { hasItem, immediate } from '../utils/lang';
+import { getClassName, hasItem, immediate } from '../utils/lang';
+import { Execption } from '../execption';
 
 
+/**
+ * reflective
+ */
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     private _tagPdrs: ProviderType[] | undefined;
     private _type: Type<T>;
+    private _typeName: string;
     private _instance?: T;
     private _ctx: InvocationContext;
     private _mthCtx: Map<string, InvocationContext | null>;
     constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments) {
         super()
         this._type = _class.type as Type<T>;
+        this._typeName = getClassName(this._type);
         this._ctx = this.createContext(injector, options);
         this._mthCtx = new Map();
         this._ctx.setValue(ReflectiveRef, this);
@@ -38,6 +44,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 
     getInstance(): T {
+        this.assertNotDestroyed();
         if (!this._instance) {
             this._instance = this.resolve(this.type);
         }
@@ -46,40 +53,45 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
 
     resolve<R>(token: Token<R>): R {
+        this.assertNotDestroyed();
         return this._ctx.resolveArgument({ provider: token, nullable: true })!
     }
 
     invoke(method: MethodType<T>, option?: InvokeArguments | InvocationContext, instance?: T) {
-        const [context, key, destroy] = this.createMethodContext(method, option);
-        return this.class.invoke(key, context, instance ?? this.getInstance(), (ctx, run) => {
-            const result = run(ctx);
-            if (destroy) {
-                const act = destroy as (() => void);
-                if (isPromise(result)) {
-                    return result.then(val => {
-                        immediate(act);
-                        return val;
-                    })
-                } else {
+        this.assertNotDestroyed();
+        const name = this.class.getMethodName(method);
+        const [context, destroy] = this.createMethodContext(name, option);
+        const args = this.class.resolveArguments(name, context);
+        const result = this.class.invoke(name, context, instance ?? this.getInstance(), args);
+
+        if (destroy) {
+            const act = destroy as (() => void);
+            if (isPromise(result)) {
+                return result.then(val => {
                     immediate(act);
-                }
+                    return val;
+                })
+            } else {
+                immediate(act);
             }
-            return result;
-        })
+        }
+        return result;
+
     }
 
     resolveArguments(method: MethodType<T>, option?: InvokeArguments | InvocationContext) {
-        const [context, key, destroy] = this.createMethodContext(method, option);
-        const args = this.class.resolveArguments(key, context);
+        this.assertNotDestroyed();
+        const name = this.class.getMethodName(method);
+        const [context, destroy] = this.createMethodContext(name, option);
+        const args = this.class.resolveArguments(name, context);
         if (destroy) {
             destroy()
         }
         return args
     }
 
-    protected createMethodContext(method: MethodType<T>, option?: InvokeArguments | InvocationContext): [InvocationContext, string, Function | undefined] {
-        const key = isFunction(method) ? this.class.getPropertyName(method(this.class.getPropertyDescriptors() as any)) : method;
-        const ctx = this.getContext(key);
+    protected createMethodContext(method: string, option?: InvokeArguments | InvocationContext): [InvocationContext, Function | undefined] {
+        const ctx = this.getContext(method);
         let context: InvocationContext;
         let destroy: Function | undefined;
         if (option instanceof InvocationContext) {
@@ -87,7 +99,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             const ext = ctx !== context;
             ext && context.addRef(ctx);
             destroy = () => {
-                if (context.injected) return;
+                if (context.used) return;
                 ext && context.removeRef(ctx);
             }
         } else if (option) {
@@ -96,7 +108,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
                     context = createContext(option.parent!, option);
                     context.addRef(ctx);
                     destroy = () => {
-                        if (context.injected) return;
+                        if (context.used) return;
                         context.removeRef(ctx);
                         context.destroy()
                     }
@@ -104,14 +116,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
                     context = option.parent!;
                     context.addRef(ctx);
                     destroy = () => {
-                        if (context.injected) return;
+                        if (context.used) return;
                         context.removeRef(ctx);
                     }
                 }
             } else if (hasContext(option)) {
                 context = createContext(ctx, option);
                 destroy = () => {
-                    if (context.injected) return;
+                    if (context.used) return;
                     context.destroy()
                 }
             } else {
@@ -121,10 +133,11 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             context = ctx;
         }
 
-        return [context, key, destroy]
+        return [context, destroy]
     }
 
     getContext(method?: string) {
+        this.assertNotDestroyed();
         if (!method) return this._ctx;
         let ctx = this._mthCtx.get(method);
         if (ctx === undefined) {
@@ -140,8 +153,24 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return ctx ?? this._ctx;
     }
 
-    createInvoker(method: string, instance?: boolean | T | (() => T), proceeding?: Proceed<T>): OperationInvoker {
-        return new ReflectiveOperationInvoker(this.class, method, isBoolean(instance) ? this.getInstance.bind(this) : instance, proceeding)
+    /**
+     * create method invoker of target type.
+     * @param method the method name of target.
+     * @param proceed proceeding invoke with hooks
+     * @returns instance of {@link OperationInvoker}.
+     */
+    createInvoker(method: string): OperationInvoker;
+    /**
+     * create method invoker of target type.
+     * @param method the method name of target.
+     * @param instance instance or instance factory of target type.
+     * @param proceed proceeding invoke with hooks
+     * @returns instance of {@link OperationInvoker}.
+     */
+    createInvoker(method: string, instance?: T | (() => T)): OperationInvoker;
+    createInvoker(method: string, instance?: boolean | T | (() => T)): OperationInvoker {
+        this.assertNotDestroyed();
+        return new ReflectiveOperationInvoker(this, method, instance ?? this.getInstance.bind(this))
     }
 
     protected createContext(injector: Injector, option?: InvokeArguments): InvocationContext<any> {
@@ -168,6 +197,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     get destroyed(): boolean {
         return this._destroyed;
     }
+
     /**
      * destroy this.
      */
@@ -181,6 +211,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         this._destroyed = true;
         return this._ctx.destroy()
     }
+
     /**
      * register callback on destroy.
      * @param callback destroy callback
@@ -190,6 +221,12 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             return this.destroy();
         }
         this._ctx.onDestroy(callback);
+    }
+
+    protected assertNotDestroyed(): void {
+        if (this.destroyed) {
+            throw new Execption(`ReflectiveRef of ${this._typeName} has already been destroyed.`)
+        }
     }
 }
 

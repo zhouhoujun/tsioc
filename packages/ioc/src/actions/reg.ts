@@ -16,8 +16,8 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if(!ctx.class){
         ctx.class = get(ctx.type)
     }
-    if (ctx.class.annotation.singleton) {
-        ctx.singleton = ctx.class.annotation.singleton
+    if (ctx.class.getAnnotation().singleton) {
+        ctx.singleton = ctx.class.getAnnotation().singleton!;
     }
 
     if (next) {

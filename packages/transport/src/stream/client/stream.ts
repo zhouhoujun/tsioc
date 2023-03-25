@@ -39,8 +39,8 @@ export class ClientStream extends TransportStream {
 
         this.write({ id: this.id, headers }, () => {
             const len = headers[hdr.CONTENT_LENGTH];
-            const hasPlayload = len ? true : false;
-            if (opts.endStream == true || !hasPlayload) {
+            const hasPayload = len ? true : false;
+            if (opts.endStream == true || !hasPayload) {
                 opts.endStream = true;
                 this.end();
             }

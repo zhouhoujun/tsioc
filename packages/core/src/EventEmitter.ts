@@ -19,12 +19,12 @@ export class EventEmitter<T = any> extends Subject<T | undefined> {
     emit(value?: T) { super.next(value); }
 
     /**
-   * Registers handlers for events emitted by this instance.
-   * @param next When supplied, a custom handler for emitted events.
-   * @param error When supplied, a custom handler for an error notification from this emitter.
-   * @param complete When supplied, a custom handler for a completion notification from this
-   *     emitter.
-   */
+     * Registers handlers for events emitted by this instance.
+     * @param next When supplied, a custom handler for emitted events.
+     * @param error When supplied, a custom handler for an error notification from this emitter.
+     * @param complete When supplied, a custom handler for a completion notification from this
+     *     emitter.
+     */
     subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription;
     /**
     * Registers handlers for events emitted by this instance.

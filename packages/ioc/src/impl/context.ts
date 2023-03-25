@@ -1,17 +1,17 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { forIn, remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isClassType, isDefined, isFunction, isString, isNil } from '../utils/chk';
+import { remove, getClassName } from '../utils/lang';
+import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass, isPrimitive } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { InjectFlags, Token } from '../tokens';
+import { InjectFlags, Token, tokenId } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
+import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
-import { Class } from '../metadata/type';
 
 
 
@@ -20,7 +20,6 @@ import { Class } from '../metadata/type';
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
 
-    protected _args: T;
     protected _refs: InvocationContext[];
     protected _methodName?: string;
     private _injected = false;
@@ -45,7 +44,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     constructor(
         injector: Injector,
-        options: InvocationOption = EMPTY_OBJ) {
+        options: InvocationOption<T> = EMPTY_OBJ) {
         super();
         this._refs = [];
         this.injector = this.createInjector(injector, options.providers);
@@ -54,7 +53,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             const parent = options.parent;
             this.addRef(parent);
             parent.onDestroy(() => {
-                this.removeRef(parent);
+                !this.destroyed && this.removeRef(parent);
             });
         }
 
@@ -63,16 +62,31 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
                 this.injector.setValue(par[0], par[1]);
             })
         }
-        this._args = options.arguments;
-        if (this._args) {
-            forIn(this._args, (v, k) => {
-                this.injector.setValue(k, v)
-            })
+
+        const args = options.arguments;
+        if (args) {
+            if (isType(args)) {
+                this.injector.inject({ provide: CONTEXT_ARGS, useExisting: args });
+            } else {
+                this.injector.setValue(CONTEXT_ARGS, args);
+                const argType = getClass(args);
+                if (!isPrimitive(argType)) {
+                    this.injector.setValue(argType, args);
+                }
+            }
         }
 
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
+    }
+
+    /**
+     * get context arguments resolvers.
+     * @returns 
+     */
+    protected getArgumentResolver(): OperationArgumentResolver[] {
+        return EMPTY;
     }
 
     private _resolvers?: OperationArgumentResolver[];
@@ -81,7 +95,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     protected getResolvers(): OperationArgumentResolver[] {
         if (!this._resolvers) {
-            this._resolvers = [...this.injector.get(this.getResolvesToken(), EMPTY), ...this.getDefaultResolvers()];
+            this._resolvers = [
+                ...this.getArgumentResolver(),
+                ...this.injector.get(this.getResolvesToken(), EMPTY),
+                ...this.getDefaultResolvers()
+            ];
         }
         return this._resolvers;
     }
@@ -98,7 +116,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return isFunction(resolver) ? { provide: this.getResolvesToken(), useClass: resolver as Type, multi: true } : { provide: this.getResolvesToken(), useValue: resolver, multi: true } as ProviderType
     }
 
-
     protected createInjector(injector: Injector, providers?: ProviderType[]) {
         return Injector.create(providers, injector, Scopes.static)
     }
@@ -108,6 +125,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
      */
     addRef(...contexts: InvocationContext[]): void {
+        this.assertNotDestroyed();
         contexts.forEach(j => {
             if (!this.hasRef(j)) {
                 this._refs.unshift(j)
@@ -120,10 +138,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param context instance of {@link InvocationContext}.
      */
     removeRef(context: InvocationContext): void {
+        this.assertNotDestroyed();
         remove(this._refs, context)
     }
 
     hasRef(ctx: InvocationContext): boolean {
+        this.assertNotDestroyed();
         return ctx === this && this._refs.indexOf(ctx) >= 0;
     }
 
@@ -131,10 +151,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * the invocation arguments.
      */
     get arguments(): T {
-        return this._args
+        return this.injector.get<T>(CONTEXT_ARGS);
     }
 
-    get injected(): boolean {
+    get used(): boolean {
         return this._injected
     }
 
@@ -149,6 +169,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns the instance of token.
      */
     getValueify<T>(token: Token<T>, factory: () => T): T {
+        this.assertNotDestroyed();
         let value = this.get(token);
         if (isNil(value)) {
             value = factory();
@@ -164,6 +185,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns boolean.
      */
     has(token: Token, flags?: InjectFlags): boolean {
+        this.assertNotDestroyed();
         if (this.isSelf(token)) return true;
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs.some(i => i.has(token, flags))
@@ -185,6 +207,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
     get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
+        this.assertNotDestroyed();
         if (this.isSelf(token)) {
             this._injected = true;
             return this as any
@@ -216,6 +239,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param value value for the token.
      */
     setValue<T>(token: Token<T>, value: T) {
+        this.assertNotDestroyed();
         this.injector.setValue(token, value);
         return this
     }
@@ -242,6 +266,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns the parameter value in this context.
      */
     resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
+        this.assertNotDestroyed();
         let result: T | null | undefined;
         let canResolved = false;
         const metaRvr = this.getMetaReolver(meta);
@@ -282,7 +307,24 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this._destroyed
     }
 
-    destroy(): void | Promise<void> {
+    protected assertNotDestroyed(): void {
+        if (this.destroyed) {
+            throw new Execption('Context has already been destroyed.')
+        }
+    }
+
+    destroy(): void {
+        return this._destroying()
+    }
+
+    onDestroy(callback?: DestroyCallback): void {
+        if (!callback) {
+            return this._destroying()
+        }
+        this._dsryCbs.add(callback)
+    }
+
+    private _destroying() {
         if (!this._destroyed) {
             this._destroyed = true;
 
@@ -297,21 +339,17 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         }
     }
 
-    onDestroy(callback?: DestroyCallback): void | Promise<void> {
-        if (!callback) {
-            return this.destroy()
-        }
-        this._dsryCbs.add(callback)
-    }
-
     protected clear() {
-        this._args = null!;
         this._resolvers = null!;
         this._refs = null!;
     }
 
 }
 
+/**
+ * context arguments token.
+ */
+export const CONTEXT_ARGS = tokenId('CONTEXT_ARGS');
 
 /**
  * Missing argument execption.
@@ -339,7 +377,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `[${obj.map(v => object2string(v, options)).join(', ')}]`
     } else if (isString(obj)) {
         return `"${obj}"`
-    } else if (isClassType(obj)) {
+    } else if (isType(obj)) {
         return 'Type<' + getClassName(obj) + '>'
     } else if (obj instanceof Class) {
         return `[${obj.className} TypeReflect]`

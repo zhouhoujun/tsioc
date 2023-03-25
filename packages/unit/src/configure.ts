@@ -1,5 +1,5 @@
-import { lang, ProviderType, tokenId } from '@tsdi/ioc';
-import { Application, ApplicationContext, ComponentScan, ConfigureService } from '@tsdi/core';
+import { Injectable, lang, ProviderType, tokenId } from '@tsdi/ioc';
+import { Application, ApplicationContext, Start } from '@tsdi/core';
 import * as assert from 'assert';
 import * as expect from 'expect';
 import { UnitTestConfigure } from './UnitTestConfigure';
@@ -16,9 +16,10 @@ export const UNITTESTCONFIGURE = tokenId<UnitTestConfigure>('UNITTESTCONFIGURE')
  * @class UnitTestConfigureRegister
  * @extends {ConfigureRegister}
  */
-@ComponentScan()
-export class UnitTestConfigureService implements ConfigureService {
+@Injectable()
+export class UnitTestConfigureService {
 
+    @Start()
     async configureService(ctx: ApplicationContext): Promise<void> {
         const config = ctx.get(UNITTESTCONFIGURE);
         const inj = ctx.injector;
@@ -36,6 +37,4 @@ export class UnitTestConfigureService implements ConfigureService {
             inj.inject(config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as ProviderType)))
         }
     }
-
-    destroy(): void { }
 }

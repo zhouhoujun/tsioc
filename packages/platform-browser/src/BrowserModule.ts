@@ -1,6 +1,8 @@
-import { Module, PROCESS_ROOT, global } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
+import { PROCESS_ROOT, global } from '@tsdi/core';
 import { BrowserXhr } from './xhr';
 import { XhrFactory, PLATFORM_ID, PLATFORM_BROWSER_ID, DOCUMENT } from '@tsdi/common';
+
 
 
 const processRoot = global.baseURL || '.';

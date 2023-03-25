@@ -132,7 +132,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
                 target,
                 advices,
                 originMethod: propertyMethod,
-                annotations: targetRef.decors.filter(d => d.propertyKey === name),
+                annotations: targetRef.defs.filter(d => d.propertyKey === name),
                 parent
             });
             if (parent) {
@@ -171,7 +171,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements Proceeding
             if (metadata.annotationName) {
                 let d: string = metadata.annotationName;
                 d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-                joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor == d).map(d => d.metadata) : [])
+                joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor.toString() == d).map(d => d.metadata) : [])
             } else {
                 joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? [])
             }

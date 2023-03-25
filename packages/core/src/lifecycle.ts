@@ -1,5 +1,4 @@
-import { Abstract, LifecycleHooks, OnDestroy } from '@tsdi/ioc';
-import { ApplicationEventMulticaster } from './events';
+import { OnDestroy } from '@tsdi/ioc';
 
 
 /**
@@ -19,7 +18,7 @@ export interface OnApplicationStart {
     /**
      * start hooks
      */
-    onApplicationStart(): void | Promise<void>;
+    onApplicationStart(): void;
 }
 
 /**
@@ -29,24 +28,8 @@ export interface OnApplicationShutdown {
     /**
      * shutdown hooks
      */
-    onApplicationShutdown(): void | Promise<void>;
+    onApplicationShutdown(): void;
 }
 
 
 export type Hooks = OnApplicationStart & OnApplicationShutdown & OnDispose & OnDestroy;
-
-/**
- * module lifecycle hooks
- */
-@Abstract()
-export abstract class ModuleLifecycleHooks extends LifecycleHooks {
-    /**
-     * invoked dispose or not
-     */
-    abstract get disposed(): boolean;
-    /**
-     * invoked shutdown or not.
-     */
-    abstract get shutdown(): boolean;
-
-}

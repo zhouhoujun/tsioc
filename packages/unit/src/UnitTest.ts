@@ -1,8 +1,9 @@
-import { LoadType, ProviderType, Type } from '@tsdi/ioc';
-import { ApplicationOption, Application, Module, LoggerModule, PROCESS_ROOT } from '@tsdi/core';
+import { Module, ProviderType, Type } from '@tsdi/ioc';
+import { ApplicationOption, Application, PROCESS_ROOT, LoadType } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
-import { UnitTestRunner } from './runner/UnitTestRunner';
+import { UnitTestService } from './UnitTestService';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
@@ -16,10 +17,10 @@ import { DefaultTestReport } from './reports/TestReport';
       UnitTestConfigureService,
       RunAspect,
       OldTestRunner,
-      UnitTestRunner,
+      UnitTestService,
       DefaultTestReport
    ],
-   bootstrap: UnitTestRunner
+   bootstrap: UnitTestService
 })
 export class UnitTest { }
 

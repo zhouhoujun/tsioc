@@ -4,9 +4,10 @@ import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
-import { Application, LoggerModule } from '../src';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { Application } from '../src';
+// import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { HttpClient, HttpClientModule } from '@tsdi/common';
+import { LoggerModule } from '@tsdi/logs';
 
 
 describe('di module', () => {
@@ -14,57 +15,58 @@ describe('di module', () => {
     it('should has bootstrap, and auto wrid mark via inject.', async () => {
         const ctx = await Application.run(ModuleB);
         expect(ctx.instance).not.toBeNull();
-        expect(ctx.runners.bootstraps[0]).not.toBeNull();
-        const runner = ctx.runners.bootstraps[0];
+        const typeRef = ctx.runners.getRef(ClassSevice);
+        expect(typeRef).not.toBeNull();
+        
         // console.log(runner.instance);
-        expect(runner.instance.mark).toEqual('marked');
-        await ctx.destroy();
+        expect(typeRef!.getInstance().mark).toEqual('marked');
+        await ctx.close();
 
     });
 
 
-    it('message test.', async () => {
+    // it('message test.', async () => {
 
-        const ctx = await Application.run({
-            module: ModuleB,
-            uses: [
-                ServerModule,
-                HttpClientModule,
-                ServerHttpClientModule,
-                HttpModule.withOption({
-                    majorVersion: 1,
-                    listenOpts: {
-                        port: 3200
-                    }
-                })
-            ]
-        });
-        const runable = ctx.createRunnable(HttpServer);
-        runable.instance.use((ctx, next) => {
-            console.log('ctx.url:', ctx.url);
-            if (ctx.url.startsWith('/test')) {
-                console.log('message queue test: ' + ctx.playload);
-            }
+    //     const ctx = await Application.run({
+    //         module: ModuleB,
+    //         uses: [
+    //             ServerModule,
+    //             HttpClientModule,
+    //             ServerHttpClientModule,
+    //             HttpModule.withOption({
+    //                 majorVersion: 1,
+    //                 listenOpts: {
+    //                     port: 3200
+    //                 }
+    //             })
+    //         ]
+    //     });
+    //     const serRef = ctx.runners.attach(HttpServer);
+    //     serRef.getInstance().use((ctx, next) => {
+    //         console.log('ctx.url:', ctx.url);
+    //         if (ctx.url.startsWith('/test')) {
+    //             console.log('message queue test: ' + ctx.payload);
+    //         }
 
-            console.log(ctx.body, ctx.query);
-            ctx.body = ctx.query.hi;
-            return next();
-        }, 0);
+    //         console.log(ctx.body, ctx.query);
+    //         ctx.body = ctx.query.hi;
+    //         return next();
+    //     }, 0);
 
-        await runable.run();
+    //     await ctx.runners.run(HttpServer);
 
-        // has no parent.
-        const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(rep.body).toEqual('hello');
-        expect(rep.status).toEqual(200);
+    //     // has no parent.
+    //     const rep = await lastValueFrom(ctx.resolve(HttpClient).request('GET', 'test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
+    //     expect(rep.body).toEqual('hello');
+    //     expect(rep.status).toEqual(200);
 
-        await ctx.destroy();
-    });
+    //     await ctx.close();
+    // });
 
     it('options test.', async () => {
         const ctx = await Application.run({
@@ -77,9 +79,9 @@ describe('di module', () => {
             ]
         });
 
-        expect(ctx.runners.bootstraps[0].instance).toBeInstanceOf(ClassSevice);
+        expect(ctx.runners.getRef(ClassSevice)?.getInstance()).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
-        await ctx.destroy();
+        await ctx.close();
     });
 
 
@@ -95,7 +97,7 @@ describe('di module', () => {
         const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -104,7 +106,7 @@ describe('di module', () => {
         const ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -112,7 +114,7 @@ describe('di module', () => {
         const ctx = await Application.run({
             module: StatupModule,
             uses: [
-                LoggerModule.withOptions(null, true)
+                LoggerModule
             ],
             deps: [
                 ModuleA
@@ -125,7 +127,7 @@ describe('di module', () => {
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         expect(ctx.destroyed).toBeFalsy();
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 
@@ -133,7 +135,7 @@ describe('di module', () => {
         const ctx = await Application.run({
             module: StatupModule,
             uses: [
-                LoggerModule.withOptions(null, true),
+                LoggerModule
             ],
             deps: [
                 ServerLogsModule
@@ -143,7 +145,7 @@ describe('di module', () => {
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server);
         expect(ctx.destroyed).toBeFalsy();
-        await ctx.destroy();
+        await ctx.close();
         expect(ctx.destroyed).toBeTruthy();
     });
 

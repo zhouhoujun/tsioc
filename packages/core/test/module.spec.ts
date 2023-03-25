@@ -2,7 +2,7 @@ import { Application } from '../src';
 import { ClassSevice, LoggerAspect, ModuleA, SharedModule } from './demo';
 import expect = require('expect');
 
-describe('module metadata', () => {
+describe('Application run with module options', () => {
 
     it('boot with module metadata.', async () => {
         const v = 1;
@@ -20,11 +20,11 @@ describe('module metadata', () => {
             }
         });
         expect(ctx.instance).not.toBeNull();
-        expect(ctx.runners.bootstraps[0]).not.toBeNull();
-        const runner = ctx.runners.bootstraps[0];
+        const serRef = ctx.runners.getRef(ClassSevice);
+        expect(serRef).not.toBeNull();
         // console.log(runner.instance);
-        expect(runner.instance.mark).toEqual('marked');
-        await ctx.destroy();
+        expect(serRef!.getInstance().mark).toEqual('marked');
+        await ctx.close();
 
     });
 

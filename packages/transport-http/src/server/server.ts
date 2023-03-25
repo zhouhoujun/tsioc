@@ -1,7 +1,7 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify } from '@tsdi/ioc';
 import {
     RunnableFactory, Router, ListenOpts, InOutInterceptorFilter,
-    PathHanlderFilter, StatusInterceptorFilter, CatchInterceptor
+    PathHanlderFilter, StatusInterceptorFilter, CatchFilter
 } from '@tsdi/core';
 import { Subscriber } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -40,7 +40,7 @@ const httpOpts = {
     interceptors: [
         LogInterceptor,
         StatusInterceptorFilter,
-        CatchInterceptor,
+        CatchFilter,
         PathHanlderFilter,
         InOutInterceptorFilter,
         HttpFinalizeFilter

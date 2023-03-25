@@ -1,4 +1,4 @@
-import { HttpRequestMethod, mths, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
+import { DELETE, GET, HEAD, HttpRequestMethod, JSONP, PATCH, POST, PUT, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
 import { Injectable, InvocationContext, _tystr } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
@@ -432,7 +432,7 @@ export class HttpClient {
             }
 
             // Construct the request.
-            req = new HttpRequest(method ?? mths.GET, url!, (options.body !== undefined ? options.body : null), {
+            req = new HttpRequest(method ?? GET, url!, (options.body !== undefined ? options.body : null), {
                 headers,
                 params,
                 context: options.context,
@@ -834,7 +834,7 @@ export class HttpClient {
         withCredentials?: boolean,
         body?: any | null,
     } = {}): Observable<any> {
-        return this.request<any>(mths.DELETE, url, options as any);
+        return this.request<any>(DELETE, url, options as any);
     }
 
 
@@ -1141,7 +1141,7 @@ export class HttpClient {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.request<any>(mths.GET, url, options as any);
+        return this.request<any>(GET, url, options as any);
     }
 
 
@@ -1455,7 +1455,7 @@ export class HttpClient {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.request<any>(mths.HEAD, url, options as any);
+        return this.request<any>(HEAD, url, options as any);
     }
 
     /**
@@ -1501,7 +1501,7 @@ export class HttpClient {
      *
      */
     jsonp<T>(url: string, callbackParam: string): Observable<T> {
-        return this.request<any>(mths.JSONP, url, {
+        return this.request<any>(JSONP, url, {
             params: new HttpParams().append(callbackParam, 'JSONP_CALLBACK'),
             observe: 'body',
             responseType: 'json',
@@ -2142,7 +2142,7 @@ export class HttpClient {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.request<any>(mths.PATCH, url, addBody(options, body));
+        return this.request<any>(PATCH, url, addBody(options, body));
     }
 
     /**
@@ -2468,7 +2468,7 @@ export class HttpClient {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.request<any>(mths.POST, url, addBody(options, body));
+        return this.request<any>(POST, url, addBody(options, body));
     }
 
     /**
@@ -2793,7 +2793,7 @@ export class HttpClient {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
     } = {}): Observable<any> {
-        return this.request<any>(mths.PUT, url, addBody(options, body))
+        return this.request<any>(PUT, url, addBody(options, body))
     }
 
 }

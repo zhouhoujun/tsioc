@@ -1,22 +1,26 @@
 export * from './pipe';
-export * from './json';
 export * from './slice';
 export * from './sort';
 export * from './cases';
-export * from './date';
-export * from './times';
-export * from './bytes';
+
+//format
+export * from './formats/json';
+export * from './formats/date';
+export * from './formats/time';
+export * from './formats/bytes';
 
 //parses
-export * from './parses/bool.pipe';
-export * from './parses/date.pipe';
-export * from './parses/enum.pipe';
-export * from './parses/float.pipe';
-export * from './parses/double.pipe';
-export * from './parses/int.pipe';
-export * from './parses/number.pipe';
-export * from './parses/string.pipe';
-export * from './parses/json.pipe';
+export * from './parses/bool';
+export * from './parses/date';
+export * from './parses/enum';
+export * from './parses/float';
+export * from './parses/double';
+export * from './parses/int';
+export * from './parses/number';
+export * from './parses/string';
+export * from './parses/json';
+
+export * from './pipe.service';
 
 export * from './transform.module';
 

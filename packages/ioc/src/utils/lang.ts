@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNil, isPromise } from './chk';
+import { getClass, isArray, isFunction, isNil, isPrimitive, isPromise, isType } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -237,8 +237,8 @@ export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is Type
  */
 export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
-    if (isClassType(target) && baseClass) {
-        const isCls = isClassType(baseClass);
+    if (isType(target) && baseClass) {
+        const isCls = isType(baseClass) && !isPrimitive(baseClass);
         forInClassChain(target, t => {
             if (isCls) {
                 isExtnds = t === baseClass
@@ -261,7 +261,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
 export function getTypes(mds: Modules | Modules[]): Type[] {
     const types: Type[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
-        isClass(ty) && types.push(ty)
+        isType(ty) && types.push(ty)
     }, v => isPlainObject(v));
     return types
 }
@@ -366,7 +366,7 @@ export const immediate = typeof setImmediate !== 'undefined' ? setImmediate : (c
  * @returns
  */
 export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], initVal?: T, guard?: (val: T) => boolean): Promise<T> {
-    function runStep(val: T, idx: number): Promise<T> {
+    function stepFn(val: T, idx: number): Promise<T> {
         let handle: T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>);
         if (idx < promises.length) {
             handle = promises[idx]
@@ -377,10 +377,10 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
         return Promise.resolve(isFunction(handle) ? handle(val) : handle)
             .then(v => {
                 if (guard && !guard(v)) return v;
-                return runStep(v, idx + 1)
+                return stepFn(v, idx + 1)
             })
     }
-    return runStep(initVal ?? null!, 0);
+    return stepFn(initVal ?? null!, 0);
 }
 
 /**

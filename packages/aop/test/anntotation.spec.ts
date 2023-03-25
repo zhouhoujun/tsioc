@@ -78,7 +78,7 @@ describe('aop test', () => {
     let container: Container;
     beforeEach(async () => {
         container = Container.create();
-        container.inject(AopModule, IocLog);
+        container.use(AopModule, IocLog);
     });
 
     it('BoolExpression test', () => {

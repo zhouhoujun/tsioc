@@ -1,8 +1,12 @@
 import { ClassType } from './types';
 import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
+import { ReflectiveRef } from './reflective';
 
 
+/**
+ * asyc like
+ */
 export type AsyncLike<T> = T | Promise<T> | Observable<T>;
 
 
@@ -10,6 +14,10 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  * Interface to perform an operation invocation.
  */
 export interface OperationInvoker<T = any> {
+    /**
+     * type ref.
+     */
+    get typeRef(): ReflectiveRef;
     /**
      * invoker order.
      */
@@ -22,20 +30,27 @@ export interface OperationInvoker<T = any> {
      * origin method descriptor.
      */
     get descriptor(): TypedPropertyDescriptor<T>;
-
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
-     * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, proceed?: Proceed<T>): T;
+    invoke(): T;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param context the context to use to invoke the operation
+     */
+    invoke(context: InvocationContext): T;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      * @param instance instance of the method to invoke.
-     * @param proceed proceed invoke with hooks
      */
-    invoke(context: InvocationContext, instance: object, proceed?: Proceed<T>): T;
+    invoke(context: InvocationContext, instance: object): T;
+    /**
+     * resolve args. 
+     * @param context 
+     */
+    resolveArguments(): any[];
     /**
      * resolve args. 
      * @param context 
@@ -47,8 +62,3 @@ export interface OperationInvoker<T = any> {
  * invoker like.
  */
 export type InvokerLike<T = any> = OperationInvoker<T> | ((ctx: InvocationContext) => T);
-
-/**
- * invoke proceed.
- */
-export type Proceed<T = any> = (ctx: InvocationContext, backend: (ctx: InvocationContext) => T) => T;

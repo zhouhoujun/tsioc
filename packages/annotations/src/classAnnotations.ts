@@ -6,7 +6,6 @@ import { Plugin } from 'rollup';
 
 const tsChkExp = /\.ts$/;
 const replEmpty = /\s*$/;
-const repl$ = /\'\$\'/gi;
 const constructorName = 'constructor';
 /**
  * attach class Annotations before typescript ts compile.
@@ -47,7 +46,8 @@ export function iocAnnotations(contents: string): string {
             };
 
             const oldclass = node.getText();
-            if ((node.decorators && node.decorators.length) || (node.getChildren()?.some(n => n.decorators && n.decorators.length))) {
+
+            if ((ts.canHaveDecorators(node) && ts.getDecorators(node)?.length) || (node.getChildren()?.some(n => ts.canHaveDecorators(n) && ts.getDecorators(n)?.length))) {
                 annations.methods = {};
                 ts.forEachChild(node, (nd) => eachChild(nd, annations));
             }
@@ -74,7 +74,7 @@ export function iocAnnotations(contents: string): string {
                 annations.methods[constructorName] = paramNames;
             }
         } else if (ts.isMethodDeclaration(node)) {
-            if (annations && node.decorators && node.decorators.length && node.parameters.length) {
+            if (annations && ts.canHaveDecorators(node) && ts.getDecorators(node)?.length && node.parameters.length) {
                 const params = node.parameters.map(param => {
                     return {
                         type: param.type?.getText(),
@@ -120,7 +120,7 @@ export function rollupClassAnnotations(options?: AnnOptions): Plugin {
                         code: iocAnnotations(code),
                         map: null
                     });
-                } catch (err) {
+                } catch (err: any) {
                     // istanbul ignore else
                     if ('position' in err && this.error) {
                         this.error(err.message, err.position)

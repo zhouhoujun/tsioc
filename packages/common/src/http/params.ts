@@ -11,7 +11,7 @@ import { ParameterCodec, TransportParams } from '@tsdi/core';
  *
  * @publicApi
  */
-export class HttpUrlEncodingCodec implements ParameterCodec {
+export class HttpUrlEncodingCodec {
   /**
    * Encodes a key name for a URL parameter or query-string.
    * @param key The key name.

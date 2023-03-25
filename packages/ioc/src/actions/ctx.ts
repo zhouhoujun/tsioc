@@ -1,9 +1,10 @@
 import { Token } from '../tokens';
 import { Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
-import { Class, TypeDef } from '../metadata/type';
-import { FactoryRecord, Injector, Platform } from '../injector';
+import { Class, DecoratorFn } from '../metadata/type';
+import { FactoryRecord, Injector } from '../injector';
 import { InvocationContext } from '../context';
+import { Platform } from '../platform';
 
 
 
@@ -27,7 +28,6 @@ export interface IocContext {
 export interface RegContext extends IocContext {
     /**
      * resolve token.
-     *
      */
     provide?: Token;
     /**
@@ -45,10 +45,9 @@ export interface RegContext extends IocContext {
     /**
      * current decoractor.
      */
-    currDecor: string;
+    currDecor: DecoratorFn;
     /**
      * custom set singleton or not.
-     *
      */
     singleton: boolean;
 }

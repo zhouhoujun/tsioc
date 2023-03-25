@@ -1,0 +1,26 @@
+import { isNumber, isString } from '@tsdi/ioc';
+import { Pipe } from '../../metadata';
+import { PipeTransform, invalidPipeArgument } from '../pipe';
+
+/**
+ * parse int.
+ */
+@Pipe('int')
+export class IntPipe implements PipeTransform<number> {
+
+    transform(value: any, radix = 10): number {
+        let ret: number;
+        if (isString(value)) {
+            ret = parseInt(value, radix)
+        } else if (isNumber(value)) {
+            ret = parseInt(value.toString(), radix)
+        } else {
+            ret = NaN
+        }
+        if (isNaN(ret)) {
+            throw invalidPipeArgument(this, value)
+        }
+        return ret
+    }
+
+}

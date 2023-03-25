@@ -32,7 +32,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             this.logger.debug('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
             joinPoint.setValue(EntityManager, entityManager);
 
-            joinPoint.params?.length && targetRef.paramDecors.filter(dec => {
+            joinPoint.params?.length && targetRef.paramDefs.filter(dec => {
                 if (dec.propertyKey === joinPoint.methodName) {
                     if (dec.decor === InjectRepository.toString()) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
@@ -45,7 +45,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             });
 
             const context = {} as any;
-            targetRef.propDecors.forEach(dec => {
+            targetRef.propDefs.forEach(dec => {
                 if (dec.decor === InjectRepository.toString()) {
                     context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
                 } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {

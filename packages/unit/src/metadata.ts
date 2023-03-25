@@ -1,6 +1,6 @@
 import { ActionTypes, ClassMetadata, createDecorator, DecoratorOption, EMPTY_OBJ, TypeDef } from '@tsdi/ioc';
-import { RunnableFactory } from '@tsdi/core';
-import { SuiteRunnableFactory } from './runner/SuiteRunner';
+import { RunnableRef } from '@tsdi/core';
+import { SuiteRunner } from './runner/SuiteRunner';
 
 
 /**
@@ -37,7 +37,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     def: {
         class: (ctx, next) => {
             ctx.class.setAnnotation(ctx.define.metadata);
-            (ctx.class.annotation as SuiteDef).suite = true;
+            ctx.class.getAnnotation<SuiteDef>().suite = true;
             return next()
         }
     },
@@ -47,7 +47,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         return metadata
     },
     providers: [
-        { provide: RunnableFactory, useClass: SuiteRunnableFactory }
+        { provide: RunnableRef, useClass: SuiteRunner }
     ]
 });
 

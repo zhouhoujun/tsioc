@@ -1,28 +1,29 @@
-import { Module } from '../metadata';
-import { BytesPipe } from './bytes';
+import { Module } from '@tsdi/ioc';
+import { BytesFormatPipe } from './formats/bytes';
+import { DateFormatPipe } from './formats/date';
+import { TimeFormatPipe } from './formats/time';
+import { JsonFormatPipe } from './formats/json';
 import { LowerCasePipe, UpperCasePipe } from './cases';
-import { DateFormatPipe } from './date';
-import { ParseBoolPipe } from './parses/bool.pipe';
-import { DatePipe } from './parses/date.pipe';
-import { ParseEnumPipe } from './parses/enum.pipe';
-import { ParseFloatPipe } from './parses/float.pipe';
-import { ParseIntPipe } from './parses/int.pipe';
-import { JsonPipe } from './parses/json.pipe';
-import { ParseNumberPipe } from './parses/number.pipe';
-import { ParseStringPipe } from './parses/string.pipe';
+import { BoolPipe } from './parses/bool';
+import { DatePipe } from './parses/date';
+import { EnumPipe } from './parses/enum';
+import { FloatPipe } from './parses/float';
+import { IntPipe } from './parses/int';
+import { JsonPipe } from './parses/json';
+import { NumberPipe } from './parses/number';
+import { StringPipe } from './parses/string';
 import { SlicePipe } from './slice';
 import { SortPipe } from './sort';
-import { TimesPipe } from './times';
 
 /*
  * Transform module.
  */
 @Module({
     exports: [
-        LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe, DateFormatPipe,
-        JsonPipe, DatePipe, TimesPipe, BytesPipe,
-        ParseStringPipe, ParseBoolPipe, ParseEnumPipe,
-        ParseFloatPipe, ParseIntPipe, ParseNumberPipe
+        LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe,
+        DateFormatPipe, JsonFormatPipe, BytesFormatPipe, TimeFormatPipe,
+        JsonPipe, DatePipe, StringPipe, BoolPipe, EnumPipe,
+        FloatPipe, IntPipe, NumberPipe
     ]
 })
 export class TransformModule {

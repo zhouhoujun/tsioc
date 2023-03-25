@@ -59,7 +59,7 @@ export class ServerBootTest {
 
     @After()
     async after() {
-        this.ctx.destroy();
+        await this.ctx.close();
         await del(this.logdir);
     }
 }

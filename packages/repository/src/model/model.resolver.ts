@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, Type, Parameter, OperationInvoker } from '@tsdi/ioc';
-import { ModelArgumentResolver, ServerEndpointContext } from '@tsdi/core';
+import { ModelArgumentResolver, EndpointContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
@@ -12,11 +12,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 
     abstract get resolvers(): ModelFieldResolver[];
 
-    canResolve(parameter: Parameter, ctx: ServerEndpointContext): boolean {
+    canResolve(parameter: Parameter, ctx: EndpointContext): boolean {
         return this.isModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: ServerEndpointContext): T {
+    resolve<T>(parameter: Parameter<T>, ctx: EndpointContext): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
@@ -28,7 +28,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         return this.resolveModel(classType, ctx, fields)
     }
 
-    canResolveModel(modelType: Type, ctx: ServerEndpointContext, args: Record<string, any>, nullable?: boolean): boolean {
+    canResolveModel(modelType: Type, ctx: EndpointContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.isModel(p.provider ?? p.type)) {
                 return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
@@ -37,7 +37,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         })
     }
 
-    resolveModel(modelType: Type, ctx: ServerEndpointContext, fields: Record<string, any>, nullable?: boolean): any {
+    resolveModel(modelType: Type, ctx: EndpointContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
             return null
         }

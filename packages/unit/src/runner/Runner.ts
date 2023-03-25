@@ -1,4 +1,4 @@
-import { Runnable } from '@tsdi/core';
+import { RunnableRef } from '@tsdi/core';
 import { Abstract, Type } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 
@@ -6,11 +6,8 @@ import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
  * suite runner interface.
  */
 @Abstract()
-export abstract class UnitRunner<T = any> implements Runnable {
+export abstract class UnitRunner<T = any> {
 
-    /**
-     * suite class type.
-     */
     abstract get type(): Type<T>;
     /**
      * run test.

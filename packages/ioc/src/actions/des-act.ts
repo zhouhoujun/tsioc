@@ -1,15 +1,16 @@
-import { cleanObj } from '../utils/lang';
-import { runChain } from '../handler';
 import { Type } from '../types';
 import { Token } from '../tokens';
-import { DesignContext, RuntimeContext } from './ctx';
+import { runChain } from '../handler';
 import { ActionSetup } from '../action';
-import { IocRegScope } from './reg';
-import { RuntimeLifeScope } from './runtime';
-import { FactoryRecord, FnType, Injector, Platform } from '../injector';
+import { cleanObj } from '../utils/lang';
+import { FactoryRecord, FnType, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Decors } from '../metadata/type';
 import { ReflectiveFactory } from '../reflective';
+import { Platform } from '../platform';
+import { IocRegScope } from './reg';
+import { RuntimeLifeScope } from './runtime';
+import { DesignContext, RuntimeContext } from './ctx';
 
 
 /**
@@ -28,7 +29,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements Acti
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.class.annotation.singleton === true, ctx.class.annotation.static);
+    regProvider(ctx.getRecords(), ctx.platform, ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.class.getAnnotation().singleton === true, ctx.class.getAnnotation().static);
     next()
 };
 
@@ -65,7 +66,7 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 
             platform.getAction(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
-            if (singleton) {
+            if (singleton || isStatic) {
                 recd.value = instance
             }
             // clean context
@@ -80,9 +81,9 @@ function regProvider(records: Map<Token, FactoryRecord>, platform: Platform, inj
 }
 
 export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => void) {
-    ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.beforeAnnoation), ctx)
+    ctx.class.classDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.beforeAnnoation), ctx)
     });
 
     return next()
@@ -91,8 +92,8 @@ export const BeforeAnnoDecorHandle = function (ctx: DesignContext, next: () => v
 
 export const DesignClassDecorHandle = function (ctx: DesignContext, next: () => void) {
     ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.CLASS), ctx)
+        ctx.currDecor = d;
+        d.getDesignHandle && runChain(d.getDesignHandle(Decors.CLASS), ctx)
     });
 
     return next()
@@ -108,8 +109,8 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements Actio
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.class.propDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.property), ctx)
+        ctx.currDecor = d;
+        d.getDesignHandle && runChain(d.getDesignHandle(Decors.property), ctx)
     });
 
     return next()
@@ -150,14 +151,41 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements Action
 }
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.class.methodDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.method), ctx)
+    ctx.class.methodDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.method), ctx)
     });
 
     return next()
 }
 
+/**
+ * Annoaction
+ */
+export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup {
+
+    setup() {
+        this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction)
+    }
+}
+
+export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.class.classDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.annoation), ctx)
+    });
+
+    return next()
+}
+
+export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.class.classDecors.forEach(decor => {
+        ctx.currDecor = decor;
+        decor.getDesignHandle && runChain(decor.getDesignHandle(Decors.afterAnnoation), ctx)
+    });
+
+    return next()
+}
 
 /**
  * method auto run action.
@@ -181,28 +209,3 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     });
     return next()
 };
-
-export class AnnoScope extends IocRegScope<DesignContext> implements ActionSetup {
-
-    setup() {
-        this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction)
-    }
-}
-
-export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.annoation), ctx)
-    });
-
-    return next()
-}
-
-export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.class.classDecors.forEach(d => {
-        ctx.currDecor = d.decor;
-        runChain(d.getDesignHandle(Decors.afterAnnoation), ctx)
-    });
-
-    return next()
-}

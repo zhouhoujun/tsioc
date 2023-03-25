@@ -1,4 +1,4 @@
-import { AbstractType, Type, ClassType } from './types';
+import { AbstractType, Type, ClassType, TypeOf } from './types';
 import { isFunction } from './utils/chk';
 import { getClassName } from './utils/lang';
 
@@ -12,7 +12,7 @@ import { getClassName } from './utils/lang';
  */
 export class InjectToken<T = any> {
     constructor(
-        private desc: string,
+        protected desc: string,
         readonly providedIn: Type | 'root' | 'platform' | string = '') { }
 
     toString(): string {
@@ -38,7 +38,7 @@ export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
  * parse id string to token, type of {@link Token}.
  * @param key id
  */
-export function tokenId<T = any>(key: string,): Token<T> {
+export function tokenId<T = any>(key: string): Token<T> {
     return Symbol(key)
 }
 
@@ -65,12 +65,14 @@ export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
 }
 
 /**
- * create token ref
- * @param token token
- * @param target token ref target.
+ * get token of type
+ * @param type target type
+ * @param alias token alias
+ * @param propertyKey target propertyKey
+ * @returns 
  */
-export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
-    return `Ref ${formatToken(token)} for ${formatToken(target)}`
+export function getTokenOf<T>(type: TypeOf<any>, alias: string, propertyKey?: string): Token<T> {
+    return propertyKey ? `${getClassName(type)}_${propertyKey}_${alias}` : `${getClassName(type)}_${alias}`;
 }
 
 /**
@@ -81,8 +83,6 @@ export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
 export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken
 }
-
-
 
 /**
  * Injection flags for DI.

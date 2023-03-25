@@ -10,7 +10,7 @@ import { MimeTypes } from '../mime';
 
 
 @Abstract()
-export class PlayloadOptions {
+export class PayloadOptions {
 
     json?: {
         strict?: boolean;
@@ -58,7 +58,7 @@ export class BodyparserMiddleware implements Middleware {
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(@Nullable() options: PlayloadOptions) {
+    constructor(@Nullable() options: PayloadOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };

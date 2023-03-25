@@ -1,4 +1,4 @@
-import { Injector, Injectable, lang, tokenId, isArray } from '@tsdi/ioc';
+import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
@@ -8,10 +8,11 @@ import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-    LoggerModule, Middleware, Chain, BadRequestExecption, ServerEndpointContext
+    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
+    Middleware, Chain, BadRequestExecption, ServerEndpointContext
 } from '@tsdi/core';
 import { HttpClient, HttpClientModule } from '../src';
+import { LoggerModule } from '@tsdi/logs';
 
 
 @RouteMapping('/device')
@@ -135,8 +136,8 @@ class DeviceStartupHandle implements Middleware {
 
     invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
-        if (ctx.playload.type === 'startup') {
+        console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
+        if (ctx.payload.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -149,8 +150,8 @@ class DeviceStartupHandle implements Middleware {
 class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.playload.type, 'req:', ctx.playload.type)
-        if (ctx.playload.type === 'startup') {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
+        if (ctx.payload.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);

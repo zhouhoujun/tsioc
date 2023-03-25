@@ -6,8 +6,10 @@ import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { Class } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
-import { Injector, InjectorScope, ModuleRef, Platform, Scopes } from '../injector';
+import { Injector, InjectorScope, Scopes } from '../injector';
 import { Execption } from '../execption';
+import { Platform } from '../platform';
+import { ModuleRef } from '../module.ref';
 
 
 /**
