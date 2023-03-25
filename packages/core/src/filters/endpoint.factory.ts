@@ -2,7 +2,7 @@ import { Abstract, Type, Class, ReflectiveRef, Injector } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { RunnableRef } from '../ApplicationRunners';
 import { EndpointOptions } from '../EndpointService';
-import { EndpointContext } from './context';
+import { EndpointContext } from '../endpoints/context';
 import { Respond } from './filter';
 
 

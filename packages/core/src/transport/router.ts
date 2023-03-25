@@ -3,10 +3,11 @@ import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
-import { MiddlewareContext } from './middleware';
+import { Context } from './middleware';
 import { Protocols, RequestMethod } from './protocols';
 import { EndpointOptions } from '../EndpointService';
 import { InterceptorMiddleware } from './middleware.compose';
+import { EndpointContext } from '../endpoints/context';
 
 
 
@@ -30,7 +31,7 @@ export abstract class Router implements Middleware {
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
-    abstract invoke(ctx: MiddlewareContext, next: () => Promise<void>): Promise<void>;
+    abstract invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void>;
     /**
      * has route or not.
      * @param route route
@@ -68,7 +69,7 @@ export class MappingRoute implements Middleware {
         return this.route.path
     }
 
-    async invoke(ctx: MiddlewareContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
         const can = await this.canActive(ctx);
         if (can) {
             if (!this._middleware) {
@@ -81,7 +82,7 @@ export class MappingRoute implements Middleware {
         }
     }
 
-    protected canActive(ctx: MiddlewareContext) {
+    protected canActive(ctx: EndpointContext<Context>) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
@@ -89,7 +90,7 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
-    protected async parse(route: Route & { router?: Router }, ctx: MiddlewareContext): Promise<MiddlewareLike> {
+    protected async parse(route: Route & { router?: Router }, ctx: EndpointContext<Context>): Promise<MiddlewareLike> {
         if (route.invoke) {
             return route as Middleware;
         } else if (route.middleware) {
@@ -124,11 +125,11 @@ export class MappingRoute implements Middleware {
     }
 
 
-    protected async redirect(ctx: MiddlewareContext, url: string, alt?: string): Promise<void> {
-        if (!isFunction(ctx.redirect)) {
+    protected async redirect(ctx: EndpointContext<Context>, url: string, alt?: string): Promise<void> {
+        if (!isFunction(ctx.payload.redirect)) {
             throw new BadRequestExecption();
         }
-        ctx.redirect(url, alt)
+        ctx.payload.redirect(url, alt)
     }
 
 }
@@ -183,7 +184,7 @@ export class MappingRouter extends Router implements OnDestroy {
         return this
     }
 
-    invoke(ctx: MiddlewareContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
             return route(ctx, next)
@@ -192,18 +193,18 @@ export class MappingRouter extends Router implements OnDestroy {
         }
     }
 
-    protected getRoute(ctx: MiddlewareContext): MiddlewareFn | undefined {
+    protected getRoute(ctx: EndpointContext<Context>): MiddlewareFn | undefined {
         // if (!(ctx.status instanceof NotFoundStatus)) return;
 
         let url: string;
         if (this.prefix) {
-            if (!ctx.url.startsWith(this.prefix)) return;
-            url = ctx.url.slice(this.prefix.length)
+            if (!ctx.payload.url.startsWith(this.prefix)) return;
+            url = ctx.payload.url.slice(this.prefix.length)
         } else {
-            url = ctx.url ?? '/'
+            url = ctx.payload.url ?? '/'
         }
 
-        const route = this.getRouteByUrl(ctx.url);
+        const route = this.getRouteByUrl(ctx.payload.url);
         return route
     }
 

@@ -6,7 +6,7 @@ import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs'
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent } from '../events';
-import { Endpoint, FnEndpoint, runEndpoints } from '../Endpoint';
+import { Endpoint } from '../Endpoint';
 import { FilterEndpoint } from '../filters/endpoint';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
@@ -14,13 +14,16 @@ import { BootstrapOption, EndpointFactoryResolver } from '../filters/endpoint.fa
 import { getClassName } from 'packages/ioc/src/utils/lang';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
-import { CatchFilter, createEndpointContext } from '../filters';
+import { FnEndpoint } from '../endpoints/fn.endpoint';
+import { runEndpoints } from '../endpoints/runs';
+import { createEndpointContext, EndpointContext } from '../endpoints/context';
+import { CatchFilter } from '../filters/execption.filter';
 
 
 /**
  *  Appplication runner interceptors mutil token
  */
-export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor[]>('APP_RUNNERS_INTERCEPTORS');
+export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<EndpointContext>[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
  *  Appplication runner filters mutil token
@@ -78,7 +81,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
         if (hasAdapter) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
-            const endpoint = new FnEndpoint((input, ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
+            const endpoint = new FnEndpoint((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
             return targetRef;
@@ -128,12 +131,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._endpoint.handle(type, createEndpointContext(this.injector)));
+            return lastValueFrom(this._endpoint.handle(createEndpointContext(this.injector, { payload: type })));
         }
         return lastValueFrom(
             this.beforeRun()
                 .pipe(
-                    mergeMap(v => this._endpoint.handle(this._types, createEndpointContext(this.injector))),
+                    mergeMap(v => this._endpoint.handle(createEndpointContext(this.injector, { payload: this._types }))),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -155,16 +158,16 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         this._types = null!;
     }
 
-    handle(input: any, context: InvocationContext<any>): Observable<any> {
-        if (isFunction(input)) {
-            return runEndpoints(this._maps.get(input), context, input, v => v.done === true)
+    handle(context: InvocationContext<any>): Observable<any> {
+        if (isFunction(context.payload)) {
+            return runEndpoints(this._maps.get(context.payload), context, v => v.done === true)
         }
-        if (isArray(input)) {
+        if (isArray(context.payload)) {
             const endpoints: Endpoint[] = [];
-            input.forEach(type => {
+            context.payload.forEach(type => {
                 endpoints.push(...this._maps.get(type) || []);
             })
-            return runEndpoints(endpoints, context, input, v => v.done === true)
+            return runEndpoints(endpoints, context, v => v.done === true)
         }
         return throwError(() => new ArgumentExecption('input type unknow'))
     }

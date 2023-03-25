@@ -12,7 +12,7 @@ import { FilterHandlerResolver } from './filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
-import { TransportParameter, TransportParameterOptions } from './filters';
+import { TransportParameter, TransportParameterOptions } from './endpoints/resolver';
 
 
 /**

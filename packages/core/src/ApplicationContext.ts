@@ -38,7 +38,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      *
      * @type {ApplicationArguments}
      */
-    abstract get arguments(): ApplicationArguments;
+    abstract get payload(): ApplicationArguments;
     /**
      * application runners.
      *

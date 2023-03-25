@@ -1,21 +1,22 @@
-import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, InvocationContext, StaticProvider, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, StaticProvider, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
-import { Endpoint, runEndpoints } from '../Endpoint';
+import { Endpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { ApplicationEvent } from '../ApplicationEvent';
-import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
+import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
-import { CatchFilter, createEndpointContext } from '../filters';
+import { CatchFilter } from '../filters/execption.filter';
+import { runEndpoints } from '../endpoints/runs';
 
 
 /**
  *  event multicaster interceptors mutil token.
  */
-export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
+export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEventContext, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
  *  event multicaster filters mutil token.
@@ -28,9 +29,9 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanActivate[]>('EVENT_MULTICASTER_GUARDS');
 
 @Injectable()
-export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEvent> {
+export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEventContext> {
 
-    private _endpoint: FilterEndpoint<ApplicationEvent, any>;
+    private _endpoint: FilterEndpoint<ApplicationEventContext, any>;
     private maps: Map<Type, Endpoint[]>;
 
     constructor(private injector: Injector) {
@@ -40,7 +41,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         this._endpoint.useFilter(CatchFilter)
     }
 
-    get endpoint(): Endpoint<ApplicationEvent, any> {
+    get endpoint(): Endpoint<ApplicationEventContext, any> {
         return this._endpoint
     }
 
@@ -54,7 +55,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEvent, any>> | TypeOf<Interceptor<ApplicationEvent, any>>[], order?: number): this {
+    useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEventContext, any>> | TypeOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
         this._endpoint.useInterceptor(interceptor, order);
         return this;
     }
@@ -76,9 +77,9 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     emit(value: ApplicationEvent): Observable<any> {
-        const ctx = createEndpointContext(this.injector, { arguments: value });
+        const ctx = new ApplicationEventContext(this.injector, { payload: value });
         ctx.setValue(getClass(value), value);
-        return this.endpoint.handle(value, ctx)
+        return this.endpoint.handle(ctx)
             .pipe(
                 finalize(() => {
                     ctx.destroy();
@@ -122,9 +123,9 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     }
 
-    handle(input: ApplicationEvent, context: InvocationContext<any>): Observable<any> {
-        const endpoints = this.maps.get(getClass(input));
-        return runEndpoints(endpoints, context, input, v => v.done === true);
+    handle(context: ApplicationEventContext): Observable<any> {
+        const endpoints = this.maps.get(getClass(context.payload));
+        return runEndpoints(endpoints, context, v => v.done === true);
     }
 
     clear(): void {

@@ -9,7 +9,7 @@ export class ServerApplicationExit extends ApplicationExit {
     }
 
     override register(): void {
-        const usedsignls = this.context.arguments.signls;
+        const usedsignls = this.context.payload.signls;
         if (!usedsignls?.length) return;
 
         const logger = this.context.getLogger();

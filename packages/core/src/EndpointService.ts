@@ -5,6 +5,7 @@ import { CanActivate } from './guard';
 import { Interceptor, InterceptorService } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
 import { Filter } from './filters/filter';
+import { EndpointContext } from './endpoints/context';
 
 
 /**
@@ -23,7 +24,7 @@ export interface EndpointService extends FilterService, PipeService, Interceptor
 /**
  * endpoint service options.
  */
-export interface EndpointServiceOptions {
+export interface EndpointServiceOptions<TCtx extends EndpointContext = EndpointContext> {
     /**
      * An array of dependency-injection tokens used to look up `CanActivate()`
      * handlers, in order to determine if the current user is allowed to
@@ -33,7 +34,7 @@ export interface EndpointServiceOptions {
     /**
      * interceptors of bootstrap.
      */
-    interceptors?: ProvdierOf<Interceptor>[];
+    interceptors?: ProvdierOf<Interceptor<TCtx>>[];
     /**
      * pipes for the bootstrap.
      */
@@ -41,7 +42,7 @@ export interface EndpointServiceOptions {
     /**
      * filters of bootstrap.
      */
-    filters?: ProvdierOf<Filter>[];
+    filters?: ProvdierOf<Filter<TCtx>>[];
 }
 
 /**

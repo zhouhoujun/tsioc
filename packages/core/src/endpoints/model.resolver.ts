@@ -1,5 +1,5 @@
 import { Parameter, tokenId, OperationInvoker } from '@tsdi/ioc';
-import { EndpointContext } from '../filters/context';
+import { EndpointContext } from './context';
 
 
 /**

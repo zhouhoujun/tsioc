@@ -111,11 +111,11 @@ class DeviceQueue implements Middleware {
         const deviceA_state = ctx.get('deviceA_state');
         const deviceB_state = ctx.get('deviceB_state');
 
-        ctx.arguments = {
+        ctx.setPayload({
             device,
             deviceA_state,
             deviceB_state
-        };
+        });
 
         console.log('device sub msg done.');
         return await next();
@@ -128,8 +128,8 @@ class DeviceStartupHandle implements Middleware {
 
     invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.arguments.type, 'req:', ctx.arguments.type)
-        if (ctx.arguments.type === 'startup') {
+        console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
+        if (ctx.payload.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -142,8 +142,8 @@ class DeviceStartupHandle implements Middleware {
 class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.arguments.type, 'req:', ctx.arguments.type)
-        if (ctx.arguments.type === 'startup') {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
+        if (ctx.payload.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);

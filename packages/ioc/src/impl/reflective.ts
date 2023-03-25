@@ -231,7 +231,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 }
 
 export function hasContext(option: InvokeArguments) {
-    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.arguments)
+    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.payload)
 }
 
 export class DefaultReflectiveFactory extends ReflectiveFactory {

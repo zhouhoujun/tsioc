@@ -2,7 +2,7 @@ import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { MessageExecption } from '../execptions';
-import { EndpointContext } from './context';
+import { createEndpointContext, EndpointContext } from '../endpoints/context';
 import { Filter, runHandlers } from './filter';
 
 
@@ -10,28 +10,28 @@ import { Filter, runHandlers } from './filter';
  * execption filter
  */
 @Abstract()
-export abstract class ExecptionFilter extends Filter<Error, MessageExecption> {
+export abstract class ExecptionFilter extends Filter<EndpointContext<Error>, any> {
 
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
+    abstract handle(context: EndpointContext<Error>): Observable<any>;
 }
 
 /**
  * execption backend.
  */
 @Abstract()
-export abstract class ExecptionBackend implements Endpoint<Error, MessageExecption> {
+export abstract class ExecptionBackend implements Endpoint<EndpointContext<Error>, any> {
 
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    abstract handle(input: Error, context: EndpointContext): Observable<MessageExecption>;
+    abstract handle(context: EndpointContext<Error>): Observable<any>;
 }
 
 
@@ -39,10 +39,10 @@ export abstract class ExecptionBackend implements Endpoint<Error, MessageExecpti
  * catch interceptor.
  */
 @Injectable({ static: true })
-export class CatchFilter<TInput = any, TOutput = any> implements Filter<TInput, TOutput> {
+export class CatchFilter<TCtx extends EndpointContext, TOutput = any> implements Filter<TCtx, TOutput> {
 
-    intercept(input: TInput, next: Endpoint<TInput, TOutput>, ctx: EndpointContext): Observable<TOutput> {
-        return next.handle(input, ctx)
+    intercept(ctx: TCtx, next: Endpoint<TCtx, TOutput>): Observable<TOutput> {
+        return next.handle(ctx)
             .pipe(
                 catchError((err, caught) => {
                     ctx.execption = err;
@@ -51,11 +51,12 @@ export class CatchFilter<TInput = any, TOutput = any> implements Filter<TInput, 
                         return of(err);
                     }
                     const token = getClass(err);
-                    ctx.setValue(token, err);
-                    return endpoint.handle(err, ctx)
+                    const context = createEndpointContext(ctx.injector, { payload: err })
+                    context.setValue(token, err);
+                    return endpoint.handle(context)
                         .pipe(
                             finalize(() => {
-                                ctx.setValue(token, null);
+                                context.destroy();
                             })
                         );
                 })
@@ -69,16 +70,16 @@ export class CatchFilter<TInput = any, TOutput = any> implements Filter<TInput, 
 @Injectable({ static: true })
 export class ExecptionHandlerBackend extends ExecptionBackend {
 
-    handle(input: Error, context: EndpointContext): Observable<MessageExecption> {
+    handle(context: EndpointContext<Error>): Observable<any> {
 
         return new Observable((observer: Observer<MessageExecption>) => {
-            return runHandlers(context, input, getClass(input))
+            return runHandlers(context, getClass(context.payload))
                 .pipe(
                     map(r => {
                         if (!context.execption || !(context.execption instanceof MessageExecption)) {
                             throw new Execption('can not handle error type');
                         }
-                        return context.execption as MessageExecption;
+                        return context.execption;
                     }),
                     catchError((err, caught) => {
                         // const exception = new InternalServerExecption((err as Error).message, context.statusFactory.getStatusCode('InternalServerError'));

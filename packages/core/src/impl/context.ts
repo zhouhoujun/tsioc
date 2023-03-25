@@ -133,8 +133,8 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         if(!option) {
             option = {};
         }
-        if(!option.arguments) {
-            option.arguments = ApplicationArguments;
+        if(!option.payload) {
+            option.payload = ApplicationArguments;
         }
         const ctx = this.createInstance(root, option);
         return ctx

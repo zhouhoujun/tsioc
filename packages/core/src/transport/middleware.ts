@@ -1,22 +1,38 @@
 import { Handle } from '@tsdi/ioc';
-import { EndpointContext } from '../filters/context';
+import { EndpointContext } from '../endpoints/context';
+
+
 
 /**
- * middleware context.
+ * Middleware is a chainable behavior modifier for context.
  */
-export abstract class MiddlewareContext<TRequest = any, TResponse = any> extends EndpointContext {
+export interface Middleware<Tx extends EndpointContext = EndpointContext> {
+    /**
+     * invoke the middleware.
+     * @param ctx  context with request and response.
+     * @param next The next middleware in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
+     */
+    invoke(ctx: Tx, next: () => Promise<void>): Promise<void>;
+}
+
+/**
+ * middleware context
+ */
+export interface Context {
     /**
      * url
      */
-    abstract get url(): string;
+    get url(): string;
     /**
      * transport request.
      */
-    abstract get request(): TRequest;
+    get request(): any;
     /**
      * transport response.
      */
-    abstract get response(): TResponse;
+    get response(): any;
 
     /**
      * Perform a 302 redirect to `url`.
@@ -36,31 +52,16 @@ export abstract class MiddlewareContext<TRequest = any, TResponse = any> extends
      * @param {String} [alt]
      * @api public
      */
-    abstract redirect?(url: string, alt?: string): void;
-}
-
-
-/**
- * Middleware is a chainable behavior modifier for context.
- */
-export interface Middleware<T extends MiddlewareContext = MiddlewareContext> {
-    /**
-     * invoke the middleware.
-     * @param ctx  context with request and response.
-     * @param next The next middleware in the chain, or the backend
-     * if no interceptors remain in the chain.
-     * @returns An observable of the event stream.
-     */
-    invoke(ctx: T, next: () => Promise<void>): Promise<void>;
+    redirect?(url: string, alt?: string): void;
 }
 
 /**
  * middleware function
  */
-export type MiddlewareFn<T extends MiddlewareContext = MiddlewareContext> = Handle<T, Promise<void>>;
+export type MiddlewareFn<T extends EndpointContext = EndpointContext> = Handle<T, Promise<void>>;
 /**
  * middleware like.
  */
-export type MiddlewareLike<T extends MiddlewareContext = MiddlewareContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends EndpointContext = EndpointContext> = Middleware<T> | MiddlewareFn<T>;
 
 

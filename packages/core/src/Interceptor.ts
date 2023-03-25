@@ -1,9 +1,9 @@
-import { getTokenOf, InvocationContext, Token, ProvdierOf, TypeOf } from '@tsdi/ioc';
+import { getTokenOf, Token, ProvdierOf, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Endpoint } from './Endpoint';
+import { Handler } from './Handler';
 
 /**
- * Interceptor is a chainable behavior modifier for `endpoints`.
+ * Interceptor is a chainable behavior modifier for `hanlders`.
  */
 export interface Interceptor<TInput = any, TOutput = any> {
     /**
@@ -11,10 +11,9 @@ export interface Interceptor<TInput = any, TOutput = any> {
      * @param input  request input.
      * @param next The next interceptor in the chain, or the backend
      * if no interceptors remain in the chain.
-     * @param context request context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: Endpoint<TInput, TOutput>, context: InvocationContext): Observable<TOutput>;
+    intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<TOutput>;
 }
 
 /**

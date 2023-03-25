@@ -1,7 +1,7 @@
 import { ClassType, EMPTY, EMPTY_OBJ, Type, TypeOf } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass, isPrimitive, isClassType } from '../utils/chk';
+import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -63,17 +63,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        const args = options.arguments;
-        if (args) {
-            if (isClassType(args)) {
-                this.injector.inject({ provide: CONTEXT_ARGS, useExisting: args });
-            } else {
-                this._args = args;
-                this.injector.setValue(CONTEXT_ARGS, args);
-                const argType = getClass(args);
-                if (!isPrimitive(argType)) {
-                    this.injector.setValue(argType, args);
-                }
+        const payload = options.payload || options.arguments;
+        if (payload) {
+            this._payload = payload;
+            this.injector.setValue(CONTEXT_PAYLOAD, payload);
+            if (!isFunction(payload)) {
+                const argType = getClass(payload);
+                this.injector.setValue(argType, payload);
             }
         }
 
@@ -149,15 +145,15 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected _args?: T;
+    protected _payload?: T;
     /**
-     * the invocation arguments.
+     * the invocation payload.
      */
-    get arguments(): T {
-        if(!this._args) {
-            this._args = this.injector.get(CONTEXT_ARGS);
+    get payload(): T {
+        if (!this._payload) {
+            this._payload = this.injector.get(CONTEXT_PAYLOAD);
         }
-        return this._args!;
+        return this._payload!;
     }
 
     get used(): boolean {
@@ -353,9 +349,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 }
 
 /**
- * context arguments token.
+ * context payload token.
  */
-export const CONTEXT_ARGS = tokenId('CONTEXT_ARGS');
+export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
 
 /**
  * Missing argument execption.

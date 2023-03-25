@@ -8,15 +8,15 @@ export function missingPipeExecption(parameter: Parameter, type?: ClassType, met
 
 export const primitiveResolvers: TransportArgumentResolver[] = [
     composeResolver<TransportArgumentResolver, TransportParameter>(
-        (parameter, ctx) => !!parameter.scope && isDefined(ctx.arguments?.[parameter.scope]),
+        (parameter, ctx) => !!parameter.scope && isDefined(ctx.payload?.[parameter.scope]),
         composeResolver<TransportArgumentResolver>(
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {
                 canResolve(parameter, ctx) {
-                    return !!parameter.scope && isDefined(ctx.arguments[parameter.scope]?.[parameter.field ?? parameter.name!])
+                    return !!parameter.scope && isDefined(ctx.payload[parameter.scope]?.[parameter.field ?? parameter.name!])
                 },
                 resolve(parameter, ctx) {
-                    const scope = ctx.arguments[parameter.scope!];
+                    const scope = ctx.payload[parameter.scope!];
                     const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(scope[parameter.field ?? parameter.name!], ...parameter.args || EMPTY)
@@ -24,10 +24,10 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             },
             {
                 canResolve(parameter, ctx) {
-                    return !parameter.field && !!parameter.scope && isNative(ctx.arguments[parameter.scope])
+                    return !parameter.field && !!parameter.scope && isNative(ctx.payload[parameter.scope])
                 },
                 resolve(parameter, ctx) {
-                    const value = ctx.arguments[parameter.scope!];
+                    const value = ctx.payload[parameter.scope!];
                     const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(value, ...parameter.args || EMPTY)
@@ -39,10 +39,10 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.name!;
-                    return !!parameter.scope && isList(ctx.arguments[parameter.scope]?.[field])
+                    return !!parameter.scope && isList(ctx.payload[parameter.scope]?.[field])
                 },
                 resolve(parameter, ctx) {
-                    const value = ctx.arguments[parameter.scope!][parameter.field ?? parameter.name!];
+                    const value = ctx.payload[parameter.scope!][parameter.field ?? parameter.name!];
                     const values: any[] = isString(value) ? value.split(',') : value;
                     const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
@@ -54,10 +54,10 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
 
             canResolve(parameter, ctx) {
                 return isDefined(parameter.pipe) && parameter.scope
-                    && (parameter.field ? ctx.arguments[parameter.scope][parameter.field] : Object.keys(ctx.arguments[parameter.scope]).length > 0)
+                    && (parameter.field ? ctx.payload[parameter.scope][parameter.field] : Object.keys(ctx.payload[parameter.scope]).length > 0)
             },
             resolve(parameter, ctx) {
-                const value = parameter.field ? ctx.arguments[parameter.scope!][parameter.field] : ctx.arguments[parameter.scope!];
+                const value = parameter.field ? ctx.payload[parameter.scope!][parameter.field] : ctx.payload[parameter.scope!];
                 const pipe = getPipe(parameter, ctx);
                 if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                 return pipe.transform(value, ...parameter.args || EMPTY)

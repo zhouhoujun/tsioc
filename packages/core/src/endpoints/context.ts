@@ -1,4 +1,4 @@
-import { CONTEXT_ARGS, DefaultInvocationContext, EMPTY, Injector, InvocationOption, OperationArgumentResolver } from '@tsdi/ioc';
+import { CONTEXT_PAYLOAD, DefaultInvocationContext, EMPTY, Injector, InvocationOption, OperationArgumentResolver } from '@tsdi/ioc';
 import { getResolversToken } from './resolver';
 import { primitiveResolvers } from './resolvers';
 
@@ -9,11 +9,11 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
 
 
     /**
-     * set arguments.
+     * set plaload.
      */
-    set arguments(val: TInput) {
-        this._args = val;
-        this.injector.setValue(CONTEXT_ARGS, this._args);
+    setPayload(val: TInput) {
+        this._payload = val;
+        this.injector.setValue(CONTEXT_PAYLOAD, this._payload);
     }
 
     /**
@@ -22,8 +22,8 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
     execption?: any;
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
-        if (!this.arguments) return EMPTY;
-        return this.injector.get(getResolversToken(this.arguments), primitiveResolvers);
+        if (!this.payload) return EMPTY;
+        return this.injector.get(getResolversToken(this.payload), primitiveResolvers);
     }
 
     protected override clear(): void {

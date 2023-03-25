@@ -1,8 +1,11 @@
 import { chain, isFunction, lang } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
+import { Middleware, Context, MiddlewareFn, MiddlewareLike } from './middleware';
+import { FnEndpoint } from '../endpoints/fn.endpoint';
+import { Endpoints } from '../endpoints/chain';
+import { EndpointContext } from '../endpoints/context';
 import { Interceptor } from '../Interceptor';
-import { Endpoints, EndpointBackend, FnEndpoint } from '../Endpoint';
-import { Middleware, MiddlewareContext, MiddlewareFn, MiddlewareLike } from './middleware';
+import { Backend } from '../Handler';
 
 
 
@@ -11,7 +14,7 @@ import { Middleware, MiddlewareContext, MiddlewareFn, MiddlewareLike } from './m
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareFnify<T extends MiddlewareContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
+export function middlewareFnify<T extends EndpointContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
     return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
@@ -20,7 +23,7 @@ export function middlewareFnify<T extends MiddlewareContext>(m: MiddlewareLike<T
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends MiddlewareContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
+export function compose<T extends EndpointContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => middlewareFnify<T>(m));
     return chain(middleFns)
 }
@@ -38,7 +41,7 @@ export class MiddlewareChain implements Middleware {
     private _chainFn?: MiddlewareFn;
     constructor(private middlewares: (Middleware | MiddlewareFn)[]) { }
 
-    invoke<T extends MiddlewareContext>(ctx: T, next?: () => Promise<void>): Promise<void> {
+    invoke<T extends Context>(ctx: EndpointContext<T>, next?: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
             this._chainFn = compose(this.middlewares)
         }
@@ -51,18 +54,18 @@ export class MiddlewareChain implements Middleware {
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<TRequest, TResponse, Tx extends MiddlewareContext = MiddlewareContext> implements EndpointBackend<TRequest, TResponse> {
+export class MiddlewareBackend<Tx extends EndpointContext, TResponse> implements Backend<Tx, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) { }
 
-    handle(req: TRequest, context: Tx): Observable<TResponse> {
+    handle(context: Tx): Observable<TResponse> {
         return defer(async () => {
             if (!this._middleware) {
                 this._middleware = compose(this.middlewares)
             }
             await this._middleware(context, NEXT);
-            return context.response as TResponse;
+            return context.payload.response;
         })
     }
 
@@ -74,20 +77,20 @@ export class MiddlewareBackend<TRequest, TResponse, Tx extends MiddlewareContext
 /**
  * interceptor middleware.
  */
-export class InterceptorMiddleware<TRequest = any, TResponse = any> implements Middleware {
+export class InterceptorMiddleware<Tx extends EndpointContext = EndpointContext, TResponse = any> implements Middleware {
 
-    private _chainFn?: MiddlewareFn;
-    constructor(private readonly middleware: MiddlewareLike, private readonly interceptors: Interceptor<TRequest, TResponse>[]) { }
+    private _chainFn?: MiddlewareFn<Tx>;
+    constructor(private readonly middleware: MiddlewareLike<Tx>, private readonly interceptors: Interceptor<Tx, TResponse>[]) { }
 
-    invoke<T extends MiddlewareContext>(ctx: T, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: Tx, next: () => Promise<void>): Promise<void> {
         if (!this._chainFn) {
-            const chain = new Endpoints(new FnEndpoint((req, ctx) => defer(async () => {
-                await (isFunction(this.middleware)? this.middleware(ctx as T, next) :  this.middleware.invoke(ctx as T, next));
-                return (ctx as T).response as TResponse;
+            const chain = new Endpoints<Tx, TResponse>(new FnEndpoint((ctx) => defer(async () => {
+                await (isFunction(this.middleware)? this.middleware(ctx, next) :  this.middleware.invoke(ctx, next));
+                return ctx.payload.response;
             })), this.interceptors);
-            this._chainFn = (ctx: MiddlewareContext) => {
+            this._chainFn = (ctx: Tx) => {
                 const defer = lang.defer<void>();
-                const cancel = chain.handle(ctx.request as TRequest, ctx)
+                const cancel = chain.handle(ctx)
                     .subscribe({
                         error: (err) => {
                             defer.reject(err);

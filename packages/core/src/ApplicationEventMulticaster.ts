@@ -4,10 +4,19 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Endpoint } from './Endpoint';
 import { EndpointService } from './EndpointService';
+import { EndpointContext } from './endpoints/context';
 import { Filter } from './filters/filter';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
+
+
+/**
+ * Application event context.
+ */
+export class ApplicationEventContext extends EndpointContext<ApplicationEvent> {
+
+}
 
 /**
  * providing the basic listener registration facility.
@@ -29,7 +38,7 @@ export abstract class ApplicationEventMulticaster implements EndpointService, Ap
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptor(interceptor: ProvdierOf<Interceptor<ApplicationEvent, any>> | ProvdierOf<Interceptor<ApplicationEvent, any>>[], order?: number): this;
+    abstract useInterceptor(interceptor: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
     /**
      * use filter
      * @param filter 

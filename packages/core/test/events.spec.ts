@@ -5,22 +5,22 @@ import { Application, ApplicationContext, Dispose, Endpoint, EndpointContext, Ev
 
 @Injectable()
 export class StringFilter implements Filter  {
-    intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: EndpointContext<any>): Observable<any> {
-        if(isString(input.payload)){
-            return next.handle(input, context);
+    intercept(context: EndpointContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+        if(isString(context.payload.payload)){
+            return next.handle(context);
         }
-        return of(input);
+        return of(context);
     }
 }
 
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: EndpointContext<any>): Observable<any> {
-        if(isPlainObject(input.payload)){
-            return next.handle(input, context);
+    intercept(context: EndpointContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+        if(isPlainObject(context.payload.payload)){
+            return next.handle(context);
         }
-        return of(input);
+        return of(context);
     }
 
 }
@@ -29,11 +29,11 @@ export class JsonFilter implements Filter  {
 
 @Injectable()
 export class PayloadInterceptor implements Interceptor {
-    intercept(input: PayloadApplicationEvent, next: Endpoint<any, any>, context: InvocationContext<any>): Observable<any> {
-        if (isString(input.payload)) {
-            input.payload = 'hi ' + input.payload;
+    intercept(context: InvocationContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+        if (isString(context.payload.payload)) {
+            context.payload.payload = 'hi ' + context.payload.payload;
         }
-        return next.handle(input, context);
+        return next.handle(context);
     }
 
 }

@@ -47,9 +47,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract hasRef(ctx: InvocationContext): boolean;
     /**
-     * the invocation arguments.
+     * the invocation payload.
      */
-    abstract get arguments(): T;
+    abstract get payload(): T;
     /**
      * get value ify create by factory and register the value for the token.
      * @param token the token to get value.
@@ -148,9 +148,14 @@ export type TokenValue<T = any> = [Token<T>, T];
  */
 export interface InvokeOptions<TArg = any> {
     /**
-     * invocation arguments data.
+     * invocation payload data.
      */
-    arguments?: TypeOf<TArg>;
+    payload?: TArg;
+    /**
+     * invocation payload data.
+     * @deprecated use payload instead.
+     */
+    arguments?: TArg;
     /**
      * token values.
      */

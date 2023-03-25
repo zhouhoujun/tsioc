@@ -9,7 +9,7 @@ import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, 
 import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
 import { Middleware, MiddlewareFn } from './middleware';
 import { TransportParameterDecorator } from '../metadata';
-import { TransportParameter } from '../filters';
+import { TransportParameter } from '../endpoints/resolver';
 
 
 

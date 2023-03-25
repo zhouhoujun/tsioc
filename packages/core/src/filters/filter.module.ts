@@ -53,7 +53,6 @@ export const FILTER_PROVIDERS: ProviderType[] = [
 
 
 @Module({
-    providedIn: 'root',
     imports: [
         TransformModule,
     ],
