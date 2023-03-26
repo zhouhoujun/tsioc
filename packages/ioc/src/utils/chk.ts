@@ -247,23 +247,28 @@ export function isPrimitive(target: any): boolean {
 }
 
 function isPrimit(target: Function): boolean {
-    return target === Function
-        // || target === Object
-        || target === String
-        || target === Number
-        || target === Boolean
-        || target === Array
-        || target === Date
-        || target === Symbol
+    return isBasicType(target)
+        || target === Object
         || target === Promise
 }
 
 /**
- * is base type or not.
- *
- * @deprecated use `isPrimitiveType` instead.
+ * is target basic type, value or not.
+ * @param target 
+ * @returns 
  */
-export const isBaseType = isPrimitiveType;
+export function isBasic(target: any) : boolean {
+    return isBasicType(getClass(target))
+}
+function isBasicType(target: Function) : boolean {
+    return target === Function
+    || target === String
+    || target === Number
+    || target === Boolean
+    || target === Array
+    || target === Date
+    || target === Symbol
+}
 
 export function isAnnotation(target: any): target is AnnotationType {
     if (!isFunction(target)) return false;

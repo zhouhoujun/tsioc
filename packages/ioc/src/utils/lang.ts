@@ -99,7 +99,7 @@ export function deepForEach<T>(
             deepForEach(value, fn, isRecord, getRecord)
         } else if (value && isRecord && isRecord(value)) {
             deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord)
-        } else {
+        } else if (value) {
             fn(value as T)
         }
     })
