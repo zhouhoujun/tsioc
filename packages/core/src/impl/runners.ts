@@ -131,12 +131,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._endpoint.handle(createEndpointContext(this.injector, { payload: type })));
+            return lastValueFrom(this._endpoint.handle(createEndpointContext(this.injector, { payload: { useValue: type } })));
         }
         return lastValueFrom(
             this.beforeRun()
                 .pipe(
-                    mergeMap(v => this._endpoint.handle(createEndpointContext(this.injector, { payload: this._types }))),
+                    mergeMap(v => this._endpoint.handle(createEndpointContext(this.injector, { payload: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );
