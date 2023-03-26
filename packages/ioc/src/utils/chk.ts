@@ -228,7 +228,7 @@ const native = /\[native code\]/;
  * @returns {boolean}
  */
 export function isNative(target: any): boolean {
-    return isFunction(target)? native.test(target.toString()) : native.test(getClass(target).toString())
+    return isFunction(target) ? native.test(target.toString()) : native.test(getClass(target).toString())
 }
 
 /**
@@ -239,12 +239,16 @@ export function isNative(target: any): boolean {
  * @returns {boolean}
  */
 export function isPrimitiveType(target: any): boolean {
-    return isFunction(target) && isPrimitive(target)
+    return isFunction(target) && isPrimit(target)
 }
 
-export function isPrimitive(target: Function): boolean {
+export function isPrimitive(target: any): boolean {
+    return isPrimit(getClass(target));
+}
+
+function isPrimit(target: Function): boolean {
     return target === Function
-        || target === Object
+        // || target === Object
         || target === String
         || target === Number
         || target === Boolean

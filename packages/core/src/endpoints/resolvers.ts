@@ -1,4 +1,4 @@
-import { ClassType, composeResolver, EMPTY, isArray, isDefined, isNative, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
+import { ClassType, composeResolver, EMPTY, getClass, isArray, isDefined, isPrimitive, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
 import { MessageArgumentExecption } from '../execptions';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 
@@ -24,7 +24,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             },
             {
                 canResolve(parameter, ctx) {
-                    return !parameter.field && !!parameter.scope && isNative(ctx.payload[parameter.scope])
+                    return !parameter.field && !!parameter.scope && (isPrimitive(ctx.payload[parameter.scope]) || parameter.type == getClass(ctx.payload[parameter.scope]))
                 },
                 resolve(parameter, ctx) {
                     const value = ctx.payload[parameter.scope!];

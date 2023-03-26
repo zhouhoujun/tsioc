@@ -423,10 +423,12 @@ export function dispatchTypeDecor(type: ClassType, define: DecorDefine, options:
 }
 
 export function dispatchPorpDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
+    if(!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(propDecorActions, type, type.constructor, define, options)
 }
 
 export function dispatchMethodDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
+    if(!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(methodDecorActions, type, type.constructor, define, options)
 }
 
@@ -437,6 +439,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
     } else {
         type = type.constructor
     }
+    if(!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(paramDecorActions, target, type, define, options)
 }
 

@@ -265,20 +265,24 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         let result: T | null | undefined;
-        let canResolved = false;
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
-            canResolved = true;
             result = metaRvr.resolve(meta, this, target);
             if (!isNil(result)) {
                 return result;
             }
         }
+
+        let canResolved = false;
         if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
-                canResolved = true;
                 result = r.resolve(meta, this, target);
-                return !isNil(result);
+                if (!isNil(result)) {
+                    canResolved = true;
+                    return true;
+                } else if (meta.nullable) {
+                    canResolved = true;
+                }
             }
             return false
         })) {
@@ -297,7 +301,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
-        return new MissingParameterExecption(missings, type, method)
+        throw new MissingParameterExecption(missings, type, method)
     }
 
     get destroyed() {

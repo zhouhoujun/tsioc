@@ -54,7 +54,7 @@ export type ArgumentResolver = TypeOf<OperationArgumentResolver>;
  */
 export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
     return {
-        canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx) && resolvers.some(r => r.canResolve(parameter, ctx)),
+        canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx),
         resolve: (parameter: TP, ctx: InvocationContext) => {
             let result: any;
             resolvers.some(r => {

@@ -1,4 +1,4 @@
-import { ArgumentExecption, Injectable, Module } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, MissingParameterExecption, Module } from '@tsdi/ioc';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 import { Application, ApplicationContext, MessageMissingExecption, PayloadApplicationEvent } from '../src';
@@ -111,10 +111,13 @@ describe('Application Event Execption', () => {
 
     it('payload filed transport parameter arguments message execption', async () => {
 
-        await lastValueFrom(ctx.publishEvent({ name: 'name' }));
+        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }));
+        expect(result).toBeInstanceOf(MissingParameterExecption);
+
+        expect((result as MissingParameterExecption).message.indexOf('name: "age"')).toBeGreaterThan(1);
+
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
-
         expect(testServiceRef?.getInstance().name).toEqual('name');
         expect(testServiceRef?.getInstance().age).toEqual(20);
     })
