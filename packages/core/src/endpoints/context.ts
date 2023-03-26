@@ -1,6 +1,5 @@
 import { CONTEXT_PAYLOAD, DefaultInvocationContext, EMPTY, Injector, InvocationOption, OperationArgumentResolver } from '@tsdi/ioc';
 import { getResolversToken } from './resolver';
-import { primitiveResolvers } from './resolvers';
 
 /**
  * endpoint context.
@@ -23,7 +22,7 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.payload) return EMPTY;
-        return this.injector.get(getResolversToken(this.payload), primitiveResolvers);
+        return this.injector.get(getResolversToken(this.payload), EMPTY);
     }
 
     protected override clear(): void {

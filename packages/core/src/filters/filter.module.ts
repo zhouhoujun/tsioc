@@ -1,5 +1,8 @@
 import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
+import { getResolversToken } from '../endpoints';
+import { primitiveResolvers } from '../endpoints/resolvers';
+import { PayloadApplicationEvent } from '../events';
 import { TransformModule } from '../pipes/transform.module';
 import { CatchFilter, ExecptionHandlerBackend } from './execption.filter';
 import { FilterHandlerResolver } from './filter';
@@ -48,7 +51,8 @@ export const FILTER_PROVIDERS: ProviderType[] = [
     // StatusInterceptorFilter,
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true },
     CatchFilter,
-    ExecptionHandlerBackend
+    ExecptionHandlerBackend,
+    { provide: getResolversToken(PayloadApplicationEvent), useValue: primitiveResolvers }
 ]
 
 
