@@ -1,7 +1,6 @@
 import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
-import { ApplicationExit } from './ApplicationExit';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
 import { setOptions } from './EndpointService';
@@ -187,10 +186,6 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     }
 
     protected refreshContext(ctx: T): any {
-        const exit = ctx.injector.get(ApplicationExit, null);
-        if (exit) {
-            exit.register()
-        }
         return ctx.refresh()
     }
 

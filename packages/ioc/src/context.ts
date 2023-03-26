@@ -150,12 +150,12 @@ export interface InvokeOptions<TArg = any> {
     /**
      * invocation payload data.
      */
-    payload?: TArg;
+    payload?: ProvdierOf<TArg>;
     /**
      * invocation payload data.
      * @deprecated use payload instead.
      */
-    arguments?: TArg;
+    arguments?: ProvdierOf<TArg>;
     /**
      * token values.
      */

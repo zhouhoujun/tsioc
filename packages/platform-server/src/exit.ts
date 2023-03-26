@@ -1,22 +1,22 @@
-import { ApplicationContext, ApplicationExit } from '@tsdi/core';
+import { ApplicationContext, Start } from '@tsdi/core';
 import { Static } from '@tsdi/ioc';
 
 @Static()
-export class ServerApplicationExit extends ApplicationExit {
+export class ApplicationExit {
 
-    constructor(readonly context: ApplicationContext) {
-        super()
-    }
+    constructor() { }
 
-    override register(): void {
-        const usedsignls = this.context.payload.signls;
+    @Start()
+    register(context: ApplicationContext): void {
+        const usedsignls = context.payload.signls;
         if (!usedsignls?.length) return;
 
-        const logger = this.context.getLogger();
+        const logger = context.getLogger();
         const cleanup = async (signal: string) => {
             try {
                 usedsignls.forEach(si => process.removeListener(si, cleanup));
-                await this.context.destroy();
+                logger?.info('Application', process.pid, 'close');
+                await context.destroy();
                 process.kill(process.pid, signal)
             } catch (err) {
                 logger?.error(err);
