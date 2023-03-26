@@ -1,6 +1,6 @@
 import {
     Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
-    Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef
+    Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
 import { Logger, LoggerManager } from '@tsdi/logs';
 import { Observable } from 'rxjs';
@@ -125,7 +125,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         super()
     }
 
-    create<T, TArg>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext {
+    create<T, TArg extends ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
@@ -134,7 +134,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
             option = {};
         }
         if(!option.payload) {
-            option.payload = ApplicationArguments as TArg;
+            option.payload = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);
         return ctx

@@ -1,7 +1,7 @@
 import { Injectable, InvocationContext, isPlainObject, isString, Module } from '@tsdi/ioc';
 import expect = require('expect');
 import { lastValueFrom, Observable, of } from 'rxjs';
-import { Application, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+import { Application, ApplicationArguments, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
@@ -126,7 +126,7 @@ class MainModule {
 
 describe('Application Event', () => {
 
-    let ctx: ApplicationContext;
+    let ctx: ApplicationContext<MainModule, ApplicationArguments>;
     before(async () => {
         ctx = await Application.run(MainModule);
     })

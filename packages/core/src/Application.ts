@@ -5,6 +5,7 @@ import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
 import { setOptions } from './EndpointService';
 import { FilterModule } from './filters/filter.module';
+import { ApplicationArguments } from './ApplicationArguments';
 
 
 /**
@@ -13,7 +14,7 @@ import { FilterModule } from './filters/filter.module';
  * @export
  * @class Application
  */
-export class Application<T extends ApplicationContext = ApplicationContext> {
+export class Application<T, TArg extends ApplicationArguments = any> {
 
     private _loads?: Type[];
     /**
@@ -23,10 +24,10 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     /**
      * application context.
      */
-    protected context!: T;
+    protected context!: ApplicationContext<T, TArg>;
 
 
-    constructor(protected target: Type | ApplicationOption<any, any>, protected loader?: ModuleLoader) {
+    constructor(protected target: Type<T> | ApplicationOption<T, TArg>, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
@@ -57,7 +58,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      *
      * @returns instance of {@link ApplicationContext}.
      */
-    getContext(): ApplicationContext {
+    getContext(): ApplicationContext<T, TArg> {
         return this.context
     }
 
@@ -68,7 +69,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      * @param {ApplicationOption} option option of type {@link ApplicationOption}
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run<T, TArg>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext>
+    static run<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>
     /**
      * run application.
      *
@@ -77,18 +78,18 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run<T, TArg>(target: Type<T>, option?: EnvironmentOption<TArg>): Promise<ApplicationContext>;
-    static run(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext> {
-        return new Application(option ? { module: target, ...option } as ApplicationOption<any, any> : target).run()
+    static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: EnvironmentOption<TArg>): Promise<ApplicationContext<T, TArg>>;
+    static run<T, TArg extends ApplicationArguments>(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext<T, TArg>> {
+        return new Application<T, TArg>(option ? { module: target, ...option } as ApplicationOption : target).run();
     }
 
     /**
      * run application of module.
      *
      * @param {...string[]} args
-     * @returns {Promise<T>}
+     * @returns {Promise<ApplicationContext<T, TArg>>}
      */
-    async run(): Promise<T> {
+    async run(): Promise<ApplicationContext<T, TArg>> {
         try {
             const ctx = await this.createContext();
             await this.prepareContext(ctx);
@@ -151,25 +152,25 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         } as ModuleDef);
     }
 
-    protected async createContext(): Promise<T> {
+    protected async createContext(): Promise<ApplicationContext<T, TArg>> {
         if (!this.context) {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
                 const modueRef = root.reflectiveFactory.create(target, root);
-                this.context = modueRef.resolve(ApplicationFactory).create(root) as T
+                this.context = modueRef.resolve(ApplicationFactory).create(root);
             } else {
                 const modueRef = root.reflectiveFactory.create(root.moduleType, root);
                 if (target.loads) {
                     this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
                 }
-                this.context = modueRef.resolve(ApplicationFactory).create(root, target) as T;
+                this.context = modueRef.resolve(ApplicationFactory).create(root, target);
             }
         }
         return this.context
     }
 
-    protected prepareContext(ctx: T): any {
+    protected prepareContext(ctx: ApplicationContext<T, TArg>): any {
         const target = this.target;
         if (!isFunction(target)) {
             if (target.events) {
@@ -185,15 +186,15 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         }
     }
 
-    protected refreshContext(ctx: T): any {
+    protected refreshContext(ctx: ApplicationContext<T, TArg>): any {
         return ctx.refresh()
     }
 
-    protected callRunners(ctx: ApplicationContext): Promise<void> {
+    protected callRunners(ctx: ApplicationContext<T, TArg>): Promise<void> {
         return ctx.runners.run()
     }
 
-    protected async handleRunFailure(ctx: ApplicationContext, error: Error | any): Promise<void> {
+    protected async handleRunFailure(ctx: ApplicationContext<T, TArg>, error: Error | any): Promise<void> {
         if (ctx) {
             const logger = ctx.getLogger();
             logger ? logger.error(error) : console.error(error);

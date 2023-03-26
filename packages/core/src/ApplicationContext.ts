@@ -18,15 +18,15 @@ import { EndpointOptions, EndpointServiceOptions } from './EndpointService';
  * implements {@link Destroyable}.
  */
 @Abstract()
-export abstract class ApplicationContext extends InvocationContext implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = any, TArg extends ApplicationArguments = ApplicationArguments> extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
     /**
      * application root module injector.
      */
-    abstract get injector(): ModuleRef;
+    abstract get injector(): ModuleRef<T>;
     /**
      * module instance.
      */
-    abstract get instance(): any;
+    abstract get instance(): T;
     /**
      * boot base url.
      *
@@ -36,9 +36,9 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
     /**
      * application args of type {@link ApplicationArguments}.
      *
-     * @type {ApplicationArguments}
+     * @type {TArg}
      */
-    abstract get payload(): ApplicationArguments;
+    abstract get payload(): TArg;
     /**
      * application runners.
      *
@@ -158,5 +158,5 @@ export abstract class ApplicationFactory {
      * @param option application option.
      * @returns instance of {@link EnvironmentOption}
      */
-    abstract create<T, TArg>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext;
+    abstract create<T, TArg extends ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg>;
 }
