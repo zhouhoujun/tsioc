@@ -29,7 +29,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
 
     private _runners: ApplicationRunners;
 
-    constructor(readonly injector: ModuleRef, options: InvokeArguments = EMPTY_OBJ) {
+    constructor(readonly injector: ModuleRef, options: InvokeArguments<any> = EMPTY_OBJ) {
         super(injector, options);
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
@@ -58,7 +58,7 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return this._multicaster;
     }
 
-    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<ReflectiveRef<C>> {
+    async bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<ReflectiveRef<C>> {
         const typeRef = this.runners.attach(type, option);
         if (typeRef) {
             await this.runners.run(typeRef.type);
@@ -125,7 +125,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         super()
     }
 
-    create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext {
+    create<T, TArg>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
@@ -134,13 +134,13 @@ export class DefaultApplicationFactory extends ApplicationFactory {
             option = {};
         }
         if(!option.payload) {
-            option.payload = ApplicationArguments;
+            option.payload = ApplicationArguments as TArg;
         }
         const ctx = this.createInstance(root, option);
         return ctx
     }
 
-    protected createInstance(inj: ModuleRef, option?: InvokeArguments) {
+    protected createInstance<TArg>(inj: ModuleRef, option?: InvokeArguments<TArg>) {
         return new DefaultApplicationContext(inj, option)
     }
 }

@@ -345,7 +345,7 @@ export type AutoWiredMetadata = MethodParamPropMetadata;
  * @interface RunnableMetadata
  * @extends {TypeMetadata}
  */
-export interface RunnableMetadata extends TypeMetadata, PatternMetadata, ProvidedInMetadata {
+export interface RunnableMetadata<TArg> extends TypeMetadata, PatternMetadata, ProvidedInMetadata {
     /**
      * the method as runnable.
      */
@@ -357,7 +357,7 @@ export interface RunnableMetadata extends TypeMetadata, PatternMetadata, Provide
     /**
      * runnable invoke args.
      */
-    args?: InvokeArguments;
+    args?: InvokeArguments<TArg>;
     /**
      * is auto run when created instance.
      */

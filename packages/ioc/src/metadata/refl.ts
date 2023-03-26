@@ -303,7 +303,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
 const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
 export const RunnableAction = (ctx: DecorContext, next: () => void) => {
     if (runnableDecors[ctx.define.decor.toString()]) {
-        const metadata = ctx.define.metadata as RunnableMetadata;
+        const metadata = ctx.define.metadata as RunnableMetadata<any>;
         (metadata as any).decorType = ctx.define.decorType,
             metadata.method = metadata.method ?? ctx.define.propertyKey,
             metadata.order = ctx.define.decorType === Decors.CLASS ? 0 : metadata.order
@@ -344,7 +344,7 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.define.decor.toString()]) {
-        const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
+        const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions<any>;
         if (mpdrs) {
             ctx.class.setMethodOptions(ctx.define.propertyKey, mpdrs)
         }

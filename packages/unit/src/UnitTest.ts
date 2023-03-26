@@ -1,5 +1,5 @@
 import { Module, ProviderType, Type } from '@tsdi/ioc';
-import { ApplicationOption, Application, PROCESS_ROOT, LoadType } from '@tsdi/core';
+import { Application, PROCESS_ROOT, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
@@ -49,5 +49,5 @@ export async function runTest(src: string | Type | (string | Type)[], config?: U
       module: UnitTest,
       loads,
       providers
-   } as ApplicationOption)
+   })
 }

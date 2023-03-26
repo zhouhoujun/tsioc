@@ -60,7 +60,7 @@ export interface RunableDefine {
     /**
      * runnable invoke args.
      */
-    args?: InvokeArguments;
+    args?: InvokeArguments<any>;
     /**
      * is auto run when created instance.
      */
@@ -238,9 +238,9 @@ export class Class<T = any> {
     /**
      * method providers.
      *
-     * @type {Map<string, InvokeOptions>}
+     * @type {Map<string, InvokeOptions<any>>}
      */
-    private methodOptions: Map<string, InvokeOptions>;
+    private methodOptions: Map<string, InvokeOptions<any>>;
     /**
      * runnable defines.
      */
@@ -371,10 +371,10 @@ export class Class<T = any> {
     hasMethodOptions(method: string): boolean {
         return this.methodOptions.has(method)
     }
-    getMethodOptions(method: string): InvokeOptions | undefined {
+    getMethodOptions<T>(method: string): InvokeOptions<T> | undefined {
         return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodOptions(method: string, options: InvokeOptions) {
+    setMethodOptions<T>(method: string, options: InvokeOptions<T>) {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {

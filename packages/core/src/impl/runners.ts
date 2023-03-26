@@ -71,7 +71,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         return this;
     }
 
-    attach<T>(type: Type<T> | Class<T>, options: BootstrapOption = {}): ReflectiveRef<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: BootstrapOption<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
         if (this._maps.has(target.type)) {
             return this._refs.get(target.type)!;

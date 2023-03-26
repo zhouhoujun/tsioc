@@ -26,7 +26,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
     protected context!: T;
 
 
-    constructor(protected target: Type | ApplicationOption, protected loader?: ModuleLoader) {
+    constructor(protected target: Type | ApplicationOption<any, any>, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
@@ -68,7 +68,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      * @param {ApplicationOption} option option of type {@link ApplicationOption}
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run(option: ApplicationOption): Promise<ApplicationContext>
+    static run<T, TArg>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext>
     /**
      * run application.
      *
@@ -77,9 +77,9 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
      * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run(target: Type, option?: EnvironmentOption): Promise<ApplicationContext>;
-    static run(target: any, option?: EnvironmentOption): Promise<ApplicationContext> {
-        return new Application(option ? { module: target, ...option } as ApplicationOption : target).run()
+    static run<T, TArg>(target: Type<T>, option?: EnvironmentOption<TArg>): Promise<ApplicationContext>;
+    static run(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext> {
+        return new Application(option ? { module: target, ...option } as ApplicationOption<any, any> : target).run()
     }
 
     /**
@@ -117,7 +117,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return []
     }
 
-    protected createInjector(providers: ProviderType[], option: ApplicationOption) {
+    protected createInjector<T, TArg>(providers: ProviderType[], option: ApplicationOption<T, TArg>) {
         const container = option.injector ?? Injector.create(providers);
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL)
@@ -133,7 +133,7 @@ export class Application<T extends ApplicationContext = ApplicationContext> {
         return this.createModuleRef(container, option);
     }
 
-    protected createModuleRef(container: Injector, option: ApplicationOption) {
+    protected createModuleRef<T, TArg>(container: Injector, option: ApplicationOption<T, TArg>) {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 

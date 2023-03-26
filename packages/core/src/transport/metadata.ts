@@ -29,7 +29,7 @@ export interface Handle {
      * @param {string} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: string | RegExp, protocol?: Protocols, option?: RouteOptions): MethodDecorator;
+    <TArg>(pattern: string | RegExp, protocol?: Protocols, option?: RouteOptions<TArg>): MethodDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
@@ -37,7 +37,7 @@ export interface Handle {
      * @param {string} pattern message match pattern.
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    (pattern: string | RegExp, option?: RouteOptions): MethodDecorator;
+    <TArg>(pattern: string | RegExp, option?: RouteOptions<TArg>): MethodDecorator;
 
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
@@ -53,10 +53,10 @@ export interface Handle {
  * 
  * @exports {@link Handle}
  */
-export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePattern>('Handle', {
+export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessagePattern>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (parent?: Type<Router> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
-        (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata & HandleMessagePattern,
+        (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata<any> & HandleMessagePattern,
     def: {
         class: (ctx, next) => {
             ctx.class.setAnnotation(ctx.define.metadata);
@@ -66,7 +66,7 @@ export const Handle: Handle = createDecorator<HandleMetadata & HandleMessagePatt
     design: {
         method: (ctx, next) => {
             const def = ctx.class;
-            const metadatas = def.getMetadatas<HandleMetadata>(ctx.currDecor);
+            const metadatas = def.getMetadatas<HandleMetadata<any>>(ctx.currDecor);
 
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(def, injector);
@@ -131,7 +131,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
+    <TArg>(route: string, options: ProtocolRouteMappingOptions<TArg>): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -146,24 +146,24 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 
     /**
      * route decorator. define the controller as an route.
      *
      * @param {ProtocolRouteMappingMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMappingMetadata): ClassDecorator;
+    <TArg>(metadata: ProtocolRouteMappingMetadata<TArg>): ClassDecorator;
     /**
      * route decorator. define the method as an route.
      *
      * @param {RouteMappingMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMappingMetadata): MethodDecorator;
+    <TArg>(metadata: RouteMappingMetadata<TArg>): MethodDecorator;
 }
 
 
-export function createMappingDecorator<T extends ProtocolRouteMappingMetadata>(name: string, controllerOnly?: boolean) {
+export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
         props: (route: string, arg2?: Type<Router> | Type<CanActivate>[] | string | T) => {
             route = normalize(route);
@@ -343,13 +343,13 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
+    <TArg>(route: string, options: ProtocolRouteMappingOptions<TArg>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMappingMetadata): ClassMethodDecorator;
+    <TArg>(metadata: ProtocolRouteMappingMetadata<TArg>): ClassMethodDecorator;
 }
 
 
@@ -383,7 +383,7 @@ export interface RouteMethodDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 
 
@@ -395,14 +395,14 @@ export interface RouteMethodDecorator {
  * @param {RequestMethod} [method]
  * @param { MetadataExtends<T>} [metaExtends]
  */
-export function createRouteDecorator(method: RequestMethod) {
-    return createDecorator<RouteMappingMetadata>('Route', {
+export function createRouteDecorator<TArg>(method: RequestMethod) {
+    return createDecorator<RouteMappingMetadata<TArg>>('Route', {
         props: (
             route: string,
             arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
-            return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata
+            return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata<TArg>
         }
     });
 }
@@ -433,7 +433,7 @@ export interface HeadDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 
 
@@ -465,7 +465,7 @@ export interface OptionsDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -496,7 +496,7 @@ export interface GetDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -528,7 +528,7 @@ export interface DeleteDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 
 }
 /**
@@ -560,7 +560,7 @@ export interface PatchDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -593,7 +593,7 @@ export interface PostDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 /**
  * Post decorator. define the route method as post.
@@ -624,7 +624,7 @@ export interface PutDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: RouteOptions): MethodDecorator;
+    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
 }
 /**
  * Put decorator. define the route method as put.
@@ -657,7 +657,7 @@ export interface HandleMessagePattern {
  * @interface RegisterForMetadata
  * @extends {TypeMetadata}
  */
-export interface HandleMetadata extends TypeMetadata, PatternMetadata, RouteOptions {
+export interface HandleMetadata<TArg> extends TypeMetadata, PatternMetadata, RouteOptions<TArg> {
     /**
      * handle route
      */

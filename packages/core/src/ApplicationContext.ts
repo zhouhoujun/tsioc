@@ -54,7 +54,7 @@ export abstract class ApplicationContext extends InvocationContext implements Ap
      * @param type bootstrap type.
      * @param option bootstrap option.
      */
-    abstract bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<ReflectiveRef<C>>;
+    abstract bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<ReflectiveRef<C>>;
     /**
      * get logger.
      * @param name 
@@ -96,7 +96,7 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 /**
  * Environment option.
  */
-export interface EnvironmentOption extends ModuleOption, EndpointOptions {
+export interface EnvironmentOption<TArg = any> extends ModuleOption, EndpointOptions<TArg> {
     /**
      * boot base url.
      *
@@ -137,7 +137,7 @@ export interface EnvironmentOption extends ModuleOption, EndpointOptions {
 /**
  * ApplicationOption option.
  */
-export interface ApplicationOption<T = any> extends EnvironmentOption {
+export interface ApplicationOption<T= any, TArg = any> extends EnvironmentOption<TArg> {
     /**
      * target module type.
      *
@@ -158,5 +158,5 @@ export abstract class ApplicationFactory {
      * @param option application option.
      * @returns instance of {@link EnvironmentOption}
      */
-    abstract create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext;
+    abstract create<T, TArg>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext;
 }

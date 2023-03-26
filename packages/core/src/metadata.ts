@@ -18,7 +18,7 @@ import { TransportParameter, TransportParameterOptions } from './endpoints/resol
 /**
  * Runner option.
  */
-export interface RunnerOption extends BootstrapOption {
+export interface RunnerOption<TArg> extends BootstrapOption<TArg> {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
@@ -37,14 +37,14 @@ export interface Runner {
      * @param {string} runable the method of the class to run.
      * @param {RunnerOption} [args] the method invoke arguments {@link RunnerOption}.
      */
-    (runable: string, args?: RunnerOption): ClassDecorator;
+    <TArg>(runable: string, args?: RunnerOption<TArg>): ClassDecorator;
 
     /**
      * Runner decorator, use to define the method of class as application Runner.
      * 
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
-    (args?: BootstrapOption): MethodDecorator;
+    <TArg>(args?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**
@@ -52,11 +52,11 @@ export interface Runner {
  */
 export const Runner: Runner = createDecorator('Runner', {
     actionType: 'runnable',
-    props: (method: string | RunnerOption, args?: RunnerOption) =>
+    props: <TArg>(method: string | RunnerOption<TArg>, args?: RunnerOption<TArg>) =>
         (isString(method) ? { method, args } : { args: method }),
 
     afterInit: (ctx) => {
-        const meta = ctx.define.metadata as { method: string, args: RunnerOption };
+        const meta = ctx.define.metadata as { method: string, args: RunnerOption<any> };
         if (meta.args?.parameters) {
             ctx.class.setParameters(meta.method, meta.args.parameters)
         }
@@ -203,14 +203,14 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    (option?: BootstrapOption): MethodDecorator;
+    <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    (event: Type<ApplicationEvent>, option?: BootstrapOption): MethodDecorator;
+    <TArg>(event: Type<ApplicationEvent>, option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler') {
@@ -219,7 +219,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
         design: {
             method: (ctx, next) => {
                 const typeRef = ctx.class;
-                const decors = typeRef.getDecorDefines<EventHandlerMetadata>(ctx.currDecor, Decors.method);
+                const decors = typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'event');
                 const multicaster = injector.get(ApplicationEventMulticaster);
@@ -247,7 +247,7 @@ export const EventHandler: EventHandler = createEventHandler(PayloadApplicationE
 /**
  * event handler metadata.
  */
-export interface EventHandlerMetadata extends BootstrapOption {
+export interface EventHandlerMetadata<TArg> extends BootstrapOption<TArg> {
     /**
      * execption type.
      */
@@ -265,7 +265,7 @@ export interface StartEventHandler {
      *
      * @param {BootstrapOption} option message match option.
      */
-    (option?: BootstrapOption): MethodDecorator;
+    <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**
@@ -285,7 +285,7 @@ export interface StartedEventHandler {
      *
      * @param {BootstrapOption} option message match option.
      */
-    (option?: BootstrapOption): MethodDecorator;
+    <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**
@@ -306,7 +306,7 @@ export interface ShutdownEventHandler {
      *
      * @param {BootstrapOption} option message match option.
      */
-    (option?: BootstrapOption): MethodDecorator;
+    <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**
@@ -327,7 +327,7 @@ export interface DisposeEventHandler {
      *
      * @param {BootstrapOption} option message match option.
      */
-    (option?: BootstrapOption): MethodDecorator;
+    <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**
@@ -340,7 +340,7 @@ export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDispos
 /**
  * Endpoint handler metadata.
  */
-export interface EndpointHandlerMetadata extends BootstrapOption {
+export interface EndpointHandlerMetadata<TArg> extends BootstrapOption<TArg> {
     /**
      * execption type.
      */
@@ -362,7 +362,7 @@ export interface EndpointHanlder {
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    (filter: Type | string, option?: BootstrapOption): MethodDecorator;
+    <TArg>(filter: Type | string, option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**
@@ -376,7 +376,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<EndpointHandlerMetadata>(ctx.currDecor, Decors.method);
+            const decors = typeRef.getDecorDefines<EndpointHandlerMetadata<any>>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector, 'filter');
             const handlerResolver = injector.get(FilterHandlerResolver);
@@ -405,7 +405,7 @@ export interface ExecptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: BootstrapOption): MethodDecorator;
+    <TArg>(execption: Type<Error>, option?: BootstrapOption<TArg>): MethodDecorator;
 }
 
 /**

@@ -195,7 +195,7 @@ export interface Autowired {
      * Autowired decorator with providers for method.
      * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    (options?: InvokeOptions): MethodDecorator;
+    <T>(options?: InvokeOptions<T>): MethodDecorator;
 }
 
 
@@ -312,7 +312,7 @@ export interface Inject {
      * Inject decorator with providers for method.
      * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    (options?: InvokeOptions): MethodDecorator;
+    <T>(options?: InvokeOptions<T>): MethodDecorator;
 }
 
 /**
@@ -833,7 +833,7 @@ export interface Autorun {
      * @param {string} [autorun] the special method name when define to class.
      * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
      */
-    (autorun: string, args?: InvokeArguments): ClassDecorator;
+    <T>(autorun: string, args?: InvokeArguments<T>): ClassDecorator;
     /**
      * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
      * for class, to auto create singleton instance and call this method.
@@ -842,7 +842,7 @@ export interface Autorun {
      *
      * @param {RunnableMetadata} [metadata] metadata map.
      */
-    (metadata: RunnableMetadata): ClassMethodDecorator;
+    <T>(metadata: RunnableMetadata<T>): ClassMethodDecorator;
 
     /**
      * Autorun decorator, for method.  to auto this method after create new instance.
@@ -851,7 +851,7 @@ export interface Autorun {
      * @param {string} [autorun] the special method name when define to class.
      * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
      */
-    (order?: number, args?: InvokeArguments): MethodDecorator;
+    <T>(order?: number, args?: InvokeArguments<T>): MethodDecorator;
 }
 
 /**
@@ -859,8 +859,8 @@ export interface Autorun {
  *
  * @Autorun
  */
-export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
-    props: (arg: string | number, args?: InvokeArguments) => {
+export const Autorun: Autorun = createDecorator<RunnableMetadata<any>>('Autorun', {
+    props: (arg: string | number, args?: InvokeArguments<any>) => {
         if (isString(arg)) {
             return { method: arg, args }
         }

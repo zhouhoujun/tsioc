@@ -15,7 +15,7 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T>(type: Type<T> | Class<T>, options?: BootstrapOption): ReflectiveRef<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: BootstrapOption<TArg>): ReflectiveRef<T>;
 
   /**
    * detach runner

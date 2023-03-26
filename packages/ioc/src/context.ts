@@ -119,7 +119,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
  * @param options 
  * @returns 
  */
-export function createContext(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
+export function createContext<TArg>(parent: Injector | InvocationContext, options?: InvocationOption<TArg>): InvocationContext {
     return INVOCATION_CONTEXT_IMPL.create(parent, options)
 }
 
@@ -132,7 +132,7 @@ export const INVOCATION_CONTEXT_IMPL = {
      * @param parent parent context or parent injector. 
      * @param options invocation options.
      */
-    create(parent: Injector | InvocationContext, options?: InvocationOption): InvocationContext {
+    create<TArg>(parent: Injector | InvocationContext, options?: InvocationOption<TArg>): InvocationContext {
         throw new Execption('not implemented.')
     }
 };
@@ -146,7 +146,7 @@ export type TokenValue<T = any> = [Token<T>, T];
 /**
  * invoke options.
  */
-export interface InvokeOptions<TArg = any> {
+export interface InvokeOptions<TArg> {
     /**
      * invocation payload data.
      */

@@ -400,7 +400,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: InvocationOption) => {
+INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: InvocationOption<TArg>) => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options)
     } else {

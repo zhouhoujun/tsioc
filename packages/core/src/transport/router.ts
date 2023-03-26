@@ -227,7 +227,7 @@ export class MappingRouter extends Router implements OnDestroy {
 /**
  * route options
  */
-export interface RouteOptions extends EndpointOptions {
+export interface RouteOptions<TArg> extends EndpointOptions<TArg> {
     /**
      * protocol
      */
@@ -241,7 +241,7 @@ export interface RouteOptions extends EndpointOptions {
 /**
  * route mapping metadata.
  */
-export interface RouteMappingMetadata extends RouteOptions {
+export interface RouteMappingMetadata<TArg> extends RouteOptions<TArg> {
     /**
      * request method.
      */
@@ -258,7 +258,7 @@ export interface RouteMappingMetadata extends RouteOptions {
 /**
  * Protocol route mapping options.
  */
-export interface ProtocolRouteMappingOptions extends RouteOptions {
+export interface ProtocolRouteMappingOptions<TArg> extends RouteOptions<TArg> {
     /**
      * parent router.
      * default register in root handle queue.
@@ -278,7 +278,7 @@ export interface ProtocolRouteMappingOptions extends RouteOptions {
 /**
  * protocol route mapping metadata.
  */
-export interface ProtocolRouteMappingMetadata extends ProtocolRouteMappingOptions {
+export interface ProtocolRouteMappingMetadata<TArg> extends ProtocolRouteMappingOptions<TArg> {
     /**
      * route.
      *
@@ -296,7 +296,7 @@ export interface ProtocolRouteMappingMetadata extends ProtocolRouteMappingOption
 /**
  * mapping type def.
  */
-export interface MappingDef<T = any> extends TypeDef<T>, ProtocolRouteMappingMetadata {
+export interface MappingDef<T = any> extends TypeDef<T>, ProtocolRouteMappingMetadata<any> {
 
 }
 

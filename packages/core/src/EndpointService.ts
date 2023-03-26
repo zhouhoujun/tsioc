@@ -70,6 +70,6 @@ export function getGuardsToken(type: TypeOf<any>, propertyKey?: string): Token<C
 /**
  * endpoint options.
  */
-export interface EndpointOptions extends EndpointServiceOptions, InvokeArguments {
+export interface EndpointOptions<T = any> extends EndpointServiceOptions, InvokeArguments<T> {
 
 }

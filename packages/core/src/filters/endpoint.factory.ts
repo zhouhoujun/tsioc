@@ -10,7 +10,7 @@ import { Respond } from './filter';
 /**
  * bootstrap option for {@link RunnableRef}.
  */
-export interface BootstrapOption extends EndpointOptions {
+export interface BootstrapOption<T = any> extends EndpointOptions<T> {
     /**
      * bootstrap order
      */
@@ -30,7 +30,7 @@ export abstract class EndpointFactory<T> {
 
     abstract get typeRef(): ReflectiveRef<T>;
 
-    abstract create(propertyKey: string, options: BootstrapOption): Endpoint;
+    abstract create<TArg>(propertyKey: string, options: BootstrapOption<TArg>): Endpoint;
 }
 
 /**

@@ -33,7 +33,7 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
         super()
     }
 
-    create(propertyKey: string, options: EndpointOptions): Endpoint<any, any> {
+    create<TArg>(propertyKey: string, options: EndpointOptions<TArg>): Endpoint<any, any> {
         const endpoint = new OperationEndpoint(this.typeRef.injector,
             getInterceptorsToken(this.typeRef.type, propertyKey),
             this.typeRef.createInvoker(propertyKey),

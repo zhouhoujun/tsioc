@@ -6,7 +6,7 @@ import { Pattern } from './protocols';
 /**
  * Route.
  */
-export interface Route extends EndpointOptions {
+export interface Route<TArg= any> extends EndpointOptions<TArg> {
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.
@@ -62,7 +62,7 @@ export interface Route extends EndpointOptions {
 }
 
 export type LoadChildren = () => any;
-export type Routes = Route[];
+export type Routes = Route<any>[];
 
 
 @Abstract()

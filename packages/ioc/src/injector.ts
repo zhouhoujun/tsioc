@@ -76,7 +76,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
      * @returns {T}
      */
-    abstract resolve<T>(token: Token<T>, option?: InvokeArguments): T;
+    abstract resolve<T>(token: Token<T>, option?: InvokeArguments<any>): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -205,10 +205,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
-     * @param {InvokeArguments} option ivacation arguments, type of {@link InvokeArguments}.
+     * @param {InvokeArguments<any>} option ivacation arguments, type of {@link InvokeArguments<any>}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeArguments): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeArguments<any>): TR;
     /**
      * invoke method.
      * 
