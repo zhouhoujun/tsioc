@@ -4,14 +4,14 @@ import { AnnotationType, ClassType, Type } from '../types';
 declare let process: any;
 
 export const toString = Object.prototype.toString;
-export const _tyfunc = 'function';
-export const _tyundef = 'undefined';
-export const _tystr = 'string';
-export const _tybool = 'boolean';
-export const _tynum = 'number';
-export const _tysymbol = 'symbol';
-export const _tybigint = 'bigint';
-export const _tyobj = 'object';
+const _tyfunc = 'function';
+const _tyundef = 'undefined';
+const _tystr = 'string';
+const _tybool = 'boolean';
+const _tynum = 'number';
+const _tysymbol = 'symbol';
+const _tybigint = 'bigint';
+const _tyobj = 'object';
 
 
 export { isObservable } from 'rxjs';

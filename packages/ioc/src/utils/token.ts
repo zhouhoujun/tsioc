@@ -1,5 +1,4 @@
 import { isInjectToken, Token } from '../tokens';
-import { _tyfunc, _tystr, _tysymbol } from './chk';
 
 
 /**
@@ -26,3 +25,6 @@ import { _tyfunc, _tystr, _tysymbol } from './chk';
     return isInjectToken(target)
 }
 
+const _tysymbol = 'symbol';
+const _tyfunc = 'function';
+const _tystr = 'string';

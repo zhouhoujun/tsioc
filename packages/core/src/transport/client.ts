@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, createContext, EMPTY_OBJ, Execption, Injector, InvocationContext, isNil, tokenId, _tystr } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, createContext, EMPTY_OBJ, Execption, Injector, InvocationContext, isNil, isString, tokenId } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
@@ -317,7 +317,7 @@ export abstract class Client {
                     case 'text':
                         return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is a string.
-                            if (res.body !== null && typeof res.body !== _tystr) {
+                            if (res.body !== null && !isString(res.body)) {
                                 throw new Execption('Response is not a string.')
                             }
                             return res.body

@@ -111,7 +111,7 @@ class DeviceQueue implements Middleware {
         const deviceA_state = ctx.get('deviceA_state');
         const deviceB_state = ctx.get('deviceB_state');
 
-        ctx.setPayload({
+        Object.assign(ctx.payload, {
             device,
             deviceA_state,
             deviceB_state

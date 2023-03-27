@@ -16,7 +16,7 @@ import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { FnEndpoint } from '../endpoints/fn.endpoint';
 import { runEndpoints } from '../endpoints/runs';
-import { createEndpointContext, EndpointContext } from '../endpoints/context';
+import { EndpointContext } from '../endpoints/context';
 import { CatchFilter } from '../filters/execption.filter';
 
 
@@ -131,12 +131,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._endpoint.handle(createEndpointContext(this.injector, { payload: { useValue: type } })));
+            return lastValueFrom(this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
         }
         return lastValueFrom(
             this.beforeRun()
                 .pipe(
-                    mergeMap(v => this._endpoint.handle(createEndpointContext(this.injector, { payload: { useValue: this._types } }))),
+                    mergeMap(v => this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );

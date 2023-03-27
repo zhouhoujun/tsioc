@@ -1,4 +1,4 @@
-import { _tyundef } from '@tsdi/ioc';
+const _tyundef = 'undefined';
 
 /**
  * Safely assert whether the given value is an ArrayBuffer.

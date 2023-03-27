@@ -1,24 +1,10 @@
-import { CONTEXT_PAYLOAD, DefaultInvocationContext, EMPTY, Injector, InvocationOption, OperationArgumentResolver, Token } from '@tsdi/ioc';
+import { DefaultInvocationContext, EMPTY,  OperationArgumentResolver, Token } from '@tsdi/ioc';
 import { getResolversToken } from './resolver';
 
 /**
  * endpoint context.
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
-
-
-    /**
-     * set plaload.
-     */
-    setPayload(val: TInput) {
-        this._payload = val;
-        this.injector.setValue(CONTEXT_PAYLOAD, this._payload);
-    }
-
-    override isSelf(token: Token) {
-        return token === EndpointContext;
-    }
-
     /**
      * execption.
      */
@@ -34,14 +20,9 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         this.execption = null;
     }
 
-}
+    override isSelf(token: Token) {
+        return token === EndpointContext;
+    }
 
-/**
- * create invocation context.
- * @param parent 
- * @param options 
- * @returns 
- */
-export function createEndpointContext<T>(parent: Injector, options?: InvocationOption<T>): EndpointContext {
-    return new EndpointContext(parent, options)
+
 }

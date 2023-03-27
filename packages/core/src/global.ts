@@ -2,7 +2,7 @@
 // CommonJS / Node have global context exposed as "global" variable.
 // We don't want to include the whole node.d.ts this this compilation unit so we'll just fake
 
-import { _tyundef } from '@tsdi/ioc';
+const _tyundef = 'undefined';
 
 // the global "global" var for now.
 declare const global: any;

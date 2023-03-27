@@ -21,6 +21,11 @@ export class ExecptionContext extends EndpointContext {
         return token === ExecptionContext;
     }
 
+    protected override clear(): void {
+        (this as any).host = null!;
+        super.clear();
+    }
+
 }
 
 /**

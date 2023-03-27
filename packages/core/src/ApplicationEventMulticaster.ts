@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, Type, ProvdierOf, Token, InvocationContext } from '@tsdi/ioc';
+import { Abstract, StaticProvider, Type, ProvdierOf, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -17,7 +17,7 @@ import { PipeTransform } from './pipes/pipe';
 export class ApplicationEventContext extends EndpointContext<ApplicationEvent> {
 
     override isSelf(token: Token) {
-        return token === ApplicationEventContext || token === EndpointContext || token === InvocationContext;
+        return token === ApplicationEventContext;
     }
 }
 

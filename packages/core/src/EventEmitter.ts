@@ -1,4 +1,3 @@
-import { _tyobj } from '@tsdi/ioc';
 import { PartialObserver, Subject, Subscription } from 'rxjs';
 
 /**
@@ -44,7 +43,7 @@ export class EventEmitter<T = any> extends Subject<T | undefined> {
         let schedulerFn: (t: any) => any;
         let errorFn = (err: any): any => null;
         let completeFn = (): any => null;
-        if (next && typeof next === _tyobj) {
+        if (next && typeof next === 'object') {
             const genOrNext = next as PartialObserver<T>;
             schedulerFn = this.async ? (value: any) => {
                 setTimeout(() => genOrNext.next?.(value));

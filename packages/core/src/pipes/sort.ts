@@ -1,4 +1,4 @@
-import { isString, _tystr, _tyundef } from '@tsdi/ioc';
+import { isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata';
 import { PipeTransform } from './pipe';
 
@@ -54,3 +54,5 @@ export class SortPipe implements PipeTransform {
     }
 }
 
+const _tyundef = 'undefined';
+const _tystr = 'string';

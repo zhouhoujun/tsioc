@@ -1,5 +1,6 @@
 import { ArgumentExecption, EMPTY, Injector, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
+import { Interceptor } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
 import { EndpointChain } from '../endpoints/chain';
 import { InterceptorHandler } from '../endpoints/handler';
@@ -9,7 +10,6 @@ import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { EndpointContext } from '../endpoints/context';
 import { Filter } from './filter';
-import { Interceptor } from '../Interceptor';
 
 
 

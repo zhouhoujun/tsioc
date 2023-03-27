@@ -1,5 +1,7 @@
-import { isArray, _tyfunc } from './utils/chk';
+import { isArray } from './utils/chk';
 
+
+const _tyfunc = 'function';
 /**
  * Execption is Basic Error.
  * for custom extends.
