@@ -1,16 +1,14 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ConnectionOptions, CONNECTIONS, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { ParseObjectIdPipe } from './objectid.pipe';
-import { TypeOrmHelper } from './helper';
-import { TypeormServer } from './TypeormServer';
+import { TypeormAdapter } from './TypeormAdapter';
 import { TypeormTransactionManager } from './transaction';
 import { TypeormRepositoryArgumentResolver, TypeormTransactionResolver } from './resolvers';
 
 
 @Module({
     providers: [
-        TypeormServer,
-        TypeOrmHelper,
+        TypeormAdapter,
         ParseObjectIdPipe,
         { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver, static: true },
         { provide: TransactionResolver, useClass: TypeormTransactionResolver },

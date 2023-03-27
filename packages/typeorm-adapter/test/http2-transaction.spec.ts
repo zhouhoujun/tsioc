@@ -3,7 +3,7 @@ import { Http, HttpClientOpts } from '@tsdi/transport-http';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TypeOrmHelper } from '../src';
+import { TypeormAdapter } from '../src/TypeormAdapter';
 import { cert, Http2TransBootTest } from './app';
 import { Role, User } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
@@ -36,7 +36,7 @@ export class Http2TransactionTest {
         if (u1) await urep.remove(u1);
         const u2 = await urep.findByAccount('post_test');
         if (u2) await urep.remove(u2);
-        const rrep = await this.ctx.injector.get(TypeOrmHelper).getRepository(Role);
+        const rrep = await this.ctx.injector.get(TypeormAdapter).getRepository(Role);
         const role1 = await rrep.find({ where: { name: 'opter_1' } });
         if (role1) await rrep.remove(role1);
         const role2 = await rrep.find({ where: { name: 'opter_2' } });

@@ -1,34 +1,35 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
-import { Type, isString, Injector, EMPTY, isNil, isType, Static } from '@tsdi/ioc';
+import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
-import {
-    getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
-    getMetadataArgsStorage, getConnectionManager, getManager
-} from 'typeorm';
+import {  getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository } from 'typeorm';
 import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
 
-
+/**
+ * Typeorm adapter service
+ */
 @Static()
-export class TypeormServer {
+export class TypeormAdapter {
     /**
      * default connection options.
      */
     protected options!: ConnectionOptions;
 
+    private sources: Map<string, DataSource>;
+
     @Log() private logger!: Logger;
 
     constructor(protected injector: Injector) {
-
+        this.sources = new Map();
     }
 
     /**
      * startup server.
      */
     @Startup()
-    async startup(): Promise<void> {
+    protected async startup(): Promise<void> {
         this.logger.info('startup db connections');
         const connections = this.injector.get(CONNECTIONS);
         const injector = this.injector;
@@ -44,7 +45,7 @@ export class TypeormServer {
     }
 
     private mdlmap = new Map<Type, DBPropertyMetadata[]>();
-    getModelPropertyMetadata(type: Type) {
+    protected getModelPropertyMetadata(type: Type) {
         let props = this.mdlmap.get(type);
         if (!props) {
             props = [];
@@ -68,10 +69,14 @@ export class TypeormServer {
                     let relaModel: Type;
                     if (isString(col.type)) {
                         relaModel = col.type as any;
-                    } else if (isType(col.type)) {
+                    } else if (isType(col.type) && Reflect.getMetadataKeys(col.type)?.length) {
                         relaModel = col.type;
-                    } else {
+                    } else if (isFunction(col.type)) {
                         relaModel = col.type();
+                    } else if (col.type instanceof EntitySchema) {
+                        relaModel = col.type.options.target as Type;
+                    } else {
+                        return;
                     }
                     // else if (isFunction(col.type)) {
                     //     relaModel = col.type();
@@ -94,7 +99,7 @@ export class TypeormServer {
     }
 
 
-    async statupConnection(injector: Injector, options: ConnectionOptions, config: ConnectionOptions[]) {
+    protected async statupConnection(injector: Injector, options: ConnectionOptions, config: ConnectionOptions[]) {
         if (options.type == 'mongodb') {
             const mgd = await injector.get(ModuleLoader).require('mongodb');
             if (mgd.ObjectID) {
@@ -126,7 +131,7 @@ export class TypeormServer {
 
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
             if (options.entities?.some(e => e === meta.entity)) {
-                injector.inject({ provide: meta.target, useFactory: () => getManager(options.name!).getCustomRepository(meta.target) })
+                injector.inject({ provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
             }
         });
 
@@ -140,7 +145,7 @@ export class TypeormServer {
      * @param options connenction options.
      * @param config config
      */
-    async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
+    protected async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
 
         const loader = this.injector.get(ModuleLoader);
         if (options.entities?.some(m => isString(m))) {
@@ -158,10 +163,18 @@ export class TypeormServer {
             // preload repositories for typeorm.
             await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) })
         }
-        if (options.asDefault) {
-            this.options = options
+
+        if (!options.name) {
+            options.name = 'defaults';
         }
-        return await createConnection(options as OrmConnOptions)
+
+        if (options.asDefault || options.name === 'defaults') {
+            this.options = options;
+        }
+
+        const dataSource = new DataSource(options as DataSourceOptions);
+        this.sources.set(options.name, dataSource);
+        return dataSource;
     }
 
     /**
@@ -170,24 +183,54 @@ export class TypeormServer {
      * @param {string} [connectName]
      * @returns {Connection}
      */
-    getConnection(connectName?: string): Connection {
-        return getConnection(connectName ?? this.options?.name)
+    getConnection(connectName?: string): DataSource {
+        return this.sources.get(connectName ?? this.options.name!)!;
     }
 
-    async disconnect(): Promise<void> {
-        this.logger?.info('close db connections');
-        await Promise.all(getConnectionManager().connections?.map(async c => {
-            if (c && c.isConnected) {
-                await c.close()
-            }
-        }))
+    getRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): Repository<T> {
+        return this.getConnection(connectName).getRepository<T>(type)
     }
+
+    getTreeRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): TreeRepository<T> {
+        return this.getConnection(connectName).getTreeRepository<T>(type)
+    }
+
+    getCustomRepository<T extends Repository<any>>({ type, connectName }: { type: Type<T>; connectName?: string; }): T {
+        return this.getConnection(connectName).getCustomRepository(type)
+    }
+
+    getMongoRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): MongoRepository<T> {
+        return this.getConnection(connectName).getMongoRepository<T>(type)
+    }
+
 
     @Dispose()
-    async onDispose(): Promise<void> {
+    protected async onDispose(): Promise<void> {
         await this.disconnect();
+        this.sources.clear();
         this.logger = null!;
         this.injector = null!;
         this.options = null!
+    }    
+    
+    protected async disconnect(): Promise<void> {
+        this.logger?.info('close db connections');
+        await Promise.all(Array.from(this.sources.values()).map(async c => {
+            if (c && c.isInitialized) {
+                await c.destroy()
+            }
+        }))
     }
 }
+
+/**
+ * Typeorm Helper
+ * @deprecated use `TypeormAdapter` instead.
+ */
+export const TypeOrmHelper = TypeormAdapter;
+
+/**
+ * TypeormServer
+ * @deprecated use `TypeormAdapter` instead.
+ */
+export const TypeormServer =  TypeormAdapter;

@@ -5,7 +5,7 @@ import * as expect from 'expect';
 import { lastValueFrom } from 'rxjs';
 
 import { Role, User } from './models/models';
-import { TypeOrmHelper } from '../src';
+import { TypeormAdapter } from '../src';
 import { UserRepository } from './repositories/UserRepository';
 import { option, MockBootTest } from './app';
 
@@ -25,7 +25,7 @@ export class LoadReposTest {
 
     @Test()
     async hasUserRepository() {
-        expect(this.ctx.injector.get(TypeOrmHelper).getRepository(User)).toBeDefined();
+        expect(this.ctx.injector.get(TypeormAdapter).getRepository(User)).toBeDefined();
         expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
     }
 
