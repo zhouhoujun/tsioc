@@ -1,4 +1,4 @@
-import { Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Interceptor, InterceptorHandler } from '@tsdi/core';
 import { HttpBackend, HttpHandler } from './handler';

@@ -1,5 +1,5 @@
 import { GET, HEAD } from '@tsdi/core';
-import { Inject, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { DOCUMENT, PLATFORM_ID } from '../platform';
 
