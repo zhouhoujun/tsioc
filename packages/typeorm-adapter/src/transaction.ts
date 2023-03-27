@@ -32,26 +32,26 @@ export class TypeormTransactionStatus extends TransactionStatus {
             this.logger.debug('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
             joinPoint.setValue(EntityManager, entityManager);
 
-            joinPoint.params?.length && targetRef.paramDefs.filter(dec => {
-                if (dec.propertyKey === joinPoint.methodName) {
-                    if (dec.decor === InjectRepository.toString()) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
-                    } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
-                    } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager))
-                    }
+            joinPoint.params?.length && targetRef.paramDefs.get(joinPoint.methodName!)?.filter(dec => {
+                if (dec.decor === InjectRepository) {
+                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
+                } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
+                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
+                } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
+                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager))
                 }
             });
 
             const context = {} as any;
-            targetRef.propDefs.forEach(dec => {
-                if (dec.decor === InjectRepository.toString()) {
-                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
-                } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
-                    context[dec.propertyKey] = entityManager
-                } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager)
+            targetRef.defs.forEach(dec => {
+                if (dec.decorType === 'property') {
+                    if (dec.decor === InjectRepository) {
+                        context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
+                    } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
+                        context[dec.propertyKey] = entityManager
+                    } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
+                        context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager)
+                    }
                 }
             });
 

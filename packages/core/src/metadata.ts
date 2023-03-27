@@ -6,7 +6,7 @@ import {
 import { PipeTransform } from './pipes/pipe';
 import {
     ApplicationDisposeEvent, ApplicationShutdownEvent,
-    ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
+    ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent, PayloadApplicationEvent
 } from './events';
 import { FilterHandlerResolver } from './filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from './endpoints/endpoint.factory';
@@ -255,14 +255,37 @@ export interface EventHandlerMetadata<TArg> extends BootstrapOption<TArg> {
 }
 
 /**
+ * Application Startup event hander.
+ * rasie after `ApplicationContextRefreshEvent`
+ * @Startup
+ */
+export interface StartupEventHandler {
+
+    /**
+     * Application Startup event handle.
+     * rasie after `ApplicationContextRefreshEvent`
+     * @param {BootstrapOption} option message match option.
+     */
+    <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
+}
+
+/**
+ * Application Startup event hander.
+ * rasie after `ApplicationContextRefreshEvent`
+ * @Startup
+ */
+export const Startup: StartEventHandler = createEventHandler(ApplicationStartupEvent, 'Startup');
+
+/**
  * Application start event hander.
+ * rasie after `ApplicationStartupEvent`
  * @Start
  */
 export interface StartEventHandler {
 
     /**
      * Application start event handle.
-     *
+     * rasie after `ApplicationStartupEvent`
      * @param {BootstrapOption} option message match option.
      */
     <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
@@ -270,19 +293,21 @@ export interface StartEventHandler {
 
 /**
  * Application start event hander.
+ * rasie after `ApplicationStartupEvent`
  * @Start
  */
 export const Start: StartEventHandler = createEventHandler(ApplicationStartEvent, 'Start');
 
 /**
  * Application started event hander.
+ * rasie after `ApplicationStartEvent`
  * @Started
  */
 export interface StartedEventHandler {
 
     /**
      * Application started event handle.
-     *
+     * rasie after `ApplicationStartEvent`
      * @param {BootstrapOption} option message match option.
      */
     <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
@@ -290,6 +315,7 @@ export interface StartedEventHandler {
 
 /**
  * Application Started event hander.
+ * rasie after `ApplicationStartEvent`
  * @Start
  */
 export const Started: StartedEventHandler = createEventHandler(ApplicationStartedEvent, 'Started');
@@ -297,13 +323,14 @@ export const Started: StartedEventHandler = createEventHandler(ApplicationStarte
 
 /**
  * Application Shutdown event hander.
+ * rasie after Application close invoked.
  * @Shutdown
  */
 export interface ShutdownEventHandler {
 
     /**
      * Application Shutdown event handle.
-     *
+     * rasie after Application close invoked.
      * @param {BootstrapOption} option message match option.
      */
     <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
@@ -311,6 +338,7 @@ export interface ShutdownEventHandler {
 
 /**
  * Application Shutdown event hander.
+ * rasie after Application close invoked.
  * @Shutdown
  */
 export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown');
@@ -318,13 +346,14 @@ export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShut
 
 /**
  * Application Dispose event hander.
+ * rasie after `ApplicationShutdownEvent`
  * @Dispose
  */
 export interface DisposeEventHandler {
 
     /**
      * Application Dispose event handle.
-     *
+     * rasie after `ApplicationShutdownEvent`
      * @param {BootstrapOption} option message match option.
      */
     <TArg>(option?: BootstrapOption<TArg>): MethodDecorator;
@@ -332,6 +361,7 @@ export interface DisposeEventHandler {
 
 /**
  * Application Shutdown event hander.
+ * rasie after `ApplicationShutdownEvent`
  * @Dispose
  */
 export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose');

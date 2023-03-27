@@ -1,6 +1,5 @@
-import { Abstract, getTokenOf, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, InvocationContext, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { EndpointContext } from '../endpoints/context';
 import { Endpoint } from '../Endpoint';
 import { runEndpoints } from '../endpoints/runs';
 import { Interceptor } from '../Interceptor';
@@ -10,7 +9,7 @@ import { Interceptor } from '../Interceptor';
  * endpoint filter is a chainable behavior modifier for `endpoints`.
  */
 @Abstract()
-export abstract class Filter<TCtx extends EndpointContext = EndpointContext, TOutput = any> implements Interceptor<TCtx, TOutput> {
+export abstract class Filter<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Interceptor<TCtx, TOutput> {
     /**
      * the method to implemet interceptor filter.
      * @param context request context.
@@ -65,7 +64,7 @@ export abstract class FilterHandlerResolver {
  * @param filter 
  * @returns 
  */
-export function runHandlers(ctx: EndpointContext, filter: Type | string): Observable<any> {
+export function runHandlers(ctx: InvocationContext, filter: Type | string): Observable<any> {
     const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
     return runEndpoints(handles, ctx, c => c.done === true)
 }

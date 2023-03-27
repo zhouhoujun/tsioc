@@ -1,4 +1,4 @@
-import { Abstract, Execption, getClass, Injectable, InvokeArguments, Token } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, InvokeArguments, Token } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { MessageExecption } from '../execptions';
@@ -9,9 +9,9 @@ import { Filter, runHandlers } from './filter';
 /**
  * execption context
  */
-export class ExecptionContext extends EndpointContext {
+export class ExecptionContext extends DefaultInvocationContext {
 
-    constructor(public readonly execption: Error, public readonly host: EndpointContext, options?: InvokeArguments) {
+    constructor(public execption: Error, readonly host: EndpointContext, options?: InvokeArguments) {
         super(host.injector, { ...options, payload: execption })
         const token = getClass(execption);
         this.setValue(token, execption);
@@ -90,7 +90,7 @@ export class CatchFilter<TCtx extends EndpointContext, TOutput = any> implements
 @Injectable({ static: true })
 export class ExecptionHandlerBackend extends ExecptionBackend {
 
-    handle(context: EndpointContext<Error>): Observable<any> {
+    handle(context: ExecptionContext): Observable<any> {
 
         return new Observable((observer: Observer<MessageExecption>) => {
             return runHandlers(context, getClass(context.payload))

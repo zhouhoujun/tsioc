@@ -5,7 +5,7 @@ import {
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
-import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent } from '../events';
+import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { Endpoint } from '../Endpoint';
 import { FilterEndpoint } from '../filters/endpoint';
 import { Interceptor } from '../Interceptor';
@@ -134,8 +134,9 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
             return lastValueFrom(this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
         }
         return lastValueFrom(
-            this.beforeRun()
+            this.startup()
                 .pipe(
+                    mergeMap(v => this.beforeRun()),
                     mergeMap(v => this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
@@ -170,6 +171,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
             return runEndpoints(endpoints, context, v => v.done === true)
         }
         return throwError(() => new ArgumentExecption('input type unknow'))
+    }
+
+    protected startup(): Observable<any> {
+        return this.multicaster.emit(new ApplicationStartupEvent(this));
     }
 
     protected beforeRun(): Observable<any> {

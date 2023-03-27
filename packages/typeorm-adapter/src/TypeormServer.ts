@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Log, Logger } from '@tsdi/logs';
-import { Type, isString, Injector, EMPTY, isNil, isType } from '@tsdi/ioc';
-import { ComponentScan, Startup, OnDispose, PipeTransform, ServerEndpointContext, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader } from '@tsdi/core';
+import { Type, isString, Injector, EMPTY, isNil, isType, Static } from '@tsdi/ioc';
+import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {
     getConnection, createConnection, ConnectionOptions as OrmConnOptions, Connection,
@@ -11,8 +11,8 @@ import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
 
 
 
-@ComponentScan()
-export class TypeormServer implements Startup, OnDispose {
+@Static()
+export class TypeormServer {
     /**
      * default connection options.
      */
@@ -27,6 +27,7 @@ export class TypeormServer implements Startup, OnDispose {
     /**
      * startup server.
      */
+    @Startup()
     async startup(): Promise<void> {
         this.logger.info('startup db connections');
         const connections = this.injector.get(CONNECTIONS);
@@ -107,7 +108,7 @@ export class TypeormServer implements Startup, OnDispose {
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             hasField: (parameter, ctx) => ctx.payload,
-            getFields: (parameter: TransportParameter, ctx: ServerEndpointContext) => parameter.field ? ctx.payload[parameter.field] : ctx.payload,
+            getFields: (parameter: TransportParameter, ctx: EndpointContext) => parameter.field ? ctx.payload[parameter.field] : ctx.payload,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
@@ -182,6 +183,7 @@ export class TypeormServer implements Startup, OnDispose {
         }))
     }
 
+    @Dispose()
     async onDispose(): Promise<void> {
         await this.disconnect();
         this.logger = null!;

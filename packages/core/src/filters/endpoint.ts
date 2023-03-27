@@ -1,4 +1,4 @@
-import { ArgumentExecption, EMPTY, Injector, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
@@ -8,7 +8,6 @@ import { EndpointService } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
-import { EndpointContext } from '../endpoints/context';
 import { Filter } from './filter';
 
 
@@ -16,7 +15,7 @@ import { Filter } from './filter';
 /**
  * filter endpoint.
  */
-export class FilterEndpoint<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements EndpointService {
+export class FilterEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements EndpointService {
 
 
     private guards: CanActivate[] | null | undefined;
