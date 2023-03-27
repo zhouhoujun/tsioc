@@ -3,12 +3,12 @@ import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { HttpClientModule } from '@tsdi/common';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
-import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logs';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Connection } from 'typeorm';
-import { TypeOrmModule } from '../src';
+import { DataSource } from 'typeorm';
+import { TypeormModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
@@ -18,7 +18,7 @@ import { UserRepository } from './repositories/UserRepository';
 
 export const option = {
     entities:[],
-    async initDb(connection: Connection) {
+    async initDb(connection: DataSource) {
         const userRep = connection.getRepository(User);
         const c = await userRep.count();
         if (c < 1) {
@@ -39,7 +39,7 @@ export const option = {
     // useNewUrlParser: true,
     synchronize: true, // 同步数据库
     logging: false  // 日志
-} as ConnectionOptions;
+} as TypeormOptions;
 
 
 export const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -56,7 +56,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         }),
         HttpClientModule,
         ServerHttpClientModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: [
                 Role,
@@ -89,7 +89,7 @@ export class MockBootTest {
         HttpClientModule,
         ServerHttpClientModule,
         TransactionModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
@@ -118,7 +118,7 @@ export class MockBootLoadTest {
         HttpClientModule,
         ServerHttpClientModule,
         TransactionModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
@@ -147,7 +147,7 @@ export class MockTransBootTest {
             }
         }),
         TransactionModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']

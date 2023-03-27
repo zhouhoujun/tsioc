@@ -9,14 +9,22 @@ export const CONNECTIONS = tokenId<ConnectionOptions[]>('CONNECTIONS');
  * connection options
  */
 export interface ConnectionOptions extends Record<string, any> {
-    asDefault?: boolean;
+    /**
+     * connection name, default as `default`
+     */
     name?: string;
+
+    /**
+     * set connection as default connection.
+     * @deprecated name `default` or not config name will as default.
+     */
+    asDefault?: boolean;
     /**
      * db type.
      */
-    type: string;
-    host: string;
-    database: string;
+    type?: string;
+    host?: string;
+    database?: string;
 
     port?: number;
     username?: string;

@@ -3,7 +3,7 @@ import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import { TransactionModule } from '@tsdi/repository';
 import { HttpModule } from '@tsdi/transport-http';
-import { TypeOrmModule } from '@tsdi/typeorm-adapter';
+import { TypeormModule } from '@tsdi/typeorm-adapter';
 
 @Module({
     exports: [
@@ -11,7 +11,7 @@ import { TypeOrmModule } from '@tsdi/typeorm-adapter';
         LoggerModule,
         HttpModule,
         TransactionModule,
-        TypeOrmModule
+        TypeormModule
     ]
 })
 export class MvcModule {

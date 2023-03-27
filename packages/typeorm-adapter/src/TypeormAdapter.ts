@@ -165,10 +165,10 @@ export class TypeormAdapter {
         }
 
         if (!options.name) {
-            options.name = 'defaults';
+            options.name = 'default';
         }
 
-        if (options.asDefault || options.name === 'defaults') {
+        if (options.asDefault || options.name === 'default') {
             this.options = options;
         }
 
