@@ -1,6 +1,6 @@
 import { Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Interceptor, InterceptorEndpoint } from '@tsdi/core';
+import { Interceptor, InterceptorHandler } from '@tsdi/core';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';
@@ -13,9 +13,8 @@ export interface HttpInterceptor extends Interceptor<HttpRequest, HttpEvent> {
      * the method to implemet interceptor.
      * @param req request.
      * @param next route handler.
-     * @param context request with context for interceptor
      */
-    intercept(req: HttpRequest, next: HttpHandler, context: InvocationContext): Observable<HttpEvent>;
+    intercept(req: HttpRequest, next: HttpHandler): Observable<HttpEvent>;
 }
 
 
@@ -40,19 +39,19 @@ export class HttpInterceptingHandler implements HttpHandler {
 
     constructor(private backend: HttpBackend, private injector: Injector) { }
 
-    handle(req: HttpRequest, context: InvocationContext): Observable<HttpEvent> {
+    handle(req: HttpRequest): Observable<HttpEvent> {
         if (!this.chain) {
             const interceptors = this.injector.get(HTTP_CLIENT_INTERCEPTORS);
             this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorEndpoint(next, interceptor), this.backend)
+                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
         }
-        return this.chain.handle(req, context)
+        return this.chain.handle(req)
     }
 }
 
 @Injectable()
 export class NoopInterceptor implements HttpInterceptor {
-    intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent> {
-        return next.handle(req, context)
+    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent> {
+        return next.handle(req)
     }
 }

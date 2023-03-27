@@ -3,7 +3,7 @@ import { InvocationContext } from '../context';
 import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
 import { isFunction } from '../utils/chk';
-import { ReflectiveRef } from '../reflective';
+import { InvokerOptions, ReflectiveRef } from '../reflective';
 
 
 
@@ -16,8 +16,8 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
     private _returnType!: ClassType;
     constructor(
         readonly typeRef: ReflectiveRef<T>,
-        private method: string,
-        private instance?: any | (() => any)) {
+        readonly method: string,
+        private options: InvokerOptions = {}) {
 
     }
 
@@ -57,12 +57,12 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
             } else if (arg && isTypeObject(arg)) {
                 instance = arg;
             } else {
-                if (this.instance) {
-                    instance = isFunction(this.instance) ? this.instance() : this.instance;
+                if (this.options.instance) {
+                    instance = isFunction(this.options.instance) ? this.options.instance() : this.options.instance;
                 }
             }
         } else {
-            context = this.typeRef.getContext(this.method);
+            context = this.typeRef.getContext(this.method, this.options);
         }
 
         return this.typeRef.class.invoke(this.method, context, instance);

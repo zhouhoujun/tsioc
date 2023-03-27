@@ -10,7 +10,7 @@ import { Endpoint } from '../Endpoint';
 import { FilterEndpoint } from '../filters/endpoint';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
-import { BootstrapOption, EndpointFactoryResolver } from '../filters/endpoint.factory';
+import { BootstrapOption, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
 import { getClassName } from 'packages/ioc/src/utils/lang';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -125,8 +125,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         return this._maps.has(type);
     }
 
-    getRef<T>(type: Type<T>): ReflectiveRef<T> | null {
-        return this._refs.get(type) || null;
+    getRef<T>(type: Type<T>): ReflectiveRef<T> {
+       return this._refs.get(type) || null!;
     }
 
     run(type?: Type): Promise<void> {

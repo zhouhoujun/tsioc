@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { BootstrapOption } from './filters/endpoint.factory';
+import { BootstrapOption } from './endpoints/endpoint.factory';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';

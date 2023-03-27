@@ -24,11 +24,11 @@ export class HttpClientBackend implements HttpBackend {
 
   }
 
-  handle(req: HttpRequest<any>, context: InvocationContext): Observable<HttpEvent<any>> {
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest;
       if (!isAbsoluteUrl.test(req.url)) {
-        const { host, port, path, withCredentials } = context?.get(ListenOpts) ?? this.injector.get(ListenOpts, EMPTY_OBJ);
+        const { host, port, path, withCredentials } = req.context?.get(ListenOpts) ?? this.injector.get(ListenOpts, EMPTY_OBJ);
         const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
         const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
         const baseUrl = new URL(urlPrefix);
@@ -37,7 +37,7 @@ export class HttpClientBackend implements HttpBackend {
       } else {
         request = req
       }
-      this.backend.handle(request, context).subscribe(observer)
+      this.backend.handle(request).subscribe(observer)
     }))
   }
 

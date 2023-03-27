@@ -70,29 +70,3 @@ export function runHandlers(ctx: EndpointContext, filter: Type | string): Observ
     return runEndpoints(handles, ctx, c => c.done === true)
 }
 
-
-@Abstract()
-export abstract class Respond {
-
-    /**
-     * respond with execption handled data.
-     * @param ctx transport context. instance of {@link ServerEndpointContext}.
-     * @param value execption handled returnning value
-     */
-    abstract respond<T>(ctx: EndpointContext, value: T): void;
-}
-
-/**
- * Execption respond adapter with response type.
- */
-@Abstract()
-export abstract class TypedRespond {
-    /**
-     * respond with execption handled data.
-     * @param ctx transport context. instance of {@link ServerEndpointContext}.
-     * @param responseType response type
-     * @param value execption handled returnning value
-     */
-    abstract respond<T>(ctx: EndpointContext, responseType: 'body' | 'header' | 'response', value: T): void;
-}
-

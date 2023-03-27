@@ -71,7 +71,7 @@ export class JsonpClientBackend implements HttpBackend {
      * @returns An observable of the response events.
      *
      */
-    handle(req: HttpRequest<never>, context: InvocationContext): Observable<HttpEvent<any>> {
+    handle(req: HttpRequest<never>): Observable<HttpEvent<any>> {
         // Firstly, check both the method and response type. If either doesn't match
         // then the request was improperly routed here and cannot be handled.
         if (req.method !== JSONP) {
@@ -243,11 +243,11 @@ export class JsonpInterceptor {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(req: HttpRequest<any>, next: HttpHandler, context: InvocationContext): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         if (req.method === JSONP) {
-            return this.jsonp.handle(req as HttpRequest<never>, context)
+            return this.jsonp.handle(req as HttpRequest<never>)
         }
         // Fall through for normal HTTP requests.
-        return next.handle(req, context)
+        return next.handle(req)
     }
 }

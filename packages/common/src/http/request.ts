@@ -1,5 +1,5 @@
 
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, mths, ReqHeaders, TransportRequest } from '@tsdi/core';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/core';
 import { isString, _tybool, _tynum, _tyobj, InvocationContext } from '@tsdi/ioc';
 import { HttpParams } from './params';
 
@@ -14,6 +14,8 @@ interface HttpRequestInit {
     context?: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
+    
+    observe?: 'body' | 'events' | 'response';
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
     withCredentials?: boolean;
 }
@@ -23,11 +25,11 @@ interface HttpRequestInit {
  */
 function mightHaveBody(method: string): boolean {
     switch (method) {
-        case mths.DELETE:
-        case mths.GET:
-        case mths.HEAD:
-        case mths.OPTIONS:
-        case mths.JSONP:
+        case DELETE:
+        case GET:
+        case HEAD:
+        case OPTIONS:
+        case JSONP:
             return false
         default:
             return true
@@ -72,6 +74,9 @@ export class HttpRequest<T = any> implements TransportRequest {
      */
     readonly withCredentials: boolean = false;
 
+    
+    readonly observe: 'body' | 'events' | 'response';
+
     /**
      * The expected response type of the server.
      *
@@ -109,6 +114,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
+        observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         context?: InvocationContext
@@ -117,6 +123,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
+        observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         context?: InvocationContext
@@ -125,6 +132,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         headers?: ReqHeaders,
         reportProgress?: boolean,
         params?: HttpParams,
+        observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         context?: InvocationContext
@@ -134,6 +142,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             headers?: ReqHeaders,
             reportProgress?: boolean,
             params?: HttpParams,
+            observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
             context?: InvocationContext
@@ -142,6 +151,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             headers?: ReqHeaders,
             reportProgress?: boolean,
             params?: HttpParams,
+            observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean
         }) {
@@ -161,6 +171,8 @@ export class HttpRequest<T = any> implements TransportRequest {
             options = third as HttpRequestInit
         }
 
+        
+        this.observe = options?.observe || 'body';
         this.context = options?.context;
         // If options have been passed, interpret them.
         if (options) {

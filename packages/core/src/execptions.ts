@@ -1,22 +1,5 @@
-import { ArgumentExecption, ClassType, Execption, isArray, MissingParameterExecption, Parameter } from '@tsdi/ioc';
+import { Execption, isArray } from '@tsdi/ioc';
 
-/**
- * Message arguments execption.
- */
-export class MessageArgumentExecption extends ArgumentExecption {
-    constructor(message?: string | string[]) {
-        super(message)
-    }
-}
-
-/**
- * Message missing parameter execption.
- */
-export class MessageMissingExecption extends MissingParameterExecption {
-    constructor(parameters: Parameter[], type: ClassType, method: string) {
-        super(parameters, type, method)
-    }
-}
 
 /**
  * Message Execption

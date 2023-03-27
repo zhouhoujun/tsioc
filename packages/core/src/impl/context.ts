@@ -10,7 +10,7 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
-import { BootstrapOption } from '../filters/endpoint.factory';
+import { BootstrapOption } from '../endpoints/endpoint.factory';
 
 
 

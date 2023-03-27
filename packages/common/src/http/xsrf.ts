@@ -1,4 +1,4 @@
-import { mths } from '@tsdi/core';
+import { GET, HEAD } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { DOCUMENT, PLATFORM_ID } from '../platform';
@@ -65,15 +65,15 @@ export class HttpXsrfInterceptor implements HttpInterceptor {
         private tokenService: HttpXsrfTokenExtractor,
         @Inject(XSRF_HEADER_NAME) private headerName: string) { }
 
-    intercept(req: HttpRequest, next: HttpHandler, context: InvocationContext): Observable<HttpEvent> {
+    intercept(req: HttpRequest, next: HttpHandler): Observable<HttpEvent> {
         const lcUrl = req.url.toLowerCase();
         // Skip both non-mutating requests and absolute URLs.
         // Non-mutating requests don't require a token, and absolute URLs require special handling
         // anyway as the cookie set
         // on our origin is not the same as the token expected by another origin.
-        if (req.method === mths.GET || req.method === mths.HEAD || lcUrl.startsWith('http://') ||
+        if (req.method === GET || req.method === HEAD || lcUrl.startsWith('http://') ||
             lcUrl.startsWith('https://')) {
-            return next.handle(req, context)
+            return next.handle(req)
         }
         const token = this.tokenService.getToken();
 
@@ -81,7 +81,7 @@ export class HttpXsrfInterceptor implements HttpInterceptor {
         if (token !== null && !req.headers.has(this.headerName)) {
             req = req.clone({ headers: req.headers.set(this.headerName, token) })
         }
-        return next.handle(req, context)
+        return next.handle(req)
     }
 }
 

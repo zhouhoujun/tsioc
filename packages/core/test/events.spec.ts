@@ -1,4 +1,4 @@
-import { Injectable, InvocationContext, isPlainObject, isString, Module } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, InvocationContext, isPlainObject, isString, MissingParameterExecption, Module, ReflectiveRef } from '@tsdi/ioc';
 import expect = require('expect');
 import { lastValueFrom, Observable, of } from 'rxjs';
 import { Application, ApplicationArguments, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
@@ -135,21 +135,21 @@ describe('Application Event', () => {
 
         expect(ctx.instance).not.toBeNull();
         const testServiceRef = ctx.runners.getRef(TestService);
-        expect(testServiceRef).not.toBeNull();
+        expect(testServiceRef).toBeInstanceOf(ReflectiveRef);
         // console.log(runner.instance);
-        expect(testServiceRef!.getInstance().started).toBeTruthy();
+        expect(testServiceRef.getInstance().started).toBeTruthy();
 
     });
 
     it('publish payload event', async () => {
 
         await lastValueFrom(ctx.publishEvent('payload message'));
-        const testServiceRef = ctx.runners.getRef(TestService);
+        const testServiceRef = ctx.runners.getRef(TestService)!;
         expect(testServiceRef).not.toBeNull();
-        expect(testServiceRef!.getInstance().payload).toBeInstanceOf(PayloadApplicationEvent);
+        expect(testServiceRef.getInstance().payload).toBeInstanceOf(PayloadApplicationEvent);
         
-        expect(testServiceRef?.getInstance().message).toEqual('hi payload message');
-        expect(testServiceRef?.getInstance().payload.payload).toEqual('hi hi payload message');
+        expect(testServiceRef.getInstance().message).toEqual('hi payload message');
+        expect(testServiceRef.getInstance().payload.payload).toEqual('hi hi payload message');
 
     });
 
@@ -160,6 +160,31 @@ describe('Application Event', () => {
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
         
+        expect(testServiceRef?.getInstance().name).toEqual('name');
+        expect(testServiceRef?.getInstance().age).toEqual(20);
+    })
+
+    it('payload filed transport parameter missing arguments execption', async () => {
+
+        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }));
+        expect(result).toBeInstanceOf(MissingParameterExecption);
+
+        expect((result as MissingParameterExecption).message.indexOf('name: "age"')).toBeGreaterThan(1);
+
+        const testServiceRef = ctx.runners.getRef(TestService);
+        expect(testServiceRef).not.toBeNull();
+        expect(testServiceRef?.getInstance().name).toEqual('name');
+        expect(testServiceRef?.getInstance().age).toEqual(20);
+    })
+
+    it('payload filed transport parameter arguments execption', async () => {
+
+        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan1', age: 'zzz' }));
+        expect(result).toBeInstanceOf(ArgumentExecption);
+
+        expect(result.message).toEqual(`InvalidPipeArgument: 'zzz' for pipe 'number'`);
+        const testServiceRef = ctx.runners.getRef(TestService);
+        expect(testServiceRef).not.toBeNull();
         expect(testServiceRef?.getInstance().name).toEqual('name');
         expect(testServiceRef?.getInstance().age).toEqual(20);
     })

@@ -9,7 +9,7 @@ import {
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterHandlerResolver } from './filters/filter';
-import { BootstrapOption, EndpointFactoryResolver } from './filters/endpoint.factory';
+import { BootstrapOption, EndpointFactoryResolver } from './endpoints/endpoint.factory';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, TransportParameterOptions } from './endpoints/resolver';

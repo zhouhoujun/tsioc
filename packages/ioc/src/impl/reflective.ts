@@ -4,8 +4,8 @@ import { isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { createContext, InvocationContext, InvokeArguments } from '../context';
-import { ReflectiveRef, ReflectiveFactory } from '../reflective';
+import { createContext, InvocationContext, InvokeArguments, InvokeOptions } from '../context';
+import { ReflectiveRef, ReflectiveFactory, InvokerOptions } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
 import { OperationInvoker } from '../operation';
@@ -136,14 +136,18 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return [context, destroy]
     }
 
-    getContext(method?: string) {
+    getContext<TArg>(method?: string, options?: InvokeArguments<TArg>) {
         this.assertNotDestroyed();
         if (!method) return this._ctx;
         let ctx = this._mthCtx.get(method);
         if (ctx === undefined) {
             const opts = this.class.getMethodOptions(method);
             if (opts) {
-                ctx = createContext(this._ctx, opts);
+                ctx = createContext(this._ctx, options ? { ...opts, ...options } : opts);
+                this._ctx.onDestroy(ctx);
+                this._mthCtx.set(method, ctx);
+            } else if (options) {
+                ctx = createContext(this._ctx, options);
                 this._ctx.onDestroy(ctx);
                 this._mthCtx.set(method, ctx);
             } else {
@@ -156,21 +160,18 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     /**
      * create method invoker of target type.
      * @param method the method name of target.
-     * @param proceed proceeding invoke with hooks
      * @returns instance of {@link OperationInvoker}.
      */
     createInvoker(method: string): OperationInvoker;
     /**
      * create method invoker of target type.
      * @param method the method name of target.
-     * @param instance instance or instance factory of target type.
-     * @param proceed proceeding invoke with hooks
+     * @param options invoker options.
      * @returns instance of {@link OperationInvoker}.
      */
-    createInvoker(method: string, instance?: T | (() => T)): OperationInvoker;
-    createInvoker(method: string, instance?: boolean | T | (() => T)): OperationInvoker {
+    createInvoker<TArg>(method: string, options?: InvokerOptions<T, TArg>): OperationInvoker {
         this.assertNotDestroyed();
-        return new ReflectiveOperationInvoker(this, method, instance ?? this.getInstance.bind(this))
+        return new ReflectiveOperationInvoker(this, method, { instance: this.getInstance.bind(this), ...options })
     }
 
     protected createContext<TArg>(injector: Injector, option?: InvokeArguments<TArg>): InvocationContext<any> {

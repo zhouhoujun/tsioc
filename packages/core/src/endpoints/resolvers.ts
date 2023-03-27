@@ -1,9 +1,8 @@
-import { ClassType, composeResolver, EMPTY, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
-import { MessageArgumentExecption } from '../execptions';
+import { ArgumentExecption, ClassType, composeResolver, EMPTY, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 
 export function missingPipeExecption(parameter: Parameter, type?: ClassType, method?: string) {
-    return new MessageArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
+    return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
 }
 
 export const primitiveResolvers: TransportArgumentResolver[] = [

@@ -25,7 +25,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     /**
      * get the method invcation context of target type.
      */
-    abstract getContext(method: string): InvocationContext;
+    abstract getContext<TArg>(method: string, options?: InvokeArguments<TArg>): InvocationContext;
     /**
      * resolve token in this invcation context.
      */
@@ -48,7 +48,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * @param option invoke arguments.
      * @param instance target instance.
      */
-    abstract invoke(method: MethodType<T>, option?: InvokeArguments<any>, instance?: T): any;
+    abstract invoke<TArg>(method: MethodType<T>, option?: InvokeArguments<TArg>, instance?: T): any;
     /**
      * invoke target method.
      * @param method method name.
@@ -65,19 +65,10 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     /**
      * create method invoker of target type.
      * @param method the method name of target.
-     * @param proceed proceeding invoke with hooks
+     * @param options invoker options
      * @returns instance of {@link OperationInvoker}.
      */
-    abstract createInvoker(method: string): OperationInvoker;
-    /**
-     * create method invoker of target type.
-     * @param method the method name of target.
-     * @param instance instance or instance factory of target type.
-     * @param proceed proceeding invoke with hooks
-     * @returns instance of {@link OperationInvoker}.
-     */
-    abstract createInvoker(method: string, instance?: T | (() => T)): OperationInvoker;
-
+    abstract createInvoker<TArg>(method: string, options?: InvokerOptions<T, TArg>): OperationInvoker;
     /**
      * context destroyed or not.
      */
@@ -93,6 +84,12 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
 }
 
+export interface InvokerOptions<T = any, TArg = any> extends InvokeArguments<TArg> {
+    /**
+     * instance or instance factory of target type.
+     */
+    instance?: T | (() => T)
+}
 
 /**
  * ReflectiveRef factory.

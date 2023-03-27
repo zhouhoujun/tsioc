@@ -1,7 +1,6 @@
-import { EMPTY_OBJ, Injector, Type } from '@tsdi/ioc';
-import { createModuleRef, ModuleRef } from '@tsdi/core';
+import { Injector, Type, createModuleRef, ModuleRef } from '@tsdi/ioc';
 import { Directive, Input } from '../metadata/decor';
-import { Change, Changes, OnChanges, OnDestroy } from '../lifecycle';
+import { Changes, OnChanges, OnDestroy } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';

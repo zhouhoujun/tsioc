@@ -1,5 +1,5 @@
 import { EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, ProvdierOf, Token, toProvider, TypeOf } from '@tsdi/ioc';
-import { Endpoint, EndpointBackend } from '../Endpoint';
+import { EndpointBackend } from '../Endpoint';
 import { Interceptor, InterceptorService } from '../Interceptor';
 import { AbstractEndpoint } from './endpoint';
 

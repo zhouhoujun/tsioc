@@ -2,7 +2,7 @@ import { ArgumentExecption, EMPTY, Injector, lang, pomiseOf, ProvdierOf, StaticP
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Endpoint, EndpointBackend } from '../Endpoint';
 import { EndpointChain } from '../endpoints/chain';
-import { InterceptorEndpoint } from '../endpoints/endpoint';
+import { InterceptorHandler } from '../endpoints/handler';
 import { EndpointService } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
@@ -81,9 +81,9 @@ export class FilterEndpoint<TCtx extends EndpointContext = EndpointContext, TOut
 
     protected override compose(): Endpoint<TCtx, TOutput> {
         const chain = this.getInterceptors().reduceRight(
-            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.getBackend());
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
         return this.filtersToken ? this.getFilters(this.filtersToken).reduceRight(
-            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), chain) : chain;
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), chain) : chain;
     }
 
     /**

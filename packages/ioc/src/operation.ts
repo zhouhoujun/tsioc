@@ -27,6 +27,10 @@ export interface OperationInvoker<T = any> {
      */
     get returnType(): ClassType;
     /**
+     * invoke method name
+     */
+    get method(): string;
+    /**
      * origin method descriptor.
      */
     get descriptor(): TypedPropertyDescriptor<T>;

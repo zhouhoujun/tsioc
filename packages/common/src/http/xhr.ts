@@ -1,5 +1,5 @@
 import { Execption, Injectable, InvocationContext, isArray, isString, isUndefined } from '@tsdi/ioc';
-import { mths, ReqHeaders } from '@tsdi/core';
+import { JSONP, ReqHeaders } from '@tsdi/core';
 import { Observable, Observer } from 'rxjs';
 import { HttpStatusCode, statusMessage } from './status';
 import { HttpBackend, XhrFactory } from './handler';
@@ -44,7 +44,7 @@ export class HttpXhrBackend implements HttpBackend {
     handle(req: HttpRequest<any>, context?: InvocationContext): Observable<HttpEvent<any>> {
         // Quick check to give a better error message when a user attempts to use
         // HttpClient.jsonp() without installing the HttpClientJsonpModule
-        if (req.method === mths.JSONP) {
+        if (req.method === JSONP) {
             throw new Execption(
                 `Attempted to construct Jsonp request without HttpClientJsonpModule installed.`)
         }

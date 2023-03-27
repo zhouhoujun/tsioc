@@ -4,8 +4,8 @@ import * as https from 'https';
 import * as fs from 'fs';
 import { URL } from 'url';
 import { spawn } from 'child_process';
-import { EMPTY_OBJ, Execption, isFunction } from '@tsdi/ioc';
-import { InvalidStateExecption, mths, SecurityExecption } from '@tsdi/core';
+import { Execption, isFunction } from '@tsdi/ioc';
+import { GET, InvalidStateExecption, SecurityExecption } from '@tsdi/core';
 
 /**
  * refactor XMLHttpRequest.js
@@ -71,7 +71,7 @@ export class XMLHttpRequest2 {
     // Event listeners
     private listeners: Record<string, Function[]>;
 
-    constructor(private opts: XhrOptions = EMPTY_OBJ) {
+    constructor(private opts: XhrOptions = {}) {
         this.disableHeaderCheck = opts.disableHeaderCheck ?? false;
         this.settings = opts.settings ?? {};
         this.headers = { ...defaultHeaders, ...opts.headers };
@@ -351,7 +351,7 @@ export class XMLHttpRequest2 {
                         hostname: url.hostname,
                         port: url.port,
                         path: url.pathname,
-                        method: this._response.statusCode === 303 ? mths.GET : this.settings.method,
+                        method: this._response.statusCode === 303 ? GET : this.settings.method,
                         headers: this.headers
                     };
 

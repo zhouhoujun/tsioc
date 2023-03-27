@@ -1,23 +1,24 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Token, Type } from '@tsdi/ioc';
-import { CanActivate } from '../guard';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
-import { Filter, getFiltersToken } from '../filters/filter';
+import { getFiltersToken } from '../filters/filter';
 import { FilterEndpoint } from '../filters/endpoint';
-import { EndpointFactory, EndpointFactoryResolver } from '../filters/endpoint.factory';
-import { getInterceptorsToken, Interceptor } from '../Interceptor';
+import { EndpointFactory, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
+import { getInterceptorsToken } from '../Interceptor';
 import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';
 import { EndpointContext } from '../endpoints/context';
 import { FnEndpoint } from '../endpoints/fn.endpoint';
 
 
-export class OperationEndpoint<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends FilterEndpoint<TCtx, TOutput> {
+export class OperationEndpoint<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends FilterEndpoint<TCtx, TOutput> implements OperationEndpoint<TCtx, TOutput> {
 
-    constructor(injector: Injector,
-        token: Token<Interceptor<TCtx, TOutput>[]>,
-        private invoker: OperationInvoker,
-        guardsToken: Token<CanActivate[]>,
-        filterToken?: Token<Filter<TCtx, TOutput>[]>) {
-        super(injector, token, null!, guardsToken, filterToken)
+    constructor(
+        public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {
+        super(invoker.typeRef.injector,
+            getInterceptorsToken(invoker.typeRef.type, invoker.method),
+            null!,
+            getGuardsToken(invoker.typeRef.type, invoker.method),
+            getFiltersToken(invoker.typeRef.type, invoker.method))
+
     }
 
     protected override getBackend(): Endpoint<TCtx, TOutput> {
@@ -33,14 +34,11 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
         super()
     }
 
-    create<TArg>(propertyKey: string, options: EndpointOptions<TArg>): Endpoint<any, any> {
-        const endpoint = new OperationEndpoint(this.typeRef.injector,
-            getInterceptorsToken(this.typeRef.type, propertyKey),
-            this.typeRef.createInvoker(propertyKey),
-            getGuardsToken(this.typeRef.type, propertyKey),
-            getFiltersToken(this.typeRef.type, propertyKey));
+    create<TArg>(propertyKey: string, options?: EndpointOptions<TArg>): OperationEndpoint {
+        const endpoint = new OperationEndpoint(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
 
-        setOptions(endpoint, options);
+        options && setOptions(endpoint, options);
+
         return endpoint;
     }
 

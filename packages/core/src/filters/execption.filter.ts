@@ -1,37 +1,54 @@
-import { Abstract, Execption, getClass, Injectable } from '@tsdi/ioc';
+import { Abstract, Execption, getClass, Injectable, InvokeArguments, Token } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { MessageExecption } from '../execptions';
-import { createEndpointContext, EndpointContext } from '../endpoints/context';
+import { EndpointContext } from '../endpoints/context';
 import { Filter, runHandlers } from './filter';
 
+
+/**
+ * execption context
+ */
+export class ExecptionContext extends EndpointContext {
+
+    constructor(public readonly execption: Error, public readonly host: EndpointContext, options?: InvokeArguments) {
+        super(host.injector, { ...options, payload: execption })
+        const token = getClass(execption);
+        this.setValue(token, execption);
+    }
+
+    override isSelf(token: Token) {
+        return token === ExecptionContext;
+    }
+
+}
 
 /**
  * execption filter
  */
 @Abstract()
-export abstract class ExecptionFilter extends Filter<EndpointContext<Error>, any> {
+export abstract class ExecptionFilter extends Filter<ExecptionContext, any> {
 
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    abstract handle(context: EndpointContext<Error>): Observable<any>;
+    abstract handle(context: ExecptionContext): Observable<any>;
 }
 
 /**
  * execption backend.
  */
 @Abstract()
-export abstract class ExecptionBackend implements Endpoint<EndpointContext<Error>, any> {
+export abstract class ExecptionBackend implements Endpoint<ExecptionContext, any> {
 
     /**
      * transport endpoint handle.
      * @param input request input.
      * @param context request context.
      */
-    abstract handle(context: EndpointContext<Error>): Observable<any>;
+    abstract handle(context: ExecptionContext): Observable<any>;
 }
 
 
@@ -50,9 +67,7 @@ export class CatchFilter<TCtx extends EndpointContext, TOutput = any> implements
                     if (!endpoint) {
                         return of(err);
                     }
-                    const token = getClass(err);
-                    const context = createEndpointContext(ctx.injector, { payload: err })
-                    context.setValue(token, err);
+                    const context = new ExecptionContext(err, ctx);
                     return endpoint.handle(context)
                         .pipe(
                             finalize(() => {

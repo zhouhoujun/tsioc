@@ -2,19 +2,8 @@ import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Endpoint, EndpointBackend } from '../Endpoint';
 import { Interceptor } from '../Interceptor';
+import { InterceptorHandler } from './handler';
 
-
-/**
- * Interceptor Endpoint.
- */
-export class InterceptorEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Endpoint<TCtx, TOutput> {
-
-    constructor(private next: Endpoint<TCtx, TOutput>, private interceptor: Interceptor<TCtx, TOutput>) { }
-
-    handle(context: TCtx): Observable<TOutput> {
-        return this.interceptor.intercept(context, this.next)
-    }
-}
 
 /**
  * abstract endpoint.
@@ -41,7 +30,7 @@ export abstract class AbstractEndpoint<TCtx extends InvocationContext = Invocati
 
     protected compose(): Endpoint<TCtx, TOutput> {
         return this.getInterceptors().reduceRight(
-            (next, inteceptor) => new InterceptorEndpoint(next, inteceptor), this.getBackend());
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
     }
 
     /**
