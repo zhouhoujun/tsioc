@@ -18,7 +18,8 @@ import { EndpointOptions, EndpointServiceOptions } from './EndpointService';
  * implements {@link Destroyable}.
  */
 @Abstract()
-export abstract class ApplicationContext<T = any, TArg extends ApplicationArguments = ApplicationArguments> extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = any, TArg extends ApplicationArguments = ApplicationArguments>
+    extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
     /**
      * application root module injector.
      */
@@ -137,7 +138,7 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, EndpointOpt
 /**
  * ApplicationOption option.
  */
-export interface ApplicationOption<T= any, TArg = any> extends EnvironmentOption<TArg> {
+export interface ApplicationOption<T = any, TArg = any> extends EnvironmentOption<TArg> {
     /**
      * target module type.
      *

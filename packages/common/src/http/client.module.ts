@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, _tyobj } from '@tsdi/ioc';
+import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpClient } from './client';
 import { HttpXhrBackend } from './xhr';
@@ -113,7 +113,7 @@ export class HttpClientJsonpModule {
 }
 
 export function jsonpCallbackContext(): Object {
-    if (typeof window === _tyobj) {
+    if (typeof window === 'object') {
         return window
     }
     return {}

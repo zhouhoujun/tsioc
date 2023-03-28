@@ -1,4 +1,3 @@
-export * from './result';
 export * from './route';
 export * from './router';
 export * from './middleware';

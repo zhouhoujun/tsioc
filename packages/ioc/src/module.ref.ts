@@ -1,9 +1,8 @@
-
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
+import { ModuleWithProviders, ProviderType } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-import { ModuleWithProviders, ProviderType } from './providers';
 import { ReflectiveFactory } from './reflective';
 import { Modules, Type } from './types';
 import { isType } from './utils/chk';

@@ -1,7 +1,5 @@
+import { EndpointContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
-import { EndpointContext } from '../endpoints/context';
-import { Context } from './middleware';
-
 /**
  * route mapping return result. 
  *
@@ -18,9 +16,9 @@ export abstract class ResultValue {
      * send value.
      *
      * @abstract
-     * @param {EndpointContext<Context>} context
+     * @param {EndpointContext} context
      * @returns {Promise<any>}
      * @memberof ResultValue
      */
-    abstract sendValue(ctx: EndpointContext<Context>): Promise<any>;
+    abstract sendValue(ctx: EndpointContext): Promise<any>;
 }

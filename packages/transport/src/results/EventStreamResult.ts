@@ -1,4 +1,4 @@
-import { ResultValue } from '@tsdi/core';
+import { ResultValue } from './ResultValue';
 import { AssetServerContext } from '../asset.ctx';
 import { Stream } from 'stream';
 import { hdr } from '../consts';

@@ -1,8 +1,8 @@
 import { Modules, Type, TypeOf } from './types';
 import { Token } from './tokens';
 import { Injector } from './injector';
-import { isArray, isDefined, isType } from './utils/chk';
 import { isPlainObject } from './utils/obj';
+import { isArray, isDefined, isType } from './utils/chk';
 
 /**
  * provide for {@link Injector }.

@@ -75,7 +75,6 @@ export interface Annotation<T = any> {
 }
 
 
-
 /**
  * abstract type
  *

@@ -33,7 +33,7 @@ export abstract class Client {
 
     constructor(
         private injector: Injector,
-        private endpoint: Endpoint) {
+        readonly endpoint: Endpoint) {
 
     }
 

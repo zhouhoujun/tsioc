@@ -1,11 +1,11 @@
 import { Abstract } from './metadata/fac';
+import { Class } from './metadata/type';
 import { Handle } from './handle';
 import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
 import { ClassType, Type } from './types';
-import { Class } from './metadata/type';
 import { ProviderType } from './providers';
 import { ModuleRef } from './module.ref';
 

@@ -1,5 +1,5 @@
 import {
-    OutgoingHeader, ServerContext, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
     ServerContextOpts, ServerEndpointContext, Status, RedirectStatus, EmptyStatus
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';

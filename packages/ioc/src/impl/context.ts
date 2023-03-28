@@ -253,8 +253,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return meta.resolver
     }
 
+    /**
+     * resolve token.
+     * @param token 
+     * @returns 
+     */
     resolve<T>(token: Token<T>): T {
-        return this.resolveArgument({ provider: token }) as T
+        return this.resolveArgument({ provider: token }) as T;
     }
 
     /**
