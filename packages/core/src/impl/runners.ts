@@ -7,7 +7,7 @@ import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { Endpoint } from '../Endpoint';
-import { FilterEndpoint } from '../filters/endpoint';
+import { GuardsEndpoint } from './guards.endpoint';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
@@ -41,13 +41,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
     private _types: ClassType[];
     private _maps: Map<ClassType, Endpoint[]>;
     private _refs: Map<ClassType, ReflectiveRef>;
-    private _endpoint: FilterEndpoint;
+    private _endpoint: GuardsEndpoint;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._endpoint = new GuardsEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
         this._endpoint.useFilters(CatchFilter);
     }
 

@@ -1,7 +1,7 @@
 import { Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { EndpointContext } from '../endpoints';
-import { FilterEndpoint } from '../filters/endpoint';
+import { GuardsEndpoint } from './guards.endpoint';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
@@ -11,7 +11,7 @@ import { MiddlewareBackend } from '../transport/middleware.compose';
 
 
 export class MiddlewareEndpointImpl<TCtx extends EndpointContext, TOutput>
-    extends FilterEndpoint<TCtx, TOutput> implements MiddlewareEndpoint<TCtx, TOutput> {
+    extends GuardsEndpoint<TCtx, TOutput> implements MiddlewareEndpoint<TCtx, TOutput> {
 
     constructor(
         injector: Injector,

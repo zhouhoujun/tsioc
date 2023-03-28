@@ -1,7 +1,7 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { getFiltersToken } from '../filters/filter';
-import { FilterEndpoint } from '../filters/endpoint';
+import { GuardsEndpoint } from './guards.endpoint';
 import { EndpointFactory, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
 import { getInterceptorsToken } from '../Interceptor';
 import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';
@@ -9,7 +9,7 @@ import { EndpointContext } from '../endpoints/context';
 import { FnEndpoint } from '../endpoints/fn.endpoint';
 
 
-export class OperationEndpoint<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends FilterEndpoint<TCtx, TOutput> implements OperationEndpoint<TCtx, TOutput> {
+export class OperationEndpoint<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardsEndpoint<TCtx, TOutput> implements OperationEndpoint<TCtx, TOutput> {
 
     constructor(
         public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {

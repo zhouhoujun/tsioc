@@ -3,7 +3,7 @@ import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
-import { FilterEndpoint } from '../filters/endpoint';
+import { GuardsEndpoint } from './guards.endpoint';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { ApplicationEvent } from '../ApplicationEvent';
@@ -31,13 +31,13 @@ export const EVENT_MULTICASTER_GUARDS = tokenId<CanActivate[]>('EVENT_MULTICASTE
 @Injectable()
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEventContext> {
 
-    private _endpoint: FilterEndpoint<ApplicationEventContext, any>;
+    private _endpoint: GuardsEndpoint<ApplicationEventContext, any>;
     private maps: Map<Type, Endpoint[]>;
 
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
-        this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
+        this._endpoint = new GuardsEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
         this._endpoint.useFilters(CatchFilter)
     }
 

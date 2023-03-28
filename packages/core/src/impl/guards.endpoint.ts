@@ -8,14 +8,14 @@ import { ServiceEndpoint } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
-import { Filter } from './filter';
+import { Filter } from '../filters/filter';
 
 
 
 /**
- * filter endpoint.
+ * Guards endpoint.
  */
-export class FilterEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements ServiceEndpoint<InvocationContext, TOutput> {
+export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements ServiceEndpoint<InvocationContext, TOutput> {
 
 
     private guards: CanActivate[] | null | undefined;
