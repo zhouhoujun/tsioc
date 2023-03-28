@@ -2,14 +2,12 @@ import {
     Token, InjectableMetadata, isArray, getClass,
     refl, createDecorator, createPropDecorator, createParamDecorator, ActionTypes
 } from '@tsdi/ioc';
-import {  RunnableFactory } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { AnnotationDef, ComponentDef, DirectiveDef } from '../type';
 import { CompilerFacade } from '../compile/facade';
-import { ComponentRunnableFactory } from '../runnable';
 
 
 /**
@@ -47,25 +45,24 @@ export const Directive: Directive = createDecorator<DirectiveMetadata>('Directiv
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     def: {
         class: (ctx, next) => {
-            (ctx.class as DirectiveDef).annoType = 'directive';
-            (ctx.class as DirectiveDef).annoDecor = ctx.decor;
-            (ctx.class as DirectiveDef).annotation = ctx.metadata;
+            const def = ctx.class.getAnnotation<DirectiveDef>();
+            def.annoType = 'directive';
             return next();
         }
     },
     design: {
         class: (ctx, next) => {
-            if ((ctx.class as DirectiveDef).annoType !== 'directive') {
+            const directivDef = ctx.class.getAnnotation<DirectiveDef>();
+            if (directivDef.annoType !== 'directive') {
                 return next();
             }
 
-            if (ctx.class.class.annotation?.def) {
-                (ctx.class as DirectiveDef).def = ctx.class.class.annotation?.def;
+            if (directivDef.def) {
                 return next();
             }
 
-            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
-            (ctx.class as DirectiveDef).def = compiler.compileDirective((ctx.class as DirectiveDef));
+            const compiler = ctx.injector.get(CompilerFacade);
+            directivDef.def = compiler.compileDirective(directivDef);
 
             next();
         }
@@ -109,32 +106,27 @@ export const Component: Component = createDecorator<ComponentMetadata>('Componen
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     def: {
         class: (ctx, next) => {
-            (ctx.class as ComponentDef).annoType = 'component';
-            (ctx.class as ComponentDef).annoDecor = ctx.decor;
-            (ctx.class as ComponentDef).annotation = ctx.metadata;
+            const def = ctx.class.getAnnotation<ComponentDef>();
+            def.annoType = 'component';
             return next();
         }
     },
     design: {
         class: (ctx, next) => {
-            const compRefl = ctx.class as ComponentDef;
+            const compRefl = ctx.class.getAnnotation<ComponentDef>();
             if (compRefl.annoType !== 'component') {
                 return next();
             }
 
-            if (ctx.class.class.annotation?.def) {
-                (ctx.class as ComponentDef).def = ctx.class.class.annotation?.def;
+            if (compRefl.def) {
                 return next();
             }
 
-            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
+            const compiler = ctx.injector.get(CompilerFacade);
             compRefl.def = compiler.compileComponent(compRefl);
             next();
         }
-    },
-    providers: [
-        { provide: RunnableFactory, useExisting: ComponentRunnableFactory }
-    ]
+    }
 });
 
 
@@ -549,7 +541,7 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
 export abstract class Query { }
 
 function isDirOrComponent(target: any) {
-    const anTy = refl.get<AnnotationDef>(getClass(target))?.annoType;
+    const anTy = refl.get(getClass(target)).getAnnotation<AnnotationDef>().annoType;
     return anTy === 'component' || anTy === 'directive';
 }
 
@@ -609,8 +601,9 @@ export interface ContentChildrenDecorator {
 export const ContentChildren: ContentChildrenDecorator = createPropDecorator('ContentChildren', {
     def: {
         property: (ctx, next) => {
-            if (!(ctx.metadata as QueryMetadata).selector) {
-                (ctx.metadata as QueryMetadata).selector = isDirOrComponent(ctx.metadata.type) ? ctx.metadata.type : ctx.propertyKey;
+            ctx.define.metadata
+            if (!(ctx.define.metadata as QueryMetadata).selector) {
+                (ctx.define.metadata as QueryMetadata).selector = isDirOrComponent(ctx.class.type) ? ctx.class.type : ctx.class.type;
             }
             return next();
         }
@@ -665,9 +658,9 @@ export interface ContentChildDecorator {
 export const ContentChild: ContentChildDecorator = createPropDecorator('ContentChild', {
     def: {
         property: (ctx, next) => {
-            const meta = ctx.metadata as QueryMetadata;
+            const meta = ctx.define.metadata as QueryMetadata;
             if (!meta.selector) {
-                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.define.propertyKey;
             }
             return next();
         }
@@ -709,9 +702,9 @@ export interface ViewChildrenDecorator {
 export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
     def: {
         property: (ctx, next) => {
-            const meta = ctx.metadata as QueryMetadata;
+            const meta = ctx.define.metadata as QueryMetadata;
             if (!meta.selector) {
-                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.define.propertyKey;
             }
             return next();
         }
@@ -774,8 +767,8 @@ export interface ViewChildDecorator {
 export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
     def: {
         property: (ctx, next) => {
-            if (!(ctx.metadata as QueryMetadata).selector) {
-                (ctx.metadata as QueryMetadata).selector = isDirOrComponent(ctx.metadata.type) ? ctx.metadata.type : ctx.propertyKey;
+            if (!(ctx.define.metadata as QueryMetadata).selector) {
+                (ctx.define.metadata as QueryMetadata).selector = isDirOrComponent(ctx.class.type) ? ctx.class.type : ctx.define.propertyKey;
             }
             return next();
         }
