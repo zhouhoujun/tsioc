@@ -1,7 +1,7 @@
 import { Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { EndpointContext } from '../endpoints';
-import { GuardsEndpoint } from './guards.endpoint';
+import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';

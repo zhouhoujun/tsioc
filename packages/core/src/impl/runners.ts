@@ -7,7 +7,7 @@ import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { Endpoint } from '../Endpoint';
-import { GuardsEndpoint } from './guards.endpoint';
+import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from '../endpoints/endpoint.factory';

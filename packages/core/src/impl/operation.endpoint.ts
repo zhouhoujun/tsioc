@@ -1,7 +1,7 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { Endpoint } from '../Endpoint';
 import { getFiltersToken } from '../filters/filter';
-import { GuardsEndpoint } from './guards.endpoint';
+import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { EndpointFactory, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
 import { getInterceptorsToken } from '../Interceptor';
 import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';

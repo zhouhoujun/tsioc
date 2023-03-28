@@ -3,7 +3,7 @@ import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
-import { GuardsEndpoint } from './guards.endpoint';
+import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { ApplicationEvent } from '../ApplicationEvent';

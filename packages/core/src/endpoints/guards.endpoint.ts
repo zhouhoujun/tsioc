@@ -2,13 +2,13 @@ import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, pomiseOf, 
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
-import { EndpointChain } from '../endpoints/chain';
-import { InterceptorHandler } from '../endpoints/handler';
 import { ServiceEndpoint } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { Filter } from '../filters/filter';
+import { EndpointChain } from './chain';
+import { InterceptorHandler } from './handler';
 
 
 
