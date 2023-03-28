@@ -1,6 +1,6 @@
 import { chain, isFunction, lang } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
-import { Middleware, Context, MiddlewareFn, MiddlewareLike } from './middleware';
+import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { FnEndpoint } from '../endpoints/fn.endpoint';
 import { Endpoints } from '../endpoints/chain';
 import { EndpointContext } from '../endpoints/context';
@@ -32,23 +32,6 @@ export function compose<T extends EndpointContext>(middlewares: MiddlewareLike<T
  * empty next.
  */
 export const NEXT = () => Promise.resolve();
-
-/**
- * middleware chain.
- */
-export class MiddlewareChain implements Middleware {
-
-    private _chainFn?: MiddlewareFn;
-    constructor(private middlewares: (Middleware | MiddlewareFn)[]) { }
-
-    invoke<T extends Context>(ctx: EndpointContext<T>, next?: () => Promise<void>): Promise<void> {
-        if (!this._chainFn) {
-            this._chainFn = compose(this.middlewares)
-        }
-        return this._chainFn(ctx, next ?? NEXT)
-    }
-
-}
 
 
 /**

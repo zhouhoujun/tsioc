@@ -194,6 +194,11 @@ export type TypeProvider<T = any> = Type<T>;
 export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | TypeOf<T>;
 
 /**
+ * use static value of.
+ */
+export type ValueOf<T> = UseValue<T> | UseFactory<T> | UseExisting<T>;
+
+/**
  * static providers.
  */
 export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;

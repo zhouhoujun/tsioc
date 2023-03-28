@@ -109,6 +109,9 @@ export interface RequestOptions {
     | ReadonlyArray<[string, string | number | boolean]>
     | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
 
+    /**
+     * parameter codec.
+     */
     encoder?: ParameterCodec;
 }
 

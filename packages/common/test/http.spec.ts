@@ -1,4 +1,9 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
+import {
+    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
+    Middleware, BadRequestExecption, EndpointContext
+} from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
@@ -7,12 +12,7 @@ import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, Chain, BadRequestExecption, ServerEndpointContext
-} from '@tsdi/core';
 import { HttpClient, HttpClientModule } from '../src';
-import { LoggerModule } from '@tsdi/logs';
 
 
 @RouteMapping('/device')
@@ -104,7 +104,7 @@ class DeviceController {
 @Handle('/hdevice')
 class DeviceQueue implements Middleware {
 
-    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')

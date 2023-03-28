@@ -1,4 +1,4 @@
-import { Handle } from '@tsdi/ioc';
+import { Handle, ProvdierOf, ValueOf } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
 
 
@@ -64,4 +64,4 @@ export type MiddlewareFn<T extends EndpointContext = EndpointContext> = Handle<T
  */
 export type MiddlewareLike<T extends EndpointContext = EndpointContext> = Middleware<T> | MiddlewareFn<T>;
 
-
+export type MiddlewareProviderOf = ProvdierOf<Middleware> |  ValueOf<MiddlewareFn>;
