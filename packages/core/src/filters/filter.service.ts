@@ -6,9 +6,9 @@ import { Filter } from './filter';
  */
 export interface FilterService {
     /**
-     * use filter
-     * @param filter 
+     * use filters
+     * @param filters 
      * @param order 
      */
-    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    useFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 }

@@ -41,13 +41,13 @@ export abstract class ApplicationEventMulticaster implements EndpointService, Ap
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptor(interceptor: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
     /**
      * use filter
      * @param filter 
      * @param order 
      */
-    abstract useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
     /**
      * add event endpoint.
      * @param event 

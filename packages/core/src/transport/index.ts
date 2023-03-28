@@ -14,6 +14,9 @@ export * from './client';
 
 export * from './listen';
 
+export * from './microservice';
+export * from './service';
+
 export * from './router.module';
 
 export * from './utils';

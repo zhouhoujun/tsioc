@@ -41,7 +41,7 @@ export class EndpointChain<TCtx extends InvocationContext = InvocationContext, T
         super();
     }
 
-    useInterceptor(interceptor: ProvdierOf<Interceptor<TCtx, TOutput>> | ProvdierOf<Interceptor<TCtx, TOutput>>[], order?: number): this {
+    useInterceptors(interceptor: ProvdierOf<Interceptor<TCtx, TOutput>> | ProvdierOf<Interceptor<TCtx, TOutput>>[], order?: number): this {
         this.regMulti(this.token, interceptor, order);
         this.reset();
         return this;

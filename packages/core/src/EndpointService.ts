@@ -1,11 +1,12 @@
-import { getTokenOf, InvokeArguments, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, InvocationContext, InvokeArguments, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { PipeService } from './pipes/pipe.service';
 import { FilterService } from './filters/filter.service';
 import { CanActivate } from './guard';
 import { Interceptor, InterceptorService } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
 import { Filter } from './filters/filter';
-import { EndpointContext } from './endpoints/context';
+import { Endpoint } from './Endpoint';
+import { Observable } from 'rxjs';
 
 
 /**
@@ -24,7 +25,7 @@ export interface EndpointService extends FilterService, PipeService, Interceptor
 /**
  * endpoint service options.
  */
-export interface EndpointServiceOptions<TCtx extends EndpointContext = EndpointContext> {
+export interface EndpointServiceOptions<TCtx extends InvocationContext = InvocationContext> {
     /**
      * An array of dependency-injection tokens used to look up `CanActivate()`
      * handlers, in order to determine if the current user is allowed to
@@ -52,9 +53,9 @@ export interface EndpointServiceOptions<TCtx extends EndpointContext = EndpointC
  */
 export function setOptions(service: EndpointService, options: EndpointServiceOptions) {
     options.pipes && service.usePipes(options.pipes);
-    options.filters && service.useFilter(options.filters);
+    options.filters && service.useFilters(options.filters);
     options.guards && service.useGuards(options.guards);
-    options.interceptors && service.useInterceptor(options.interceptors);
+    options.interceptors && service.useInterceptors(options.interceptors);
 }
 
 const GUARDS = 'GUARDS';
@@ -65,6 +66,20 @@ const GUARDS = 'GUARDS';
  */
 export function getGuardsToken(type: TypeOf<any>, propertyKey?: string): Token<CanActivate[]> {
     return getTokenOf(type, GUARDS, propertyKey)
+}
+
+@Abstract()
+export abstract class ServiceEndpoint<TCtx extends InvocationContext, TOutput> implements Endpoint<TCtx, TOutput>, EndpointService {
+
+    abstract handle(context: TCtx): Observable<TOutput>;
+    
+    abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+
+    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    
+    abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
+
+    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<any, any>> | ProvdierOf<Interceptor<any, any>>[], order?: number): this;
 }
 
 /**

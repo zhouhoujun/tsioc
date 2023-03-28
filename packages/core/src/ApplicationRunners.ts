@@ -61,13 +61,13 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
     * @param interceptor 
     * @param order 
     */
-  abstract useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
+  abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
   /**
    * use filter
    * @param filter 
    * @param order 
    */
-  abstract useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+  abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 
   /**
    * destroy.

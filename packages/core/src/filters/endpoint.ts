@@ -4,7 +4,7 @@ import { Interceptor } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
 import { EndpointChain } from '../endpoints/chain';
 import { InterceptorHandler } from '../endpoints/handler';
-import { EndpointService } from '../EndpointService';
+import { ServiceEndpoint } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
@@ -15,7 +15,7 @@ import { Filter } from './filter';
 /**
  * filter endpoint.
  */
-export class FilterEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements EndpointService {
+export class FilterEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements ServiceEndpoint<InvocationContext, TOutput> {
 
 
     private guards: CanActivate[] | null | undefined;
@@ -49,7 +49,7 @@ export class FilterEndpoint<TCtx extends InvocationContext = InvocationContext, 
         return this;
     }
 
-    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
+    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
         if (!this.filtersToken) throw new ArgumentExecption('no filters token');
         this.regMulti(this.filtersToken, filter, order);
         this.reset();

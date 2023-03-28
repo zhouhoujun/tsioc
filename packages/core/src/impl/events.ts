@@ -38,7 +38,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         super();
         this.maps = new Map();
         this._endpoint = new FilterEndpoint(injector, EVENT_MULTICASTER_INTERCEPTORS, this, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
-        this._endpoint.useFilter(CatchFilter)
+        this._endpoint.useFilters(CatchFilter)
     }
 
     get endpoint(): Endpoint<ApplicationEventContext, any> {
@@ -55,13 +55,13 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useInterceptor(interceptor: TypeOf<Interceptor<ApplicationEventContext, any>> | TypeOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
-        this._endpoint.useInterceptor(interceptor, order);
+    useInterceptors(interceptor: TypeOf<Interceptor<ApplicationEventContext, any>> | TypeOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
+        this._endpoint.useInterceptors(interceptor, order);
         return this;
     }
 
-    useFilter(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number | undefined): this {
-        this._endpoint.useFilter(filter, order);
+    useFilters(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number | undefined): this {
+        this._endpoint.useFilters(filter, order);
         return this;
     }
 

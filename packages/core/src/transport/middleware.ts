@@ -63,5 +63,7 @@ export type MiddlewareFn<T extends EndpointContext = EndpointContext> = Handle<T
  * middleware like.
  */
 export type MiddlewareLike<T extends EndpointContext = EndpointContext> = Middleware<T> | MiddlewareFn<T>;
-
+/**
+ * provider of middleware.
+ */
 export type MiddlewareProviderOf = ProvdierOf<Middleware> |  ValueOf<MiddlewareFn>;

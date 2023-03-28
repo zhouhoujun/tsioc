@@ -21,11 +21,11 @@ export interface Interceptor<TInput = any, TOutput = any> {
  */
 export interface InterceptorService {
     /**
-     * use interceptor
-     * @param interceptor 
+     * use interceptors
+     * @param interceptors 
      * @param order 
      */
-    useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
+    useInterceptors(interceptors: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
 }
 
 

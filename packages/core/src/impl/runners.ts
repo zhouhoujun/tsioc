@@ -48,7 +48,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         this._maps = new Map();
         this._refs = new Map();
         this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
-        this._endpoint.useFilter(CatchFilter);
+        this._endpoint.useFilters(CatchFilter);
     }
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
@@ -61,13 +61,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         return this;
     }
 
-    useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
-        this._endpoint.useInterceptor(interceptor, order);
+    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
+        this._endpoint.useInterceptors(interceptor, order);
         return this;
     }
 
-    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._endpoint.useFilter(filter, order);
+    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
+        this._endpoint.useFilters(filter, order);
         return this;
     }
 

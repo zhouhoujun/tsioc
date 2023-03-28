@@ -5,12 +5,13 @@ import { FilterEndpoint } from '../filters/endpoint';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
-import { MiddlewareLike, MiddlewareProviderOf } from './middleware';
-import { MiddlewareBackend } from './middleware.compose';
+import { MiddlewareLike, MiddlewareProviderOf } from '../transport/middleware';
+import { MiddlewareEndpoint } from '../transport/middleware.service';
+import { MiddlewareBackend } from '../transport/middleware.compose';
 
 
-
-export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput> extends FilterEndpoint<TCtx, TOutput> {
+export class MiddlewareEndpointImpl<TCtx extends EndpointContext, TOutput>
+    extends FilterEndpoint<TCtx, TOutput> implements MiddlewareEndpoint<TCtx, TOutput> {
 
     constructor(
         injector: Injector,
@@ -22,8 +23,8 @@ export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput> extends F
 
     }
 
-    useMiddlewares(middlewares: MiddlewareProviderOf | MiddlewareProviderOf[]): this {
-        this.regMulti(this.midddlesToken, middlewares as ProvdierOf<MiddlewareLike>);
+    use(middlewares: MiddlewareProviderOf | MiddlewareProviderOf[], order?: number): this {
+        this.regMulti(this.midddlesToken, middlewares as ProvdierOf<MiddlewareLike>, order);
         this.reset();
         return this;
     }

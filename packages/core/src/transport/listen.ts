@@ -25,3 +25,7 @@ export abstract class ListenOpts {
     ipv6Only?: boolean | undefined;
     withCredentials?: boolean;
 }
+
+export interface ListenService {
+    listen(port: number, host?: string): Promise<void>
+}
