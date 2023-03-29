@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointContext } from '../endpoints';
+import { EndpointContext } from '../endpoints/context';
 import { EndpointService, MicroServiceEndpoint } from '../EndpointService';
-import { MiddlewareProviderOf } from './middleware';
+import { MiddlewareOf } from './middleware';
 
 
 /**
@@ -12,7 +12,7 @@ export interface MiddlewareService {
      * use middlewares.
      * @param middlewares 
      */
-    use(middlewares: MiddlewareProviderOf | MiddlewareProviderOf[], order?: number): this;
+    use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this;
 }
 
 /**
@@ -21,5 +21,5 @@ export interface MiddlewareService {
 @Abstract()
 export abstract class ServiceEndpoint<TCtx extends EndpointContext, TOutput> extends MicroServiceEndpoint<TCtx, TOutput> implements EndpointService, MiddlewareService  {
     
-    abstract use(middlewares: MiddlewareProviderOf | MiddlewareProviderOf[], order?: number): this;
+    abstract use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this;
 }

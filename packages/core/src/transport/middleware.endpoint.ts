@@ -5,7 +5,7 @@ import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
-import { MiddlewareLike, MiddlewareProviderOf } from './middleware';
+import { MiddlewareLike, MiddlewareOf } from './middleware';
 import { ServiceEndpoint } from './middleware.service';
 import { MiddlewareBackend } from './middleware.compose';
 
@@ -23,7 +23,7 @@ export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
 
     }
 
-    use(middlewares: MiddlewareProviderOf | MiddlewareProviderOf[], order?: number): this {
+    use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this {
         this.regMulti(this.midddlesToken, middlewares as ProvdierOf<MiddlewareLike>, order);
         this.reset();
         return this;

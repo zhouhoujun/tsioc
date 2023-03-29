@@ -60,10 +60,10 @@ export interface Context {
  */
 export type MiddlewareFn<T extends EndpointContext = EndpointContext> = Handle<T, Promise<void>>;
 /**
- * middleware like.
+ * middleware like. instance of middleware or middleware function.
  */
 export type MiddlewareLike<T extends EndpointContext = EndpointContext> = Middleware<T> | MiddlewareFn<T>;
 /**
  * provider of middleware.
  */
-export type MiddlewareProviderOf = ProvdierOf<Middleware> |  ValueOf<MiddlewareFn>;
+export type MiddlewareOf = ProvdierOf<Middleware> |  ValueOf<MiddlewareFn>;

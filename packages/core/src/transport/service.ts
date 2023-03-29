@@ -5,7 +5,7 @@ import { Filter } from '../filters';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes';
-import { MiddlewareProviderOf } from './middleware';
+import { MiddlewareOf } from './middleware';
 import { MiddlewareService, ServiceEndpoint } from './middleware.service';
 
 /**
@@ -19,7 +19,7 @@ export abstract class Service<TCtx extends EndpointContext, TOutput = any> imple
         
     }
 
-    use(middlewares: MiddlewareProviderOf | MiddlewareProviderOf[], order?: number): this {
+    use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this {
         this.endpoint.use(middlewares, order);
         return this;
     }
