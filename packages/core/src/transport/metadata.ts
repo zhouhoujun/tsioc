@@ -5,7 +5,7 @@ import {
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { joinprefix, normalize } from './route';
-import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, RouteMappingMetadata, RouteOptions, Router } from './router';
+import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, RouteMappingMetadata, RouteOptions, MiddlewareRouter } from './router';
 import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
 import { Middleware, MiddlewareFn } from './middleware';
 import { TransportParameterDecorator } from '../metadata';
@@ -58,7 +58,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessagePattern>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (parent?: Type<Router> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
+    props: (parent?: Type<MiddlewareRouter> | string | RegExp, options?: { guards?: Type<CanActivate>[], parent?: Type<MiddlewareRouter> | string }) =>
         (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata<any> & HandleMessagePattern,
     def: {
         class: (ctx, next) => {
@@ -84,8 +84,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
 
                 if (isString(route)) {
                     const path = joinprefix(prefix, version, route);
-                    const routerInst = router ? injector.get(router) : injector.get(Router);
-                    if (!(router instanceof Router)) {
+                    const routerInst = router ? injector.get(router) : injector.get(MiddlewareRouter);
+                    if (!(router instanceof MiddlewareRouter)) {
                         throw new Execption(lang.getClassName(router) + 'is not message router!');
                     }
                     factory.onDestroy(() => router.unuse(path));
@@ -117,9 +117,9 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<Router>} [parent] the middlewares for the route.
+     * @param {Type<MiddlewareRouter>} [parent] the middlewares for the route.
      */
-    (route: string, parent?: TypeOf<Router>): ClassDecorator;
+    (route: string, parent?: TypeOf<MiddlewareRouter>): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -168,13 +168,13 @@ export interface RouteMapping {
 
 export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
-        props: (route: string, arg2?: Type<Router> | Type<CanActivate>[] | string | T) => {
+        props: (route: string, arg2?: Type<MiddlewareRouter> | Type<CanActivate>[] | string | T) => {
             route = normalize(route);
             if (isArray(arg2)) {
                 return { route, guards: arg2 } as T;
             } else if (!controllerOnly && isString(arg2)) {
                 return { route, method: arg2 as RequestMethod } as T;
-            } else if (lang.isBaseOf(arg2, Router)) {
+            } else if (lang.isBaseOf(arg2, MiddlewareRouter)) {
                 return { route, router: arg2 } as T;
             } else {
                 return { ...arg2 as T, route };
@@ -194,15 +194,15 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const mapping = ctx.class.getAnnotation<MappingDef>();
 
                 const injector = ctx.injector;
-                let router: Router;
+                let router: MiddlewareRouter;
                 if (mapping.router) {
                     router = injector.get(mapping.router);
                 } else {
-                    router = injector.get(Router);
+                    router = injector.get(MiddlewareRouter);
                 }
 
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
-                if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+                if (!(router instanceof MiddlewareRouter)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
                 const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
                 const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
@@ -294,9 +294,9 @@ export interface Controller {
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {TypeOf<Router>} [parent] the middlewares for the route.
+     * @param {TypeOf<MiddlewareRouter>} [parent] the middlewares for the route.
      */
-    (route?: string, parent?: TypeOf<Router>): ClassDecorator;
+    (route?: string, parent?: TypeOf<MiddlewareRouter>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
@@ -380,15 +380,15 @@ export function createRouteDecorator<TArg>(method: RequestMethod) {
                 const mapping = ctx.class.getAnnotation<MappingDef>();
 
                 const injector = ctx.injector;
-                let router: Router;
+                let router: MiddlewareRouter;
                 if (mapping.router) {
                     router = injector.get(mapping.router);
                 } else {
-                    router = injector.get(Router);
+                    router = injector.get(MiddlewareRouter);
                 }
 
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
-                if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+                if (!(router instanceof MiddlewareRouter)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
                 const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
                 const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
@@ -662,7 +662,7 @@ export interface HandleMetadata<TArg> extends TypeMetadata, PatternMetadata, Rou
      */
     route?: string;
 
-    router?: Type<Router>;
+    router?: Type<MiddlewareRouter>;
 
     /**
      * version of api.

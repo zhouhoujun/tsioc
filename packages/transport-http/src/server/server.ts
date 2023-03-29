@@ -1,6 +1,6 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify } from '@tsdi/ioc';
 import {
-    RunnableFactory, Router, ListenOpts, InOutInterceptorFilter,
+    RunnableFactory, MiddlewareRouter, ListenOpts, InOutInterceptorFilter,
     PathHanlderFilter, StatusInterceptorFilter, CatchFilter
 } from '@tsdi/core';
 import { Subscriber } from 'rxjs';
@@ -56,7 +56,7 @@ const httpOpts = {
         CsrfMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
-        Router
+        MiddlewareRouter
     ]
 } as Http2ServerOpts;
 

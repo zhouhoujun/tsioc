@@ -1,6 +1,6 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    Router, Server, StatusInterceptorFilter, CatchFilter
+    MiddlewareRouter, Server, StatusInterceptorFilter, CatchFilter
 } from '@tsdi/core';
 import { Abstract, AsyncLike, isBoolean, lang, pomiseOf } from '@tsdi/ioc';
 import { finalize, from, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
@@ -43,7 +43,7 @@ const defOpts = {
         SessionMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
-        Router
+        MiddlewareRouter
     ],
     listenOpts: {
     }

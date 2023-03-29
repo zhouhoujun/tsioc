@@ -1,5 +1,5 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
-import { lastValueFrom, mergeMap } from 'rxjs';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef, InvocationContext } from '@tsdi/ioc';
+import { defer, lastValueFrom, mergeMap, Observable, of, pipe, throwError } from 'rxjs';
 import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
@@ -7,17 +7,16 @@ import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../e
 import { Context } from './middleware';
 import { Protocols, RequestMethod } from './protocols';
 import { EndpointOptions } from '../EndpointService';
-import { InterceptorMiddleware } from './middleware.compose';
+import { InterceptorMiddleware, NEXT } from './middleware.compose';
 import { EndpointContext } from '../endpoints/context';
 import { Endpoint } from '../Endpoint';
+import { Backend } from '../Handler';
 
-
-
-/**
- * abstract router.
+/***
+ * router
  */
 @Abstract()
-export abstract class Router implements Middleware {
+export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
     /**
      * route prefix.
      */
@@ -25,7 +24,33 @@ export abstract class Router implements Middleware {
     /**
      * routes.
      */
-    abstract get routes(): Map<string, MiddlewareFn>;
+    abstract get routes(): Map<string, T>;
+
+    /**
+     * has route or not.
+     * @param route route
+     */
+    abstract has(route: string): boolean;
+    /**
+     * use route.
+     * @param route
+     * @param endpoint endpoint. 
+     */
+    abstract use(route: string, endpoint: T): this;
+
+    /**
+     * unuse route.
+     * @param route 
+     */
+    abstract unuse(route: string): this;
+}
+
+
+/**
+ * abstract router.
+ */
+@Abstract()
+export abstract class MiddlewareRouter extends Router<Endpoint | MiddlewareLike> implements Middleware {
     /**
      * invoke middleware.
      *
@@ -35,21 +60,10 @@ export abstract class Router implements Middleware {
      */
     abstract invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void>;
     /**
-     * has route or not.
-     * @param route route
-     */
-    abstract has(route: string): boolean;
-    /**
      * use route.
      * @param route 
      */
     abstract use(route: Route): this;
-    /**
-     * use route.
-     * @param route 
-     * @param middleware middleware. 
-     */
-    abstract use(route: string, middleware: MiddlewareLike): this;
 
     /**
      * use route.
@@ -57,24 +71,36 @@ export abstract class Router implements Middleware {
      * @param endpoint endpoint. 
      */
     abstract use(route: string, endpoint: Endpoint): this;
-
     /**
-     * unuse route.
+     * use route.
      * @param route 
+     * @param middleware middleware. 
      */
-    abstract unuse(route: string): this;
+    abstract use(route: string, middleware: MiddlewareLike): this;
 }
 
 /**
  * Mapping route.
  */
-export class MappingRoute implements Middleware {
+export class MappingRoute implements Middleware, Endpoint {
 
     private _middleware?: Middleware;
     private _guards?: CanActivate[];
     constructor(private route: Route) {
 
     }
+
+    handle(ctx: EndpointContext<Context>): Observable<any> {
+        return defer(async () => {
+            const can = await this.canActive(ctx);
+            if (!can) {
+                return throwError(()=> new ForbiddenExecption())
+            }
+            await this._middleware?.invoke(ctx, NEXT);
+            return ctx;
+        });
+    }
+
 
     get path() {
         return this.route.path
@@ -101,7 +127,7 @@ export class MappingRoute implements Middleware {
         return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
-    protected async parse(route: Route & { router?: Router }, ctx: EndpointContext<Context>): Promise<MiddlewareLike> {
+    protected async parse(route: Route & { router?: MiddlewareRouter }, ctx: EndpointContext<Context>): Promise<MiddlewareLike> {
         if (route.invoke) {
             return route as Middleware;
         } else if (route.middleware) {
@@ -124,7 +150,7 @@ export class MappingRoute implements Middleware {
             if (!platform.modules.has(module)) {
                 ctx.injector.get(ModuleRef).import(module, true)
             }
-            const router = platform.modules.get(module)?.injector.get(Router) as MappingRouter;
+            const router = platform.modules.get(module)?.injector.get(MiddlewareRouter) as MappingRouter;
             if (router) {
                 router.prefix = route.path ?? '';
                 return router
@@ -149,9 +175,9 @@ export class MappingRoute implements Middleware {
  * Mapping router.
  */
 @Injectable()
-export class MappingRouter extends Router implements OnDestroy {
+export class MappingRouter extends MiddlewareRouter implements OnDestroy {
 
-    readonly routes: Map<string, MiddlewareFn>;
+    readonly routes: Map<string, Endpoint | MiddlewareLike>;
 
     constructor(@Nullable() public prefix: string = '', @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
@@ -185,42 +211,67 @@ export class MappingRouter extends Router implements OnDestroy {
     use(route: Route | string, middleware?: MiddlewareLike | Endpoint): this {
         if (isString(route)) {
             if (!middleware || this.has(route)) return this;
-            this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware))
+            this.routes.set(route, middleware)
         } else {
             if (this.has(route.path)) return this;
-            this.routes.set(route.path, this.parse(new MappingRoute(route)))
+            this.routes.set(route.path, new MappingRoute(route))
         }
         return this
     }
 
-    parse(endpoint: Middleware | Endpoint): MiddlewareFn {
-        if (endpoint instanceof Endpoint) {
-            return (ctx, next) => lastValueFrom(endpoint.handle(ctx)
-                .pipe(
-                    mergeMap(async r => {
-                        await next();
-                        return r;
-                    })
-                ))
-        }
-        return (ctx, next) => endpoint.invoke(ctx, next)
-    }
+    // parse(endpoint: Middleware | Endpoint): MiddlewareFn {
+    //     if (endpoint instanceof Endpoint) {
+    //         return (ctx, next) => lastValueFrom(endpoint.handle(ctx)
+    //             .pipe(
+    //                 mergeMap(async r => {
+    //                     await next();
+    //                     return r;
+    //                 })
+    //             ))
+    //     }
+    //     return (ctx, next) => endpoint.invoke(ctx, next)
+    // }
 
     unuse(route: string) {
         this.routes.delete(route);
         return this
     }
 
-    invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
+
+    handle(ctx: EndpointContext<Context>): Observable<any> {
         const route = this.getRoute(ctx);
         if (route) {
-            return route(ctx, next)
+            if ((route as Endpoint).handle) {
+                return (route as Endpoint).handle(ctx)
+            } else {
+                return defer(async () => {
+                    await (isFunction(route) ? route(ctx, NEXT) : (route as Middleware).invoke(ctx, NEXT));
+                    return ctx;
+                });
+            }
+
         } else {
-            return next()
+            return throwError(() => new NotFoundExecption())
         }
     }
 
-    protected getRoute(ctx: EndpointContext<Context>): MiddlewareFn | undefined {
+
+
+    async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
+        const route = this.getRoute(ctx);
+        if (route) {
+            if ((route as Endpoint).handle) {
+                await lastValueFrom((route as Endpoint).handle(ctx))
+            } else {
+                await (isFunction(route) ? route(ctx, NEXT) : (route as Middleware).invoke(ctx, NEXT));
+            }
+            return await next()
+        } else {
+            throw new NotFoundExecption();
+        }
+    }
+
+    protected getRoute(ctx: EndpointContext<Context>): MiddlewareLike | Endpoint | undefined {
         // if (!(ctx.status instanceof NotFoundStatus)) return;
 
         let url: string;
@@ -235,9 +286,9 @@ export class MappingRouter extends Router implements OnDestroy {
         return route
     }
 
-    getRouteByUrl(url: string): MiddlewareFn | undefined {
+    getRouteByUrl(url: string): MiddlewareLike | Endpoint | undefined {
         const paths = url.split('/');
-        let route: MiddlewareFn | undefined;
+        let route: MiddlewareLike | Endpoint | undefined;
         for (let i = paths.length; i > 0; i--) {
             route = this.routes.get(paths.slice(0, i).join('/'));
             if (route) break
@@ -297,7 +348,7 @@ export interface ProtocolRouteMappingOptions<TArg = any> extends RouteOptions<TA
      * parent router.
      * default register in root handle queue.
      */
-    router?: Type<Router>;
+    router?: Type<MiddlewareRouter>;
     /**
      * version of api.
      */
