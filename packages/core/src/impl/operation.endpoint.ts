@@ -5,11 +5,11 @@ import { getFiltersToken } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { FnEndpoint } from '../endpoints/fn.endpoint';
-import { EndpointFactory, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
+import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
 import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';
 
 
-export class GuardsEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardsEndpoint<TCtx, TOutput> implements GuardsEndpointImpl<TCtx, TOutput> {
+export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardsEndpoint<TCtx, TOutput> implements OperationEndpointImpl<TCtx, TOutput> {
 
     constructor(
         public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {
@@ -34,8 +34,8 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
         super()
     }
 
-    create<TArg>(propertyKey: string, options?: EndpointOptions<TArg>): GuardsEndpointImpl {
-        const endpoint = new GuardsEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
+    create<TArg>(propertyKey: string, options?: EndpointOptions<TArg>): OperationEndpoint {
+        const endpoint = new OperationEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
 
         options && setOptions(endpoint, options);
 
