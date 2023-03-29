@@ -5,13 +5,13 @@ import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
-import { MiddlewareLike, MiddlewareProviderOf } from '../transport/middleware';
-import { MiddlewareEndpoint } from '../transport/middleware.service';
-import { MiddlewareBackend } from '../transport/middleware.compose';
+import { MiddlewareLike, MiddlewareProviderOf } from './middleware';
+import { ServiceEndpoint } from './middleware.service';
+import { MiddlewareBackend } from './middleware.compose';
 
 
-export class MiddlewareEndpointImpl<TCtx extends EndpointContext, TOutput>
-    extends GuardsEndpoint<TCtx, TOutput> implements MiddlewareEndpoint<TCtx, TOutput> {
+export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
+    extends GuardsEndpoint<TCtx, TOutput> implements ServiceEndpoint<TCtx, TOutput> {
 
     constructor(
         injector: Injector,

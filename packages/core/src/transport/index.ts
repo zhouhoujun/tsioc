@@ -3,6 +3,7 @@ export * from './router';
 export * from './middleware';
 export * from './middleware.compose';
 export * from './middleware.service';
+export * from './middleware.endpoint';
 export * from './protocols';
 export * from './headers';
 export * from './metadata';

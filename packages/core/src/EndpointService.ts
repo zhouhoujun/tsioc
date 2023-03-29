@@ -68,18 +68,21 @@ export function getGuardsToken(type: TypeOf<any>, propertyKey?: string): Token<C
     return getTokenOf(type, GUARDS, propertyKey)
 }
 
+/**
+ * MicroService endpoint.
+ */
 @Abstract()
-export abstract class ServiceEndpoint<TCtx extends InvocationContext, TOutput> implements Endpoint<TCtx, TOutput>, EndpointService {
+export abstract class MicroServiceEndpoint<TCtx extends InvocationContext, TOutput> implements Endpoint<TCtx, TOutput>, EndpointService {
 
     abstract handle(context: TCtx): Observable<TOutput>;
-    
+
     abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
 
     abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
-    
+
     abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 
-    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<any, any>> | ProvdierOf<Interceptor<any, any>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
 }
 
 /**

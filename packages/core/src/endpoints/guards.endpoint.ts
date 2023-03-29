@@ -2,7 +2,7 @@ import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, pomiseOf, 
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
-import { ServiceEndpoint } from '../EndpointService';
+import { MicroServiceEndpoint } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
@@ -15,7 +15,7 @@ import { InterceptorHandler } from './handler';
 /**
  * Guards endpoint.
  */
-export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements ServiceEndpoint<InvocationContext, TOutput> {
+export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements MicroServiceEndpoint<InvocationContext, TOutput> {
 
 
     private guards: CanActivate[] | null | undefined;
