@@ -188,12 +188,37 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
  * type class reflective.
  */
 export class Class<T = any> {
+
+    /**
+     * class name.
+     */
     className: string;
 
+    /**
+     * all decorator defines.
+     */
     readonly defs: DecorDefine[];
+    /**
+     * class decorator defs
+     * keys is decoator name toString()
+     */
     readonly classDefs: Map<string, DecorDefine[]>;
+    /**
+     * property decorator defs
+     * keys is decoator name toString()
+     */
     readonly propDefs: Map<string, DecorDefine<PropertyMetadata>[]>;
+    
+    /**
+     * method decorator defs
+     * keys is decoator name toString()
+     */
     readonly methodDefs: Map<string, DecorDefine<MethodMetadata>[]>;
+    
+    /**
+     * Parameter decorator defs
+     * keys is decoator name toString()
+     */
     readonly paramDefs: Map<string, DecorDefine<ParameterMetadata>[]>;
 
     readonly classDecors: DecoratorFn[];

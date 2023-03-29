@@ -64,7 +64,7 @@ const GUARDS = 'GUARDS';
  * @param request 
  * @returns 
  */
-export function getGuardsToken(type: TypeOf<any>, propertyKey?: string): Token<CanActivate[]> {
+export function getGuardsToken(type: TypeOf<any>|string, propertyKey?: string): Token<CanActivate[]> {
     return getTokenOf(type, GUARDS, propertyKey)
 }
 

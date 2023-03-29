@@ -1,4 +1,5 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Type, TypeDef } from '@tsdi/ioc';
+import { lastValueFrom, mergeMap } from 'rxjs';
 import { CanActivate } from '../guard';
 import { Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
@@ -8,6 +9,7 @@ import { Protocols, RequestMethod } from './protocols';
 import { EndpointOptions } from '../EndpointService';
 import { InterceptorMiddleware } from './middleware.compose';
 import { EndpointContext } from '../endpoints/context';
+import { Endpoint } from '../Endpoint';
 
 
 
@@ -45,8 +47,17 @@ export abstract class Router implements Middleware {
     /**
      * use route.
      * @param route 
+     * @param middleware middleware. 
      */
-    abstract use(route: string, middleware: Middleware | MiddlewareFn): this;
+    abstract use(route: string, middleware: MiddlewareLike): this;
+
+    /**
+     * use route.
+     * @param route
+     * @param endpoint endpoint. 
+     */
+    abstract use(route: string, endpoint: Endpoint): this;
+
     /**
      * unuse route.
      * @param route 
@@ -74,7 +85,7 @@ export class MappingRoute implements Middleware {
         if (can) {
             if (!this._middleware) {
                 const middleware = await this.parse(this.route, ctx);
-                this._middleware = new InterceptorMiddleware(middleware, this.route.interceptors? this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i) : EMPTY);
+                this._middleware = new InterceptorMiddleware(middleware, this.route.interceptors ? this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i) : EMPTY);
             }
             return this._middleware.invoke(ctx, next);
         } else {
@@ -162,9 +173,16 @@ export class MappingRouter extends Router implements OnDestroy {
     /**
      * use route.
      * @param route 
+     * @param middleware
      */
-    use(route: string, middleware: Middleware | MiddlewareFn): this;
-    use(route: Route | string, middleware?: Middleware | MiddlewareFn): this {
+    use(route: string, middleware: MiddlewareLike): this;
+    /**
+     * use route.
+     * @param route 
+     * @param endpoint
+     */
+    use(route: string, endpoint: Endpoint): this;
+    use(route: Route | string, middleware?: MiddlewareLike | Endpoint): this {
         if (isString(route)) {
             if (!middleware || this.has(route)) return this;
             this.routes.set(route, isFunction(middleware) ? middleware : this.parse(middleware))
@@ -175,8 +193,17 @@ export class MappingRouter extends Router implements OnDestroy {
         return this
     }
 
-    parse(middleware: Middleware): MiddlewareFn {
-        return (ctx, next) => middleware.invoke(ctx, next)
+    parse(endpoint: Middleware | Endpoint): MiddlewareFn {
+        if (endpoint instanceof Endpoint) {
+            return (ctx, next) => lastValueFrom(endpoint.handle(ctx)
+                .pipe(
+                    mergeMap(async r => {
+                        await next();
+                        return r;
+                    })
+                ))
+        }
+        return (ctx, next) => endpoint.invoke(ctx, next)
     }
 
     unuse(route: string) {
@@ -227,7 +254,7 @@ export class MappingRouter extends Router implements OnDestroy {
 /**
  * route options
  */
-export interface RouteOptions<TArg> extends EndpointOptions<TArg> {
+export interface RouteOptions<TArg = any> extends EndpointOptions<TArg> {
     /**
      * protocol
      */
@@ -241,7 +268,14 @@ export interface RouteOptions<TArg> extends EndpointOptions<TArg> {
 /**
  * route mapping metadata.
  */
-export interface RouteMappingMetadata<TArg> extends RouteOptions<TArg> {
+export interface RouteMappingMetadata<TArg = any> extends RouteOptions<TArg> {
+    /**
+     * route.
+     *
+     * @type {string}
+     * @memberof RouteMappingMetadata
+     */
+    route?: string;
     /**
      * request method.
      */
@@ -250,7 +284,7 @@ export interface RouteMappingMetadata<TArg> extends RouteOptions<TArg> {
      * http content type.
      *
      * @type {string}
-     * @memberof RouteMetadata
+     * @memberof RouteMappingMetadata
      */
     contentType?: string;
 }
@@ -258,7 +292,7 @@ export interface RouteMappingMetadata<TArg> extends RouteOptions<TArg> {
 /**
  * Protocol route mapping options.
  */
-export interface ProtocolRouteMappingOptions<TArg> extends RouteOptions<TArg> {
+export interface ProtocolRouteMappingOptions<TArg = any> extends RouteOptions<TArg> {
     /**
      * parent router.
      * default register in root handle queue.
@@ -283,7 +317,7 @@ export interface ProtocolRouteMappingMetadata<TArg> extends ProtocolRouteMapping
      * route.
      *
      * @type {string}
-     * @memberof RouteMetadata
+     * @memberof ProtocolRouteMappingMetadata
      */
     route?: string;
 

@@ -44,54 +44,84 @@ export interface DecorDefHandles<T = any> {
 }
 
 /**
- * decorator action scope hanldes.
+ * design action scope hanldes.
+ * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
  */
-export interface DecorScopeHandles<T> {
+export interface DesignScopeHandles<T> {
     /**
      * decorator BeforeAnnoation action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
     beforeAnnoation?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Class action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
     class?: Handle<T> | Handle<T>[];
 
     /**
-     * decorator Parameter action handles.
-     */
-    parameter?: Handle<T> | Handle<T>[];
-
-    /**
      * decorator Property action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
     property?: Handle<T> | Handle<T>[];
 
     /**
      * decorator Method action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
     method?: Handle<T> | Handle<T>[];
 
     /**
-     * decorator BeforeConstructor action handles.
-     */
-    beforeConstructor?: Handle<T> | Handle<T>[];
-
-    /**
-     * decorator AfterConstructor action handles.
-     */
-    afterConstructor?: Handle<T> | Handle<T>[];
-
-    /**
      * decorator Annoation action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
     annoation?: Handle<T> | Handle<T>[];
 
     /**
      * decorator AfterAnnoation action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
     afterAnnoation?: Handle<T> | Handle<T>[];
 }
+
+/**
+ * runtime action scope hanldes.
+ * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+ */
+export interface RuntimeScopeHandles<T> {
+    /**
+     * decorator BeforeConstructor action handles.
+     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     */
+    beforeConstructor?: Handle<T> | Handle<T>[];
+
+    /**
+     * decorator AfterConstructor action handles.
+     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     */
+    afterConstructor?: Handle<T> | Handle<T>[];
+
+    /**
+     * decorator Property action handles.
+     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     */
+    property?: Handle<T> | Handle<T>[];
+
+    /**
+     * decorator Method action handles.
+     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     */
+    method?: Handle<T> | Handle<T>[];
+
+    /**
+     * decorator Class action handles.
+     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     */
+    class?: Handle<T> | Handle<T>[];
+
+}
+
 
 /**
  * decorator register options.
@@ -103,16 +133,21 @@ export interface DecorRegisterOption<T = any> {
     actionType?: ActionType | ActionType[];
     /**
      * set def handles.
+     * raise when init decorator metadate of Type.
      */
     def?: DecorDefHandles<T>;
     /**
      * set design action scope handles.
+     * raise when Type inject.
+     * raise design handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    design?: DecorScopeHandles<DesignContext>
+    design?: DesignScopeHandles<DesignContext>
     /**
      * set runtime action scope handles.
+     * raise when resolve instance of Type.
+     * raise runtime handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    runtime?: DecorScopeHandles<RuntimeContext>;
+    runtime?: RuntimeScopeHandles<RuntimeContext>;
 }
 
 /**

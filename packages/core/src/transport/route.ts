@@ -80,7 +80,7 @@ const staExp = /^\//;
 const endExp = /\/$/;
 
 export function joinprefix(...paths: (string | undefined)[]) {
-    const joined = paths.filter(p => p)
+    const joined = paths
         .map(p => {
             if (!p) return '';
             p = p.trim();
@@ -88,6 +88,7 @@ export function joinprefix(...paths: (string | undefined)[]) {
             const end = endExp.test(p) ? p.length - 1 : p.length;
             return p.slice(start, end)
         })
+        .filter(p => p)
         .join('/');
 
     return '/' + joined

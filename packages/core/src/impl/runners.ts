@@ -92,7 +92,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const facResolver = targetRef.resolve(EndpointFactoryResolver);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                const factory = facResolver.resolve(targetRef, 'runnable');
+                const factory = facResolver.resolve(targetRef);
                 return factory.create(runnable.method, options)
             });
             this._maps.set(target.type, endpoints);

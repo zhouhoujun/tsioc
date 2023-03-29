@@ -20,7 +20,7 @@ export interface Middleware<Tx extends EndpointContext = EndpointContext> {
 /**
  * middleware context
  */
-export interface Context {
+export interface Context<TRequest = any, TResponse = any> {
     /**
      * url
      */
@@ -28,11 +28,11 @@ export interface Context {
     /**
      * transport request.
      */
-    get request(): any;
+    get request(): TRequest;
     /**
      * transport response.
      */
-    get response(): any;
+    get response(): TResponse;
 
     /**
      * Perform a 302 redirect to `url`.
@@ -66,4 +66,4 @@ export type MiddlewareLike<T extends EndpointContext = EndpointContext> = Middle
 /**
  * provider of middleware.
  */
-export type MiddlewareOf = ProvdierOf<Middleware> |  ValueOf<MiddlewareFn>;
+export type MiddlewareOf = ProvdierOf<Middleware> | ValueOf<MiddlewareFn>;

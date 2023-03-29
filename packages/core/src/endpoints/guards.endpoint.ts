@@ -24,8 +24,8 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
         injector: Injector,
         token: Token<Interceptor<TCtx, TOutput>[]>,
         backend: TypeOf<EndpointBackend<TCtx, TOutput>>,
-        private guardsToken?: Token<CanActivate[]>,
-        private filtersToken?: Token<Filter<TCtx, TOutput>[]>) {
+        protected guardsToken?: Token<CanActivate[]>,
+        protected filtersToken?: Token<Filter<TCtx, TOutput>[]>) {
         super(injector, token, backend);
         if (!guardsToken) {
             this.guards = null;
@@ -57,8 +57,8 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
     }
 
     override handle(context: TCtx): Observable<TOutput> {
-        if (this.guards === undefined && this.guardsToken) {
-            this.guards = this.injector.get(this.guardsToken, null);
+        if (this.guards === undefined) {
+            this.guards = this.getGuards();
         }
 
         if (!this.guards || !this.guards.length) return this.getChain().handle(context);
@@ -81,15 +81,19 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
     protected override compose(): Endpoint<TCtx, TOutput> {
         const chain = this.getInterceptors().reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
-        return this.filtersToken ? this.getFilters(this.filtersToken).reduceRight(
-            (next, inteceptor) => new InterceptorHandler(next, inteceptor), chain) : chain;
+        return this.getFilters().reduceRight(
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), chain);
+    }
+
+    protected getGuards() {
+        return this.guardsToken ? this.injector.get(this.guardsToken, null) : null;
     }
 
     /**
      *  get filters. 
      */
-    protected getFilters(token: Token<Filter[]>): Filter<TCtx, TOutput>[] {
-        return this.injector.get(token, EMPTY);
+    protected getFilters(): Filter<TCtx, TOutput>[] {
+        return this.filtersToken? this.injector.get(this.filtersToken, EMPTY): EMPTY;
     }
 
 }

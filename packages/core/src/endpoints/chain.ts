@@ -36,8 +36,8 @@ export class EndpointChain<TCtx extends InvocationContext = InvocationContext, T
 
     constructor(
         protected injector: Injector,
-        private token: Token<Interceptor<TCtx, TOutput>[]>,
-        private backend: TypeOf<EndpointBackend<TCtx, TOutput>>) {
+        protected token: Token<Interceptor<TCtx, TOutput>[]>,
+        protected backend: TypeOf<EndpointBackend<TCtx, TOutput>>) {
         super();
     }
 

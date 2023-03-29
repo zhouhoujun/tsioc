@@ -35,7 +35,7 @@ const INTERCEPTORS = 'INTERCEPTORS';
  * @param request 
  * @returns 
  */
-export function getInterceptorsToken(type: TypeOf<any>, propertyKey?: string): Token<Interceptor[]> {
+export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
     return getTokenOf(type, INTERCEPTORS, propertyKey);
 }
 

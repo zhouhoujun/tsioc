@@ -8,6 +8,7 @@ export * from './protocols';
 export * from './headers';
 export * from './metadata';
 export * from './params';
+export * from  './context';
 
 export * from './request';
 export * from './response';

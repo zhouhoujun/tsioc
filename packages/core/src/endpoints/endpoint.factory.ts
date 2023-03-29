@@ -44,6 +44,7 @@ export abstract class EndpointFactory<T> {
 /**
  * endpoint factory resolver.
  */
+@Abstract()
 export abstract class EndpointFactoryResolver {
     /**
      * resolve endpoint factory.
@@ -51,14 +52,14 @@ export abstract class EndpointFactoryResolver {
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: ReflectiveRef<T>, categare?: 'event' | 'filter' | 'runnable' | 'route'): EndpointFactory<T>;
+    abstract resolve<T>(type: ReflectiveRef<T>): EndpointFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector, categare?: 'event' | 'filter' | 'runnable' | 'route'): EndpointFactory<T>;
+    abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector): EndpointFactory<T>;
 }
 
 

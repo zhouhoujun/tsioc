@@ -16,7 +16,7 @@ export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
     constructor(
         injector: Injector,
         token: Token<Interceptor<TCtx, TOutput>[]>,
-        private midddlesToken: Token<MiddlewareLike[]>,
+        protected midddlesToken: Token<MiddlewareLike[]>,
         guardsToken?: Token<CanActivate[]>,
         filtersToken?: Token<Filter<TCtx, TOutput>[]>) {
         super(injector, token, null!, guardsToken, filtersToken);
@@ -30,8 +30,12 @@ export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
     }
 
     protected override getBackend(): Endpoint<TCtx, TOutput> {
-        const middlewares = this.injector.get(this.midddlesToken);
+        const middlewares = this.getMiddlewares();
         return new MiddlewareBackend(middlewares);
+    }
+
+    protected getMiddlewares() {
+        return this.injector.get(this.midddlesToken);
     }
 
 }

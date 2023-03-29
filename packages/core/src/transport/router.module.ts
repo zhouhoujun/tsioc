@@ -1,5 +1,7 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 import { ROUTES, Routes } from './route';
+import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingRouter, Router } from './router';
 
 /*
@@ -7,6 +9,7 @@ import { MappingRouter, Router } from './router';
  */
 @Module({
     providers: [
+        { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
         { provide: Router, useClass: MappingRouter, static: true }
     ]
 })

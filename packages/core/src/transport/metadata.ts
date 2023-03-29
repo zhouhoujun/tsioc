@@ -1,6 +1,6 @@
 import {
     isArray, isString, isType, lang, Type, isRegExp, createDecorator, ActionTypes, Execption,
-    ClassMethodDecorator, createParamDecorator, ReflectiveFactory, TypeMetadata, PatternMetadata, TypeOf
+    ClassMethodDecorator, createParamDecorator, ReflectiveFactory, TypeMetadata, PatternMetadata, TypeOf, toProvider
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -10,6 +10,9 @@ import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from '.
 import { Middleware, MiddlewareFn } from './middleware';
 import { TransportParameterDecorator } from '../metadata';
 import { TransportParameter } from '../endpoints/resolver';
+import { getGuardsToken } from '../EndpointService';
+import { getInterceptorsToken } from '../Interceptor';
+import { RouteEndpointFactoryResolver } from './route.endpoint';
 
 
 
@@ -184,13 +187,16 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
             }
         },
         design: {
-            afterAnnoation: (ctx, next) => {
-                const def = ctx.class.getAnnotation<MappingDef>();
-                const { router: CustomRouter, version, prefix, guards, interceptors } = def;
+            method: (ctx, next) => {
+                const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
+                if (!defines || defines.length) return next();
+
+                const mapping = ctx.class.getAnnotation<MappingDef>();
+
                 const injector = ctx.injector;
                 let router: Router;
-                if (CustomRouter) {
-                    router = injector.get(CustomRouter);
+                if (mapping.router) {
+                    router = injector.get(mapping.router);
                 } else {
                     router = injector.get(Router);
                 }
@@ -198,72 +204,34 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
-                // const factory = injector.get(ReflectiveFactory).create(ctx.class, injector);
-                // const routes: string[] = [];
-                // const formatter = factory.resolve(PatternFormatter);
-                // ctx.class.methodDecors
-                //     .filter(m => m && isString((m.metadata as RouteMappingMetadata).route))
-                //     .sort((ra, rb) => ((rb.metadata as RouteMappingMetadata).route || '').length - ((ra.metadata as RouteMappingMetadata).route || '').length)
-                //     .forEach(d => {
-                //         if (d.name === 'Route') {
-                //             const { route, method, guards, interceptors, pipes } = d.metadata as RouteMappingMetadata;
-                //             const allinterceptors = [...interceptors ?? EMPTY, ...interceptors ?? EMPTY];
-                //             const allguards = [...clsGuards ?? EMPTY, ...guards ?? EMPTY] as Type<CanActivate>[];
-                //             const invoker = factory.createInvoker(d.propertyKey, async (ctx, run) => {
+                const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
+                const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
 
-                //                 const context = ctx instanceof ServerEndpointContext ? ctx : ctx.resolve(ServerEndpointContext);
+                defines.forEach(def => {
+                    const metadata = def.metadata as RouteMappingMetadata;
+                    const route = joinprefix(prefix, metadata.route);
+                    const endpoint = factory.create(def.propertyKey, {...metadata, prefix });
+                    router.use(route, endpoint);
+                    factory.typeRef.onDestroy(() => router.unuse(route));
+                });
 
-                //                 if (pipes && pipes.length) {
-                //                     context.injector.inject(pipes);
-                //                 }
+                return next();
+            },
 
-                //                 if (allguards.length) {
-                //                     if (!(await lang.some(
-                //                         allguards.map(token => () => pomiseOf(factory.resolve(token)?.canActivate(context))),
-                //                         vaild => vaild === false))) {
-                //                         throw new ForbiddenExecption();
-                //                     }
-                //                 }
+            afterAnnoation: (ctx, next)=> {
+                const mapping = ctx.class.getAnnotation<MappingDef>();
+                const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
 
-                //                 let result;
-                //                 if (allinterceptors.length) {
-                //                     const inters = allinterceptors.map(i => ctx.resolve(i) ?? i);
-                //                     await new InterceptorMiddleware(async c => {
-                //                         result = run(c);
-                //                     }, inters).invoke(context, async () => { });
-                //                 } else {
-                //                     result = run(context);
-                //                 }
-                //                 if (isPromise(result)) {
-                //                     result = await result
-                //                 } else if (isObservable(result)) {
-                //                     result = await lastValueFrom(result)
-                //                 }
+                
+                const tyepRef = ctx.injector.get(ReflectiveFactory).create(ctx.class, ctx.injector);
+                const injecor = tyepRef.injector; 
+            
+                mapping.pipes && injecor.inject(mapping.pipes);
+                mapping.guards && injecor.inject(toProvider(getGuardsToken(prefix), mapping.guards));
+                mapping.interceptors && injecor.inject(toProvider(getInterceptorsToken(prefix), mapping.interceptors));
+                mapping.filters && injecor.inject(toProvider(getGuardsToken(prefix), mapping.filters));
 
-                //                 // // middleware.
-                //                 // if (isFunction(result)) {
-                //                 //     return await result(ctx)
-                //                 // }
-
-                //                 // if (result instanceof ResultValue) {
-                //                 //     return await result.sendValue(context)
-                //                 // }
-                //                 return result
-
-                //             });
-                //             const pattern = formatter.format(route ?? '', method, prefix, version);
-                //             routes.push(pattern);
-                //             router.use(pattern, (c) => invoker.invoke(c))
-                //         }
-                //     });
-                // factory.onDestroy(() => routes.forEach(path => router.unuse(path)));
-
-                // const routeRef = injector.get(RouteFactoryResolver).resolve(ctx.class).create(injector);
-                // const path = routeRef.path;
-                // routeRef.onDestroy(() => router.unuse(path));
-                // router.use(path, routeRef);
-
-                next();
+                return next();
             }
         }
     });
@@ -403,6 +371,37 @@ export function createRouteDecorator<TArg>(method: RequestMethod) {
         ) => {
             route = normalize(route);
             return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata<TArg>
+        },
+        design: {
+            method: (ctx, next) => {
+                const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
+                if (!defines || defines.length) return next();
+
+                const mapping = ctx.class.getAnnotation<MappingDef>();
+
+                const injector = ctx.injector;
+                let router: Router;
+                if (mapping.router) {
+                    router = injector.get(mapping.router);
+                } else {
+                    router = injector.get(Router);
+                }
+
+                if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
+                if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+
+                const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
+                const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
+                defines.forEach(def => {
+                    const metadata = def.metadata as RouteMappingMetadata;
+                    const route = joinprefix(prefix, metadata.route);
+                    const endpoint = factory.create(def.propertyKey, {...metadata, prefix });
+                    router.use(route, endpoint);
+                    factory.typeRef.onDestroy(() => router.unuse(route));
+                });
+
+                return next();
+            },
         }
     });
 }
