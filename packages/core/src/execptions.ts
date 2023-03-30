@@ -134,6 +134,14 @@ export class UnsupportedMediaTypeExecption extends MessageExecption {
     }
 }
 
+const pushDisMsg = 'Push disabled';
+export class PushDisabledExecption extends Execption {
+    constructor(message = pushDisMsg) {
+        super(`PushDisabledExecption: ${message}`)
+    }
+}
+
+
 
 /**
  * connection refused error.

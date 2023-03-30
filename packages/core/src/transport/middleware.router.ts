@@ -1,14 +1,19 @@
-import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf } from '@tsdi/ioc';
-import { defer, lastValueFrom, Observable, throwError } from 'rxjs';
+import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Injector } from '@tsdi/ioc';
+import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate } from '../guard';
-import { Route, ROUTES, Routes } from './route';
+import { joinprefix, Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
-import { BadRequestExecption, ForbiddenExecption, NotFoundExecption } from '../execptions';
+import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { Context } from './middleware';
-import { InterceptorMiddleware, NEXT } from './middleware.compose';
+import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { EndpointContext } from '../endpoints/context';
 import { Endpoint } from '../Endpoint';
 import { Router } from './router';
+import { getInterceptorsToken } from '../Interceptor';
+import { GuardsEndpoint } from '../endpoints';
+import { getGuardsToken, setOptions } from '../EndpointService';
+import { getFiltersToken } from '../filters';
+import { ControllerRouteReolver } from './controller';
 
 /**
  * abstract router.
@@ -48,39 +53,37 @@ export abstract class MiddlewareRouter extends Router<Endpoint | MiddlewareLike>
  */
 export class MappingRoute implements Middleware, Endpoint {
 
-    private _middleware?: Middleware;
+    private endpoint?: Endpoint;
     private _guards?: CanActivate[];
-    constructor(private route: Route) {
+
+    constructor(
+        protected injector: Injector,
+        private route: Route) {
 
     }
-
-    handle(ctx: EndpointContext<Context>): Observable<any> {
-        return defer(async () => {
-            const can = await this.canActive(ctx);
-            if (!can) {
-                return throwError(()=> new ForbiddenExecption())
-            }
-            await this._middleware?.invoke(ctx, NEXT);
-            return ctx;
-        });
-    }
-
 
     get path() {
         return this.route.path
     }
 
     async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
-        const can = await this.canActive(ctx);
-        if (can) {
-            if (!this._middleware) {
-                const middleware = await this.parse(this.route, ctx);
-                this._middleware = new InterceptorMiddleware(middleware, this.route.interceptors ? this.route.interceptors.map(i => isFunction(i) ? ctx.resolve(i) : i) : EMPTY);
-            }
-            return this._middleware.invoke(ctx, next);
-        } else {
-            throw new ForbiddenExecption();
-        }
+        await lastValueFrom(this.handle(ctx));
+        if (next) await next();
+    }
+
+    handle(ctx: EndpointContext<Context>): Observable<any> {
+        return of(ctx)
+            .pipe(
+                mergeMap(async ctx => {
+                    if (!this.endpoint) {
+                        this.endpoint = await this.buildEndpoint(this.route);
+                    }
+                    return this.endpoint;
+                }),
+                mergeMap((endpoint) => {
+                    return endpoint.handle(ctx);
+                })
+            );
     }
 
     protected canActive(ctx: EndpointContext<Context>) {
@@ -91,30 +94,29 @@ export class MappingRoute implements Middleware, Endpoint {
         return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
-    protected async parse(route: Route & { router?: MiddlewareRouter }, ctx: EndpointContext<Context>): Promise<MiddlewareLike> {
+    protected async parse(route: Route & { router?: Router }): Promise<MiddlewareLike> {
         if (route.invoke) {
             return route as Middleware;
         } else if (route.middleware) {
-            return isFunction(route.middleware) ? ctx.get(route.middleware) : route.middleware
+            return isFunction(route.middleware) ? this.injector.get(route.middleware) : route.middleware
         } else if (route.middlewareFn) {
             return route.middlewareFn;
         } else if (route.redirectTo) {
             const to = route.redirectTo
             return (c, n) => this.redirect(c, to)
         } else if (route.controller) {
-            return null!;
-            // return ctx.resolve(RouteFactoryResolver).resolve(route.controller).last() ?? createMiddleware((c, n) => { throw new NotFoundExecption() })
+            return this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
         } else if (route.children) {
-            const router = new MappingRouter(route.path);
+            const router = new MappingRouter(this.injector, route.path);
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {
             const module = await route.loadChildren();
-            const platform = ctx.injector.platform();
+            const platform = this.injector.platform();
             if (!platform.modules.has(module)) {
-                ctx.injector.get(ModuleRef).import(module, true)
+                this.injector.get(ModuleRef).import(module, true)
             }
-            const router = platform.modules.get(module)?.injector.get(MiddlewareRouter) as MappingRouter;
+            const router = platform.modules.get(module)?.injector.get(Router) as MappingRouter;
             if (router) {
                 router.prefix = route.path ?? '';
                 return router
@@ -125,6 +127,26 @@ export class MappingRoute implements Middleware, Endpoint {
         }
     }
 
+    protected async buildEndpoint(route: Route & { router?: Router }) {
+        let endpoint: Endpoint;
+        if (route.endpoint) {
+            endpoint = isFunction(route.endpoint) ? this.injector.get(route.endpoint) : route.endpoint
+        } else if (route.controller) {
+            endpoint = this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
+        } else {
+            const middleware = await this.parse(route);
+            endpoint = new MiddlewareBackend([middleware])
+        }
+
+        if (this.route.interceptors || this.route.guards || this.route.filters) {
+            const route = joinprefix(this.route.path);
+            const gendpt = new GuardsEndpoint(this.injector, getInterceptorsToken(route), endpoint, getGuardsToken(route), getFiltersToken(route));
+            setOptions(gendpt, this.route);
+            endpoint = gendpt;
+        }
+
+        return endpoint;
+    }
 
     protected async redirect(ctx: EndpointContext<Context>, url: string, alt?: string): Promise<void> {
         if (!isFunction(ctx.payload.redirect)) {
@@ -143,7 +165,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
 
     readonly routes: Map<string, Endpoint | MiddlewareLike>;
 
-    constructor(@Nullable() public prefix: string = '', @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
+    constructor(private injector: Injector, @Nullable() public prefix: string = '', @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
@@ -178,7 +200,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
             this.routes.set(route, middleware)
         } else {
             if (this.has(route.path)) return this;
-            this.routes.set(route.path, new MappingRoute(route))
+            this.routes.set(route.path, new MappingRoute(this.injector, route))
         }
         return this
     }

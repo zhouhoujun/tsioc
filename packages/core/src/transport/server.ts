@@ -6,7 +6,8 @@ import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes';
 import { MiddlewareOf } from './middleware';
-import { MiddlewareService, ServiceEndpoint } from './middleware.service';
+import { MiddlewareService } from './middleware.service';
+import { ServerEndpoint } from './server.endpoint';
 
 /**
  * Service
@@ -15,7 +16,7 @@ import { MiddlewareService, ServiceEndpoint } from './middleware.service';
 export abstract class Service<TCtx extends EndpointContext, TOutput = any> implements EndpointService, MiddlewareService {
 
 
-    constructor(private endpoint: ServiceEndpoint<TCtx, TOutput>) {
+    constructor(private endpoint: ServerEndpoint<TCtx, TOutput>) {
         
     }
 

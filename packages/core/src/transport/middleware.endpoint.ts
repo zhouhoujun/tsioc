@@ -6,12 +6,12 @@ import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { MiddlewareLike, MiddlewareOf } from './middleware';
-import { ServiceEndpoint } from './middleware.service';
 import { MiddlewareBackend } from './middleware.compose';
+import { ServerEndpoint } from './server.endpoint';
 
 
 export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
-    extends GuardsEndpoint<TCtx, TOutput> implements ServiceEndpoint<TCtx, TOutput> {
+    extends GuardsEndpoint<TCtx, TOutput> implements ServerEndpoint<TCtx, TOutput> {
 
     constructor(
         injector: Injector,

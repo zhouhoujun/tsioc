@@ -4,6 +4,7 @@ import { Router } from './router';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingRouter } from './middleware.router';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
+import { ControllerRouteReolver } from './controller';
 
 /*
  * Middleware module.
@@ -11,7 +12,8 @@ import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 @Module({
     providers: [
         { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
-        { provide: Router, useClass: MappingRouter, static: true }
+        { provide: Router, useClass: MappingRouter, static: true },
+        ControllerRouteReolver
     ]
 })
 export class RouterModule {

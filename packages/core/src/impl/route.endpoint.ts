@@ -4,6 +4,9 @@ import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointContext } from '../endpoints/context';
 import { getGuardsToken, setOptions } from '../EndpointService';
 import { Filter, getFiltersToken } from '../filters/filter';
+import { Endpoint } from '../Endpoint';
+import { FnEndpoint } from '../endpoints/fn.endpoint';
+import { patternToPath } from '../transport/pattern';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
 
@@ -11,9 +14,11 @@ import { OperationEndpointImpl } from './operation.endpoint';
 export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends OperationEndpointImpl<TCtx, TOutput> implements RouteEndpoint {
 
     private _prefix: string;
+    readonly route: string;
     constructor(invoker: OperationInvoker, options: RouteEndpointOptions = {}) {
         super(invoker, options);
         this._prefix = options.prefix || '';
+        this.route = patternToPath(options.route || '');
     }
 
     get prefix(): string {
@@ -37,7 +42,33 @@ export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, T
         const routeFilters = this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
         return prefixFilters ? [...prefixFilters, ...routeFilters] : routeFilters;
     }
+
+    protected override getBackend(): Endpoint<TCtx, TOutput> {
+        return new FnEndpoint((ctx) => {
+            if (this.route && isRest.test(this.route)) {
+                const restParams: any = {};
+                const routes = this.route.split('/').map(r => r.trim());
+                const restParamNames = routes.filter(d => restParms.test(d));
+                const routeUrls = ctx.payload.url.replace(this.prefix, '').split('/');
+                let has = false;
+                restParamNames.forEach(pname => {
+                    const val = routeUrls[routes.indexOf(pname)];
+                    if (val) {
+                        has = true;
+                        restParams[pname.substring(1)] = val
+                    }
+                });
+                if (has) {
+                    ctx.payload.param = restParams;
+                }
+            }
+            return this.invoker.invoke(ctx)
+        });
+    }
 }
+
+const isRest = /\/:/;
+const restParms = /^\S*:/;
 
 
 @Injectable()

@@ -13,6 +13,8 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
 
     method?: string;
 
+    sent?: boolean;
+
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.payload) return EMPTY;
         return this.injector.get(getResolversToken(this.payload), EMPTY);

@@ -1,5 +1,6 @@
 import { Abstract, Class, Injector, ReflectiveRef, Type } from '@tsdi/ioc';
 import { BootstrapOption, OperationEndpoint } from '../endpoints/endpoint.factory';
+import { Pattern } from './pattern';
 
 
 /**
@@ -16,6 +17,7 @@ export abstract class RouteEndpoint extends OperationEndpoint {
  * Route endpoint options.
  */
 export interface RouteEndpointOptions<T = any> extends BootstrapOption<T> {
+    route?: Pattern;
     /**
      * route prefix
      */
