@@ -1,10 +1,10 @@
-import { Abstract, ArgumentExecption, createContext, EMPTY_OBJ, Execption, Injector, InvocationContext, isNil, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, isNil, isString, tokenId } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
-import { Endpoint } from '../Endpoint';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
+import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
-import { Pattern } from './protocols';
+import { Pattern } from './pattern';
 import { RequestOptions, ResponseAs, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
 
@@ -31,9 +31,7 @@ export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 @Abstract()
 export abstract class Client {
 
-    constructor(
-        private injector: Injector,
-        readonly endpoint: Endpoint) {
+    constructor(readonly handler: Handler) {
 
     }
 
@@ -259,8 +257,7 @@ export abstract class Client {
                     return throwError(() => this.onError(err))
                 }),
                 mergeMap(() => {
-                    ctx = this.createContext(req, options);
-                    return this.request(ctx, req, options)
+                    return this.request(req, options)
                 }),
                 finalize(() => {
                     ctx?.destroy()
@@ -268,15 +265,15 @@ export abstract class Client {
             )
     }
 
-    protected request(context: InvocationContext, first: Pattern | TransportRequest, options: RequestOptions = EMPTY_OBJ as any): Observable<any> {
-        const req = this.buildRequest(context, first, options);
+    protected request(first: Pattern | TransportRequest, options: RequestOptions = EMPTY_OBJ as any): Observable<any> {
+        const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<TransportResponse> =
-            of(req).pipe(concatMap((req: TransportRequest) => this.endpoint.handle(context)));
+            of(req).pipe(concatMap((req: TransportRequest) => this.handler.handle(req)));
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
@@ -340,11 +337,7 @@ export abstract class Client {
         return err;
     }
 
-    protected createContext(req: TransportRequest | Pattern, options?: RequestOptions & ResponseAs): InvocationContext {
-        return options?.context ?? createContext(this.injector);
-    }
-
-    protected abstract buildRequest(context: InvocationContext, url: TransportRequest | Pattern, options?: RequestOptions & ResponseAs): TransportRequest;
+    protected abstract buildRequest(url: TransportRequest | Pattern, options?: RequestOptions & ResponseAs): TransportRequest;
 
     protected abstract connect(): Promise<any> | Observable<any>;
 

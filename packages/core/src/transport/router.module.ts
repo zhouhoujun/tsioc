@@ -1,8 +1,9 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
-import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 import { ROUTES, Routes } from './route';
+import { Router } from './router';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
-import { MappingRouter, MiddlewareRouter } from './router';
+import { MappingRouter } from './middleware.router';
+import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 
 /*
  * Middleware module.
@@ -10,7 +11,7 @@ import { MappingRouter, MiddlewareRouter } from './router';
 @Module({
     providers: [
         { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
-        { provide: MiddlewareRouter, useClass: MappingRouter, static: true }
+        { provide: Router, useClass: MappingRouter, static: true }
     ]
 })
 export class RouterModule {
