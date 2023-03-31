@@ -17,6 +17,9 @@ export abstract class RouteEndpoint extends OperationEndpoint {
  * Route endpoint options.
  */
 export interface RouteEndpointOptions<T = any> extends BootstrapOption<T> {
+    /**
+     * route
+     */
     route?: Pattern;
     /**
      * route prefix
@@ -29,10 +32,16 @@ export interface RouteEndpointOptions<T = any> extends BootstrapOption<T> {
  */
 @Abstract()
 export abstract class RouteEndpointFactory<T> {
-
+    /**
+     * type ref.
+     */
     abstract get typeRef(): ReflectiveRef<T>;
-
-    abstract create<TArg>(propertyKey: string, options: RouteEndpointOptions<TArg>): OperationEndpoint;
+    /**
+     * create route endpoint.
+     * @param propertyKey 
+     * @param options 
+     */
+    abstract create<TArg>(propertyKey: string, options: RouteEndpointOptions<TArg>): RouteEndpoint;
 }
 
 

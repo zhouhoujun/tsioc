@@ -1,4 +1,4 @@
-import { Class, DecorDefine, Injectable, Injector, isString, ReflectiveRef, toProvider, Type } from '@tsdi/ioc';
+import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, toProvider, Type } from '@tsdi/ioc';
 import { lastValueFrom, Observable, throwError } from 'rxjs';
 import { Endpoint } from '../Endpoint';
 import { EndpointContext } from '../endpoints';
@@ -12,7 +12,10 @@ import { MappingDef, RouteMappingMetadata } from './router';
 
 const isRest = /\/:/;
 
-export class ControllerRoute<T> implements Middleware, Endpoint {
+/**
+ * Controller route.
+ */
+export class ControllerRoute<T> implements Middleware, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[] | undefined;
@@ -31,7 +34,7 @@ export class ControllerRoute<T> implements Middleware, Endpoint {
     }
 
     get ctrlRef() {
-        return this.factory.typeRef;
+        return this.factory?.typeRef;
     }
 
     async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
@@ -59,6 +62,16 @@ export class ControllerRoute<T> implements Middleware, Endpoint {
         }
         return endpoint.handle(ctx);
     }
+
+    private _destroyed = false;
+    onDestroy(): void {
+        if (this._destroyed) return;
+        this._destroyed = true;
+        this.routes.clear();
+        this.factory.typeRef.onDestroy();
+        (this as any).factory = null!;
+    }
+
 
     protected getRouteMetaData(ctx: EndpointContext<Context>) {
         const subRoute = ctx.payload.url.replace(this.prefix, '') || '/';

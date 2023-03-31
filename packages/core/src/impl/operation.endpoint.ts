@@ -18,6 +18,7 @@ export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContex
             null!,
             getGuardsToken(invoker.typeRef.type, invoker.method),
             getFiltersToken(invoker.typeRef.type, invoker.method))
+        invoker.typeRef.onDestroy(this);
 
     }
 

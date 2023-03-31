@@ -146,7 +146,7 @@ export type TokenValue<T = any> = [Token<T>, T];
 /**
  * invoke options.
  */
-export interface InvokeOptions<TArg> {
+export interface InvokeOptions<TArg = any> {
     /**
      * invocation payload data.
      */
@@ -169,6 +169,7 @@ export interface InvokeOptions<TArg> {
      */
     providers?: ProviderType[];
 }
+
 
 /**
  * invoke arguments.

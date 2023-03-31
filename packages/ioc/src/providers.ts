@@ -239,6 +239,14 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
     return target && isType(target.module) && isArray(target.providers)
 }
 
+/**
+ * parse to provider
+ * @param provide 
+ * @param useOf 
+ * @param multi 
+ * @param multiOrder 
+ * @returns 
+ */
 export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number): StaticProvider<T> {
     if (isType(useOf)) {
         return { provide, useClass: useOf, multi, multiOrder };

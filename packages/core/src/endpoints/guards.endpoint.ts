@@ -1,4 +1,4 @@
-import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
 import { Endpoint, EndpointBackend } from '../Endpoint';
@@ -15,7 +15,7 @@ import { InterceptorHandler } from './handler';
 /**
  * Guards endpoint.
  */
-export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements MicroServiceEndpoint<InvocationContext, TOutput> {
+export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements MicroServiceEndpoint<InvocationContext, TOutput>, OnDestroy {
 
 
     private guards: CanActivate[] | null | undefined;
@@ -31,7 +31,6 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
             this.guards = null;
         }
     }
-
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
         this.injector.inject(pipes);
@@ -78,6 +77,22 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
         )
     }
 
+    
+    private _destroyed = false;
+    onDestroy(): void {
+        if (this._destroyed) return;
+        this._destroyed = true;
+    }
+
+    protected clear() {
+        this.guards = null;
+        this.injector.unregister(this.token);
+        if (this.guardsToken) this.injector.unregister(this.guardsToken);
+        if (this.filtersToken) this.injector.unregister(this.filtersToken);
+        this.injector = null!;
+    }
+
+
     protected override compose(): Endpoint<TCtx, TOutput> {
         const chain = this.getInterceptors().reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
@@ -93,7 +108,7 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
      *  get filters. 
      */
     protected getFilters(): Filter<TCtx, TOutput>[] {
-        return this.filtersToken? this.injector.get(this.filtersToken, EMPTY): EMPTY;
+        return this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
     }
 
 }

@@ -144,7 +144,7 @@ export type MethodPropDecorator = (target: Object, propertyKey: string | symbol,
 /**
  * property parameter decorator.
  */
-export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
+export type PropParamDecorator = (target: Object, propertyKey: string | symbol | undefined, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
 
 /**
  * method property parameter decorator.

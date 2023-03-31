@@ -7,7 +7,7 @@ import { Endpoint } from '../Endpoint';
 /**
  * Route.
  */
-export interface Route<TArg= any> extends EndpointOptions<TArg> {
+export interface Route<TArg = any> extends EndpointOptions<TArg> {
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.
@@ -68,7 +68,7 @@ export interface Route<TArg= any> extends EndpointOptions<TArg> {
 }
 
 export type LoadChildren = () => any;
-export type Routes = Route<any>[];
+export type Routes<T = any> = Route<T>[];
 
 
 @Abstract()

@@ -11,7 +11,7 @@ import { ModuleRef } from './module.ref';
 
 
 /**
- * platform of {@link Container}.
+ * platform of {@link Injector}.
  */
 @Abstract()
 export abstract class Platform implements OnDestroy {
@@ -96,12 +96,17 @@ export abstract class Platform implements OnDestroy {
      */
     abstract getHandle<T extends Handle>(target: Token<Action>): T;
     /**
-     * set value.
+     * set action value.
      * @param token 
      * @param value 
      * @param provider 
      */
     abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    /**
+     * get action value
+     * @param token 
+     * @param notFoundValue 
+     */
     abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
     /**
      * destroy hook.

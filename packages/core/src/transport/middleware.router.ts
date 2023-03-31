@@ -165,7 +165,10 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
 
     readonly routes: Map<string, Endpoint | MiddlewareLike>;
 
-    constructor(private injector: Injector, @Nullable() public prefix: string = '', @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
+    constructor(
+        private injector: Injector,
+        @Nullable() public prefix: string = '',
+        @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
