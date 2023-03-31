@@ -1,5 +1,5 @@
 import { Injector, ProvdierOf, Token } from '@tsdi/ioc';
-import { Endpoint } from '../Endpoint';
+import { Backend } from '../Handler';
 import { EndpointContext } from '../endpoints';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { Filter } from '../filters/filter';
@@ -29,7 +29,7 @@ export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
         return this;
     }
 
-    protected override getBackend(): Endpoint<TCtx, TOutput> {
+    protected override getBackend(): Backend<TCtx, TOutput> {
         const middlewares = this.getMiddlewares();
         return new MiddlewareBackend(middlewares);
     }

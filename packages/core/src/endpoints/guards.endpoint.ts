@@ -1,21 +1,22 @@
 import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
-import { Endpoint, EndpointBackend } from '../Endpoint';
 import { MicroServiceEndpoint } from '../EndpointService';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';
 import { Filter } from '../filters/filter';
-import { EndpointChain } from './chain';
+import { RegisterChain } from './chain';
 import { InterceptorHandler } from './handler';
+import { Backend, Handler } from '../Handler';
+import { Endpoint } from './endpoint';
 
 
 
 /**
- * Guards endpoint.
+ * guards endpoint.
  */
-export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends EndpointChain<TCtx, TOutput> implements MicroServiceEndpoint<InvocationContext, TOutput>, OnDestroy {
+export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends RegisterChain<TCtx, TOutput> implements Endpoint<TCtx, TOutput>, MicroServiceEndpoint<InvocationContext, TOutput>, OnDestroy {
 
 
     private guards: CanActivate[] | null | undefined;
@@ -23,7 +24,7 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
     constructor(
         injector: Injector,
         token: Token<Interceptor<TCtx, TOutput>[]>,
-        backend: TypeOf<EndpointBackend<TCtx, TOutput>>,
+        backend: TypeOf<Backend<TCtx, TOutput>>,
         protected guardsToken?: Token<CanActivate[]>,
         protected filtersToken?: Token<Filter<TCtx, TOutput>[]>) {
         super(injector, token, backend);
@@ -93,7 +94,7 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
     }
 
 
-    protected override compose(): Endpoint<TCtx, TOutput> {
+    protected override compose(): Handler<TCtx, TOutput> {
         const chain = this.getInterceptors().reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
         return this.getFilters().reduceRight(

@@ -1,26 +1,70 @@
-import { EMPTY, Injector, InvocationContext, isArray, isFunction, isNumber, ProvdierOf, Token, toProvider, TypeOf } from '@tsdi/ioc';
-import { EndpointBackend } from '../Endpoint';
+import { Abstract, EMPTY, Injector, isArray, isFunction, isNumber, ProvdierOf, Token, toProvider, TypeOf } from '@tsdi/ioc';
 import { Interceptor, InterceptorService } from '../Interceptor';
-import { AbstractEndpoint } from './endpoint';
+import { Backend, Handler } from '../Handler';
+import { Observable } from 'rxjs';
+import { InterceptorHandler } from './handler';
+
+
+/**
+ * abstract handler chain.
+ */
+@Abstract()
+export abstract class AbstractChain<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+
+    private chain: Handler<TInput, TOutput> | null = null;
+
+    handle(context: TInput): Observable<TOutput> {
+        return this.getChain().handle(context);
+    }
+
+    protected getChain(): Handler<TInput, TOutput> {
+        if (!this.chain) {
+            this.chain = this.compose();
+        }
+        return this.chain;
+    }
+
+    protected reset() {
+        this.chain = null;
+    }
+
+    protected compose(): Handler<TInput, TOutput> {
+        return this.getInterceptors().reduceRight(
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
+    }
+
+    /**
+     *  get backend endpoint. 
+     */
+    protected abstract getBackend(): Backend<TInput, TOutput>;
+
+    /**
+     *  get interceptors. 
+     */
+    protected abstract getInterceptors(): Interceptor<TInput, TOutput>[];
+}
+
+
+
 
 /**
  * Simple Endpoint chain. for composing interceptors. Requests will
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class Endpoints<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends AbstractEndpoint<TCtx, TOutput> {
+export class Handlers<TInput = any, TOutput = any> extends AbstractChain<TInput, TOutput> {
 
     constructor(
-        protected readonly backend: EndpointBackend<TCtx, TOutput>,
-        protected readonly interceptors: Interceptor<TCtx, TOutput>[]) {
+        protected readonly backend: Backend<TInput, TOutput>,
+        protected readonly interceptors: Interceptor<TInput, TOutput>[]) {
         super()
     }
 
-    protected getBackend(): EndpointBackend<TCtx, TOutput> {
+    protected getBackend(): Backend<TInput, TOutput> {
         return this.backend;
     }
 
-    protected getInterceptors(): Interceptor<TCtx, TOutput>[] {
+    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
         return this.interceptors;
     }
 
@@ -28,20 +72,20 @@ export class Endpoints<TCtx extends InvocationContext = InvocationContext, TOutp
 
 
 /**
- * Endpoint chain. for composing interceptors. Requests will
+ * Register handler chain. for composing interceptors. Requests will
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class EndpointChain<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends AbstractEndpoint<TCtx, TOutput> implements InterceptorService {
+export class RegisterChain<TInput = any, TOutput = any> extends AbstractChain<TInput, TOutput> implements InterceptorService {
 
     constructor(
         protected injector: Injector,
-        protected token: Token<Interceptor<TCtx, TOutput>[]>,
-        protected backend: TypeOf<EndpointBackend<TCtx, TOutput>>) {
+        protected token: Token<Interceptor<TInput, TOutput>[]>,
+        protected backend: TypeOf<Backend<TInput, TOutput>>) {
         super();
     }
 
-    useInterceptors(interceptor: ProvdierOf<Interceptor<TCtx, TOutput>> | ProvdierOf<Interceptor<TCtx, TOutput>>[], order?: number): this {
+    useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
         this.regMulti(this.token, interceptor, order);
         this.reset();
         return this;
@@ -50,11 +94,11 @@ export class EndpointChain<TCtx extends InvocationContext = InvocationContext, T
     /**
      *  get backend endpoint. 
      */
-    protected getBackend(): EndpointBackend<TCtx, TOutput> {
+    protected getBackend(): Backend<TInput, TOutput> {
         return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
     }
 
-    protected getInterceptors(): Interceptor<TCtx, TOutput>[] {
+    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
         return this.injector.get(this.token, EMPTY)
     }
 

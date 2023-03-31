@@ -1,9 +1,9 @@
 import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, InvokeArguments, Token } from '@tsdi/ioc';
 import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
-import { Endpoint } from '../Endpoint';
 import { MessageExecption } from '../execptions';
 import { EndpointContext } from '../endpoints/context';
-import { Filter, runHandlers } from './filter';
+import { Filter, runFilters } from './filter';
+import { Backend, Handler } from '../Handler';
 
 
 /**
@@ -46,7 +46,7 @@ export abstract class ExecptionFilter extends Filter<ExecptionContext, any> {
  * execption backend.
  */
 @Abstract()
-export abstract class ExecptionBackend implements Endpoint<ExecptionContext, any> {
+export abstract class ExecptionBackend implements Backend<ExecptionContext, any> {
 
     /**
      * transport endpoint handle.
@@ -63,7 +63,7 @@ export abstract class ExecptionBackend implements Endpoint<ExecptionContext, any
 @Injectable({ static: true })
 export class CatchFilter<TCtx extends EndpointContext, TOutput = any> implements Filter<TCtx, TOutput> {
 
-    intercept(ctx: TCtx, next: Endpoint<TCtx, TOutput>): Observable<TOutput> {
+    intercept(ctx: TCtx, next: Handler<TCtx, TOutput>): Observable<TOutput> {
         return next.handle(ctx)
             .pipe(
                 catchError((err, caught) => {
@@ -93,7 +93,7 @@ export class ExecptionHandlerBackend extends ExecptionBackend {
     handle(context: ExecptionContext): Observable<any> {
 
         return new Observable((observer: Observer<MessageExecption>) => {
-            return runHandlers(context, getClass(context.payload))
+            return runFilters(context, getClass(context.payload))
                 .pipe(
                     map(r => {
                         if (!context.execption || !(context.execption instanceof MessageExecption)) {

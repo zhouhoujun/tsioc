@@ -1,7 +1,7 @@
 import { Abstract, getTokenOf, InvocationContext, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Endpoint } from '../Endpoint';
-import { runEndpoints } from '../endpoints/runs';
+import { runHandlers } from '../endpoints/runs';
+import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 
 
@@ -18,7 +18,7 @@ export abstract class Filter<TCtx extends InvocationContext = InvocationContext,
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract intercept(context: TCtx, next: Endpoint<TCtx, TOutput>): Observable<TOutput>;
+    abstract intercept(context: TCtx, next: Handler<TCtx, TOutput>): Observable<TOutput>;
 }
 
 const FILTERS = 'FILTERS';
@@ -41,20 +41,20 @@ export abstract class FilterHandlerResolver {
      * resolve filter hanlde.
      * @param filter 
      */
-    abstract resolve<T>(filter: Type<T> | T | string): Endpoint[];
+    abstract resolve<T>(filter: Type<T> | T | string): Handler[];
     /**
      * add filter handle.
      * @param filter filter type
-     * @param endpoint filter endpoint.
+     * @param handler filter handler.
      * @param order order.
      */
-    abstract addHandle(filter: Type | string, endpoint: Endpoint, order?: number): this;
+    abstract addHandle(filter: Type | string, handler: Handler, order?: number): this;
     /**
      * remove filter handle.
      * @param filter filter type.
-     * @param endpoint filter endpoint.
+     * @param handler filter handler.
      */
-    abstract removeHandle(filter: Type | string, endpoint: Endpoint): this;
+    abstract removeHandle(filter: Type | string, handler: Handler): this;
 }
 
 
@@ -64,8 +64,8 @@ export abstract class FilterHandlerResolver {
  * @param filter 
  * @returns 
  */
-export function runHandlers(ctx: InvocationContext, filter: Type | string): Observable<any> {
+export function runFilters(ctx: InvocationContext, filter: Type | string): Observable<any> {
     const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
-    return runEndpoints(handles, ctx, c => c.done === true)
+    return runHandlers(handles, ctx, c => c.done === true)
 }
 

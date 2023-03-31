@@ -1,6 +1,6 @@
-import { InvocationContext, isPromise } from '@tsdi/ioc';
+import { isPromise } from '@tsdi/ioc';
 import { isObservable, mergeMap, Observable, of } from 'rxjs';
-import { Endpoint } from '../Endpoint';
+import { Handler } from '../Handler';
 
 
 /**
@@ -11,8 +11,8 @@ import { Endpoint } from '../Endpoint';
  * @param isDone 
  * @returns 
  */
-export function runEndpoints(endpoints: Endpoint[] | undefined, ctx: InvocationContext, isDone: (ctx: InvocationContext) => boolean): Observable<any> {
-    let $obs: Observable<any> = of(ctx);
+export function runHandlers<TInput>(endpoints: Handler[] | undefined, input: TInput, isDone: (input: TInput) => boolean): Observable<any> {
+    let $obs: Observable<any> = of(input);
     if (!endpoints || !endpoints.length) {
         return $obs;
     }
@@ -20,8 +20,8 @@ export function runEndpoints(endpoints: Endpoint[] | undefined, ctx: InvocationC
     endpoints.forEach(i => {
         $obs = $obs.pipe(
             mergeMap(() => {
-                if (isDone(ctx)) return of(ctx);
-                const $res = i.handle(ctx);
+                if (isDone(input)) return of(input);
+                const $res = i.handle(input);
                 if (isPromise($res) || isObservable($res)) return $res;
                 return of($res);
             }));

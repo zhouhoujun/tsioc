@@ -6,16 +6,16 @@ import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs'
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
-import { Endpoint } from '../Endpoint';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
+import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { BootstrapOption, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
 import { getClassName } from 'packages/ioc/src/utils/lang';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
-import { FnEndpoint } from '../endpoints/fn.endpoint';
-import { runEndpoints } from '../endpoints/runs';
+import { FnHandler } from '../endpoints/handler';
+import { runHandlers } from '../endpoints/runs';
 import { EndpointContext } from '../endpoints/context';
 import { CatchFilter } from '../filters/execption.filter';
 
@@ -37,9 +37,9 @@ export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 
 
 @Injectable()
-export class DefaultApplicationRunners extends ApplicationRunners implements Endpoint {
+export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
     private _types: ClassType[];
-    private _maps: Map<ClassType, Endpoint[]>;
+    private _maps: Map<ClassType, Handler[]>;
     private _refs: Map<ClassType, ReflectiveRef>;
     private _endpoint: GuardsEndpoint;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
@@ -81,7 +81,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
         if (hasAdapter) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
-            const endpoint = new FnEndpoint((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
+            const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
             return targetRef;
@@ -161,14 +161,14 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
 
     handle(context: InvocationContext<any>): Observable<any> {
         if (isFunction(context.payload)) {
-            return runEndpoints(this._maps.get(context.payload), context, v => v.done === true)
+            return runHandlers(this._maps.get(context.payload), context, v => v.done === true)
         }
         if (isArray(context.payload)) {
-            const endpoints: Endpoint[] = [];
+            const handlers: Handler[] = [];
             context.payload.forEach(type => {
-                endpoints.push(...this._maps.get(type) || []);
+                handlers.push(...this._maps.get(type) || []);
             })
-            return runEndpoints(endpoints, context, v => v.done === true)
+            return runHandlers(handlers, context, v => v.done === true)
         }
         return throwError(() => new ArgumentExecption('input type unknow'))
     }

@@ -1,8 +1,8 @@
 import { Abstract, Type, Class, ReflectiveRef, Injector, OperationInvoker } from '@tsdi/ioc';
-import { Endpoint } from '../Endpoint';
 import { RunnableRef } from '../ApplicationRunners';
 import { EndpointOptions } from '../EndpointService';
 import { EndpointContext } from './context';
+import { Endpoint } from './endpoint';
 
 /**
  * Opteration Endpoint

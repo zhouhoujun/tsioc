@@ -7,12 +7,12 @@ import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { Context } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { EndpointContext } from '../endpoints/context';
-import { Endpoint } from '../Endpoint';
 import { Router } from './router';
 import { getInterceptorsToken } from '../Interceptor';
-import { GuardsEndpoint } from '../endpoints';
+import { Endpoint } from '../endpoints/endpoint';
+import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { getGuardsToken, setOptions } from '../EndpointService';
-import { getFiltersToken } from '../filters';
+import { getFiltersToken } from '../filters/filter';
 import { ControllerRouteReolver } from './controller';
 
 /**
@@ -208,24 +208,10 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
         return this
     }
 
-    // parse(endpoint: Middleware | Endpoint): MiddlewareFn {
-    //     if (endpoint instanceof Endpoint) {
-    //         return (ctx, next) => lastValueFrom(endpoint.handle(ctx)
-    //             .pipe(
-    //                 mergeMap(async r => {
-    //                     await next();
-    //                     return r;
-    //                 })
-    //             ))
-    //     }
-    //     return (ctx, next) => endpoint.invoke(ctx, next)
-    // }
-
     unuse(route: string) {
         this.routes.delete(route);
         return this
     }
-
 
     handle(ctx: EndpointContext<Context>): Observable<any> {
         const route = this.getRoute(ctx);

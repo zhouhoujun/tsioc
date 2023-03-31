@@ -4,11 +4,11 @@ import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointContext } from '../endpoints/context';
 import { getGuardsToken, setOptions } from '../EndpointService';
 import { Filter, getFiltersToken } from '../filters/filter';
-import { Endpoint } from '../Endpoint';
-import { FnEndpoint } from '../endpoints/fn.endpoint';
+import { FnHandler } from '../endpoints/handler';
 import { patternToPath } from '../transport/pattern';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
+import { Backend } from '../Handler';
 
 
 export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends OperationEndpointImpl<TCtx, TOutput> implements RouteEndpoint {
@@ -43,8 +43,8 @@ export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, T
         return prefixFilters ? [...prefixFilters, ...routeFilters] : routeFilters;
     }
 
-    protected override getBackend(): Endpoint<TCtx, TOutput> {
-        return new FnEndpoint((ctx) => {
+    protected override getBackend(): Backend<TCtx, TOutput> {
+        return new FnHandler((ctx) => {
             if (this.route && isRest.test(this.route)) {
                 const restParams: any = {};
                 const routes = this.route.split('/').map(r => r.trim());

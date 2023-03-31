@@ -1,5 +1,5 @@
 import {
-    EmptyStatus, Endpoint, EndpointBackend, EndpointContext, Filter,
+    EmptyStatus, GuardsEndpoint, EndpointBackend, EndpointContext, Filter,
     mths, Outgoing, ServerEndpointContext, MessageExecption
 } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
@@ -19,7 +19,7 @@ export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpoin
 @Injectable({ static: true })
 export class ServerFinalizeFilter extends Filter {
 
-    intercept(input: any, next: Endpoint<any, any>, context: TransportContext): Observable<any> {
+    intercept(input: any, next: GuardsEndpoint<any, any>, context: TransportContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(res => {

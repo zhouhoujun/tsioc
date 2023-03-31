@@ -1,12 +1,12 @@
 import { Abstract, getTokenOf, InvocationContext, InvokeArguments, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import { PipeService } from './pipes/pipe.service';
 import { FilterService } from './filters/filter.service';
 import { CanActivate } from './guard';
+import { Handler } from './Handler';
 import { Interceptor, InterceptorService } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
 import { Filter } from './filters/filter';
-import { Endpoint } from './Endpoint';
-import { Observable } from 'rxjs';
 
 
 /**
@@ -72,7 +72,7 @@ export function getGuardsToken(type: TypeOf<any>|string, propertyKey?: string): 
  * MicroService endpoint.
  */
 @Abstract()
-export abstract class MicroServiceEndpoint<TCtx extends InvocationContext, TOutput> implements Endpoint<TCtx, TOutput>, EndpointService {
+export abstract class MicroServiceEndpoint<TCtx extends InvocationContext, TOutput> implements Handler<TCtx, TOutput>, EndpointService {
 
     abstract handle(context: TCtx): Observable<TOutput>;
 

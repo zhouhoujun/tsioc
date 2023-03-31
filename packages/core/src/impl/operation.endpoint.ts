@@ -1,10 +1,10 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
-import { Endpoint } from '../Endpoint';
+import { Backend } from '../Handler';
 import { getInterceptorsToken } from '../Interceptor';
 import { getFiltersToken } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
-import { FnEndpoint } from '../endpoints/fn.endpoint';
+import { FnHandler } from '../endpoints/handler';
 import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
 import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';
 
@@ -22,8 +22,8 @@ export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContex
 
     }
 
-    protected override getBackend(): Endpoint<TCtx, TOutput> {
-        return new FnEndpoint((ctx) => this.invoker.invoke(ctx))
+    protected override getBackend(): Backend<TCtx, TOutput> {
+        return new FnHandler((ctx) => this.invoker.invoke(ctx))
     }
 
 }

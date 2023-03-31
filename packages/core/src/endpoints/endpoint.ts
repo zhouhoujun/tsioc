@@ -1,47 +1,21 @@
 import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Endpoint, EndpointBackend } from '../Endpoint';
-import { Interceptor } from '../Interceptor';
-import { InterceptorHandler } from './handler';
-
+import { Handler } from '../Handler';
 
 /**
- * abstract endpoint.
+ * Endpoint is the fundamental building block of servers and clients.
  */
 @Abstract()
-export abstract class AbstractEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Endpoint<TCtx, TOutput> {
-
-    private chain: Endpoint<TCtx, TOutput> | null = null;
-
-    handle(context: TCtx): Observable<TOutput> {
-        return this.getChain().handle(context);
-    }
-
-    protected getChain(): Endpoint<TCtx, TOutput> {
-        if (!this.chain) {
-            this.chain = this.compose();
-        }
-        return this.chain;
-    }
-
-    protected reset() {
-        this.chain = null;
-    }
-
-    protected compose(): Endpoint<TCtx, TOutput> {
-        return this.getInterceptors().reduceRight(
-            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
-    }
+export abstract class Endpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Handler<TCtx, TOutput> {
+    /**
+     * transport endpoint handle.
+     * @param context request context.
+     */
+    abstract handle(context: TCtx): Observable<TOutput>;
 
     /**
-     *  get backend endpoint. 
+     * is this equals to target or not
+     * @param target 
      */
-    protected abstract getBackend(): EndpointBackend<TCtx, TOutput>;
-
-    /**
-     *  get interceptors. 
-     */
-    protected abstract getInterceptors(): Interceptor<TCtx, TOutput>[];
+    abstract equals?(target: any): boolean;
 }
-
-

@@ -1,4 +1,4 @@
-import { EmptyStatus, Endpoint, Filter, mths } from '@tsdi/core';
+import { EmptyStatus, GuardsEndpoint, Filter, mths } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { hdr, isBuffer, isStream, pipeStream } from '@tsdi/transport';
 import { mergeMap, Observable } from 'rxjs';
@@ -7,7 +7,7 @@ import { HttpContext, HttpServResponse } from './context';
 @Injectable({ static: true })
 export class HttpFinalizeFilter extends Filter {
 
-    intercept(input: any, next: Endpoint<any, any>, context: HttpContext): Observable<any> {
+    intercept(input: any, next: GuardsEndpoint<any, any>, context: HttpContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(res => {

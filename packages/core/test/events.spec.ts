@@ -1,11 +1,11 @@
 import { ArgumentExecption, Injectable, InvocationContext, isPlainObject, isString, MissingParameterExecption, Module, ReflectiveRef } from '@tsdi/ioc';
 import expect = require('expect');
 import { lastValueFrom, Observable, of } from 'rxjs';
-import { Application, ApplicationArguments, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+import { Application, ApplicationArguments, ApplicationContext, Dispose, GuardsEndpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
-    intercept(context: EndpointContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+    intercept(context: EndpointContext<PayloadApplicationEvent>, next: GuardsEndpoint<any, any>): Observable<any> {
         if(isString(context.payload.payload)){
             return next.handle(context);
         }
@@ -16,7 +16,7 @@ export class StringFilter implements Filter  {
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    intercept(context: EndpointContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+    intercept(context: EndpointContext<PayloadApplicationEvent>, next: GuardsEndpoint<any, any>): Observable<any> {
         if(isPlainObject(context.payload.payload)){
             return next.handle(context);
         }
@@ -29,7 +29,7 @@ export class JsonFilter implements Filter  {
 
 @Injectable()
 export class PayloadInterceptor implements Interceptor {
-    intercept(context: InvocationContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+    intercept(context: InvocationContext<PayloadApplicationEvent>, next: GuardsEndpoint<any, any>): Observable<any> {
         if (isString(context.payload.payload)) {
             context.payload.payload = 'hi ' + context.payload.payload;
         }

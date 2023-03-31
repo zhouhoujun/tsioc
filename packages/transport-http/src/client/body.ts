@@ -1,5 +1,5 @@
 import { HttpEvent, HttpRequest } from '@tsdi/common';
-import { Endpoint, EndpointContext, Interceptor, isBlob, isFormData } from '@tsdi/core';
+import { GuardsEndpoint, EndpointContext, Interceptor, isBlob, isFormData } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { createFormData, isFormDataLike, hdr } from '@tsdi/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
@@ -12,7 +12,7 @@ export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> 
 
     constructor() { }
 
-    intercept(req: HttpRequest<any>, next: Endpoint<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: GuardsEndpoint<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
         let body = req.serializeBody();
         if (body == null) {
             return next.handle(req, context);

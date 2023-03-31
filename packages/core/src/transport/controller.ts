@@ -1,7 +1,7 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, toProvider, Type } from '@tsdi/ioc';
 import { lastValueFrom, Observable, throwError } from 'rxjs';
-import { Endpoint } from '../Endpoint';
-import { EndpointContext } from '../endpoints';
+import { EndpointContext } from '../endpoints/context';
+import { Endpoint } from '../endpoints/endpoint';
 import { getGuardsToken } from '../EndpointService';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { getInterceptorsToken } from '../Interceptor';

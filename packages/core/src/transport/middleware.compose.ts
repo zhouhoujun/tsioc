@@ -1,10 +1,7 @@
-import { chain, isFunction, lang } from '@tsdi/ioc';
+import { chain, isFunction } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
-import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
-import { FnEndpoint } from '../endpoints/fn.endpoint';
-import { Endpoints } from '../endpoints/chain';
+import { MiddlewareFn, MiddlewareLike } from './middleware';
 import { EndpointContext } from '../endpoints/context';
-import { Interceptor } from '../Interceptor';
 import { Backend } from '../Handler';
 
 

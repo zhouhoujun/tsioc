@@ -1,7 +1,7 @@
 import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, StaticProvider, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
-import { Endpoint } from '../Endpoint';
+import { Handler } from '../Handler';
 import { Filter } from '../filters/filter';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { CanActivate } from '../guard';
@@ -10,7 +10,7 @@ import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
 import { CatchFilter } from '../filters/execption.filter';
-import { runEndpoints } from '../endpoints/runs';
+import { runHandlers } from '../endpoints/runs';
 
 
 /**
@@ -29,10 +29,10 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanActivate[]>('EVENT_MULTICASTER_GUARDS');
 
 @Injectable()
-export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Endpoint<ApplicationEventContext> {
+export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEventContext> {
 
     private _endpoint: GuardsEndpoint<ApplicationEventContext, any>;
-    private maps: Map<Type, Endpoint[]>;
+    private maps: Map<Type, Handler[]>;
 
     constructor(private injector: Injector) {
         super();
@@ -41,7 +41,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         this._endpoint.useFilters(CatchFilter)
     }
 
-    get endpoint(): Endpoint<ApplicationEventContext, any> {
+    get endpoint(): Handler<ApplicationEventContext, any> {
         return this._endpoint
     }
 
@@ -65,13 +65,13 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    addListener(event: Type<ApplicationEvent>, endpoint: Endpoint, order = -1): this {
+    addListener(event: Type<ApplicationEvent>, handler: Handler, order = -1): this {
         const endpoints = this.maps.get(event);
         if (endpoints) {
-            if (endpoints.some(i => i.equals ? i.equals(endpoint) : i === endpoint)) return this;
-            order >= 0 ? endpoints.splice(order, 0, endpoint) : endpoints.push(endpoint);
+            if (endpoints.some(i => i.equals ? i.equals(handler) : i === handler)) return this;
+            order >= 0 ? endpoints.splice(order, 0, handler) : endpoints.push(handler);
         } else {
-            this.maps.set(event, [endpoint]);
+            this.maps.set(event, [handler]);
         }
         return this;
     }
@@ -125,7 +125,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     handle(context: ApplicationEventContext): Observable<any> {
         const endpoints = this.maps.get(getClass(context.payload));
-        return runEndpoints(endpoints, context, v => v.done === true);
+        return runHandlers(endpoints, context, v => v.done === true);
     }
 
     clear(): void {

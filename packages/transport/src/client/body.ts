@@ -1,5 +1,5 @@
 import {
-    Endpoint, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData,
+    GuardsEndpoint, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData,
     isUrlSearchParams, Message, TransportEvent, TransportRequest
 } from '@tsdi/core';
 import { Injectable, isString, _tybool, _tynum, _tyobj } from '@tsdi/ioc';
@@ -18,7 +18,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
 
     constructor() { }
 
-    intercept(req: TransportRequest, next: Endpoint<Message, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
+    intercept(req: TransportRequest, next: GuardsEndpoint<Message, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
         let body = this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req, context);

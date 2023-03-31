@@ -11,6 +11,12 @@ export abstract class Handler<TInput = any, TOutput = any> {
      * @param input request input.
      */
     abstract handle(input: TInput): Observable<TOutput>;
+
+    /**
+     * is this equals to target or not
+     * @param target 
+     */
+    abstract equals?(target: any): boolean;
 }
 
 

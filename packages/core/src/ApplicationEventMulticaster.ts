@@ -2,11 +2,11 @@ import { Abstract, StaticProvider, Type, ProvdierOf, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
-import { Endpoint } from './Endpoint';
 import { EndpointService } from './EndpointService';
 import { EndpointContext } from './endpoints/context';
 import { Filter } from './filters/filter';
 import { CanActivate } from './guard';
+import { Handler } from './Handler';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
 
@@ -49,11 +49,11 @@ export abstract class ApplicationEventMulticaster implements EndpointService, Ap
      */
     abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
     /**
-     * add event endpoint.
+     * add event handler.
      * @param event 
-     * @param endpoint 
+     * @param handler 
      */
-    abstract addListener(event: Type<ApplicationEvent>, endpoint: Endpoint, order?: number): this;
+    abstract addListener(event: Type<ApplicationEvent>, handler: Handler, order?: number): this;
     /**
      * multicast emit event.
      * @param event 
