@@ -1,7 +1,7 @@
 import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Interceptor } from '../Interceptor';
-import { MicroServiceEndpoint } from '../EndpointService';
+import { MicroServiceEndpoint } from './micro.endpoint';
 import { ForbiddenExecption } from '../execptions';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes';

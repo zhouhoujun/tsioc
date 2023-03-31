@@ -1,7 +1,7 @@
+import { isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, mergeMap, of } from 'rxjs';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
-import { isPromise } from '@tsdi/ioc';
 
 
 /**

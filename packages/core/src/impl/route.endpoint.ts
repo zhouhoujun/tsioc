@@ -2,7 +2,7 @@ import { Class, EMPTY, Injectable, Injector, OperationInvoker, ReflectiveFactory
 import { CanActivate } from '../guard';
 import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointContext } from '../endpoints/context';
-import { getGuardsToken, setOptions } from '../EndpointService';
+import { getGuardsToken, setOptions } from '../endpoints/endpoint.service';
 import { Filter, getFiltersToken } from '../filters/filter';
 import { FnHandler } from '../endpoints/handler';
 import { patternToPath } from '../transport/pattern';

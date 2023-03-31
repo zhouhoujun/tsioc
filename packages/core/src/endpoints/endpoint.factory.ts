@@ -1,6 +1,6 @@
 import { Abstract, Type, Class, ReflectiveRef, Injector, OperationInvoker } from '@tsdi/ioc';
 import { RunnableRef } from '../ApplicationRunners';
-import { EndpointOptions } from '../EndpointService';
+import { EndpointOptions } from './endpoint.service';
 import { EndpointContext } from './context';
 import { Endpoint } from './endpoint';
 

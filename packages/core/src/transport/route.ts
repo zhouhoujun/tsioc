@@ -1,8 +1,8 @@
 import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Middleware, MiddlewareFn } from './middleware';
-import { EndpointOptions } from '../EndpointService';
-import { Pattern } from './pattern';
+import { EndpointOptions } from '../endpoints/endpoint.service';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
+import { Pattern } from './pattern';
 
 /**
  * Route.

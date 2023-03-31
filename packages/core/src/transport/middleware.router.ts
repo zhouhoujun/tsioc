@@ -11,7 +11,7 @@ import { Router } from './router';
 import { getInterceptorsToken } from '../Interceptor';
 import { Endpoint } from '../endpoints/endpoint';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
-import { getGuardsToken, setOptions } from '../EndpointService';
+import { getGuardsToken, setOptions } from '../endpoints/endpoint.service';
 import { getFiltersToken } from '../filters/filter';
 import { ControllerRouteReolver } from './controller';
 

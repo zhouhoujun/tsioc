@@ -1,7 +1,7 @@
 import { Abstract, Type, TypeDef } from '@tsdi/ioc';
 import { Protocols, RequestMethod } from './protocols';
-import { EndpointOptions } from '../EndpointService';
 import { EndpointContext } from '../endpoints/context';
+import { EndpointOptions } from '../endpoints/endpoint.service';
 import { Endpoint } from '../endpoints/endpoint';
 import { Backend } from '../Handler';
 import { Pattern } from './pattern';

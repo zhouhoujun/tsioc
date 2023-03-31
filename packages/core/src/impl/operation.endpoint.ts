@@ -3,10 +3,10 @@ import { Backend } from '../Handler';
 import { getInterceptorsToken } from '../Interceptor';
 import { getFiltersToken } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
-import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { FnHandler } from '../endpoints/handler';
+import { GuardsEndpoint } from '../endpoints/guards.endpoint';
+import { EndpointOptions, getGuardsToken, setOptions } from '../endpoints/endpoint.service';
 import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
-import { EndpointOptions, getGuardsToken, setOptions } from '../EndpointService';
 
 
 export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardsEndpoint<TCtx, TOutput> implements OperationEndpointImpl<TCtx, TOutput> {

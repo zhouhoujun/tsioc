@@ -2,7 +2,7 @@ import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, Reflecti
 import { lastValueFrom, Observable, throwError } from 'rxjs';
 import { EndpointContext } from '../endpoints/context';
 import { Endpoint } from '../endpoints/endpoint';
-import { getGuardsToken } from '../EndpointService';
+import { getGuardsToken } from '../endpoints/endpoint.service';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { getInterceptorsToken } from '../Interceptor';
 import { Context, Middleware } from './middleware';

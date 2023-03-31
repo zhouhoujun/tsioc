@@ -1,6 +1,6 @@
 import { RouteMapping } from '@tsdi/core';
 import { Inject, Injector, lang } from '@tsdi/ioc';
-import { ApiOperation } from 'packages/swagger/src/metadata/decor';
+import { ApiOperation } from '@tsdi/swagger';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 

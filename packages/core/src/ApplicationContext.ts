@@ -8,10 +8,10 @@ import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
 import { BootstrapOption } from './endpoints/endpoint.factory';
+import { EndpointOptions, EndpointServiceOptions } from './endpoints/endpoint.service';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';
-import { EndpointOptions, EndpointServiceOptions } from './EndpointService';
 
 /**
  * application context for global.

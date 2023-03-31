@@ -134,7 +134,7 @@ export interface IClassDecorator {
 /**
  * class method decorator.
  */
-export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
+export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol | undefined, descriptor?: TypedPropertyDescriptor<any>) => void;
 
 /**
  * method property decorator.

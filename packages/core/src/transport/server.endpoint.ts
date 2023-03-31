@@ -1,6 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
-import { EndpointService, MicroServiceEndpoint } from '../EndpointService';
+import { EndpointService } from '../endpoints/endpoint.service';
+import { MicroServiceEndpoint } from '../endpoints/micro.endpoint';
 import { MiddlewareOf } from './middleware';
 import { MiddlewareService } from './middleware.service';
 

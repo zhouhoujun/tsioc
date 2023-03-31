@@ -1,5 +1,5 @@
 import { Abstract, Class, InvocationContext, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
-import { EndpointService } from './EndpointService';
+import { EndpointService } from './endpoints/endpoint.service';
 import { BootstrapOption } from './endpoints/endpoint.factory';
 import { Filter } from './filters/filter';
 import { CanActivate } from './guard';

@@ -1,10 +1,11 @@
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { EndpointContext } from '../endpoints/context';
-import { EndpointService, MicroServiceEndpoint } from '../EndpointService';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
+import { EndpointContext } from '../endpoints/context';
+import { EndpointService } from '../endpoints/endpoint.service';
+import { MicroServiceEndpoint } from '../endpoints/micro.endpoint';
 
 
 

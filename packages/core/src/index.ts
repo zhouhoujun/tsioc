@@ -24,7 +24,6 @@ export * from './global';
 
 export * from './Handler';
 export * from './Interceptor';
-export * from './EndpointService';
 export * from './guard';
 export * from './execptions';
 

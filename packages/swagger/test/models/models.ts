@@ -1,5 +1,5 @@
 
-import { ApiModel, ApiModelProperty } from 'packages/swagger/src/metadata/decor';
+import { ApiModel, ApiModelProperty } from '@tsdi/swagger';
 import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository, Connection } from 'typeorm';
 
 

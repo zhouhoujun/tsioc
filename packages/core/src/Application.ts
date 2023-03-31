@@ -3,7 +3,7 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentO
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
-import { setOptions } from './EndpointService';
+import { setOptions } from './endpoints/endpoint.service';
 import { FilterModule } from './filters/filter.module';
 import { ApplicationArguments } from './ApplicationArguments';
 
