@@ -31,7 +31,7 @@ export class ControllerRoute<T> implements Middleware, Endpoint, OnDestroy {
         mapping.guards && injector.inject(toProvider(getGuardsToken(prefix), mapping.guards));
         mapping.interceptors && injector.inject(toProvider(getInterceptorsToken(prefix), mapping.interceptors));
         mapping.filters && injector.inject(toProvider(getGuardsToken(prefix), mapping.filters));
-        factory.typeRef.onDestroy(this);
+        factory.onDestroy(this);
     }
 
     get ctrlRef() {

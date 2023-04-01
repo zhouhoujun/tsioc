@@ -9,11 +9,11 @@ import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamD
 import { ProviderType, StaticProvider } from '../providers';
 import { OperationArgumentResolver } from '../resolver';
 import { InvokeArguments, InvokeOptions } from '../context';
-import { DecoratorOption } from './refl';
-import { ModuleDef } from './type';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { DesignContext } from '../actions/ctx';
+import { DecoratorOption } from './refl';
+import { ModuleDef } from './type';
 
 
 

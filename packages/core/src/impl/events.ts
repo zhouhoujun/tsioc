@@ -76,6 +76,17 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
+    removeListener(event: Type<ApplicationEvent>, handler: Handler): this {
+        const endpoints = this.maps.get(event);
+        if (endpoints) {
+            const idx = endpoints.findIndex(i => i.equals ? i.equals(handler) : i === handler);
+            if (idx >= 0) {
+                endpoints.splice(idx, 1);
+            }
+        }
+        return this;
+    }
+
     emit(value: ApplicationEvent): Observable<any> {
         const ctx = new ApplicationEventContext(this.injector, { payload: value });
         ctx.setValue(getClass(value), value);

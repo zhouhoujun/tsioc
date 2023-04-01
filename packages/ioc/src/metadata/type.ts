@@ -7,14 +7,14 @@ import {
 import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
 import { Token } from '../tokens';
 import { ArgumentResolver } from '../resolver';
+import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isArray, isFunction, isString } from '../utils/chk';
-import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
+import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
 import { MethodType } from '../injector';
 import { Handle } from '../handle';
-import { DesignContext, RuntimeContext } from '../actions/ctx';
 
 
 
@@ -208,13 +208,13 @@ export class Class<T = any> {
      * keys is decoator name toString()
      */
     readonly propDefs: Map<string, DecorDefine<PropertyMetadata>[]>;
-    
+
     /**
      * method decorator defs
      * keys is decoator name toString()
      */
     readonly methodDefs: Map<string, DecorDefine<MethodMetadata>[]>;
-    
+
     /**
      * Parameter decorator defs
      * keys is decoator name toString()

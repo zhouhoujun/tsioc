@@ -93,7 +93,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
                 const route = patternToPath(metadata.route!);
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
                 router.use(route, endpoint);
-                factory.typeRef.onDestroy(() => router.unuse(route));
+                factory.onDestroy(() => router.unuse(route));
             });
 
             return next();
@@ -240,8 +240,8 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const endpoint = injector.get(ControllerRouteReolver).resolve(ctx.class, injector);
                 const route = endpoint.prefix;
                 router.use(route, endpoint);
-                
-                endpoint.factory.typeRef.onDestroy(() => {
+
+                endpoint.factory.onDestroy(() => {
                     router.unuse(route)
                 });
                 return next();

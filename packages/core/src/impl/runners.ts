@@ -83,6 +83,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
+            targetRef.onDestroy(()=> this.detach(target.type as Type));
             return targetRef;
         }
 
@@ -96,6 +97,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             });
             this._maps.set(target.type, endpoints);
             this.attachRef(targetRef, options.order);
+            targetRef.onDestroy(()=> this.detach(target.type as Type));
             return targetRef;
         }
 

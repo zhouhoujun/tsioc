@@ -55,6 +55,12 @@ export abstract class ApplicationEventMulticaster implements EndpointService, Ap
      */
     abstract addListener(event: Type<ApplicationEvent>, handler: Handler, order?: number): this;
     /**
+     * add event handler.
+     * @param event 
+     * @param handler 
+     */
+    abstract removeListener(event: Type<ApplicationEvent>, handler: Handler): this;
+    /**
      * multicast emit event.
      * @param event 
      */

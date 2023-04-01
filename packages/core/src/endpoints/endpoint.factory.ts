@@ -1,4 +1,4 @@
-import { Abstract, Type, Class, ReflectiveRef, Injector, OperationInvoker } from '@tsdi/ioc';
+import { Abstract, Type, Class, ReflectiveRef, Injector, OperationInvoker, OnDestroy, Destroyable, DestroyCallback } from '@tsdi/ioc';
 import { RunnableRef } from '../ApplicationRunners';
 import { EndpointOptions } from './endpoint.service';
 import { EndpointContext } from './context';
@@ -34,11 +34,23 @@ export interface BootstrapOption<T = any> extends EndpointOptions<T> {
  * endpoint factory.
  */
 @Abstract()
-export abstract class EndpointFactory<T> {
+export abstract class EndpointFactory<T> implements OnDestroy, Destroyable {
 
     abstract get typeRef(): ReflectiveRef<T>;
 
     abstract create<TArg>(propertyKey: string, options: BootstrapOption<TArg>): OperationEndpoint;
+
+    
+    destroy(): void {
+        this.typeRef.destroy();
+    }
+    get destroyed(): boolean {
+        return this.typeRef.destroyed;
+    }
+    
+    onDestroy(callback?: DestroyCallback): void {
+        this.typeRef.onDestroy(callback);
+    }
 }
 
 /**

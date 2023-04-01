@@ -1,4 +1,4 @@
-import { Abstract, Class, Injector, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Type } from '@tsdi/ioc';
 import { BootstrapOption, OperationEndpoint } from '../endpoints/endpoint.factory';
 import { Pattern } from './pattern';
 
@@ -31,7 +31,7 @@ export interface RouteEndpointOptions<T = any> extends BootstrapOption<T> {
  * route endpoint factory.
  */
 @Abstract()
-export abstract class RouteEndpointFactory<T> {
+export abstract class RouteEndpointFactory<T> implements OnDestroy, Destroyable {
     /**
      * type ref.
      */
@@ -42,6 +42,18 @@ export abstract class RouteEndpointFactory<T> {
      * @param options 
      */
     abstract create<TArg>(propertyKey: string, options: RouteEndpointOptions<TArg>): RouteEndpoint;
+
+    
+    destroy(): void {
+        this.typeRef.destroy();
+    }
+    get destroyed(): boolean {
+        return this.typeRef.destroyed;
+    }
+    
+    onDestroy(callback?: DestroyCallback): void {
+        this.typeRef.onDestroy(callback);
+    }
 }
 
 
