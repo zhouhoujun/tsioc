@@ -26,6 +26,9 @@ export abstract class ListenOpts {
     withCredentials?: boolean;
 }
 
+/**
+ * listen service.
+ */
 export interface ListenService {
     listen(port: number, host?: string): Promise<void>
 }

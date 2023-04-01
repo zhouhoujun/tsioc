@@ -1,6 +1,6 @@
 import {
-    isArray, isString, lang, Type, isRegExp, createDecorator, ActionTypes, Execption, PatternMetadata,
-    ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf
+    isArray, isString, lang, Type, isRegExp, createDecorator, ActionTypes, PatternMetadata,
+    ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf, Execption
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';

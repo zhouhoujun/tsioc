@@ -31,6 +31,7 @@ export class ControllerRoute<T> implements Middleware, Endpoint, OnDestroy {
         mapping.guards && injector.inject(toProvider(getGuardsToken(prefix), mapping.guards));
         mapping.interceptors && injector.inject(toProvider(getInterceptorsToken(prefix), mapping.interceptors));
         mapping.filters && injector.inject(toProvider(getGuardsToken(prefix), mapping.filters));
+        factory.typeRef.onDestroy(this);
     }
 
     get ctrlRef() {
@@ -66,11 +67,17 @@ export class ControllerRoute<T> implements Middleware, Endpoint, OnDestroy {
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
+        this.clear();
+    }
+
+
+    protected clear() {
         this._destroyed = true;
         this.routes.clear();
         this.factory.typeRef.onDestroy();
         (this as any).factory = null!;
     }
+
 
 
     protected getRouteMetaData(ctx: EndpointContext<Context>) {

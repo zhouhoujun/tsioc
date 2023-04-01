@@ -50,7 +50,6 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             }
         ),
         {
-
             canResolve(parameter, ctx) {
                 return isDefined(parameter.pipe) && parameter.scope
                     && (parameter.field ? ctx.payload[parameter.scope][parameter.field] : Object.keys(ctx.payload[parameter.scope]).length > 0)
