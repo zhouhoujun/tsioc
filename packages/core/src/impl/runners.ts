@@ -114,6 +114,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     detach<T>(type: Type<T>): void {
+        if(this._destroyed) return;
         this._maps.delete(type);
         this._refs.delete(type);
         const idx = this._types.indexOf(type);
@@ -154,7 +155,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         );
     }
 
+    private _destroyed = false;
     onDestroy(): void {
+        if(this._destroyed) return;
+        this._destroyed = true;
         this._maps.clear();
         this.multicaster.clear();
         this._types = null!;
