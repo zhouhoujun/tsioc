@@ -75,7 +75,7 @@ export class CatchFilter<TInput, TOutput = any> implements Filter<TInput, TOutpu
                     } else {
                         injector = this.injector;
                     }
-                    const endpoint = (injector === this.injector) ? injector.get(ExecptionFilter) : (injector.get(ExecptionFilter, null) ?? this.injector.get(ExecptionFilter));
+                    const endpoint = (injector === this.injector) ? injector.get(ExecptionFilter, null) : (injector.get(ExecptionFilter, null) ?? this.injector.get(ExecptionFilter, null));
                     if (!endpoint) {
                         return of(err);
                     }

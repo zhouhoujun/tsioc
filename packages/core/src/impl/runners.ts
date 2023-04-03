@@ -7,11 +7,12 @@ import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
+import { CanActivate } from '../guard';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
-import { BootstrapOption, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
-import { CanActivate } from '../guard';
+import { EndpointOptions } from '../endpoints/endpoint.service';
+import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
 import { PipeTransform } from '../pipes/pipe';
 import { FnHandler } from '../endpoints/handler';
 import { runHandlers } from '../endpoints/runs';
@@ -70,7 +71,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: BootstrapOption<TArg> = {}): ReflectiveRef<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: EndpointOptions<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
         if (this._maps.has(target.type)) {
             return this._refs.get(target.type)!;
