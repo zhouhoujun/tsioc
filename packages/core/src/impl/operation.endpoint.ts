@@ -1,12 +1,13 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isObservable, isPromise, isString } from '@tsdi/ioc';
 import { Backend } from '../Handler';
 import { getInterceptorsToken } from '../Interceptor';
 import { getFiltersToken } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { FnHandler } from '../endpoints/handler';
 import { GuardsEndpoint } from '../endpoints/guards.endpoint';
-import { EndpointOptions, getGuardsToken, setOptions } from '../endpoints/endpoint.service';
+import { EndpointOptions, Respond, TypedRespond, getGuardsToken, setOptions } from '../endpoints/endpoint.service';
 import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
+import { mergeMap } from 'rxjs';
 
 
 export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardsEndpoint<TCtx, TOutput> implements OperationEndpointImpl<TCtx, TOutput> {
@@ -23,7 +24,59 @@ export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContex
     }
 
     protected override getBackend(): Backend<TCtx, TOutput> {
-        return new FnHandler((ctx) => this.invoker.invoke(ctx))
+        return new FnHandler(this.respond.bind(this));
+    }
+
+    /**
+     * before `OperationInvoker` invoke 
+     * @param ctx 
+     */
+    protected beforeInvoke(ctx: TCtx): void { }
+
+    /**
+     * respond.
+     * @param ctx 
+     * @returns 
+     */
+    protected respond(ctx: TCtx) {
+        this.beforeInvoke(ctx);
+        const res = this.invoker.invoke(ctx);
+        if (!this.options.response) return res;
+
+        if (isPromise(res)) {
+            return res.then(r => this.respondAs(ctx, r))
+        } else if (isObservable(res)) {
+            return res.pipe(
+                mergeMap(r => this.respondAs(ctx, r))
+            )
+        } else {
+            return this.respondAs(ctx, res);
+        }
+    }
+
+    /**
+     * respond as
+     * @param ctx 
+     * @param res 
+     * @returns 
+     */
+    protected respondAs(ctx: TCtx, res: any): Promise<TOutput> {
+        if (isString(this.options.response)) {
+            const trespond = ctx.get(TypedRespond);
+            if (trespond) {
+                trespond.respond(ctx, res, this.options.response);
+            } else {
+                ctx.payload[this.options.response] = res;
+            }
+        } else if (this.options.response) {
+            const respond = ctx.get(this.options.response) ?? this.options.response;
+            if (isFunction(respond)) {
+                respond(ctx, res);
+            } else if (respond) {
+                (respond as Respond).respond(ctx, res);
+            }
+        }
+        return res;
     }
 
 }

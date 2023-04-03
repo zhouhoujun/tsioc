@@ -1,4 +1,4 @@
-import { Abstract, getTokenOf, InvocationContext, InvokeArguments, ProvdierOf, StaticProvider, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, InvokeArguments, ProvdierOf, StaticProvider, Token, Type, TypeOf } from '@tsdi/ioc';
 import { PipeService } from '../pipes/pipe.service';
 import { FilterService } from '../filters/filter.service';
 import { CanActivate } from '../guard';
@@ -80,28 +80,29 @@ export interface EndpointOptions<T = any> extends EndpointServiceOptions, Invoke
 }
 
 
-
+/**
+ * Respond 
+ */
 @Abstract()
 export abstract class Respond<TInput = any> {
-
     /**
-     * respond with execption handled data.
+     * respond with handled data.
      * @param input endpoint input data.
-     * @param value execption handled returnning value
+     * @param value handled returnning value
      */
     abstract respond<T>(input: TInput, value: T): void;
 }
 
 /**
- * Execption respond adapter with response type.
+ * Respond adapter with response type.
  */
 @Abstract()
 export abstract class TypedRespond<TInput = any>  {
     /**
-     * respond with execption handled data.
-     * @param input endpoint input data.
+     * respond with handled data.
+     * @param input input data.
+     * @param value handled returnning value
      * @param responseType response type
-     * @param value execption handled returnning value
      */
-    abstract respond<T>(input: TInput, responseType: 'body' | 'header' | 'response', value: T): void;
+    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response'): void;
 }

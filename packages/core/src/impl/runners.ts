@@ -11,13 +11,13 @@ import { CanActivate } from '../guard';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
+import { CatchFilter } from '../filters/execption.filter';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
 import { PipeTransform } from '../pipes/pipe';
 import { FnHandler } from '../endpoints/handler';
 import { runHandlers } from '../endpoints/runs';
 import { EndpointContext } from '../endpoints/context';
-import { CatchFilter } from '../filters/execption.filter';
 
 
 /**

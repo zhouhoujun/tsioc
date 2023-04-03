@@ -73,24 +73,6 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
     publishEvent(event: Object): Observable<any>;
     publishEvent(obj: ApplicationEvent | Object): Observable<any> {
         return this.eventMulticaster.publishEvent(obj);
-        // if (!obj) throw new ArgumentExecption('Event must not be null');
-
-        // // Decorate event as an ApplicationEvent if necessary
-        // let event: ApplicationEvent;
-        // if (obj instanceof ApplicationEvent) {
-        //     event = obj
-        // }
-        // else {
-        //     event = new PayloadApplicationEvent(this, obj)
-        // }
-
-        // this._multicaster?.emit(event);
-
-        // // Publish event via parent context as well...
-        // const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
-        // if (context) {
-        //     context.publishEvent(event)
-        // }
     }
 
     /**

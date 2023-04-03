@@ -1,11 +1,9 @@
 import { Class, EMPTY, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
-import { Backend } from '../Handler';
 import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointContext } from '../endpoints/context';
 import { getGuardsToken, setOptions } from '../endpoints/endpoint.service';
 import { Filter, getFiltersToken } from '../filters/filter';
-import { FnHandler } from '../endpoints/handler';
 import { patternToPath } from '../transport/pattern';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
@@ -44,27 +42,24 @@ export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, T
         return prefixFilters ? [...prefixFilters, ...routeFilters] : routeFilters;
     }
 
-    protected override getBackend(): Backend<TCtx, TOutput> {
-        return new FnHandler((ctx) => {
-            if (this.route && isRest.test(this.route)) {
-                const restParams: any = {};
-                const routes = this.route.split('/').map(r => r.trim());
-                const restParamNames = routes.filter(d => restParms.test(d));
-                const routeUrls = ctx.payload.url.replace(this.prefix, '').split('/');
-                let has = false;
-                restParamNames.forEach(pname => {
-                    const val = routeUrls[routes.indexOf(pname)];
-                    if (val) {
-                        has = true;
-                        restParams[pname.substring(1)] = val
-                    }
-                });
-                if (has) {
-                    ctx.payload.param = restParams;
+    protected override beforeInvoke(ctx: TCtx): void {
+        if (this.route && isRest.test(this.route)) {
+            const restParams: any = {};
+            const routes = this.route.split('/').map(r => r.trim());
+            const restParamNames = routes.filter(d => restParms.test(d));
+            const routeUrls = ctx.payload.url.replace(this.prefix, '').split('/');
+            let has = false;
+            restParamNames.forEach(pname => {
+                const val = routeUrls[routes.indexOf(pname)];
+                if (val) {
+                    has = true;
+                    restParams[pname.substring(1)] = val
                 }
+            });
+            if (has) {
+                ctx.payload.param = restParams;
             }
-            return this.invoker.invoke(ctx)
-        });
+        }
     }
 }
 

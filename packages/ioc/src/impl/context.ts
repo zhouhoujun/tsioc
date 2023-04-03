@@ -7,10 +7,10 @@ import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '..
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
+import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
 import { ProviderType, toProvider } from '../providers';
-import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
 
 
@@ -149,6 +149,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             this._payload = this.injector.get(CONTEXT_PAYLOAD);
         }
         return this._payload!;
+    }
+
+    /**
+     * the invocation arguments.
+     * @deprecated use `payload` instead.
+     */
+    get arguments() {
+        return this.payload;
     }
 
     get used(): boolean {
