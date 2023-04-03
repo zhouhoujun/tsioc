@@ -8,9 +8,8 @@ import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
-import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
+import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
-import { BootstrapOption } from '../endpoints/endpoint.factory';
 
 
 
@@ -125,15 +124,15 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         super()
     }
 
-    create<T, TArg extends ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
+    create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
         }
-        if(!option) {
+        if (!option) {
             option = {};
         }
-        if(!option.payload) {
+        if (!option.payload) {
             option.payload = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);

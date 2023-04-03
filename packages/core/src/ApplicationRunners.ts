@@ -1,6 +1,5 @@
 import { Abstract, Class, InvocationContext, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
-import { EndpointService } from './endpoints/endpoint.service';
-import { BootstrapOption } from './endpoints/endpoint.factory';
+import { EndpointOptions, EndpointService } from './endpoints/endpoint.service';
 import { Filter } from './filters/filter';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
@@ -15,7 +14,7 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: BootstrapOption<TArg>): ReflectiveRef<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: EndpointOptions<TArg>): ReflectiveRef<T>;
 
   /**
    * detach runner

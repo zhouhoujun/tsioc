@@ -7,7 +7,6 @@ import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { BootstrapOption } from './endpoints/endpoint.factory';
 import { EndpointOptions, EndpointServiceOptions } from './endpoints/endpoint.service';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
@@ -18,7 +17,7 @@ import { ApplicationEvent } from './ApplicationEvent';
  * implements {@link Destroyable}.
  */
 @Abstract()
-export abstract class ApplicationContext<T = any, TArg extends ApplicationArguments = ApplicationArguments>
+export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
     extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
     /**
      * application root module injector.
@@ -86,6 +85,12 @@ export abstract class ApplicationContext<T = any, TArg extends ApplicationArgume
      */
     abstract destroy(): Promise<void>;
 
+}
+
+/**
+ * bootstrap option for {@link RunnableRef}.
+ */
+export interface BootstrapOption<T = any> extends EndpointOptions<T> {
 }
 
 
@@ -159,5 +164,5 @@ export abstract class ApplicationFactory {
      * @param option application option.
      * @returns instance of {@link EnvironmentOption}
      */
-    abstract create<T, TArg extends ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg>;
+    abstract create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg>;
 }

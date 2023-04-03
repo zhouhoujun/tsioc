@@ -1,6 +1,7 @@
 import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Type } from '@tsdi/ioc';
-import { BootstrapOption, OperationEndpoint } from '../endpoints/endpoint.factory';
 import { Pattern } from './pattern';
+import { OperationEndpoint } from '../endpoints/endpoint.factory';
+import { EndpointOptions } from '../endpoints/endpoint.service';
 
 
 /**
@@ -16,7 +17,7 @@ export abstract class RouteEndpoint extends OperationEndpoint {
 /**
  * Route endpoint options.
  */
-export interface RouteEndpointOptions<T = any> extends BootstrapOption<T> {
+export interface RouteEndpointOptions<T = any> extends EndpointOptions<T> {
     /**
      * route
      */

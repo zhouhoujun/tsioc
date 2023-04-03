@@ -14,7 +14,7 @@ import { ApplicationArguments } from './ApplicationArguments';
  * @export
  * @class Application
  */
-export class Application<T, TArg extends ApplicationArguments = any> {
+export class Application<T = any, TArg = ApplicationArguments> {
 
     private _loads?: Type[];
     /**
