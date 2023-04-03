@@ -9,16 +9,16 @@ import { Interceptor } from '../Interceptor';
  * endpoint filter is a chainable behavior modifier for `endpoints`.
  */
 @Abstract()
-export abstract class Filter<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Interceptor<TCtx, TOutput> {
+export abstract class Filter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
     /**
      * the method to implemet interceptor filter.
-     * @param context request context.
+     * @param input request input data.
      * @param next The next interceptor in the chain, or the backend
      * if no interceptors remain in the chain.
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract intercept(context: TCtx, next: Handler<TCtx, TOutput>): Observable<TOutput>;
+    abstract intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<TOutput>;
 }
 
 const FILTERS = 'FILTERS';

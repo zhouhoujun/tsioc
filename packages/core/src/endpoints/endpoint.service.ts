@@ -22,7 +22,7 @@ export interface EndpointService extends FilterService, PipeService, Interceptor
 /**
  * endpoint service options.
  */
-export interface EndpointServiceOptions<TCtx extends InvocationContext = InvocationContext> {
+export interface EndpointServiceOptions<TInput = any> {
     /**
      * An array of dependency-injection tokens used to look up `CanActivate()`
      * handlers, in order to determine if the current user is allowed to
@@ -32,7 +32,7 @@ export interface EndpointServiceOptions<TCtx extends InvocationContext = Invocat
     /**
      * interceptors of bootstrap.
      */
-    interceptors?: ProvdierOf<Interceptor<TCtx>>[];
+    interceptors?: ProvdierOf<Interceptor<TInput>>[];
     /**
      * pipes for the bootstrap.
      */
@@ -40,7 +40,7 @@ export interface EndpointServiceOptions<TCtx extends InvocationContext = Invocat
     /**
      * filters of bootstrap.
      */
-    filters?: ProvdierOf<Filter<TCtx>>[];
+    filters?: ProvdierOf<Filter<TInput>>[];
 }
 
 /**
