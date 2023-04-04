@@ -1,7 +1,7 @@
 import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, Token } from '@tsdi/ioc';
-import { catchError, finalize, map, Observable, Observer, of } from 'rxjs';
+import { catchError, finalize, map, Observable, Observer, of, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
-import { MessageExecption } from '../execptions';
+import { InternalServerExecption, MessageExecption } from '../execptions';
 import { EndpointContext } from '../endpoints/context';
 import { Filter, runFilters } from './filter';
 
@@ -75,12 +75,12 @@ export class CatchFilter<TInput, TOutput = any> implements Filter<TInput, TOutpu
                     } else {
                         injector = this.injector;
                     }
-                    const endpoint = (injector === this.injector) ? injector.get(ExecptionFilter, null) : (injector.get(ExecptionFilter, null) ?? this.injector.get(ExecptionFilter, null));
-                    if (!endpoint) {
-                        return of(err);
+                    const filter = (injector === this.injector) ? injector.get(ExecptionFilter, null) : (injector.get(ExecptionFilter, null) ?? this.injector.get(ExecptionFilter, null));
+                    if (!filter) {
+                        return throwError(()=> new InternalServerExecption(err.message));
                     }
                     const context = new ExecptionContext(err, input, injector);
-                    return endpoint.handle(context)
+                    return filter.handle(context)
                         .pipe(
                             finalize(() => {
                                 context.destroy();
