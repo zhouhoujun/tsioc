@@ -45,8 +45,6 @@ export abstract class AbstractChain<TInput = any, TOutput = any> implements Hand
 }
 
 
-
-
 /**
  * Simple Endpoint chain. for composing interceptors. Requests will
  * traverse them in the order they're declared. That is, the first endpoint

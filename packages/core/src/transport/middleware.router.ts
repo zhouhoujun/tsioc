@@ -3,14 +3,13 @@ import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs
 import { CanActivate } from '../guard';
 import { getInterceptorsToken } from '../Interceptor';
 import { BadRequestExecption, NotFoundExecption } from '../execptions';
+import { getFiltersToken } from '../filters/filter';
+import { GuardHandler } from '../handlers/guards';
 import { Endpoint } from '../endpoints/endpoint';
 import { EndpointContext } from '../endpoints/context';
-import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { getGuardsToken, setOptions } from '../endpoints/endpoint.service';
-import { getFiltersToken } from '../filters/filter';
 import { joinprefix, Route, ROUTES, Routes } from './route';
-import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
-import { Context } from './middleware';
+import { Middleware, MiddlewareFn, MiddlewareLike, Context } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { Router } from './router';
 import { ControllerRouteReolver } from './controller';
@@ -140,7 +139,7 @@ export class MappingRoute implements Middleware, Endpoint {
 
         if (this.route.interceptors || this.route.guards || this.route.filters) {
             const route = joinprefix(this.route.path);
-            const gendpt = new GuardsEndpoint(this.injector, getInterceptorsToken(route), endpoint, getGuardsToken(route), getFiltersToken(route));
+            const gendpt = new GuardHandler(this.injector, getInterceptorsToken(route), endpoint, getGuardsToken(route), getFiltersToken(route));
             setOptions(gendpt, this.route);
             endpoint = gendpt;
         }

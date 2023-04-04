@@ -29,11 +29,9 @@ export interface Handle {
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @param {Pattern} pattern message match pattern.
-     * @param {cmd?: string, pattern?: string } option message match option.
+     * @param {RouteMappingMetadata} option message match option.
      */
-    <TArg>(pattern: Pattern, protocol?: Protocols, option?: RouteOptions<TArg>): MethodDecorator;
-
+    <TArg>(option: ProtocolRouteMappingMetadata<TArg>): HandleDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -41,13 +39,13 @@ export interface Handle {
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
     <TArg>(pattern: Pattern, option?: RouteOptions<TArg>): MethodDecorator;
-
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
-     * @param {RouteMappingMetadata} option message match option.
+     * @param {Pattern} pattern message match pattern.
+     * @param {cmd?: string, pattern?: string } option message match option.
      */
-    <TArg>(option: RouteMappingMetadata<TArg>): MethodDecorator;
+    <TArg>(pattern: Pattern, protocol?: Protocols, option?: RouteOptions<TArg>): MethodDecorator;
 }
 
 /**

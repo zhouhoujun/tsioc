@@ -6,16 +6,16 @@ import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs'
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
-import { GuardsEndpoint } from '../endpoints/guards.endpoint';
+import { PipeTransform } from '../pipes/pipe';
 import { CanActivate } from '../guard';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { CatchFilter } from '../filters/execption.filter';
+import { GuardHandler } from '../handlers/guards';
+import { FnHandler } from '../handlers/handler';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
-import { PipeTransform } from '../pipes/pipe';
-import { FnHandler } from '../endpoints/handler';
 import { runHandlers } from '../endpoints/runs';
 import { EndpointContext } from '../endpoints/context';
 
@@ -41,33 +41,37 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     private _types: ClassType[];
     private _maps: Map<ClassType, Handler[]>;
     private _refs: Map<ClassType, ReflectiveRef>;
-    private _endpoint: GuardsEndpoint;
+    private _handler: GuardHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._endpoint = new GuardsEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
-        this._endpoint.useFilters(CatchFilter);
+        this._handler = new GuardHandler(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._handler.useFilters(CatchFilter);
+    }
+
+    get handler(): Handler {
+        return this._handler
     }
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this._endpoint.usePipes(pipes);
+        this._handler.usePipes(pipes);
         return this;
     }
 
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
-        this._endpoint.useGuards(guards, order);
+        this._handler.useGuards(guards, order);
         return this;
     }
 
     useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
-        this._endpoint.useInterceptors(interceptor, order);
+        this._handler.useInterceptors(interceptor, order);
         return this;
     }
 
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._endpoint.useFilters(filter, order);
+        this._handler.useFilters(filter, order);
         return this;
     }
 
@@ -134,13 +138,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );

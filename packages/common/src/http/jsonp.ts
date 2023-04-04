@@ -6,13 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import { Inject, Injectable } from '@tsdi/ioc';
+import { JSONP } from '@tsdi/core';
 import { Observable, Observer } from 'rxjs';
 import { HttpStatusCode } from './status';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpErrorResponse, HttpEvent, HttpEventType, HttpResponse } from './response';
 import { DOCUMENT } from '../platform';
-import { JSONP } from '@tsdi/core';
 
 
 // Every request made through JSONP needs a callback name that's unique across the

@@ -1,4 +1,4 @@
-import { BytesFormatPipe, GuardsEndpoint, EndpointContext, Interceptor, TimeFormatPipe, Message } from '@tsdi/core';
+import { BytesFormatPipe, GuardHandler, EndpointContext, Interceptor, TimeFormatPipe, Message } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -62,7 +62,7 @@ export class LogInterceptor implements Interceptor {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
-    intercept(req: Message, next: GuardsEndpoint, ctx: EndpointContext): Observable<any> {
+    intercept(req: Message, next: GuardHandler, ctx: EndpointContext): Observable<any> {
         const logger: Logger = ctx.target.logger ?? ctx.get(Logger);
 
         const level = this.options.level;

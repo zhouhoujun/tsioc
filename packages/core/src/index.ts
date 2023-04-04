@@ -29,8 +29,11 @@ export * from './execptions';
 
 export * from './uuid';
 
+export * from './filters';
+
+export * from './handlers';
+
 export * from './endpoints';
 
-export * from './filters';
 
 export * from './transport';

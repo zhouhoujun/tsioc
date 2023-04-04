@@ -1,5 +1,5 @@
 import {
-    Outgoing, StatusFactory, Filter, GuardsEndpoint, EndpointContext, BadRequestExecption, ExecptionHandler,
+    Outgoing, StatusFactory, Filter, GuardHandler, EndpointContext, BadRequestExecption, ExecptionHandler,
     ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption, MessageExecption,
     ENOENT, MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
@@ -12,7 +12,7 @@ import { TransportContext } from './context';
 
 @Injectable({ static: true })
 export class ExecptionFinalizeFilter implements Filter {
-    intercept(input: any, next: GuardsEndpoint<any, any>, context: TransportContext): Observable<any> {
+    intercept(input: any, next: GuardHandler<any, any>, context: TransportContext): Observable<any> {
 
         return next.handle(input, context)
             .pipe(

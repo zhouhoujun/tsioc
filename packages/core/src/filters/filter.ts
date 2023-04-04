@@ -1,4 +1,4 @@
-import { Abstract, getTokenOf, InvocationContext, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, InvocationContext, ProvdierOf, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { runHandlers } from '../endpoints/runs';
 import { Handler } from '../Handler';
@@ -20,6 +20,19 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
      */
     abstract intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<TOutput>;
 }
+
+/**
+ * filter service.
+ */
+export interface FilterService {
+    /**
+     * use filters
+     * @param filters 
+     * @param order 
+     */
+    useFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+}
+
 
 const FILTERS = 'FILTERS';
 /**

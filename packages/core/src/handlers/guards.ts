@@ -1,32 +1,29 @@
-import { ArgumentExecption, EMPTY, Injector, InvocationContext, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY, Injector, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
-import { Interceptor } from '../Interceptor';
-import { MicroServiceEndpoint } from './micro.endpoint';
+import { Interceptor, InterceptorService } from '../Interceptor';
 import { ForbiddenExecption } from '../execptions';
-import { CanActivate } from '../guard';
-import { PipeTransform } from '../pipes';
-import { Filter } from '../filters/filter';
+import { CanActivate, GuardsService } from '../guard';
+import { Filter, FilterService } from '../filters/filter';
 import { RegisterChain } from './chain';
 import { InterceptorHandler } from './handler';
 import { Backend, Handler } from '../Handler';
-import { Endpoint } from './endpoint';
-
-
+import { PipeTransform, PipeService } from '../pipes/pipe';
 
 /**
- * guards endpoint.
+ * guards handler.
  */
-export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> extends RegisterChain<TCtx, TOutput> implements Endpoint<TCtx, TOutput>, MicroServiceEndpoint<InvocationContext, TOutput>, OnDestroy {
+export class GuardHandler<TInput = any, TOutput = any> extends RegisterChain<TInput, TOutput>
+    implements Handler<TInput, TOutput>, GuardsService, PipeService, InterceptorService, FilterService, OnDestroy {
 
 
     private guards: CanActivate[] | null | undefined;
 
     constructor(
         injector: Injector,
-        token: Token<Interceptor<TCtx, TOutput>[]>,
-        backend: TypeOf<Backend<TCtx, TOutput>>,
+        token: Token<Interceptor<TInput, TOutput>[]>,
+        backend: TypeOf<Backend<TInput, TOutput>>,
         protected guardsToken?: Token<CanActivate[]>,
-        protected filtersToken?: Token<Filter<TCtx, TOutput>[]>) {
+        protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
         super(injector, token, backend);
         if (!guardsToken) {
             this.guards = null;
@@ -56,29 +53,29 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
         return this;
     }
 
-    override handle(context: TCtx): Observable<TOutput> {
+    override handle(input: TInput): Observable<TOutput> {
         if (this.guards === undefined) {
             this.guards = this.getGuards();
         }
 
-        if (!this.guards || !this.guards.length) return this.getChain().handle(context);
+        if (!this.guards || !this.guards.length) return this.getChain().handle(input);
         const guards = this.guards;
         return defer(async () => {
             if (!(await lang.some(
-                guards.map(gd => () => pomiseOf(gd.canActivate(context))),
+                guards.map(gd => () => pomiseOf(gd.canActivate(input))),
                 vaild => vaild === false))) {
                 return false;
             }
             return true;
         }).pipe(
             mergeMap(r => {
-                if (r === true) return this.getChain().handle(context);
+                if (r === true) return this.getChain().handle(input);
                 return throwError(() => new ForbiddenExecption())
             })
         )
     }
 
-    
+
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
@@ -94,7 +91,7 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
     }
 
 
-    protected override compose(): Handler<TCtx, TOutput> {
+    protected override compose(): Handler<TInput, TOutput> {
         const chain = this.getInterceptors().reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
         return this.getFilters().reduceRight(
@@ -108,7 +105,7 @@ export class GuardsEndpoint<TCtx extends InvocationContext = InvocationContext, 
     /**
      *  get filters. 
      */
-    protected getFilters(): Filter<TCtx, TOutput>[] {
+    protected getFilters(): Filter<TInput, TOutput>[] {
         return this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
     }
 

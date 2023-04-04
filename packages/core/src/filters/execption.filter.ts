@@ -77,7 +77,7 @@ export class CatchFilter<TInput, TOutput = any> implements Filter<TInput, TOutpu
                     }
                     const filter = (injector === this.injector) ? injector.get(ExecptionFilter, null) : (injector.get(ExecptionFilter, null) ?? this.injector.get(ExecptionFilter, null));
                     if (!filter) {
-                        return throwError(()=> new InternalServerExecption(err.message));
+                        return throwError(()=> err instanceof Execption? err : new InternalServerExecption(err.message));
                     }
                     const context = new ExecptionContext(err, input, injector);
                     return filter.handle(context)

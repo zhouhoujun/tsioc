@@ -1,22 +1,14 @@
 import { Abstract, getTokenOf, InvokeArguments, ProvdierOf, StaticProvider, Token, Type, TypeOf } from '@tsdi/ioc';
-import { PipeService } from '../pipes/pipe.service';
-import { FilterService } from '../filters/filter.service';
-import { CanActivate } from '../guard';
+import { PipeTransform, PipeService } from '../pipes/pipe';
+import { CanActivate, GuardsService } from '../guard';
 import { Interceptor, InterceptorService } from '../Interceptor';
-import { PipeTransform } from '../pipes/pipe';
-import { Filter } from '../filters/filter';
-
+import { Filter, FilterService } from '../filters/filter';
 
 /**
  * endpoint service.
  */
-export interface EndpointService extends FilterService, PipeService, InterceptorService {
-    /**
-     * use guards.
-     * @param guards
-     * @param order 
-     */
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+export interface EndpointService extends FilterService, PipeService, InterceptorService, GuardsService {
+
 }
 
 /**
@@ -61,7 +53,7 @@ const GUARDS = 'GUARDS';
  * @param request 
  * @returns 
  */
-export function getGuardsToken(type: TypeOf<any>|string, propertyKey?: string): Token<CanActivate[]> {
+export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanActivate[]> {
     return getTokenOf(type, GUARDS, propertyKey)
 }
 

@@ -3,14 +3,14 @@ import { Backend } from '../Handler';
 import { getInterceptorsToken } from '../Interceptor';
 import { getFiltersToken } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
-import { FnHandler } from '../endpoints/handler';
-import { GuardsEndpoint } from '../endpoints/guards.endpoint';
+import { FnHandler } from '../handlers/handler';
+import { GuardHandler } from '../handlers/guards';
 import { EndpointOptions, Respond, TypedRespond, getGuardsToken, setOptions } from '../endpoints/endpoint.service';
 import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
 import { mergeMap } from 'rxjs';
 
 
-export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardsEndpoint<TCtx, TOutput> implements OperationEndpointImpl<TCtx, TOutput> {
+export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends GuardHandler<TCtx, TOutput> implements OperationEndpointImpl<TCtx, TOutput> {
 
     constructor(
         public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {

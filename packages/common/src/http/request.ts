@@ -1,6 +1,6 @@
 
 import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/core';
-import { isString, _tybool, _tynum, _tyobj, InvocationContext } from '@tsdi/ioc';
+import { isString, InvocationContext } from '@tsdi/ioc';
 import { HttpParams } from './params';
 
 
@@ -246,7 +246,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             return this.body.toString()
         }
         // Check whether the body is an object or array, and serialize with JSON if so.
-        if (typeof this.body === _tyobj || typeof this.body === _tybool ||
+        if (typeof this.body === 'object' || typeof this.body === 'boolean' ||
             Array.isArray(this.body)) {
             return JSON.stringify(this.body)
         }
@@ -289,8 +289,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.
         const type = typeof this.body;
-        if (type === _tyobj || type === _tynum ||
-            type === _tybool) {
+        if (type === 'object' || type === 'number' || type === 'boolean') {
             return 'application/json'
         }
         // No type could be inferred.

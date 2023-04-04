@@ -78,13 +78,10 @@ class DeviceController {
 
     }
 
-    @Handle(/dd./)
+    @Handle('dd*')
     async subMessage1() {
 
     }
-
-
-
 
 }
 
@@ -101,7 +98,9 @@ class DeviceController {
 
 // }
 
-@Handle('/hdevice')
+@Handle({
+    route: '/hdevice'
+})
 class DeviceQueue implements Middleware {
 
     async invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {

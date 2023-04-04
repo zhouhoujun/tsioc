@@ -1,16 +1,27 @@
-import { Abstract, Type, Class, ReflectiveRef, Injector, OperationInvoker, OnDestroy, Destroyable, DestroyCallback } from '@tsdi/ioc';
-import { EndpointOptions } from './endpoint.service';
+import { Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback, InvocationContext, ProvdierOf, StaticProvider } from '@tsdi/ioc';
+import { CanActivate } from '../guard';
+import { PipeTransform } from '../pipes/pipe';
+import { Filter } from '../filters/filter';
+import { Interceptor } from '../Interceptor';
 import { Endpoint } from './endpoint';
+import { EndpointOptions, EndpointService } from './endpoint.service';
+
 
 /**
  * Opteration Endpoint
  */
-export abstract class OperationEndpoint extends Endpoint {
-    /**
-     * invoker.
-     */
-    abstract get invoker(): OperationInvoker
+@Abstract()
+export abstract class OperationEndpoint<TInput extends InvocationContext = InvocationContext, TOutput = any> extends Endpoint<TInput, TOutput> implements EndpointService {
+
+    abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+
+    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+
+    abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
+
+    abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
 }
+
 
 
 
@@ -24,14 +35,14 @@ export abstract class EndpointFactory<T> implements OnDestroy, Destroyable {
 
     abstract create<TArg>(propertyKey: string, options: EndpointOptions<TArg>): OperationEndpoint;
 
-    
+
     destroy(): void {
         this.typeRef.destroy();
     }
     get destroyed(): boolean {
         return this.typeRef.destroyed;
     }
-    
+
     onDestroy(callback?: DestroyCallback): void {
         this.typeRef.onDestroy(callback);
     }

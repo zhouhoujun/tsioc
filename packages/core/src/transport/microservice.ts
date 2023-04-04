@@ -5,14 +5,14 @@ import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
-import { MicroServiceEndpoint } from '../endpoints/micro.endpoint';
+import { OperationEndpoint } from '../endpoints';
 
 
 
 @Abstract()
 export abstract class MicroService<TCtx extends EndpointContext, TOutput = any> implements EndpointService {
     
-    constructor(private endpoint: MicroServiceEndpoint<TCtx, TOutput>) {
+    constructor(private endpoint: OperationEndpoint<TCtx, TOutput>) {
         
     }
 

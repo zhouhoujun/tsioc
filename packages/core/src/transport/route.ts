@@ -1,7 +1,7 @@
 import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { GuardHandler } from '../handlers/guards';
 import { Middleware, MiddlewareFn } from './middleware';
 import { EndpointOptions } from '../endpoints/endpoint.service';
-import { GuardsEndpoint } from '../endpoints/guards.endpoint';
 import { Pattern } from './pattern';
 
 /**
@@ -48,7 +48,7 @@ export interface Route<TArg = any> extends EndpointOptions<TArg> {
     /**
      * ednpoint.
      */
-    endpoint?: TypeOf<GuardsEndpoint>;
+    endpoint?: TypeOf<GuardHandler>;
     /**
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.

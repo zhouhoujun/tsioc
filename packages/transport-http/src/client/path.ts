@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { GuardsEndpoint, EndpointContext, Interceptor, ListenOpts } from '@tsdi/core';
+import { GuardHandler, EndpointContext, Interceptor, ListenOpts } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { HttpClientOpts } from './option';
@@ -11,7 +11,7 @@ export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> 
 
     constructor() { }
 
-    intercept(req: HttpRequest<any>, next: GuardsEndpoint<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: GuardHandler<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
         let url = req.url.trim();
         if (!abstUrlExp.test(url)) {
             const option = context.target.getOptions() as HttpClientOpts;
