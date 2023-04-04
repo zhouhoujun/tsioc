@@ -36,12 +36,26 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
 export abstract class ExecptionFilter extends Filter<ExecptionContext, any> {
 
     /**
-     * transport endpoint handle.
-     * @param input request input.
-     * @param context request context.
+     * execption filter.
+     * @param context execption context.
+     * @returns any
+     */
+    abstract intercept(context: ExecptionContext): Observable<any>;
+}
+
+/**
+ * execption filters
+ */
+@Abstract()
+export abstract class ExecptionFilters extends Handler<ExecptionContext, any> {
+    /**
+     * execption handle.
+     * @param context execption context.
+     * @returns any
      */
     abstract handle(context: ExecptionContext): Observable<any>;
 }
+
 
 /**
  * execption backend.
@@ -76,7 +90,7 @@ export class CatchFilter<TInput, TOutput = any> implements Filter<TInput, TOutpu
                     } else {
                         injector = this.injector;
                     }
-                    const filter = (injector === this.injector) ? injector.get(ExecptionFilter, null) : (injector.get(ExecptionFilter, null) ?? this.injector.get(ExecptionFilter, null));
+                    const filter = (injector === this.injector) ? injector.get(ExecptionFilters, null) : (injector.get(ExecptionFilters, null) ?? this.injector.get(ExecptionFilters, null));
                     if (!filter) {
                         return throwError(()=> err instanceof Execption? err : new InternalServerExecption(err.message));
                     }
