@@ -1,6 +1,5 @@
-import { Abstract, getTokenOf, InvocationContext, ProvdierOf, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, ProvdierOf, Token, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { runHandlers } from '../endpoints/runs';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 
@@ -14,7 +13,6 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
      * the method to implemet interceptor filter.
      * @param input request input data.
      * @param next The next interceptor in the chain, or the backend
-     * if no interceptors remain in the chain.
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
@@ -70,15 +68,4 @@ export abstract class FilterHandlerResolver {
     abstract removeHandle(filter: Type | string, handler: Handler): this;
 }
 
-
-/**
- * run handlers.
- * @param ctx 
- * @param filter 
- * @returns 
- */
-export function runFilters(ctx: InvocationContext, filter: Type | string): Observable<any> {
-    const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
-    return runHandlers(handles, ctx, c => c.done === true)
-}
 

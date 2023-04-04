@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
+import { OperationEndpoint } from '../endpoints/endpoint.factory';
 import { MiddlewareOf } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { OperationEndpoint } from '../endpoints';
 
 /**
  * Service endpoint.

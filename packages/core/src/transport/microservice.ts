@@ -5,7 +5,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
-import { OperationEndpoint } from '../endpoints';
+import { OperationEndpoint } from '../endpoints/endpoint.factory';
 
 
 

@@ -1,8 +1,8 @@
 import { Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback, InvocationContext, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
+import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
-import { Interceptor } from '../Interceptor';
 import { Endpoint } from './endpoint';
 import { EndpointOptions, EndpointService } from './endpoint.service';
 

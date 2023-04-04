@@ -6,7 +6,7 @@ import { Interceptor } from '../Interceptor';
 import { Handler } from '../Handler';
 import { Filter } from '../filters/filter';
 import { CatchFilter } from '../filters/execption.filter';
-import { runHandlers } from '../endpoints/runs';
+import { runHandlers } from '../handlers/runs';
 import { GuardHandler } from '../handlers/guards';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';

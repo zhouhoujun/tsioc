@@ -16,7 +16,7 @@ import { GuardHandler } from '../handlers/guards';
 import { FnHandler } from '../handlers/handler';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
-import { runHandlers } from '../endpoints/runs';
+import { runHandlers } from '../handlers/runs';
 import { EndpointContext } from '../endpoints/context';
 
 
