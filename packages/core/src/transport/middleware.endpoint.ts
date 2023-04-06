@@ -1,25 +1,25 @@
 import { Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Backend } from '../Handler';
-import { CanActivate } from '../guard';
+import { CanActivate, GUARDS_TOKEN } from '../guard';
 import { Interceptor } from '../Interceptor';
-import { Filter } from '../filters/filter';
-import { GuardHandler } from '../handlers/guards';
+import { FILTERS_TOKEN, Filter } from '../filters/filter';
+import { AbstractGuardHandler } from '../handlers/guards';
 import { EndpointContext } from '../endpoints/context';
-import { MiddlewareLike, MiddlewareOf } from './middleware';
+import { MIDDLEWARES_TOKEN, MiddlewareLike, MiddlewareOf } from './middleware';
 import { MiddlewareBackend } from './middleware.compose';
 import { ServerEndpoint } from './server.endpoint';
 
 
 export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
-    extends GuardHandler<TCtx, TOutput> implements ServerEndpoint<TCtx, TOutput> {
+    extends AbstractGuardHandler<TCtx, TOutput> implements ServerEndpoint<TCtx, TOutput> {
 
     constructor(
         injector: Injector,
         token: Token<Interceptor<TCtx, TOutput>[]>,
-        protected midddlesToken: Token<MiddlewareLike[]>,
-        guardsToken?: Token<CanActivate[]>,
-        filtersToken?: Token<Filter<TCtx, TOutput>[]>) {
-        super(injector, token, null!, guardsToken, filtersToken);
+        protected midddlesToken: Token<MiddlewareLike[]> = MIDDLEWARES_TOKEN,
+        guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
+        filtersToken: Token<Filter<TCtx, TOutput>[]> = FILTERS_TOKEN) {
+        super(injector, token, guardsToken, filtersToken);
 
     }
 

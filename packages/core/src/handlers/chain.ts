@@ -1,15 +1,15 @@
 import { Abstract, EMPTY, Injector, isArray, isFunction, isNumber, ProvdierOf, Token, toProvider, TypeOf } from '@tsdi/ioc';
-import { Interceptor, InterceptorService } from '../Interceptor';
+import { Interceptor, INTERCEPTORS_TOKEN, InterceptorService } from '../Interceptor';
 import { Backend, Handler } from '../Handler';
 import { Observable } from 'rxjs';
 import { InterceptorHandler } from './handler';
 
 
 /**
- * abstract handler chain.
+ * abstract handler.
  */
 @Abstract()
-export abstract class AbstractChain<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export abstract class AbstractHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
 
     private chain: Handler<TInput, TOutput> | null = null;
 
@@ -50,7 +50,7 @@ export abstract class AbstractChain<TInput = any, TOutput = any> implements Hand
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class Handlers<TInput = any, TOutput = any> extends AbstractChain<TInput, TOutput> {
+export class Handlers<TInput = any, TOutput = any> extends AbstractHandler<TInput, TOutput> {
 
     constructor(
         protected readonly backend: Backend<TInput, TOutput>,
@@ -70,16 +70,15 @@ export class Handlers<TInput = any, TOutput = any> extends AbstractChain<TInput,
 
 
 /**
- * Register handler chain. for composing interceptors. Requests will
+ * Dynamic handler. for composing interceptors. Requests will
  * traverse them in the order they're declared. That is, the first endpoint
  * is treated as the outermost interceptor.
  */
-export class RegisterChain<TInput = any, TOutput = any> extends AbstractChain<TInput, TOutput> implements InterceptorService {
+export abstract class DynamicHandler<TInput = any, TOutput = any> extends AbstractHandler<TInput, TOutput> implements InterceptorService {
 
     constructor(
         protected injector: Injector,
-        protected token: Token<Interceptor<TInput, TOutput>[]>,
-        protected backend: TypeOf<Backend<TInput, TOutput>>) {
+        protected token: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN) {
         super();
     }
 
@@ -87,13 +86,6 @@ export class RegisterChain<TInput = any, TOutput = any> extends AbstractChain<TI
         this.regMulti(this.token, interceptor, order);
         this.reset();
         return this;
-    }
-
-    /**
-     *  get backend endpoint. 
-     */
-    protected getBackend(): Backend<TInput, TOutput> {
-        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
     }
 
     protected getInterceptors(): Interceptor<TInput, TOutput>[] {

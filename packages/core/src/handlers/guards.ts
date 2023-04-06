@@ -1,18 +1,18 @@
-import { ArgumentExecption, EMPTY, Injector, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
-import { Interceptor, InterceptorService } from '../Interceptor';
-import { ForbiddenExecption } from '../execptions';
-import { CanActivate, GuardsService } from '../guard';
-import { Filter, FilterService } from '../filters/filter';
-import { RegisterChain } from './chain';
-import { InterceptorHandler } from './handler';
 import { Backend, Handler } from '../Handler';
+import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
+import { Interceptor, INTERCEPTORS_TOKEN, InterceptorService } from '../Interceptor';
+import { ForbiddenExecption } from '../execptions';
 import { PipeTransform, PipeService } from '../pipes/pipe';
+import { Filter, FILTERS_TOKEN, FilterService } from '../filters/filter';
+import { DynamicHandler } from './chain';
+import { InterceptorHandler } from './handler';
 
 /**
- * guards handler.
+ * abstract guards handler.
  */
-export class GuardHandler<TInput = any, TOutput = any> extends RegisterChain<TInput, TOutput>
+export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends DynamicHandler<TInput, TOutput>
     implements Handler<TInput, TOutput>, GuardsService, PipeService, InterceptorService, FilterService, OnDestroy {
 
 
@@ -20,15 +20,15 @@ export class GuardHandler<TInput = any, TOutput = any> extends RegisterChain<TIn
 
     constructor(
         injector: Injector,
-        token: Token<Interceptor<TInput, TOutput>[]>,
-        backend: TypeOf<Backend<TInput, TOutput>>,
-        protected guardsToken?: Token<CanActivate[]>,
-        protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
-        super(injector, token, backend);
+        interceptorsToken: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN,
+        protected guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
+        protected filtersToken: Token<Filter<TInput, TOutput>[]> = FILTERS_TOKEN) {
+        super(injector, interceptorsToken);
         if (!guardsToken) {
             this.guards = null;
         }
     }
+
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
         this.injector.inject(pipes);
@@ -80,6 +80,7 @@ export class GuardHandler<TInput = any, TOutput = any> extends RegisterChain<TIn
     onDestroy(): void {
         if (this._destroyed) return;
         this._destroyed = true;
+        this.clear();
     }
 
     protected clear() {
@@ -109,4 +110,27 @@ export class GuardHandler<TInput = any, TOutput = any> extends RegisterChain<TIn
         return this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
     }
 
+}
+
+
+/**
+ * Guard handler
+ */
+export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> {
+    constructor(
+        injector: Injector,
+        protected backend: TypeOf<Backend<TInput, TOutput>>,
+        interceptorsToken: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN,
+        guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
+        filtersToken: Token<Filter<TInput, TOutput>[]> = FILTERS_TOKEN) {
+        super(injector, interceptorsToken, guardsToken, filtersToken);
+
+    }
+
+    /**
+     *  get backend endpoint. 
+     */
+    protected getBackend(): Backend<TInput, TOutput> {
+        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
+    }
 }

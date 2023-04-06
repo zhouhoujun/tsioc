@@ -11,7 +11,7 @@ import { CanActivate } from '../guard';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
-import { CatchFilter } from '../filters/execption.filter';
+import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { GuardHandler } from '../handlers/guards';
 import { FnHandler } from '../handlers/handler';
 import { EndpointOptions } from '../endpoints/endpoint.service';
@@ -47,8 +47,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = new GuardHandler(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
-        this._handler.useFilters(CatchFilter);
+        this._handler = new GuardHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._handler.useFilters(ExecptionHandlerFilter);
     }
 
     get handler(): Handler {
@@ -88,7 +88,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(()=> this.detach(target.type as Type));
+            targetRef.onDestroy(() => this.detach(target.type as Type));
             return targetRef;
         }
 
@@ -102,7 +102,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             });
             this._maps.set(target.type, endpoints);
             this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(()=> this.detach(target.type as Type));
+            targetRef.onDestroy(() => this.detach(target.type as Type));
             return targetRef;
         }
 
@@ -119,7 +119,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     detach<T>(type: Type<T>): void {
-        if(this._destroyed) return;
+        if (this._destroyed) return;
         this._maps.delete(type);
         this._refs.delete(type);
         const idx = this._types.indexOf(type);
@@ -133,7 +133,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     getRef<T>(type: Type<T>): ReflectiveRef<T> {
-       return this._refs.get(type) || null!;
+        return this._refs.get(type) || null!;
     }
 
     run(type?: Type): Promise<void> {
@@ -162,7 +162,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     private _destroyed = false;
     onDestroy(): void {
-        if(this._destroyed) return;
+        if (this._destroyed) return;
         this._destroyed = true;
         this._maps.clear();
         this.multicaster.clear();

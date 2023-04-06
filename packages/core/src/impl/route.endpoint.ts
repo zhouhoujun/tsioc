@@ -1,9 +1,6 @@
 import { Class, EMPTY, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
-import { CanActivate } from '../guard';
-import { getInterceptorsToken, Interceptor } from '../Interceptor';
 import { EndpointContext } from '../endpoints/context';
-import { getGuardsToken, setOptions } from '../endpoints/endpoint.service';
-import { Filter, getFiltersToken } from '../filters/filter';
+import { setOptions } from '../endpoints/endpoint.service';
 import { patternToPath } from '../transport/pattern';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
@@ -24,23 +21,23 @@ export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, T
         return this._prefix;
     }
 
-    protected override getInterceptors(): Interceptor<TCtx, TOutput>[] {
-        const prefixIns = this.prefix ? this.injector.get(getInterceptorsToken(this.prefix), null) : null;
-        const routeIns = this.injector.get(this.token, EMPTY);
-        return prefixIns ? [...prefixIns, ...routeIns] : routeIns;
-    }
+    // protected override getInterceptors(): Interceptor<TCtx, TOutput>[] {
+    //     const prefixIns = this.prefix ? this.injector.get(getInterceptorsToken(this.prefix), null) : null;
+    //     const routeIns = this.injector.get(this.token, EMPTY);
+    //     return prefixIns ? [...prefixIns, ...routeIns] : routeIns;
+    // }
 
-    protected override getGuards(): CanActivate[] | null {
-        const prefixGuards = this.prefix ? this.injector.get(getGuardsToken(this.prefix), null) : null;
-        const routeGuards = this.guardsToken ? this.injector.get(this.guardsToken, null) : null;
-        return prefixGuards ? [...prefixGuards, ...routeGuards ?? EMPTY] : routeGuards;
-    }
+    // protected override getGuards(): CanActivate[] | null {
+    //     const prefixGuards = this.prefix ? this.injector.get(getGuardsToken(this.prefix), null) : null;
+    //     const routeGuards = this.guardsToken ? this.injector.get(this.guardsToken, null) : null;
+    //     return prefixGuards ? [...prefixGuards, ...routeGuards ?? EMPTY] : routeGuards;
+    // }
 
-    protected override getFilters(): Filter<TCtx, TOutput>[] {
-        const prefixFilters = this.prefix ? this.injector.get(getFiltersToken(this.prefix), null) : null;
-        const routeFilters = this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
-        return prefixFilters ? [...prefixFilters, ...routeFilters] : routeFilters;
-    }
+    // protected override getFilters(): Filter<TCtx, TOutput>[] {
+    //     const prefixFilters = this.prefix ? this.injector.get(getFiltersToken(this.prefix), null) : null;
+    //     const routeFilters = this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
+    //     return prefixFilters ? [...prefixFilters, ...routeFilters] : routeFilters;
+    // }
 
     protected override beforeInvoke(ctx: TCtx): void {
         if (this.route && isRest.test(this.route)) {

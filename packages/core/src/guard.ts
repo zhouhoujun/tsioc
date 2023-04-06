@@ -1,4 +1,4 @@
-import { ProvdierOf } from '@tsdi/ioc';
+import { ProvdierOf, Token, TypeOf, getTokenOf, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 
@@ -16,9 +16,26 @@ export interface CanActivate<T = any> {
 
 
 /**
+ * mutil guards token
+ */
+export const GUARDS_TOKEN = tokenId<CanActivate[]>('GUARDS_TOKEN');
+
+
+const GUARDS = 'GUARDS';
+/**
+ * get target guards token.
+ * @param request 
+ * @returns 
+ */
+export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanActivate[]> {
+    return getTokenOf(type, GUARDS, propertyKey)
+}
+
+
+/**
  * guards service.
  */
-export interface GuardsService  {
+export interface GuardsService {
     /**
      * use guards.
      * @param guards

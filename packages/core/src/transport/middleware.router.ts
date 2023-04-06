@@ -1,18 +1,18 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Injector } from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { CanActivate } from '../guard';
-import { getInterceptorsToken } from '../Interceptor';
+import { CanActivate, getGuardsToken } from '../guard';
 import { BadRequestExecption, NotFoundExecption } from '../execptions';
-import { getFiltersToken } from '../filters/filter';
 import { GuardHandler } from '../handlers/guards';
 import { Endpoint } from '../endpoints/endpoint';
 import { EndpointContext } from '../endpoints/context';
-import { getGuardsToken, setOptions } from '../endpoints/endpoint.service';
+import { setOptions } from '../endpoints/endpoint.service';
 import { joinprefix, Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike, Context } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { Router } from './router';
 import { ControllerRouteReolver } from './controller';
+import { getInterceptorsToken } from '../Interceptor';
+import { getFiltersToken } from '../filters/filter';
 
 /**
  * abstract router.
@@ -139,7 +139,7 @@ export class MappingRoute implements Middleware, Endpoint {
 
         if (this.route.interceptors || this.route.guards || this.route.filters) {
             const route = joinprefix(this.route.path);
-            const gendpt = new GuardHandler(this.injector, getInterceptorsToken(route), endpoint, getGuardsToken(route), getFiltersToken(route));
+            const gendpt = new GuardHandler(this.injector, endpoint, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
             setOptions(gendpt, this.route);
             endpoint = gendpt;
         }

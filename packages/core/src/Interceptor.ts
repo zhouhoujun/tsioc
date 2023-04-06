@@ -1,4 +1,4 @@
-import { getTokenOf, Token, ProvdierOf, TypeOf } from '@tsdi/ioc';
+import { getTokenOf, Token, ProvdierOf, TypeOf, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from './Handler';
 
@@ -28,6 +28,10 @@ export interface InterceptorService {
     useInterceptors(interceptors: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
 }
 
+/**
+ * mutil Interceptors token
+ */
+export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
 
 const INTERCEPTORS = 'INTERCEPTORS';
 /**

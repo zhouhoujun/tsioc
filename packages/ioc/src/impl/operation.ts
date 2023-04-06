@@ -4,6 +4,7 @@ import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
 import { isFunction } from '../utils/chk';
 import { InvokerOptions, ReflectiveRef } from '../reflective';
+import { OnDestroy } from '../destroy';
 
 
 
@@ -11,14 +12,33 @@ import { InvokerOptions, ReflectiveRef } from '../reflective';
  * reflective operation invoker.
  * implements {@link OperationInvoker}
  */
-export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> {
+export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>, OnDestroy {
 
     private _returnType!: ClassType;
     constructor(
-        readonly typeRef: ReflectiveRef<T>,
+        private _typeRef: ReflectiveRef<T>,
         readonly method: string,
         private options: InvokerOptions = {}) {
+        this.typeRef.onDestroy(this);
 
+    }
+
+    onDestroy(): void {
+        this._typeRef = null!;
+        this.options = null!;
+        this._ctx = null!;
+    }
+
+    get typeRef(): ReflectiveRef<T> {
+        return this._typeRef;
+    }
+
+    private _ctx?: InvocationContext;
+    get context() {
+        if (!this._ctx) {
+            this._ctx = this.typeRef.getContext(this.method, this.options);
+        }
+        return this._ctx;
     }
 
     get descriptor(): TypedPropertyDescriptor<T> {
@@ -48,13 +68,11 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      * @param proceed proceed invoke with hooks
      */
     invoke(context: InvocationContext, instance: object): T;
-    invoke(context?: any, arg?: object): T {
+    invoke(context?: InvocationContext, arg?: object): T {
         let instance;
 
         if (context) {
-            if (isFunction(context)) {
-                context = null;
-            } else if (arg && isTypeObject(arg)) {
+            if (arg && isTypeObject(arg)) {
                 instance = arg;
             } else {
                 if (this.options.instance) {
@@ -62,7 +80,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
                 }
             }
         } else {
-            context = this.typeRef.getContext(this.method, this.options);
+            context = this.context;
         }
 
         return this.typeRef.class.invoke(this.method, context, instance);
@@ -73,6 +91,6 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T> 
      * @param context 
      */
     resolveArguments(context?: InvocationContext): any[] {
-        return this.typeRef.resolveArguments(this.method, context ?? this.typeRef.getContext(this.method))
+        return this.typeRef.resolveArguments(this.method, context ?? this.context)
     }
 }

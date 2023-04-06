@@ -54,36 +54,3 @@ export class MiddlewareBackend<Tx extends EndpointContext, TResponse> implements
     }
 }
 
-// /**
-//  * interceptor middleware.
-//  */
-// export class InterceptorMiddleware<Tx extends EndpointContext = EndpointContext, TResponse = any> implements Middleware {
-
-//     private _chainFn?: MiddlewareFn<Tx>;
-//     constructor(private readonly middleware: MiddlewareLike<Tx>, private readonly interceptors: Interceptor<Tx, TResponse>[]) { }
-
-//     invoke(ctx: Tx, next: () => Promise<void>): Promise<void> {
-//         if (!this._chainFn) {
-//             const chain = new Endpoints<Tx, TResponse>(new FnEndpoint((ctx) => defer(async () => {
-//                 await (isFunction(this.middleware)? this.middleware(ctx, next) :  this.middleware.invoke(ctx, next));
-//                 return ctx.payload.response;
-//             })), this.interceptors);
-//             this._chainFn = (ctx: Tx) => {
-//                 const defer = lang.defer<void>();
-//                 const cancel = chain.handle(ctx)
-//                     .subscribe({
-//                         error: (err) => {
-//                             defer.reject(err);
-//                         },
-//                         next: (val) => {
-//                             defer.resolve();
-//                         }
-//                     });
-//                 ctx.onDestroy(() => cancel?.unsubscribe());
-
-//                 return defer.promise;
-//             }
-//         }
-//         return this._chainFn(ctx, next ?? NEXT)
-//     }
-// }

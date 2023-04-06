@@ -1,10 +1,10 @@
 import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, Token } from '@tsdi/ioc';
-import { catchError, finalize, map, Observable, Observer, of, throwError } from 'rxjs';
-import { Backend, Handler } from '../Handler';
-import { InternalServerExecption, MessageExecption } from '../execptions';
+import { catchError, finalize, Observable, throwError } from 'rxjs';
+import { Handler } from '../Handler';
+import { InternalServerExecption } from '../execptions';
 import { EndpointContext } from '../endpoints/context';
-import { Filter } from './filter';
-import { runFilters } from './runs';
+import { Filter, FilterHandlerResolver } from './filter';
+import { runHandlers } from '../handlers/runs';
 
 
 /**
@@ -33,103 +33,59 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
  * execption filter
  */
 @Abstract()
-export abstract class ExecptionFilter extends Filter<ExecptionContext, any> {
-
+export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filter<TInput, TOutput> {
     /**
      * execption filter.
      * @param context execption context.
+     * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    abstract intercept(context: ExecptionContext): Observable<any>;
-}
-
-/**
- * execption filters
- */
-@Abstract()
-export abstract class ExecptionFilters extends Handler<ExecptionContext, any> {
-    /**
-     * execption handle.
-     * @param context execption context.
-     * @returns any
-     */
-    abstract handle(context: ExecptionContext): Observable<any>;
-}
-
-
-/**
- * execption backend.
- */
-@Abstract()
-export abstract class ExecptionBackend implements Backend<ExecptionContext, any> {
-
-    /**
-     * transport endpoint handle.
-     * @param input request input.
-     * @param context request context.
-     */
-    abstract handle(context: ExecptionContext): Observable<any>;
-}
-
-
-/**
- * catch interceptor.
- */
-@Injectable({ static: true })
-export class CatchFilter<TInput, TOutput = any> implements Filter<TInput, TOutput> {
-    constructor(private injector: Injector) { }
-
-    intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<TOutput> {
+    intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<any> {
         return next.handle(input)
             .pipe(
-                catchError((err, caught) => {
-                    let injector: Injector;
-                    if (input instanceof EndpointContext) {
-                        injector = input.injector;
-                        input.execption = err;
-                    } else {
-                        injector = this.injector;
-                    }
-                    const filter = (injector === this.injector) ? injector.get(ExecptionFilters, null) : (injector.get(ExecptionFilters, null) ?? this.injector.get(ExecptionFilters, null));
-                    if (!filter) {
-                        return throwError(()=> err instanceof Execption? err : new InternalServerExecption(err.message));
-                    }
-                    const context = new ExecptionContext(err, input, injector);
-                    return filter.handle(context)
-                        .pipe(
-                            finalize(() => {
-                                context.destroy();
-                            })
-                        );
-                })
+                catchError((err, caught) => this.catchError(input, err, caught))
             )
     }
+
+    /**
+     * catch error.
+     * @param err 
+     * @param caught 
+     */
+    abstract catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any>
 }
 
 /**
- * execption handler banckend.
+ * execption handler filter.
  */
 @Injectable({ static: true })
-export class ExecptionHandlerBackend extends ExecptionBackend {
-
-    handle(context: ExecptionContext): Observable<any> {
-
-        return new Observable((observer: Observer<MessageExecption>) => {
-            return runFilters(context, getClass(context.payload))
-                .pipe(
-                    map(r => {
-                        if (!context.execption || !(context.execption instanceof MessageExecption)) {
-                            throw new Execption('can not handle error type');
-                        }
-                        return context.execption;
-                    }),
-                    catchError((err, caught) => {
-                        context.execption = err;
-                        return of(err);
-                    })
-                ).subscribe(observer)
-        })
+export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilter<TInput, TOutput> {
+    constructor(private injector: Injector) {
+        super()
     }
+
+    catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any> {
+        let injector: Injector;
+        if (input instanceof EndpointContext) {
+            injector = input.injector;
+            input.execption = err;
+        } else {
+            injector = this.injector;
+        }
+        const handlers = injector.get(FilterHandlerResolver)?.resolve(err);
+        if (!handlers || !handlers.length) {
+            return throwError(() => err instanceof Execption ? err : new InternalServerExecption(err.message));
+        }
+
+        const context = new ExecptionContext(err, input, injector);
+        return runHandlers(handlers, context, c => c.done === true)
+            .pipe(
+                finalize(() => {
+                    context.destroy();
+                })
+            );
+    }
+
 }
 
 

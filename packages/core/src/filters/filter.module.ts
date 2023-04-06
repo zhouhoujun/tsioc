@@ -1,12 +1,11 @@
 import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module } from '@tsdi/ioc';
-import { getResolversToken } from '../endpoints';
-import { primitiveResolvers } from '../endpoints/resolvers';
-import { PayloadApplicationEvent } from '../events';
-import { TransformModule } from '../pipes/transform.module';
-import { CatchFilter, ExecptionHandlerBackend } from './execption.filter';
-import { FilterHandlerResolver } from './filter';
 import { Handler } from '../Handler';
-
+import { PayloadApplicationEvent } from '../events';
+import { getResolversToken } from '../endpoints/resolver';
+import { primitiveResolvers } from '../endpoints/resolvers';
+import { TransformModule } from '../pipes/transform.module';
+import { ExecptionHandlerFilter } from './execption.filter';
+import { FilterHandlerResolver } from './filter';
 /**
  * endpoint hanlders resolver.
  */
@@ -47,11 +46,8 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
  * filter providers.
  */
 export const FILTER_PROVIDERS: ProviderType[] = [
-    // PathHanlderFilter,
-    // StatusInterceptorFilter,
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true },
-    CatchFilter,
-    ExecptionHandlerBackend,
+    ExecptionHandlerFilter,
     { provide: getResolversToken(PayloadApplicationEvent), useValue: primitiveResolvers }
 ]
 
@@ -71,51 +67,3 @@ export class FilterModule {
 
 }
 
-
-// @Injectable({ static: true })
-// export class PathHanlderFilter implements EndpointFilter<Incoming, Outgoing> {
-
-//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
-//         if (!input.url) return next.handle(input, ctx);
-
-//         return runHandlers(ctx, input, input.url)
-//             .pipe(
-//                 mergeMap(r => {
-//                     if (ctx.done) return of(r);
-//                     return next.handle(input, ctx);
-//                 }))
-//     }
-
-// }
-
-// @Injectable({ static: true })
-// export class StatusInterceptorFilter implements EndpointFilter<Incoming, Outgoing> {
-
-//     intercept(input: Incoming, next: Endpoint<Incoming, Outgoing>, ctx: EndpointContext): Observable<Outgoing> {
-//         return next.handle(input, ctx)
-//             .pipe(
-//                 mergeMap(res => {
-//                     return runHandlers(ctx, res, getClass(ctx.status))
-//                 })
-//             )
-//     }
-
-// }
-
-// @Injectable({ static: true })
-// export class InOutInterceptorFilter implements Interceptor {
-
-//     intercept(input: any, next: Endpoint<any, any>, ctx: EndpointContext): Observable<any> {
-//         return runHandlers(ctx, input, input)
-//             .pipe(
-//                 mergeMap(r => {
-//                     if (ctx.done) return of(r);
-//                     return next.handle(input, ctx);
-//                 }),
-//                 mergeMap(res => {
-//                     return runHandlers(ctx, res, res);
-//                 })
-//             )
-//     }
-
-// }

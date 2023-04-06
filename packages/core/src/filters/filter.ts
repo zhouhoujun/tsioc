@@ -1,4 +1,4 @@
-import { Abstract, getTokenOf, ProvdierOf, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
@@ -31,6 +31,10 @@ export interface FilterService {
     useFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 }
 
+/**
+ * mutil filters token
+ */
+export const FILTERS_TOKEN = tokenId<Filter[]>('FILTERS_TOKEN');
 
 const FILTERS = 'FILTERS';
 /**

@@ -1,6 +1,6 @@
 import {
     InOutInterceptorFilter, Incoming, ListenOpts, ModuleRef, Outgoing,
-    MiddlewareRouter, Server, StatusInterceptorFilter, CatchFilter
+    MiddlewareRouter, Server, StatusInterceptorFilter, ExecptionHandlerFilter
 } from '@tsdi/core';
 import { Abstract, AsyncLike, isBoolean, lang, pomiseOf } from '@tsdi/ioc';
 import { finalize, from, mergeMap, Observable, Subscriber, Subscription } from 'rxjs';
@@ -30,7 +30,7 @@ const defOpts = {
     mimeDb: db,
     interceptors: [
         LogInterceptor,
-        CatchFilter,
+        ExecptionHandlerFilter,
         InOutInterceptorFilter,
         StatusInterceptorFilter,
         ServerFinalizeFilter,

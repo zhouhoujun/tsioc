@@ -18,6 +18,11 @@ export interface OperationInvoker<T = any> {
      * type ref.
      */
     get typeRef(): ReflectiveRef;
+
+    /**
+     * `InvocationContext` of operation method
+     */
+    get context(): InvocationContext;
     /**
      * invoker order.
      */

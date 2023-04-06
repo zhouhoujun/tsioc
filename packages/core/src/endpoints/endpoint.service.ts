@@ -1,4 +1,4 @@
-import { Abstract, getTokenOf, InvokeArguments, ProvdierOf, StaticProvider, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, EMPTY, InvokeArguments, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { PipeTransform, PipeService } from '../pipes/pipe';
 import { CanActivate, GuardsService } from '../guard';
 import { Interceptor, InterceptorService } from '../Interceptor';
@@ -42,20 +42,11 @@ export interface EndpointServiceOptions<TInput = any> {
  */
 export function setOptions(service: EndpointService, options: EndpointServiceOptions) {
     options.pipes && service.usePipes(options.pipes);
-    options.filters && service.useFilters(options.filters);
-    options.guards && service.useGuards(options.guards);
-    options.interceptors && service.useInterceptors(options.interceptors);
+    service.useFilters(options.filters ?? EMPTY);
+    service.useGuards(options.guards ?? EMPTY);
+    service.useInterceptors(options.interceptors ?? EMPTY);
 }
 
-const GUARDS = 'GUARDS';
-/**
- * get target guards token.
- * @param request 
- * @returns 
- */
-export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanActivate[]> {
-    return getTokenOf(type, GUARDS, propertyKey)
-}
 
 /**
  * endpoint options.

@@ -1,36 +1,48 @@
-import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, toProvider, Type } from '@tsdi/ioc';
-import { lastValueFrom, Observable, throwError } from 'rxjs';
+import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
+import { lastValueFrom, throwError } from 'rxjs';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
-import { getInterceptorsToken } from '../Interceptor';
 import { EndpointContext } from '../endpoints/context';
 import { Endpoint } from '../endpoints/endpoint';
-import { getGuardsToken } from '../endpoints/endpoint.service';
 import { joinprefix } from './route';
 import { Context, Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
+import { AbstractGuardHandler } from '../handlers/guards';
+import { Backend } from '../Handler';
+import { FnHandler } from '../handlers';
+import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
+import { CanActivate, GUARDS_TOKEN } from '../guard';
+import { Filter, FILTERS_TOKEN } from '../filters/filter';
+import { setOptions } from '../endpoints';
 
 const isRest = /\/:/;
 
 /**
  * Controller route.
  */
-export class ControllerRoute<T> implements Middleware, Endpoint, OnDestroy {
+export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[] | undefined;
     readonly prefix: string;
 
-    constructor(readonly factory: RouteEndpointFactory<T>, prefix?: string) {
+    constructor(readonly factory: RouteEndpointFactory<T>,
+        prefix?: string,
+        protected interceptorsToken: Token<Interceptor[]> = INTERCEPTORS_TOKEN,
+        protected guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
+        protected filtersToken: Token<Filter[]> = FILTERS_TOKEN) {
+        super(factory.typeRef.injector);
         this.routes = new Map();
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
         prefix = this.prefix = joinprefix(prefix, mapping.prefix, mapping.version, mapping.route);
-        const injector = factory.typeRef.injector;
-        mapping.pipes && injector.inject(mapping.pipes);
-        mapping.guards && injector.inject(toProvider(getGuardsToken(prefix), mapping.guards));
-        mapping.interceptors && injector.inject(toProvider(getInterceptorsToken(prefix), mapping.interceptors));
-        mapping.filters && injector.inject(toProvider(getGuardsToken(prefix), mapping.filters));
+        // const injector = factory.typeRef.injector;
+        // mapping.pipes && injector.inject(mapping.pipes);
+        // this.useGuards(mapping.guards ?? EMPTY);
+        // injector.inject(toProvider(guardsToken, mapping.guards ?? EMPTY));
+        // injector.inject(toProvider(interceptorsToken, mapping.interceptors));
+        // mapping.filters && injector.inject(toProvider(filtersToken, mapping.filters));
+        setOptions(this, mapping);
         factory.onDestroy(this);
     }
 
@@ -43,37 +55,32 @@ export class ControllerRoute<T> implements Middleware, Endpoint, OnDestroy {
         if (next) await next();
     }
 
-    handle(ctx: EndpointContext<Context>): Observable<any> {
+    protected getBackend(): Backend<EndpointContext<Context>, any> {
+        return new FnHandler((ctx) => {
+            if (ctx.sent) return throwError(() => new PushDisabledExecption());
 
-        if (ctx.sent) return throwError(() => new PushDisabledExecption());
+            const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
+            if (!method || !method.propertyKey) {
+                return throwError(() => new NotFoundExecption());
+            }
 
-        const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
-        if (!method || !method.propertyKey) {
-            return throwError(() => new NotFoundExecption());
-        }
+            let endpoint = this.routes.get(method.propertyKey);
+            if (!endpoint) {
+                const prefix = this.prefix;
 
-        let endpoint = this.routes.get(method.propertyKey);
-        if (!endpoint) {
-            const prefix = this.prefix;
+                const metadata = method.metadata as RouteMappingMetadata;
+                endpoint = this.factory.create(method.propertyKey, { ...metadata, prefix });
+                this.routes.set(method.propertyKey, endpoint);
 
-            const metadata = method.metadata as RouteMappingMetadata;
-            endpoint = this.factory.create(method.propertyKey, { ...metadata, prefix });
-            this.routes.set(method.propertyKey, endpoint);
-
-        }
-        return endpoint.handle(ctx);
-    }
-
-    private _destroyed = false;
-    onDestroy(): void {
-        if (this._destroyed) return;
-        this.clear();
+            }
+            return endpoint.handle(ctx);
+        })
     }
 
 
     protected clear() {
-        this._destroyed = true;
         this.routes.clear();
+        super.clear();
         this.factory.typeRef.onDestroy();
         (this as any).factory = null!;
     }
