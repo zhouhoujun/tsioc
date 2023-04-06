@@ -1,5 +1,6 @@
-import { EMPTY_OBJ, InvocationContext } from '@tsdi/ioc';
-import { IncomingHeaders, ReqHeaders } from './headers';
+import { Abstract, EMPTY_OBJ, InvocationContext } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+import { IncomingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
 import { Pattern, patternToPath } from './pattern';
 import { RequestMethod } from './protocols';
@@ -40,6 +41,14 @@ export class TransportRequest<T = any> {
 
 }
 
+
+@Abstract()
+export abstract class Redirector {
+    /**
+     * redirect.
+     */
+    abstract redirect<TRes, TReq = any>(req: TReq, status: number | string, headers: ResHeaders): Observable<TRes>
+}
 
 
 /**

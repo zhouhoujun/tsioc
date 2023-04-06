@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, Nullable, promisify, ProviderType } from '@tsdi/ioc';
 import {
-    RequestMethod, OnDispose, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike
+    RequestMethod, OnDispose, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -2361,7 +2361,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } & HttpNodeOpts = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.PUT, body))
+        return this.send<any>(url, merge(options, PUT, body))
     }
 
     async close(): Promise<void> {

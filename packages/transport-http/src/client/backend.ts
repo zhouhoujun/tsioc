@@ -1,5 +1,5 @@
-import { Injectable, isUndefined, lang } from '@tsdi/ioc';
-import { EndpointContext, ResHeaders } from '@tsdi/core';
+import { Injectable, InvocationContext, isUndefined, lang } from '@tsdi/ioc';
+import { Redirector, HEAD, ResHeaders } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend, HttpStatusCode } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
@@ -13,7 +13,6 @@ import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
 
 const pmPipeline = promisify(pipeline);
 
-
 /**
  * http client backend.
  */
@@ -22,19 +21,21 @@ export class HttpBackend2 extends HttpBackend {
 
     constructor(
         private mimeTypes: MimeTypes,
-        private mimeAdapter: MimeAdapter) {
+        private mimeAdapter: MimeAdapter,
+        private redirector: Redirector,
+        private options: HttpClientOpts) {
         super()
     }
 
     handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
         return new Observable((observer: Observer<HttpEvent<any>>) => {
             const url = req.urlWithParams.trim();
-            const option = ctx.target.getOptions() as HttpClientOpts;
+            const option = this.options;
             let request: http2.ClientHttp2Stream | http.ClientRequest;
 
-            const ac = this.getAbortSignal(ctx);
+            const ac = this.getAbortSignal(req.context);
             if (option.authority) {
-                request = this.request2(url, req, ctx.get(CLIENT_HTTP2SESSION), option, ac);
+                request = this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION), option, ac);
             } else {
                 request = this.request1(url, req, ac);
             }
@@ -85,7 +86,7 @@ export class HttpBackend2 extends HttpBackend {
 
                 if (redirectStatus[status]) {
                     // HTTP fetch step 5.2
-                    ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
+                    this.redirector.redirect<HttpEvent<any>>(req, status, headers)
                         .pipe(
                             finalize(() => completed = true)
                         ).subscribe(observer);
@@ -109,7 +110,7 @@ export class HttpBackend2 extends HttpBackend {
                     }));
                 }
 
-                const rqstatus = req.context?.getValueify(RequestStauts, () => new RequestStauts());
+                const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
 
@@ -120,7 +121,7 @@ export class HttpBackend2 extends HttpBackend {
                 // 3. no Content-Encoding header
                 // 4. no content response (204)
                 // 5. content not modified response (304)
-                if (rqstatus.compress && req.method !== mths.HEAD && codings) {
+                if (rqstatus.compress && req.method !== HEAD && codings) {
                     // For Node v6+
                     // Be less strict when decoding compressed responses, since sometimes
                     // servers send slightly invalid responses that are still accepted
@@ -290,7 +291,7 @@ export class HttpBackend2 extends HttpBackend {
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
-                if (!ctx.destroyed) {
+                if (!req.context.destroyed) {
                     observer.error(new HttpErrorResponse({
                         status: 0,
                         statusText: 'The operation was aborted.'
@@ -341,7 +342,7 @@ export class HttpBackend2 extends HttpBackend {
         return stream;
     }
 
-    protected getAbortSignal(ctx: EndpointContext): AbortController {
+    protected getAbortSignal(ctx: InvocationContext): AbortController {
         return typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
