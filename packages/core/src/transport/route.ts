@@ -1,8 +1,7 @@
-import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { GuardHandler } from '../handlers/guards';
 import { Middleware, MiddlewareFn } from './middleware';
 import { EndpointOptions } from '../endpoints/endpoint.service';
-import { Pattern } from './pattern';
 
 /**
  * Route.
@@ -69,12 +68,6 @@ export interface Route<TArg = any> extends EndpointOptions<TArg> {
 
 export type LoadChildren = () => any;
 export type Routes<T = any> = Route<T>[];
-
-
-@Abstract()
-export abstract class PatternFormatter {
-    abstract format(route: Pattern, method?: string, prefix?: string, version?: string): string;
-}
 
 /**
  * ROUTES

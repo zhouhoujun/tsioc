@@ -1,13 +1,14 @@
 import { Abstract } from '@tsdi/ioc';
 import { Context } from './middleware';
+import { EndpointContext } from '../endpoints';
 
 
 /**
  * abstract server context.
  */
 @Abstract()
-export abstract class ServerContext<TRequest, TResponse, TStatus = number> implements Context<TRequest, TResponse>  {
-    
+export abstract class ServerContext<TRequest = any, TResponse = any, TStatus = number> extends EndpointContext<TRequest> implements Context<TRequest, TResponse>  {
+
     /**
      * Get response status.
      */
@@ -30,6 +31,10 @@ export abstract class ServerContext<TRequest, TResponse, TStatus = number> imple
      * protocol name
      */
     abstract get protocol(): string;
+    /**
+     * The outgoing request method.
+     */
+    abstract readonly method: string;
 
     /**
      * Get request rul
@@ -50,10 +55,6 @@ export abstract class ServerContext<TRequest, TResponse, TStatus = number> imple
      * request URL query parameters.
      */
     abstract get query(): Record<string, string | string[] | number | any>;
-    /**
-     * The outgoing request method.
-     */
-    abstract get method(): string;
 
     /**
      * The request body, or `null` if one isn't set.
@@ -88,7 +89,7 @@ export abstract class ServerContext<TRequest, TResponse, TStatus = number> imple
     /**
      * has sent or not.
      */
-    abstract get sent(): boolean;
+    abstract readonly sent: boolean;
 
     /**
      * is secure protocol or not.
@@ -105,7 +106,7 @@ export abstract class ServerContext<TRequest, TResponse, TStatus = number> imple
  * abstract asset context.
  */
 @Abstract()
-export abstract class AssetContext<TRequest, TResponse> extends ServerContext<TRequest, TResponse> implements Context<TRequest, TResponse> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number> extends ServerContext<TRequest, TResponse, TStatus> implements Context<TRequest, TResponse> {
     /**
      * Return request header.
      *
@@ -389,6 +390,7 @@ export abstract class AssetContext<TRequest, TResponse> extends ServerContext<TR
     abstract redirect(url: string, alt?: string): void;
 
 }
+
 
 /**
  * throw able.

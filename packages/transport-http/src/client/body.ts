@@ -1,5 +1,5 @@
 import { HttpEvent, HttpRequest } from '@tsdi/common';
-import { GuardHandler, EndpointContext, Interceptor, isBlob, isFormData } from '@tsdi/core';
+import { GuardHandler, Interceptor, isBlob, isFormData } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { createFormData, isFormDataLike, hdr } from '@tsdi/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
@@ -12,10 +12,10 @@ export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> 
 
     constructor() { }
 
-    intercept(req: HttpRequest<any>, next: GuardHandler<HttpRequest<any>, HttpEvent<any>>, context: EndpointContext): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: GuardHandler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
         let body = req.serializeBody();
         if (body == null) {
-            return next.handle(req, context);
+            return next.handle(req);
         }
         return defer(async () => {
             let headers = req.headers;
@@ -46,7 +46,7 @@ export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> 
             })
 
         }).pipe(
-            mergeMap(req => next.handle(req, context))
+            mergeMap(req => next.handle(req))
         );
     }
 }

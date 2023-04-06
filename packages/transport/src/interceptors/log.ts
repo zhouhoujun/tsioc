@@ -1,4 +1,4 @@
-import { BytesFormatPipe, GuardHandler, EndpointContext, Interceptor, TimeFormatPipe, Message } from '@tsdi/core';
+import { BytesFormatPipe, GuardHandler, EndpointContext, Interceptor, TimeFormatPipe } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
@@ -62,12 +62,12 @@ export class LogInterceptor implements Interceptor {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
-    intercept(req: Message, next: GuardHandler, ctx: EndpointContext): Observable<any> {
-        const logger: Logger = ctx.target.logger ?? ctx.get(Logger);
+    intercept( ctx: EndpointContext, next: GuardHandler): Observable<any> {
+        const logger = ctx.get(Logger);
 
         const level = this.options.level;
         if (!matchLevel(logger.level, level)) {
-            return next.handle(req, ctx);
+            return next.handle(ctx);
         }
 
         //todo console log and other. need to refactor formater.

@@ -1,4 +1,4 @@
-import { AssetContext, Middleware, RequestMethod, ServerEndpointContext, MessageExecption } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, MessageExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
@@ -97,8 +97,8 @@ export class CorsMiddleware implements Middleware {
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        const requestOrigin = ctx.getHeader(hdr.ORIGIN);
-        !ctx.sent && vary(ctx.response, hdr.ORIGIN);
+        const requestOrigin = ctx.payload.getHeader(hdr.ORIGIN);
+        !ctx.sent && vary(ctx.payload.response, hdr.ORIGIN);
         if (!requestOrigin) {
             return await next()
         }
@@ -150,8 +150,9 @@ export class CorsMiddleware implements Middleware {
                     ...headersSet,
                     ...{ vary: varyWithOrigin },
                 };
-                const errCode = ctx.statusFactory.getStatusCode('InternalServerError');
-                ctx.status = ctx.statusFactory.createByCode(err instanceof MessageExecption ? err.status || errCode : errCode, err.message || err.toString() || '');
+                const errCode =  500; //ctx.statusFactory.getStatusCode('InternalServerError');
+                ctx.status = err instanceof MessageExecption ? err.status || errCode : errCode;
+                ctx.message = ctx.statusFactory.createByCode( err.message || err.toString() || '');
                 ctx.get(Logger)?.error(err)
             }
         } else {

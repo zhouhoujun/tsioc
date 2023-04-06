@@ -1,6 +1,6 @@
-import { Injectable, isUndefined, lang, _tyundef } from '@tsdi/ioc';
-import { EndpointContext, mths, ResHeaders, Redirector, Status, EmptyStatus, NoContentStatus, RedirectStatus, OkStatus, StatusFactory } from '@tsdi/core';
-import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend } from '@tsdi/common';
+import { Injectable, isUndefined, lang } from '@tsdi/ioc';
+import { EndpointContext, ResHeaders } from '@tsdi/core';
+import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend, HttpStatusCode } from '@tsdi/common';
 import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
@@ -20,7 +20,13 @@ const pmPipeline = promisify(pipeline);
 @Injectable()
 export class HttpBackend2 extends HttpBackend {
 
-    handle(req: HttpRequest<any>, ctx: EndpointContext): Observable<HttpEvent<any>> {
+    constructor(
+        private mimeTypes: MimeTypes,
+        private mimeAdapter: MimeAdapter) {
+        super()
+    }
+
+    handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
         return new Observable((observer: Observer<HttpEvent<any>>) => {
             const url = req.urlWithParams.trim();
             const option = ctx.target.getOptions() as HttpClientOpts;
@@ -34,37 +40,38 @@ export class HttpBackend2 extends HttpBackend {
             }
 
             // const stat = ctx.transport as TransportStrategy<number> & RedirectTransportStatus;
-            let status: Status<number>;
+            let status: number;
             let completed = false;
             let headers: ResHeaders;
+            let statusText: string;
 
             let error: any;
             let ok = false;
-            const factory = ctx.statusFactory as StatusFactory<number>;
 
             const onResponse = async (incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, flags: number) => {
                 let body: any;
                 if (incoming instanceof http.IncomingMessage) {
                     headers = new ResHeaders(incoming.headers);
-                    status = factory.createByCode(incoming.statusCode ?? 0, incoming.statusMessage ?? 'OK');
-                    if (!(status instanceof NoContentStatus)) {
-                        body = status.statusText;
+                    status = incoming.statusCode ?? 0;
+                    statusText = incoming.statusMessage ?? 'OK';
+                    if (status !== HttpStatusCode.NoContent) {
+                        body = statusText;
                     }
-                    if (status.status === 0 && body) {
-                        status = factory.create('Ok');
+                    if (status === 0 && body) {
+                        status = 200;
                     }
                 } else {
                     headers = new ResHeaders(incoming);
-                    status = factory.createByCode(incoming[hdr.STATUS2] ?? 0);
+                    status = incoming[hdr.STATUS2] ?? 0;
                 }
-                ctx.status = status;
 
-                if (status instanceof EmptyStatus) {
+                if (emptyStatus[status]) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
                         headers,
-                        ...status
+                        status,
+                        statusText
                     }));
                     observer.complete();
                     return;
@@ -76,7 +83,7 @@ export class HttpBackend2 extends HttpBackend {
                     ok = !err;
                 });
 
-                if (status instanceof RedirectStatus) {
+                if (redirectStatus[status]) {
                     // HTTP fetch step 5.2
                     ctx.get(Redirector).redirect<HttpEvent<any>>(ctx, req, status, headers)
                         .pipe(
@@ -86,7 +93,7 @@ export class HttpBackend2 extends HttpBackend {
                 }
 
                 completed = true;
-                ok = status instanceof OkStatus;
+                ok = status === HttpStatusCode.Ok;
 
                 if (!ok) {
                     if (!error) {
@@ -97,11 +104,12 @@ export class HttpBackend2 extends HttpBackend {
                     return observer.error(new HttpErrorResponse({
                         url,
                         error: error ?? body,
-                        ...status
+                        status,
+                        statusText
                     }));
                 }
 
-                const rqstatus = (req.context ?? ctx).getValueify(RequestStauts, () => new RequestStauts());
+                const rqstatus = req.context?.getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
 
@@ -170,8 +178,8 @@ export class HttpBackend2 extends HttpBackend {
                 const contentType = headers.get(hdr.CONTENT_TYPE) as string;
                 let type = req.responseType;
                 if (contentType) {
-                    const adapter = ctx.get(MimeAdapter);
-                    const mity = ctx.get(MimeTypes);
+                    const adapter = this.mimeAdapter;
+                    const mity = this.mimeTypes;
                     if (type === 'json' && !adapter.match(mity.json, contentType)) {
                         if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
                             type = 'text';
@@ -228,14 +236,16 @@ export class HttpBackend2 extends HttpBackend {
                         url,
                         body,
                         headers,
-                        ...status
+                        status,
+                        statusText
                     }));
                     observer.complete();
                 } else {
                     observer.error(new HttpErrorResponse({
                         url,
                         error: error ?? body,
-                        ...status
+                        status,
+                        statusText
                     }));
                 }
             };
@@ -246,8 +256,8 @@ export class HttpBackend2 extends HttpBackend {
                 const res = new HttpErrorResponse({
                     url,
                     error,
-                    statusText: 'Unknown Error',
-                    ...status
+                    status,
+                    statusText: 'Unknown Error'
 
                 });
                 observer.error(res)
@@ -332,7 +342,7 @@ export class HttpBackend2 extends HttpBackend {
     }
 
     protected getAbortSignal(ctx: EndpointContext): AbortController {
-        return typeof AbortController === _tyundef ? null! : ctx.getValueify(AbortController, () => new AbortController());
+        return typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
 }

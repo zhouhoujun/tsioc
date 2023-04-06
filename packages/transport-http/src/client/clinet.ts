@@ -1,7 +1,6 @@
 import { Injectable, InvocationContext, Nullable, promisify, ProviderType } from '@tsdi/ioc';
 import {
-    RequestMethod, OnDispose, RequestOptions, ClientEndpointContext,
-    ResponseAs, mths, ReqHeaders, ReqHeadersLike
+    RequestMethod, OnDispose, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
 import { Observable } from 'rxjs';

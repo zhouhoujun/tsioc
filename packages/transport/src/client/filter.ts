@@ -1,4 +1,4 @@
-import { ClientContext, GuardHandler, Filter } from '@tsdi/core';
+import { GuardHandler, Filter } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
@@ -10,8 +10,7 @@ export abstract class ClientFinalizeFilter <TInput = any, TOutput = any>  extend
      * @param input  request input.
      * @param next The next interceptor in the chain, or the backend
      * if no interceptors remain in the chain.
-     * @param context request context.
      * @returns An observable of the event stream.
      */
-    abstract intercept(input: TInput, next: GuardHandler<TInput, TOutput>, context: ClientContext): Observable<TOutput>;
+    abstract intercept(input: TInput, next: GuardHandler<TInput, TOutput>): Observable<TOutput>;
 }

@@ -28,11 +28,11 @@ export interface Context<TRequest = any, TResponse = any> {
     /**
      * transport request.
      */
-    get request(): TRequest;
+    get request(): any;
     /**
      * transport response.
      */
-    get response(): TResponse;
+    get response(): any;
 
     /**
      * Perform a 302 redirect to `url`.

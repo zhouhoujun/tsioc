@@ -1,6 +1,7 @@
-import { Middleware, mths, AssetContext, MessageExecption } from '@tsdi/core';
+import { Middleware, AssetContext, MessageExecption, EndpointContext, HEAD, GET } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
+import { HttpStatusCode } from '@tsdi/common';
 
 /**
  * Static Content options.
@@ -35,12 +36,12 @@ export class ContentMiddleware implements Middleware {
             await next()
         }
         let file = '';
-        if (ctx.method === mths.HEAD || ctx.method === mths.GET) {
+        if (ctx.method === HEAD || ctx.method === GET) {
             try {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
-                if ((err as MessageExecption).status !== ctx.statusFactory.getStatusCode('NotFound')) {
+                if ((err as MessageExecption).status !== HttpStatusCode.NotFound) {
                     throw err
                 }
             }

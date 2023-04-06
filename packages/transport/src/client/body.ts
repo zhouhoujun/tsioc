@@ -1,8 +1,8 @@
 import {
-    GuardHandler, EndpointContext, Interceptor, isArrayBuffer, isBlob, isFormData,
-    isUrlSearchParams, Message, TransportEvent, TransportRequest
+    GuardHandler, Interceptor, isArrayBuffer, isBlob, isFormData,
+    isUrlSearchParams, TransportEvent, TransportRequest
 } from '@tsdi/core';
-import { Injectable, isString, _tybool, _tynum, _tyobj } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
@@ -18,10 +18,10 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
 
     constructor() { }
 
-    intercept(req: TransportRequest, next: GuardHandler<Message, TransportEvent>, context: EndpointContext): Observable<TransportEvent> {
+    intercept(req: TransportRequest, next: GuardHandler<TransportRequest, TransportEvent>): Observable<TransportEvent> {
         let body = this.serializeBody(req.body);
         if (body == null) {
-            return next.handle(req, context);
+            return next.handle(req);
         }
         return defer(async () => {
             const contentType = this.detectContentTypeHeader(body);
@@ -49,7 +49,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
             return req;
 
         }).pipe(
-            mergeMap(req => next.handle(req, context))
+            mergeMap(req => next.handle(req))
         );
     }
 
@@ -70,7 +70,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
         }
 
         // Check whether the body is an object or array, and serialize with JSON if so.
-        if (typeof body === _tyobj || typeof body === _tybool ||
+        if (typeof body === 'object' || typeof body === 'boolean' ||
             Array.isArray(body)) {
             return JSON.stringify(body)
         }
@@ -112,8 +112,8 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.
         const type = typeof body;
-        if (type === _tyobj || type === _tynum ||
-            type === _tybool) {
+        if (type === 'object' || type === 'number' ||
+            type === 'boolean') {
             return 'application/json'
         }
         // No type could be inferred.
