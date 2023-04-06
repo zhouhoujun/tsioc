@@ -1,17 +1,15 @@
 import {
-    EmptyStatus, GuardHandler, EndpointBackend, EndpointContext, Filter,
-    mths, Outgoing, ServerEndpointContext, MessageExecption
+    GuardHandler, EndpointContext, Filter, MessageExecption, AssetContext, Backend
 } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
 import { Writable } from 'stream';
-import { TransportContext } from './context';
 import { hdr } from '../consts';
 import { isBuffer, isStream, pipeStream } from '../utils';
 
 
 @Abstract()
-export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpointContext = ServerEndpointContext> implements EndpointBackend<IInput, TOutput> {
+export abstract class ReceiveBackend<IInput = any, TOutput = any> implements Backend<IInput, TOutput> {
     abstract handle(input: IInput, context: EndpointContext): Observable<TOutput>;
 }
 
@@ -19,8 +17,8 @@ export abstract class ReceiveBackend<IInput = any, TOutput extends ServerEndpoin
 @Injectable({ static: true })
 export class ServerFinalizeFilter extends Filter {
 
-    intercept(input: any, next: GuardHandler<any, any>, context: TransportContext): Observable<any> {
-        return next.handle(input, context)
+    intercept(context: AssetContext, next: GuardHandler<any, any>): Observable<any> {
+        return next.handle(context)
             .pipe(
                 mergeMap(res => {
                     return this.respond(res, context)
@@ -28,7 +26,7 @@ export class ServerFinalizeFilter extends Filter {
             )
     }
 
-    protected async respond(res: Outgoing, ctx: TransportContext): Promise<any> {
+    protected async respond(res: Outgoing, ctx: AssetContext): Promise<any> {
 
         if (!ctx.writable) return;
 

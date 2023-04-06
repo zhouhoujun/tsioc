@@ -23,5 +23,6 @@ export * from './server.endpoint';
 export * from './server';
 
 export * from './router.module';
+export * from './packet';
 
 export * from './utils';

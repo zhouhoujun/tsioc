@@ -1,6 +1,5 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server,
-    ServerContextOpts, ServerEndpointContext, Status, RedirectStatus, EmptyStatus
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, AssetContext
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -15,7 +14,7 @@ import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
  * asset server context.
  */
 @Abstract()
-export abstract class AssetServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerContext<TRequest, TResponse> {
+export abstract class AssetServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;

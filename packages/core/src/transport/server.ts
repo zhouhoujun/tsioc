@@ -10,10 +10,10 @@ import { MiddlewareService } from './middleware.service';
 import { ServerEndpoint } from './server.endpoint';
 
 /**
- * Service
+ * Server
  */
 @Abstract()
-export abstract class Service<TCtx extends EndpointContext, TOutput = any> implements EndpointService, MiddlewareService {
+export abstract class Server<TCtx extends EndpointContext, TOutput = any> implements EndpointService, MiddlewareService {
 
 
     constructor(private endpoint: ServerEndpoint<TCtx, TOutput>) {
