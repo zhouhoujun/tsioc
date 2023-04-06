@@ -3,6 +3,7 @@ import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
+import { HttpStatusCode } from '@tsdi/common';
 
 
 /**
@@ -151,9 +152,10 @@ export class CorsMiddleware implements Middleware {
                     ...{ vary: varyWithOrigin },
                 };
                 const errCode =  500; //ctx.statusFactory.getStatusCode('InternalServerError');
-                ctx.status = err instanceof MessageExecption ? err.status || errCode : errCode;
-                ctx.message = ctx.statusFactory.createByCode( err.message || err.toString() || '');
-                ctx.get(Logger)?.error(err)
+                err.status = err instanceof MessageExecption ? err.status || errCode : errCode;
+                err.statusMessage = err.message || err.toString() || '';
+                ctx.get(Logger)?.error(err);
+                throw err;
             }
         } else {
             if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
@@ -184,7 +186,7 @@ export class CorsMiddleware implements Middleware {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = ctx.statusFactory.create('NoContent')
+            ctx.status = HttpStatusCode.NoContent;
         }
     }
 }
@@ -198,7 +200,7 @@ interface Options {
     /**
      * origin `Access-Control-Allow-Origin`, default is request Origin header
      */
-    origin?: string | ((ctx: ServerEndpointContext) => any);
+    origin?: string | ((ctx: AssetContext) => any);
     /**
      * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
      */

@@ -18,7 +18,7 @@ export class TransportRequest<T = any> {
     public body: T | null;
     readonly headers: ReqHeaders;
 
-    readonly context: InvocationContext | undefined;
+    readonly context: InvocationContext;
 
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response';
@@ -30,7 +30,7 @@ export class TransportRequest<T = any> {
         this.pattern = pattern;
         this.method = options.method;
         this.params = new TransportParams(options);
-        this.context = options.context;
+        this.context = options.context!;
         this.responseType = options.responseType ?? 'json';
         this.reportProgress = !!options.reportProgress;
         this.withCredentials = !!options.withCredentials;
@@ -47,7 +47,7 @@ export abstract class Redirector {
     /**
      * redirect.
      */
-    abstract redirect<TRes, TReq = any>(req: TReq, status: number | string, headers: ResHeaders): Observable<TRes>
+    abstract redirect<TRes>(req: TransportRequest, status: number | string, headers: ResHeaders): Observable<TRes>
 }
 
 

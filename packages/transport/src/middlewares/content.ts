@@ -1,4 +1,4 @@
-import { Middleware, AssetContext, MessageExecption, EndpointContext, HEAD, GET } from '@tsdi/core';
+import { Middleware, AssetContext, MessageExecption, HEAD, GET } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
 import { HttpStatusCode } from '@tsdi/common';

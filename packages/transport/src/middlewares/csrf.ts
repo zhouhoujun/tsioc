@@ -1,4 +1,4 @@
-import { AssetContext, ForbiddenExecption, Middleware, mths } from '@tsdi/core';
+import { AssetContext, ForbiddenExecption, GET, HEAD, Middleware, OPTIONS } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import * as Tokens from 'csrf';
 import { hdr } from '../consts';
@@ -23,7 +23,7 @@ export abstract class CsrfOptions implements Tokens.Options {
 
 const defOpts = {
     invalidTokenMessage: 'Invalid CSRF token',
-    excludedMethods: [mths.GET, mths.HEAD, mths.OPTIONS],
+    excludedMethods: [GET, HEAD, OPTIONS],
     disableQuery: false
 } as CsrfOptions;
 

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, Message, RedirectStatus, Status, mths, SeeOtherStatus, MovedPermanentlyStatus, FoundStatus } from '@tsdi/core';
+import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, GET, POST } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Readable } from 'stream';
@@ -8,9 +8,9 @@ import { hdr } from '../consts';
 @Injectable()
 export class AssetRedirector extends Redirector {
 
-    redirect<T>(ctx: EndpointContext, req: Message, status: RedirectStatus, headers: ResHeaders): Observable<T> {
+    redirect<T>(req: TransportRequest, status: string|number, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            const rdstatus = ctx.getValueify(RedirectState, () => new RedirectState());
+            const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
             const location = headers.get(hdr.LOCATION) as string;
 
@@ -90,11 +90,11 @@ export class AssetRedirector extends Redirector {
                         reqhdrs = reqhdrs.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = (ctx.target as Client).send(locationURL, {
+                    sub = req.context.get(Client).send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,
-                        context: ctx,
+                        context: req.context,
                         observe: 'response'
                     }).subscribe(observer as any);
 
@@ -111,13 +111,13 @@ export class AssetRedirector extends Redirector {
         });
     }
 
-    protected redirectBodify(status: Status, method?: string | undefined): boolean {
-        if (status instanceof SeeOtherStatus) return false;
-        return method ? (status instanceof MovedPermanentlyStatus || status instanceof FoundStatus) && method !== mths.POST : true;
+    protected redirectBodify(status: string | number, method?: string | undefined): boolean {
+        if(!method) return status === 303;
+        return status === 303 || ((status === 301 || status === 302) && method === POST)
     }
 
     protected redirectDefaultMethod(): string {
-        return mths.GET;
+        return GET;
     }
 
 

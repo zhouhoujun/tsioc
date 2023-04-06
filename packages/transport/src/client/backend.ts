@@ -1,11 +1,10 @@
 /* eslint-disable no-case-declarations */
 import {
-    EndpointBackend, TransportEvent, ClientContext, TransportErrorResponse,
-    TransportRequest, ResHeaders, OutgoingHeader, Status, StatusFactory,
-    EmptyStatus, RedirectStatus, TransportHeaderResponse, Redirector, OkStatus, mths,
-    ResponseJsonParseError, TransportResponse, ResHeadersLike
+    TransportEvent, TransportErrorResponse, TransportRequest, 
+    ResHeaders, OutgoingHeader, TransportHeaderResponse, Redirector,
+    ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend
 } from '@tsdi/core';
-import { Abstract, lang, _tyundef } from '@tsdi/ioc';
+import { Abstract, lang } from '@tsdi/ioc';
 import { PassThrough, pipeline, Readable } from 'stream';
 import { EventEmitter } from 'events';
 import { Observable, Observer } from 'rxjs';
@@ -23,16 +22,15 @@ import { TransportClient } from './client';
  * transport endpoint backend.
  */
 @Abstract()
-export abstract class TransportBackend implements EndpointBackend<TransportRequest, TransportEvent> {
+export abstract class TransportBackend implements Backend<TransportRequest, TransportEvent> {
 
-    handle(req: TransportRequest, ctx: ClientContext): Observable<TransportEvent> {
+    handle(req: TransportRequest): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent<any>>) => {
             const url = req.url.trim();
-            let status: Status<number>;
+            let status: number|string;
 
             let error: any;
             let ok = false;
-            const factory = ctx.statusFactory as StatusFactory<number>;
 
             const request = this.createRequest((ctx.target as TransportClient).connection, req);
 
@@ -41,7 +39,7 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
                     url,
                     error,
                     statusText: 'Unknown Error',
-                    ...status
+                    status
 
                 });
                 observer.error(res)
@@ -49,14 +47,13 @@ export abstract class TransportBackend implements EndpointBackend<TransportReque
             const onResponse = async (incoming: IncomingMessage) => {
                 let body: any;
                 const headers = new ResHeaders(incoming.headers);
-                status = factory.createByCode(headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0);
-                ctx.status = status;
+                status = headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
 
-                if (status instanceof EmptyStatus) {
+                if (emptyStatus[status]) {
                     observer.next(this.createHeadResponse({
                         url,
                         headers,
-                        ...status
+                        status
                     }));
                     observer.complete();
                     return;

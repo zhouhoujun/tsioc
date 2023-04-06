@@ -1,4 +1,4 @@
-import { OutgoingHeader, OutgoingHeaders, Outgoing, ResHeaders, MessageExecption } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption } from '@tsdi/core';
 import { ArgumentExecption, Execption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { Writable } from 'stream';
 import { HeandersSentExecption, InvalidStreamExecption } from './execptions';
@@ -9,7 +9,7 @@ import { ev, hdr } from './consts';
 /**
  * outgoing message.
  */
-export class OutgoingMessage extends Writable implements Outgoing {
+export class OutgoingMessage extends Writable {
 
     _closed = false;
     ending = false;

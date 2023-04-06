@@ -1,18 +1,17 @@
-import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption, PROCESS_ROOT } from '@tsdi/core';
+import { AssetContext, BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption, PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, TypeExecption } from '@tsdi/ioc';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { ContentSendAdapter, SendOptions } from '../middlewares/send';
 import { hdr } from '../consts';
-import { AssetServerContext } from '../asset.ctx';
 
 
 const statify = promisify(stat);
 
 @Injectable({ static: true })
 export class TransportSendAdapter extends ContentSendAdapter {
-    async send(ctx: AssetServerContext, opts: SendOptions): Promise<string> {
+    async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
@@ -91,8 +90,8 @@ export class TransportSendAdapter extends ContentSendAdapter {
 
         const maxAge = opts.maxAge ?? 0;
         ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
-        if (!ctx.getRespHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
-        if (!ctx.getRespHeader(hdr.CACHE_CONTROL)) {
+        if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
+        if (!ctx.response.getHeader(hdr.CACHE_CONTROL)) {
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (opts.immutable) {
                 directives.push('immutable')
