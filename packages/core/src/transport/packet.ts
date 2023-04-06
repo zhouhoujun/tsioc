@@ -2,9 +2,20 @@ import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from "./headers";
 
 
 /**
+ * packet data.
+ */
+export interface Packet<T = any> {
+    type?: number;
+    payload?: T;
+    error?: Error;
+}
+
+
+
+/**
  * server side incoming message.
  */
-export interface Incoming<TConn = any> {
+export interface Incoming<T = any, TConn = any> extends Packet<T> {
     /**
      * packet id.
      */
