@@ -1,7 +1,7 @@
-import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status, ListenOpts, ServerContext } from '@tsdi/core';
+import { MiddlewareLike, Throwable, Status, ListenOpts, AbstractServerContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
+import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -17,7 +17,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements Throwable {
+export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse> implements Throwable {
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
@@ -274,7 +274,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     protected isSelf(token: Token) {
-        return token === HttpContext || token === AssetServerContext || token == ServerContext || token === ServerEndpointContext;
+        return token === HttpContext || token === AbstractAssetContext || token == AbstractServerContext || token === ServerEndpointContext;
     }
 
 

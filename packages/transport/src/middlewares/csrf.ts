@@ -30,7 +30,7 @@ const defOpts = {
 export const CSRF = tokenId<string>('CSRF');
 
 @Injectable()
-export class CsrfMiddleware implements Middleware {
+export class CsrfMiddleware implements Middleware<AssetContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;

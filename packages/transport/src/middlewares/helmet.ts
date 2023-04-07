@@ -33,7 +33,7 @@ const defOpts = {
 } as HelmentOptions;
 
 @Injectable()
-export class HelmetMiddleware implements Middleware {
+export class HelmetMiddleware implements Middleware<AssetContext> {
 
     private options: HelmentOptions
     constructor(@Nullable() options: HelmentOptions) {

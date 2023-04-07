@@ -1,9 +1,9 @@
 import { AssetContext, Middleware, RequestMethod, MessageExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
+import { HttpStatusCode } from '@tsdi/common';
 import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
-import { HttpStatusCode } from '@tsdi/common';
 
 
 /**
@@ -63,7 +63,7 @@ export abstract class CorsOptions {
 
 
 @Injectable()
-export class CorsMiddleware implements Middleware {
+export class CorsMiddleware implements Middleware<AssetContext> {
 
     private options: Options;
 

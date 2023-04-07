@@ -1,19 +1,31 @@
-import { MiddlewareFilter, MiddlewareType } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { MiddlewareOf } from '@tsdi/core';
+import { Abstract, Injectable } from '@tsdi/ioc';
 import { ContentMiddleware } from './content';
 import { CorsMiddleware } from './cors';
 import { CsrfMiddleware } from './csrf';
 import { SessionMiddleware } from './session';
 
-@Injectable()
-export class DefaultMiddlewareFilter implements MiddlewareFilter {
 
-    filter(middlewares: MiddlewareType[], opts: {
+@Abstract()
+export abstract class MiddlewareFilter {
+    abstract filter(middlewares: MiddlewareOf[], opts: {
         cors?: any;
         session?: any;
         csrf?: any;
         content?: any;
-    }): MiddlewareType[] {
+    }): MiddlewareOf[];
+}
+
+
+@Injectable()
+export class DefaultMiddlewareFilter implements MiddlewareFilter {
+
+    filter(middlewares: MiddlewareOf[], opts: {
+        cors?: any;
+        session?: any;
+        csrf?: any;
+        content?: any;
+    }): MiddlewareOf[] {
         return middlewares.filter(m => {
             if (!opts.cors && m === CorsMiddleware) return false;
             if (!opts.session && m === SessionMiddleware) return false;

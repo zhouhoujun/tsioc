@@ -1,5 +1,5 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, AssetContext
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, AssetContext, AbstractServerContext
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -14,7 +14,7 @@ import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
  * asset server context.
  */
 @Abstract()
-export abstract class AssetServerContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
@@ -811,7 +811,7 @@ export abstract class AssetServerContext<TRequest extends Incoming = Incoming, T
     }
 
     protected override isSelf(token: Token<any>): boolean {
-        return token === AssetServerContext || token === ServerEndpointContext || token === ServerContext;
+        return token === AssetContext || token ===  AssetContext || token === AbstractServerContext;
     }
 
 }

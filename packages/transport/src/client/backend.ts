@@ -211,7 +211,8 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                         url,
                         body,
                         headers,
-                        ...status
+                        status,
+                        statusText
                     }));
                     observer.complete();
                 } else {

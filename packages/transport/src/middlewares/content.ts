@@ -24,7 +24,7 @@ export abstract class ContentOptions implements SendOptions {
  * static content resources.
  */
 @Injectable()
-export class ContentMiddleware implements Middleware {
+export class ContentMiddleware implements Middleware<AssetContext> {
 
     private options: ContentOptions
     constructor(@Nullable() options: ContentOptions) {

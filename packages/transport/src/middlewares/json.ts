@@ -13,7 +13,7 @@ export abstract class JsonMiddlewareOption {
 
 
 @Injectable()
-export class EncodeJsonMiddleware implements Middleware {
+export class EncodeJsonMiddleware implements Middleware<AssetContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;

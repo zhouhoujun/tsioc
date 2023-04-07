@@ -31,6 +31,23 @@ export const LOGGER_PROVIDERS: ProviderType[] = [
 })
 export class LoggerModule {
 
+    /**
+     * LoggerModule with options.
+     * @param config
+     * @param debug 
+     * @returns 
+     */
+    static withOptions(config: LogConfigure | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
+        const providers: ProviderType[] = config ? [{ provide: LogConfigure, useValue: config }] : [];
+        if(debug) {
+            providers.push(DebugLogAspect)
+        }
+
+        return {
+            module: LoggerModule,
+            providers
+        }
+    }
 }
 
 

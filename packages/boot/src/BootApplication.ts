@@ -1,5 +1,5 @@
 import { Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
-import { Application, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
+import { Application, ApplicationArguments, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
@@ -21,7 +21,7 @@ const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
  * @export
  * @class BootApplication
  */
-export class BootApplication extends Application<BootApplicationContext> {
+export class BootApplication<T = any, TArg = ApplicationArguments> extends Application<T, TArg> {
 
     constructor(protected target: Type | BootApplicationOption, protected loader?: ModuleLoader) {
         super(target, loader)
@@ -41,7 +41,7 @@ export class BootApplication extends Application<BootApplicationContext> {
         return [MvcModule];
     }
 
-    protected async prepareContext(ctx: BootApplicationContext): Promise<void> {
+    protected async prepareContext(ctx: BootApplicationContext<T, TArg>): Promise<void> {
         const { baseURL, injector } = ctx;
         const mgr = ctx.getConfigureManager();
         await mgr.load();
@@ -60,10 +60,6 @@ export class BootApplication extends Application<BootApplicationContext> {
             config.baseURL = baseURL
         } else if (config.baseURL) {
             injector.setValue(PROCESS_ROOT, config.baseURL)
-        }
-
-        if (injector.moduleReflect.annotation?.debug) {
-            config.debug = injector.moduleReflect.annotation.debug
         }
 
         injector.setValue(ApplicationConfiguration, config);

@@ -1,13 +1,13 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, EndpointContext, Middleware, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { AssetContext, Middleware, UnsupportedMediaTypeExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
+import { HttpStatusCode } from '@tsdi/common';
 import * as zlib from 'zlib';
 import { Stream, Readable, PassThrough } from 'stream';
 import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
 import { MimeTypes } from '../mime';
-import { HttpStatusCode } from '@tsdi/common';
 
 
 @Abstract()
@@ -32,7 +32,7 @@ export class PayloadOptions {
 }
 
 @Injectable()
-export class BodyparserMiddleware implements Middleware<EndpointContext<AssetContext>> {
+export class BodyparserMiddleware implements Middleware<AssetContext> {
 
     private options: {
         json: {

@@ -7,7 +7,7 @@ import { EndpointContext } from '../endpoints';
  * abstract server context.
  */
 @Abstract()
-export abstract class ServerContext<TRequest = any, TResponse = any, TStatus = number> extends EndpointContext<TRequest> implements Context<TRequest, TResponse>  {
+export abstract class AbstractServerContext<TRequest = any, TResponse = any, TStatus = number | string> extends EndpointContext<TRequest> implements Context<TRequest, TResponse>  {
 
     /**
      * Get response status.
@@ -17,6 +17,16 @@ export abstract class ServerContext<TRequest = any, TResponse = any, TStatus = n
      * Set response status, defaults to OK.
      */
     abstract set status(status: TStatus);
+    /**
+     * Get response status message.
+     */
+    abstract get statusMessage(): string;
+    /**
+     * Set response status message.
+     */
+    abstract set statusMessage(message: string);
+
+
 
     /**
      * transport request.
@@ -106,7 +116,7 @@ export abstract class ServerContext<TRequest = any, TResponse = any, TStatus = n
  * abstract asset context.
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number> extends ServerContext<TRequest, TResponse, TStatus> implements Context<TRequest, TResponse> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number | string> extends AbstractServerContext<TRequest, TResponse, TStatus> implements Context<TRequest, TResponse> {
     /**
      * Return request header.
      *

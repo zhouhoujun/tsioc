@@ -15,7 +15,7 @@ import { ServerFinalizeFilter } from './filter';
 import { ExecptionFinalizeFilter } from './execption-filter';
 import { SERVER_MIDDLEWARES } from './context';
 import { TransportServerOpts, SERVER_INTERCEPTORS, SERVER_EXECPTION_FILTERS } from './options';
-import { AssetServerContext } from '../asset.ctx';
+import { AbstractAssetContext } from '../asset.ctx';
 
 
 const defOpts = {
@@ -57,7 +57,7 @@ export abstract class TransportServer<TServe extends EventEmitter = EventEmitter
     TRequest extends Incoming = Incoming,
     TResponse extends Outgoing = Outgoing,
     TOpts extends TransportServerOpts<TRequest, TResponse> = TransportServerOpts<TRequest, TResponse>,
-    TContext extends AssetServerContext<TRequest, TResponse> = AssetServerContext<TRequest, TResponse>> extends Server<TRequest, TResponse, TContext, TOpts> {
+    TContext extends AbstractAssetContext<TRequest, TResponse> = AbstractAssetContext<TRequest, TResponse>> extends Server<TRequest, TResponse, TContext, TOpts> {
 
     private _server: TServe | null = null;
     protected _reqSet: Set<Subscription> = new Set();

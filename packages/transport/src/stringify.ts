@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
 /* eslint-disable no-misleading-character-class */
-import { Execption, isNumber, isPromise, isString, _tybigint, _tybool, _tyfunc, _tynum, _tyobj, _tystr, _tysymbol } from '@tsdi/ioc';
+import { Execption, isNumber, isPromise, isString } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { ev } from './consts';
 
@@ -20,7 +20,7 @@ export class JsonStreamStringify extends Readable {
     constructor(value: any, replacer?: Function | any[], spaces?: number | string, private cycle: boolean = false) {
         super({ encoding: 'utf8' });
         const spaceType = typeof spaces;
-        if (spaceType === _tystr || spaceType === _tynum) {
+        if (spaceType === 'string' || spaceType === 'number') {
             this.gap = Number.isFinite(spaces as number) ? ' '.repeat(spaces as number) : spaces as string;
         }
         Object.assign(this, {
@@ -56,7 +56,7 @@ export class JsonStreamStringify extends Readable {
         if (realValue && realValue.toJSON instanceof Function) {
             realValue = realValue.toJSON();
         }
-        if (realValue instanceof Function || typeof value === _tysymbol) {
+        if (realValue instanceof Function || typeof value === 'symbol') {
             realValue = undefined;
         }
         if (key !== undefined && this.replacerArray) {
@@ -214,19 +214,19 @@ export class JsonStreamStringify extends Readable {
             const type = typeof current.value;
             let value;
             switch (type) {
-                case _tystr:
+                case 'string':
                     value = quoteString(current.value);
                     break;
-                case _tynum:
+                case 'number':
                     value = Number.isFinite(current.value) ? String(current.value) : 'null';
                     break;
-                case _tybigint:
+                case 'bigint':
                     value = String(current.value);
                     break;
-                case _tybool:
+                case 'boolean':
                     value = String(current.value);
                     break;
-                case _tyobj:
+                case 'object':
                     if (!current.value) {
                         value = 'null';
                     }
@@ -325,7 +325,7 @@ export class JsonStreamStringify extends Readable {
         return this.stack.map(({
             key,
             index,
-        }) => key || index).filter(v => v || (v || -1) > -1).reverse();
+        }) => key || index).filter(v => isNumber(v) ? v > -1 : v).reverse();
     }
 }
 
@@ -345,12 +345,12 @@ const meta: any = {
 };
 
 function isReadableStream(value: any): boolean {
-    return typeof value.read === _tyfunc
-        && typeof value.pause === _tyfunc
-        && typeof value.resume === _tyfunc
-        && typeof value.pipe === _tyfunc
-        && typeof value.once === _tyfunc
-        && typeof value.removeListener === _tyfunc;
+    return typeof value.read === 'function'
+        && typeof value.pause === 'function'
+        && typeof value.resume === 'function'
+        && typeof value.pipe === 'function'
+        && typeof value.once === 'function'
+        && typeof value.removeListener === 'function';
 }
 
 function getType(value: any): Types {
@@ -358,7 +358,7 @@ function getType(value: any): Types {
     if (isPromise(value)) return Types.Promise;
     if (isReadableStream(value)) return value._readableState.objectMode ? Types.ReadableObject : Types.ReadableString;
     if (Array.isArray(value)) return Types.Array;
-    if (typeof value === _tyobj || value instanceof Object) return Types.Object;
+    if (typeof value === 'object' || value instanceof Object) return Types.Object;
     return Types.Primitive
 }
 

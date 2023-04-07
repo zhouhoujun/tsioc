@@ -1,6 +1,6 @@
 import {
-    BadRequestExecption,  ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption,
-    MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, ExecptionEndpoint, MessageExecption
+    BadRequestExecption,  ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption,
+    UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, MessageExecption, Filter, Handler
 } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
@@ -12,10 +12,10 @@ import { map, Observable } from 'rxjs';
 
 
 @Injectable({ static: true })
-export class HttpExecptionFinalizeFilter implements ExecptionFilter {
-    intercept(input: Error, next: ExecptionEndpoint, context: HttpContext): Observable<HttpError> {
+export class HttpExecptionFinalizeFilter implements Filter {
+    intercept(context: HttpContext, next: Handler): Observable<HttpError> {
 
-        return next.handle(input, context)
+        return next.handle(context)
             .pipe(
                 map(r => {
                     if (!context.execption) return r;

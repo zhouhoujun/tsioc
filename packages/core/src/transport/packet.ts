@@ -1,10 +1,11 @@
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from "./headers";
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 
 
 /**
  * packet data.
  */
 export interface Packet<T = any> {
+    id?: any;
     type?: number;
     payload?: T;
     error?: Error;

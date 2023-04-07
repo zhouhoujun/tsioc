@@ -99,7 +99,7 @@ const defOpts = {
  * session middleware.
  */
 @Injectable()
-export class SessionMiddleware implements Middleware {
+export class SessionMiddleware implements Middleware<AssetContext> {
 
     private options: SessionOptions;
     constructor(@Nullable() options: SessionOptions) {

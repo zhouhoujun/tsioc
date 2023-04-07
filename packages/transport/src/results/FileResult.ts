@@ -1,10 +1,11 @@
 import { isString } from '@tsdi/ioc';
-import { ApplicationContext, ResultValue } from '@tsdi/core';
+import { ApplicationContext, AssetContext } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { AssetServerContext } from '../asset.ctx';
+import { AbstractAssetContext } from '../asset.ctx';
+import { ResultValue } from './ResultValue';
 
 /**
  * controller method return result type of file.
@@ -54,7 +55,7 @@ export class FileResult extends ResultValue {
         super(options?.contentType || 'application/octet-stream');
     }
 
-    async sendValue(ctx: AssetServerContext) {
+    async sendValue(ctx: AssetContext) {
         const file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {

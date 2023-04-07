@@ -1,10 +1,10 @@
 
-import { MiddlewareFilter, Redirector, TypedRespond } from '@tsdi/core';
+import { Redirector, TypedRespond } from '@tsdi/core';
 import { ProviderType } from '@tsdi/ioc';
 import { DefaultStatusFormater } from './interceptors/formater';
 import { ResponseStatusFormater } from './interceptors/log';
 import { ContentSendAdapter } from './middlewares/send';
-import { DefaultMiddlewareFilter } from './middlewares/filter';
+import { DefaultMiddlewareFilter, MiddlewareFilter } from './middlewares/filter';
 import { MimeAdapter, MimeDb, MimeTypes } from './mime';
 import { Negotiator } from './negotiator';
 import { BasicMimeDb } from './impl/mimedb';
