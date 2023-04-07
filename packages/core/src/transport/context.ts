@@ -65,15 +65,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
  */
 @Abstract()
 export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number | string> extends TransportContext<TRequest, TResponse, TStatus> {
-    
-    /**
-     * Get request rul
-     */
-    abstract get url(): string;
-    /**
-     * Set request url
-     */
-    abstract set url(value: string);
 
     /**
      * is secure protocol or not.

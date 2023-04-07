@@ -2,7 +2,7 @@
 /**
  * status codes for redirects
  */
-const redirectStatus: Record<number, boolean> = {
+const redirectStatus: Record<number|string, boolean> = {
     300: true,
     301: true,
     302: true,
@@ -15,7 +15,7 @@ const redirectStatus: Record<number, boolean> = {
 /**
  * status codes for empty bodies
  */
-const emptyStatus: Record<number, boolean> = {
+const emptyStatus: Record<number|string, boolean> = {
     204: true,
     205: true,
     304: true
@@ -24,7 +24,7 @@ const emptyStatus: Record<number, boolean> = {
 /**
  * status codes for when you should retry the request
  */
-const retryStatus: Record<number, boolean> = {
+const retryStatus: Record<number|string, boolean> = {
     502: true,
     503: true,
     504: true

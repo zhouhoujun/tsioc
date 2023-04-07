@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 
 @Abstract()
-export abstract class ClientFinalizeFilter <TInput = any, TOutput = any>  extends Filter<TInput, TOutput> {
+export abstract class ClientFinalizeFilter<TInput = any, TOutput = any> extends Filter<TInput, TOutput> {
     /**
      * the method to implemet interceptor filter.
      * @param input  request input.

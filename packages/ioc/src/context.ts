@@ -14,6 +14,9 @@ import { OperationInvoker } from './operation';
  */
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
+    /**
+     * is done or not.
+     */
     done?: boolean;
     /**
      * is this context injected in object or not.

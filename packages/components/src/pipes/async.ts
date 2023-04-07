@@ -1,5 +1,5 @@
 import { isPromise, isObservable } from '@tsdi/ioc';
-import { EventEmitter, PipeTransform, Pipe, invalidPipeArgument } from '@tsdi/core';
+import { SubjectEmitter, PipeTransform, Pipe, invalidPipeArgument } from '@tsdi/core';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { OnDestroy } from '../lifecycle';
 import { ChangeDetectorRef } from '../chage/detector';
@@ -12,7 +12,7 @@ export class AsyncPipe implements OnDestroy, PipeTransform {
     private _latestValue: any = null;
 
   private _subscription: SubscriptionLike|Promise<any>|null = null;
-  private _obj: Observable<any>|Promise<any>|EventEmitter<any>|null = null;
+  private _obj: Observable<any>|Promise<any>|SubjectEmitter<any>|null = null;
   private _strategy: SubscriptionStrategy = null!;
 
   constructor(private _ref: ChangeDetectorRef) {}
@@ -43,14 +43,14 @@ export class AsyncPipe implements OnDestroy, PipeTransform {
     return this._latestValue;
   }
 
-  private _subscribe(obj: Observable<any>|Promise<any>|EventEmitter<any>): void {
+  private _subscribe(obj: Observable<any>|Promise<any>|SubjectEmitter<any>): void {
     this._obj = obj;
     this._strategy = this._selectStrategy(obj);
     this._subscription = this._strategy.createSubscription(
         obj, (value: Object) => this._updateLatestValue(obj, value));
   }
 
-  private _selectStrategy(obj: Observable<any>|Promise<any>|EventEmitter<any>): any {
+  private _selectStrategy(obj: Observable<any>|Promise<any>|SubjectEmitter<any>): any {
     if (isPromise(obj)) {
       return _promiseStrategy;
     }

@@ -3,7 +3,6 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentO
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
-import { setOptions } from './endpoints/endpoint.service';
 import { FilterModule } from './filters/filter.module';
 import { ApplicationArguments } from './ApplicationArguments';
 
@@ -171,13 +170,6 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected prepareContext(ctx: ApplicationContext<T, TArg>): any {
-        const target = this.target;
-        if (!isFunction(target)) {
-            if (target.events) {
-                setOptions(this.context.eventMulticaster, target.events);
-            }
-            setOptions(this.context.runners, target);
-        }
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
             bootstraps.forEach((type, order) => {

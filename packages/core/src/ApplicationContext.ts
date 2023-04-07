@@ -1,13 +1,13 @@
 import {
     ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { EndpointOptions, EndpointServiceOptions } from './endpoints/endpoint.service';
+import { EndpointOptions } from './endpoints/endpoint.service';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';
@@ -102,7 +102,7 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 /**
  * Environment option.
  */
-export interface EnvironmentOption<TArg = any> extends ModuleOption, EndpointOptions<TArg> {
+export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArguments<TArg> {
     /**
      * boot base url.
      *
@@ -133,11 +133,14 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, EndpointOpt
      * application providers.
      */
     platformProviders?: ProviderType[];
-
     /**
-     * event endpoint options.
+     * Application runners endpoint options.
      */
-    events?: EndpointServiceOptions;
+    runnersOptions?: EndpointOptions<TArg>;
+    /**
+     * Application events endpoint options.
+     */
+    eventsOptions?: EndpointOptions<TArg>;
 }
 
 /**

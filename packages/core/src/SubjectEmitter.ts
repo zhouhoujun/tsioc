@@ -5,7 +5,7 @@ import { PartialObserver, Subject, Subscription } from 'rxjs';
  * synchronously or asynchronously, and register handlers for those events
  * by subscribing to an instance.
  */
-export class EventEmitter<T = any> extends Subject<T | undefined> {
+export class SubjectEmitter<T = any> extends Subject<T | undefined> {
 
     constructor(public async = false) {
         super();

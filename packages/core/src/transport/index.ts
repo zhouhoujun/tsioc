@@ -12,6 +12,9 @@ export * from './metadata';
 export * from './params';
 export * from  './context';
 
+export * from './stream';
+export * from './socket';
+
 export * from './request';
 export * from './response';
 export * from './client';

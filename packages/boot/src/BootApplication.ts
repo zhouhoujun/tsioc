@@ -1,19 +1,14 @@
 import { Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
-import { Application, ApplicationArguments, ApplicationFactory, APPLICTION_DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
+import { Application, ApplicationArguments, ApplicationFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT, ROOT_DEFAULT_PROVIDERS } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
 import { BootApplicationFactory } from './impl/context';
 import { ConfigureFileLoader } from './configure/loader';
 import { MvcModule } from './mvc/mvc.module';
-import { LoggerModule } from '@tsdi/logs';
 
 
-const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
-    ConfigureFileLoader,
-    { provide: ApplicationFactory, useClass: BootApplicationFactory },
-    ...APPLICTION_DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationFactory)
-];
 
 /**
  * boot application.
@@ -31,9 +26,12 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
         return BOOT_DEFAULTA_PROVIDERS
     }
 
+    protected override getRootDefaultProviders(): ProviderType[] {
+        return BOOT_ROOT_DEFAULT_PROVIDERS;
+    }
+
+
     protected override initRoot() {
-        this.root.register(DefaultConfigureManager, ConfigureMergerImpl);
-        super.initRoot();
         this.root.setValue(BootApplication, this)
     }
 
@@ -87,10 +85,21 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
      * @param {BootApplicationOption} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: BootEnvironmentOption): Promise<BootApplicationContext>;
+    static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>>;
     static override run<T, TArg extends ApplicationArguments>(target: Type<T> | BootApplicationOption<T, TArg>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>> {
         return new BootApplication<T, TArg>(option ? { module: target, ...option } as BootApplicationOption : target).run() as Promise<BootApplicationContext<T, TArg>>
     }
 }
 
+const BOOT_DEFAULTA_PROVIDERS: ProviderType[] = [
+    ConfigureFileLoader,
+    ...DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationFactory),
+    { provide: ApplicationFactory, useClass: BootApplicationFactory }
+];
+
+const BOOT_ROOT_DEFAULT_PROVIDERS = [
+    DefaultConfigureManager,
+    ConfigureMergerImpl,
+    ...ROOT_DEFAULT_PROVIDERS
+];
 
