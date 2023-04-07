@@ -1,10 +1,10 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { Router } from './router';
-import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingRouter } from './middleware.router';
-import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 import { ControllerRouteReolver } from './controller';
+import { RouteEndpointFactoryResolver } from './route.endpoint';
+import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 
 /*
  * Middleware module.

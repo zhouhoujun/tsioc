@@ -1,4 +1,4 @@
-import { MiddlewareLike, Throwable, Status, ListenOpts, AbstractServerContext } from '@tsdi/core';
+import { MiddlewareLike, Throwable, Status, ListenOpts, TransportContext } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
@@ -274,7 +274,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
     }
 
     protected isSelf(token: Token) {
-        return token === HttpContext || token === AbstractAssetContext || token == AbstractServerContext || token === ServerEndpointContext;
+        return token === HttpContext || token === AbstractAssetContext || token == TransportContext || token === ServerEndpointContext;
     }
 
 

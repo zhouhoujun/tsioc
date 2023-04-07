@@ -4,7 +4,7 @@ import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { EndpointContext } from '../endpoints/context';
 import { Endpoint } from '../endpoints/endpoint';
 import { joinprefix } from './route';
-import { Context, Middleware } from './middleware';
+import { Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
 import { AbstractGuardHandler } from '../handlers/guards';
@@ -14,13 +14,15 @@ import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
 import { CanActivate, GUARDS_TOKEN } from '../guard';
 import { Filter, FILTERS_TOKEN } from '../filters/filter';
 import { setOptions } from '../endpoints';
+import { Packet } from './packet';
+import { TransportContext } from './context';
 
 const isRest = /\/:/;
 
 /**
  * Controller route.
  */
-export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware, Endpoint, OnDestroy {
+export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<TransportContext>, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[] | undefined;
@@ -50,12 +52,12 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         return this.factory?.typeRef;
     }
 
-    async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    protected getBackend(): Backend<EndpointContext<Context>, any> {
+    protected getBackend(): Backend<TransportContext, any> {
         return new FnHandler((ctx) => {
             if (ctx.sent) return throwError(() => new PushDisabledExecption());
 
@@ -87,8 +89,8 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
 
 
 
-    protected getRouteMetaData(ctx: EndpointContext<Context>) {
-        const subRoute = ctx.payload.url.replace(this.prefix, '') || '/';
+    protected getRouteMetaData(ctx: TransportContext) {
+        const subRoute = ctx.url.replace(this.prefix, '') || '/';
         if (!this.sortRoutes) {
             this.sortRoutes = this.ctrlRef.class.defs
                 .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))

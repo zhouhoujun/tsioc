@@ -1,5 +1,5 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, AssetContext, AbstractServerContext
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, AssetContext, TransportContext
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -811,7 +811,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     protected override isSelf(token: Token<any>): boolean {
-        return token === AssetContext || token ===  AssetContext || token === AbstractServerContext;
+        return token === AssetContext || token ===  AssetContext || token === TransportContext;
     }
 
 }

@@ -4,14 +4,14 @@ import { CanActivate, GUARDS_TOKEN } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { FILTERS_TOKEN, Filter } from '../filters/filter';
 import { AbstractGuardHandler } from '../handlers/guards';
-import { EndpointContext } from '../endpoints/context';
+import { TransportContext } from './context';
 import { MIDDLEWARES_TOKEN, MiddlewareLike, MiddlewareOf } from './middleware';
 import { MiddlewareBackend } from './middleware.compose';
-import { ServerEndpoint } from './server.endpoint';
+import { TransportEndpoint } from './transport.endpoint';
 
 
-export class MiddlewareEndpoint<TCtx extends EndpointContext, TOutput>
-    extends AbstractGuardHandler<TCtx, TOutput> implements ServerEndpoint<TCtx, TOutput> {
+export class MiddlewareEndpoint<TCtx extends TransportContext, TOutput>
+    extends AbstractGuardHandler<TCtx, TOutput> implements TransportEndpoint<TCtx, TOutput> {
 
     constructor(
         injector: Injector,

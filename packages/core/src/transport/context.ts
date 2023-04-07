@@ -1,32 +1,21 @@
 import { Abstract } from '@tsdi/ioc';
-import { Context } from './middleware';
 import { EndpointContext } from '../endpoints';
 
 
 /**
- * abstract server context.
+ * abstract transport context.
  */
 @Abstract()
-export abstract class AbstractServerContext<TRequest = any, TResponse = any, TStatus = number | string> extends EndpointContext<TRequest> implements Context<TRequest, TResponse>  {
+export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = number | string> extends EndpointContext<TRequest> {
 
     /**
-     * Get response status.
+     * Get request rul
      */
-    abstract get status(): TStatus;
+    abstract get url(): string;
     /**
-     * Set response status, defaults to OK.
+     * Set request url
      */
-    abstract set status(status: TStatus);
-    /**
-     * Get response status message.
-     */
-    abstract get statusMessage(): string;
-    /**
-     * Set response status message.
-     */
-    abstract set statusMessage(message: string);
-
-
+    abstract set url(value: string);
 
     /**
      * transport request.
@@ -45,16 +34,54 @@ export abstract class AbstractServerContext<TRequest = any, TResponse = any, TSt
      * The outgoing request method.
      */
     abstract readonly method: string;
+    
+    /**
+     * Get response status.
+     */
+    abstract get status(): TStatus;
+    /**
+     * Set response status, defaults to OK.
+     */
+    abstract set status(status: TStatus);
+    /**
+     * Get response status message.
+     */
+    abstract get statusMessage(): string;
+    /**
+     * Set response status message.
+     */
+    abstract set statusMessage(message: string);
 
+    /**
+     * has sent or not.
+     */
+    abstract readonly sent: boolean;
+
+}
+
+
+/**
+ * abstract asset context.
+ */
+@Abstract()
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number | string> extends TransportContext<TRequest, TResponse, TStatus> {
+    
     /**
      * Get request rul
      */
     abstract get url(): string;
-
     /**
      * Set request url
      */
     abstract set url(value: string);
+
+    /**
+     * is secure protocol or not.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    abstract get secure(): boolean;
 
     /**
      * Get request pathname .
@@ -81,12 +108,6 @@ export abstract class AbstractServerContext<TRequest = any, TResponse = any, TSt
      * @api public
      */
     abstract set body(value: any);
-
-    /**
-     * response body length.
-     */
-    abstract get length(): number | undefined;
-
     /**
      * Whether the status code is ok
      */
@@ -96,27 +117,6 @@ export abstract class AbstractServerContext<TRequest = any, TResponse = any, TSt
      */
     abstract set ok(ok: boolean);
 
-    /**
-     * has sent or not.
-     */
-    abstract readonly sent: boolean;
-
-    /**
-     * is secure protocol or not.
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    abstract get secure(): boolean;
-
-}
-
-
-/**
- * abstract asset context.
- */
-@Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number | string> extends AbstractServerContext<TRequest, TResponse, TStatus> implements Context<TRequest, TResponse> {
     /**
      * Return request header.
      *

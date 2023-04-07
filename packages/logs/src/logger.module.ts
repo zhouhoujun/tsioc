@@ -1,9 +1,11 @@
-import { Module, ProviderType } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { AnnotationLogAspect } from './aspect';
 import { LoggerManager } from './LoggerManager';
 import { ConsoleLogManager, ConfigureLoggerManager } from './manager';
 import { DefaultLogFormater } from './formater';
+import { LogConfigure } from './LogConfigure';
+import { DebugLogAspect } from './debugs/aspect';
 
 /**
  * logger providers.

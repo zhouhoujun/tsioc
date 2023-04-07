@@ -19,7 +19,7 @@ export * from './client';
 export * from './listen';
 
 export * from './microservice';
-export * from './server.endpoint';
+export * from './transport.endpoint';
 export * from './server';
 
 export * from './router.module';

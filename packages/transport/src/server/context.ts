@@ -1,4 +1,4 @@
-import { MiddlewareLike, ServerEndpointContext, AbstractServerContext, Incoming, Outgoing, ListenOpts, ServerContextOpts } from '@tsdi/core';
+import { MiddlewareLike, ServerEndpointContext, TransportContext, Incoming, Outgoing, ListenOpts, ServerContextOpts } from '@tsdi/core';
 import { Abstract, Injector, Token, tokenId } from '@tsdi/ioc';
 import { AbstractAssetContext } from '../asset.ctx';
 import { TransportServer } from './server';
@@ -82,7 +82,7 @@ export class TransportContext<TRequest extends Incoming = Incoming, TResponse ex
     }
 
     protected isSelf(token: Token) {
-        return token === TransportContext || token === AbstractAssetContext || token === ServerEndpointContext || token === AbstractServerContext;
+        return token === TransportContext || token === AbstractAssetContext || token === ServerEndpointContext || token === TransportContext;
     }
 
 }

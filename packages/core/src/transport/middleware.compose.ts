@@ -1,7 +1,7 @@
 import { chain, isFunction } from '@tsdi/ioc';
 import { defer, Observable } from 'rxjs';
 import { MiddlewareFn, MiddlewareLike } from './middleware';
-import { EndpointContext } from '../endpoints/context';
+import { TransportContext } from './context';
 import { Backend } from '../Handler';
 
 
@@ -11,7 +11,7 @@ import { Backend } from '../Handler';
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareFnify<T extends EndpointContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
+export function middlewareFnify<T extends TransportContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
     return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
@@ -20,7 +20,7 @@ export function middlewareFnify<T extends EndpointContext>(m: MiddlewareLike<T>)
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends EndpointContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
+export function compose<T extends TransportContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => middlewareFnify<T>(m));
     return chain(middleFns)
 }
@@ -34,7 +34,7 @@ export const NEXT = () => Promise.resolve();
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<Tx extends EndpointContext, TResponse> implements Backend<Tx, TResponse> {
+export class MiddlewareBackend<Tx extends TransportContext, TResponse> implements Backend<Tx, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) { }

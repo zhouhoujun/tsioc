@@ -6,6 +6,7 @@ import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
  */
 export interface Packet<T = any> {
     id?: any;
+    url: string;
     type?: number;
     payload?: T;
     error?: Error;
@@ -28,7 +29,7 @@ export interface Incoming<T = any, TConn = any> extends Packet<T> {
     /**
      * Outgoing URL
      */
-    readonly url?: string;
+    readonly url: string;
     /**
      * Outgoing URL parameters.
      */

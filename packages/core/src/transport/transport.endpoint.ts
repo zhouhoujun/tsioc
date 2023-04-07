@@ -6,10 +6,10 @@ import { MiddlewareOf } from './middleware';
 import { MiddlewareService } from './middleware.service';
 
 /**
- * Service endpoint.
+ * Transport endpoint.
  */
 @Abstract()
-export abstract class ServerEndpoint<TCtx extends EndpointContext, TOutput> extends OperationEndpoint<TCtx, TOutput> implements EndpointService, MiddlewareService  {
+export abstract class TransportEndpoint<TCtx extends EndpointContext, TOutput> extends OperationEndpoint<TCtx, TOutput> implements EndpointService, MiddlewareService  {
     
     abstract use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this;
 }

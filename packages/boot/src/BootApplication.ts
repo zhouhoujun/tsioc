@@ -78,7 +78,7 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
     * @param {BootApplicationOption<M>} target
     * @returns {Promise<ApplicationContext<M>>}
     */
-    static run(target: BootApplicationOption): Promise<BootApplicationContext>
+    static run<T, TArg extends ApplicationArguments>(target: BootApplicationOption<T, TArg>): Promise<BootApplicationContext<T, TArg>>
     /**
      * run application.
      *
@@ -87,9 +87,9 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
      * @param {BootApplicationOption} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static run(target: Type, option?: BootEnvironmentOption): Promise<BootApplicationContext>;
-    static override run(target: Type | BootApplicationOption, option?: BootEnvironmentOption): Promise<BootApplicationContext> {
-        return new BootApplication(option ? { module: target, ...option } as BootApplicationOption : target).run()
+    static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: BootEnvironmentOption): Promise<BootApplicationContext>;
+    static override run<T, TArg extends ApplicationArguments>(target: Type<T> | BootApplicationOption<T, TArg>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>> {
+        return new BootApplication<T, TArg>(option ? { module: target, ...option } as BootApplicationOption : target).run() as Promise<BootApplicationContext<T, TArg>>
     }
 }
 

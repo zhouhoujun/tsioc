@@ -1,18 +1,18 @@
 import { Abstract, EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Injector } from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate, getGuardsToken } from '../guard';
+import { getInterceptorsToken } from '../Interceptor';
+import { getFiltersToken } from '../filters/filter';
 import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { GuardHandler } from '../handlers/guards';
 import { Endpoint } from '../endpoints/endpoint';
-import { EndpointContext } from '../endpoints/context';
 import { setOptions } from '../endpoints/endpoint.service';
 import { joinprefix, Route, ROUTES, Routes } from './route';
-import { Middleware, MiddlewareFn, MiddlewareLike, Context } from './middleware';
+import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { Router } from './router';
 import { ControllerRouteReolver } from './controller';
-import { getInterceptorsToken } from '../Interceptor';
-import { getFiltersToken } from '../filters/filter';
+import { TransportContext } from './context';
 
 /**
  * abstract router.
@@ -22,11 +22,11 @@ export abstract class MiddlewareRouter extends Router<Endpoint | MiddlewareLike>
     /**
      * invoke middleware.
      *
-     * @param {MiddlewareContext} ctx context.
+     * @param {TransportContext} ctx context.
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
-    abstract invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void>;
+    abstract invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
     /**
      * use route.
      * @param route 
@@ -65,12 +65,12 @@ export class MappingRoute implements Middleware, Endpoint {
         return this.route.path
     }
 
-    async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    handle(ctx: EndpointContext<Context>): Observable<any> {
+    handle(ctx: TransportContext): Observable<any> {
         return of(ctx)
             .pipe(
                 mergeMap(async ctx => {
@@ -85,7 +85,7 @@ export class MappingRoute implements Middleware, Endpoint {
             );
     }
 
-    protected canActive(ctx: EndpointContext<Context>) {
+    protected canActive(ctx: TransportContext) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
@@ -147,7 +147,7 @@ export class MappingRoute implements Middleware, Endpoint {
         return endpoint;
     }
 
-    protected async redirect(ctx: EndpointContext<Context>, url: string, alt?: string): Promise<void> {
+    protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
         if (!isFunction(ctx.payload.redirect)) {
             throw new BadRequestExecption();
         }
@@ -212,7 +212,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
         return this
     }
 
-    handle(ctx: EndpointContext<Context>): Observable<any> {
+    handle(ctx: TransportContext): Observable<any> {
         const route = this.getRoute(ctx);
         if (route) {
             if ((route as Endpoint).handle) {
@@ -231,7 +231,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
 
 
 
-    async invoke(ctx: EndpointContext<Context>, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const route = this.getRoute(ctx);
         if (route) {
             if ((route as Endpoint).handle) {
@@ -245,7 +245,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
         }
     }
 
-    protected getRoute(ctx: EndpointContext<Context>): MiddlewareLike | Endpoint | undefined {
+    protected getRoute(ctx: TransportContext): MiddlewareLike | Endpoint | undefined {
         // if (!(ctx.status instanceof NotFoundStatus)) return;
 
         let url: string;

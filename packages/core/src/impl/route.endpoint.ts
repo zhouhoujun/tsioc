@@ -1,4 +1,4 @@
-import { Class, EMPTY, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
 import { setOptions } from '../endpoints/endpoint.service';
 import { patternToPath } from '../transport/pattern';

@@ -1,13 +1,15 @@
 import { ProvdierOf, StaticProvider, Abstract } from '@tsdi/ioc';
-import { EndpointContext } from '../endpoints/context';
-import { EndpointService } from '../endpoints/endpoint.service';
-import { Filter } from '../filters';
+import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
-import { PipeTransform } from '../pipes';
+import { PipeTransform } from '../pipes/pipe';
+import { EndpointContext } from '../endpoints/context';
+import { EndpointService } from '../endpoints/endpoint.service';
 import { MiddlewareOf } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { ServerEndpoint } from './server.endpoint';
+import { TransportEndpoint } from './transport.endpoint';
+
+
 
 /**
  * Server
@@ -16,7 +18,7 @@ import { ServerEndpoint } from './server.endpoint';
 export abstract class Server<TCtx extends EndpointContext, TOutput = any> implements EndpointService, MiddlewareService {
 
 
-    constructor(private endpoint: ServerEndpoint<TCtx, TOutput>) {
+    constructor(private endpoint: TransportEndpoint<TCtx, TOutput>) {
         
     }
 
