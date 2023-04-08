@@ -1,8 +1,18 @@
-import { Incoming, IncomingHeaders } from '@tsdi/core';
+import { Incoming, IncomingHeaders, ResHeaders } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
 import { Readable } from 'stream';
 import { Connection } from './connection';
 import { ev, hdr } from './consts';
 
+
+@Abstract()
+export abstract class IncomingAdapter {
+    /**
+     * parse headers from incoming message.
+     * @param incoming 
+     */
+    abstract parseHeaders(incoming: Incoming): ResHeaders;
+}
 /**
  * incoming message.
  */

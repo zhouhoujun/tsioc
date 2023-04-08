@@ -4,7 +4,6 @@ import { Buffer } from 'buffer';
 import { Stream } from 'stream';
 import { existsSync, createReadStream } from 'fs';
 import { join, isAbsolute } from 'path';
-import { AbstractAssetContext } from '../asset.ctx';
 import { ResultValue } from './ResultValue';
 
 /**

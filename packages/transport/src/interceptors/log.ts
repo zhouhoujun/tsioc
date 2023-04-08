@@ -1,5 +1,5 @@
-import { BytesFormatPipe, GuardHandler, EndpointContext, Interceptor, TimeFormatPipe } from '@tsdi/core';
 import { Abstract, Inject, Injectable, isNumber, Nullable } from '@tsdi/ioc';
+import { BytesFormatPipe, EndpointContext, Interceptor, TimeFormatPipe, Handler, TransportContext } from '@tsdi/core';
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
@@ -62,7 +62,7 @@ export class LogInterceptor implements Interceptor {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
-    intercept( ctx: EndpointContext, next: GuardHandler): Observable<any> {
+    intercept(ctx: TransportContext, next: Handler): Observable<any> {
         const logger = ctx.get(Logger);
 
         const level = this.options.level;
@@ -72,10 +72,10 @@ export class LogInterceptor implements Interceptor {
 
         //todo console log and other. need to refactor formater.
         const start = hrtime();
-        const method = chalk.cyan(req.method);
-        const url = req.url;
+        const method = chalk.cyan(ctx.method);
+        const url = ctx.url;
         logger[level](incoming, method, url);
-        return next.handle(req, ctx)
+        return next.handle(ctx)
             .pipe(
                 map(res => {
                     logger[level](outgoing, method, url, ...this.formatter.format(ctx, hrtime(start)));

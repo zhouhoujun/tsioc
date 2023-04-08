@@ -1,14 +1,18 @@
-import { OkStatus, RedirectStatus, RequestFailedStatus, RetryStatus, ServerEndpointContext, ServerFailedStatus } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
+import { TransportContext } from '@tsdi/core';
 import * as chalk from 'chalk';
 import { ResponseStatusFormater } from './log';
+import { StatusVaildator } from '../status';
 
 
 
 @Injectable({ static: true })
 export class DefaultStatusFormater extends ResponseStatusFormater {
+    constructor(private vaildator: StatusVaildator) {
+        super()
+    }
 
-    format(ctx: ServerEndpointContext, hrtime: [number, number]): string[] {
+    format(ctx: TransportContext, hrtime: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
         return [
             status,
@@ -19,30 +23,30 @@ export class DefaultStatusFormater extends ResponseStatusFormater {
     }
 
 
-    private formatStatus(ctx: ServerEndpointContext): [string, string] {
-        const { status } = ctx;
+    private formatStatus(ctx: TransportContext): [string, string] {
+        const { status, statusMessage } = ctx;
 
-        if (status instanceof OkStatus) {
-            return [chalk.green(status.status), status.statusText ? chalk.green(status.statusText) : ''];
+        if (this.vaildator.isOk(status)) {
+            return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
         }
 
-        if (status instanceof RedirectStatus) {
-            return [chalk.yellow(status.status), status.statusText ? chalk.yellow(status.statusText) : ''];
+        if (this.vaildator.isRedirect(status)) {
+            return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        if (status instanceof RequestFailedStatus) {
-            return [chalk.magentaBright(status.status), status.statusText ? chalk.magentaBright(status.statusText) : '']
+        if (this.vaildator.isRequestFailed(status)) {
+            return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (status instanceof ServerFailedStatus) {
-            return [chalk.red(status.status), status.statusText ? chalk.red(status.statusText) : '']
+        if (this.vaildator.isServerError(status)) {
+            return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
 
-        if (status instanceof RetryStatus) {
-            return [chalk.yellow(status.status), status.statusText ? chalk.yellow(status.statusText) : ''];
+        if (this.vaildator.isRetry(status)) {
+            return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        return [chalk.cyan(status.status), status.statusText ? chalk.cyan(status.statusText) : '']
+        return [chalk.cyan(status), statusMessage ? chalk.cyan(statusMessage) : '']
 
     }
 

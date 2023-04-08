@@ -11,8 +11,6 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
      */
     execption?: any;
 
-    method?: string;
-
     sent?: boolean;
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {

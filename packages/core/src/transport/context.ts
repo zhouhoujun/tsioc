@@ -31,9 +31,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      */
     abstract get protocol(): string;
     /**
-     * The outgoing request method.
+     * The request method.
      */
-    abstract readonly method: string;
+    abstract get method(): string;
     
     /**
      * Get response status.
@@ -43,6 +43,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      * Set response status, defaults to OK.
      */
     abstract set status(status: TStatus);
+
     /**
      * Get response status message.
      */
@@ -52,6 +53,21 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      */
     abstract set statusMessage(message: string);
 
+    /**
+     * Set Content-Length field to `n`.
+     *
+     * @param {Number} n
+     * @api public
+     */
+    abstract set length(n: number | undefined);
+    /**
+     * Return parsed response Content-Length when present.
+     *
+     * @return {Number}
+     * @api public
+     */
+    abstract get length(): number | undefined;
+    
     /**
      * has sent or not.
      */
@@ -218,21 +234,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = nu
      * @api public
      */
     abstract set contentType(type: string);
-
-    /**
-     * Set Content-Length field to `n`.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    abstract set length(n: number | undefined);
-    /**
-     * Return parsed response Content-Length when present.
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract get length(): number | undefined;
 
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`

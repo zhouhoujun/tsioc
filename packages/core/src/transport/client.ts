@@ -337,8 +337,16 @@ export abstract class Client {
         return err;
     }
 
+    /**
+     * build request.
+     * @param url 
+     * @param options 
+     */
     protected abstract buildRequest(url: TransportRequest | Pattern, options?: RequestOptions & ResponseAs): TransportRequest;
-
+ 
+    /**
+     * connect service.
+     */
     protected abstract connect(): Promise<any> | Observable<any>;
 
 }

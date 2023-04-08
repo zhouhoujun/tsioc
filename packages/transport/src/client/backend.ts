@@ -2,11 +2,10 @@
 import {
     TransportEvent, TransportErrorResponse, TransportRequest, 
     ResHeaders, OutgoingHeader, TransportHeaderResponse, Redirector,
-    ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend
+    ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend, Incoming, HEAD
 } from '@tsdi/core';
 import { Abstract, lang } from '@tsdi/ioc';
 import { PassThrough, pipeline, Readable } from 'stream';
-import { EventEmitter } from 'events';
 import { Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
 import { isBuffer, pmPipeline, sendbody, toBuffer, XSSI_PREFIX } from '../utils';
@@ -15,7 +14,7 @@ import { OutgoingMessage } from '../outgoing';
 import { ev, hdr } from '../consts';
 import { RequestStauts } from './options';
 import { MimeAdapter, MimeTypes } from '../mime';
-import { TransportClient } from './client';
+import { StatusVaildator } from '../status';
 
 
 /**
@@ -24,15 +23,23 @@ import { TransportClient } from './client';
 @Abstract()
 export abstract class TransportBackend implements Backend<TransportRequest, TransportEvent> {
 
+    constructor(
+        private vaildator:StatusVaildator,
+        private mimeTypes: MimeTypes,
+        private mimeAdapter: MimeAdapter,
+        private redirector: Redirector) {
+    }
+
     handle(req: TransportRequest): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent<any>>) => {
             const url = req.url.trim();
             let status: number|string;
+            let statusText: string;
 
             let error: any;
             let ok = false;
 
-            const request = this.createRequest((ctx.target as TransportClient).connection, req);
+            const request = this.createRequest(req);
 
             const onError = (error?: Error | null) => {
                 const res = this.createError({
@@ -65,12 +72,12 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                     ok = !err;
                 });
 
-                if (status instanceof RedirectStatus) {
+                if (this.vaildator.isRedirect(status)) {
                     // HTTP fetch step 5.2
-                    ctx.get(Redirector).redirect<TransportEvent<any>>(ctx, req, status, headers).subscribe(observer);
+                    this.redirector.redirect<TransportEvent<any>>(req, status, headers).subscribe(observer);
                     return;
                 }
-                ok = status instanceof OkStatus;
+                ok = this.vaildator.isOk(status);
 
                 if (!ok) {
                     if (!error) {
@@ -80,11 +87,12 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                     return observer.error(this.createError({
                         url,
                         error: error ?? body,
-                        ...status
+                        status,
+                        statusText
                     }));
                 }
 
-                const rqstatus = (req.context ?? ctx).getValueify(RequestStauts, () => new RequestStauts());
+                const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
                 // HTTP-network fetch step 12.1.1.3
                 const codings = headers.get(hdr.CONTENT_ENCODING);
 
@@ -95,7 +103,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 // 3. no Content-Encoding header
                 // 4. no content response (204)
                 // 5. content not modified response (304)
-                if (rqstatus.compress && req.method !== mths.HEAD && codings) {
+                if (rqstatus.compress && req.method !== HEAD && codings) {
                     // For Node v6+
                     // Be less strict when decoding compressed responses, since sometimes
                     // servers send slightly invalid responses that are still accepted
@@ -153,8 +161,8 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 const contentType = headers.get(hdr.CONTENT_TYPE) as string;
                 let type = req.responseType;
                 if (contentType) {
-                    const adapter = ctx.get(MimeAdapter);
-                    const mity = ctx.get(MimeTypes);
+                    const adapter = this.mimeAdapter;
+                    const mity = this.mimeTypes;
                     if (type === 'json' && !adapter.match(mity.json, contentType)) {
                         if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
                             type = 'text';
@@ -219,10 +227,10 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                     observer.error(this.createError({
                         url,
                         error: error ?? body,
-                        ...status
+                        status,
+                        statusText
                     }));
                 }
-
             };
 
             const respName = this.getResponseEvenName();
@@ -239,21 +247,18 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 this.sendBody(request, req.body, onError);
             }
 
-
             return () => {
                 request.off(respName, onResponse);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
-                if (!ctx.destroyed) {
+                if (!req.context.destroyed) {
                     observer.error(this.createError({
                         status: 0,
                         statusText: 'The operation was aborted.'
                     }));
-
                 }
-
             }
         });
     }
@@ -297,7 +302,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
         return ev.RESPONSE
     }
 
-    protected abstract createRequest(conn: EventEmitter, req: TransportRequest): OutgoingMessage;
+    protected abstract createRequest(req: TransportRequest): OutgoingMessage;
 
     protected sendBody(request: OutgoingMessage, body: any, callback: (error?: Error | null) => void) {
         sendbody(body, request, callback);

@@ -21,8 +21,8 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     private _url?: string;
     private _status: Status;
 
-    constructor(injector: Injector, request: TRequest, response: TResponse, target: Server, options?: ServerContextOpts) {
-        super(injector, request, response, target, options);
+    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, options?: ServerContextOpts) {
+        super(injector, request, response, options);
         this.originalUrl = request.url?.toString() ?? '';
         this._status = this.statusFactory.create('NotFound');
         this._url = request.url ?? '';
@@ -687,7 +687,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!(this.status instanceof RedirectStatus)) this.status = this.statusFactory.create('Found');
+        // if (!(this.status instanceof RedirectStatus)) this.status = this.statusFactory.create('Found');
 
         // html
         if (this.accepts('html')) {
