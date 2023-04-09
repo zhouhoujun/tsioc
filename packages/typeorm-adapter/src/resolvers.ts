@@ -1,40 +1,33 @@
 import { Joinpoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { Parameter, InvocationContext, Type, lang, Inject, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
-import { getConnection, MongoRepository, Repository, TreeRepository, getManager } from 'typeorm';
+import { getConnection, MongoRepository, ObjectLiteral, Repository, TreeRepository } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
+import { TypeormAdapter } from './TypeormAdapter';
 
 
 export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolver {
 
-    constructor(@Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string) {
+    constructor(private adapter: TypeormAdapter) {
         super()
     }
 
     canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
-        const { model } = parameter as RepositoryMetadata;
-        let { connection } = parameter as RepositoryMetadata;
-        if (!connection) {
-            connection = this.conn
-        }
+        const { model, connection } = parameter as RepositoryMetadata;
 
         if (!parameter.type || !lang.isExtendsClass(parameter.type, Repository)) {
             throw new ArgumentExecption(`Autowired repository design type not defined, or not extends with TypeORM Repository`)
         }
 
-        if (!model || !getConnection(connection).hasMetadata(model)) {
+        if (!model || !this.adapter.getConnection(connection).hasMetadata(model)) {
             throw new ArgumentExecption(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.targetType} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `)
         }
         return true
     }
 
     resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T {
-        const { model, type } = parameter as RepositoryMetadata;
-        let { connection } = parameter as RepositoryMetadata;
-        if (!connection) {
-            connection = this.conn
-        }
-        return this.getRepository<T>(model, type as Type, connection)
+        const { model, type, connection } = parameter as RepositoryMetadata;
+        return this.getRepository(model, type as Type, connection) as T;
     }
 
     protected getLocal(parameter: Parameter<any>, ctx: InvocationContext<any>) {
@@ -49,19 +42,19 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         return local
     }
 
-    protected getRepository<T>(model: Type<T> | undefined, rep: Type | undefined, connection: string) {
+    protected getRepository(model: Type | undefined, rep: Type | undefined, connection: string | undefined) {
         if (!model) {
-            return getManager(connection).getCustomRepository(rep!)
+            return this.adapter.getCustomRepository(rep!, connection)
         }
         switch (rep) {
             case Repository:
-                return getManager(connection).getRepository(model)
+                return this.adapter.getRepository(model, connection)
             case MongoRepository:
-                return getManager(connection).getMongoRepository(model)
+                return this.adapter.getMongoRepository(model, connection)
             case TreeRepository:
-                return getManager(connection).getTreeRepository(model)
+                return this.adapter.getTreeRepository(model, connection)
             default:
-                return getManager(connection).getCustomRepository(rep!)
+                return this.adapter.getCustomRepository(rep!, connection)
         }
     }
 }

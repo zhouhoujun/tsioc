@@ -2,8 +2,9 @@ import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
-import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
+import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { DEFAULT_CONNECTION } from './objectid.pipe';
+import { TypeormAdapter } from './TypeormAdapter';
 
 export class TypeormTransactionStatus extends TransactionStatus {
 
@@ -77,9 +78,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
         const withNewTransaction = () => {
             if (isolation) {
-                return getManager(connection).transaction(isolation as any, runInTransaction)
+                return joinPoint.get(TypeormAdapter).getConnection(connection).manager.transaction(isolation as any, runInTransaction)
             } else {
-                return getManager(connection).transaction(runInTransaction)
+                return joinPoint.get(TypeormAdapter).getConnection(connection).manager.transaction(runInTransaction)
             }
         };
 

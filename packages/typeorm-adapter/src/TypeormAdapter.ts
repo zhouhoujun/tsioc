@@ -195,7 +195,7 @@ export class TypeormAdapter {
         return this.getConnection(connectName).getTreeRepository<T>(type)
     }
 
-    getCustomRepository<T extends Repository<any>>({ type, connectName }: { type: Type<T>; connectName?: string; }): T {
+    getCustomRepository<T extends Repository<any>>(type: Type<T>, connectName?: string): T {
         return this.getConnection(connectName).getCustomRepository(type)
     }
 
