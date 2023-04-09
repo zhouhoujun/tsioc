@@ -1,4 +1,4 @@
-import { MiddlewareLike, Throwable, Status, ListenOpts, TransportContext } from '@tsdi/core';
+import { MiddlewareLike, Throwable, ListenOpts, TransportContext, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
@@ -17,7 +17,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse> implements Throwable {
+export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number> implements Throwable {
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
@@ -43,7 +43,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
     }
 
     get update(): boolean {
-        return this.method === mths.PUT;
+        return this.method === PUT;
     }
 
     isAbsoluteUrl(url: string): boolean {
@@ -136,10 +136,10 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
      */
     get fresh(): boolean {
         const method = this.methodName;
-        const s = this.status.status;
+        const s = this.status;
 
         // GET or HEAD for weak freshness validation only
-        if (mths.GET !== method && mths.HEAD !== method) return false;
+        if (GET !== method && HEAD !== method) return false;
 
         // 2xx or 304 as per rfc2616 14.26
         if ((s >= 200 && s < 300) || 304 === s) {
@@ -286,7 +286,7 @@ const httpPtl = 'http';
 const httptl = /^https?:\/\//i;
 const urlsplit = /\s*,\s*/;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
-const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
+const methods = [GET, HEAD, PUT, DELETE, OPTIONS, TRACE];
 
 
 function parseStamp(date?: string | number): number {

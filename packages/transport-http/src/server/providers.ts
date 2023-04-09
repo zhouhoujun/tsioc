@@ -1,9 +1,8 @@
-import { StatusFactory } from '@tsdi/core';
-import { HttpStatusFactory } from '../status';
+import { HttpStatusVaildator } from '../status';
+import { StatusVaildator } from '@tsdi/transport';
 import { HttpExecptionHandlers } from './exception-filter';
-
 
 export const HTTP_SERVR_PROVIDERS = [
     HttpExecptionHandlers,
-    { provide: StatusFactory, useExisting: HttpStatusFactory },
+    { provide: StatusVaildator, useClass: HttpStatusVaildator },
 ]

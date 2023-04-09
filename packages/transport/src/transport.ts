@@ -1,9 +1,7 @@
-import { RouterModule, TransformModule, Client, Server } from '@tsdi/core';
+import { RouterModule, TransformModule } from '@tsdi/core';
 import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { TransportClient } from './client/client';
 import { BodyContentInterceptor } from './client/body';
 import { TransportServerOpts } from './server/options';
-import { TransportServer } from './server/server';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { DefaultStatusFormater, LogInterceptor } from './interceptors';
 import {
@@ -35,10 +33,7 @@ import { ServerFinalizeFilter } from './server/filter';
         SessionMiddleware,
 
         ServerFinalizeFilter,
-        ExecptionFinalizeFilter,
-
-        { provide: Client, useExisting: TransportClient },
-        { provide: Server, useExisting: TransportServer }
+        ExecptionFinalizeFilter
     ]
 })
 export class TransportModule {

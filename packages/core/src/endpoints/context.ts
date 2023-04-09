@@ -28,7 +28,7 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         this.execption = null;
     }
 
-    override isSelf(token: Token) {
+    protected override isSelf(token: Token) {
         return token === EndpointContext;
     }
 

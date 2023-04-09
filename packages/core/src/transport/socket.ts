@@ -1,3 +1,5 @@
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
+import { Packet } from './packet';
 import { ReadableStream, WritableStream } from './stream';
 
 /**
@@ -68,4 +70,155 @@ export interface Socket extends ReadableStream, WritableStream {
      * @return The socket itself.
      */
     setKeepAlive?(enable?: boolean, initialDelay?: number): this;
+}
+
+
+
+/**
+ * server side incoming message.
+ */
+export interface Incoming<T = any, TConn = any> extends Packet<T>, ReadableStream {
+    /**
+     * packet id.
+     */
+    readonly id?: number;
+    /**
+     * headers
+     */
+    readonly headers: IncomingHeaders;
+    /**
+     * Outgoing URL
+     */
+    readonly url: string;
+    /**
+     * Outgoing URL parameters.
+     */
+    readonly params?: Record<string, string | string[] | number | any>;
+    /**
+     * The outgoing request method.
+     */
+    readonly method?: string;
+
+    readonly connection: TConn;
+
+    body?: any;
+
+    rawBody?: any;
+}
+
+/**
+ * server outgoing message.
+ */
+export interface Outgoing<TConn = any> extends WritableStream {
+
+    readonly connection: TConn;
+    /**
+     * Get response status code.
+     */
+    get statusCode(): number | string;
+    /**
+     * Set response status code.
+     */
+    set statusCode(status: number | string);
+    /**
+     * Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
+    get statusMessage(): string;
+    /**
+     * Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
+    set statusMessage(msg: string);
+
+    /**
+     * headers has sent or not.
+     */
+    get headersSent(): boolean;
+    /**
+     * Get all headers.
+     */
+    getHeaders(): OutgoingHeaders;
+
+    /**
+     * has header field or not.
+     * @param field 
+     */
+    hasHeader(field: string): boolean;
+    /**
+     * Return header.
+     *
+     * Examples:
+     *
+     *     this.getHeader('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.getHeader('content-type');
+     *     // => "text/plain"
+     *
+     *     this.getHeader('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
+     */
+    getHeader(field: string): OutgoingHeader;
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.setHeader('Foo', ['bar', 'baz']);
+     *    this.setHeader('Accept', 'application/json');
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    setHeader(field: string, val: OutgoingHeader): void;
+    /**
+     * append header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.appendHeader('Foo', ['bar', 'baz']);
+     *    this.appendHeader('Accept', 'application/json');
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    appendHeader?(field: string, val: OutgoingHeader): void;
+    /**
+     * Remove header `field`.
+     *
+     * @param {String} name
+     * @api public
+     */
+    removeHeader(field: string): void;
+
+    /**
+     * get header names
+     */
+    getHeaderNames?(): string[];
+
+    /**
+     * write head
+     * @param statusCode 
+     * @param headers 
+     */
+    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    /**
+     * write head
+     * @param statusCode 
+     * @param statusMessage 
+     * @param headers 
+     */
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+
 }

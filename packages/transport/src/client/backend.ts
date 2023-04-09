@@ -1,10 +1,10 @@
 /* eslint-disable no-case-declarations */
 import {
-    TransportEvent, TransportErrorResponse, TransportRequest, 
+    TransportEvent, TransportErrorResponse, TransportRequest,
     ResHeaders, OutgoingHeader, TransportHeaderResponse, Redirector,
     ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend, Incoming, HEAD
 } from '@tsdi/core';
-import { Abstract, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
 import { PassThrough, pipeline, Readable } from 'stream';
 import { Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
@@ -12,7 +12,6 @@ import { isBuffer, pmPipeline, sendbody, toBuffer, XSSI_PREFIX } from '../utils'
 import { IncomingMessage } from '../incoming';
 import { OutgoingMessage } from '../outgoing';
 import { ev, hdr } from '../consts';
-import { RequestStauts } from './options';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { StatusVaildator } from '../status';
 
@@ -24,7 +23,7 @@ import { StatusVaildator } from '../status';
 export abstract class TransportBackend implements Backend<TransportRequest, TransportEvent> {
 
     constructor(
-        private vaildator:StatusVaildator,
+        private vaildator: StatusVaildator,
         private mimeTypes: MimeTypes,
         private mimeAdapter: MimeAdapter,
         private redirector: Redirector) {
@@ -33,7 +32,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
     handle(req: TransportRequest): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent<any>>) => {
             const url = req.url.trim();
-            let status: number|string;
+            let status: number | string;
             let statusText: string;
 
             let error: any;
@@ -309,4 +308,25 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
     }
 }
 
+
+export class RequestStauts {
+    public highWaterMark: number;
+    public insecureParser: boolean;
+    public referrerPolicy: ReferrerPolicy;
+    readonly compress: boolean;
+    constructor(init: {
+        compress?: boolean;
+        follow?: number;
+        counter?: number;
+        highWaterMark?: number;
+        insecureParser?: boolean;
+        referrerPolicy?: ReferrerPolicy;
+        redirect?: 'manual' | 'error' | 'follow' | '';
+    } = EMPTY_OBJ) {
+        this.compress = init.compress ?? false;
+        this.highWaterMark = init.highWaterMark ?? 16384;
+        this.insecureParser = init.insecureParser ?? false;
+        this.referrerPolicy = init.referrerPolicy ?? '';
+    }
+}
 

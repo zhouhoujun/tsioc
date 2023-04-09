@@ -7,6 +7,7 @@ export * from './duplexify';
 export * from './connection';
 export * from './incoming';
 export * from './outgoing';
+export * from './status';
 
 export * from './stringify';
 export * from './utils';

@@ -1,4 +1,4 @@
-import { Interceptor, ServerOpts, ListenOpts, ExecptionFilter, Incoming, Outgoing } from '@tsdi/core';
+import { Interceptor, EndpointOptions, ListenOpts, ExecptionFilter, Incoming, Outgoing } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { ConnectionOpts } from '../connection';
 import { ContentOptions, SessionOptions } from '../middlewares';
@@ -8,7 +8,7 @@ import { MimeSource } from '../mime';
  * transport server options.
  */
 @Abstract()
-export abstract class TransportServerOpts<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends ServerOpts<TRequest, TResponse> {
+export abstract class TransportServerOpts<TRequest = Incoming, TResponse = Outgoing> implements EndpointOptions<TRequest> {
     /**
      * options of protocol.
      */

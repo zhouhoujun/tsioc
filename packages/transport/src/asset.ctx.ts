@@ -14,12 +14,12 @@ import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
  * asset server context.
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing> extends AssetContext<TRequest, TResponse> {
+export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string> extends AssetContext<TRequest, TResponse, TStatus> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
-    private _status: Status;
+    private _status: TStatus;
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, options?: ServerContextOpts) {
         super(injector, request, response, options);
@@ -37,11 +37,11 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
     }
 
-    get status(): Status {
+    get status(): TStatus {
         return this._status;
     }
 
-    set status(status: Status) {
+    set status(status: TStatus) {
         if (this.sent) return;
         this._explicitStatus = true;
         const chged = this._status !== status;
@@ -52,7 +52,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if (this.body && status instanceof EmptyStatus) this.body = null;
     }
 
-    protected onStatusChanged(status: Status) {
+    protected onStatusChanged(status: TStatus) {
 
     }
 

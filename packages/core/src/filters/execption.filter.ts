@@ -1,5 +1,5 @@
-import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, Token } from '@tsdi/ioc';
-import { catchError, finalize, Observable, throwError } from 'rxjs';
+import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
+import { catchError, finalize, isObservable, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { InternalServerExecption } from '../execptions';
 import { EndpointContext } from '../endpoints/context';
@@ -43,7 +43,11 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filte
     intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<any> {
         return next.handle(input)
             .pipe(
-                catchError((err, caught) => this.catchError(input, err, caught))
+                catchError((err, caught) => {
+                    const res = this.catchError(input, err, caught);
+                    if (isObservable(res) || isPromise(res)) return res;
+                    return of(res);
+                })
             )
     }
 
@@ -52,7 +56,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filte
      * @param err 
      * @param caught 
      */
-    abstract catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any>
+    abstract catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any> | Promise<any> | any;
 }
 
 /**

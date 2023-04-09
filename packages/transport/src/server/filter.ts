@@ -1,46 +1,53 @@
 import {
-    GuardHandler, EndpointContext, Filter, MessageExecption, AssetContext, Backend
+    GuardHandler, Filter, MessageExecption, AssetContext, Backend, Outgoing, TransportContext, HEAD
 } from '@tsdi/core';
 import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
 import { Writable } from 'stream';
 import { hdr } from '../consts';
 import { isBuffer, isStream, pipeStream } from '../utils';
+import { StatusVaildator } from '../status';
 
 
 @Abstract()
-export abstract class ReceiveBackend<IInput = any, TOutput = any> implements Backend<IInput, TOutput> {
-    abstract handle(input: IInput, context: EndpointContext): Observable<TOutput>;
+export abstract class ReceiveBackend<IInput extends TransportContext = TransportContext, TOutput = any> implements Backend<IInput, TOutput> {
+    abstract handle(context: IInput): Observable<TOutput>;
 }
 
 
 @Injectable({ static: true })
 export class ServerFinalizeFilter extends Filter {
 
+    constructor(private vaildator: StatusVaildator) {
+        super()
+    }
+
     intercept(context: AssetContext, next: GuardHandler<any, any>): Observable<any> {
         return next.handle(context)
             .pipe(
                 mergeMap(res => {
-                    return this.respond(res, context)
+                    return this.respond(context)
                 })
             )
     }
 
-    protected async respond(res: Outgoing, ctx: AssetContext): Promise<any> {
+    protected async respond(ctx: AssetContext): Promise<any> {
 
-        if (!ctx.writable) return;
+        if (ctx.destroyed || !ctx.writable) return;
+
+        const res: Outgoing = ctx.response;
 
         let body = ctx.body;
         const status = ctx.status;
 
         // ignore body
-        if (ctx.status instanceof EmptyStatus) {
+        if (this.vaildator.isEmpty(status)) {
             // strip headers
             ctx.body = null;
             return res.end()
         }
 
-        if (mths.HEAD === ctx.method) {
+        if (HEAD === ctx.method) {
             if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
                 const length = ctx.length;
                 if (Number.isInteger(length)) ctx.length = length
@@ -57,7 +64,7 @@ export class ServerFinalizeFilter extends Filter {
                 return res.end()
             }
 
-            body = status.statusText || String(status.status);
+            body = ctx.statusMessage || String(status);
             body = Buffer.from(body);
             if (!res.headersSent) {
                 ctx.type = 'text';

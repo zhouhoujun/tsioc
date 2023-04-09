@@ -1,8 +1,8 @@
 import {
-    BadRequestExecption,  ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption,
+    BadRequestExecption, ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption,
     UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, MessageExecption, Filter, Handler
 } from '@tsdi/core';
-import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, MissingParameterExecption, isFunction, isNumber } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
@@ -12,66 +12,56 @@ import { map, Observable } from 'rxjs';
 
 
 @Injectable({ static: true })
-export class HttpExecptionFinalizeFilter implements Filter {
-    intercept(context: HttpContext, next: Handler): Observable<HttpError> {
+export class HttpExecptionFinalizeFilter extends ExecptionFilter<HttpContext> {
+    catchError(context: HttpContext, err: any, caught: Observable<any>): any {
 
-        return next.handle(context)
-            .pipe(
-                map(r => {
-                    if (!context.execption) return r;
+        //finllay defalt send error.
+        let headerSent = false;
+        if (context.sent || !context.writable) {
+            headerSent = err.headerSent = true
+        }
 
-                    const err = context.execption;
+        // nothing we can do here other
+        // than delegate to the app-level
+        // handler and log.
+        if (headerSent) {
+            return
+        }
 
-                    //finllay defalt send error.
-                    let headerSent = false;
-                    if (context.sent || !context.writable) {
-                        headerSent = err.headerSent = true
-                    }
+        const res = context.response;
 
-                    // nothing we can do here other
-                    // than delegate to the app-level
-                    // handler and log.
-                    if (headerSent) {
-                        return
-                    }
+        // first unset all headers
+        if (isFunction(res.getHeaderNames)) {
+            res.getHeaderNames().forEach(name => res.removeHeader(name))
+        } else {
+            (res as any)._headers = {} // Node < 7.7
+        }
 
-                    const res = context.response;
+        // then set those specified
+        if (err.headers) context.setHeader(err.headers);
 
-                    // first unset all headers
-                    if (isFunction(res.getHeaderNames)) {
-                        res.getHeaderNames().forEach(name => res.removeHeader(name))
-                    } else {
-                        (res as any)._headers = {} // Node < 7.7
-                    }
+        // force text/plain
+        context.type = 'text';
+        let statusCode = (err.status || err.statusCode) as HttpStatusCode;
+        let msg;
+        if (err instanceof MessageExecption) {
+            msg = err.message
+        } else {
+            // ENOENT support
+            if (ENOENT === err.code) statusCode = 404;
 
-                    // then set those specified
-                    if (err.headers) context.setHeader(err.headers);
+            // default to 500
+            if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
 
-                    // force text/plain
-                    context.type = 'text';
-                    let statusCode = (err.status || err.statusCode) as HttpStatusCode;
-                    let msg;
-                    if (err instanceof MessageExecption) {
-                        msg = err.message
-                    } else {
-                        // ENOENT support
-                        if (ENOENT === err.code) statusCode = 404;
+            // respond
+            msg = statusMessage[statusCode]
+        }
 
-                        // default to 500
-                        if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
-
-                        // respond
-                        msg = statusMessage[statusCode]
-                    }
-
-                    context.status = context.statusFactory.createByCode(statusCode);
-                    msg = Buffer.from(msg);
-                    context.length = Buffer.byteLength(msg);
-                    res.end(msg);
-                    return err;
-                })
-            )
-
+        context.status = statusCode;
+        msg = Buffer.from(msg);
+        context.length = Buffer.byteLength(msg);
+        res.end(msg);
+        return err;
     }
 
 }
@@ -110,8 +100,8 @@ export class HttpExecptionHandlers {
         ctx.execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message)
     }
 
-    @ExecptionHandler(MessageArgumentExecption)
-    anguExecption(ctx: HttpContext, execption: MessageArgumentExecption) {
+    @ExecptionHandler(ArgumentExecption)
+    anguExecption(ctx: HttpContext, execption: ArgumentExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
@@ -120,8 +110,8 @@ export class HttpExecptionHandlers {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 
-    @ExecptionHandler(MessageMissingExecption)
-    missExecption(ctx: HttpContext, execption: MessageMissingExecption) {
+    @ExecptionHandler(MissingParameterExecption)
+    missExecption(ctx: HttpContext, execption: MissingParameterExecption) {
         ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
     }
 

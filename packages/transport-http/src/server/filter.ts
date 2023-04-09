@@ -1,37 +1,42 @@
-import { EmptyStatus, GuardHandler, Filter, mths } from '@tsdi/core';
+import { Handler, Filter, HEAD } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { hdr, isBuffer, isStream, pipeStream } from '@tsdi/transport';
+import { StatusVaildator, hdr, isBuffer, isStream, pipeStream } from '@tsdi/transport';
 import { mergeMap, Observable } from 'rxjs';
 import { HttpContext, HttpServResponse } from './context';
 
 @Injectable({ static: true })
 export class HttpFinalizeFilter extends Filter {
 
-    intercept(input: any, next: GuardHandler<any, any>, context: HttpContext): Observable<any> {
-        return next.handle(input, context)
+    constructor(private vaildator: StatusVaildator) {
+        super()
+    }
+
+    intercept(context: HttpContext, next: Handler<any, any>): Observable<any> {
+        return next.handle(context)
             .pipe(
                 mergeMap(res => {
-                    return this.respond(res, context)
+                    return this.respond(context)
                 })
             )
     }
 
-    protected async respond(res: HttpServResponse, ctx: HttpContext): Promise<any> {
-        if (ctx.destroyed) return;
+    protected async respond(ctx: HttpContext): Promise<any> {
 
-        if (!ctx.writable) return;
+        if (ctx.destroyed || !ctx.writable) return;
+
+        const res: HttpServResponse = ctx.response;
 
         let body = ctx.body;
         const status = ctx.status;
 
         // ignore body
-        if (status instanceof EmptyStatus) {
+        if (this.vaildator.isEmpty(status)) {
             // strip headers
             ctx.body = null;
             return res.end()
         }
 
-        if (mths.HEAD === ctx.method) {
+        if (HEAD === ctx.method) {
             if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
                 const length = ctx.length;
                 if (Number.isInteger(length)) ctx.length = length
@@ -48,9 +53,9 @@ export class HttpFinalizeFilter extends Filter {
                 return res.end()
             }
             if (ctx.request.httpVersionMajor >= 2) {
-                body = String(status.status)
+                body = String(status)
             } else {
-                body = status.statusText || String(status.status)
+                body = ctx.statusMessage || String(status)
             }
             body = Buffer.from(body);
             if (!res.headersSent) {

@@ -1,5 +1,5 @@
 import {
-    GuardHandler, Interceptor, isArrayBuffer, isBlob, isFormData,
+    Handler, Interceptor, isArrayBuffer, isBlob, isFormData,
     isUrlSearchParams, TransportEvent, TransportRequest
 } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
@@ -18,7 +18,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
 
     constructor() { }
 
-    intercept(req: TransportRequest, next: GuardHandler<TransportRequest, TransportEvent>): Observable<TransportEvent> {
+    intercept(req: TransportRequest, next: Handler<TransportRequest, TransportEvent>): Observable<TransportEvent> {
         let body = this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req);

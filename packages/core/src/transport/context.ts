@@ -6,7 +6,7 @@ import { EndpointContext } from '../endpoints';
  * abstract transport context.
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = number | string> extends EndpointContext<TRequest> {
+export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {
 
     /**
      * Get request rul
@@ -100,6 +100,12 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = nu
      */
     abstract get query(): Record<string, string | string[] | number | any>;
 
+    /**
+     * can response stream writeable
+     */
+    abstract get writable(): boolean;
+
+    _explicitNullBody?: boolean;
     /**
      * The request body, or `null` if one isn't set.
      *

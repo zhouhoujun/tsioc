@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, isNil, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, Injector, InvocationContext, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
@@ -7,6 +7,8 @@ import { Interceptor } from '../Interceptor';
 import { Pattern } from './pattern';
 import { RequestOptions, ResponseAs, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
+import { ReqHeaders } from './headers';
+import { TransportParams } from './params';
 
 
 /**
@@ -31,7 +33,9 @@ export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 @Abstract()
 export abstract class Client {
 
-    constructor(readonly handler: Handler) {
+    constructor(
+        private injector: Injector,
+        readonly handler: Handler) {
 
     }
 
@@ -339,11 +343,50 @@ export abstract class Client {
 
     /**
      * build request.
-     * @param url 
+     * @param first 
      * @param options 
      */
-    protected abstract buildRequest(url: TransportRequest | Pattern, options?: RequestOptions & ResponseAs): TransportRequest;
- 
+    protected buildRequest(first: TransportRequest | Pattern, options: RequestOptions & ResponseAs = {}): TransportRequest {
+        let req: TransportRequest<any>;
+        // First, check whether the primary argument is an instance of `TransportRequest`.
+        if (first instanceof TransportRequest) {
+            // It is. The other arguments must be undefined (per the signatures) and can be
+            // ignored.
+            req = first
+        } else {
+            const method = first as string;
+            // Figure out the headers.
+            let headers: ReqHeaders | undefined = undefined;
+            if (options.headers instanceof ReqHeaders) {
+                headers = options.headers
+            } else {
+                headers = new ReqHeaders(options.headers)
+            }
+
+            // Sort out parameters.
+            let params: TransportParams | undefined = undefined;
+            if (options.params) {
+                if (options.params instanceof TransportParams) {
+                    params = options.params
+                } else {
+                    params = new TransportParams({ params: options.params })
+                }
+            }
+
+            // Construct the request.
+            req = new TransportRequest(first, {
+                ...options,
+                headers,
+                params,
+                body: options.body ?? null,
+                context: options.context || createContext(this.injector, options),
+                // By default, JSON is assumed to be returned for all calls.
+                responseType: options.responseType || 'json'
+            })
+        }
+        return req;
+    }
+
     /**
      * connect service.
      */
