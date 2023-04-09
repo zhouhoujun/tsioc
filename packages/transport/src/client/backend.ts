@@ -55,7 +55,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 const headers = new ResHeaders(incoming.headers);
                 status = headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
 
-                if (emptyStatus[status]) {
+                if (this.vaildator.isEmpty(status)) {
                     observer.next(this.createHeadResponse({
                         url,
                         headers,
