@@ -1,8 +1,7 @@
 import { Joinpoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
-import { Parameter, InvocationContext, Type, lang, Inject, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
-import { getConnection, MongoRepository, ObjectLiteral, Repository, TreeRepository } from 'typeorm';
-import { DEFAULT_CONNECTION } from './objectid.pipe';
+import { Parameter, InvocationContext, Type, lang, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
+import { MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { TypeormAdapter } from './TypeormAdapter';
 
 

@@ -1,8 +1,6 @@
 import { Inject, isString, Token, tokenId, Type } from '@tsdi/ioc';
 import { invalidPipeArgument, Pipe, PipeTransform } from '@tsdi/core';
 
-export const DEFAULT_CONNECTION = tokenId<string>('DEFAULT_CONNECTION');
-
 /**
  * ObjectID token for objectId pipe {@link ParseObjectIdPipe}
  */

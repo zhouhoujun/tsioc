@@ -1,9 +1,8 @@
-import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
+import { ClassType, ctorName, lang, refl, Type } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
 import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
-import { DEFAULT_CONNECTION } from './objectid.pipe';
 import { TypeormAdapter } from './TypeormAdapter';
 
 export class TypeormTransactionStatus extends TransactionStatus {
@@ -153,13 +152,12 @@ export class TypeormTransactionStatus extends TransactionStatus {
 export class TypeormTransactionManager extends TransactionManager {
 
     constructor(
-        @Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string,
         @Log() private logger: Logger) {
         super()
     }
 
     async getTransaction(definition: TransactionalMetadata): Promise<TypeormTransactionStatus> {
-        return new TypeormTransactionStatus({ connection: this.conn, ...definition }, this.logger)
+        return new TypeormTransactionStatus({ ...definition }, this.logger)
     }
 
     async commit(status: TypeormTransactionStatus): Promise<void> {

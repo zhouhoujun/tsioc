@@ -4,7 +4,7 @@ import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction } fr
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import {  getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository } from 'typeorm';
-import { DEFAULT_CONNECTION, ObjectIDToken } from './objectid.pipe';
+import { ObjectIDToken } from './objectid.pipe';
 
 
 /**
@@ -39,7 +39,6 @@ export class TypeormAdapter {
         } else if (connections.length === 1) {
             const options = connections[0];
             options.asDefault = true;
-            options.name && injector.setValue(DEFAULT_CONNECTION, options.name);
             await this.statupConnection(injector, options, connections)
         }
     }
