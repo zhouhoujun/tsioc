@@ -1,24 +1,28 @@
 {
-  "name": "@tsdi/platform-server-transport",
+  "name": "@tsdi/platform-browser-transport",
   "version": "6.0.31",
-  "description": "@tsdi/platform-server-transport is transport platform for server",
+  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "typings": "./lib/index.d.ts",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
-    "IoC",
+    "transport",
+    "Application",
+    "frameworks",
+    "plarform",
+    "browser",
     "AOP",
-    "dependency",
-    "injection",
-    "ts-ioc",
+    "aop",
+    "tsdi",
     "@tsdi",
     "tsioc",
-    "container",
-    "decorator",
-    "autofac",
-    "Inject",
+    "ioc",
+    "IoC",
     "type",
-    "typescript"
+    "container",
+    "dependency",
+    "injection"
   ],
   "author": "houjun",
   "license": "MIT",
@@ -31,14 +35,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "chalk": "^4.0.0",
-    "csrf": "^3.1.0",
-    "form-data": "^4.0.0",
-    "raw-body": "^2.5.1"
+    "readable-stream":"^4.3.0",
+    "browserify-zlib":"^0.2.0"
   },
   "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
-  "devDependencies": {}
+    "lib": "lib"
+  }
 }

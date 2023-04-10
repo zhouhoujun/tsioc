@@ -46,6 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^5.23.0",
     "@typescript-eslint/parser": "^5.23.0",
     "assert": "^2.0.0",
+    "browserify-zlib": "^0.2.0",
     "chalk": "^4.0.0",
     "chokidar": "^3.4.0",
     "commander": "^4.1.1",
@@ -115,6 +116,7 @@
     "kafkajs": "^1.15.0",
     "modbus-serial": "^8.0.5",
     "nats": "^2.9.0",
+    "pumpify": "^2.0.1",
     "qs": "^6.10.3",
     "uuid": "^8.3.2",
     "ws": "^8.5.0"
