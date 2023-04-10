@@ -77,7 +77,7 @@ export class Handlers<TInput = any, TOutput = any> extends AbstractHandler<TInpu
 export abstract class DynamicHandler<TInput = any, TOutput = any> extends AbstractHandler<TInput, TOutput> implements InterceptorService {
 
     constructor(
-        protected injector: Injector,
+        readonly injector: Injector,
         protected token: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN) {
         super();
     }

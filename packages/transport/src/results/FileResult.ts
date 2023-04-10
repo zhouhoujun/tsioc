@@ -2,7 +2,8 @@ import { isString } from '@tsdi/ioc';
 import { ApplicationContext, AssetContext, Stream } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { ResultValue } from './ResultValue';
-import { FileAdapter, StreamAdapter } from '../stream';
+import { StreamAdapter } from '../stream';
+import { FileAdapter } from '../file';
 
 /**
  * controller method return result type of file.

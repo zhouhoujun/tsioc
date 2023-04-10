@@ -115,7 +115,7 @@ export class HttpServer extends TransportServer<http2.Http2Server | http.Server 
         if (opts.majorVersion === 2) {
             const server = isSecure ? http2.createSecureServer(option as http2.SecureServerOptions)
                 : http2.createServer(option as http2.ServerOptions);
-
+            server.listen()
             return server;
         } else {
             const server = isSecure ? https.createServer(option as http.ServerOptions)

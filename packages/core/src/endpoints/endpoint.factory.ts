@@ -13,6 +13,8 @@ import { EndpointOptions, EndpointService } from './endpoint.service';
 @Abstract()
 export abstract class OperationEndpoint<TInput extends InvocationContext = InvocationContext, TOutput = any> extends Endpoint<TInput, TOutput> implements EndpointService {
 
+    abstract get injector(): Injector;
+
     abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
 
     abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;

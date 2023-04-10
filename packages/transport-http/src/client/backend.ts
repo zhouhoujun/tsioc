@@ -1,7 +1,7 @@
 import { Injectable, InvocationContext, isUndefined, lang } from '@tsdi/ioc';
 import { Redirector, HEAD, ResHeaders } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpResponse, HttpErrorResponse, HttpHeaderResponse, HttpJsonParseError, HttpBackend, HttpStatusCode } from '@tsdi/common';
-import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, sendbody, XSSI_PREFIX, MimeTypes } from '@tsdi/transport';
+import { ev, hdr, toBuffer, isBuffer, MimeAdapter, ctype, RequestStauts, XSSI_PREFIX, MimeTypes, StatusVaildator, StreamAdapter } from '@tsdi/transport';
 import { finalize, Observable, Observer } from 'rxjs';
 import * as zlib from 'zlib';
 import * as http from 'http';
@@ -20,7 +20,9 @@ const pmPipeline = promisify(pipeline);
 export class HttpBackend2 extends HttpBackend {
 
     constructor(
+        private vaildator: StatusVaildator,
         private mimeTypes: MimeTypes,
+        private streamAdapter: StreamAdapter,
         private mimeAdapter: MimeAdapter,
         private redirector: Redirector,
         private options: HttpClientOpts) {
@@ -66,7 +68,7 @@ export class HttpBackend2 extends HttpBackend {
                     status = incoming[hdr.STATUS2] ?? 0;
                 }
 
-                if (emptyStatus[status]) {
+                if (this.vaildator.isEmpty(status)) {
                     completed = true;
                     observer.next(new HttpHeaderResponse({
                         url,
@@ -84,7 +86,7 @@ export class HttpBackend2 extends HttpBackend {
                     ok = !err;
                 });
 
-                if (redirectStatus[status]) {
+                if (this.vaildator.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     this.redirector.redirect<HttpEvent<any>>(req, status, headers)
                         .pipe(
@@ -275,7 +277,7 @@ export class HttpBackend2 extends HttpBackend {
             if (data === null) {
                 request.end();
             } else {
-                sendbody(
+                this.streamAdapter.sendbody(
                     data,
                     request,
                     err => onError(err),

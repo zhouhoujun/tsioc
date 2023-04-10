@@ -1,6 +1,7 @@
-import { StatusFactory } from '@tsdi/core';
-import { HttpStatusFactory } from '../status';
+import { StatusVaildator } from '@tsdi/transport';
+import { HttpStatusVaildator } from '../status';
 
 export const HTTP_CLIENT_PROVIDERS = [
-    { provide: StatusFactory, useExisting: HttpStatusFactory }
+    HttpStatusVaildator,
+    { provide: StatusVaildator, useExisting: HttpStatusVaildator }
 ]

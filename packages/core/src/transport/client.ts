@@ -1,14 +1,14 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, Injector, InvocationContext, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
-import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Pattern } from './pattern';
 import { RequestOptions, ResponseAs, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
+import { AbstractGuardHandler } from '../handlers/guards';
 
 
 /**
@@ -31,11 +31,9 @@ export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
  * abstract client.
  */
 @Abstract()
-export abstract class Client {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TRespone = TransportEvent> {
 
-    constructor(
-        private injector: Injector,
-        readonly handler: Handler) {
+    constructor(readonly handler: AbstractGuardHandler) {
 
     }
 
@@ -44,7 +42,7 @@ export abstract class Client {
      *
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
-    send(req: TransportRequest): Observable<TransportEvent>;
+    send(req: TRequest): Observable<TRespone>;
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in
      * an `ArrayBuffer`.
@@ -249,7 +247,7 @@ export abstract class Client {
      *
      * @return An `Observable` of the requested response, with body of type `any`.
      */
-    send(req: TransportRequest | Pattern, options?: RequestOptions & ResponseAs): Observable<any> {
+    send(req: TRequest | Pattern, options?: RequestOptions & ResponseAs): Observable<any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
@@ -269,7 +267,7 @@ export abstract class Client {
             )
     }
 
-    protected request(first: Pattern | TransportRequest, options: RequestOptions = EMPTY_OBJ as any): Observable<any> {
+    protected request(first: Pattern | TRequest, options: RequestOptions = EMPTY_OBJ as any): Observable<any> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -277,7 +275,7 @@ export abstract class Client {
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<TransportResponse> =
-            of(req).pipe(concatMap((req: TransportRequest) => this.handler.handle(req)));
+            of(req).pipe(concatMap((req: TRequest) => this.handler.handle(req)));
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
@@ -346,7 +344,7 @@ export abstract class Client {
      * @param first 
      * @param options 
      */
-    protected buildRequest(first: TransportRequest | Pattern, options: RequestOptions & ResponseAs = {}): TransportRequest {
+    protected buildRequest(first: TRequest | Pattern, options: RequestOptions & ResponseAs = {}): TRequest {
         let req: TransportRequest<any>;
         // First, check whether the primary argument is an instance of `TransportRequest`.
         if (first instanceof TransportRequest) {
@@ -354,7 +352,7 @@ export abstract class Client {
             // ignored.
             req = first
         } else {
-            const method = first as string;
+            // const method = first as string;
             // Figure out the headers.
             let headers: ReqHeaders | undefined = undefined;
             if (options.headers instanceof ReqHeaders) {
@@ -379,12 +377,12 @@ export abstract class Client {
                 headers,
                 params,
                 body: options.body ?? null,
-                context: options.context || createContext(this.injector, options),
+                context: options.context || createContext(this.handler.injector, options),
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json'
             })
         }
-        return req;
+        return req as TRequest;
     }
 
     /**

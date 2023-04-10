@@ -1,4 +1,4 @@
-import { ArgumentExecption, EMPTY, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
@@ -12,6 +12,7 @@ import { InterceptorHandler } from './handler';
 /**
  * abstract guards handler.
  */
+@Abstract()
 export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends DynamicHandler<TInput, TOutput>
     implements Handler<TInput, TOutput>, GuardsService, PipeService, InterceptorService, FilterService, OnDestroy {
 
@@ -88,7 +89,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
         this.injector.unregister(this.token);
         if (this.guardsToken) this.injector.unregister(this.guardsToken);
         if (this.filtersToken) this.injector.unregister(this.filtersToken);
-        this.injector = null!;
+        (this as any).injector  = null!;
     }
 
 

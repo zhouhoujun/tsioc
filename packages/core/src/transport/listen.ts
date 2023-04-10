@@ -29,6 +29,7 @@ export abstract class ListenOpts {
 /**
  * listen service.
  */
-export interface ListenService {
-    listen(port: number, host?: string): Promise<void>
+export interface ListenService<LOpt = ListenOpts> {
+    listen(options: LOpt, listeningListener?: () => void): this;
+    listen(port: number, host?: string, listeningListener?: () => void): this;
 }

@@ -1,10 +1,13 @@
 import { Injectable } from '@tsdi/ioc'
 import { StatusVaildator } from '@tsdi/transport'
 
-@Injectable()
+@Injectable({ static: true })
 export class HttpStatusVaildator implements StatusVaildator<number> {
     isOk(status: number): boolean {
         return status == 200;
+    }
+    isNotFound(status: number): boolean {
+        return status == 204;
     }
     isEmpty(status: number): boolean {
         return emptyStatus[status];

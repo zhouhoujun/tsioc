@@ -7,65 +7,6 @@ export function isBuffer(body: any): body is Buffer {
   return Buffer.isBuffer(body)
 }
 
-// export const pmPipeline = promisify(pipeline);
-
-// export async function pipeStream(src: Stream, dest: Writable): Promise<void> {
-//   if (src instanceof Readable) {
-//     await pmPipeline(src, dest);
-//     src.destroy();
-//   } else {
-//     const defer = lang.defer();
-//     src.once(ev.ERROR, (err) => {
-//       defer.reject(err)
-//     });
-//     src.once(ev.END, () => {
-//       defer.resolve()
-//     });
-//     src.pipe(dest);
-//     return await defer.promise
-//       .finally(() => {
-//         isFunction((src as any).destroy) && (src as any).destroy();
-//       })
-//   }
-// }
-
-// export function createFormData(options?: {
-//   writable?: boolean;
-//   readable?: boolean;
-//   dataSize?: number;
-//   maxDataSize?: number;
-//   pauseStreams?: boolean;
-//   highWaterMark?: number;
-//   encoding?: string;
-//   objectMode?: boolean;
-//   read?(this: Readable, size: number): void;
-//   destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void;
-//   autoDestroy?: boolean;
-// }): FormData {
-//   return new FormData(options);
-// }
-
-// export function isFormDataLike(body: any): boolean {
-//   return isFormData(body) || body instanceof FormData
-// }
-
-// export function isStream(body: any): body is Stream {
-//   return body instanceof Stream || (body instanceof EventEmitter && isFunction((body as Stream).pipe))
-// }
-
-
-// export function isDuplex(target: any): target is Duplex {
-//   return target instanceof Duplex;
-// }
-
-// export function isJson(body: any) {
-//   if (!body) return false;
-//   if (isString(body)) return false;
-//   if (isStream(body)) return false;
-//   if (isBuffer(body)) return false;
-//   return true
-// }
-
 /**
  * xml reg exp check.
  */

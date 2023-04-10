@@ -1,7 +1,7 @@
 import { HttpEvent, HttpRequest } from '@tsdi/common';
-import { GuardHandler, Interceptor, isBlob, isFormData } from '@tsdi/core';
+import { Handler, Interceptor, isBlob, isFormData } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { createFormData, isFormDataLike, hdr } from '@tsdi/transport';
+import { StreamAdapter, hdr } from '@tsdi/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 
 /**
@@ -10,9 +10,9 @@ import { defer, mergeMap, Observable } from 'rxjs';
 @Injectable({ static: true })
 export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> {
 
-    constructor() { }
+    constructor(private adapter: StreamAdapter) { }
 
-    intercept(req: HttpRequest<any>, next: GuardHandler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: Handler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
         let body = req.serializeBody();
         if (body == null) {
             return next.handle(req);
@@ -27,9 +27,9 @@ export class HttpBodyInterceptor implements Interceptor<HttpRequest, HttpEvent> 
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
-                } else if (isFormDataLike(body)) {
+                } else if (this.adapter.isFormDataLike(body)) {
                     if (isFormData(body)) {
-                        const form = createFormData();
+                        const form = this.adapter.createFormData();
                         body.forEach((v, k, parent) => {
                             form.append(k, v);
                         });
