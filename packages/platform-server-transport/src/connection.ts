@@ -3,7 +3,7 @@ import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, isFunction, lang } from 
 import { EventEmitter } from 'events';
 import { Writable, Duplex, Transform } from 'stream';
 import { Duplexify, DuplexifyOptions } from './duplexify';
-import { ev } from './consts';
+import { ev } from '@tsdi/transport';
 
 /**
  * connection options.

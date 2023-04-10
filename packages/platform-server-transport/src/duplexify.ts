@@ -1,6 +1,6 @@
 import { isFunction, isNil } from '@tsdi/ioc';
 import { Duplex, Readable, Writable, DuplexOptions, finished } from 'stream';
-import { ev } from './consts';
+import { ev } from '@tsdi/transport';
 
 /**
  * duplexify options.

@@ -1,5 +1,4 @@
-import { Stream } from 'stream';
-import { AssetContext } from '@tsdi/core';
+import { AssetContext, Stream } from '@tsdi/core';
 import { hdr } from '../consts';
 import { ResultValue } from './ResultValue';
 

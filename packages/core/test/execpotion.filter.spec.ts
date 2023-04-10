@@ -100,7 +100,7 @@ describe('Application Event Execption', () => {
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
         // console.log(runner.instance);
-        expect(testServiceRef!.getInstance().started).toBeTruthy();
+        expect(testServiceRef.getInstance().started).toBeTruthy();
 
     });
 

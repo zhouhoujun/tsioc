@@ -1,7 +1,7 @@
 
 import { Duplex, DuplexOptions } from 'stream';
 import { Socket, RemoteInfo } from 'dgram';
-import { ev } from './consts';
+import { ev } from '@tsdi/transport';
 
 export interface UdpStreamOption extends DuplexOptions {
     /**

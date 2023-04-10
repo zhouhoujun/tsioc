@@ -1,75 +1,70 @@
-import { ArgumentExecption, isFunction, isString, lang, TypeExecption } from '@tsdi/ioc';
-import { Outgoing, isFormData, isArrayBuffer, isBlob, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { ArgumentExecption, TypeExecption } from '@tsdi/ioc';
+import { Outgoing, ReadableStream } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream, Writable, Readable, Duplex, PassThrough, pipeline, PipelineSource } from 'stream';
-import { promisify } from 'util';
-import * as zlib from 'zlib';
-import * as FormData from 'form-data';
-import { EventEmitter } from 'events';
-import { ev, hdr } from './consts';
+import { hdr } from './consts';
 
 export function isBuffer(body: any): body is Buffer {
   return Buffer.isBuffer(body)
 }
 
-export const pmPipeline = promisify(pipeline);
+// export const pmPipeline = promisify(pipeline);
 
-export async function pipeStream(src: Stream, dest: Writable): Promise<void> {
-  if (src instanceof Readable) {
-    await pmPipeline(src, dest);
-    src.destroy();
-  } else {
-    const defer = lang.defer();
-    src.once(ev.ERROR, (err) => {
-      defer.reject(err)
-    });
-    src.once(ev.END, () => {
-      defer.resolve()
-    });
-    src.pipe(dest);
-    return await defer.promise
-      .finally(() => {
-        isFunction((src as any).destroy) && (src as any).destroy();
-      })
-  }
-}
+// export async function pipeStream(src: Stream, dest: Writable): Promise<void> {
+//   if (src instanceof Readable) {
+//     await pmPipeline(src, dest);
+//     src.destroy();
+//   } else {
+//     const defer = lang.defer();
+//     src.once(ev.ERROR, (err) => {
+//       defer.reject(err)
+//     });
+//     src.once(ev.END, () => {
+//       defer.resolve()
+//     });
+//     src.pipe(dest);
+//     return await defer.promise
+//       .finally(() => {
+//         isFunction((src as any).destroy) && (src as any).destroy();
+//       })
+//   }
+// }
 
-export function createFormData(options?: {
-  writable?: boolean;
-  readable?: boolean;
-  dataSize?: number;
-  maxDataSize?: number;
-  pauseStreams?: boolean;
-  highWaterMark?: number;
-  encoding?: string;
-  objectMode?: boolean;
-  read?(this: Readable, size: number): void;
-  destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void;
-  autoDestroy?: boolean;
-}): FormData {
-  return new FormData(options);
-}
+// export function createFormData(options?: {
+//   writable?: boolean;
+//   readable?: boolean;
+//   dataSize?: number;
+//   maxDataSize?: number;
+//   pauseStreams?: boolean;
+//   highWaterMark?: number;
+//   encoding?: string;
+//   objectMode?: boolean;
+//   read?(this: Readable, size: number): void;
+//   destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void;
+//   autoDestroy?: boolean;
+// }): FormData {
+//   return new FormData(options);
+// }
 
-export function isFormDataLike(body: any): boolean {
-  return isFormData(body) || body instanceof FormData
-}
+// export function isFormDataLike(body: any): boolean {
+//   return isFormData(body) || body instanceof FormData
+// }
 
-export function isStream(body: any): body is Stream {
-  return body instanceof Stream || (body instanceof EventEmitter && isFunction((body as Stream).pipe))
-}
+// export function isStream(body: any): body is Stream {
+//   return body instanceof Stream || (body instanceof EventEmitter && isFunction((body as Stream).pipe))
+// }
 
 
-export function isDuplex(target: any): target is Duplex {
-  return target instanceof Duplex;
-}
+// export function isDuplex(target: any): target is Duplex {
+//   return target instanceof Duplex;
+// }
 
-export function isJson(body: any) {
-  if (!body) return false;
-  if (isString(body)) return false;
-  if (isStream(body)) return false;
-  if (isBuffer(body)) return false;
-  return true
-}
+// export function isJson(body: any) {
+//   if (!body) return false;
+//   if (isString(body)) return false;
+//   if (isStream(body)) return false;
+//   if (isBuffer(body)) return false;
+//   return true
+// }
 
 /**
  * xml reg exp check.
@@ -136,14 +131,14 @@ export function escapeHtml(content: string): string {
 }
 
 
-export async function toBuffer(body: Readable, limit = 0, url?: string) {
+export async function toBuffer(body: ReadableStream, limit = 0, url?: string) {
   const data = [];
   let bytes = 0;
 
   for await (const chunk of body) {
     if (limit > 0 && bytes + chunk.length > limit) {
       const error = new TypeExecption(`content size at ${url} over limit: ${limit}`);
-      body.destroy(error);
+      body.destroy?.(error);
       throw error;
     }
     bytes += chunk.length;
@@ -183,7 +178,10 @@ const UNMATCHED_SURROGATE_PAIR_REGEXP = /(^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]|[\u
 
 const UNMATCHED_SURROGATE_PAIR_REPLACE = '$1\uFFFD$2'
 
-
+/**
+ * json xss.
+ */
+export const XSSI_PREFIX = /^\)\]\}',?\n/;
 
 /**
  * Parse a HTTP token list.
@@ -301,50 +299,4 @@ export function append(header: string, field: string) {
   }
 
   return val
-}
-
-
-/**
- * json xss.
- */
-export const XSSI_PREFIX = /^\)\]\}',?\n/;
-
-export async function sendbody(data: any, request: Writable, error: (err: any) => void, encoding?: string): Promise<void> {
-  let source: PipelineSource<any>;
-  try {
-    if (isArrayBuffer(data)) {
-      source = Buffer.from(data);
-    } else if (isBuffer(data)) {
-      source = data;
-    } else if (isBlob(data)) {
-      const arrbuff = await data.arrayBuffer();
-      source = Buffer.from(arrbuff);
-    } else if (isFormDataLike(data)) {
-      if (isFormData(data)) {
-        const form = createFormData();
-        data.forEach((v, k, parent) => {
-          form.append(k, v);
-        });
-        data = form;
-      }
-      source = data.getBuffer();
-    } else {
-      source = String(data);
-    }
-    if (encoding) {
-      switch (encoding) {
-        case 'gzip':
-        case 'deflate':
-          source = (source instanceof Readable ? source : pipeline(source, new PassThrough())).pipe(zlib.createGzip());
-          break;
-        case 'identity':
-          break;
-        default:
-          throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
-      }
-    }
-    await pmPipeline(source, request)
-  } catch (err) {
-    error(err);
-  }
 }

@@ -2,11 +2,15 @@
 import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, GET, POST } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { Readable } from 'stream';
 import { hdr } from '../consts';
+import { StreamAdapter } from '../stream';
 
 @Injectable()
 export class AssetRedirector extends Redirector {
+
+    constructor(private adapter: StreamAdapter){
+        super();
+    }
 
     redirect<T>(req: TransportRequest, status: string|number, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
@@ -72,7 +76,7 @@ export class AssetRedirector extends Redirector {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (this.redirectBodify(status) && req.body && req.body instanceof Readable) {
+                    if (this.redirectBodify(status) && req.body &&  this.adapter.isReadable(req.body)) {
                         observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
                         break;
                     }

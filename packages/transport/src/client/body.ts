@@ -1,13 +1,13 @@
 import {
     Handler, Interceptor, isArrayBuffer, isBlob, isFormData,
-    isUrlSearchParams, TransportEvent, TransportRequest
+    isUrlSearchParams, Stream, TransportEvent, TransportRequest
 } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
-import { Stream } from 'stream';
 import { hdr } from '../consts';
-import { createFormData, isBuffer, isFormDataLike, isStream } from '../utils';
+import { isBuffer } from '../utils';
+import { StreamAdapter, FormData } from '../stream';
 
 
 /**
@@ -16,7 +16,7 @@ import { createFormData, isBuffer, isFormDataLike, isStream } from '../utils';
 @Injectable({ static: true })
 export class BodyContentInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 
-    constructor() { }
+    constructor(private adapter: StreamAdapter) { }
 
     intercept(req: TransportRequest, next: Handler<TransportRequest, TransportEvent>): Observable<TransportEvent> {
         let body = this.serializeBody(req.body);
@@ -32,9 +32,9 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
-                } else if (isFormDataLike(body)) {
+                } else if (this.adapter.isFormDataLike(body)) {
                     if (isFormData(body)) {
-                        const form = createFormData();
+                        const form = this.adapter.createFormData();
                         body.forEach((v, k, parent) => {
                             form.append(k, v);
                         });
@@ -64,7 +64,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
         }
         // Check whether the body is already in a serialized form. If so,
         // it can just be returned directly.
-        if (isArrayBuffer(body) || isBuffer(body) || isStream(body) || isBlob(body) || isFormDataLike(body) ||
+        if (isArrayBuffer(body) || isBuffer(body) || this.adapter.isStream(body) || isBlob(body) || this.adapter.isFormDataLike(body) ||
             isUrlSearchParams(body) || isString(body)) {
             return body as any;
         }
@@ -89,7 +89,7 @@ export class BodyContentInterceptor implements Interceptor<TransportRequest, Tra
             return null
         }
         // FormData bodies rely on the browser's content type assignment.
-        if (isFormDataLike(body)) {
+        if (this.adapter.isFormDataLike(body)) {
             return null
         }
         // Blobs usually have their own content type. If it doesn't, then

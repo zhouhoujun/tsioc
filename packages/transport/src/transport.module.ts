@@ -3,7 +3,7 @@ import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
 import { TransportServerOpts } from './server/options';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
-import { DefaultStatusFormater, LogInterceptor } from './interceptors';
+import { LogInterceptor } from './interceptors';
 import {
     BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware,
     EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware
@@ -19,7 +19,6 @@ import { ServerFinalizeFilter } from './server/filter';
     ],
     providers: [
         ...ASSET_SERVR_PROVIDERS,
-        DefaultStatusFormater,
         LogInterceptor,
 
         BodyContentInterceptor,

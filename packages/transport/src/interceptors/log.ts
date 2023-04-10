@@ -3,44 +3,9 @@ import { BytesFormatPipe, EndpointContext, Interceptor, TimeFormatPipe, Handler,
 import { Level, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, map } from 'rxjs';
-import { hrtime } from 'process';
 
 
 
-/**
- * status formater.
- */
-@Abstract()
-export abstract class ResponseStatusFormater {
-
-    @Inject()
-    protected bytes!: BytesFormatPipe;
-    @Inject()
-    protected times!: TimeFormatPipe;
-
-    constructor() {
-
-    }
-
-    abstract format(ctx: EndpointContext, hrtime: [number, number]): string[];
-
-    protected formatSize(size?: number, precise = 2) {
-        if (!isNumber(size)) return ''
-        return chalk.gray(this.bytes.transform(size, precise))
-    }
-
-    protected formatHrtime(hrtime: [number, number], precise = 2): string {
-        if (!hrtime) return '';
-        const [s, ns] = hrtime;
-        const total = s * 1e3 + ns / 1e6;
-
-        return chalk.gray(this.times.transform(total, precise))
-    }
-
-    protected cleanZero(num: string) {
-        return num.replace(clrZReg, '');
-    }
-}
 
 @Abstract()
 export abstract class LogInterceptorOptions {
@@ -71,14 +36,14 @@ export class LogInterceptor implements Interceptor {
         }
 
         //todo console log and other. need to refactor formater.
-        const start = hrtime();
+        const start = this.formatter.hrtime();
         const method = chalk.cyan(ctx.method);
         const url = ctx.url;
         logger[level](incoming, method, url);
         return next.handle(ctx)
             .pipe(
                 map(res => {
-                    logger[level](outgoing, method, url, ...this.formatter.format(ctx, hrtime(start)));
+                    logger[level](outgoing, method, url, ...this.formatter.format(ctx, this.formatter.hrtime(start)));
                     return res
                 })
             )
@@ -86,6 +51,42 @@ export class LogInterceptor implements Interceptor {
 
 }
 
+/**
+ * status formater.
+ */
+@Abstract()
+export abstract class ResponseStatusFormater {
+
+    @Inject()
+    protected bytes!: BytesFormatPipe;
+    @Inject()
+    protected times!: TimeFormatPipe;
+
+    constructor() {
+
+    }
+
+    abstract hrtime(time?: [number, number]): [number, number];
+
+    abstract format(ctx: EndpointContext, hrtime: [number, number]): string[];
+
+    protected formatSize(size?: number, precise = 2) {
+        if (!isNumber(size)) return ''
+        return chalk.gray(this.bytes.transform(size, precise))
+    }
+
+    protected formatHrtime(hrtime: [number, number], precise = 2): string {
+        if (!hrtime) return '';
+        const [s, ns] = hrtime;
+        const total = s * 1e3 + ns / 1e6;
+
+        return chalk.gray(this.times.transform(total, precise))
+    }
+
+    protected cleanZero(num: string) {
+        return num.replace(clrZReg, '');
+    }
+}
 
 const clrZReg = /\.?0+$/;
 const incoming = chalk.gray('--->');

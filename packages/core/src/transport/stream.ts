@@ -333,24 +333,35 @@ export interface Stream extends EventEmitter {
     ): T;
 }
 
-export interface ReadableStream extends Stream {
+export interface ReadableStream<T= any> extends Stream {
     readable: boolean;
-    read(size?: number): string | Buffer;
+    read(size?: number): T;
     setEncoding(encoding: BufferEncoding): this;
     pause(): this;
     resume(): this;
     isPaused(): boolean;
     pipe<T extends WritableStream>(destination: T, options?: { end?: boolean | undefined; }): T;
     unpipe(destination?: WritableStream): this;
-    unshift(chunk: string | Uint8Array, encoding?: BufferEncoding): void;
+    unshift(chunk: T, encoding?: BufferEncoding): void;
     wrap(oldStream: ReadableStream): this;
+    destroy?(error?: any): void;
+    [Symbol.asyncIterator](): AsyncIterableIterator<T>;
 }
 
-export interface WritableStream extends Stream {
+export interface WritableStream<T = any> extends Stream {
     writable: boolean;
-    write(buffer: Uint8Array | string, cb?: (err?: Error | null) => void): boolean;
+    write(buffer: T, cb?: (err?: Error | null) => void): boolean;
     write(str: string, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
     end(cb?: () => void): this;
-    end(data: string | Uint8Array, cb?: () => void): this;
+    end(data: T, cb?: () => void): this;
     end(str: string, encoding?: BufferEncoding, cb?: () => void): this;
+}
+
+export interface DuplexStream extends ReadableStream, WritableStream {
+
+}
+
+export interface TransformStream extends DuplexStream {
+    _transform(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
+    _flush(callback: (error?: Error | null, data?: any) => void): void;
 }

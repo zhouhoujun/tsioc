@@ -2,18 +2,15 @@
 import {
     TransportEvent, TransportErrorResponse, TransportRequest,
     ResHeaders, OutgoingHeader, TransportHeaderResponse, Redirector,
-    ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend, Incoming, HEAD
+    ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend, Incoming, HEAD, Outgoing
 } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
-import { PassThrough, pipeline, Readable } from 'stream';
 import { Observable, Observer } from 'rxjs';
-import * as zlib from 'zlib';
-import { isBuffer, pmPipeline, sendbody, toBuffer, XSSI_PREFIX } from '../utils';
-import { IncomingMessage } from '../incoming';
-import { OutgoingMessage } from '../outgoing';
+import { isBuffer, toBuffer, XSSI_PREFIX } from '../utils';
 import { ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { StatusVaildator } from '../status';
+import { StreamAdapter } from '../stream';
 
 
 /**
@@ -25,6 +22,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
     constructor(
         private vaildator: StatusVaildator,
         private mimeTypes: MimeTypes,
+        private streamAdapter: StreamAdapter,
         private mimeAdapter: MimeAdapter,
         private redirector: Redirector) {
     }
@@ -50,7 +48,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 });
                 observer.error(res)
             };
-            const onResponse = async (incoming: IncomingMessage) => {
+            const onResponse = async (incoming: Incoming) => {
                 let body: any;
                 const headers = new ResHeaders(incoming.headers);
                 status = headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
@@ -66,7 +64,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 }
 
                 // HTTP fetch step 5
-                body = pipeline(incoming, new PassThrough(), (err) => {
+                body = this.streamAdapter.pipeline(incoming, this.streamAdapter.passThrough(), (err) => {
                     error = err;
                     ok = !err;
                 });
@@ -108,31 +106,32 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                     // servers send slightly invalid responses that are still accepted
                     // by common browsers.
                     // Always using Z_SYNC_FLUSH is what cURL does.
+                    const constants = this.streamAdapter.getZipConstants();
                     const zlibOptions = {
-                        flush: zlib.constants.Z_SYNC_FLUSH,
-                        finishFlush: zlib.constants.Z_SYNC_FLUSH
+                        flush: constants.Z_SYNC_FLUSH,
+                        finishFlush: constants.Z_SYNC_FLUSH
                     };
 
                     try {
                         if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
-                            const unzip = zlib.createGunzip(zlibOptions);
-                            await pmPipeline(body, unzip);
+                            const unzip = this.streamAdapter.gunzip(zlibOptions);
+                            await this.streamAdapter.pipeTo(body, unzip);
                             body = unzip;
                         } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
                             // Handle the infamous raw deflate response from old servers
                             // a hack for old IIS and Apache servers
-                            const raw = new PassThrough();
-                            await pmPipeline(body, raw);
+                            const raw = this.streamAdapter.passThrough();
+                            await this.streamAdapter.pipeTo(body, raw);
                             const defer = lang.defer();
                             raw.on(ev.DATA, chunk => {
                                 if ((chunk[0] & 0x0F) === 0x08) {
-                                    body = pipeline(body, zlib.createInflate(), err => {
+                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.inflate(), err => {
                                         if (err) {
                                             defer.reject(err);
                                         }
                                     });
                                 } else {
-                                    body = pipeline(body, zlib.createInflateRaw(), err => {
+                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.inflateRaw(), err => {
                                         if (err) {
                                             defer.reject(err);
                                         }
@@ -145,8 +144,8 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                             await defer.promise;
 
                         } else if (codings === 'br') { // For br
-                            const unBr = zlib.createBrotliDecompress();
-                            await pmPipeline(body, unBr);
+                            const unBr = this.streamAdapter.brotliDecompress();
+                            await this.streamAdapter.pipeTo(body, unBr);
                             body = unBr;
                         }
                     } catch (err) {
@@ -156,7 +155,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 }
 
                 let originalBody: any;
-                body = body instanceof Readable ? await toBuffer(body) : body;
+                body = this.streamAdapter.isReadable(body) ? await toBuffer(body) : body;
                 const contentType = headers.get(hdr.CONTENT_TYPE) as string;
                 let type = req.responseType;
                 if (contentType) {
@@ -301,10 +300,10 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
         return ev.RESPONSE
     }
 
-    protected abstract createRequest(req: TransportRequest): OutgoingMessage;
+    protected abstract createRequest(req: TransportRequest): Outgoing;
 
-    protected sendBody(request: OutgoingMessage, body: any, callback: (error?: Error | null) => void) {
-        sendbody(body, request, callback);
+    protected sendBody(request: Outgoing, body: any, callback: (error?: Error | null) => void) {
+        this.streamAdapter.sendbody(body, request, callback);
     }
 }
 

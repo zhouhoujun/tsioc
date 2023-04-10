@@ -1,13 +1,11 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, UnsupportedMediaTypeExecption } from '@tsdi/core';
+import { AssetContext, Middleware, UnsupportedMediaTypeExecption, ReadableStream, BadRequestExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { HttpStatusCode } from '@tsdi/common';
-import * as zlib from 'zlib';
-import { Stream, Readable, PassThrough } from 'stream';
-import * as getRaw from 'raw-body';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
 import { MimeTypes } from '../mime';
+import { StreamAdapter } from '../stream';
 
 
 @Abstract()
@@ -59,7 +57,7 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(@Nullable() options: PayloadOptions) {
+    constructor(private streamAdapter: StreamAdapter, @Nullable() options: PayloadOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };
@@ -108,7 +106,7 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
         }
         const { limit, strict, encoding } = this.options.json;
 
-        const str = await getRaw(this.getStream(context, hdrcode), {
+        const str = await this.streamAdapter.rawbody(this.getStream(context, hdrcode), {
             encoding,
             limit,
             length
@@ -126,7 +124,7 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
         }
     }
 
-    private getStream(ctx: AssetContext, encoding: string): Readable {
+    private getStream(ctx: AssetContext, encoding: string): ReadableStream {
         return this.unzipify(ctx, encoding);
     }
 
@@ -136,17 +134,17 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
             case 'deflate':
                 break
             case 'identity':
-                if (ctx.request instanceof Readable) {
+                if (this.streamAdapter.isReadable(ctx.request)) {
                     return ctx.request
-                } else if (ctx.request instanceof Stream) {
-                    return (ctx.request as Stream).pipe(new PassThrough());
+                } else if (this.streamAdapter.isStream(ctx.request)) {
+                    return ctx.request.pipe(this.streamAdapter.passThrough());
                 }
                 throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
-        if (ctx.request instanceof Stream) {
-            return ctx.request.pipe(zlib.createUnzip());
+        if (this.streamAdapter.isStream(ctx.request)) {
+            return ctx.request.pipe(this.streamAdapter.gunzip());
         }
         throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
     }
@@ -176,7 +174,7 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
             qs = qslib
         }
 
-        const str = await getRaw(this.getStream(ctx, hdrcode), {
+        const str = await this.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
             encoding,
             limit,
             length
@@ -188,9 +186,8 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
                 body
             }
         } catch (err) {
-            (err as any).status = HttpStatusCode.BadRequest; // ctx.statusFactory.getStatusCode('BadRequest');
             (err as any).body = str;
-            throw err
+            throw new BadRequestExecption((err as any).message);
         }
     }
 
@@ -202,7 +199,7 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
             length = ~~len
         }
         const { limit, encoding } = this.options.text;
-        const str = await getRaw(this.getStream(ctx, hdrcode), {
+        const str = await this.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
             encoding,
             limit,
             length

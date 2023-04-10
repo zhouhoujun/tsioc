@@ -1,7 +1,7 @@
 import { Middleware, AssetContext, MessageExecption, HEAD, GET } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
-import { HttpStatusCode } from '@tsdi/common';
+import { StatusVaildator } from '../status';
 
 /**
  * Static Content options.
@@ -27,7 +27,7 @@ export abstract class ContentOptions implements SendOptions {
 export class ContentMiddleware implements Middleware<AssetContext> {
 
     private options: ContentOptions
-    constructor(@Nullable() options: ContentOptions) {
+    constructor(private vaildator: StatusVaildator, @Nullable() options: ContentOptions) {
         this.options = { ...defOpts, ...options };
     }
 
@@ -41,7 +41,7 @@ export class ContentMiddleware implements Middleware<AssetContext> {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
-                if ((err as MessageExecption).status !== HttpStatusCode.NotFound) {
+                if (!this.vaildator.isNotFound((err as MessageExecption).status)) {
                     throw err
                 }
             }

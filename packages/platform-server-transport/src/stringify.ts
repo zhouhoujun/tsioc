@@ -1,8 +1,8 @@
 /* eslint-disable no-control-regex */
 /* eslint-disable no-misleading-character-class */
 import { Execption, isNumber, isPromise, isString } from '@tsdi/ioc';
+import { ev } from '@tsdi/transport';
 import { Readable } from 'stream';
-import { ev } from './consts';
 
 export class JsonStreamStringify extends Readable {
     private visited!: VisitedWeakMap | VisitedWeakSet;

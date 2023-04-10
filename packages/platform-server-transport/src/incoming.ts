@@ -1,8 +1,8 @@
 import { Incoming, IncomingHeaders, ResHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { ev, hdr } from '@tsdi/transport';
 import { Readable } from 'stream';
 import { Connection } from './connection';
-import { ev, hdr } from './consts';
 
 
 @Abstract()

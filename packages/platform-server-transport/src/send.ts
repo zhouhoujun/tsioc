@@ -1,11 +1,9 @@
 import { AssetContext, BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption, PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, TypeExecption } from '@tsdi/ioc';
+import { ContentSendAdapter, SendOptions, hdr } from '@tsdi/transport';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
-import { ContentSendAdapter, SendOptions } from '../middlewares/send';
-import { hdr } from '../consts';
-
 
 const statify = promisify(stat);
 
@@ -124,4 +122,4 @@ function isHidden(root: string, path: string) {
 
 const notfound = [ENOENT, ENAMETOOLONG, ENOTDIR];
 const winAbsPath = /^[a-zA-Z]+:\//;
-const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/
+const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;

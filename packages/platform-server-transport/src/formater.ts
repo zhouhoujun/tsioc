@@ -1,15 +1,19 @@
 import { Injectable } from '@tsdi/ioc';
 import { TransportContext } from '@tsdi/core';
+import { StatusVaildator, ResponseStatusFormater } from '@tsdi/transport';
 import * as chalk from 'chalk';
-import { ResponseStatusFormater } from './log';
-import { StatusVaildator } from '../status';
+import { hrtime } from 'process';
 
 
 
 @Injectable({ static: true })
-export class DefaultStatusFormater extends ResponseStatusFormater {
+export class NodeResponseStatusFormater extends ResponseStatusFormater {
     constructor(private vaildator: StatusVaildator) {
         super()
+    }
+
+    hrtime(time?: [number, number] | undefined): [number, number] {
+        return hrtime(time);
     }
 
     format(ctx: TransportContext, hrtime: [number, number]): string[] {

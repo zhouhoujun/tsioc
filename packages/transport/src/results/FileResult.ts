@@ -1,10 +1,8 @@
 import { isString } from '@tsdi/ioc';
-import { ApplicationContext, AssetContext } from '@tsdi/core';
+import { ApplicationContext, AssetContext, Stream } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { Stream } from 'stream';
-import { existsSync, createReadStream } from 'fs';
-import { join, isAbsolute } from 'path';
 import { ResultValue } from './ResultValue';
+import { FileAdapter, StreamAdapter } from '../stream';
 
 /**
  * controller method return result type of file.
@@ -62,15 +60,17 @@ export class FileResult extends ResultValue {
         } else {
             ctx.contentType = contentType
         }
+        const adapter = ctx.get(StreamAdapter);
+        const fileAdapter = ctx.get(FileAdapter);
         const baseURL = ctx.get(ApplicationContext).baseURL;
         if (isString(file)) {
-            const filepath = (isAbsolute(file) || !baseURL) ? file : join(baseURL, file);
-            if (existsSync(filepath)) {
-                ctx.body = createReadStream(filepath)
+            const filepath = (fileAdapter.isAbsolute(file) || !baseURL) ? file : fileAdapter.resolve(baseURL, file);
+            if (fileAdapter.existsSync(filepath)) {
+                ctx.body = fileAdapter.read(filepath)
             }
-        } else if (file instanceof Buffer) {
+        } else if (Buffer.isBuffer(file)) {
             ctx.body = file
-        } else if (file instanceof Stream) {
+        } else if (adapter.isStream(file)) {
             ctx.body = file
         }
     }
