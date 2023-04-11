@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
-import { ServerLogFormater } from './ServerLogFormater';
+import { ServerJoinpointLogFormater } from './ServerLogFormater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
 @Module({
     providers: [
-        ServerLogFormater,
+        ServerJoinpointLogFormater,
         Log4jsAdapter
     ]
 })

@@ -59,7 +59,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
      * get logger.
      * @param name 
      */
-    abstract getLogger(name?: string): Logger;
+    abstract getLogger(name?: string, adapter?: string | Type): Logger;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events

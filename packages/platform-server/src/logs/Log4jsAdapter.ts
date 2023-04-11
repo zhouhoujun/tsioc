@@ -9,7 +9,7 @@ import { isAbsolute, join } from 'path';
  * log4js logger manager adapter.
  */
 @NonePointcut()
-@Injectable(LoggerManager, 'log4js', { singleton: true })
+@Injectable(LoggerManager, 'log4js', { static: true, providedIn: 'root' })
 export class Log4jsAdapter implements LoggerManager {
     private _log4js?: log4js.Log4js;
 

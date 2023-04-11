@@ -3,7 +3,7 @@ import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata, ProvidedInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
@@ -601,18 +601,18 @@ export interface Injectable {
      * Injectable decorator setting with params.
      *
      * @param {Token} [provide] define this class provider for provide.
-     * @param {PatternMetadata} [pattern] define this class pattern.
+     * @param {PatternMetadata & ProvidedInMetadata} [pattern] define this class pattern.
      */
-    (provide?: Token, pattern?: PatternMetadata): ClassDecorator;
+    (provide?: Token, pattern?: PatternMetadata & ProvidedInMetadata): ClassDecorator;
 
     /**
      * Injectable decorator setting with params.
      *
      * @param {Token} provide define this class provider for provide.
      * @param {string} alias define this class provider with alias for provide.
-     * @param {PatternMetadata} [pattern] define this class pattern.
+     * @param {PatternMetadata & ProvidedInMetadata} [pattern] define this class pattern.
      */
-    (provide: Token, alias: string, pattern?: PatternMetadata): ClassDecorator;
+    (provide: Token, alias: string, pattern?: PatternMetadata & ProvidedInMetadata): ClassDecorator;
 
     /**
      * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.

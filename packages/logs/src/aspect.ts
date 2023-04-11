@@ -1,12 +1,11 @@
 import { Abstract, isFunction, isToken, isObject, isArray, isNil, EMPTY_OBJ } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { Logger } from './logger';
-import { LogMetadata } from './metadata/log';
+import { LogMetadata } from './metadata';
 import { isLevel, Level } from './Level';
 import { LogProcess } from './LogProcess';
-import { LogFormater, DefaultLogFormater } from './formater';
+import { JoinpointFormater, DefaultJoinpointFormater } from './formater';
 import { LogConfigure } from './LogConfigure';
-import { ConfigureLoggerManager } from './manager';
 
 /**
  * base log aspect. for extends your log aspect.
@@ -81,16 +80,16 @@ export abstract class LogAspect extends LogProcess {
         return `[${now.toISOString()}]`
     }
 
-    private _formater: LogFormater | undefined;
+    private _formater: JoinpointFormater | undefined;
     getFormater() {
         if (!this._formater) {
-            const config = (this.logManger as ConfigureLoggerManager).config || (EMPTY_OBJ as LogConfigure);
-            let formater: LogFormater | undefined;
-            const format = config.format || LogFormater;
+            const config = this.mangers.getConfigure() || (EMPTY_OBJ as LogConfigure);
+            let formater: JoinpointFormater | undefined;
+            const format = config.format || JoinpointFormater;
             if (isToken(format)) {
-                formater = this.injector.get(format, null) ?? this.injector.get(DefaultLogFormater)
+                formater = this.injector.get(format, null) ?? this.injector.get(DefaultJoinpointFormater)
             } else if (isFunction(format)) {
-                formater = { format } as LogFormater
+                formater = { format } as JoinpointFormater
             } else if (isObject(format) && isFunction(format.format)) {
                 formater = format
             }
@@ -104,7 +103,7 @@ export abstract class LogAspect extends LogProcess {
         if (formater) {
             messages = formater.format(joinPoint, level, logger, ...messages)
         } else {
-            messages.unshift((logger.name ?? 'default') + ' -')
+            messages.unshift((logger.category ?? 'default') + ' -')
             if (level) {
                 messages.unshift(`[${level.toUpperCase()}]`)
             }

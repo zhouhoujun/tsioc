@@ -2,7 +2,7 @@ import {
     Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
     Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
-import { Logger, LoggerManager } from '@tsdi/logs';
+import { Logger, LoggerManager, LoggerManagers } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
@@ -72,8 +72,8 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
         return typeRef;
     }
 
-    getLogger(name?: string): Logger {
-        return this.injector.get(LoggerManager, null)?.getLogger(name) ?? null!;
+    getLogger(name?: string, adapter?: string | Type): Logger {
+        return this.injector.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 
     publishEvent(event: ApplicationEvent): Observable<any>;

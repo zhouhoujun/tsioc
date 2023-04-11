@@ -1,5 +1,5 @@
 import { isString, lang } from '@tsdi/ioc';
-import { ConfigureLoggerManager, ILogger, LogConfigure } from '@tsdi/logs';
+import { LoggerManagers, ILogger, LogConfigure, LOG_CONFIGURES } from '@tsdi/logs';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
@@ -23,7 +23,7 @@ export class ServerBootTest {
             module: ServerMainModule,
             providers: [
                 { provide: PROCESS_ROOT, useValue: dir },
-                { provide: LogConfigure, useValue: logConfig }
+                { provide: LOG_CONFIGURES, useValue: logConfig, multi: true }
             ]
         });
         console.log(this.ctx.baseURL);
@@ -35,13 +35,13 @@ export class ServerBootTest {
 
     @Test()
     isLog4js() {
-        const cfg = this.ctx.resolve(LogConfigure);
-        expect(cfg).toBeDefined();
-        const loggerMgr = this.ctx.resolve(ConfigureLoggerManager);
-        expect(loggerMgr).toBeInstanceOf(ConfigureLoggerManager);
-        const logger = loggerMgr.getLogger() as ILogger;
+        const cfgs = this.ctx.get(LOG_CONFIGURES);
+        expect(cfgs.length).toBeGreaterThan(0);
+        const loggerMgr = this.ctx.resolve(LoggerManagers);
+        expect(loggerMgr).toBeInstanceOf(LoggerManagers);
+        const logger = loggerMgr.getLogger();
         expect(logger).toBeDefined();
-        expect((logger as log4js.Logger).category).toEqual('default');
+        expect(logger.category).toEqual('default');
     }
 
 
@@ -49,7 +49,7 @@ export class ServerBootTest {
     async canWriteLogFile() {
         const msg = 'log file test';
         this.ctx.getLogger().info(msg);
-        await lang.delay(10);
+        await lang.delay(20);
         expect(fs.existsSync(this.logfile)).toBeTruthy();
         const content = fs.readFileSync(this.logfile, 'utf-8');
         expect(isString(content)).toBeTruthy();

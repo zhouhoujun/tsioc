@@ -12,7 +12,7 @@ import * as assert from 'assert';
 import {
     CONTENT_DISPOSITION, ev, LOCALHOST, LogInterceptor,
     CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
-    ContentMiddleware, SessionMiddleware, CsrfMiddleware, TransportServer, Cleanup
+    ContentMiddleware, SessionMiddleware, CsrfMiddleware, Cleanup
 } from '@tsdi/transport';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
 import { HttpExecptionFinalizeFilter } from './exception-filter';

@@ -1,10 +1,9 @@
 import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
-    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, getToken, ClassType, isDefined
+    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, ClassType, isDefined
 } from '@tsdi/ioc';
-import { Level } from '../Level';
-import { LogConfigure } from '../LogConfigure';
-import { LoggerConfig, LoggerManager } from '../LoggerManager';
+import { Level } from './Level';
+import { LoggerManagers } from './manager';
 
 
 /**
@@ -22,6 +21,10 @@ export interface LogMetadata extends TypeMetadata {
      */
     logname?: string;
     /**
+     * adapter manager name
+     */
+    adapter?: string | Type;
+    /**
      * log for target type.
      */
     target?: ClassType;
@@ -33,10 +36,6 @@ export interface LogMetadata extends TypeMetadata {
      * property key.
      */
     propertyKey?: string;
-    /**
-     * logger config.
-     */
-    config?: LoggerConfig;
     /**
      * operation argument resolver.
      */
@@ -88,6 +87,10 @@ export interface Log<T extends LogMetadata> {
          */
         logname?: string | Type,
         /**
+         * adapter manager name
+         */
+        adapter?: string | Type;
+        /**
          * [level] set the logger level.
          */
         level?: Level;
@@ -117,7 +120,11 @@ export interface Log<T extends LogMetadata> {
         /**
          * use the logger with name.  Default current class name.
          */
-        logname?: string | Type,
+        logname?: string | Type;
+        /**
+         * adapter manager name
+         */
+        adapter?: string | Type;
         /**
          * set log level to this message.
          */
@@ -132,7 +139,8 @@ export interface Log<T extends LogMetadata> {
 
 const loggerResolver = {
     canResolve: (pr: LogMetadata, ctx) => {
-        if (!ctx.has(LoggerManager)) {
+        const managers = ctx.get(LoggerManagers);
+        if (!managers) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
                 local = ` method ${ctx.methodName} param ${pr.paramName} of class `
@@ -141,34 +149,27 @@ const loggerResolver = {
             } else {
                 local = ' '
             }
-            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LogModule (in package '@tsdi/logs') or LoggerModule (in package '@tsdi/core'),  please register LogModule first. `)
-        } else if (ctx.has(LogConfigure)) {
-            const adapter = ctx.get(LogConfigure)?.adapter ?? 'console';
-            const token = isString(adapter) ? getToken(LoggerManager, adapter) : adapter;
-            if (!ctx.has(token)) {
-                let local: string;
-                if (pr.propertyKey && pr.paramName) {
-                    local = ` method ${ctx.methodName} param ${pr.paramName} of class `
-                } else if (pr.propertyKey) {
-                    local = ` field ${pr.propertyKey} of class `
-                } else {
-                    local = ' '
-                }
-                throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${token.toString()}',  please register this LoggerManager first. `)
-            }
+            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LoggerModule in package '@tsdi/logs',  please register LoggerModule first. `)
         }
+        const adapter = pr.adapter;
+        if (!managers.hasConfigure(adapter)) {
+            let local: string;
+            if (pr.propertyKey && pr.paramName) {
+                local = ` method ${ctx.methodName} param ${pr.paramName} of class `
+            } else if (pr.propertyKey) {
+                local = ` field ${pr.propertyKey} of class `
+            } else {
+                local = ' '
+            }
+            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${adapter}' adapter,  please register LogConfigure first. `)
+        }
+
         return isDefined(pr.logname || pr.target)
     },
     resolve: (pr: LogMetadata, ctx, target?: ClassType) => {
-        const factory = ctx.get(LoggerManager);
-        let level = pr.level;
-        if (pr.config) {
-            if (!level) {
-                level = pr.config.level
-            }
-            factory.configure(pr.config)
-        }
-        const logger = factory.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target));
+        const managers = ctx.get(LoggerManagers);
+        const level = pr.level;
+        const logger = managers.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target), pr.adapter);
         if (level) logger.level = level;
         return logger
     }
