@@ -1,6 +1,6 @@
 import * as http2 from 'http2';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ClientOpts, Filter, InterceptorLike } from '@tsdi/core';
+import { Filter, EndpointOptions, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 
@@ -18,7 +18,7 @@ export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTT
  * http client options.
  */
 @Abstract()
-export abstract class HttpClientOpts extends ClientOpts<HttpRequest, HttpEvent> {
+export abstract class HttpClientOpts implements EndpointOptions<HttpRequest> {
     /**
      * http2 authority.
      */
@@ -36,7 +36,7 @@ export abstract class HttpClientOpts extends ClientOpts<HttpRequest, HttpEvent> 
 /**
  * http client interceptors for `Http`.
  */
-export const HTTP_INTERCEPTORS = tokenId<InterceptorLike<HttpRequest, HttpEvent>[]>('HTTP_INTERCEPTORS');
+export const HTTP_INTERCEPTORS = tokenId<Interceptor<HttpRequest, HttpEvent>[]>('HTTP_INTERCEPTORS');
 /**
  * http client filters for `Http`.
  */

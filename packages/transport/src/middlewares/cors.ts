@@ -1,9 +1,8 @@
-import { AssetContext, Middleware, RequestMethod, MessageExecption } from '@tsdi/core';
+import { AssetContext, Middleware, RequestMethod, InternalServerExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
-import { HttpStatusCode } from '@tsdi/common';
-import { Logger } from '@tsdi/logs';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
+import { StatusVaildator } from '../status';
 
 
 /**
@@ -67,7 +66,7 @@ export class CorsMiddleware implements Middleware<AssetContext> {
 
     private options: Options;
 
-    constructor(@Nullable() options: CorsOptions) {
+    constructor(private vaildator: StatusVaildator, @Nullable() options: CorsOptions) {
 
         this.options = this.parseOption({
             allowMethods,
@@ -151,11 +150,13 @@ export class CorsMiddleware implements Middleware<AssetContext> {
                     ...headersSet,
                     ...{ vary: varyWithOrigin },
                 };
-                const errCode =  500; //ctx.statusFactory.getStatusCode('InternalServerError');
-                err.status = err instanceof MessageExecption ? err.status || errCode : errCode;
-                err.statusMessage = err.message || err.toString() || '';
-                ctx.get(Logger)?.error(err);
-                throw err;
+                const statusMessage = err.message || err.toString() || '';
+                if (err.status) {
+                    err.statusMessage = statusMessage;
+                    throw err;
+                } else {
+                    throw new InternalServerExecption(statusMessage);
+                }
             }
         } else {
             if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
@@ -186,7 +187,7 @@ export class CorsMiddleware implements Middleware<AssetContext> {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = HttpStatusCode.NoContent;
+            ctx.status = this.vaildator.noContent;
         }
     }
 }

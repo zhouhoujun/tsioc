@@ -14,7 +14,8 @@ import { LoggerConfig, LoggerManager } from './LoggerManager';
  * @export
  */
 @Injectable({
-    static: true
+    static: true,
+    providedIn: 'root'
 })
 export class LoggerManagers implements LoggerManager {
     static ƿNPT = true;
@@ -26,7 +27,7 @@ export class LoggerManagers implements LoggerManager {
     constructor(@Inject() protected injector: Injector) {
         this.maps = new Map();
         this.cfgs = new Map();
-        if (!this.injector.has(LOG_CONFIGURES, InjectFlags.Self)) {
+        if (!this.injector.has(LOG_CONFIGURES)) {
             this.injector.inject({ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
         }
         this.init();

@@ -48,8 +48,8 @@ export class ServerBootTest {
     @Test()
     async canWriteLogFile() {
         const msg = 'log file test';
-        this.ctx.getLogger().log(msg);
-        await lang.delay(20);
+        this.ctx.getLogger().info(msg);
+        await lang.delay(15);
         expect(fs.existsSync(this.logfile)).toBeTruthy();
         const content = fs.readFileSync(this.logfile, 'utf-8');
         expect(isString(content)).toBeTruthy();

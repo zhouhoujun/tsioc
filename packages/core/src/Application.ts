@@ -163,7 +163,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
                 if (target.loads) {
                     this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
                 }
-                this.context = modueRef.resolve(ApplicationFactory).create(root, target);
+                this.context = modueRef.resolve(ApplicationFactory).create(root, { ...target, providers: [] });
             }
         }
         return this.context

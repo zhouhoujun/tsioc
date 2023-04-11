@@ -1,7 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
 
 @Abstract()
-export abstract class StatusVaildator<T = string | number | undefined> {
+export abstract class StatusVaildator<T = any> {
+    
+    abstract get noContent(): T;
+
     abstract isOk(status: T): boolean;
     abstract isNotFound(status: T): boolean;
     abstract isEmpty(status: T): boolean;
