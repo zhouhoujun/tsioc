@@ -20,7 +20,7 @@ export interface LogConfigure {
      *
      * @type {Record<string, any>}
      */
-    config?: Record<string, any>;
+    config?: Record<string, any>|string;
 
     /**
      * format

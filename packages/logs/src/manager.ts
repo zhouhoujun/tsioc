@@ -80,10 +80,6 @@ export class LoggerManagers implements LoggerManager {
                 throw new ArgumentExecption(`has no provider for LoggerManager ${token.toString()}.`)
             }
 
-            // if(cfg.adapter === 'console') {
-            //     cfg.format = 
-            // }
-
             this.cfgs.set(adapter, cfg);
 
             cfg.config && manager.configure(cfg.config);

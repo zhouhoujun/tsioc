@@ -40,10 +40,3 @@ export class TypeormModule {
         }
     }
 }
-
-/**
- * type orm module.
- * 
- * @deprecated use `TypeormModule` instead.
- */
-export const TypeOrmModule = TypeormModule;

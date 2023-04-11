@@ -4,7 +4,7 @@ import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
 import { logConfig, ServerMainModule } from './demo';
-import * as log4js from 'log4js';
+// import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
 import del = require('del');
@@ -48,7 +48,7 @@ export class ServerBootTest {
     @Test()
     async canWriteLogFile() {
         const msg = 'log file test';
-        this.ctx.getLogger().info(msg);
+        this.ctx.getLogger().log(msg);
         await lang.delay(20);
         expect(fs.existsSync(this.logfile)).toBeTruthy();
         const content = fs.readFileSync(this.logfile, 'utf-8');

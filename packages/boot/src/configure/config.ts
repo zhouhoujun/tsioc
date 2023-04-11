@@ -50,7 +50,7 @@ export abstract class ApplicationConfiguration implements Record<string, any> {
      *
      * @type {*}
      */
-    abstract logConfig?: LogConfigure;
+    abstract logConfig?: LogConfigure | LogConfigure[];
     /**
      * custom config key value setting.
      *
