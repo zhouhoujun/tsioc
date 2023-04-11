@@ -2,7 +2,7 @@ import { DuplexStream, ReadableStream, Stream, UnsupportedMediaTypeExecption, Wr
 import { Abstract } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 
-export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | ReadableStream<T>;
+export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | Stream;
 
 /**
  * stream adapter

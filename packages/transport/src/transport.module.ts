@@ -1,7 +1,6 @@
 import { RouterModule, TransformModule } from '@tsdi/core';
 import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
-import { TransportServerOpts } from './server/options';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './interceptors';
 import {
@@ -37,16 +36,4 @@ import { ServerFinalizeFilter } from './server/filter';
 })
 export class TransportModule {
 
-    /**
-     * Tcp Server options.
-     * @param options 
-     * @returns 
-     */
-    static withOptions(options: TransportServerOpts): ModuleWithProviders<TransportModule> {
-        const providers: ProviderType[] = [{ provide: TransportServerOpts, useValue: options }];
-        return {
-            module: TransportModule,
-            providers
-        }
-    }
 }

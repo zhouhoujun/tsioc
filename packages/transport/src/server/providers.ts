@@ -1,9 +1,9 @@
 
 import { ProviderType } from '@tsdi/ioc';
-import { TransportExecptionHandlers } from './execption-filter';
+import { ExecptionFinalizeFilter } from './execption-filter';
 
 
 
 export const TRANSPORT_SERVR_PROVIDERS: ProviderType[] = [
-    TransportExecptionHandlers
+    ExecptionFinalizeFilter
 ];

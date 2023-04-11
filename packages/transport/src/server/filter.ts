@@ -5,8 +5,9 @@ import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
 import { Writable } from 'stream';
 import { hdr } from '../consts';
-import { isBuffer, isStream, pipeStream } from '../utils';
+import { isBuffer } from '../utils';
 import { StatusVaildator } from '../status';
+import { StreamAdapter } from '../stream';
 
 
 @Abstract()
@@ -18,7 +19,9 @@ export abstract class ReceiveBackend<IInput extends TransportContext = Transport
 @Injectable({ static: true })
 export class ServerFinalizeFilter extends Filter {
 
-    constructor(private vaildator: StatusVaildator) {
+    constructor(
+        private vaildator: StatusVaildator,
+        private streamAdapter: StreamAdapter) {
         super()
     }
 
@@ -77,9 +80,9 @@ export class ServerFinalizeFilter extends Filter {
         // responses
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
-        if (isStream(body)) {
+        if (this.streamAdapter.isStream(body)) {
             if (!(res instanceof Writable)) throw new MessageExecption('response is not writable, no support strem.');
-            await pipeStream(body, res);
+            await this.streamAdapter.pipeTo(body, res);
         }
 
         // body: json

@@ -39,11 +39,11 @@ export class LogInterceptor implements Interceptor {
         const start = this.formatter.hrtime();
         const method = chalk.cyan(ctx.method);
         const url = ctx.url;
-        logger[level](incoming, method, url);
+        logger[level](this.formatter.incoming, method, url);
         return next.handle(ctx)
             .pipe(
                 map(res => {
-                    logger[level](outgoing, method, url, ...this.formatter.format(ctx, this.formatter.hrtime(start)));
+                    logger[level](this.formatter.outgoing, method, url, ...this.formatter.format(ctx, this.formatter.hrtime(start)));
                     return res
                 })
             )
@@ -62,6 +62,9 @@ export abstract class ResponseStatusFormater {
     @Inject()
     protected times!: TimeFormatPipe;
 
+    abstract get incoming(): string;
+    abstract get outgoing(): string;
+
     constructor() {
 
     }
@@ -72,7 +75,7 @@ export abstract class ResponseStatusFormater {
 
     protected formatSize(size?: number, precise = 2) {
         if (!isNumber(size)) return ''
-        return chalk.gray(this.bytes.transform(size, precise))
+        return this.bytes.transform(size, precise)
     }
 
     protected formatHrtime(hrtime: [number, number], precise = 2): string {
@@ -80,7 +83,7 @@ export abstract class ResponseStatusFormater {
         const [s, ns] = hrtime;
         const total = s * 1e3 + ns / 1e6;
 
-        return chalk.gray(this.times.transform(total, precise))
+        return this.times.transform(total, precise)
     }
 
     protected cleanZero(num: string) {
@@ -89,5 +92,3 @@ export abstract class ResponseStatusFormater {
 }
 
 const clrZReg = /\.?0+$/;
-const incoming = chalk.gray('--->');
-const outgoing = chalk.gray('<---');

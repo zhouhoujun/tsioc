@@ -8,6 +8,10 @@ import { hrtime } from 'process';
 
 @Injectable({ static: true })
 export class NodeResponseStatusFormater extends ResponseStatusFormater {
+
+    readonly incoming = chalk.gray('--->');
+    readonly outgoing = chalk.gray('<---');
+
     constructor(private vaildator: StatusVaildator) {
         super()
     }
@@ -20,8 +24,8 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         const [status, message] = this.formatStatus(ctx);
         return [
             status,
-            this.formatHrtime(hrtime),
-            this.formatSize(ctx.length),
+            chalk.gray(this.formatHrtime(hrtime)),
+            chalk.gray(this.formatSize(ctx.length)),
             message
         ]
     }

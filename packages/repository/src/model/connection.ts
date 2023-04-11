@@ -1,7 +1,7 @@
 import { tokenId, Type } from '@tsdi/ioc';
 
 /**
- * db connections.
+ * db connections multi token.
  */
 export const CONNECTIONS = tokenId<ConnectionOptions[]>('CONNECTIONS');
 
