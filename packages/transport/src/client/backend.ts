@@ -1,9 +1,8 @@
-/* eslint-disable no-case-declarations */
 import {
     TransportEvent, TransportRequest, Redirector,
     ResponseJsonParseError, Backend, Incoming, HEAD
 } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer, XSSI_PREFIX } from '../utils';
 import { ev, hdr } from '../consts';
@@ -50,7 +49,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
             const onResponse = async (incoming: Incoming) => {
                 let body: any;
                 const headers = this.reqAdapter.parseHeaders(incoming); // new ResHeaders(incoming.headers);
-                status = this.reqAdapter.parseStatus(headers, incoming); // headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
+                status = this.reqAdapter.parseStatus(incoming, headers); // headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
 
                 if (this.vaildator.isEmpty(status)) {
                     observer.next(this.reqAdapter.createHeadResponse({

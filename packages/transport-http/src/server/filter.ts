@@ -1,6 +1,6 @@
 import { Handler, Filter, HEAD } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { StatusVaildator, hdr, isBuffer, isStream, pipeStream } from '@tsdi/transport';
+import { StatusVaildator, hdr, isBuffer } from '@tsdi/transport';
 import { mergeMap, Observable } from 'rxjs';
 import { HttpContext, HttpServResponse } from './context';
 
@@ -69,7 +69,7 @@ export class HttpFinalizeFilter extends Filter {
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (isStream(body)) {
-            await pipeStream(body, res);
+            return await pipeStream(body, res);
         }
 
         // body: json

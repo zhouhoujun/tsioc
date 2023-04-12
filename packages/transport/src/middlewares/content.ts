@@ -1,4 +1,4 @@
-import { Middleware, AssetContext, MessageExecption, HEAD, GET } from '@tsdi/core';
+import { Middleware, AssetContext, HEAD, GET } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions } from './send';
 import { StatusVaildator } from '../status';
@@ -41,7 +41,7 @@ export class ContentMiddleware implements Middleware<AssetContext> {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
-                if (!this.vaildator.isNotFound((err as MessageExecption).status)) {
+                if (!this.vaildator.isNotFound((err as any).status)) {
                     throw err
                 }
             }

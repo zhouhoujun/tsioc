@@ -1,23 +1,34 @@
 import { GET, POST } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc'
 import { StatusVaildator } from '@tsdi/transport'
+import { HttpStatusCode, statusMessage } from '@tsdi/common';
 
 @Injectable({ static: true })
 export class HttpStatusVaildator implements StatusVaildator<number> {
+    get notFound(): number {
+        return HttpStatusCode.NotFound
+    }
+    get serverError(): number {
+        throw new Error('Method not implemented.');
+    }
+
+    isStatus(status: number): boolean {
+        return !!statusMessage[status as HttpStatusCode]
+    }
 
     get none(): number {
         return 0;
     }
 
     get noContent(): number {
-        return 204;
+        return HttpStatusCode.NoContent;
     }
 
     isOk(status: number): boolean {
-        return status == 200;
+        return status == HttpStatusCode.Ok;
     }
     isNotFound(status: number): boolean {
-        return status == 404;
+        return status == HttpStatusCode.NotFound;
     }
     isEmpty(status: number): boolean {
         return emptyStatus[status];

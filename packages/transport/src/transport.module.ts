@@ -1,6 +1,7 @@
 import { RouterModule, TransformModule } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
+import { TransportBackend } from './client/backend';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './interceptors';
 import {
@@ -9,7 +10,7 @@ import {
 } from './middlewares';
 import { ExecptionFinalizeFilter } from './server/execption-filter';
 import { ServerFinalizeFilter } from './server/filter';
-import { TransportBackend } from './client';
+import { RespondAdapter } from './server/respond';
 
 
 @Module({
@@ -31,6 +32,7 @@ import { TransportBackend } from './client';
         EncodeJsonMiddleware,
         SessionMiddleware,
 
+        RespondAdapter,
         ServerFinalizeFilter,
         ExecptionFinalizeFilter
     ]

@@ -80,7 +80,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
  * abstract asset context.
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number | string> extends TransportContext<TRequest, TResponse, TStatus> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = number> extends TransportContext<TRequest, TResponse, TStatus> {
 
     /**
      * is secure protocol or not.
