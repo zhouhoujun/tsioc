@@ -1,7 +1,7 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, Server, AssetContext, TransportContext
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, TransportContext, ListenOpts
 } from '@tsdi/core';
-import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
+import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
@@ -9,22 +9,37 @@ import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from './utils';
+import { StatusVaildator } from './status';
+import { StreamAdapter } from './stream';
+
+
+export interface ProxyOpts {
+    proxyIpHeader: string;
+    maxIpsCount?: number;
+}
 
 /**
  * asset server context.
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string> extends AssetContext<TRequest, TResponse, TStatus> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string> extends AssetContext<TRequest, TResponse, TStatus> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
     private _status: TStatus;
 
-    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, options?: ServerContextOpts) {
-        super(injector, request, response, options);
+    private vaildator: StatusVaildator<TStatus>;
+    private streamAdapter: StreamAdapter;
+    private listenOpts: ListenOpts;
+
+    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: InvokeArguments<TRequest>) {
+        super(injector, options);
+        this.vaildator = injector.get(StatusVaildator);
+        this._status = this.vaildator.notFound;
+        this.listenOpts = injector.get(ListenOpts);
+        this.streamAdapter = injector.get(StreamAdapter);
         this.originalUrl = request.url?.toString() ?? '';
-        this._status = this.statusFactory.create('NotFound');
         this._url = request.url ?? '';
 
         if (this.isAbsoluteUrl(this._url)) {
@@ -49,7 +64,7 @@ export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extend
         if (chged) {
             this.onStatusChanged(status);
         }
-        if (this.body && status instanceof EmptyStatus) this.body = null;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
 
     protected onStatusChanged(status: TStatus) {
@@ -93,11 +108,22 @@ export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extend
 
     protected createURL() {
         try {
-            return this.parseURL(this.request, this.target.getOptions()?.listenOpts, this.target.proxy);
+            return this.parseURL(this.request, this.listenOpts, !!this.proxy);
         } catch (err) {
             return Object.create(null);
         }
     }
+
+    
+    /**
+     * the url is absolute url or not.
+     * @param url 
+     */
+    abstract isAbsoluteUrl(url: string): boolean;
+    /**
+     * parse URL.
+     */
+    protected abstract parseURL(req: TRequest, listenOpts: ListenOpts, proxy?: boolean): URL;
 
     get pathname(): string {
         return this.URL.pathname
@@ -485,8 +511,8 @@ export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extend
 
         // no content
         if (null == val) {
-            if (!(this.status instanceof EmptyStatus)) {
-                this.status = this.statusFactory.create('NoContent');
+            if (!(this.vaildator.isEmpty(this.status))) {
+                this.status = this.vaildator.noContent;
             }
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
@@ -516,7 +542,7 @@ export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extend
         }
 
         // stream
-        if (isStream(val)) {
+        if (this.streamAdapter.isStream(val)) {
             if (original != val) {
                 // overwriting
                 if (null != original) this.removeHeader(hdr.CONTENT_LENGTH)
@@ -571,7 +597,7 @@ export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extend
         }
 
         const { body } = this;
-        if (!body || isStream(body)) return undefined;
+        if (!body || this.streamAdapter.isStream(body)) return undefined;
         if (isString(body)) return Buffer.byteLength(body);
         if (Buffer.isBuffer(body)) return body.length;
         return Buffer.byteLength(JSON.stringify(body))
@@ -811,7 +837,7 @@ export abstract class AbstractAssetContext<TRequest = Incoming, TResponse extend
     }
 
     protected override isSelf(token: Token<any>): boolean {
-        return token === AssetContext || token ===  AssetContext || token === TransportContext;
+        return token === AssetContext || token === AssetContext || token === TransportContext;
     }
 
 }

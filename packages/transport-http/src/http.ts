@@ -9,7 +9,7 @@ import { TransportModule } from '@tsdi/transport';
 import { HttpBackend2 } from './client/backend';
 import { HttpExecptionHandlers, HttpExecptionFinalizeFilter } from './server/exception-filter';
 import { HttpFinalizeFilter } from './server/filter';
-import { HttpStatusFactory } from './status';
+import { HttpStatusVaildator } from './status';
 
 /**
  * http module.
@@ -27,7 +27,7 @@ import { HttpStatusFactory } from './status';
         HttpExecptionHandlers,
         HttpBackend2,
         HttpFinalizeFilter,
-        HttpStatusFactory,
+        HttpStatusVaildator,
         HttpServer,
         Http
     ]

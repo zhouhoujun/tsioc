@@ -21,7 +21,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
-        if (!this.target.proxy) return httpPtl;
+        if (!this.proxy) return httpPtl;
         const proto = this.getHeader(hdr.X_FORWARDED_PROTO);
         return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
     }
@@ -82,13 +82,13 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
      */
 
     get ips() {
-        const proxy = (this.target as HttpServer)?.proxy;
-        const val = this.getHeader((this.target as any)?.proxyIpHeader) as string;
+        const proxy = !!this.proxy;
+        const val = this.getHeader(this.proxy?.proxyIpHeader ?? '') as string;
         let ips = (proxy && val)
             ? val.split(/\s*,\s*/)
             : [];
-        if ((this.target as HttpServer)?.maxIpsCount > 0) {
-            ips = ips.slice(-(this.target as any)?.maxIpsCount)
+        if ((this.proxy?.maxIpsCount ?? 0) > 0) {
+            ips = ips.slice(-(this.proxy?.maxIpsCount?? 0))
         }
         return ips
     }
@@ -204,8 +204,8 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         return true
     }
 
-    protected override onStatusChanged(status: Status<number>): void {
-        const code = status.status;
+    protected override onStatusChanged(status: number): void {
+        const code = status;
         assert(Number.isInteger(code), 'status code must be a number');
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this.response.statusCode = code;
@@ -274,7 +274,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
     }
 
     protected isSelf(token: Token) {
-        return token === HttpContext || token === AbstractAssetContext || token == TransportContext || token === ServerEndpointContext;
+        return token === HttpContext || token === AbstractAssetContext || token == TransportContext;
     }
 
 

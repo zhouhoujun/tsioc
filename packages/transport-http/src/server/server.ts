@@ -1,7 +1,7 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify } from '@tsdi/ioc';
 import {
     RunnableFactory, MiddlewareRouter, ListenOpts, InOutInterceptorFilter,
-    PathHanlderFilter, StatusInterceptorFilter, ExecptionHandlerFilter
+    PathHanlderFilter, StatusInterceptorFilter, ExecptionHandlerFilter, Server
 } from '@tsdi/core';
 import { Subscriber } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -65,7 +65,7 @@ const httpOpts = {
  * http server.
  */
 @Injectable()
-export class HttpServer extends TransportServer<http2.Http2Server | http.Server | https.Server, HttpServRequest, HttpServResponse, HttpServerOpts, HttpContext>  {
+export class HttpServer extends Server<HttpContext, HttpServerOpts>  {
 
     constructor(@Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOpts) {
         super(options)
