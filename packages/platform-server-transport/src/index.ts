@@ -1,4 +1,4 @@
-export * from './adapter';
+export * from './stream';
 export * from './connection';
 export * from './duplexify';
 export * from './incoming';

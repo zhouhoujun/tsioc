@@ -1,11 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
 import { TransportContext } from '@tsdi/core';
 import { ResponseStatusFormater } from '@tsdi/transport';
-import * as hrtime from 'browser-process-hrtime';
-
+import hrtime = require('browser-process-hrtime');
 
 @Injectable({ static: true })
-export class NodeResponseStatusFormater extends ResponseStatusFormater {
+export class BrowserResponseStatusFormater extends ResponseStatusFormater {
 
     readonly incoming = '--->';
     readonly outgoing = '<---';

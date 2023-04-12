@@ -8,7 +8,7 @@ import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
-import { encodeUrl, escapeHtml, isBuffer, isStream, xmlRegExp } from './utils';
+import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from './utils';
 
 /**
  * asset server context.

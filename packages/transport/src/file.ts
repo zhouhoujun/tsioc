@@ -1,4 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
+import { ReadableStream } from '@tsdi/core';
 
 /**
  * file adapter
@@ -61,7 +62,7 @@ export abstract class FileAdapter {
      * Returns `true` if the path exists, `false` otherwise.
      *
      */
-    abstract existsSync(path: string): string;
+    abstract existsSync(path: string): boolean;
 
     /**
      * `options` may also include a `start` option to allow writing data at some

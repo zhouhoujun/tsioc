@@ -1,5 +1,5 @@
 import { RouterModule, TransformModule } from '@tsdi/core';
-import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { Module } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './interceptors';
@@ -9,6 +9,7 @@ import {
 } from './middlewares';
 import { ExecptionFinalizeFilter } from './server/execption-filter';
 import { ServerFinalizeFilter } from './server/filter';
+import { TransportBackend } from './client';
 
 
 @Module({
@@ -18,10 +19,10 @@ import { ServerFinalizeFilter } from './server/filter';
     ],
     providers: [
         ...ASSET_SERVR_PROVIDERS,
-        LogInterceptor,
-
+        TransportBackend,
         BodyContentInterceptor,
 
+        LogInterceptor,
         BodyparserMiddleware,
         ContentMiddleware,
         CorsMiddleware,

@@ -1,60 +1,59 @@
 /* eslint-disable no-case-declarations */
 import {
-    TransportEvent, TransportErrorResponse, TransportRequest,
-    ResHeaders, OutgoingHeader, TransportHeaderResponse, Redirector,
-    ResponseJsonParseError, TransportResponse, ResHeadersLike, Backend, Incoming, HEAD, Outgoing
+    TransportEvent, TransportRequest, Redirector,
+    ResponseJsonParseError, Backend, Incoming, HEAD
 } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer, XSSI_PREFIX } from '../utils';
 import { ev, hdr } from '../consts';
 import { MimeAdapter, MimeTypes } from '../mime';
 import { StatusVaildator } from '../status';
 import { StreamAdapter } from '../stream';
-
+import { RequestAdapter } from './request';
 
 /**
  * transport endpoint backend.
  */
-@Abstract()
-export abstract class TransportBackend implements Backend<TransportRequest, TransportEvent> {
+@Injectable()
+export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Backend<TRequest, TResponse> {
 
     constructor(
-        private vaildator: StatusVaildator,
         private mimeTypes: MimeTypes,
+        private vaildator: StatusVaildator<TStatus>,
+        private reqAdapter: RequestAdapter<TRequest, TResponse, TStatus>,
         private streamAdapter: StreamAdapter,
         private mimeAdapter: MimeAdapter,
-        private redirector: Redirector) {
+        private redirector: Redirector<TStatus>) {
     }
 
-    handle(req: TransportRequest): Observable<TransportEvent> {
-        return new Observable((observer: Observer<TransportEvent<any>>) => {
+    handle(req: TRequest): Observable<TResponse> {
+        return new Observable((observer: Observer<TResponse>) => {
             const url = req.url.trim();
-            let status: number | string;
+            let status: TStatus;
             let statusText: string;
 
             let error: any;
             let ok = false;
 
-            const request = this.createRequest(req);
+            const request = this.reqAdapter.createRequest(req);
 
             const onError = (error?: Error | null) => {
-                const res = this.createError({
+                const res = this.reqAdapter.createErrorResponse({
                     url,
                     error,
                     statusText: 'Unknown Error',
                     status
-
                 });
                 observer.error(res)
             };
             const onResponse = async (incoming: Incoming) => {
                 let body: any;
-                const headers = new ResHeaders(incoming.headers);
-                status = headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
+                const headers = this.reqAdapter.parseHeaders(incoming); // new ResHeaders(incoming.headers);
+                status = this.reqAdapter.parseStatus(headers, incoming); // headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
 
                 if (this.vaildator.isEmpty(status)) {
-                    observer.next(this.createHeadResponse({
+                    observer.next(this.reqAdapter.createHeadResponse({
                         url,
                         headers,
                         status
@@ -71,7 +70,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
 
                 if (this.vaildator.isRedirect(status)) {
                     // HTTP fetch step 5.2
-                    this.redirector.redirect<TransportEvent<any>>(req, status, headers).subscribe(observer);
+                    this.redirector.redirect<TResponse>(req, status, headers).subscribe(observer);
                     return;
                 }
                 ok = this.vaildator.isOk(status);
@@ -81,7 +80,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                         body = await toBuffer(body);
                         body = new TextDecoder().decode(body);
                     }
-                    return observer.error(this.createError({
+                    return observer.error(this.reqAdapter.createErrorResponse({
                         url,
                         error: error ?? body,
                         status,
@@ -213,7 +212,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
 
 
                 if (ok) {
-                    observer.next(this.createResponse({
+                    observer.next(this.reqAdapter.createResponse({
                         url,
                         body,
                         headers,
@@ -222,7 +221,7 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                     }));
                     observer.complete();
                 } else {
-                    observer.error(this.createError({
+                    observer.error(this.reqAdapter.createErrorResponse({
                         url,
                         error: error ?? body,
                         status,
@@ -231,79 +230,36 @@ export abstract class TransportBackend implements Backend<TransportRequest, Tran
                 }
             };
 
-            const respName = this.getResponseEvenName();
+            const respEventName = this.reqAdapter.getResponseEvenName();
 
-            request.on(respName, onResponse);
+            request.on(respEventName, onResponse);
             request.on(ev.ERROR, onError);
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
-            if (req.body === null) {
-                request.end();
-            } else {
-                this.sendBody(request, req.body, onError);
-            }
+
+            // if (req.body === null) {
+            //     request.end();
+            // } else {
+            //     this.sendBody(request, req.body, onError);
+            // }
+            this.reqAdapter.send(request, req, onError);
 
             return () => {
-                request.off(respName, onResponse);
+                request.off(respEventName, onResponse);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
                 if (!req.context.destroyed) {
-                    observer.error(this.createError({
-                        status: 0,
+                    observer.error(this.reqAdapter.createErrorResponse({
+                        status: this.vaildator.none,
                         statusText: 'The operation was aborted.'
                     }));
                 }
             }
         });
-    }
-
-
-    protected createError(options: {
-        url?: string,
-        headers?: Record<string, OutgoingHeader>;
-        status: number | string;
-        error?: any;
-        statusText?: string;
-        statusMessage?: string;
-    }) {
-        return new TransportErrorResponse(options);
-    }
-
-    protected createHeadResponse(options: {
-        url?: string,
-        ok?: boolean;
-        headers?: ResHeadersLike;
-        status: number | string;
-        statusText?: string;
-        statusMessage?: string;
-    }) {
-        return new TransportHeaderResponse(options);
-    }
-
-    protected createResponse(options: {
-        url?: string,
-        ok?: boolean;
-        headers?: ResHeadersLike;
-        status: number | string;
-        statusText?: string;
-        statusMessage?: string;
-        body?: any;
-    }) {
-        return new TransportResponse(options);
-    }
-
-    protected getResponseEvenName() {
-        return ev.RESPONSE
-    }
-
-    protected abstract createRequest(req: TransportRequest): Outgoing;
-
-    protected sendBody(request: Outgoing, body: any, callback: (error?: Error | null) => void) {
-        this.streamAdapter.sendbody(body, request, callback);
     }
 }
 

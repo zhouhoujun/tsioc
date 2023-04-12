@@ -18,7 +18,7 @@ export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTT
  * http client options.
  */
 @Abstract()
-export abstract class HttpClientOpts implements EndpointOptions<HttpRequest> {
+export abstract class HttpClientOpts {
     /**
      * http2 authority.
      */
@@ -27,6 +27,8 @@ export abstract class HttpClientOpts implements EndpointOptions<HttpRequest> {
      * http2 session options.
      */
     abstract options?: HttpSessionOpts;
+
+    abstract endpoint?: EndpointOptions<HttpRequest>;
     /**
      * request options.
      */

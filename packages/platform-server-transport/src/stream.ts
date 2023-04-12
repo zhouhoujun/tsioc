@@ -1,5 +1,5 @@
 import { WritableStream, DuplexStream, ReadableStream, TransformStream, isFormData } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
+import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { BrotliOptions, PipeSource, StreamAdapter, ZipOptions, ev, isBuffer } from '@tsdi/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback, PipelineSource } from 'stream';
 import { promisify } from 'util';
@@ -14,13 +14,28 @@ const pmPipeline = promisify(pipeline);
 @Injectable({ static: true })
 export class NodeStreamAdapter extends StreamAdapter {
 
-    async pipeTo(source: PipeSource, destination: WritableStream<any>): Promise<void> {
-        await pmPipeline(source, destination);
-        if (source instanceof Readable) source.destroy();
+    async pipeTo(source: PipeSource | Stream, destination: WritableStream<any>): Promise<void> {
+        if (this.isStream(source) && !this.isReadable(source)) {
+            const defer = lang.defer();
+            source.once(ev.ERROR, (err) => {
+                defer.reject(err)
+            });
+            source.once(ev.END, () => {
+                defer.resolve()
+            });
+            source.pipe(destination);
+            return await defer.promise
+                .finally(() => {
+                    isFunction((source as any).destroy) && (source as any).destroy();
+                })
+        } else {
+            await pmPipeline(source, destination);
+            if (source instanceof Readable) source.destroy();
+        }
     }
 
     pipeline<T extends DuplexStream>(source: PipeSource<any>, destination: WritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T {
-        return pipeline(source as PipelineSource<any>, destination, callback) as T;
+        return pipeline(source, destination, callback) as T;
     }
 
     jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): ReadableStream<any> {
@@ -124,7 +139,7 @@ export class NodeStreamAdapter extends StreamAdapter {
             limit?: number | string | null;
         }) | string
     ): Promise<Buffer>
-    rawbody(stream: Readable, options: string | { length?: string | number | null | undefined; limit?: string | number | null | undefined; encoding?: string | null | undefined; }): Promise<string|Buffer> {
+    rawbody(stream: Readable, options: string | { length?: string | number | null | undefined; limit?: string | number | null | undefined; encoding?: string | null | undefined; }): Promise<string | Buffer> {
         return rawBody(stream, options);
     }
 

@@ -4,15 +4,18 @@ import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { hdr } from '../consts';
 import { StreamAdapter } from '../stream';
+import { StatusVaildator } from '../status';
 
 @Injectable()
-export class AssetRedirector extends Redirector {
+export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
 
-    constructor(private adapter: StreamAdapter){
+    constructor(
+        private validator: StatusVaildator<TStatus>,
+        private adapter: StreamAdapter) {
         super();
     }
 
-    redirect<T>(req: TransportRequest, status: string|number, headers: ResHeaders): Observable<T> {
+    redirect<T>(req: TransportRequest, status: TStatus, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
@@ -76,14 +79,14 @@ export class AssetRedirector extends Redirector {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (this.redirectBodify(status) && req.body &&  this.adapter.isReadable(req.body)) {
+                    if (this.validator.redirectBodify(status) && req.body && this.adapter.isReadable(req.body)) {
                         observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
                         break;
                     }
 
                     // HTTP-redirect fetch step 11
-                    if (!this.redirectBodify(status, req.method)) {
-                        method = this.redirectDefaultMethod() as RequestMethod;
+                    if (!this.validator.redirectBodify(status, req.method)) {
+                        method = this.validator.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
                         reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
                     }
@@ -115,14 +118,6 @@ export class AssetRedirector extends Redirector {
         });
     }
 
-    protected redirectBodify(status: string | number, method?: string | undefined): boolean {
-        if(!method) return status === 303;
-        return status === 303 || ((status === 301 || status === 302) && method === POST)
-    }
-
-    protected redirectDefaultMethod(): string {
-        return GET;
-    }
 
 
 }

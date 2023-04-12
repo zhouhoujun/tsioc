@@ -43,11 +43,11 @@ export class TransportRequest<T = any> {
 
 
 @Abstract()
-export abstract class Redirector {
+export abstract class Redirector<TStatus = number> {
     /**
      * redirect.
      */
-    abstract redirect<TRes>(req: TransportRequest, status: number | string, headers: ResHeaders): Observable<TRes>
+    abstract redirect<T>(req: TransportRequest, status: TStatus, headers: ResHeaders): Observable<T>
 }
 
 
