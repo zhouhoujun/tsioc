@@ -1,4 +1,4 @@
-import { Handle, ProvdierOf, ValueOf, tokenId } from '@tsdi/ioc';
+import { Handle, tokenId } from '@tsdi/ioc';
 import { TransportContext } from './context';
 
 
@@ -30,8 +30,3 @@ export type MiddlewareLike<T extends TransportContext = TransportContext> = Midd
  * middlewares mutil token.
  */
 export const MIDDLEWARES_TOKEN = tokenId<MiddlewareLike[]>('MIDDLEWARES_TOKEN');
-
-/**
- * provider of middleware.
- */
-export type MiddlewareOf = ProvdierOf<Middleware> | ValueOf<MiddlewareFn>;

@@ -3,11 +3,11 @@ import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
-import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
-import { MiddlewareOf } from './middleware';
+import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { TransportEndpoint } from './transport.endpoint';
+import { TransportContext } from './context';
 
 
 
@@ -15,14 +15,11 @@ import { TransportEndpoint } from './transport.endpoint';
  * Server
  */
 @Abstract()
-export abstract class Server<TCtx extends EndpointContext, TOutput = any> implements EndpointService, MiddlewareService {
+export abstract class Server<TCtx extends TransportContext, TOutput = any> implements EndpointService, MiddlewareService {
 
+    abstract get endpoint(): TransportEndpoint<TCtx, TOutput>;
 
-    constructor(private endpoint: TransportEndpoint<TCtx, TOutput>) {
-        
-    }
-
-    use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this {
+    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number): this {
         this.endpoint.use(middlewares, order);
         return this;
     }
@@ -41,7 +38,7 @@ export abstract class Server<TCtx extends EndpointContext, TOutput = any> implem
         this.endpoint.usePipes(pipes);
         return this;
     }
-    
+
     useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
         this.endpoint.useInterceptors(interceptor, order);
         return this;

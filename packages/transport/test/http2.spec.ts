@@ -1,14 +1,14 @@
-import { Injector, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
+import { Injector, Module, isArray } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
+import { Http, HttpClientOpts, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
-
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '@tsdi/transport-http';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));

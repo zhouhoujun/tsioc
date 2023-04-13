@@ -1,11 +1,11 @@
-import { Injector, ProvdierOf, Token } from '@tsdi/ioc';
+import { Injector, ProvdierOf, Token, lang } from '@tsdi/ioc';
 import { Backend } from '../Handler';
 import { CanActivate, GUARDS_TOKEN } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { FILTERS_TOKEN, Filter } from '../filters/filter';
 import { AbstractGuardHandler } from '../handlers/guards';
 import { TransportContext } from './context';
-import { MIDDLEWARES_TOKEN, MiddlewareLike, MiddlewareOf } from './middleware';
+import { MIDDLEWARES_TOKEN, MiddlewareLike } from './middleware';
 import { MiddlewareBackend } from './middleware.compose';
 import { TransportEndpoint } from './transport.endpoint';
 
@@ -23,8 +23,8 @@ export class MiddlewareEndpoint<TCtx extends TransportContext, TOutput>
 
     }
 
-    use(middlewares: MiddlewareOf | MiddlewareOf[], order?: number): this {
-        this.regMulti(this.midddlesToken, middlewares as ProvdierOf<MiddlewareLike>, order);
+    use(middlewares: ProvdierOf<MiddlewareLike>, order?: number): this {
+        this.regMulti(this.midddlesToken, middlewares, order, type => !!lang.getParentClass(type) || Object.getOwnPropertyNames(type).indexOf('invoke') > 0);
         this.reset();
         return this;
     }

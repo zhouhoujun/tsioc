@@ -1,7 +1,5 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify } from '@tsdi/ioc';
-import {
-    RunnableFactory, MiddlewareRouter, ListenOpts, InOutInterceptorFilter,
-    PathHanlderFilter, StatusInterceptorFilter, ExecptionHandlerFilter, Server
+import { MiddlewareRouter, ListenOpts, ExecptionHandlerFilter, Server
 } from '@tsdi/core';
 import { Subscriber } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -39,10 +37,10 @@ const httpOpts = {
     detailError: true,
     interceptors: [
         LogInterceptor,
-        StatusInterceptorFilter,
+        // StatusInterceptorFilter,
         ExecptionHandlerFilter,
-        PathHanlderFilter,
-        InOutInterceptorFilter,
+        // PathHanlderFilter,
+        // InOutInterceptorFilter,
         HttpFinalizeFilter
     ],
     filters: [
@@ -65,10 +63,10 @@ const httpOpts = {
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpContext, HttpServerOpts>  {
+export class HttpServer extends Server<HttpContext>  {
 
     constructor(@Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOpts) {
-        super(options)
+        super()
     }
 
     get proxyIpHeader() {

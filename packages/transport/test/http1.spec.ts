@@ -1,11 +1,13 @@
-import { Injector, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
+import { Injector, Module, isArray } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
+import { Http, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
-import { Http, HttpModule, HttpServer } from '@tsdi/transport-http';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+
 
 
 

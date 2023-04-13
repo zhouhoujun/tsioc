@@ -93,12 +93,12 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
     }
 
 
-    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], order?: number) {
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], order?: number, isClass?: (type: Function)=> boolean) {
         if (isArray(providers)) {
             const hasOrder = isNumber(order);
-            this.injector.inject(providers.map((r, i) => toProvider(token, r, true, hasOrder ? order + i : undefined)))
+            this.injector.inject(providers.map((r, i) => toProvider(token, r, true, hasOrder ? order + i : undefined, isClass)))
         } else {
-            this.injector.inject(toProvider(token, providers, true, order));
+            this.injector.inject(toProvider(token, providers, true, order, isClass));
         }
     }
 

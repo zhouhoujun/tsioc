@@ -33,9 +33,10 @@ export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 @Abstract()
 export abstract class Client<TRequest extends TransportRequest = TransportRequest, TRespone = TransportEvent> {
 
-    constructor(readonly handler: AbstractGuardHandler) {
-
-    }
+    /**
+     * client handler
+     */
+    abstract get handler(): AbstractGuardHandler
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.

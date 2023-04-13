@@ -194,11 +194,6 @@ export type TypeProvider<T = any> = Type<T>;
 export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | TypeOf<T>;
 
 /**
- * use static value of.
- */
-export type ValueOf<T> = UseValue<T> | UseFactory<T> | UseExisting<T>;
-
-/**
  * static providers.
  */
 export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;
@@ -247,8 +242,8 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
  * @param multiOrder 
  * @returns 
  */
-export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number): StaticProvider<T> {
-    if (isType(useOf)) {
+export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): StaticProvider<T> {
+    if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
         return { provide, useClass: useOf, multi, multiOrder };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)

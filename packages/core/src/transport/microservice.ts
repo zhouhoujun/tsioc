@@ -12,9 +12,10 @@ import { OperationEndpoint } from '../endpoints/endpoint.factory';
 @Abstract()
 export abstract class MicroService<TCtx extends EndpointContext, TOutput = any> implements EndpointService {
     
-    constructor(private endpoint: OperationEndpoint<TCtx, TOutput>) {
-        
-    }
+    /**
+     * micro service endpoint.
+     */
+    abstract get endpoint(): OperationEndpoint<TCtx, TOutput>;
 
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
         this.endpoint.useGuards(guards, order);
