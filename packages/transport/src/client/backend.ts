@@ -30,7 +30,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
         return new Observable((observer: Observer<TResponse>) => {
             const url = req.url.trim();
             let status: TStatus;
-            let statusText: string;
+            let statusText: string | undefined;
 
             let error: any;
             let ok = false;
@@ -49,7 +49,11 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
             const onResponse = async (incoming: Incoming) => {
                 let body: any;
                 const headers = this.reqAdapter.parseHeaders(incoming); // new ResHeaders(incoming.headers);
-                status = this.reqAdapter.parseStatus(incoming, headers); // headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
+                const st = this.reqAdapter.parseStatus(incoming, headers); // headers.get(hdr.STATUS2) ?? headers.get(hdr.STATUS) ?? 0;
+
+                body = st.body;
+                status = st.status;
+                statusText = st.statusText;
 
                 if (this.vaildator.isEmpty(status)) {
                     observer.next(this.reqAdapter.createHeadResponse({

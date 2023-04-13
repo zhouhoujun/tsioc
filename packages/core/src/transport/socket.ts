@@ -1,11 +1,11 @@
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
-import { ReadableStream, WritableStream } from './stream';
+import { ReadableStream, WritableStream, DuplexStream, EventEmitter } from './stream';
 
 /**
  * Socket interface.
  */
-export interface Socket extends ReadableStream, WritableStream {
+export interface Socket extends DuplexStream {
 
     /**
      * Set the encoding for the socket as a `Readable Stream`. See `readable.setEncoding()` for more information.
@@ -72,7 +72,41 @@ export interface Socket extends ReadableStream, WritableStream {
     setKeepAlive?(enable?: boolean, initialDelay?: number): this;
 }
 
-
+/**
+ * Connection interface.
+ */
+export interface Connection<TSocket extends EventEmitter = EventEmitter> extends DuplexStream {
+    /**
+     * socket.
+     */
+    get socket(): TSocket;
+    /**
+     * Enable/disable keep-alive functionality, and optionally set the initial
+     * delay before the first keepalive probe is sent on an idle socket.
+     *
+     * Set `initialDelay` (in milliseconds) to set the delay between the last
+     * data packet received and the first keepalive probe. Setting `0` for`initialDelay` will leave the value unchanged from the default
+     * (or previous) setting.
+     *
+     * Enabling the keep-alive functionality will set the following socket options:
+     *
+     * * `SO_KEEPALIVE=1`
+     * * `TCP_KEEPIDLE=initialDelay`
+     * * `TCP_KEEPCNT=10`
+     * * `TCP_KEEPINTVL=1`
+     * @since v0.1.92
+     * @param [enable=false]
+     * @param [initialDelay=0]
+     * @return The socket itself.
+     */
+    setKeepAlive(enable?: boolean, initialDelay?: number): this;
+    /**
+     * setTimeout
+     * @param msecs 
+     * @param callback 
+     */
+    setTimeout(msecs: number, callback?: () => void): this;
+}
 
 /**
  * server side incoming message.

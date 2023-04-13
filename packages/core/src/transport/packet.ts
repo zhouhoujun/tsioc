@@ -10,3 +10,11 @@ export interface Packet<T = any> {
     error?: Error;
 }
 
+/**
+ * Response Packet.
+ */
+export interface ResponsePacket<TStatus = any> {
+    status: TStatus,
+    statusText?: string;
+    body?: any;
+}

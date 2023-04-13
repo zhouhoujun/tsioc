@@ -1,8 +1,7 @@
 /* eslint-disable no-case-declarations */
 import {
-    TransportEvent, TransportRequest,
-    ResHeaders, OutgoingHeader,
-    ResHeadersLike, Incoming, Outgoing, ReqHeaders, TransportParams
+    TransportEvent, TransportRequest, WritableStream,
+    ResHeaders, ReqHeaders, TransportParams, ResponsePacket
 } from '@tsdi/core';
 import { Abstract, InvocationContext } from '@tsdi/ioc';
 
@@ -11,7 +10,7 @@ import { Abstract, InvocationContext } from '@tsdi/ioc';
  * request adapter.
  */
 @Abstract()
-export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> {    
+export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> {
 
     /**
      * update req.
@@ -36,7 +35,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * create request stream by req.
      * @param req 
      */
-    abstract createRequest(req: TRequest): Outgoing;
+    abstract createRequest(req: TRequest): WritableStream;
 
     /**
      * send request.
@@ -44,7 +43,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * @param req 
      * @param callback 
      */
-    abstract send(request: Outgoing, req: TRequest, callback: (error?: Error | null) => void): void;
+    abstract send(request: WritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
 
     /**
      * create error response.
@@ -52,7 +51,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      */
     abstract createErrorResponse(options: {
         url?: string,
-        headers?: Record<string, OutgoingHeader>;
+        headers?: ResHeaders;
         status: TStatus;
         error?: any;
         statusText?: string;
@@ -66,7 +65,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
     abstract createHeadResponse(options: {
         url?: string,
         ok?: boolean;
-        headers?: ResHeadersLike;
+        headers?: ResHeaders;
         status: TStatus;
         statusText?: string;
         statusMessage?: string;
@@ -79,7 +78,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
     abstract createResponse(options: {
         url?: string,
         ok?: boolean;
-        headers?: ResHeadersLike;
+        headers?: ResHeaders;
         status: TStatus;
         statusText?: string;
         statusMessage?: string;
@@ -95,11 +94,12 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * parse headers of incoming message.
      * @param incoming 
      */
-    abstract parseHeaders(incoming: Incoming): ResHeaders;
+    abstract parseHeaders(incoming: any): ResHeaders;
+
     /**
-     * parse status of incoming message.
+     * parse status and message of incoming message.
      * @param incoming 
      * @param headers 
      */
-    abstract parseStatus(incoming: Incoming, headers: ResHeaders): TStatus;
+    abstract parseStatus(incoming: any, headers: ResHeaders): ResponsePacket<TStatus>;
 }

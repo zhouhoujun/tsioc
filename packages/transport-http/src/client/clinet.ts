@@ -50,9 +50,9 @@ const NONE = {} as http2.ClientHttp2Session;
 export class Http extends Client<HttpRequest, HttpEvent> {
 
     constructor(
-        handler: HttpGuardsHandler,
+        readonly handler: HttpGuardsHandler,
         @Nullable() private option: HttpClientOpts) {
-        super(handler);
+        super()
         if (!option?.authority) {
             this.connection = NONE;
         }

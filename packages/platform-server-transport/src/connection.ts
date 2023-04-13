@@ -37,7 +37,9 @@ export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
     encoding?: BufferEncoding;
 }
 
-
+/**
+ * connection
+ */
 @Abstract()
 export abstract class Connection<TSocket extends EventEmitter = EventEmitter> extends Duplexify {
 
