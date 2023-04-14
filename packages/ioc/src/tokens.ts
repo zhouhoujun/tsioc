@@ -5,6 +5,8 @@ import { getClassName } from './utils/lang';
 
 /**
  * inject token.
+ * 
+ * 注入标记令牌类
  *
  * @export
  * @class InjectToken
@@ -26,6 +28,8 @@ export class InjectToken<T = any> {
 
 /**
  * factory tocken.
+ * 
+ * 标记令牌
  */
 export type Token<T = any> = string | symbol | InjectToken<T> | ClassType<T>;
 

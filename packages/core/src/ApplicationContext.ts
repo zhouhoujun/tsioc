@@ -15,6 +15,8 @@ import { ApplicationEvent } from './ApplicationEvent';
 /**
  * application context for global.
  * implements {@link Destroyable}.
+ * 
+ * 应用上下文环境
  */
 @Abstract()
 export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>

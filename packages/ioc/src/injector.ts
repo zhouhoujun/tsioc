@@ -13,33 +13,52 @@ import { Platform } from './platform';
 /**
  * injector.
  * implements {@link Destroyable}
+ * 
+ * IoC 容器，注入器
  */
 @Abstract()
 export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * none poincut for aop.
+     * 
+     * 该类是否支持AOP注入
      */
     static ƿNPT = true;
 
+    /**
+     * injector scope.
+     * 
+     * 容器范围
+     */
     readonly scope?: InjectorScope;
     /**
      * parent injector.
+     * 
+     * 上级容器。
      */
     readonly parent?: Injector;
     /**
      * platform.
+     * 
+     * 容器平台环境
      */
     abstract platform(): Platform;
     /**
      * registered tokens.
+     * 
+     * 已注册标记令牌。
      */
     abstract tokens(): Token<any>[];
     /**
      * token size.
+     * 
+     * 已注册标记令牌长度。
      */
     abstract get size(): number;
     /**
      * has register.
+     * 
+     * 标记令牌是否已注册。
      *
      * @template T
      * @param {Token<T>} token the token.
@@ -50,6 +69,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * get token factory resolve instace in current.
      *
+     * 获取标记令牌的实例。
      * @template T
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
@@ -60,6 +80,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * get token factory resolve instace in current.
      *
+     * 获取标记令牌的实例。
      * @template T
      * @param {Token<T>} token token id.
      * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
@@ -70,6 +91,8 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
     /**
      * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
      *
      * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
@@ -79,6 +102,8 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract resolve<T>(token: Token<T>, option?: InvokeArguments<any>): T;
     /**
      * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
@@ -88,6 +113,8 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract resolve<T>(token: Token<T>, context?: InvocationContext): T;
     /**
      * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
      *
      * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
@@ -97,6 +124,8 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
      *
      * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
@@ -107,6 +136,9 @@ export abstract class Injector implements Destroyable, OnDestroy {
 
     /**
      * set value.
+     * 
+     * 设置标记令牌的实例，并设置为静态值。
+     * 
      * @param token provide key
      * @param value the vaule provider for the token.
      * @param provider the value type.
@@ -114,6 +146,9 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**
      * set gloabl singleton.
+     * 
+     * 设置标记令牌的实例，并设置为全局单例。
+     * 
      * @param token provide key
      * @param value singleton vaule
      */
@@ -137,12 +172,15 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract cache<T>(token: Token<T>, instance: T, expires: number): this;
     /**
      * inject providers
+     * 
+     * 注入提供标记指令
      * @param providers
      */
     abstract inject(providers: ProviderType | ProviderType[]): this;
     /**
      * inject providers.
      *
+     * 注入提供标记指令
      * @param {...ProviderType[]} providers
      * @returns {this}
      */
@@ -163,17 +201,23 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract use(...modules: Modules[]): Type<any>[];
     /**
      * register types.
+     * 
+     * 注册类
+     * 
      * @param {Type<any>[]} types class type array.
      */
     abstract register(types: (Type | RegisterOption)[]): this;
     /**
      * register types.
+     * 
+     * 注册类
      * @param types class type params.
      */
     abstract register(...types: (Type | RegisterOption)[]): this;
     /**
      * unregister the token
      *
+     * 注销标记指令
      * @template T
      * @param {Token<T>} token
      * @returns {this} this self.
@@ -181,6 +225,8 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract unregister<T>(token: Token<T>): this;
     /**
      * invoke method.
+     * 
+     * 调用类方法
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -192,6 +238,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * invoke method.
      *
+     * 调用类方法
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -202,6 +249,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * invoke method.
      *
+     * 调用类方法
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -212,6 +260,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * invoke method.
      * 
+     * 调用类方法
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.

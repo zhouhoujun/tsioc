@@ -16,6 +16,8 @@ export type ModuleType = Modules | ModuleWithProviders;
  * Represents an instance of an `Module` created by an `ModuleFactory`.
  * Provides access to the `Module` instance and related objects.
  *
+ * 模块类容器
+ * 
  * @publicApi
  */
 @Abstract()

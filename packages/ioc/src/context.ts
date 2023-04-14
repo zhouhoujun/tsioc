@@ -11,6 +11,8 @@ import { OperationInvoker } from './operation';
 
 /**
  * The context for the {@link OperationInvoker invocation of an operation}.
+ * 
+ * 执行操作调用的接口上下文
  */
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {

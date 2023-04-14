@@ -43,6 +43,7 @@ describe('middleware', () => {
                 })
             ]
         });
+        
         const runable = await ctx.runners.attach(HttpServer);
         runable.getInstance().use((ctx, next) => {
             console.log('ctx.url:', ctx.url);

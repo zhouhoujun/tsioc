@@ -9,6 +9,8 @@ import { ApplicationArguments } from './ApplicationArguments';
 
 /**
  * application.
+ * 
+ * 应用程序启动入口
  *
  * @export
  * @class Application
@@ -18,10 +20,14 @@ export class Application<T = any, TArg = ApplicationArguments> {
     private _loads?: Type[];
     /**
      * root module ref.
+     * 
+     * 应用程序启动根模块
      */
     readonly root: ModuleRef;
     /**
      * application context.
+     * 
+     * 应用程序上下文
      */
     protected context!: ApplicationContext<T, TArg>;
 
@@ -54,6 +60,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     /**
      * get application context.
+     * 
+     * 获取当前启动应用程序的上下文.
      *
      * @returns instance of {@link ApplicationContext}.
      */
@@ -63,6 +71,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     /**
      * run application.
+     * 
+     * 根据配置启动运行应用程序
      *
      * @static
      * @param {ApplicationOption} option option of type {@link ApplicationOption}
@@ -71,6 +81,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
     static run<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>
     /**
      * run application.
+     * 
+     * 根据模块，环境变量启动运行应用程序
      *
      * @static
      * @param {Type<T>} target target class type.
@@ -84,6 +96,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     /**
      * run application of module.
+     * 
+     * 启动应用程序
      *
      * @param {...string[]} args
      * @returns {Promise<ApplicationContext<T, TArg>>}
@@ -103,6 +117,9 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     /**
      * close application.
+     * 
+     * 关闭应用程序
+     * 
      * @returns 
      */
     close() {
