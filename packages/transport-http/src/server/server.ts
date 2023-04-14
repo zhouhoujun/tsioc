@@ -1,5 +1,5 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify } from '@tsdi/ioc';
-import { MiddlewareRouter, ListenOpts, ExecptionHandlerFilter, Server
+import { MiddlewareRouter, ListenOpts, ExecptionHandlerFilter, Server, ModuleLoader
 } from '@tsdi/core';
 import { Subscriber } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -8,16 +8,16 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import {
-    CONTENT_DISPOSITION, ev, LOCALHOST, LogInterceptor,
+    CONTENT_DISPOSITION, LOCALHOST, LogInterceptor,
     CorsMiddleware, EncodeJsonMiddleware, HelmetMiddleware, BodyparserMiddleware,
     ContentMiddleware, SessionMiddleware, CsrfMiddleware, Cleanup
 } from '@tsdi/transport';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
-// import { HttpExecptionFinalizeFilter } from './exception-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
-// import { HttpFinalizeFilter } from './filter';
 import { HTTP_SERVR_PROVIDERS } from './providers';
 
+// import { HttpFinalizeFilter } from './filter';
+// import { HttpExecptionFinalizeFilter } from './exception-filter';
 
 
 /**
@@ -65,7 +65,7 @@ const httpOpts = {
 @Injectable()
 export class HttpServer extends Server<HttpContext>  {
 
-    constructor(@Inject(HTTP_SERVEROPTIONS, { nullable: true }) options: HttpServerOpts) {
+    constructor(@Inject(HTTP_SERVEROPTIONS, { nullable: true }) private options: HttpServerOpts) {
         super()
     }
 
@@ -97,15 +97,16 @@ export class HttpServer extends Server<HttpContext>  {
     }
 
     protected async createServer(opts: HttpServerOpts): Promise<http2.Http2Server | http.Server | https.Server> {
-        const injector = this.context.injector;
-        if (this.context.has(CONTENT_DISPOSITION)) {
-            const func = await injector.getLoader().require('content-disposition');
+        const injector = this.endpoint.injector;
+        const loader = injector.get(ModuleLoader);
+        if (injector.has(CONTENT_DISPOSITION)) {
+            const func = await loader.require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
-            this.context.setValue(CONTENT_DISPOSITION, func)
+            injector.setValue(CONTENT_DISPOSITION, func)
         }
 
         if (opts.controllers) {
-            await injector.load(opts.controllers);
+            await loader.register(injector, opts.controllers);
         }
 
         const option = opts.serverOpts ?? EMPTY_OBJ;
@@ -123,8 +124,8 @@ export class HttpServer extends Server<HttpContext>  {
     }
 
     protected override async setupServe(server: http2.Http2Server | http.Server | https.Server, observer: Subscriber<http2.Http2Server | http.Server | https.Server>, opts: HttpServerOpts): Promise<Cleanup> {
-        const cleanup = await super.setupServe(server, observer, opts);
-        const injector = this.context.injector;
+        // const cleanup = await super.setupServe(server, observer, opts);
+        const injector = this.endpoint.injector;
         const sharing = opts.sharing;
         //sharing servers
         if (sharing) {
@@ -154,7 +155,7 @@ export class HttpServer extends Server<HttpContext>  {
     }
 
     protected createContext(req: HttpServRequest, res: HttpServResponse): HttpContext {
-        return new HttpContext(this.context.injector, req, res, this);
+        return new HttpContext(this.endpoint.injector, req, res, this.options.proxy);
     }
 
 

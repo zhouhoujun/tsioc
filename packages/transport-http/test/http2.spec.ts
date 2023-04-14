@@ -1,7 +1,9 @@
-import { Injector, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
+import { Injector, Module, isArray } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
+
+import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
@@ -114,7 +116,7 @@ describe('http2 server, Http', () => {
     it('not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
-                catchError(err=> {
+                catchError(err => {
                     console.log(err);
                     return of(err)
                 })
@@ -124,12 +126,12 @@ describe('http2 server, Http', () => {
 
     it('bad request', async () => {
         const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
-        .pipe(
-            catchError(err=> {
-                console.log(err);
-                return of(err)
-            })
-        ));
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
         expect(a.status).toEqual(400);
     })
 

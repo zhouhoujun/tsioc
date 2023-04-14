@@ -10,10 +10,11 @@ import * as http2 from 'http2';
 import { Cleanup, ev } from '@tsdi/transport';
 import { HttpPathInterceptor } from './path';
 import { HttpGuardsHandler } from './handler';
-// import { HttpBodyInterceptor } from './body';
 import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_FILTERS } from './option';
 import { HTTP_CLIENT_PROVIDERS } from './providers';
+
 // import { HttpBackend2 } from './backend';
+// import { HttpBodyInterceptor } from './body';
 
 
 

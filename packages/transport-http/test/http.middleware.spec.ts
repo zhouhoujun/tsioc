@@ -1,10 +1,12 @@
 import { ServerModule } from '@tsdi/platform-server';
+import { Module } from '@tsdi/ioc';
+import { Application } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import expect = require('expect');
-import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Application, LoggerModule, Module } from '@tsdi/core';
 import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
 
 @Module({
@@ -41,8 +43,8 @@ describe('middleware', () => {
                 })
             ]
         });
-        const runable = ctx.createRunnable(HttpServer);
-        runable.instance.use((ctx, next) => {
+        const runable = await ctx.runners.attach(HttpServer);
+        runable.getInstance().use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.payload);
@@ -53,7 +55,7 @@ describe('middleware', () => {
             return next();
         }, 0);
 
-        await runable.run();
+        await ctx.runners.run(runable.type);
 
         const http = ctx.injector.resolve(Http, {
             provide: HttpClientOpts,

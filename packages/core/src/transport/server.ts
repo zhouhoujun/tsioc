@@ -44,4 +44,8 @@ export abstract class Server<TCtx extends TransportContext, TOutput = any> imple
         return this;
     }
 
+    abstract start(): Promise<void>;
+
+    abstract close(): Promise<void>;
+
 }

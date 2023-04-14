@@ -4,7 +4,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { ListenOptions } from 'net';
-import { CorsOptions, MimeSource, ContentOptions, SessionOptions, CsrfOptions } from '@tsdi/transport';
+import { CorsOptions, MimeSource, ContentOptions, SessionOptions, CsrfOptions, ProxyOpts } from '@tsdi/transport';
 import { HttpServRequest, HttpServResponse } from './context';
 
 /**
@@ -12,10 +12,7 @@ import { HttpServRequest, HttpServResponse } from './context';
  */
 export interface HttpOpts {
     majorVersion?: number;
-    proxy?: {
-        proxyIpHeader?: string;
-        maxIpsCount?: number;
-    }
+    proxy?: ProxyOpts;
     /**
      * request timeout.
      */

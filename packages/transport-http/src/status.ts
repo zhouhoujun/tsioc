@@ -5,6 +5,7 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 
 @Injectable({ static: true })
 export class HttpStatusVaildator implements StatusVaildator<number> {
+
     get ok(): number {
         return HttpStatusCode.Ok
     }
@@ -14,19 +15,16 @@ export class HttpStatusVaildator implements StatusVaildator<number> {
     get serverError(): number {
         return HttpStatusCode.InternalServerError
     }
-
-    isStatus(status: number): boolean {
-        return !!statusMessage[status as HttpStatusCode]
-    }
-
     get none(): number {
         return 0;
     }
-
     get noContent(): number {
         return HttpStatusCode.NoContent;
     }
 
+    isStatus(status: number): boolean {
+        return !!statusMessage[status as HttpStatusCode]
+    }
     isOk(status: number): boolean {
         return status == HttpStatusCode.Ok;
     }
