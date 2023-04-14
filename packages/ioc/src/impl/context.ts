@@ -142,7 +142,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected _payload?: T;
     /**
-     * the invocation payload.
+     * the invocation context payload.
+     * 
+     * 上下文负载对象
      */
     get payload(): T {
         if (!this._payload) {
@@ -169,6 +171,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * get value ify create by factory and register the value for the token.
+     * 
+     * 获取上下文中标记指令的值，如果没有注入，则根据工厂函数注入该标记指令，并返回值。
      * @param token the token to get value.
      * @param factory the factory to create value for token.
      * @returns the instance of token.
@@ -185,6 +189,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * has token in the context or not.
+     * 
+     * 上下文中是否有注入该标记指令
      * @param token the token to check.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns boolean.
@@ -198,6 +204,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
@@ -205,6 +213,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     get<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param context invcation context, type of {@link InvocationContext}.
      * @param flags inject flags, type of {@link InjectFlags}.
@@ -240,6 +250,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * set value.
+     * 
+     * 设置上下文中标记指令的实例值
      * @param token token
      * @param value value for the token.
      */
@@ -263,6 +275,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * resolve token.
+     * 
+     * 解析上下文中标记指令的实例值
      * @param token 
      * @returns 
      */
@@ -272,6 +286,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * resolve the parameter value.
+     * 
+     * 解析调用参数
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */

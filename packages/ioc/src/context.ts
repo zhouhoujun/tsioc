@@ -57,6 +57,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get payload(): T;
     /**
      * get value ify create by factory and register the value for the token.
+     * 
+     * 获取上下文中标记指令的值，如果没有注入，则根据工厂函数注入该标记指令，并返回值。
      * @param token the token to get value.
      * @param factory the factory to create value for token.
      * @returns the instance of token.
@@ -64,6 +66,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract getValueify<T>(token: Token<T>, factory: () => T): T;
     /**
      * has token in the context or not.
+     * 
+     * 上下文中是否有注入该标记指令
      * @param token the token to check.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns boolean.
@@ -71,6 +75,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract has(token: Token, flags?: InjectFlags): boolean;
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
@@ -78,6 +84,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get<T>(token: Token<T>, flags?: InjectFlags): T
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param context invcation context, type of {@link InvocationContext}.
      * @param flags inject flags, type of {@link InjectFlags}.
@@ -86,17 +94,23 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T;
     /**
      * set value.
+     * 
+     * 设置上下文中标记指令的实例值
      * @param token token
      * @param value value for the token.
      */
     abstract setValue<T>(token: Token<T>, value: T): this;
     /**
      * resolve token in context.
+     * 
+     * 解析上下文中标记指令的实例值
      * @param token 
      */
     abstract resolve<T>(token: Token<T>): T;
     /**
      * resolve the parameter value.
+     * 
+     * 解析调用参数
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
@@ -104,15 +118,21 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null;
     /**
      * context destroyed or not.
+     * 
+     * 上下文销毁与否
      */
     abstract get destroyed(): boolean;
     /**
      * register callback on destroy.
+     * 
+     * 传回调函数参数则注册销毁回调函数，否则执行销毁操作
      * @param callback destroy callback
      */
     abstract onDestroy(callback?: DestroyCallback): void;
     /**
      * destroy this.
+     * 
+     * 销毁上下文
      */
     abstract destroy(): void;
 }
@@ -120,6 +140,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
 
 /**
  * create invocation context.
+ * 
+ * 创建调用上下文
  * @param parent 
  * @param options 
  * @returns 
