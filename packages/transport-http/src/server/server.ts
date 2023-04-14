@@ -13,9 +13,9 @@ import {
     ContentMiddleware, SessionMiddleware, CsrfMiddleware, Cleanup
 } from '@tsdi/transport';
 import { HttpContext, HttpServRequest, HttpServResponse, HTTP_MIDDLEWARES } from './context';
-import { HttpExecptionFinalizeFilter } from './exception-filter';
+// import { HttpExecptionFinalizeFilter } from './exception-filter';
 import { Http2ServerOpts, HttpServerOpts, HTTP_EXECPTION_FILTERS, HTTP_SERVEROPTIONS, HTTP_SERV_INTERCEPTORS } from './options';
-import { HttpFinalizeFilter } from './filter';
+// import { HttpFinalizeFilter } from './filter';
 import { HTTP_SERVR_PROVIDERS } from './providers';
 
 
@@ -41,10 +41,10 @@ const httpOpts = {
         ExecptionHandlerFilter,
         // PathHanlderFilter,
         // InOutInterceptorFilter,
-        HttpFinalizeFilter
+        // HttpFinalizeFilter
     ],
     filters: [
-        HttpExecptionFinalizeFilter
+        // HttpExecptionFinalizeFilter
     ],
     middlewares: [
         HelmetMiddleware,
@@ -69,27 +69,27 @@ export class HttpServer extends Server<HttpContext>  {
         super()
     }
 
-    get proxyIpHeader() {
-        return this.getOptions().proxyIpHeader
-    }
+    // get proxyIpHeader() {
+    //     return this.getOptions().proxyIpHeader
+    // }
 
-    get maxIpsCount() {
-        return this.getOptions().maxIpsCount ?? 0
-    }
+    // get maxIpsCount() {
+    //     return this.getOptions().maxIpsCount ?? 0
+    // }
 
 
-    protected override initContext(options: HttpServerOpts): void {
-        this.context.setValue(HTTP_SERVEROPTIONS, options);
-        super.initContext(options);
-    }
+    // protected override initContext(options: HttpServerOpts): void {
+    //     this.context.setValue(HTTP_SERVEROPTIONS, options);
+    //     super.initContext(options);
+    // }
 
-    protected override getDefaultOptions(): HttpServerOpts {
-        return httpOpts
-    }
+    // protected override getDefaultOptions(): HttpServerOpts {
+    //     return httpOpts
+    // }
 
-    protected override defaultProviders() {
-        return HTTP_SERVR_PROVIDERS;
-    }
+    // protected override defaultProviders() {
+    //     return HTTP_SERVR_PROVIDERS;
+    // }
 
     private _secure?: boolean;
     get isSecure() {

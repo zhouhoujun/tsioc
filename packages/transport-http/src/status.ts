@@ -5,11 +5,14 @@ import { HttpStatusCode, statusMessage } from '@tsdi/common';
 
 @Injectable({ static: true })
 export class HttpStatusVaildator implements StatusVaildator<number> {
+    get ok(): number {
+        return HttpStatusCode.Ok
+    }
     get notFound(): number {
         return HttpStatusCode.NotFound
     }
     get serverError(): number {
-        throw new Error('Method not implemented.');
+        return HttpStatusCode.InternalServerError
     }
 
     isStatus(status: number): boolean {

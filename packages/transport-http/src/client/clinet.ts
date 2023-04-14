@@ -1,28 +1,27 @@
-import { createContext, Injectable, Injector, InvocationContext, isPromise, Nullable, promisify, ProviderType } from '@tsdi/ioc';
+import { createContext, Injectable, InvocationContext, Nullable, promisify } from '@tsdi/ioc';
 import {
-    RequestMethod, OnDispose, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST
+    RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST
 } from '@tsdi/core';
-import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend, HttpHandler } from '@tsdi/common';
-import { defer, isObservable, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
+import { map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { Cleanup, ev } from '@tsdi/transport';
 import { HttpPathInterceptor } from './path';
-import { HttpBodyInterceptor } from './body';
-import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_EXECPTION_FILTERS } from './option';
-import { HTTP_CLIENT_PROVIDERS } from './providers';
-import { HttpBackend2 } from './backend';
 import { HttpGuardsHandler } from './handler';
+// import { HttpBodyInterceptor } from './body';
+import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_FILTERS } from './option';
+import { HTTP_CLIENT_PROVIDERS } from './providers';
+// import { HttpBackend2 } from './backend';
 
 
 
 
 const defOpts = {
-    backend: { provide: HttpBackend, useClass: HttpBackend2 },
     interceptorsToken: HTTP_INTERCEPTORS,
-    interceptors: [HttpPathInterceptor, HttpBodyInterceptor],
-    filtersToken: HTTP_CLIENT_EXECPTION_FILTERS,
+    interceptors: [HttpPathInterceptor, HttpGuardsHandler],
+    filtersToken: HTTP_CLIENT_FILTERS,
 } as HttpClientOpts;
 
 

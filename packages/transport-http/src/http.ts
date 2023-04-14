@@ -2,14 +2,15 @@ import { RouterModule, TransformModule } from '@tsdi/core';
 import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
-import { HttpBodyInterceptor } from './client/body';
+// import { HttpBodyInterceptor } from './client/body';
 import { HttpPathInterceptor } from './client/path';
 import { HttpServerOpts, HTTP_SERVEROPTIONS } from './server/options';
 import { TransportModule } from '@tsdi/transport';
-import { HttpBackend2 } from './client/backend';
-import { HttpExecptionHandlers, HttpExecptionFinalizeFilter } from './server/exception-filter';
-import { HttpFinalizeFilter } from './server/filter';
+import { HttpExecptionHandlers } from './server/exception-filter';
+// import { HttpBackend2 } from './client/backend';
+// import { HttpFinalizeFilter } from './server/filter';
 import { HttpStatusVaildator } from './status';
+import { HttpRequestAdapter } from './client/request';
 
 /**
  * http module.
@@ -21,12 +22,15 @@ import { HttpStatusVaildator } from './status';
         TransportModule
     ],
     providers: [
-        HttpBodyInterceptor,
+        HttpStatusVaildator,
+        HttpRequestAdapter,
+
+        // HttpBodyInterceptor,
         HttpPathInterceptor,
-        HttpExecptionFinalizeFilter,
+        // HttpExecptionFinalizeFilter,
         HttpExecptionHandlers,
-        HttpBackend2,
-        HttpFinalizeFilter,
+        // HttpBackend2,
+        // HttpFinalizeFilter,
         HttpStatusVaildator,
         HttpServer,
         Http

@@ -27,19 +27,22 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
-    private _status: TStatus;
 
-    private vaildator: StatusVaildator<TStatus>;
-    private streamAdapter: StreamAdapter;
-    private listenOpts: ListenOpts;
+    protected vaildator: StatusVaildator<TStatus>;
+    protected streamAdapter: StreamAdapter;
+    protected listenOpts: ListenOpts;
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: InvokeArguments<TRequest>) {
         super(injector, options);
         this.vaildator = injector.get(StatusVaildator);
-        this._status = this.vaildator.notFound;
         this.listenOpts = injector.get(ListenOpts);
         this.streamAdapter = injector.get(StreamAdapter);
         this.originalUrl = request.url?.toString() ?? '';
+        this.init(request);
+    }
+
+    protected init(request: TRequest) {
+        this.status = this.vaildator.notFound;
         this._url = request.url ?? '';
 
         if (this.isAbsoluteUrl(this._url)) {
@@ -52,24 +55,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
     }
 
-    get status(): TStatus {
-        return this._status;
-    }
-
-    set status(status: TStatus) {
-        if (this.sent) return;
-        this._explicitStatus = true;
-        const chged = this._status !== status;
-        this._status = status;
-        if (chged) {
-            this.onStatusChanged(status);
-        }
-        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
-    }
-
-    protected onStatusChanged(status: TStatus) {
-
-    }
 
     /**
      * Get url path.
@@ -90,6 +75,21 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     set url(value: string) {
         this._url = value
     }
+
+    /**
+     * Whether the status code is ok
+     */
+    get ok(): boolean {
+        return this.vaildator.isOk(this.status);
+    }
+
+    /**
+     * Whether the status code is ok
+     */
+    set ok(ok: boolean) {
+        this.status = ok ? this.vaildator.ok : this.vaildator.notFound
+    }
+
 
     /**
      * Get WHATWG parsed URL.
@@ -114,7 +114,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
     }
 
-    
+
     /**
      * the url is absolute url or not.
      * @param url 

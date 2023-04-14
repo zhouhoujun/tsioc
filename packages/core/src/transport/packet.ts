@@ -4,7 +4,7 @@
  */
 export interface Packet<T = any> {
     id?: any;
-    url: string;
+    url?: string;
     type?: number;
     payload?: T;
     error?: Error;

@@ -123,7 +123,7 @@ export interface Incoming<T = any, TConn = any> extends Packet<T>, ReadableStrea
     /**
      * Outgoing URL
      */
-    readonly url: string;
+    readonly url?: string;
     /**
      * Outgoing URL parameters.
      */

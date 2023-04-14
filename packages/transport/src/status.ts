@@ -14,6 +14,10 @@ export abstract class StatusVaildator<T = number> {
      */
     abstract get notFound(): T;
     /**
+     * ok status.
+     */
+    abstract get ok(): T;
+    /**
      * no status.
      */
     abstract get none(): T;

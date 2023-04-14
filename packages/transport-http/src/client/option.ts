@@ -42,7 +42,7 @@ export const HTTP_INTERCEPTORS = tokenId<Interceptor<HttpRequest, HttpEvent>[]>(
 /**
  * http client filters for `Http`.
  */
-export const HTTP_CLIENT_EXECPTION_FILTERS = tokenId<Filter<HttpRequest, HttpEvent>[]>('HTTP_CLIENT_FILTERS');
+export const HTTP_CLIENT_FILTERS = tokenId<Filter<HttpRequest, HttpEvent>[]>('HTTP_CLIENT_FILTERS');
 /**
  * http serssion options.
  */
