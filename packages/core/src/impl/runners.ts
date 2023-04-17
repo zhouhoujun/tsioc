@@ -21,17 +21,17 @@ import { EndpointContext } from '../endpoints/context';
 
 
 /**
- *  Appplication runner interceptors mutil token
+ *  Appplication runner interceptors multi token
  */
 export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<EndpointContext>[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
- *  Appplication runner filters mutil token
+ *  Appplication runner filters multi token
  */
 export const APP_RUNNERS_FILTERS = tokenId<Filter[]>('APP_RUNNERS_FILTERS');
 
 /**
- *  Appplication runner guards mutil token
+ *  Appplication runner guards multi token
  */
 export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 

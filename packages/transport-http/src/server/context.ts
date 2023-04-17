@@ -7,7 +7,6 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { HttpError, HttpInternalServerError } from './../errors';
-import { HttpServer } from './server';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;

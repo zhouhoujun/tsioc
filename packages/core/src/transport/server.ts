@@ -8,6 +8,7 @@ import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { TransportEndpoint } from './transport.endpoint';
 import { TransportContext } from './context';
+import { Runner, Shutdown, Startup } from '../metadata';
 
 
 
@@ -44,8 +45,25 @@ export abstract class Server<TCtx extends TransportContext, TOutput = any> imple
         return this;
     }
 
-    abstract start(): Promise<void>;
+    @Startup()
+    startup() {
+        return this.onStartup()
+    }
 
-    abstract close(): Promise<void>;
+    @Runner()
+    start() {
+        return this.onStart()
+    }
+
+    @Shutdown()
+    close() {
+        return this.onShutdown()
+    }
+
+    protected abstract onStartup(): Promise<any>;
+
+    protected abstract onStart(): Promise<any>;
+
+    protected abstract onShutdown(): Promise<any>;
 
 }

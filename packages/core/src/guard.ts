@@ -3,12 +3,16 @@ import { Observable } from 'rxjs';
 
 
 /**
- * Guard.
+ * Handler Guard.
+ * 
+ * 处理器守卫
  */
 export interface CanActivate<T = any> {
     /**
-     * route guard.
-     * @param input context of route.
+     * handler guard. can invoke handler or not.
+     * 
+     * 处理器守卫, 验证可以调用处理器与否。
+     * @param input input data.
      * @returns can activate or not. type of boolean, Promise<boolean> or Observable<boolean>.
      */
     canActivate(input: T): boolean | Promise<boolean> | Observable<boolean>;
@@ -16,7 +20,9 @@ export interface CanActivate<T = any> {
 
 
 /**
- * mutil guards token
+ *  guards multi token
+ * 
+ *  处理器守卫组的标记令牌
  */
 export const GUARDS_TOKEN = tokenId<CanActivate[]>('GUARDS_TOKEN');
 

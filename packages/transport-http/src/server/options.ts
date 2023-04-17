@@ -23,6 +23,8 @@ export interface HttpOpts {
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     controllers?: string[] | Type[];
+    
+    autoListen?: boolean;
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
     /**

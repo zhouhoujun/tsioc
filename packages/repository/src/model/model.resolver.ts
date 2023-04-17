@@ -22,7 +22,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         if (!fields) {
             throw missingPropExecption(classType)
         }
-        if (parameter.mutil && isArray(fields)) {
+        if (parameter.multi && isArray(fields)) {
             return fields.map(arg => this.resolveModel(classType, ctx, arg)) as any
         }
         return this.resolveModel(classType, ctx, fields)

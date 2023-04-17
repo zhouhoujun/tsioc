@@ -1,12 +1,12 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, GuardHandler, createHandler } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { Http, HttpModule, HttpServer } from '../src';
+import { HTTP_SERVEROPTIONS, Http, HttpClientOpts, HttpModule, HttpServer, HttpServerOpts } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
 
@@ -18,9 +18,23 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1,
-            listenOpts: {
-                port: 3200
+            endpoint: {
+                useFactory: (opts: HttpServerOpts) => {
+                    return new GuardHandler()
+                },
+                deps: [HTTP_SERVEROPTIONS]
+            },
+            handler: {
+                useFactory: (injector:Injector, opts: HttpClientOpts) => {
+                    return createHandler(injector, opts.endpoint);
+                },
+                deps: [Injector, HttpClientOpts]
+            },
+            serverOpts: {
+                majorVersion: 1,
+                listenOpts: {
+                    port: 3200
+                }
             }
         }),
         DeviceManageModule,
@@ -97,7 +111,7 @@ describe('http1.1 server, Http', () => {
     it('not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
-                catchError(err=> {
+                catchError(err => {
                     console.log(err);
                     return of(err)
                 })
@@ -107,12 +121,12 @@ describe('http1.1 server, Http', () => {
 
     it('bad request', async () => {
         const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
-        .pipe(
-            catchError(err=> {
-                console.log(err);
-                return of(err)
-            })
-        ));
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
         expect(a.status).toEqual(400);
     })
 

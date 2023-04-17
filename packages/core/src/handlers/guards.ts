@@ -1,20 +1,23 @@
 import { Abstract, ArgumentExecption, EMPTY, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
-import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
-import { Interceptor, INTERCEPTORS_TOKEN, InterceptorService } from '../Interceptor';
+import { CanActivate, GUARDS_TOKEN } from '../guard';
+import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
 import { ForbiddenExecption } from '../execptions';
-import { PipeTransform, PipeService } from '../pipes/pipe';
-import { Filter, FILTERS_TOKEN, FilterService } from '../filters/filter';
+import { PipeTransform } from '../pipes/pipe';
+import { Filter, FILTERS_TOKEN } from '../filters/filter';
 import { DynamicHandler } from './chain';
 import { InterceptorHandler } from './handler';
+import { HandlerService } from './handler.service';
+
+
 
 /**
  * abstract guards handler.
  */
 @Abstract()
 export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends DynamicHandler<TInput, TOutput>
-    implements Handler<TInput, TOutput>, GuardsService, PipeService, InterceptorService, FilterService, OnDestroy {
+    implements Handler<TInput, TOutput>, HandlerService, OnDestroy {
 
 
     private guards: CanActivate[] | null | undefined;
@@ -89,7 +92,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
         this.injector.unregister(this.token);
         if (this.guardsToken) this.injector.unregister(this.guardsToken);
         if (this.filtersToken) this.injector.unregister(this.filtersToken);
-        (this as any).injector  = null!;
+        (this as any).injector = null!;
     }
 
 

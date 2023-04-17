@@ -1,6 +1,5 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
-import { setOptions } from '../endpoints/endpoint.service';
 import { patternToPath } from '../transport/pattern';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
@@ -73,8 +72,6 @@ export class RouteEndpointFactoryImpl<T = any> extends RouteEndpointFactory<T> {
 
     create<TArg>(propertyKey: string, options?: RouteEndpointOptions<TArg>): RouteEndpoint {
         const endpoint = new RouteEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
-
-        options && setOptions(endpoint, options);
 
         return endpoint;
     }

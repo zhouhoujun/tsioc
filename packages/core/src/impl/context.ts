@@ -2,7 +2,7 @@ import {
     Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
     Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
-import { Logger, LoggerManager, LoggerManagers } from '@tsdi/logs';
+import { Logger, LoggerManagers } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
@@ -10,7 +10,7 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
-import { setOptions } from '../endpoints/endpoint.service';
+import { setHandlerOptions } from '../handlers/handler.service';
 
 
 
@@ -36,10 +36,10 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
         this._runners = injector.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {
-            setOptions(this.eventMulticaster, options.eventsOptions);
+            setHandlerOptions(this.eventMulticaster, options.eventsOptions);
         }
         if (options.runnersOptions) {
-            setOptions(this.runners, options.runnersOptions);
+            setHandlerOptions(this.runners, options.runnersOptions);
         }
     }
 

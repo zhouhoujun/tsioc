@@ -5,8 +5,8 @@ import { getInterceptorsToken } from '../Interceptor';
 import { getFiltersToken } from '../filters/filter';
 import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { GuardHandler } from '../handlers/guards';
+import { setHandlerOptions } from '../handlers/handler.service';
 import { Endpoint } from '../endpoints/endpoint';
-import { setOptions } from '../endpoints/endpoint.service';
 import { joinprefix, Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
@@ -140,7 +140,7 @@ export class MappingRoute implements Middleware, Endpoint {
         if (this.route.interceptors || this.route.guards || this.route.filters) {
             const route = joinprefix(this.route.path);
             const gendpt = new GuardHandler(this.injector, endpoint, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
-            setOptions(gendpt, this.route);
+            setHandlerOptions(gendpt, this.route);
             endpoint = gendpt;
         }
 

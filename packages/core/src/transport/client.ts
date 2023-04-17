@@ -9,20 +9,21 @@ import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
 import { AbstractGuardHandler } from '../handlers/guards';
+import { ConfigableHandler } from '../handlers';
 
 
 /**
- *  event multicaster interceptors mutil token.
+ *  event multicaster interceptors multi token.
  */
 export const CLIENT_INTERCEPTORS = tokenId<Interceptor[]>('CLIENT_INTERCEPTORS');
 
 /**
- *  event multicaster filters mutil token.
+ *  event multicaster filters multi token.
  */
 export const CLIENT_FILTERS = tokenId<Filter[]>('CLIENT_FILTERS');
 
 /**
- *  event multicaster guards mutil token.
+ *  event multicaster guards multi token.
  */
 export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 
@@ -36,7 +37,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     /**
      * client handler
      */
-    abstract get handler(): AbstractGuardHandler
+    abstract get handler(): ConfigableHandler
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.

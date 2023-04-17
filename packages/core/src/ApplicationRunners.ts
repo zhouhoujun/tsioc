@@ -6,7 +6,7 @@ import { PipeTransform } from './pipes/pipe';
 import { EndpointOptions, EndpointService } from './endpoints/endpoint.service';
 
 /**
- * Application runner.
+ * Application runners.
  */
 @Abstract()
 export abstract class ApplicationRunners implements EndpointService, OnDestroy {

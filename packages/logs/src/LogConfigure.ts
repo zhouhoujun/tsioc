@@ -35,6 +35,6 @@ export interface LogConfigure {
 }
 
 /**
- * mutil log configures
+ * multi log configures
  */
 export const LOG_CONFIGURES =  tokenId<LogConfigure[]>('LOG_CONFIGURES');

@@ -1,57 +1,19 @@
-import { Abstract, EMPTY, InvokeArguments, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
-import { PipeTransform, PipeService } from '../pipes/pipe';
-import { CanActivate, GuardsService } from '../guard';
-import { Interceptor, InterceptorService } from '../Interceptor';
-import { Filter, FilterService } from '../filters/filter';
-
-/**
- * endpoint service.
- */
-export interface EndpointService extends FilterService, PipeService, InterceptorService, GuardsService {
-
-}
-
-/**
- * endpoint service options.
- */
-export interface EndpointServiceOptions<TInput = any> {
-    /**
-     * An array of dependency-injection tokens used to look up `CanActivate()`
-     * handlers, in order to determine if the current user is allowed to
-     * activate the component. By default, any user can activate.
-     */
-    guards?: ProvdierOf<CanActivate>[];
-    /**
-     * interceptors of bootstrap.
-     */
-    interceptors?: ProvdierOf<Interceptor<TInput>>[];
-    /**
-     * pipes for the bootstrap.
-     */
-    pipes?: StaticProvider<PipeTransform>[];
-    /**
-     * filters of bootstrap.
-     */
-    filters?: ProvdierOf<Filter<TInput>>[];
-}
-
-/**
- * set endpoint service with options.
- * @param service 
- * @param options 
- */
-export function setOptions(service: EndpointService, options: EndpointServiceOptions) {
-    options.pipes && service.usePipes(options.pipes);
-    service.useFilters(options.filters ?? EMPTY);
-    service.useGuards(options.guards ?? EMPTY);
-    service.useInterceptors(options.interceptors ?? EMPTY);
-}
+import { Abstract, Token, Type } from '@tsdi/ioc';
+import { HandlerOptions, HandlerService } from '../handlers/handler.service';
+import { Interceptor } from '../Interceptor';
+import { CanActivate } from '../guard';
+import { Filter } from '../filters/filter';
 
 
 /**
  * endpoint options.
+ * 
+ * 终结点配置
  */
-export interface EndpointOptions<T = any> extends EndpointServiceOptions, InvokeArguments<T> {
+export interface EndpointOptions<T = any, TArg = any> extends HandlerOptions<T, TArg> {
+    interceptorsToken?: Token<Interceptor[]>;
+    guardsToken?: Token<CanActivate[]>;
+    filtersToken?: Token<Filter[]>;
     /**
      * endpoint order
      */
@@ -62,6 +24,12 @@ export interface EndpointOptions<T = any> extends EndpointServiceOptions, Invoke
     response?: 'body' | 'header' | 'response' | Type<Respond<T>> | ((input: T, returnning: any) => void)
 }
 
+/**
+ * endpoint service.
+ */
+export interface EndpointService extends HandlerService {
+
+}
 
 /**
  * Respond 

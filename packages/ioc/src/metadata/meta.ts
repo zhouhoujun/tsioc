@@ -35,9 +35,9 @@ export interface ProvideMetadata {
     provider?: Token;
 
     /**
-     * is mutil provider or not
+     * is multi provider or not
      */
-    mutil?: boolean;
+    multi?: boolean;
 
 
     /**

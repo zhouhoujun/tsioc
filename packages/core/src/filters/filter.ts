@@ -32,7 +32,7 @@ export interface FilterService {
 }
 
 /**
- * mutil filters token
+ * multi filters token
  */
 export const FILTERS_TOKEN = tokenId<Filter[]>('FILTERS_TOKEN');
 

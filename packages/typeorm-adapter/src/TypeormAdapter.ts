@@ -88,7 +88,7 @@ export class TypeormAdapter {
                         name: col.propertyName,
                         provider: relaModel,
                         nullable: col.options.nullable,
-                        mutil: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
+                        multi: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
                         type: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many') ? Array : relaModel!
                     })
                 });

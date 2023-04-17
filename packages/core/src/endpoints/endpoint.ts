@@ -3,7 +3,9 @@ import { Observable } from 'rxjs';
 import { Handler } from '../Handler';
 
 /**
- * Endpoint is the fundamental building block of servers and clients.
+ * Endpoint is the fundamental building block of servers.
+ * 
+ * 终结点是服务端的基本构建块。
  */
 @Abstract()
 export abstract class Endpoint<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Handler<TCtx, TOutput> {

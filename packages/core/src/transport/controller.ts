@@ -1,18 +1,18 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
 import { lastValueFrom, throwError } from 'rxjs';
+import { Backend } from '../Handler';
+import { CanActivate, GUARDS_TOKEN } from '../guard';
+import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
+import { Filter, FILTERS_TOKEN } from '../filters/filter';
+import { FnHandler } from '../handlers/handler';
+import { AbstractGuardHandler } from '../handlers/guards';
+import { setHandlerOptions } from '../handlers/handler.service';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { Endpoint } from '../endpoints/endpoint';
 import { joinprefix } from './route';
 import { Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
-import { AbstractGuardHandler } from '../handlers/guards';
-import { Backend } from '../Handler';
-import { FnHandler } from '../handlers';
-import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
-import { CanActivate, GUARDS_TOKEN } from '../guard';
-import { Filter, FILTERS_TOKEN } from '../filters/filter';
-import { setOptions } from '../endpoints';
 import { TransportContext } from './context';
 
 const isRest = /\/:/;
@@ -42,7 +42,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         // injector.inject(toProvider(guardsToken, mapping.guards ?? EMPTY));
         // injector.inject(toProvider(interceptorsToken, mapping.interceptors));
         // mapping.filters && injector.inject(toProvider(filtersToken, mapping.filters));
-        setOptions(this, mapping);
+        setHandlerOptions(this, mapping);
         factory.onDestroy(this);
     }
 

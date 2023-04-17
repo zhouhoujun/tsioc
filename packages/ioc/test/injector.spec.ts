@@ -91,7 +91,7 @@ describe('Injector test', () => {
         expect(isNumber(data)).toBeTruthy();
     });
 
-    it('mutil provider values in injector', () => {
+    it('multi provider values in injector', () => {
         expect(inj.has(GROUP1)).toBeTruthy();
         const gp1 = inj.get(GROUP1);
         expect(Array.isArray(gp1)).toBeTruthy();
@@ -100,7 +100,7 @@ describe('Injector test', () => {
         expect(gp1[1].name).toEqual('lisi');
     });
 
-    it('mutil provider classes in injector', () => {
+    it('multi provider classes in injector', () => {
         expect(inj.has(Students)).toBeTruthy();
         const stus = inj.get(Students);
         expect(Array.isArray(stus)).toBeTruthy();

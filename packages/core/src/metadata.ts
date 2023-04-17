@@ -19,6 +19,8 @@ import { TransportParameter, TransportParameterOptions } from './endpoints/resol
 
 /**
  * Runner option.
+ * 
+ * 运行接口配置
  */
 export interface RunnerOption<TArg> extends EndpointOptions<TArg> {
     /**

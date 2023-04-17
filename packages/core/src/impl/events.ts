@@ -14,17 +14,17 @@ import { PayloadApplicationEvent } from '../events';
 
 
 /**
- *  event multicaster interceptors mutil token.
+ *  event multicaster interceptors multi token.
  */
 export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEventContext, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
- *  event multicaster filters mutil token.
+ *  event multicaster filters multi token.
  */
 export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FILTERS');
 
 /**
- *  event multicaster guards mutil token.
+ *  event multicaster guards multi token.
  */
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanActivate[]>('EVENT_MULTICASTER_GUARDS');
 

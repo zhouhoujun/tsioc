@@ -1,9 +1,9 @@
-import { HttpEvent, HttpRequest } from '@tsdi/common';
-import { AbstractGuardHandler } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { ConfigableHandler } from '@tsdi/core';
+import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 
 @Abstract()
-export abstract class HttpGuardsHandler extends AbstractGuardHandler<HttpRequest, HttpEvent> {
+export abstract class HttpGuardsHandler extends ConfigableHandler<HttpRequest, HttpEvent> {
 
 }

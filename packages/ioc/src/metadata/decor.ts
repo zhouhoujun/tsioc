@@ -140,9 +140,9 @@ export interface Autowired {
         */
         resolver?: OperationArgumentResolver;
         /**
-         * is mutil provider or not
+         * is multi provider or not
          */
-        mutil?: boolean;
+        multi?: boolean;
         /**
          * null able or not.
          */
@@ -179,9 +179,9 @@ export interface Autowired {
         */
         resolver?: OperationArgumentResolver;
         /**
-         * is mutil provider or not
+         * is multi provider or not
          */
-        mutil?: boolean;
+        multi?: boolean;
         /**
          * null able or not.
          */
@@ -261,9 +261,9 @@ export interface Inject {
         */
         resolver?: OperationArgumentResolver;
         /**
-         * is mutil provider or not
+         * is multi provider or not
          */
-        mutil?: boolean;
+        multi?: boolean;
         /**
          * null able or not.
          */
@@ -300,9 +300,9 @@ export interface Inject {
         */
         resolver?: OperationArgumentResolver;
         /**
-         * is mutil provider or not
+         * is multi provider or not
          */
-        mutil?: boolean;
+        multi?: boolean;
         /**
          * null able or not.
          */
@@ -398,9 +398,9 @@ export interface Param {
         */
         resolver?: OperationArgumentResolver;
         /**
-         * is mutil provider or not
+         * is multi provider or not
          */
-        mutil?: boolean;
+        multi?: boolean;
         /**
          * null able or not.
          */
@@ -437,9 +437,9 @@ export interface Param {
         */
         resolver?: OperationArgumentResolver;
         /**
-         * is mutil provider or not
+         * is multi provider or not
          */
-        mutil?: boolean;
+        multi?: boolean;
         /**
          * null able or not.
          */

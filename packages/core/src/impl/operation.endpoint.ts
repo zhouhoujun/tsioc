@@ -1,19 +1,27 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isObservable, isPromise, isString } from '@tsdi/ioc';
+import { mergeMap } from 'rxjs';
 import { Backend } from '../Handler';
 import { EndpointContext } from '../endpoints/context';
 import { FnHandler } from '../handlers/handler';
 import { AbstractGuardHandler } from '../handlers/guards';
-import { EndpointOptions, Respond, TypedRespond, setOptions } from '../endpoints/endpoint.service';
+import { setHandlerOptions } from '../handlers/handler.service';
+import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';
 import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
-import { mergeMap } from 'rxjs';
+import { INTERCEPTORS_TOKEN } from '../Interceptor';
+import { GUARDS_TOKEN } from '../guard';
+import { FILTERS_TOKEN } from '../filters';
+
 
 
 export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends AbstractGuardHandler<TCtx, TOutput> implements OperationEndpoint<TCtx, TOutput> {
 
     constructor(
         public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {
-        super(invoker.context.injector)
-        setOptions(this, options);
+        super(invoker.context.injector,
+            options.interceptorsToken ?? INTERCEPTORS_TOKEN,
+            options.guardsToken ?? GUARDS_TOKEN,
+            options.filtersToken ?? FILTERS_TOKEN)
+        setHandlerOptions(this, options);
         invoker.context.onDestroy(this);
 
     }

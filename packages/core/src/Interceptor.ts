@@ -4,12 +4,16 @@ import { Handler } from './Handler';
 
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.
+ * 
+ * 拦截器，用于链接多个处理器，组合成处理器串。
  */
 export interface Interceptor<TInput = any, TOutput = any> {
     /**
      * the method to implemet interceptor.
+     * 
+     * 实现拦截处理的方法
      * @param input  request input.
-     * @param next The next interceptor in the chain, or the backend
+     * @param next The next handler in the chain, or the backend
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
@@ -18,10 +22,14 @@ export interface Interceptor<TInput = any, TOutput = any> {
 
 /**
  * interceptor service.
+ * 
+ * 拦截器服务
  */
 export interface InterceptorService {
     /**
      * use interceptors
+     * 
+     * 使用拦截器
      * @param interceptors 
      * @param order 
      */
@@ -29,7 +37,9 @@ export interface InterceptorService {
 }
 
 /**
- * mutil Interceptors token
+ * Interceptors multi token
+ * 
+ * 拦截器组的标识令牌
  */
 export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
 

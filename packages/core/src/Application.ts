@@ -23,7 +23,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
      * 
      * 应用程序启动根模块
      */
-    readonly root: ModuleRef;
+    readonly root: ModuleRef<T>;
     /**
      * application context.
      * 

@@ -1,70 +1,14 @@
 import {
-    BadRequestExecption, ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption,
-    UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, MessageExecption
+    BadRequestExecption, ExecptionHandler, ForbiddenExecption, InternalServerExecption,
+    NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
-import { ArgumentExecption, Injectable, MissingParameterExecption, isFunction, isNumber } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
+import { HttpStatusCode } from '@tsdi/common';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
 import { HTTP_SERVEROPTIONS } from './options';
-import { map, Observable } from 'rxjs';
 
-
-// @Injectable({ static: true })
-// export class HttpExecptionFinalizeFilter extends ExecptionFilter<HttpContext> {
-//     catchError(context: HttpContext, err: any, caught: Observable<any>): any {
-
-//         //finllay defalt send error.
-//         let headerSent = false;
-//         if (context.sent || !context.writable) {
-//             headerSent = err.headerSent = true
-//         }
-
-//         // nothing we can do here other
-//         // than delegate to the app-level
-//         // handler and log.
-//         if (headerSent) {
-//             return
-//         }
-
-//         const res = context.response;
-
-//         // first unset all headers
-//         if (isFunction(res.getHeaderNames)) {
-//             res.getHeaderNames().forEach(name => res.removeHeader(name))
-//         } else {
-//             (res as any)._headers = {} // Node < 7.7
-//         }
-
-//         // then set those specified
-//         if (err.headers) context.setHeader(err.headers);
-
-//         // force text/plain
-//         context.type = 'text';
-//         let statusCode = (err.status || err.statusCode) as HttpStatusCode;
-//         let msg;
-//         if (err instanceof MessageExecption) {
-//             msg = err.message
-//         } else {
-//             // ENOENT support
-//             if (ENOENT === err.code) statusCode = 404;
-
-//             // default to 500
-//             if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
-
-//             // respond
-//             msg = statusMessage[statusCode]
-//         }
-
-//         context.status = statusCode;
-//         msg = Buffer.from(msg);
-//         context.length = Buffer.byteLength(msg);
-//         res.end(msg);
-//         return err;
-//     }
-
-// }
 
 
 @Injectable({ static: true })

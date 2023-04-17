@@ -259,7 +259,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
         }
     ),
     {
-        canResolve: (prop, ctx, args) => !prop.mutil && isFunction(prop.provider ?? prop.type),
+        canResolve: (prop, ctx, args) => !prop.multi && isFunction(prop.provider ?? prop.type),
         resolve: (prop, ctx, args, target) => {
             const value = args[prop.name] ?? prop.default;
             if (isNil(value)) return null;

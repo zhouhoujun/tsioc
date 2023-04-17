@@ -34,7 +34,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             }
         ),
         composeResolver<TransportArgumentResolver, TransportParameter>(
-            (parameter) => isPrimitiveType(parameter.provider) && (parameter.mutil === true || parameter.type === Array),
+            (parameter) => isPrimitiveType(parameter.provider) && (parameter.multi === true || parameter.type === Array),
             {
                 canResolve(parameter, ctx) {
                     const field = parameter.field ?? parameter.name!;

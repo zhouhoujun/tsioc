@@ -23,7 +23,7 @@ export class MessageExecption extends Execption {
 }
 
 /**
- * transport about execption.
+ * about execption.
  */
 export class AboutExecption extends MessageExecption {
     constructor(message = 'About') {

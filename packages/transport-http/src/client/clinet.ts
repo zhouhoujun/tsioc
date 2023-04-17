@@ -8,22 +8,10 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { Cleanup, ev } from '@tsdi/transport';
-import { HttpPathInterceptor } from './path';
 import { HttpGuardsHandler } from './handler';
-import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_FILTERS } from './option';
-import { HTTP_CLIENT_PROVIDERS } from './providers';
-
-// import { HttpBackend2 } from './backend';
-// import { HttpBodyInterceptor } from './body';
+import { HttpClientOpts, CLIENT_HTTP2SESSION } from './option';
 
 
-
-
-const defOpts = {
-    interceptorsToken: HTTP_INTERCEPTORS,
-    interceptors: [HttpPathInterceptor, HttpGuardsHandler],
-    filtersToken: HTTP_CLIENT_FILTERS,
-} as HttpClientOpts;
 
 
 export interface HttpRequestOpts extends RequestOptions {
@@ -56,8 +44,6 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         if (!option?.authority) {
             this.connection = NONE;
         }
-        this.handler.injector.setValue(HttpClientOpts, option);
-
     }
 
     private connection?: http2.ClientHttp2Session | null;

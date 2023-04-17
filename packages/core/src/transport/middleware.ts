@@ -27,6 +27,6 @@ export type MiddlewareFn<T extends TransportContext = TransportContext> = Handle
 export type MiddlewareLike<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
 
 /**
- * middlewares mutil token.
+ * middlewares multi token.
  */
 export const MIDDLEWARES_TOKEN = tokenId<MiddlewareLike[]>('MIDDLEWARES_TOKEN');

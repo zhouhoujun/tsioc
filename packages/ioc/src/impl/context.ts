@@ -451,7 +451,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                if (parameter.mutil || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
+                if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
                     || getDef(parameter.provider).abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true
             },

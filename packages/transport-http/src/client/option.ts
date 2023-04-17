@@ -1,6 +1,6 @@
 import * as http2 from 'http2';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Filter, EndpointOptions, Interceptor } from '@tsdi/core';
+import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 
@@ -27,8 +27,10 @@ export abstract class HttpClientOpts {
      * http2 session options.
      */
     abstract options?: HttpSessionOpts;
-
-    abstract endpoint?: EndpointOptions<HttpRequest>;
+    /**
+     * endpoint options.
+     */
+    abstract endpoint: ConfigableHandlerOptions<HttpRequest>;
     /**
      * request options.
      */
