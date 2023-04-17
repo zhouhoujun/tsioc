@@ -196,12 +196,15 @@ export function createPropDecorator<T = PropertyMetadata>(name: string, options?
 
 /**
  * Abstract decorator. define the class as abstract class.
+ * 
+ * 抽象类修饰器，声明该类为抽象类。
  */
 export interface IAbstractDecorator {
     /**
-     * define class is abstract class.
+     * Abstract decorator. define class is abstract class.
      *
-     * @param {T} [metadata] metadata map.
+     * 抽象类修饰器，声明该类为抽象类。
+     * @param [metadata] metadata map.
      */
     (metadata?: AbstractMetadata): ClassDecorator;
 }

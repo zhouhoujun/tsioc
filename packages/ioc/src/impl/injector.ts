@@ -19,7 +19,7 @@ import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ReflectiveFactory } from '../reflective';
 import { DefaultReflectiveFactory, hasContext } from './reflective';
-import { createContext, InvocationContext, InvokeArguments } from '../context';
+import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
 /**
@@ -334,7 +334,7 @@ export class DefaultInjector extends Injector {
     }
 
 
-    resolve<T, TArg>(token: Token<T>, option?: InvokeArguments<TArg>): T;
+    resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
     resolve<T>(token: Token<T>, context?: InvocationContext): T;
     resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
@@ -391,7 +391,7 @@ export class DefaultInjector extends Injector {
     }
 
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeArguments<any>): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...args: any[]): TR {

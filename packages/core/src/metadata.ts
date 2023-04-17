@@ -12,6 +12,7 @@ import { FilterHandlerResolver } from './filters/filter';
 import { EndpointOptions } from './endpoints/endpoint.service';
 import { EndpointFactoryResolver } from './endpoints/endpoint.factory';
 import { ApplicationEvent } from './ApplicationEvent';
+import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, TransportParameterOptions } from './endpoints/resolver';
 
@@ -33,6 +34,7 @@ export interface Runner {
     /**
      * Runner decorator, use to define the method of class as application Runner.
      *
+     * 运行接口修饰器， 用于声明该方法为应用程序的运行接口。
      * @Module
      *
      * @param {string} runable the method of the class to run.
@@ -43,6 +45,7 @@ export interface Runner {
     /**
      * Runner decorator, use to define the method of class as application Runner.
      * 
+     * 运行接口修饰器， 用于声明该方法为应用程序的运行接口。
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
     <TArg>(args?: EndpointOptions<TArg>): MethodDecorator;
@@ -118,18 +121,20 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
 });
 
 /**
- * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+ * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
  */
 export interface BeanDecorator {
     /**
-     * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+     * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
+     * 
+     * 配置项修饰器，用于声明该方法或属性是输出的配置项内容。
      * @param {Token} provide the value of the method or property for the provide token.
      */
     (provide?: Token): MethodPropDecorator;
 }
 
 /**
- * Bean decorator. bean provider, provider the value of the method or property for Confgiuration.
+ * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
  */
 export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token) => ({ provide }),
@@ -146,18 +151,20 @@ export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
 });
 
 /**
- * Configuartion decorator, define the class as auto Configuration provider.
+ * `Configuartion` decorator, define the class as auto Configuration provider.
  */
 export interface ConfigurationDecorator {
     /**
-     * Configuartion decorator, define the class as auto Configuration provider.
+     * `Configuartion` decorator, define the class as auto Configuration provider.
+     * 
+     * 配置修饰器，声明该类为配置提供者。
      * @Configuartion
      */
     (): ClassDecorator;
 }
 
 /**
- * Configuartion decorator, define the class as auto Configuration provider.
+ * `Configuartion` decorator, define the class as auto Configuration provider.
  * @Configuartion
  */
 export const Configuration: ConfigurationDecorator = createDecorator<InjectableMetadata>('Configuration', {
@@ -200,13 +207,13 @@ export const Configuration: ConfigurationDecorator = createDecorator<InjectableM
 export interface EventHandler {
 
     /**
-     * payload message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * `EventHandler` dectorator, payload event message handle. use to handle payload event message of {@link  ApplicationEventPublisher}.
      *
      * @param {order?: number } option message match option.
      */
     <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
     /**
-     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * `EventHandler` dectorator, event message handle. use to handle event message of {@link  ApplicationEventPublisher}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.

@@ -6,7 +6,7 @@ import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
-import { InvocationContext, InvokeArguments } from './context';
+import { InvocationContext, InvokeOptions } from './context';
 import { Execption } from './execption';
 import { Platform } from './platform';
 
@@ -99,7 +99,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
      * @returns {T}
      */
-    abstract resolve<T>(token: Token<T>, option?: InvokeArguments<any>): T;
+    abstract resolve<T>(token: Token<T>, option?: InvokeOptions): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -253,10 +253,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
-     * @param {InvokeArguments<any>} option ivacation arguments, type of {@link InvokeArguments<any>}.
+     * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeArguments<any>): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     /**
      * invoke method.
      * 

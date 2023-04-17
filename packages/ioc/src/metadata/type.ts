@@ -263,9 +263,9 @@ export class Class<T = any> {
     /**
      * method providers.
      *
-     * @type {Map<string, InvokeOptions<any>>}
+     * @type {Map<string, InvokeArguments>}
      */
-    private methodOptions: Map<string, InvokeOptions<any>>;
+    private methodOptions: Map<string, InvokeArguments>;
     /**
      * runnable defines.
      */
@@ -396,10 +396,10 @@ export class Class<T = any> {
     hasMethodOptions(method: string): boolean {
         return this.methodOptions.has(method)
     }
-    getMethodOptions<T>(method: string): InvokeOptions<T> | undefined {
+    getMethodOptions<T>(method: string): InvokeArguments<T> | undefined {
         return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodOptions<T>(method: string, options: InvokeOptions<T>) {
+    setMethodOptions<T>(method: string, options: InvokeArguments<T>) {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {

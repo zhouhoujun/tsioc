@@ -167,32 +167,33 @@ export const INVOCATION_CONTEXT_IMPL = {
 
 /**
  * token value pair.
+ * 
+ * 标记值键值对
  */
 export type TokenValue<T = any> = [Token<T>, T];
 
 /**
  * invoke options.
+ * 
+ * 调用接口配置项
  */
-export interface InvokeOptions<TArg = any> {
-    /**
-     * invocation payload data.
-     */
-    payload?: ProvdierOf<TArg>;
-    /**
-     * invocation payload data.
-     * @deprecated use payload instead.
-     */
-    arguments?: ProvdierOf<TArg>;
+export interface InvokeOptions {
     /**
      * token values.
+     * 
+     * 调用接口的标记值键值对
      */
     values?: TokenValue[];
     /**
      * custom resolvers.
+     * 
+     * 调用接口的参数解析器
      */
     resolvers?: ProvdierOf<ArgumentResolver>[];
     /**
      * custom providers.
+     * 
+     * 调用接口的提供者
      */
     providers?: ProviderType[];
 }
@@ -200,10 +201,27 @@ export interface InvokeOptions<TArg = any> {
 
 /**
  * invoke arguments.
+ * 
+ * 调用接口配置项及负载
  */
-export interface InvokeArguments<TArg = any> extends InvokeOptions<TArg> {
+export interface InvokeArguments<TArg = any> extends InvokeOptions {
+    /**
+     * invocation payload data.
+     * 
+     * 调用接口负载对象
+     */
+    payload?: ProvdierOf<TArg>;
+    /**
+     * invocation payload data.
+     * 
+     * 调用接口负载对象
+     * @deprecated use `payload` instead.
+     */
+    arguments?: ProvdierOf<TArg>;
     /**
      * parent InvocationContext,
+     * 
+     * 上级上下文
      */
     parent?: InvocationContext;
 }

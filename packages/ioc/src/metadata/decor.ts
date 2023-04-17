@@ -18,7 +18,7 @@ import { ModuleDef } from './type';
 
 
 /**
- * Module decorator, use to define class as ioc Module.
+ * `Module` decorator, use to define class as ioc Module.
  *
  * @export
  * @interface Module
@@ -26,8 +26,9 @@ import { ModuleDef } from './type';
  */
 export interface Module<T extends ModuleMetadata> {
     /**
-     * Module decorator, use to define class as ioc Module.
+     * `Module` decorator, use to define class as ioc Module.
      *
+     * 模块修饰器，用于声明该类为IoC模块
      * @Module
      *
      * @param {T} [metadata] bootstrap metadate config.
@@ -36,7 +37,7 @@ export interface Module<T extends ModuleMetadata> {
 }
 
 /**
- * create bootstrap decorator.
+ * create module decorator.
  *
  * @export
  * @template T
@@ -89,33 +90,35 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
 }
 
 /**
- * Module Decorator, definde class as module.
- *
+ * `Module` Decorator, definde class as module.
+ * 
  * @Module
  * @exports {@link Module}
  */
 export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
 /**
- * Module Decorator, definde class as module.
+ * `DIModule` Decorator, definde class as module.
  * alias of @Module
  * @alias
  */
 export const DIModule = Module;
 
 /**
- * Autowired decoator.
+ * `Autowired` decoator.
  */
 export interface Autowired {
     /**
-     * Autowired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
-     *
+     * `Autowired` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * 
+     * 类方法参数或属性的注入修饰器， 用于自动注入实例值给该类声明的类方法参数或类属性。 
      * @param {Token<T>} [provider] define provider to resolve value to the parameter or property.
      * @param {string} [alias] define this class provider with alias for provide.
      */
     (provider?: Token, alias?: string): PropParamDecorator;
     /**
-     * Autowired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * `Autowired` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
+     * 类方法参数或属性的注入修饰器， 用于自动注入实例值给该类声明的类方法参数或类属性。 
      * @param {Token} provider define provider to resolve value to the parameter or property.
      * @param option autowired option.
      */
@@ -153,8 +156,9 @@ export interface Autowired {
 
     }): PropParamDecorator;
     /**
-     * Autowired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * `Autowired` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
+     * 类方法参数或属性的注入修饰器， 用于自动注入实例值给该类声明的类方法参数或类属性。 
      * @param option autowired option.
      */
     (option: {
@@ -192,16 +196,17 @@ export interface Autowired {
     }): PropParamDecorator;
 
     /**
-     * Autowired decorator with providers for method.
+     * `Autowired` decorator with providers for method.
      * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    <T>(options?: InvokeOptions<T>): MethodDecorator;
+    (options?: InvokeOptions): MethodDecorator;
 }
 
 
 /**
- * Autowired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
+ * `Autowired` decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
  *
+ * 类方法的注入修饰器， 用于声明的类方法的扩展调用配置。 
  * @Autowired()
  */
 export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowired', {
@@ -215,7 +220,7 @@ export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowire
 });
 
 /**
- * Autowired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
+ * `Autowired` decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
  *
  * alias of @Autowired()
  * 
@@ -228,15 +233,17 @@ export const AutoWired = Autowired;
  */
 export interface Inject {
     /**
-     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
-     *
+     * `Inject` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * 
+     * 类方法参数或属性的注入修饰器， 用于自动注入实例值给该类声明的类方法参数或类属性。 
      * @param {Token<T>} [provider] define provider to resolve value to the parameter or property.
      * @param {string} [alias] define this class provider with alias for provide.
      */
     (provider?: Token, alias?: string): PropParamDecorator;
     /**
-     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * `Inject` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
+     * 类方法参数或属性的注入修饰器， 用于自动注入实例值给该类声明的类方法参数或类属性。 
      * @param {Token} provider define provider to resolve value to the parameter or property.
      * @param option inject option.
      */
@@ -270,8 +277,9 @@ export interface Inject {
 
     }): PropParamDecorator;
     /**
-     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * `Inject` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
+     * 类方法参数或属性的注入修饰器， 用于自动注入实例值给该类声明的类方法参数或类属性。 
      * @param option inject option.
      */
     (option: {
@@ -309,14 +317,16 @@ export interface Inject {
     }): PropParamDecorator;
 
     /**
-     * Inject decorator with providers for method.
+     * `Inject` decorator with providers for method.
+     * 
+     * 类方法的注入修饰器， 用于声明的类方法的扩展调用配置。 
      * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    <T>(options?: InvokeOptions<T>): MethodDecorator;
+    (options?: InvokeOptions): MethodDecorator;
 }
 
 /**
- * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+ * `Inject` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
  *
  * @Inject()
  */
@@ -336,6 +346,8 @@ export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
 export interface Nullable {
     /**
      * @Nullable decoator. define param can enable null.
+     * 
+     * 可空修饰器，用于定义该参数可空。
      */
     (): ParameterDecorator;
 
@@ -359,14 +371,16 @@ export const Nullable = createDecorator<InjectMetadata>('Nullable', {
  */
 export interface Param {
     /**
-     * Param decorator, define parameter decorator with param.
-     *
+     * `Param` decorator, define parameter decorator with param.
+     * 
+     * 类方法参数的注入修饰器， 用于自动注入实例值给该类声明的类方法参数。 
      * @param {Token} provider define provider to resolve value to the parameter.
      */
     (provider?: Token, alias?: string): ParameterDecorator;
     /**
-     * Param decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
-     *
+     * `Param` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * 
+     * 类方法参数的注入修饰器， 用于自动注入实例值给该类声明的类方法参数。 
      * @param {Token} provider define provider to resolve value to the parameter or property.
      * @param option inject option.
      */
@@ -400,8 +414,9 @@ export interface Param {
 
     }): ParameterDecorator;
     /**
-     * Param decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * `Param` decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      *
+     * 类方法参数的注入修饰器， 用于自动注入实例值给该类声明的类方法参数。 
      * @param option inject option.
      */
     (option: {

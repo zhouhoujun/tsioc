@@ -379,7 +379,7 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors[ctx.define.decor.toString()]) {
-        const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions<any>;
+        const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
             ctx.class.setMethodOptions(ctx.define.propertyKey, mpdrs)
         }
