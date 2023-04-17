@@ -1,5 +1,5 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext, GuardHandler, createHandler } from '@tsdi/core';
+import { Application, ApplicationContext, GuardHandler, createHandler, createTransportEndpoint } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -19,10 +19,10 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         LoggerModule,
         HttpModule.withOption({
             endpoint: {
-                useFactory: (opts: HttpServerOpts) => {
-                    return new GuardHandler()
+                useFactory: (injector:Injector, opts: HttpServerOpts) => {
+                    return createTransportEndpoint(injector, opts)
                 },
-                deps: [HTTP_SERVEROPTIONS]
+                deps: [Injector, HTTP_SERVEROPTIONS]
             },
             handler: {
                 useFactory: (injector:Injector, opts: HttpClientOpts) => {

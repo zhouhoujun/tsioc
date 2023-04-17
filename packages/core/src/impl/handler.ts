@@ -1,11 +1,10 @@
 
 import { Injector } from '@tsdi/ioc';
-import { AbstractGuardHandler, GuardHandler } from './guards';
-import { ConfigableHandler, ConfigableHandlerOptions, setHandlerOptions } from './handler.service';
+import { GuardHandler } from '../handlers/guards';
+import { ConfigableHandler, ConfigableHandlerOptions, setHandlerOptions } from '../handlers/handler.service';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
 import { GUARDS_TOKEN } from '../guard';
 import { FILTERS_TOKEN } from '../filters';
-
 
 
 
@@ -22,7 +21,3 @@ export class ConfigableHandlerImpl<TInput = any, TOutput = any> extends GuardHan
     }
 }
 
-
-export function createHandler<TInput, TOutput>(injector: Injector, options: ConfigableHandlerOptions<TInput>): AbstractGuardHandler<TInput, TOutput> {
-    return new ConfigableHandlerImpl(injector, options)
-}

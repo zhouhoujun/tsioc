@@ -5,7 +5,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
-import { OperationEndpoint } from '../endpoints/endpoint.factory';
+import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
 
 
 
@@ -15,7 +15,7 @@ export abstract class MicroService<TCtx extends EndpointContext, TOutput = any> 
     /**
      * micro service endpoint.
      */
-    abstract get endpoint(): OperationEndpoint<TCtx, TOutput>;
+    abstract get endpoint(): ConfigableEndpoint<TCtx, TOutput>;
 
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
         this.endpoint.useGuards(guards, order);

@@ -4,7 +4,6 @@ export * from './headers';
 export * from './middleware';
 export * from './middleware.compose';
 export * from './middleware.service';
-export * from './middleware.endpoint';
 export * from './route';
 export * from './router';
 export * from './middleware.router';

@@ -5,6 +5,11 @@ import { MappingRouter } from './middleware.router';
 import { ControllerRouteReolver } from './controller';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
+import { TRANSPORT_ENDPOINT_IMPL } from './transport.endpoint';
+import { TransportEndpointImpl } from '../impl/transport.endpoint';
+
+
+TRANSPORT_ENDPOINT_IMPL.create = (injector, options)=> new TransportEndpointImpl(injector, options);
 
 /*
  * Middleware module.

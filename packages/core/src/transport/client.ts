@@ -8,7 +8,6 @@ import { RequestOptions, ResponseAs, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
-import { AbstractGuardHandler } from '../handlers/guards';
 import { ConfigableHandler } from '../handlers';
 
 
@@ -37,7 +36,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     /**
      * client handler
      */
-    abstract get handler(): ConfigableHandler
+    abstract get handler(): ConfigableHandler<TRequest, TRespone>
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.
@@ -276,7 +275,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
-        const events$: Observable<TransportResponse> =
+        const events$: Observable<TRespone> =
             of(req).pipe(concatMap((req: TRequest) => this.handler.handle(req)));
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,

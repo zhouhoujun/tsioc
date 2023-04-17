@@ -3,6 +3,7 @@ import { HandlerOptions, HandlerService } from '../handlers/handler.service';
 import { Interceptor } from '../Interceptor';
 import { CanActivate } from '../guard';
 import { Filter } from '../filters/filter';
+import { Backend } from '../Handler';
 
 
 /**
@@ -23,6 +24,16 @@ export interface EndpointOptions<T = any, TArg = any> extends HandlerOptions<T, 
      */
     response?: 'body' | 'header' | 'response' | Type<Respond<T>> | ((input: T, returnning: any) => void)
 }
+
+/**
+ * configable endpoint options.
+ * 
+ * 可配置结点配置
+ */
+export interface ConfigableEndpointOptions<T = any, TArg = any> extends EndpointOptions<T, TArg> {
+    backend: Type<Backend>;
+}
+
 
 /**
  * endpoint service.

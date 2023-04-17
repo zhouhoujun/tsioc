@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injector, InvokeArguments, ProvdierOf, StaticProvider, Token, Type } from '@tsdi/ioc';
+import { Abstract, EMPTY, Execption, Injector, InvokeArguments, ProvdierOf, StaticProvider, Token, Type } from '@tsdi/ioc';
 import { CanActivate, GuardsService } from '../guard';
 import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -59,6 +59,27 @@ export abstract class ConfigableHandler<TInput = any, TOutput = any> extends Han
     abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 
     abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
+}
+
+/**
+ * Configable Handler factory implement.
+ */
+export const CONFIGABLE_HANDLER_IMPL = {
+    /**
+     * create invocation context
+     * @param parent parent context or parent injector. 
+     * @param options invocation options.
+     */
+    create<TInput, TOutput>(injector: Injector, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput> {
+        throw new Execption('not implemented.')
+    }
+};
+
+/**
+ * create configable hanlder
+ */
+export function createHandler<TInput, TOutput>(injector: Injector, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput> {
+    return CONFIGABLE_HANDLER_IMPL.create(injector, options)
 }
 
 
