@@ -124,10 +124,10 @@ export interface InvokerOptions<T = any, TArg = any> extends InvokeArguments<TAr
 }
 
 /**
- * ReflectiveRef factory.
+ * ReflectiveRef resolver.
  */
 @Abstract()
-export abstract class ReflectiveFactory {
+export abstract class ReflectiveResolver {
     /**
      * resolve operation factory of target type
      * @param type target type or target type def.
@@ -135,8 +135,6 @@ export abstract class ReflectiveFactory {
      * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link ReflectiveRef}
      */
-    abstract create<T>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
-
-    abstract destroy(): void;
+    abstract resolve<T>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
 }
 

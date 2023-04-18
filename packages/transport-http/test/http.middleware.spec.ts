@@ -71,7 +71,7 @@ describe('middleware', () => {
 
         await ctx.runners.run(runable.type);
 
-        const http = runable.injector.get(Http);
+        const http = ctx.injector.get(Http);
 
         // has no parent.
         const rep = await lastValueFrom(http.get('test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })

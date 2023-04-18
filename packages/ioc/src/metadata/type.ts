@@ -4,8 +4,8 @@ import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
     PropertyMetadata, ParameterMetadata, MethodMetadata
 } from './meta';
-import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
-import { Token } from '../tokens';
+import { InvocationContext, InvokeArguments } from '../context';
+import { Token, tokenId } from '../tokens';
 import { ArgumentResolver } from '../resolver';
 import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
@@ -13,8 +13,9 @@ import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
-import { MethodType } from '../injector';
+import { Injector, MethodType } from '../injector';
 import { Handle } from '../handle';
+import { ReflectiveRef } from '../reflective';
 
 
 
@@ -271,10 +272,13 @@ export class Class<T = any> {
      */
     readonly runnables: RunableDefine[];
 
+    readonly refToken: Token<ReflectiveRef>;
+
     constructor(public readonly type: ClassType<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         this.classDefs = new Map();
+        this.refToken = tokenId<ReflectiveRef>(this.className);
         this.classDecors = [];
         if (parent) {
             this.defs = parent.defs.filter(d => d.decorType !== 'class');
@@ -312,6 +316,10 @@ export class Class<T = any> {
         for (const key in records) {
             (this.annotation as any)[key] = records[key]
         }
+    }
+
+    getReflectiveRef(injector: Injector) {
+        return injector.get(this.refToken);
     }
 
     /**

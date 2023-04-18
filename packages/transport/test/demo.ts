@@ -1,7 +1,7 @@
-import { Injectable, lang, tokenId } from '@tsdi/ioc';
+import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, Middleware, Chain, BadRequestExecption
+    RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
+    Middleware, BadRequestExecption, AssetContext
 } from '@tsdi/core';
 import { RedirectResult } from '../src';
 
@@ -70,7 +70,7 @@ export class DeviceController {
 
     }
 
-    @Handle(/dd./)
+    @Handle('dd*')
     async subMessage1() {
 
     }
@@ -93,10 +93,12 @@ export class DeviceController {
 
 // }
 
-@Handle('/hdevice')
+@Handle({
+    route:'/hdevice'
+})
 export class DeviceQueue implements Middleware {
 
-    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -104,7 +106,7 @@ export class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        // await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
@@ -126,7 +128,7 @@ export class DeviceQueue implements Middleware {
 @Injectable()
 export class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
         if (ctx.payload.type === 'startup') {
@@ -141,7 +143,7 @@ export class DeviceStartupHandle implements Middleware {
 @Injectable()
 export class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
         if (ctx.payload.type === 'startup') {
             // todo sth.
@@ -159,7 +161,6 @@ export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
         DeviceQueue,
         { provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
         { provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
-
     ]
 })
 export class DeviceManageModule {

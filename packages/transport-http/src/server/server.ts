@@ -26,28 +26,6 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
         this.validOptions(options);
     }
 
-    // get proxyIpHeader() {
-    //     return this.getOptions().proxyIpHeader
-    // }
-
-    // get maxIpsCount() {
-    //     return this.getOptions().maxIpsCount ?? 0
-    // }
-
-
-    // protected override initContext(options: HttpServerOpts): void {
-    //     this.context.setValue(HTTP_SERVEROPTIONS, options);
-    //     super.initContext(options);
-    // }
-
-    // protected override getDefaultOptions(): HttpServerOpts {
-    //     return httpOpts
-    // }
-
-    // protected override defaultProviders() {
-    //     return HTTP_SERVR_PROVIDERS;
-    // }
-
     private _secure?: boolean;
     get isSecure() {
         return this._secure === true
@@ -136,7 +114,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
             }))
         }
 
-        this._server.on(ev.REQUEST, this.requestHandler.bind(this));
+        this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
         this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
 
@@ -149,6 +127,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
         if (!this._server) return;
         await promisify(this._server.close, this._server)()
             .then(() => {
+                this._server?.removeAllListeners()
                 this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
             })
             .catch(err => {

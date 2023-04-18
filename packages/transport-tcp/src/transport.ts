@@ -1,5 +1,5 @@
 import { Injectable, isString } from '@tsdi/ioc';
-import { Incoming, ListenOpts, mths, Packet } from '@tsdi/core';
+import { Incoming, ListenOpts, Packet } from '@tsdi/core';
 import {
     ConnectionOpts, isBuffer, PacketParser, PacketGenerator,
     Connection, MessageVaildator, PacketFactory

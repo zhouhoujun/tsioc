@@ -3,7 +3,7 @@ import { ModuleWithProviders, ProviderType } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-import { ReflectiveFactory } from './reflective';
+import { ReflectiveResolver } from './reflective';
 import { Modules, Type } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
@@ -14,9 +14,9 @@ export type ModuleType = Modules | ModuleWithProviders;
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
- * Provides access to the `Module` instance and related objects.
+ * Provides access to the `Module` instance and related objects. Default static Injector.
  *
- * 模块类容器
+ * 模块类容器, 默认静态容器
  * 
  * @publicApi
  */
@@ -31,9 +31,9 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract get moduleReflect(): Class<T>;
     /**
-     * reflective factory.
+     * reflective resolver.
      */
-    abstract get reflectiveFactory(): ReflectiveFactory;
+    abstract get reflectiveResolver(): ReflectiveResolver;
     /**
      * The injector that contains all of the providers of the `Module`.
      */

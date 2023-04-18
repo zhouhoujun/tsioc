@@ -9,7 +9,7 @@ import { ctorName, Decors } from '../metadata/type';
 import { Parameter } from '../resolver';
 import { ArgumentExecption, Execption } from '../execption';
 import { createContext, InvocationContext } from '../context';
-import { ReflectiveFactory } from '../reflective';
+import { ReflectiveResolver } from '../reflective';
 
 
 /**
@@ -172,7 +172,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
     const autos = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
     if (autos.length) {
         const { injector, class: def, instance, context } = ctx;
-        const factory = injector.get(ReflectiveFactory).create(def, injector, context);
+        const factory = injector.get(ReflectiveResolver).resolve(def, injector, context);
         autos.forEach(aut => {
             factory.invoke(aut.method, context, instance)
         })

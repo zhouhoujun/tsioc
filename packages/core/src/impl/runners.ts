@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, InvocationContext, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
+    ClassType, StaticProviders, ReflectiveResolver, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -84,7 +84,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
         if (hasAdapter) {
-            const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
+            const targetRef = this.injector.get(ReflectiveResolver).resolve(target, this.injector, options);
             const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
@@ -94,7 +94,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
         const runnables = target.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
-            const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
+            const targetRef = this.injector.get(ReflectiveResolver).resolve(target, this.injector, options);
             const facResolver = targetRef.resolve(EndpointFactoryResolver);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 const factory = facResolver.resolve(targetRef);

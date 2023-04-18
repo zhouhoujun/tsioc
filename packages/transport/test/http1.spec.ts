@@ -17,9 +17,11 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1,
-            listenOpts: {
-                port: 3200
+            serverOpts: {
+                majorVersion: 1,
+                listenOpts: {
+                    port: 3200
+                }
             }
         }),
         DeviceManageModule,
@@ -96,7 +98,7 @@ describe('http1.1 server, Http', () => {
     it('not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
-                catchError(err=> {
+                catchError(err => {
                     console.log(err);
                     return of(err)
                 })
@@ -106,12 +108,12 @@ describe('http1.1 server, Http', () => {
 
     it('bad request', async () => {
         const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
-        .pipe(
-            catchError(err=> {
-                console.log(err);
-                return of(err)
-            })
-        ));
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
         expect(a.status).toEqual(400);
     })
 

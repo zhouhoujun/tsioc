@@ -3,7 +3,7 @@ import {
     RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
 } from '@tsdi/core';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
-import { map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { mergeMap, Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
@@ -56,15 +56,16 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         if (this.$conn) return this.$conn;
 
         const opts = this.option;
-        return this.$conn = of(this.createConnection(opts))
+        this.$conn = of(this.createConnection(opts))
             .pipe(
                 mergeMap(connection => this.onConnect(connection, opts)),
-                map(connection => {
+                mergeMap(async connection => {
                     this.connection = connection;
                     this.$conn = null;
                     return connection;
                 })
             );
+        return this.$conn;
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {
@@ -76,49 +77,27 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         return http2.connect(opts.authority!, opts.options);
     }
 
-    /**
-     * 
-     * @param connection 
-     * @param opts 
-     */
     protected onConnect(connection: http2.ClientHttp2Session, opts: HttpClientOpts): Observable<http2.ClientHttp2Session> {
         return new Observable((observer) => {
-            let cleanup: Cleanup;
-            this.setupConnection(connection, observer, opts)
-                .then(clean => {
-                    cleanup = clean;
-                })
-                .catch(err => observer.error(err));
+            let cleaned = false;
+            const onError = (err: Error) => observer.error(err);
+            const onConnect = () => {
+                observer.next(connection);
+                observer.complete();
+            };
+            const onClose = () => observer.complete();
+            connection.on(ev.CONNECT, onConnect)
+                .on(ev.ERROR, onError)
+                .on(ev.CLOSE, onClose);
 
             return () => {
-                cleanup?.()
-            }
+                if (cleaned) return;
+                cleaned = true;
+                connection.off(ev.CONNECT, onConnect)
+                    .off(ev.ERROR, onError)
+                    .off(ev.CLOSE, onClose)
+            };
         })
-    }
-
-    protected async setupConnection(connection: http2.ClientHttp2Session, observer: Subscriber<http2.ClientHttp2Session>, opts: HttpClientOpts): Promise<Cleanup> {
-        const events: any = {};
-        let cleaned = false;
-        const cleanup = () => {
-            if (cleaned) return;
-            cleaned = true;
-            for (const e in events) {
-                connection.off(e, events[e]);
-                events[e] = null!;
-            }
-        };
-        events[ev.CONNECT] = () => {
-            observer.next(connection);
-            observer.complete();
-        }
-        events[ev.ERROR] = events[ev.TIMEOUT] = (err: Error) => observer.error(err);
-        events[ev.CLOSE] = events[ev.END] = () => {
-            observer.complete();
-        };
-        for (const e in events) {
-            connection.on(e, events[e]);
-        }
-        return cleanup;
     }
 
     protected override buildRequest(first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {

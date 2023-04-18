@@ -17,8 +17,8 @@ import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } fr
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { ReflectiveFactory } from '../reflective';
-import { DefaultReflectiveFactory, hasContext } from './reflective';
+import { ReflectiveResolver } from '../reflective';
+import { ReflectiveResolverImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
@@ -438,7 +438,7 @@ export class DefaultInjector extends Injector {
             }
         }
         tgRefl = tgRefl ?? get(targetClass);
-        const factory = this.get(ReflectiveFactory).create(tgRefl, this);
+        const factory = this.get(ReflectiveResolver).resolve(tgRefl, this);
         return factory.invoke(propertyKey, context, instance)
     }
 
@@ -820,9 +820,9 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
-    const factory = new DefaultReflectiveFactory();
-    container.setValue(ReflectiveFactory, factory);
-    container.onDestroy(() => factory.destroy())
+    const factory = new ReflectiveResolverImpl();
+    container.setValue(ReflectiveResolver, factory);
+    // container.onDestroy(() => factory.destroy())
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

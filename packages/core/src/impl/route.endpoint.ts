@@ -1,4 +1,4 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveResolver, ReflectiveRef, Type } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
 import { patternToPath } from '../transport/pattern';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
@@ -102,7 +102,7 @@ export class RouteEndpointFactoryResolverImpl extends RouteEndpointFactoryResolv
             tyref = type;
         } else {
             const injector = arg2 as Injector;
-            tyref = injector.get(ReflectiveFactory).create(type, injector);
+            tyref = injector.get(ReflectiveResolver).resolve(type, injector);
         }
         return new RouteEndpointFactoryImpl(tyref);
     }

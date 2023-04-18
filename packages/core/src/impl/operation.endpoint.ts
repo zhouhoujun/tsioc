@@ -1,4 +1,4 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveResolver, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
 import { mergeMap, isObservable } from 'rxjs';
 import { Backend } from '../Handler';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
@@ -121,7 +121,7 @@ export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
             tyref = type;
         } else {
             const injector = arg2 as Injector;
-            tyref = injector.get(ReflectiveFactory).create(type, injector);
+            tyref = injector.get(ReflectiveResolver).resolve(type, injector);
         }
         return new EndpointFactoryImpl(tyref);
     }

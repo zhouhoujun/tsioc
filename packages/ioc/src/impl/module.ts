@@ -5,13 +5,13 @@ import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
-import { ReflectiveFactory } from '../reflective';
+import { ReflectiveResolver } from '../reflective';
 import { EMPTY, EMPTY_OBJ, Type } from '../types';
 import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { isPlainObject } from '../utils/obj';
 import { DefaultInjector, processInjectorType } from './injector';
-import { DefaultReflectiveFactory } from './reflective';
+import { ReflectiveResolverImpl } from './reflective';
 
 
 /**
@@ -22,17 +22,17 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _type: Type;
     private _typeRefl: Class;
 
-    reflectiveFactory = new DefaultReflectiveFactory();
+    reflectiveResolver = new ReflectiveResolverImpl();
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
-        this.isStatic = (moduleType.getAnnotation().static || option.isStatic) === true;
+        this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
 
         this.inject(
-            { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
+            { provide: ReflectiveResolver, useValue: this.reflectiveResolver }
         );
 
         this.setValue(ModuleRef, this);
@@ -112,7 +112,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.platform()?.modules.delete(this._type);
         super.clear();
         this._type = null!;
-        this.reflectiveFactory = null!;
+        this.reflectiveResolver = null!;
         this._typeRefl = null!;
         this._instance = null!
     }

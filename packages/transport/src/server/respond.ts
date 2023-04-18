@@ -73,7 +73,7 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
         if (this.streamAdapter.isStream(body)) {
-            if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+            // if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
             return await this.streamAdapter.pipeTo(body, res);
         }
 
