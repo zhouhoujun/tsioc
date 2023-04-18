@@ -1,5 +1,5 @@
 import { MessageExecption, ENOENT, AssetContext, ExecptionFilter } from '@tsdi/core';
-import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { Injectable, isFunction, isNil, isNumber } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { Observable } from 'rxjs';
 import { StatusVaildator } from '../status';
@@ -43,7 +43,7 @@ export class ExecptionFinalizeFilter<TCtx extends AssetContext> extends Execptio
         let msg;
         if (err instanceof MessageExecption) {
             msg = err.message
-            if (!status) {
+            if (isNil(status)) {
                 status = vaildator.serverError;
             }
         } else {

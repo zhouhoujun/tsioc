@@ -78,9 +78,8 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
         await next()
     }
 
-    parseBody(ctx: AssetContext): Promise<{ raw?: any, body?: any }> {
-        const types = ctx.get(MimeTypes);
-        const context = ctx.payload;
+    parseBody(context: AssetContext): Promise<{ raw?: any, body?: any }> {
+        const types = context.get(MimeTypes);
         if (this.enableJson && context.is(types.json)) {
             return this.parseJson(context)
         }

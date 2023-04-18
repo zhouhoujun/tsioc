@@ -12,7 +12,7 @@ import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { Router } from './router';
 import { ControllerRouteReolver } from './controller';
-import { TransportContext } from './context';
+import { AssetContext, TransportContext } from './context';
 
 /**
  * abstract router.
@@ -148,10 +148,10 @@ export class MappingRoute implements Middleware, Endpoint {
     }
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
-        if (!isFunction(ctx.payload.redirect)) {
+        if (!isFunction((ctx as AssetContext).redirect)) {
             throw new BadRequestExecption();
         }
-        ctx.payload.redirect(url, alt)
+        (ctx as AssetContext).redirect(url, alt)
     }
 
 }
@@ -250,13 +250,13 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
 
         let url: string;
         if (this.prefix) {
-            if (!ctx.payload.url.startsWith(this.prefix)) return;
-            url = ctx.payload.url.slice(this.prefix.length)
+            if (!ctx.url.startsWith(this.prefix)) return;
+            url = ctx.url.slice(this.prefix.length)
         } else {
-            url = ctx.payload.url ?? '/'
+            url = ctx.url ?? '/'
         }
 
-        const route = this.getRouteByUrl(ctx.payload.url);
+        const route = this.getRouteByUrl(ctx.url);
         return route
     }
 

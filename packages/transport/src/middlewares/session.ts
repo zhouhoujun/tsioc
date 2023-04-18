@@ -111,7 +111,8 @@ export class SessionMiddleware implements Middleware<AssetContext> {
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         ctx.setValue(SessionOptions, this.options);
-        const se = ctx.resolve(Session);
+        const se = ctx.get(Session);
+        if(!se) return await next();
         await se.load();
         try {
             await next();

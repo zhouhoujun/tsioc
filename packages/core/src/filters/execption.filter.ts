@@ -1,10 +1,9 @@
-import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
-import { InternalServerExecption } from '../execptions';
-import { EndpointContext } from '../endpoints/context';
 import { Filter, FilterHandlerResolver } from './filter';
 import { runHandlers } from '../handlers/runs';
+import { EndpointContext } from '../endpoints/context';
 
 
 /**
@@ -78,7 +77,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
         }
         const handlers = injector.get(FilterHandlerResolver)?.resolve(err);
         if (!handlers || !handlers.length) {
-            return throwError(() => err instanceof Execption ? err : new InternalServerExecption(err.message));
+            return throwError(() => err);
         }
 
         const context = new ExecptionContext(err, input, injector);

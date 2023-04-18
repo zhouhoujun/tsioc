@@ -1,7 +1,7 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, BadRequestExecption, EndpointContext
+    Middleware, BadRequestExecption, EndpointContext, AssetContext
 } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -133,7 +133,7 @@ class DeviceQueue implements Middleware {
 @Injectable()
 class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
         if (ctx.payload.type === 'startup') {
@@ -148,7 +148,7 @@ class DeviceStartupHandle implements Middleware {
 @Injectable()
 class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
         if (ctx.payload.type === 'startup') {
             // todo sth.

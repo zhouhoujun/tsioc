@@ -1,4 +1,4 @@
-import { createContext, Injectable, InvocationContext, Nullable, promisify } from '@tsdi/ioc';
+import { createContext, Inject, Injectable, InvocationContext, Nullable, promisify } from '@tsdi/ioc';
 import {
     RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
 } from '@tsdi/core';
@@ -39,7 +39,7 @@ export class Http extends Client<HttpRequest, HttpEvent> {
 
     constructor(
         readonly handler: HttpGuardsHandler,
-        @Nullable(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
+        @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
         super()
         if (!option?.authority) {
             this.connection = NONE;

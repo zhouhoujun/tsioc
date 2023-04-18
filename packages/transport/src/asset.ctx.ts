@@ -522,7 +522,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         // set the status
-        if (!this._explicitStatus) this.ok = true;
+        if (!this._explicitStatus || this.vaildator.isNotFound(this.status)) this.ok = true;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);

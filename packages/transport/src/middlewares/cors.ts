@@ -97,8 +97,8 @@ export class CorsMiddleware implements Middleware<AssetContext> {
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        const requestOrigin = ctx.payload.getHeader(hdr.ORIGIN);
-        !ctx.sent && vary(ctx.payload.response, hdr.ORIGIN);
+        const requestOrigin = ctx.getHeader(hdr.ORIGIN);
+        !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
             return await next()
         }

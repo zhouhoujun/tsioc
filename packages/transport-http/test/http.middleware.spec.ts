@@ -26,7 +26,7 @@ describe('middleware', () => {
 
     let ctx: ApplicationContext;
 
-    before(async ()=> {
+    before(async () => {
         ctx = await Application.run({
             module: ModuleB,
             uses: [
@@ -84,7 +84,7 @@ describe('middleware', () => {
         expect(rep.status).toEqual(200);
     });
 
-    after(async ()=> {
+    after(async () => {
         await ctx.destroy();
     })
 

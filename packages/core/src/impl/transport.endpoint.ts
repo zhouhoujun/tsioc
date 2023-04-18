@@ -30,7 +30,7 @@ export class TransportEndpointImpl<TInput extends TransportContext = TransportCo
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
-        this.regMulti(this.midddlesToken, middlewares, order, type => !!lang.getParentClass(type) || Object.getOwnPropertyNames(type).indexOf('invoke') > 0);
+        this.regMulti(this.midddlesToken, middlewares, order, type => Reflect.getMetadataKeys(type).length > 0);
         this.reset();
         return this;
     }
