@@ -1,7 +1,7 @@
 
 import { Redirector, TypedRespond } from '@tsdi/core';
 import { ProviderType } from '@tsdi/ioc';
-import { DefaultMiddlewareFilter, MiddlewareFilter } from './middlewares/filter';
+// import { DefaultMiddlewareFilter, MiddlewareFilter } from './middlewares/filter';
 import { MimeAdapter, MimeDb, MimeTypes } from './mime';
 import { Negotiator } from './negotiator';
 import { BasicMimeDb } from './impl/mimedb';
@@ -25,5 +25,5 @@ export const ASSET_SERVR_PROVIDERS: ProviderType[] = [
     // { provide: ResponseStatusFormater, useClass: DefaultStatusFormater },
     // { provide: ContentSendAdapter, useClass: TransportSendAdapter },
     { provide: TypedRespond, useClass: TranspotTypedRespond },
-    { provide: MiddlewareFilter, useClass: DefaultMiddlewareFilter }
+    // { provide: MiddlewareFilter, useClass: DefaultMiddlewareFilter }
 ];

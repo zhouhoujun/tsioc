@@ -6,7 +6,7 @@ import { OperationEndpointImpl } from './operation.endpoint';
 
 
 
-export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends OperationEndpointImpl<TCtx, TOutput> implements RouteEndpoint {
+export class RouteEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
 
     private _prefix: string;
     readonly route: string;
@@ -38,7 +38,7 @@ export class RouteEndpointImpl<TCtx extends EndpointContext = EndpointContext, T
     //     return prefixFilters ? [...prefixFilters, ...routeFilters] : routeFilters;
     // }
 
-    protected override beforeInvoke(ctx: TCtx): void {
+    protected override beforeInvoke(ctx: TInput): void {
         if (this.route && isRest.test(this.route)) {
             const restParams: any = {};
             const routes = this.route.split('/').map(r => r.trim());

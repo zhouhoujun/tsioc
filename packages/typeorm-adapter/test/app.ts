@@ -17,7 +17,7 @@ import { UserRepository } from './repositories/UserRepository';
 
 
 export const option = {
-    entities:[],
+    entities: [],
     async initDb(connection: DataSource) {
         const userRep = connection.getRepository(User);
         const c = await userRep.count();
@@ -52,7 +52,9 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
@@ -84,7 +86,9 @@ export class MockBootTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
@@ -113,7 +117,9 @@ export class MockBootLoadTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
@@ -140,10 +146,18 @@ export class MockTransBootTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 2,
+            clientOpts: {
+                authority: 'https://localhost:3000',
+                options: {
+                    ca: cert
+                }
+            },
             serverOpts: {
-                key,
-                cert
+                majorVersion: 2,
+                serverOpts: {
+                    key,
+                    cert
+                }
             }
         }),
         TransactionModule,

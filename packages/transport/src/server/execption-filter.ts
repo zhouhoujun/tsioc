@@ -43,10 +43,13 @@ export class ExecptionFinalizeFilter<TCtx extends AssetContext> extends Execptio
         let msg;
         if (err instanceof MessageExecption) {
             msg = err.message
+            if (!status) {
+                status = vaildator.serverError;
+            }
         } else {
             // ENOENT support
             if (ENOENT === err.code) status = vaildator.notFound; //factory.create('NotFound');
-            
+
             // default to 500
             if (!isNumber(status) || !vaildator.isStatus(status)) status = vaildator.serverError;
             // respond

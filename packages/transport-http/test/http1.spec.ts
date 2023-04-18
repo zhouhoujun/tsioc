@@ -1,12 +1,12 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext, GuardHandler, createHandler, createTransportEndpoint } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { HTTP_SERVEROPTIONS, Http, HttpClientOpts, HttpModule, HttpServer, HttpServerOpts } from '../src';
+import { Http, HttpModule, HttpServer } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
 
@@ -18,18 +18,7 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            endpoint: {
-                useFactory: (injector:Injector, opts: HttpServerOpts) => {
-                    return createTransportEndpoint(injector, opts)
-                },
-                deps: [Injector, HTTP_SERVEROPTIONS]
-            },
-            handler: {
-                useFactory: (injector:Injector, opts: HttpClientOpts) => {
-                    return createHandler(injector, opts.endpoint);
-                },
-                deps: [Injector, HttpClientOpts]
-            },
+            clientOpts: {},
             serverOpts: {
                 majorVersion: 1,
                 listenOpts: {

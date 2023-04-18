@@ -98,6 +98,12 @@
       "@tsdi/platform-server-common": [
         "packages/platform-server-common/src"
       ],
+      "@tsdi/platform-server-transport": [
+        "packages/platform-server-transport/src"
+      ],
+      "@tsdi/platform-browser-transport": [
+        "packages/platform-browser-transport/src"
+      ],
       "@tsdi/unit": [
         "packages/unit/src"
       ],
@@ -110,7 +116,7 @@
       "@tsdi/pack": [
         "packages/pack/src"
       ],
-      "@tsdi/platform-server-activities": [
+      "@tsdi/platform-browser-activities": [
         "packages/platform-server-activities/src"
       ],
       "@tsdi/platform-browser-activities": [

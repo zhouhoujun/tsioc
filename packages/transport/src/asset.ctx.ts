@@ -33,7 +33,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     protected listenOpts: ListenOpts;
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: InvokeArguments<TRequest>) {
-        super(injector, options);
+        super(injector, { ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
         this.listenOpts = injector.get(ListenOpts);
         this.streamAdapter = injector.get(StreamAdapter);

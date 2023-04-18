@@ -1,5 +1,5 @@
 
-import { Injector } from '@tsdi/ioc';
+import { Execption, Injector } from '@tsdi/ioc';
 import { GuardHandler } from '../handlers/guards';
 import { ConfigableHandler, ConfigableHandlerOptions, setHandlerOptions } from '../handlers/handler.service';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
@@ -13,10 +13,14 @@ export class ConfigableHandlerImpl<TInput = any, TOutput = any> extends GuardHan
         injector: Injector,
         options: ConfigableHandlerOptions<TInput>) {
         super(injector,
-            options.backend,
+            options.backend!,
             options.interceptorsToken ?? INTERCEPTORS_TOKEN,
             options.guardsToken ?? GUARDS_TOKEN,
             options.filtersToken ?? FILTERS_TOKEN);
+
+        if(!options.backend){
+            throw new Execption('ConfigableHandlerOptions has not set backend option')
+        }
         setHandlerOptions(this, options);
     }
 }

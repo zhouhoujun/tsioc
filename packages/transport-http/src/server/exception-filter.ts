@@ -7,7 +7,7 @@ import { HttpStatusCode } from '@tsdi/common';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
-import { HTTP_SERVEROPTIONS } from './options';
+import { HTTP_SERVER_OPTS } from './options';
 
 
 
@@ -46,17 +46,17 @@ export class HttpExecptionHandlers {
 
     @ExecptionHandler(ArgumentExecption)
     anguExecption(ctx: HttpContext, execption: ArgumentExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
     missFieldExecption(ctx: HttpContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? execption.message : undefined)
     }
 
     @ExecptionHandler(MissingParameterExecption)
     missExecption(ctx: HttpContext, execption: MissingParameterExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
+        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? execption.message : undefined)
     }
 
 }

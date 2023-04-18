@@ -5,7 +5,7 @@ import { MappingRouter } from './middleware.router';
 import { ControllerRouteReolver } from './controller';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
-import { TRANSPORT_ENDPOINT_IMPL } from './transport.endpoint';
+import { TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 
 

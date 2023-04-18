@@ -10,19 +10,19 @@ import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
 
 
 @Abstract()
-export abstract class MicroService<TCtx extends EndpointContext, TOutput = any> implements EndpointService {
+export abstract class MicroService<TInput extends EndpointContext, TOutput = any> implements EndpointService {
     
     /**
      * micro service endpoint.
      */
-    abstract get endpoint(): ConfigableEndpoint<TCtx, TOutput>;
+    abstract get endpoint(): ConfigableEndpoint<TInput, TOutput>;
 
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
+    useGuards(guards: ProvdierOf<CanActivate<TInput>> | ProvdierOf<CanActivate<TInput>>[], order?: number | undefined): this {
         this.endpoint.useGuards(guards, order);
         return this;
     }
 
-    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
+    useFilters(filter: ProvdierOf<Filter<TInput, TOutput>> | ProvdierOf<Filter<TInput, TOutput>>[], order?: number | undefined): this {
         this.endpoint.useFilters(filter, order);
         return this;
     }
@@ -32,7 +32,7 @@ export abstract class MicroService<TCtx extends EndpointContext, TOutput = any> 
         return this;
     }
 
-    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number | undefined): this {
+    useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number | undefined): this {
         this.endpoint.useInterceptors(interceptor, order);
         return this;
     }

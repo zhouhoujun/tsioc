@@ -7,32 +7,35 @@ import { AbstractGuardHandler } from '../handlers/guards';
 import { TransportContext } from '../transport/context';
 import { MIDDLEWARES_TOKEN, MiddlewareLike } from '../transport/middleware';
 import { MiddlewareBackend } from '../transport/middleware.compose';
-import { TransportEndpoint, TransportEndpointOptions } from '../transport/transport.endpoint';
+import { TransportEndpoint, TransportEndpointOptions } from '../transport/endpoint';
+import { setHandlerOptions } from '../handlers';
 
 
-export class TransportEndpointImpl<TCtx extends TransportContext = TransportContext, TOutput = any>
-    extends AbstractGuardHandler<TCtx, TOutput> implements TransportEndpoint<TCtx, TOutput> {
+export class TransportEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any>
+    extends AbstractGuardHandler<TInput, TOutput> implements TransportEndpoint<TInput, TOutput> {
 
-    protected midddlesToken: Token<MiddlewareLike[]>;
+    protected midddlesToken: Token<MiddlewareLike<TInput>[]>;
 
     constructor(
         injector: Injector,
-        options: TransportEndpointOptions<TCtx>) {
+        options: TransportEndpointOptions<TInput>) {
         super(injector,
             options.interceptorsToken ?? INTERCEPTORS_TOKEN,
             options.guardsToken ?? GUARDS_TOKEN,
             options.filtersToken ?? FILTERS_TOKEN);
         this.midddlesToken = options.middlewaresToken ?? MIDDLEWARES_TOKEN;
+        setHandlerOptions(this, options);
+        options.middlewares && this.use(options.middlewares)
 
     }
 
-    use(middlewares: ProvdierOf<MiddlewareLike>, order?: number): this {
+    use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
         this.regMulti(this.midddlesToken, middlewares, order, type => !!lang.getParentClass(type) || Object.getOwnPropertyNames(type).indexOf('invoke') > 0);
         this.reset();
         return this;
     }
 
-    protected override getBackend(): Backend<TCtx, TOutput> {
+    protected override getBackend(): Backend<TInput, TOutput> {
         const middlewares = this.getMiddlewares();
         return new MiddlewareBackend(middlewares);
     }

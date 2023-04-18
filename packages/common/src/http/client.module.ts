@@ -2,7 +2,7 @@ import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpClient } from './client';
 import { HttpXhrBackend } from './xhr';
-import { HttpInterceptingHandler, HTTP_CLIENT_INTERCEPTORS, NoopInterceptor } from './interceptor';
+import { HttpInterceptingHandler, HTTP_COMMON_INTERCEPTORS, NoopInterceptor } from './interceptor';
 import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
 import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from './xsrf';
 
@@ -23,7 +23,7 @@ import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, X
 @Module({
     providers: [
         HttpXsrfInterceptor,
-        { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
+        { provide: HTTP_COMMON_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
         { provide: HttpXsrfTokenExtractor, useClass: HttpXsrfCookieExtractor },
         { provide: XSRF_COOKIE_NAME, useValue: 'XSRF-TOKEN' },
         { provide: XSRF_HEADER_NAME, useValue: 'X-XSRF-TOKEN' },
@@ -106,7 +106,7 @@ export class HttpClientModule {
     providers: [
         JsonpClientBackend,
         { provide: JsonpCallbackContext, useFactory: jsonpCallbackContext },
-        { provide: HTTP_CLIENT_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
+        { provide: HTTP_COMMON_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
     ],
 })
 export class HttpClientJsonpModule {

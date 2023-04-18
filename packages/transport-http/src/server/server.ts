@@ -1,5 +1,5 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString } from '@tsdi/ioc';
-import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners } from '@tsdi/core';
+import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners, ListenOpts } from '@tsdi/core';
 import { Log, Logger } from '@tsdi/logs';
 import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -9,7 +9,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
-import { HttpServerOpts, HTTP_SERVEROPTIONS } from './options';
+import { HttpServerOpts, HTTP_SERVER_OPTS } from './options';
 import { HttpEndpoint } from './endpoint';
 
 
@@ -17,11 +17,11 @@ import { HttpEndpoint } from './endpoint';
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpContext> implements ListenService<ListenOptions>  {
+export class HttpServer extends Server<HttpContext, HttpServResponse> implements ListenService<ListenOptions>  {
 
     @Log() logger!: Logger;
 
-    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERVEROPTIONS, { nullable: true }) readonly options: HttpServerOpts) {
+    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERVER_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
     }
@@ -68,6 +68,7 @@ export class HttpServer extends Server<HttpContext> implements ListenService<Lis
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
+                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!')
                 this._server.listen(port, host, listeningListener);
             } else {
@@ -75,6 +76,7 @@ export class HttpServer extends Server<HttpContext> implements ListenService<Lis
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { port };
                 }
+                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://127.0.0.1:${port}`, '!')
                 this._server.listen(port, listeningListener);
             }
@@ -83,6 +85,7 @@ export class HttpServer extends Server<HttpContext> implements ListenService<Lis
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
+            this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
             this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host}:${opts?.port}${opts?.path ?? ''}`, '!');
             this._server.listen(opts, listeningListener);
         }

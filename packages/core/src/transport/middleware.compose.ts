@@ -45,7 +45,7 @@ export class MiddlewareBackend<Tx extends TransportContext, TResponse> implement
                 this._middleware = compose(this.middlewares)
             }
             await this._middleware(context, NEXT);
-            return context.payload.response;
+            return context.response
         })
     }
 

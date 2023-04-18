@@ -6,7 +6,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { EndpointService } from '../endpoints/endpoint.service';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { TransportEndpoint } from './transport.endpoint';
+import { TransportEndpoint } from './endpoint';
 import { TransportContext } from './context';
 import { Runner, Shutdown, Startup } from '../metadata';
 
@@ -16,21 +16,21 @@ import { Runner, Shutdown, Startup } from '../metadata';
  * Server
  */
 @Abstract()
-export abstract class Server<TCtx extends TransportContext, TOutput = any> implements EndpointService, MiddlewareService {
+export abstract class Server<TInput extends TransportContext, TOutput = any> implements EndpointService, MiddlewareService {
 
-    abstract get endpoint(): TransportEndpoint<TCtx, TOutput>;
+    abstract get endpoint(): TransportEndpoint<TInput, TOutput>;
 
-    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number): this {
+    use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
         this.endpoint.use(middlewares, order);
         return this;
     }
 
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+    useGuards(guards: ProvdierOf<CanActivate<TInput>> | ProvdierOf<CanActivate<TInput>>[], order?: number): this {
         this.endpoint.useGuards(guards, order);
         return this;
     }
 
-    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
+    useFilters(filter: ProvdierOf<Filter<TInput, TOutput>> | ProvdierOf<Filter<TInput, TOutput>>[], order?: number): this {
         this.endpoint.useFilters(filter, order);
         return this;
     }
@@ -40,7 +40,7 @@ export abstract class Server<TCtx extends TransportContext, TOutput = any> imple
         return this;
     }
 
-    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
+    useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
         this.endpoint.useInterceptors(interceptor, order);
         return this;
     }

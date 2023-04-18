@@ -1,5 +1,5 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isObservable, isPromise, isString } from '@tsdi/ioc';
-import { mergeMap } from 'rxjs';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
+import { mergeMap, isObservable } from 'rxjs';
 import { Backend } from '../Handler';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
 import { GUARDS_TOKEN } from '../guard';
@@ -13,7 +13,7 @@ import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../
 
 
 
-export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContext, TOutput = any> extends AbstractGuardHandler<TCtx, TOutput> implements OperationEndpoint<TCtx, TOutput> {
+export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> implements OperationEndpoint<TInput, TOutput> {
 
     constructor(
         public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {
@@ -26,7 +26,7 @@ export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContex
 
     }
 
-    protected override getBackend(): Backend<TCtx, TOutput> {
+    protected override getBackend(): Backend<TInput, TOutput> {
         return new FnHandler(this.respond.bind(this));
     }
 
@@ -34,14 +34,14 @@ export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContex
      * before `OperationInvoker` invoke 
      * @param ctx 
      */
-    protected beforeInvoke(ctx: TCtx): void { }
+    protected beforeInvoke(ctx: TInput): void { }
 
     /**
      * respond.
      * @param ctx 
      * @returns 
      */
-    protected respond(ctx: TCtx) {
+    protected respond(ctx: TInput) {
         this.beforeInvoke(ctx);
         const res = this.invoker.invoke(ctx);
         if (!this.options.response) return res;
@@ -63,7 +63,7 @@ export class OperationEndpointImpl<TCtx extends EndpointContext = EndpointContex
      * @param res 
      * @returns 
      */
-    protected respondAs(ctx: TCtx, res: any): Promise<TOutput> {
+    protected respondAs(ctx: TInput, res: any): Promise<TOutput> {
         if (isString(this.options.response)) {
             const trespond = ctx.get(TypedRespond);
             if (trespond) {

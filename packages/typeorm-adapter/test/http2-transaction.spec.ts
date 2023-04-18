@@ -21,15 +21,7 @@ export class Http2TransactionTest {
             baseURL: __dirname
         });
 
-        this.client = this.ctx.injector.resolve(Http, {
-            provide: HttpClientOpts,
-            useValue: {
-                authority: 'https://localhost:3000',
-                options: {
-                    ca: cert
-                }
-            } as HttpClientOpts
-        });
+        this.client = this.ctx.injector.resolve(Http);
 
         const urep = this.ctx.injector.get(UserRepository);
         const u1 = await urep.findByAccount('test_111');

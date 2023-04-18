@@ -4,6 +4,7 @@ import { of } from 'rxjs'; import {
     Middleware, BadRequestExecption,  EndpointHanlder, EndpointContext, TransportContext
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
+import { HttpContext } from '../src/server/context';
 
 
 @RouteMapping('/device')
@@ -106,7 +107,7 @@ export class DeviceController {
 })
 export class DeviceQueue implements Middleware {
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: HttpContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -114,7 +115,7 @@ export class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await new MiddlewareChain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        // await new MiddlewareChain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');

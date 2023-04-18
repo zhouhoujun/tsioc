@@ -21,7 +21,7 @@ export * from './client';
 export * from './listen';
 
 export * from './microservice';
-export * from './transport.endpoint';
+export * from './endpoint';
 export * from './server';
 
 export * from './router.module';

@@ -31,7 +31,7 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokeArgument
 }
 
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
-    backend: Type<Backend>;
+    backend?: Type<Backend>;
     interceptorsToken?: Token<Interceptor[]>;
     guardsToken?: Token<CanActivate[]>;
     filtersToken?: Token<Filter[]>;
@@ -52,13 +52,13 @@ export abstract class ConfigableHandler<TInput = any, TOutput = any> extends Han
 
     abstract get injector(): Injector;
 
-    abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+    abstract useGuards(guards: ProvdierOf<CanActivate<TInput>> | ProvdierOf<CanActivate<TInput>>[], order?: number): this;
 
-    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    abstract useFilters(filter: ProvdierOf<Filter<TInput, TOutput>> | ProvdierOf<Filter<TInput, TOutput>>[], order?: number): this;
 
     abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 
-    abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this;
 }
 
 /**

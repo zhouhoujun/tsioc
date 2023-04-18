@@ -6,7 +6,7 @@ import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResp
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { CLIENT_HTTP2SESSION, HttpClientOpts } from './option';
+import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './option';
 
 
 @Injectable()
@@ -35,7 +35,7 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
     createRequest(req: HttpRequest<any>): WritableStream {
         const url = req.urlWithParams.trim();
         const ac = this.getAbortSignal(req.context);
-        const option = req.context.get(HttpClientOpts);
+        const option = req.context.get(HTTP_CLIENT_OPTS);
         if (option.authority) {
             return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION), option, ac);
         } else {

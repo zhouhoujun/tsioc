@@ -10,7 +10,7 @@ import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServer } from '../src';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -22,15 +22,23 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 2,
-            protocol: 'http',
-            serverOpts: {
-                allowHTTP1: true,
-                key,
-                cert
+            clientOpts: {
+                authority: 'http://localhost:3200',
+                options: {
+                    ca: cert
+                }
             },
-            listenOpts: {
-                port: 3200
+            serverOpts: {
+                majorVersion: 2,
+                protocol: 'http',
+                serverOpts: {
+                    allowHTTP1: true,
+                    key,
+                    cert
+                },
+                listenOpts: {
+                    port: 3200
+                }
             }
         }),
         DeviceManageModule,
@@ -60,15 +68,7 @@ describe('http2 server, Http', () => {
 
         ctx = await Application.run(MainApp);
         injector = ctx.injector;
-        client = injector.resolve(Http, {
-            provide: HttpClientOpts,
-            useValue: {
-                authority: 'http://localhost:3200',
-                options: {
-                    ca: cert
-                }
-            } as HttpClientOpts
-        });
+        client = injector.get(Http);
     });
 
     it('make sure singleton', async () => {

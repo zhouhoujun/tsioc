@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { GuardHandler, Interceptor, ListenOpts } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { HttpClientOpts } from './option';
+import { HTTP_CLIENT_OPTS } from './option';
 
 const abstUrlExp = /^http(s)?:/;
 
@@ -15,7 +15,7 @@ export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> 
         let url = req.url.trim();
         if (!abstUrlExp.test(url)) {
             const context = req.context;
-            const option = context.get(HttpClientOpts);
+            const option = context.get(HTTP_CLIENT_OPTS);
             if (option.authority) {
                 url = new URL(url, option.authority).toString();
             } else {

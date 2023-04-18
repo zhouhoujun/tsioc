@@ -1,4 +1,4 @@
-import { Interceptor, Server, Filter } from '@tsdi/core';
+import { Interceptor, Server, Filter, TransportEndpointOptions } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -10,7 +10,7 @@ import { HttpServRequest, HttpServResponse } from './context';
 /**
  * http options.
  */
-export interface HttpOpts {
+export interface HttpOpts extends TransportEndpointOptions {
     majorVersion?: number;
     proxy?: ProxyOpts;
     /**
@@ -23,7 +23,6 @@ export interface HttpOpts {
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     controllers?: string[] | Type[];
-    
     autoListen?: boolean;
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
@@ -54,7 +53,7 @@ export type HttpServerOpts = Http1ServerOpts | Http2ServerOpts;
 /**
  * http server opptions.
  */
-export const HTTP_SERVEROPTIONS = tokenId<HttpServerOpts>('HTTP_SERVEROPTIONS');
+export const HTTP_SERVER_OPTS = tokenId<HttpServerOpts>('HTTP_SERVER_OPTS');
 
 export const HTTP_EXECPTION_FILTERS = tokenId<Filter[]>('HTTP_EXECPTION_FILTERS');
 
