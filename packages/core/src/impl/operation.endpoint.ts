@@ -1,5 +1,5 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
-import { mergeMap, isObservable } from 'rxjs';
+import { mergeMap, isObservable, lastValueFrom } from 'rxjs';
 import { Backend } from '../Handler';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
 import { GUARDS_TOKEN } from '../guard';
@@ -44,13 +44,22 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
     protected respond(ctx: TInput) {
         this.beforeInvoke(ctx);
         const res = this.invoker.invoke(ctx);
-        if (!this.options.response) return res;
 
         if (isPromise(res)) {
-            return res.then(r => this.respondAs(ctx, r))
+            return res.then(r => {
+                if (isObservable(r)) {
+                    return lastValueFrom(r).then(r => this.respondAs(ctx, r))
+                }
+                return this.respondAs(ctx, r)
+            })
         } else if (isObservable(res)) {
             return res.pipe(
-                mergeMap(r => this.respondAs(ctx, r))
+                mergeMap(async r => {
+                    if (isPromise(r)) {
+                        r = await r;
+                    }
+                    return this.respondAs(ctx, r)
+                })
             )
         } else {
             return this.respondAs(ctx, res);
@@ -63,7 +72,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
      * @param res 
      * @returns 
      */
-    protected respondAs(ctx: TInput, res: any): Promise<TOutput> {
+    protected respondAs(ctx: TInput, res: any): TOutput {
         if (isString(this.options.response)) {
             const trespond = ctx.get(TypedRespond);
             if (trespond) {
@@ -78,8 +87,14 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
             } else if (respond) {
                 (respond as Respond).respond(ctx, res);
             }
+        } else {
+            this.defaultRespond(ctx, res);
         }
         return res;
+    }
+
+    protected defaultRespond(ctx: TInput, res: any): void {
+
     }
 
 }
