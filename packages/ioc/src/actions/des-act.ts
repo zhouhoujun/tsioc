@@ -6,7 +6,7 @@ import { cleanObj } from '../utils/lang';
 import { FactoryRecord, FnType, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Decors } from '../metadata/type';
-import { ReflectiveResolver } from '../reflective';
+import { ReflectiveFactory } from '../reflective';
 import { Platform } from '../platform';
 import { IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
@@ -203,7 +203,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     const injector = ctx.injector;
     const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
-    const factory = injector.get(ReflectiveResolver).resolve(ctx.class, injector);
+    const factory = injector.get(ReflectiveFactory).create(ctx.class, injector);
     runs.forEach(meta => {
         factory.invoke(meta.method, undefined, instance);
     });

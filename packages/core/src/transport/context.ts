@@ -7,7 +7,6 @@ import { EndpointContext } from '../endpoints';
  */
 @Abstract()
 export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {
-
     /**
      * Get request rul
      */
@@ -34,7 +33,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      * The request method.
      */
     abstract get method(): string;
-    
+
     /**
      * Get response status.
      */
@@ -67,7 +66,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      * @api public
      */
     abstract get length(): number | undefined;
-    
+
     /**
      * has sent or not.
      */

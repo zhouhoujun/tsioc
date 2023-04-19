@@ -49,7 +49,7 @@ export abstract class Platform implements OnDestroy {
      * get injector the type registered in.
      * @param scope
      */
-    abstract getInjector(scope: InjectorScope): Injector;
+    abstract getInjector<T extends Injector = Injector>(scope?: InjectorScope, defaultInjector?: Injector): T;
     /**
      * remove injector of scope.
      * @param scope 

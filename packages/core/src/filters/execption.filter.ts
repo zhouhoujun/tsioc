@@ -81,7 +81,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
         }
 
         const context = new ExecptionContext(err, input, injector);
-        return runHandlers(handlers, context, c => c.done === true)
+        return runHandlers(handlers, context)
             .pipe(
                 finalize(() => {
                     context.destroy();

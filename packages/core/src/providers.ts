@@ -1,4 +1,4 @@
-import { Injector, ProviderType } from '@tsdi/ioc';
+import { ProviderType } from '@tsdi/ioc';
 import { ApplicationFactory } from './ApplicationContext';
 import { ApplicationRunners } from './ApplicationRunners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';

@@ -2,7 +2,6 @@
 export * from './ModuleLoader';
 export * from './ApplicationArguments';
 export * from './ApplicationContext';
-export * from './SubjectEmitter';
 export * from './ApplicationEvent';
 export * from './ApplicationEventMulticaster';
 export * from './ApplicationEventPublisher';

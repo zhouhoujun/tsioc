@@ -5,7 +5,7 @@ import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
-import { ReflectiveResolver } from '../reflective';
+import { ReflectiveFactory } from '../reflective';
 import { EMPTY, EMPTY_OBJ, Type } from '../types';
 import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
@@ -22,7 +22,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _type: Type;
     private _typeRefl: Class;
 
-    reflectiveResolver = new ReflectiveResolverImpl();
+    reflectiveFactory = new ReflectiveResolverImpl();
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
@@ -32,9 +32,9 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._type = moduleType.type as Type;
 
         this.inject(
-            { provide: ReflectiveResolver, useValue: this.reflectiveResolver }
+            { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
         );
-
+        // this.onDestroy(this.reflectiveResolver);
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
@@ -112,7 +112,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.platform()?.modules.delete(this._type);
         super.clear();
         this._type = null!;
-        this.reflectiveResolver = null!;
+        this.reflectiveFactory = null!;
         this._typeRefl = null!;
         this._instance = null!
     }

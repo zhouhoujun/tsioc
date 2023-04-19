@@ -13,9 +13,9 @@ import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
-import { Injector, MethodType } from '../injector';
+import { MethodType } from '../injector';
 import { Handle } from '../handle';
-import { ReflectiveRef } from '../reflective';
+// import { ReflectiveRef } from '../reflective';
 
 
 
@@ -272,13 +272,18 @@ export class Class<T = any> {
      */
     readonly runnables: RunableDefine[];
 
-    readonly refToken: Token<ReflectiveRef>;
+    // private _refToken?: Token<ReflectiveRef>;
+    // get refToken(): Token<ReflectiveRef> {
+    //     if (!this._refToken) {
+    //         this._refToken = tokenId<ReflectiveRef>(this.className + 'Ref');
+    //     }
+    //     return this._refToken;
+    // }
 
     constructor(public readonly type: ClassType<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         this.classDefs = new Map();
-        this.refToken = tokenId<ReflectiveRef>(this.className);
         this.classDecors = [];
         if (parent) {
             this.defs = parent.defs.filter(d => d.decorType !== 'class');
@@ -316,10 +321,6 @@ export class Class<T = any> {
         for (const key in records) {
             (this.annotation as any)[key] = records[key]
         }
-    }
-
-    getReflectiveRef(injector: Injector) {
-        return injector.get(this.refToken);
     }
 
     /**

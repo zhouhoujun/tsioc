@@ -11,7 +11,7 @@ import { Handler } from '../Handler';
  * @param isDone 
  * @returns 
  */
-export function runHandlers<TInput>(endpoints: Handler[] | undefined, input: TInput, isDone: (input: TInput) => boolean): Observable<any> {
+export function runHandlers<TInput>(endpoints: Handler[] | undefined, input: TInput, isDone?: (input: TInput) => boolean): Observable<any> {
     let $obs: Observable<any> = of(input);
     if (!endpoints || !endpoints.length) {
         return $obs;
@@ -20,7 +20,7 @@ export function runHandlers<TInput>(endpoints: Handler[] | undefined, input: TIn
     endpoints.forEach(i => {
         $obs = $obs.pipe(
             mergeMap(() => {
-                if (isDone(input)) return of(input);
+                if (isDone && isDone(input)) return of(input);
                 const $res = i.handle(input);
                 if (isPromise($res) || isObservable($res)) return $res;
                 return of($res);

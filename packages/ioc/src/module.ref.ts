@@ -3,7 +3,7 @@ import { ModuleWithProviders, ProviderType } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-import { ReflectiveResolver } from './reflective';
+import { ReflectiveFactory } from './reflective';
 import { Modules, Type } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
@@ -31,9 +31,9 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract get moduleReflect(): Class<T>;
     /**
-     * reflective resolver.
+     * reflectiveRef factory.
      */
-    abstract get reflectiveResolver(): ReflectiveResolver;
+    abstract get reflectiveFactory(): ReflectiveFactory;
     /**
      * The injector that contains all of the providers of the `Module`.
      */

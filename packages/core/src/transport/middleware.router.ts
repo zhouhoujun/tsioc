@@ -213,6 +213,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
     }
 
     handle(ctx: TransportContext): Observable<any> {
+        if (ctx.isDone()) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
             if ((route as Endpoint).handle) {
@@ -223,7 +224,6 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
                     return ctx;
                 });
             }
-
         } else {
             return throwError(() => new NotFoundExecption())
         }
@@ -232,6 +232,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
 
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+        if (ctx.isDone()) return next()
         const route = this.getRoute(ctx);
         if (route) {
             if ((route as Endpoint).handle) {
@@ -239,10 +240,8 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
             } else {
                 await (isFunction(route) ? route(ctx, NEXT) : (route as Middleware).invoke(ctx, NEXT));
             }
-            return await next()
-        } else {
-            throw new NotFoundExecption();
         }
+        return await next()
     }
 
     protected getRoute(ctx: TransportContext): MiddlewareLike | Endpoint | undefined {

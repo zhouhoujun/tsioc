@@ -1,6 +1,6 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
-    ReflectiveResolver, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
+    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
@@ -175,7 +175,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<InjectableM
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
 
-            const factory = injector.get(ReflectiveResolver).resolve(typeRef, injector);
+            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
             const pdrs = typeRef.defs.filter(d => d.decor === Bean)
                 .map(d => {
                     const key = d.propertyKey;

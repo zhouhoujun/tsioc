@@ -1,17 +1,33 @@
-import { BASE_RESOLVERS, DefaultInvocationContext, EMPTY, OperationArgumentResolver, Token } from '@tsdi/ioc';
+import { BASE_RESOLVERS, DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, Token } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model.resolver';
 import { getResolversToken } from './resolver';
+
+export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
+    isDone?(ctx: EndpointContext<T>): boolean;
+}
 
 /**
  * endpoint context.
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
+
+    private doneFn?: (ctx: EndpointContext<TInput>) => boolean
+    constructor(
+        injector: Injector,
+        options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
+        super(injector, options)
+        this.doneFn = options.isDone;
+    }
     /**
      * execption.
      */
     execption?: any;
 
     sent?: boolean;
+
+    isDone() {
+        return this.doneFn ? this.doneFn(this) : false;
+    }
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.payload) return EMPTY;

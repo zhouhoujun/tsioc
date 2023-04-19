@@ -17,7 +17,7 @@ import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } fr
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { ReflectiveResolver } from '../reflective';
+import { ReflectiveFactory } from '../reflective';
 import { ReflectiveResolverImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
@@ -50,7 +50,7 @@ export class DefaultInjector extends Injector {
             scope = this.scope = Scopes.platform
         }
         this.initScope(scope);
-        this.inject(providers)
+        this.inject(providers);
     }
 
     protected initScope(scope?: InjectorScope) {
@@ -154,7 +154,7 @@ export class DefaultInjector extends Injector {
 
     protected registerReflect(platform: Platform, def: Class, option?: RegOption) {
         const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
-        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, def, option)
+        platform.getInjector<DefaultInjector>(providedIn, this).processRegister(platform, def, option)
     }
 
     protected processRegister(platform: Platform, def: Class, option?: RegOption) {
@@ -438,8 +438,8 @@ export class DefaultInjector extends Injector {
             }
         }
         tgRefl = tgRefl ?? get(targetClass);
-        const factory = this.get(ReflectiveResolver).resolve(tgRefl, this);
-        return factory.invoke(propertyKey, context, instance)
+        const refti = this.get(ReflectiveFactory).create(tgRefl, this);
+        return refti.invoke(propertyKey, context, instance)
     }
 
     protected assertNotDestroyed(): void {
@@ -821,8 +821,8 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  */
 function registerCores(container: Container) {
     const factory = new ReflectiveResolverImpl();
-    container.setValue(ReflectiveResolver, factory);
-    // container.onDestroy(() => factory.destroy())
+    container.setValue(ReflectiveFactory, factory);
+    // container.onDestroy(factory)
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

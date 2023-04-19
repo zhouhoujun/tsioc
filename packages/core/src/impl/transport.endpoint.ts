@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, Token, lang } from '@tsdi/ioc';
+import { Injector, ProvdierOf, Token, lang, refl } from '@tsdi/ioc';
 import { Backend } from '../Handler';
 import { GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
@@ -30,7 +30,7 @@ export class TransportEndpointImpl<TInput extends TransportContext = TransportCo
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
-        this.regMulti(this.midddlesToken, middlewares, order, type => Reflect.getMetadataKeys(type).length > 0);
+        this.regMulti(this.midddlesToken, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
         this.reset();
         return this;
     }

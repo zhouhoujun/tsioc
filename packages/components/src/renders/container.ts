@@ -1,5 +1,4 @@
-import { ModuleRef } from '@tsdi/core';
-import { createContext, Injector, InvocationContext, isFunction, Type, TypeDef } from '@tsdi/ioc';
+import { createContext, Injector, ModuleRef, InvocationContext, isFunction, Type, TypeDef } from '@tsdi/ioc';
 import { isLContainer } from '../interfaces/chk';
 import { IComment, IElement } from '../interfaces/dom';
 import { LView, PARENT, RENDERER, TVIEW, T_HOST } from '../interfaces/view';

@@ -1,13 +1,13 @@
-import { createContext, Inject, Injectable, InvocationContext, Nullable, promisify } from '@tsdi/ioc';
+import { createContext, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import {
     RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
 } from '@tsdi/core';
+import { ev } from '@tsdi/transport';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
 import { mergeMap, Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { Cleanup, ev } from '@tsdi/transport';
 import { HttpGuardsHandler } from './handler';
 import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option';
 
@@ -85,9 +85,12 @@ export class Http extends Client<HttpRequest, HttpEvent> {
                 observer.next(connection);
                 observer.complete();
             };
-            const onClose = () => observer.complete();
+            const onClose = () => {
+                observer.complete();
+            }
             connection.on(ev.CONNECT, onConnect)
                 .on(ev.ERROR, onError)
+                .on(ev.END, onClose)
                 .on(ev.CLOSE, onClose);
 
             return () => {

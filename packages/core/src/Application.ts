@@ -173,10 +173,10 @@ export class Application<T = any, TArg = ApplicationArguments> {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                const modueRef = root.reflectiveResolver.resolve(target, root);
+                const modueRef = root.reflectiveFactory.create(target, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root);
             } else {
-                const modueRef = root.reflectiveResolver.resolve(root.moduleType, root);
+                const modueRef = root.reflectiveFactory.create(root.moduleType, root);
                 if (target.loads) {
                     this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
                 }

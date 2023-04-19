@@ -1,7 +1,7 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, TransportContext, ListenOpts
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, TransportContext, ListenOpts, EndpointInvokeOpts
 } from '@tsdi/core';
-import { Abstract, Injector, InvokeArguments, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
@@ -32,8 +32,8 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     protected streamAdapter: StreamAdapter;
     protected listenOpts: ListenOpts;
 
-    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: InvokeArguments<TRequest>) {
-        super(injector, { ...options, payload: request });
+    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: EndpointInvokeOpts<TRequest>) {
+        super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
         this.listenOpts = injector.get(ListenOpts);
         this.streamAdapter = injector.get(StreamAdapter);

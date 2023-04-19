@@ -79,7 +79,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
         this._explicitStatus = true;
         this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage =  statusMessage[code];
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
         if (this.body && this.vaildator.isEmpty(code)) this.body = null;
     }
 
@@ -112,7 +112,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
             ? val.split(/\s*,\s*/)
             : [];
         if ((this.proxy?.maxIpsCount ?? 0) > 0) {
-            ips = ips.slice(-(this.proxy?.maxIpsCount?? 0))
+            ips = ips.slice(-(this.proxy?.maxIpsCount ?? 0))
         }
         return ips
     }

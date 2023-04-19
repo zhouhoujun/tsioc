@@ -1,6 +1,6 @@
 import {
-    isNumber, Type, Injectable, InvocationContext, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    ClassType, StaticProviders, ReflectiveResolver, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
+    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -84,7 +84,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
         if (hasAdapter) {
-            const targetRef = this.injector.get(ReflectiveResolver).resolve(target, this.injector, options);
+            const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
@@ -94,7 +94,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
         const runnables = target.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
-            const targetRef = this.injector.get(ReflectiveResolver).resolve(target, this.injector, options);
+            const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const facResolver = targetRef.resolve(EndpointFactoryResolver);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 const factory = facResolver.resolve(targetRef);
@@ -169,16 +169,16 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = null!;
     }
 
-    handle(context: InvocationContext<any>): Observable<any> {
+    handle(context: EndpointContext<any>): Observable<any> {
         if (isFunction(context.payload)) {
-            return runHandlers(this._maps.get(context.payload), context, v => v.done === true)
+            return runHandlers(this._maps.get(context.payload), context, v => v.isDone() === true)
         }
         if (isArray(context.payload)) {
             const handlers: Handler[] = [];
             context.payload.forEach(type => {
                 handlers.push(...this._maps.get(type) || []);
             })
-            return runHandlers(handlers, context, v => v.done === true)
+            return runHandlers(handlers, context, v => v.isDone() === true)
         }
         return throwError(() => new ArgumentExecption('input type unknow'))
     }

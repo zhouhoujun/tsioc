@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { SubjectEmitter } from '@tsdi/core';
+import { EventEmitter } from '../EventEmitter';
 import { arrayEquals, flatten } from '../util/array';
 
 /**
@@ -40,7 +40,7 @@ export class QueryList<T> implements Iterable<T> {
   public readonly dirty = true;
   private _results: Array<T> = [];
   private _changesDetected = false;
-  private _changes: SubjectEmitter<QueryList<T>> | null = null;
+  private _changes: EventEmitter<QueryList<T>> | null = null;
 
   readonly length: number = 0;
   readonly first!: T;
@@ -61,7 +61,7 @@ export class QueryList<T> implements Iterable<T> {
    * Returns `Observable` of `QueryList` notifying the subscriber of changes.
    */
   get changes(): Observable<any> {
-    return this._changes || (this._changes = new SubjectEmitter());
+    return this._changes || (this._changes = new EventEmitter());
   }
 
   /**
@@ -158,7 +158,7 @@ export class QueryList<T> implements Iterable<T> {
   }
 
   /**
-   * Triggers a change event by emitting on the `changes` {@link SubjectEmitter}.
+   * Triggers a change event by emitting on the `changes` {@link EventEmitter}.
    */
   notifyOnChanges(): void {
     if (this._changes && (this._changesDetected || !this._emitDistinctChangesOnly)) this._changes.emit(this);
@@ -171,8 +171,8 @@ export class QueryList<T> implements Iterable<T> {
 
   /** internal */
   destroy(): void {
-    (this.changes as SubjectEmitter<any>).complete();
-    (this.changes as SubjectEmitter<any>).unsubscribe();
+    (this.changes as EventEmitter<any>).complete();
+    (this.changes as EventEmitter<any>).unsubscribe();
   }
 
 

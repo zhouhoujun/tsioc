@@ -1,7 +1,7 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { Router } from './router';
-import { MappingRouter } from './middleware.router';
+import { MappingRouter, MiddlewareRouter } from './middleware.router';
 import { ControllerRouteReolver } from './controller';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
@@ -9,15 +9,17 @@ import { TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 
 
-TRANSPORT_ENDPOINT_IMPL.create = (injector, options)=> new TransportEndpointImpl(injector, options);
+TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
 
 /*
  * Middleware module.
  */
 @Module({
     providers: [
+        MappingRouter,
         { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
-        { provide: Router, useClass: MappingRouter, static: true },
+        { provide: Router, useClass: MappingRouter },
+        { provide: MiddlewareRouter, useClass: MappingRouter },
         ControllerRouteReolver
     ]
 })

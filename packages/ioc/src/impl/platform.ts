@@ -73,11 +73,12 @@ export class DefaultPlatform implements Platform {
      * get injector
      * @param type
      */
-    getInjector<T extends Injector = Injector>(scope: InjectorScope): T {
+    getInjector<T extends Injector = Injector>(scope?: InjectorScope, defaultInjector?: Injector): T {
+        if (!scope) return defaultInjector as T;
         if (scope === Scopes.platform) {
             return this.injector as T
         }
-        return this._scopes.get(scope) as T
+        return (this._scopes.get(scope) ?? defaultInjector) as T
     }
 
     /**
@@ -109,7 +110,7 @@ export class DefaultPlatform implements Platform {
 
     getHandle<T extends Handle>(target: Token<Action>): T {
         const action = this._actions.get(target) as Action;
-        return (action?.getHandle() ?? null)  as T
+        return (action?.getHandle() ?? null) as T
     }
 
     setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
