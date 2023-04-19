@@ -20,7 +20,7 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
 
     addHandle(filter: Type | string, handler: Handler, order?: number): this {
         if (!handler) {
-            throw new ArgumentExecption('endpoint missing');
+            throw new ArgumentExecption('handler missing');
         }
         let hds = this.maps.get(filter);
         if (!hds) {
