@@ -5,6 +5,7 @@ import {
 import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
 import { HttpStatusCode } from '@tsdi/common';
 import { MissingModelFieldExecption } from '@tsdi/repository';
+import { ErrorRespondAdapter } from '@tsdi/transport';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
 import { HTTP_SERVER_OPTS } from './options';
@@ -14,49 +15,62 @@ import { HTTP_SERVER_OPTS } from './options';
 @Injectable({ static: true })
 export class HttpExecptionHandlers {
 
+    constructor(private adpater: ErrorRespondAdapter) {
+
+    }
+
     @ExecptionHandler(NotFoundExecption)
     notFoundExecption(ctx: HttpContext, execption: NotFoundExecption) {
-        ctx.execption = new HttpNotFoundError(execption.message)
+        execption = new HttpNotFoundError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(ForbiddenExecption)
     forbiddenExecption(ctx: HttpContext, execption: ForbiddenExecption) {
-        ctx.execption = new HttpForbiddenError(execption.message)
+        execption = new HttpForbiddenError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: HttpContext, execption: BadRequestExecption) {
-        ctx.execption = new HttpBadRequestError(execption.message)
+        execption = new HttpBadRequestError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(UnauthorizedExecption)
     unauthorized(ctx: HttpContext, execption: UnauthorizedExecption) {
-        ctx.execption = new HttpUnauthorizedError(execption.message)
+        execption = new HttpUnauthorizedError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(InternalServerExecption)
     internalServerError(ctx: HttpContext, execption: InternalServerExecption) {
-        ctx.execption = new HttpInternalServerError(execption.message)
+        execption = new HttpInternalServerError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: HttpContext, execption: UnsupportedMediaTypeExecption) {
-        ctx.execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message)
+        execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(ArgumentExecption)
-    anguExecption(ctx: HttpContext, execption: ArgumentExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? execption.message : undefined)
+    anguExecption(ctx: HttpContext, err: ArgumentExecption) {
+        const execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? err.message : undefined);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
-    missFieldExecption(ctx: HttpContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? execption.message : undefined)
+    missFieldExecption(ctx: HttpContext, err: MissingModelFieldExecption) {
+        const execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? err.message : undefined);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(MissingParameterExecption)
-    missExecption(ctx: HttpContext, execption: MissingParameterExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? execption.message : undefined)
+    missExecption(ctx: HttpContext, err: MissingParameterExecption) {
+        const execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? err.message : undefined);
+        this.adpater.respond(ctx, execption)
     }
 
 }

@@ -1,4 +1,4 @@
-import { AssetContext, HEAD, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
+import { AssetContext, HEAD, Incoming, Outgoing } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { StatusVaildator } from '../status';
 import { StreamAdapter } from '../stream';

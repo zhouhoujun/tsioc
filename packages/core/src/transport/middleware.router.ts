@@ -245,8 +245,6 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
     }
 
     protected getRoute(ctx: TransportContext): MiddlewareLike | Endpoint | undefined {
-        // if (!(ctx.status instanceof NotFoundStatus)) return;
-
         let url: string;
         if (this.prefix) {
             if (!ctx.url.startsWith(this.prefix)) return;

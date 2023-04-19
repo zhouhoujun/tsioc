@@ -1,4 +1,4 @@
-import { BASE_RESOLVERS, DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, Token } from '@tsdi/ioc';
+import { BASE_RESOLVERS, DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, Token, getClass } from '@tsdi/ioc';
 import { MODEL_RESOLVERS } from './model.resolver';
 import { getResolversToken } from './resolver';
 
@@ -17,6 +17,7 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
         super(injector, options)
         this.doneFn = options.isDone;
+        this.setValue(getClass(this), this);
     }
     /**
      * execption.

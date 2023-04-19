@@ -15,6 +15,7 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
         super(injector, { ...options, payload: execption })
         const token = getClass(execption);
         this.setValue(token, execption);
+        this.setValue(getClass(host), host);
     }
 
     override isSelf(token: Token) {

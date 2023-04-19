@@ -125,8 +125,8 @@ const defServerOpts = {
         // HttpFinalizeFilter
     ],
     filters: [
-        ExecptionHandlerFilter,
         ExecptionFinalizeFilter,
+        ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
     middlewares: [

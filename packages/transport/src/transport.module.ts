@@ -11,6 +11,7 @@ import {
 import { ExecptionFinalizeFilter } from './server/execption-filter';
 import { ServerFinalizeFilter } from './server/filter';
 import { RespondAdapter } from './server/respond';
+import { ErrorRespondAdapter } from './server/error.respond';
 
 
 @Module({
@@ -33,6 +34,7 @@ import { RespondAdapter } from './server/respond';
         SessionMiddleware,
 
         RespondAdapter,
+        ErrorRespondAdapter,
         ServerFinalizeFilter,
         ExecptionFinalizeFilter
     ]
