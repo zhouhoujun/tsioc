@@ -1,5 +1,6 @@
 import { ArgumentExecption, ClassType, composeResolver, EMPTY, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
+import { AssetContext } from '../transport/context';
 
 export function missingPipeExecption(parameter: Parameter, type?: ClassType, method?: string) {
     return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
@@ -7,15 +8,15 @@ export function missingPipeExecption(parameter: Parameter, type?: ClassType, met
 
 export const primitiveResolvers: TransportArgumentResolver[] = [
     composeResolver<TransportArgumentResolver, TransportParameter>(
-        (parameter, ctx) => !!parameter.scope && isDefined(ctx.payload?.[parameter.scope]),
+        (parameter, ctx) => (parameter.scope || ctx instanceof AssetContext) && isDefined(ctx.payload?.[parameter.scope ?? 'query']),
         composeResolver<TransportArgumentResolver>(
             (parameter, ctx) => isPrimitiveType(parameter.type),
             {
                 canResolve(parameter, ctx) {
-                    return !!parameter.scope && isDefined(ctx.payload[parameter.scope]?.[parameter.field ?? parameter.name!])
+                    return isDefined(ctx.payload[parameter.scope ?? 'query']?.[parameter.field ?? parameter.name!])
                 },
                 resolve(parameter, ctx) {
-                    const scope = ctx.payload[parameter.scope!];
+                    const scope = ctx.payload[parameter.scope ?? 'query'];
                     const pipe = getPipe(parameter, ctx, true);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(scope[parameter.field ?? parameter.name!], ...parameter.args || EMPTY)
@@ -23,7 +24,7 @@ export const primitiveResolvers: TransportArgumentResolver[] = [
             },
             {
                 canResolve(parameter, ctx) {
-                    return !parameter.field && !!parameter.scope && (isBasic(ctx.payload[parameter.scope]) || parameter.type == getClass(ctx.payload[parameter.scope]))
+                    return !parameter.field && (isBasic(ctx.payload[parameter.scope?? 'query']) || parameter.type == getClass(ctx.payload[parameter.scope ?? 'query']))
                 },
                 resolve(parameter, ctx) {
                     const value = ctx.payload[parameter.scope!];

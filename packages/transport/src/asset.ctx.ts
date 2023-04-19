@@ -53,6 +53,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
                 this._url = this._url.slice(0, sidx);
             }
         }
+        (this.request as any) ['query'] = this.query;
     }
 
 

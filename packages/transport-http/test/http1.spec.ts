@@ -120,6 +120,7 @@ describe('http1.1 server, Http', () => {
     })
 
     it('post route response object', async () => {
+
         const a = await lastValueFrom(client.post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -128,6 +129,7 @@ describe('http1.1 server, Http', () => {
     });
 
     it('post route response string', async () => {
+        
         const b = await lastValueFrom(client.post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {

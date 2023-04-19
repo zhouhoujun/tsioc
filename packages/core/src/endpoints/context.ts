@@ -32,7 +32,11 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.payload) return EMPTY;
-        return this.injector.get(getResolversToken(this.payload), EMPTY);
+        return this.injector.get(getResolversToken(this.payload), this.playloadDefaultResolvers());
+    }
+
+    protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] {
+        return EMPTY
     }
 
     protected override getDefaultResolvers(): OperationArgumentResolver<any>[] {
