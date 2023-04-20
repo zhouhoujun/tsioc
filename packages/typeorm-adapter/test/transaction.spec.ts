@@ -21,20 +21,19 @@ export class TransactionTest {
             baseURL: __dirname
         });
 
+        const mgr = this.ctx.injector.get(TypeormAdapter).getConnection().manager;
+       
+        await mgr.createQueryBuilder()
+            .delete()
+            .from(User)
+            .where('account IN (:...acs)', { acs: ['test_111', 'post_test', 'test_112'] })
+            .execute();
 
-        const urep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
-        const u1 = await urep.findOne({ where: { account: 'test_111' } });
-        if (u1) await urep.remove(u1);
-        const u2 = await urep.findOne({ where: { account: 'post_test' } });
-        if (u2) await urep.remove(u2);
-        const u3 = await urep.findOne({ where: { account: 'test_112' } });
-        if (u3) await urep.remove(u3);
-
-        const rrep = await this.ctx.injector.get(TypeormAdapter).getRepository(Role);
-        const role1 = await rrep.find({ where: { name: 'opter_1' } });
-        if (role1) await rrep.remove(role1);
-        const role2 = await rrep.find({ where: { name: 'opter_2' } });
-        if (role2) await rrep.remove(role2);
+        await mgr.createQueryBuilder()
+            .delete()
+            .from(Role)
+            .where('name IN (:...acs)', { acs: ['opter_1', 'opter_2'] })
+            .execute();
 
         console.log('clean data');
     }

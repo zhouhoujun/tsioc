@@ -3,7 +3,7 @@ import { Log, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
-import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository } from 'typeorm';
+import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
 import { ObjectIDToken } from './objectid.pipe';
 
 
@@ -191,6 +191,17 @@ export class TypeormAdapter {
     getConnection(connectName?: string): DataSource {
         return this.sources.get(connectName ?? this.options.name!)!;
     }
+
+    /**
+     * get manager via name.
+     *
+     * @param {string} [connectName]
+     * @returns {Connection}
+     */
+    getManager(connectName?: string): EntityManager {
+        return this.sources.get(connectName ?? this.options.name!)!.manager!;
+    }
+
 
     getRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): Repository<T> {
         return this.getConnection(connectName).getRepository<T>(type)
