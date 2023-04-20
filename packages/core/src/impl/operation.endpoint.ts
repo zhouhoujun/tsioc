@@ -35,7 +35,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
      * before `OperationInvoker` invoke 
      * @param ctx 
      */
-    protected beforeInvoke(ctx: TInput): void { }
+    protected beforeInvoke(ctx: TInput): any { }
 
     /**
      * respond.
@@ -44,7 +44,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
      */
     protected async respond(ctx: TInput) {
         await this.beforeInvoke(ctx);
-        let res = this.invoker.invoke(ctx);
+        let res = await this.invoker.invoke(ctx);
 
         if (isPromise(res)) {
             res = await res;
@@ -53,7 +53,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
             res = await lastValueFrom(res);
         }
         if (res instanceof ResultValue) return await res.sendValue(ctx);
-        return this.respondAs(ctx, res)
+        return await this.respondAs(ctx, res)
     }
 
     /**

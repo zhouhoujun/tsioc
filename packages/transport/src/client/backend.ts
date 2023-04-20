@@ -56,10 +56,12 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
                 statusText = st.statusText;
 
                 if (this.vaildator.isEmpty(status)) {
-                    observer.next(this.reqAdapter.createHeadResponse({
+                    body = null;
+                    observer.next(this.reqAdapter.createResponse({
                         url,
                         headers,
-                        status
+                        status,
+                        body
                     }));
                     observer.complete();
                     return;

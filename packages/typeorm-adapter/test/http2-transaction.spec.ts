@@ -29,6 +29,9 @@ export class Http2TransactionTest {
         if (u1) await urep.remove(u1);
         const u2 = await urep.findOne({ where: { account: 'post_test' } });
         if (u2) await urep.remove(u2);
+        const u3 = await urep.findOne({ where: { account: 'test_112' } });
+        if (u3) await urep.remove(u3);
+
         const rrep = await this.ctx.injector.get(TypeormAdapter).getRepository(Role);
         const role1 = await rrep.find({ where: { name: 'opter_1' } });
         if (role1) await rrep.remove(role1);
@@ -61,9 +64,9 @@ export class Http2TransactionTest {
                     return of(err);
                 })
             ));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull()
     }
 
     @Test()
@@ -82,9 +85,9 @@ export class Http2TransactionTest {
         expect(rep.body).toBeNull();
 
         const rep2 = await lastValueFrom(this.client.get<User>('/users/test_112', { observe: 'response' }));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()
@@ -130,9 +133,9 @@ export class Http2TransactionTest {
         // await lang.delay(100);
 
         const rep2 = await lastValueFrom(this.client.get<Role>('/roles/opter_1', { observe: 'response' }));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()
@@ -152,9 +155,9 @@ export class Http2TransactionTest {
         // await lang.delay(100);
 
         const rep2 = await lastValueFrom(this.client.get<Role>('/roles/opter_2', { observe: 'response' }));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()
