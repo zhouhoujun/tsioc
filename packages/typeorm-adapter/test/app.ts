@@ -12,7 +12,7 @@ import { TypeormModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
-import { UserRepository } from './repositories/UserRepository';
+// import { UserRepository } from './repositories/UserRepository';
 
 
 
@@ -64,9 +64,9 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
                 Role,
                 User
             ],
-            repositories: [
-                UserRepository
-            ]
+            // repositories: [
+            //     UserRepository
+            // ]
         })
     ],
     declarations: [

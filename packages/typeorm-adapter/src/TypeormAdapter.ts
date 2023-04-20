@@ -3,7 +3,7 @@ import { Log, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
-import {  getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository } from 'typeorm';
+import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository } from 'typeorm';
 import { ObjectIDToken } from './objectid.pipe';
 
 
@@ -105,14 +105,19 @@ export class TypeormAdapter {
                 injector.setValue(ObjectIDToken, mgd.ObjectID)
             }
         }
-        const connection = await this.createConnection(options, config);
+
+        const dataSource = await this.createConnection(options, config);
+
+        if (options.initDb) {
+            await options.initDb(dataSource)
+        }
 
         const entities = options.entities ?? EMPTY;
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
-            hasField: (parameter, ctx) => ctx.payload,
-            getFields: (parameter: TransportParameter, ctx: EndpointContext) => parameter.field ? ctx.payload[parameter.field] : ctx.payload,
+            hasField: (parameter, ctx) => ctx.payload.body,
+            getFields: (parameter: TransportParameter, ctx: EndpointContext) => parameter.field ? ctx.payload.body[parameter.field] : ctx.payload.body,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
@@ -128,14 +133,12 @@ export class TypeormAdapter {
         });
         injector.inject({ provide: MODEL_RESOLVERS, useValue: resovler, multi: true });
 
-        getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-            if (options.entities?.some(e => e === meta.entity)) {
-                injector.inject({ provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
-            }
-        });
-
-        if (options.initDb) {
-            await options.initDb(connection)
+        if (getMetadataArgsStorage().entityRepositories?.length) {
+            getMetadataArgsStorage().entityRepositories?.forEach(meta => {
+                if (options.entities?.some(e => e === meta.entity)) {
+                    injector.inject({ provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
+                }
+            });
         }
     }
 
@@ -160,7 +163,7 @@ export class TypeormAdapter {
 
         if (options.repositories && options.repositories.some(r => isString(r))) {
             // preload repositories for typeorm.
-            await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) })
+            options.repositories = await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) })
         }
 
         if (!options.name) {
@@ -171,7 +174,10 @@ export class TypeormAdapter {
             this.options = options;
         }
 
+
         const dataSource = new DataSource(options as DataSourceOptions);
+        await dataSource.initialize();
+
         this.sources.set(options.name, dataSource);
         return dataSource;
     }
@@ -194,6 +200,13 @@ export class TypeormAdapter {
         return this.getConnection(connectName).getTreeRepository<T>(type)
     }
 
+    /**
+     * custom repository.
+     * @deprecated 
+     * @param type 
+     * @param connectName 
+     * @returns 
+     */
     getCustomRepository<T extends Repository<any>>(type: Type<T>, connectName?: string): T {
         return this.getConnection(connectName).getCustomRepository(type)
     }
@@ -210,8 +223,8 @@ export class TypeormAdapter {
         this.logger = null!;
         this.injector = null!;
         this.options = null!
-    }    
-    
+    }
+
     protected async disconnect(): Promise<void> {
         this.logger?.info('close db connections');
         await Promise.all(Array.from(this.sources.values()).map(async c => {
@@ -232,4 +245,4 @@ export const TypeOrmHelper = TypeormAdapter;
  * TypeormServer
  * @deprecated use `TypeormAdapter` instead.
  */
-export const TypeormServer =  TypeormAdapter;
+export const TypeormServer = TypeormAdapter;

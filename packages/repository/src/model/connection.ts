@@ -35,6 +35,7 @@ export interface ConnectionOptions extends Record<string, any> {
     entities?: Array<string | Type>;
     /**
      * repositories of orm.
+     * @deprecated typeorm deprecated.
      */
     repositories?: Array<string | Type>;
 }

@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, Type } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, ProvdierOf, Type, toProvider } from '@tsdi/ioc';
 import { ConnectionOptions, CONNECTIONS, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeormAdapter } from './TypeormAdapter';
@@ -22,7 +22,7 @@ export interface TypeormOptions extends ConnectionOptions {
     providers: [
         TypeormAdapter,
         ParseObjectIdPipe,
-        { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver, static: true },
+        { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver },
         { provide: TransactionResolver, useClass: TypeormTransactionResolver },
         { provide: TransactionManager, useClass: TypeormTransactionManager }
     ]
@@ -33,10 +33,10 @@ export class TypeormModule {
      * @param connections 
      * @returns 
      */
-    static withConnection(...connections: (TypeormOptions | DataSourceOptions)[]): ModuleWithProviders<TypeormModule> {
+    static withConnection(...connections: ProvdierOf<TypeormOptions | DataSourceOptions>[]): ModuleWithProviders<TypeormModule> {
         return {
             module: TypeormModule,
-            providers: connections.map(c => ({ provide: CONNECTIONS, useValue: c, multi: true }))
+            providers: connections.map(c => toProvider(CONNECTIONS, c, true))
         }
     }
 }

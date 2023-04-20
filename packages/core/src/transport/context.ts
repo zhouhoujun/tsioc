@@ -1,5 +1,5 @@
-import { Abstract, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
-import { EndpointContext } from '../endpoints';
+import { Abstract, EMPTY, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
+import { EndpointContext, MODEL_RESOLVERS } from '../endpoints';
 import { createPayloadResolver } from '../endpoints/resolvers';
 
 
@@ -11,7 +11,7 @@ import { createPayloadResolver } from '../endpoints/resolvers';
 export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        return primitiveResolvers;
+        return [ ... primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
     /**
      * Get request rul

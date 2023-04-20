@@ -6,7 +6,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { TypeormAdapter } from '../src/TypeormAdapter';
 import { cert, Http2TransBootTest } from './app';
 import { Role, User } from './models/models';
-import { UserRepository } from './repositories/UserRepository';
+// import { UserRepository } from './repositories/UserRepository';
 
 
 @Suite()
@@ -14,6 +14,7 @@ export class Http2TransactionTest {
 
     private ctx!: ApplicationContext;
     private client!: Http;
+
     @Before()
     async beforeInit() {
         this.ctx = await Application.run({
@@ -23,10 +24,10 @@ export class Http2TransactionTest {
 
         this.client = this.ctx.injector.resolve(Http);
 
-        const urep = this.ctx.injector.get(UserRepository);
-        const u1 = await urep.findByAccount('test_111');
+        const urep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const u1 = await urep.findOne({ where: { account: 'test_111' } });
         if (u1) await urep.remove(u1);
-        const u2 = await urep.findByAccount('post_test');
+        const u2 = await urep.findOne({ where: { account: 'post_test' } });
         if (u2) await urep.remove(u2);
         const rrep = await this.ctx.injector.get(TypeormAdapter).getRepository(Role);
         const role1 = await rrep.find({ where: { name: 'opter_1' } });
@@ -39,7 +40,7 @@ export class Http2TransactionTest {
 
     @Test()
     async postRolebackUser() {
-        
+
         const rep = await lastValueFrom(this.client.post<User>('/users', { name: 'test_111', account: 'test_111', password: '111111' }, { observe: 'response', params: { check: true } })
             .pipe(
                 catchError((err, caught) => {

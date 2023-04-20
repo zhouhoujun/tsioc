@@ -1,4 +1,4 @@
-import { ClassType, ctorName, lang, refl, Type } from '@tsdi/ioc';
+import { ClassType, ctorName, Injectable, lang, refl, Type } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
@@ -149,6 +149,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
 }
 
+@Injectable()
 export class TypeormTransactionManager extends TransactionManager {
 
     constructor(

@@ -42,35 +42,18 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
      * @param ctx 
      * @returns 
      */
-    protected respond(ctx: TInput) {
-        this.beforeInvoke(ctx);
-        const res = this.invoker.invoke(ctx);
+    protected async respond(ctx: TInput) {
+        await this.beforeInvoke(ctx);
+        let res = await this.invoker.invoke(ctx);
 
         if (isPromise(res)) {
-            return res.then(r => {
-                if (isObservable(r)) {
-                    return lastValueFrom(r).then(r => {
-                        if (res instanceof ResultValue) return res.sendValue(ctx);
-                        return this.respondAs(ctx, r)
-                    })
-                }
-                if (res instanceof ResultValue) return res.sendValue(ctx);
-                return this.respondAs(ctx, r)
-            })
-        } else if (isObservable(res)) {
-            return res.pipe(
-                mergeMap(async r => {
-                    if (isPromise(r)) {
-                        r = await r;
-                    }
-                    if (res instanceof ResultValue) return await res.sendValue(ctx);
-                    return this.respondAs(ctx, r)
-                })
-            )
-        } else {
-            if (res instanceof ResultValue) return res.sendValue(ctx);
-            return this.respondAs(ctx, res);
+            res = await res;
         }
+        if (isObservable(res)) {
+            res = lastValueFrom(res);
+        }
+        if (res instanceof ResultValue) return await res.sendValue(ctx);
+        return await this.respondAs(ctx, res)
     }
 
     /**

@@ -6,8 +6,9 @@ import { lastValueFrom } from 'rxjs';
 
 import { Role, User } from './models/models';
 import { TypeormAdapter } from '../src';
-import { UserRepository } from './repositories/UserRepository';
+// import { UserRepository } from './repositories/UserRepository';
 import { option, MockBootTest } from './app';
+import { Repository } from 'typeorm';
 
 @Suite('load Repository test')
 export class LoadReposTest {
@@ -26,24 +27,24 @@ export class LoadReposTest {
     @Test()
     async hasUserRepository() {
         expect(this.ctx.injector.get(TypeormAdapter).getRepository(User)).toBeDefined();
-        expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
+        // expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
     }
 
     @Test()
     async canGetUserRepository() {
-        const rep = this.ctx.injector.get(UserRepository);
-        expect(rep).toBeInstanceOf(UserRepository);
+        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        expect(rep).toBeInstanceOf(Repository);
     }
 
     @Test()
     async save() {
-        const rep = this.ctx.injector.get(UserRepository);
+        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
         const newUr = new User();
         newUr.name = 'admin----test';
         newUr.account = 'admin----test';
         newUr.password = '111111';
         await rep.save(newUr);
-        const svu = await rep.findByAccount('admin----test')
+        const svu = await rep.findOne({ where: { account: 'admin----test' } })
         // console.log(svu);
         expect(svu).toBeInstanceOf(User);
         expect(svu?.id).toBeDefined();
@@ -51,8 +52,8 @@ export class LoadReposTest {
 
     @Test()
     async getUser0() {
-        const usrRep = this.ctx.injector.get(UserRepository);
-        expect(usrRep).toBeInstanceOf(UserRepository);
+        const usrRep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        expect(usrRep).toBeInstanceOf(Repository);
         const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/admin----test', { observe: 'response' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
@@ -61,12 +62,12 @@ export class LoadReposTest {
 
     @Test()
     async deleteUser() {
-        const rep = this.ctx.injector.get(UserRepository);
-        const svu = await rep.findByAccount('admin----test');
+        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const svu = await rep.findOne({ where: { account: 'admin----test' } });
         const rmd = await rep.remove(svu!);
         expect(rmd).toBeDefined();
 
-        const svu1 = await rep.findByAccount('post_test');
+        const svu1 = await rep.findOne({ where: { account: 'post_test' } });
         if (svu1) {
             await rep.remove(svu1);
         }
@@ -102,7 +103,7 @@ export class LoadReposTest {
 
     @Test()
     async postRole() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<Role>('/roles', { name: 'opter' }, {observe: 'response'}));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<Role>('/roles', { name: 'opter' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();

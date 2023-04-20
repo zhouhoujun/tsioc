@@ -1,10 +1,11 @@
 import { Joinpoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
-import { Parameter, InvocationContext, Type, lang, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver } from '@tsdi/ioc';
+import { Parameter, InvocationContext, Type, lang, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver, Injectable } from '@tsdi/ioc';
 import { MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { TypeormAdapter } from './TypeormAdapter';
 
 
+@Injectable()
 export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolver {
 
     constructor(private adapter: TypeormAdapter) {
@@ -59,6 +60,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
 }
 
 
+@Injectable()
 export class TypeormTransactionResolver extends TransactionResolver {
 
     protected resolver: OperationArgumentResolver;
