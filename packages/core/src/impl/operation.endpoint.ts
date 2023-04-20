@@ -1,5 +1,5 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
-import { mergeMap, isObservable, lastValueFrom } from 'rxjs';
+import { isObservable, lastValueFrom } from 'rxjs';
 import { Backend } from '../Handler';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
 import { GUARDS_TOKEN } from '../guard';
@@ -44,16 +44,16 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
      */
     protected async respond(ctx: TInput) {
         await this.beforeInvoke(ctx);
-        let res = await this.invoker.invoke(ctx);
+        let res = this.invoker.invoke(ctx);
 
         if (isPromise(res)) {
             res = await res;
         }
         if (isObservable(res)) {
-            res = lastValueFrom(res);
+            res = await lastValueFrom(res);
         }
         if (res instanceof ResultValue) return await res.sendValue(ctx);
-        return await this.respondAs(ctx, res)
+        return this.respondAs(ctx, res)
     }
 
     /**
