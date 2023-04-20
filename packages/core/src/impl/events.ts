@@ -108,8 +108,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         let event: ApplicationEvent;
         if (obj instanceof ApplicationEvent) {
             event = obj
-        }
-        else {
+        } else {
             event = new PayloadApplicationEvent(this, obj)
         }
 

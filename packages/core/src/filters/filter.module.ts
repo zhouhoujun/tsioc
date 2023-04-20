@@ -1,11 +1,12 @@
-import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module } from '@tsdi/ioc';
+import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module, isDefined } from '@tsdi/ioc';
 import { Handler } from '../Handler';
 import { PayloadApplicationEvent } from '../events';
 import { getResolversToken } from '../endpoints/resolver';
-import { primitiveResolvers } from '../endpoints/resolvers';
+import { createPayloadResolver } from '../endpoints/resolvers';
 import { TransformModule } from '../pipes/transform.module';
 import { ExecptionHandlerFilter } from './execption.filter';
 import { FilterHandlerResolver } from './filter';
+
 /**
  * endpoint hanlders resolver.
  */
@@ -48,7 +49,24 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
 export const FILTER_PROVIDERS: ProviderType[] = [
     { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true },
     ExecptionHandlerFilter,
-    { provide: getResolversToken(PayloadApplicationEvent), useValue: primitiveResolvers }
+    {
+        provide: getResolversToken(PayloadApplicationEvent),
+        useValue: createPayloadResolver(
+            (ctx, scope, field) => {
+                let payload = ctx.payload;
+                if (scope) {
+                    payload = payload[scope];
+                    if (field) {
+                        payload = isDefined(payload)? payload[field] : null;
+                    }
+                } else if (field) {
+                    payload = null;
+                }
+                return payload;
+            },
+            (param, payload) => payload && param.scope && isDefined(payload[param.scope])
+        )
+    }
 ]
 
 

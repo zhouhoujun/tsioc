@@ -1,6 +1,7 @@
-import { Abstract, OperationArgumentResolver } from '@tsdi/ioc';
+import { Abstract, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints';
-import { primitiveResolvers } from '../endpoints/resolvers';
+import { createPayloadResolver } from '../endpoints/resolvers';
+
 
 
 /**
@@ -8,9 +9,9 @@ import { primitiveResolvers } from '../endpoints/resolvers';
  */
 @Abstract()
 export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {
-    
+
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        return primitiveResolvers;    
+        return primitiveResolvers;
     }
     /**
      * Get request rul
@@ -79,6 +80,22 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
 
 }
 
+const primitiveResolvers = createPayloadResolver(
+    (ctx, scope, field) => {
+        let payload = ctx.payload;
+
+        if (field && !scope) {
+            scope = 'query'
+        }
+        if (scope) {
+            payload = payload[scope];
+            if (field) {
+                payload = isDefined(payload) ? payload[field] : null;
+            }
+        }
+        return payload;
+    },
+    (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
 
 /**
  * abstract asset context.

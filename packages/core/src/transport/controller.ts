@@ -36,12 +36,6 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
         prefix = this.prefix = joinprefix(prefix, mapping.prefix, mapping.version, mapping.route);
-        // const injector = factory.typeRef.injector;
-        // mapping.pipes && injector.inject(mapping.pipes);
-        // this.useGuards(mapping.guards ?? EMPTY);
-        // injector.inject(toProvider(guardsToken, mapping.guards ?? EMPTY));
-        // injector.inject(toProvider(interceptorsToken, mapping.interceptors));
-        // mapping.filters && injector.inject(toProvider(filtersToken, mapping.filters));
         setHandlerOptions(this, mapping);
         factory.onDestroy(this);
     }

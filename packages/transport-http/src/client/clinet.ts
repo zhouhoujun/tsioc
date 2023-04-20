@@ -134,6 +134,7 @@ export class Http extends Client<HttpRequest, HttpEvent> {
             }
 
             const context = options.context ?? createContext(this.handler.injector, options);
+            context.setValue(Client, this);
             if (this.connection && this.connection !== NONE) {
                 context.setValue(CLIENT_HTTP2SESSION, this.connection);
             }

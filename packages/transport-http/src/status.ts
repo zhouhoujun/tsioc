@@ -9,6 +9,9 @@ export class HttpStatusVaildator implements StatusVaildator<number> {
     get ok(): number {
         return HttpStatusCode.Ok
     }
+    get found(): number {
+        return HttpStatusCode.Found
+    }
     get notFound(): number {
         return HttpStatusCode.NotFound
     }

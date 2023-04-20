@@ -1,7 +1,6 @@
 import { isString } from '@tsdi/ioc';
-import { ApplicationContext, AssetContext, Stream } from '@tsdi/core';
+import { ApplicationContext, AssetContext, ResultValue, Stream } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { ResultValue } from './ResultValue';
 import { StreamAdapter } from '../stream';
 import { FileAdapter } from '../file';
 

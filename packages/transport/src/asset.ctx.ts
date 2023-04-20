@@ -714,7 +714,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        // if (!(this.status instanceof RedirectStatus)) this.status = this.statusFactory.create('Found');
+        if (!this.vaildator.isRedirect(this.status)) this.status = this.vaildator.found;
 
         // html
         if (this.accepts('html')) {

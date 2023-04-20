@@ -1,5 +1,4 @@
-import { AssetContext } from '@tsdi/core';
-import { ResultValue } from './ResultValue';
+import { AssetContext, ResultValue } from '@tsdi/core';
 
 
 /**

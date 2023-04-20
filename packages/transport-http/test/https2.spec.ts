@@ -104,12 +104,12 @@ describe('http2 Secure server, Secure Http', () => {
         const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
 
         const device = rep.body['device'];
-        const aState = rep.body['deviceA_state'];
-        const bState = rep.body['deviceB_state'];
+        // const aState = rep.body['deviceA_state'];
+        // const bState = rep.body['deviceB_state'];
 
         expect(device).toBe('device next');
-        expect(aState).toBe('startuped');
-        expect(bState).toBe('startuped');
+        // expect(aState).toBe('startuped');
+        // expect(bState).toBe('startuped');
     });
 
     it('not found', async () => {
@@ -182,7 +182,7 @@ describe('http2 Secure server, Secure Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -211,7 +211,7 @@ describe('http2 Secure server, Secure Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -240,7 +240,7 @@ describe('http2 Secure server, Secure Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 

@@ -95,6 +95,30 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
             });
 
             return next();
+        },
+
+        afterAnnoation: (ctx, next) => {
+            const mapping = ctx.class.getAnnotation<MappingDef>();
+            const route = mapping.route;
+            if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
+            const injector = ctx.injector;
+            let router: Router;
+            if (mapping.router) {
+                router = injector.get(mapping.router);
+            } else {
+                router = injector.get(Router);
+            }
+
+            if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
+            if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+
+
+            router.use({
+                path: route,
+                middleware: ctx.type
+            });
+
+            return next();
         }
     },
     appendProps: (meta) => {

@@ -10,6 +10,7 @@ import { AbstractGuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';
 import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
+import { ResultValue } from '../endpoints/ResultValue';
 
 
 
@@ -48,8 +49,12 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
         if (isPromise(res)) {
             return res.then(r => {
                 if (isObservable(r)) {
-                    return lastValueFrom(r).then(r => this.respondAs(ctx, r))
+                    return lastValueFrom(r).then(r => {
+                        if (res instanceof ResultValue) return res.sendValue(ctx);
+                        return this.respondAs(ctx, r)
+                    })
                 }
+                if (res instanceof ResultValue) return res.sendValue(ctx);
                 return this.respondAs(ctx, r)
             })
         } else if (isObservable(res)) {
@@ -58,10 +63,12 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
                     if (isPromise(r)) {
                         r = await r;
                     }
+                    if (res instanceof ResultValue) return await res.sendValue(ctx);
                     return this.respondAs(ctx, r)
                 })
             )
         } else {
+            if (res instanceof ResultValue) return res.sendValue(ctx);
             return this.respondAs(ctx, res);
         }
     }

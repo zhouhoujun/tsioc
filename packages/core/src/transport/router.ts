@@ -5,6 +5,7 @@ import { EndpointOptions } from '../endpoints/endpoint.service';
 import { Endpoint } from '../endpoints/endpoint';
 import { Backend } from '../Handler';
 import { Pattern } from './pattern';
+import { Route } from './route';
 
 /***
  * router
@@ -25,6 +26,11 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      * @param route route
      */
     abstract has(route: string): boolean;
+    /**
+     * use route.
+     * @param route 
+     */
+    abstract use(route: Route): this;
     /**
      * use route.
      * @param route

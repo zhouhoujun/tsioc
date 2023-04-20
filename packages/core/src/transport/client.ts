@@ -252,7 +252,6 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
-        let ctx: InvocationContext;
         const connecting = this.connect();
         return (isObservable(connecting) ? connecting : defer(() => connecting))
             .pipe(
@@ -261,9 +260,6 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 }),
                 mergeMap(() => {
                     return this.request(req, options)
-                }),
-                finalize(() => {
-                    ctx?.destroy()
                 })
             )
     }
@@ -276,7 +272,10 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<TRespone> =
-            of(req).pipe(concatMap((req: TRequest) => this.handler.handle(req)));
+            of(req).pipe(
+                concatMap((req: TRequest) => this.handler.handle(req)),
+                finalize(() => req.context?.destroy())
+            );
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
@@ -372,13 +371,15 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 }
             }
 
+            const context = options.context || createContext(this.handler.injector, options);
+            context.setValue(Client, this);
             // Construct the request.
             req = new TransportRequest(first, {
                 ...options,
                 headers,
                 params,
                 body: options.body ?? null,
-                context: options.context || createContext(this.handler.injector, options),
+                context,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json'
             })
