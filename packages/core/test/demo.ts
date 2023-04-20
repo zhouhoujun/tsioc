@@ -205,7 +205,7 @@ let id = 0;
 @Configuration()
 export class ConfiguraionManger {
 
-    @Bean()
+    @Bean(Settings, { static: false })
     settings(): Settings {
         id++;
         return {

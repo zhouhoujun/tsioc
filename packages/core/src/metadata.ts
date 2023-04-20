@@ -1,7 +1,7 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf
+    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -131,15 +131,16 @@ export interface BeanDecorator {
      * 
      * 配置项修饰器，用于声明该方法或属性是输出的配置项内容。
      * @param {Token} provide the value of the method or property for the provide token.
+     * @param {UseAsStatic} options the static option for the provide token.
      */
-    (provide?: Token): MethodPropDecorator;
+    (provide?: Token, options?: UseAsStatic): MethodPropDecorator;
 }
 
 /**
  * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
  */
 export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
-    props: (provide: Token) => ({ provide }),
+    props: (provide: Token, options?: UseAsStatic) => ({ ...options, provide }),
     afterInit: (ctx) => {
         const metadata = ctx.define.metadata as BeanMetadata & PropertyMetadata;
         if (!metadata.provide) {
@@ -162,7 +163,7 @@ export interface ConfigurationDecorator {
      * 配置修饰器，声明该类为配置提供者。
      * @Configuartion
      */
-    (): ClassDecorator;
+    (option?: PatternMetadata): ClassDecorator;
 }
 
 /**
@@ -179,16 +180,18 @@ export const Configuration: ConfigurationDecorator = createDecorator<InjectableM
             const pdrs = typeRef.defs.filter(d => d.decor === Bean)
                 .map(d => {
                     const key = d.propertyKey;
-                    const { provide } = d.metadata as BeanMetadata;
+                    const { provide, static: stac } = d.metadata as BeanMetadata;
                     if (d.decorType === 'method') {
                         return {
                             provide,
-                            useFactory: () => factory.invoke(key)
+                            useFactory: () => factory.invoke(key),
+                            static: stac,
                         } as ProviderType
                     } else {
                         return {
                             provide,
-                            useFactory: () => factory.getInstance()[key]
+                            useFactory: () => factory.getInstance()[key],
+                            static: stac,
                         } as ProviderType
                     }
                 });
@@ -197,8 +200,9 @@ export const Configuration: ConfigurationDecorator = createDecorator<InjectableM
         }
     },
     appendProps: (meta) => {
-        // meta.providedIn = 'configuration';
-        meta.singleton = true
+        if (isNil(meta.static) && isNil(meta.singleton)) {
+            meta.static = true
+        }
     }
 });
 
@@ -482,7 +486,7 @@ export interface PipeMetadata extends ProviderMetadata {
 /**
  * bean provider metadata.
  */
-export interface BeanMetadata {
+export interface BeanMetadata extends UseAsStatic {
     /**
      * the token bean provider to.
      */
