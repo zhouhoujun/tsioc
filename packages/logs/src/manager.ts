@@ -6,6 +6,7 @@ import { HeaderFormater, Logger } from './logger';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
 import { Level, Levels, levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
+import { config } from 'rxjs';
 
 /**
  * Configure logger manger. use to get configed logger manger.
@@ -38,11 +39,16 @@ export class LoggerManagers implements LoggerManager {
 
     getLoggerManager(adapter?: string | Type): LoggerManager {
         this.init();
-        if (!adapter) return this._defaultLogMgr;
+        if (!adapter) {
+            this._defaultCfg.config && this._defaultLogMgr.configure(this._defaultCfg.config);
+            return this._defaultLogMgr;
+        }
         const mgr = this.maps.get(adapter);
         if (!mgr) {
             throw new ArgumentExecption(`has no provider for LoggerManager ${adapter.toString()}.`)
         }
+        const cfg = this.cfgs.get(adapter);
+        cfg?.config && mgr.configure(config);
         return mgr;
     }
 
@@ -69,7 +75,6 @@ export class LoggerManagers implements LoggerManager {
         configs.forEach(cfg => {
             let token: Token<LoggerManager>;
             const adapter = cfg.adapter;
-            if (this.maps.has(adapter)) return;
             if (isString(adapter)) {
                 token = getToken(LoggerManager, adapter)
             } else {

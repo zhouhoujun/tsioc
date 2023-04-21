@@ -7,14 +7,10 @@ export function missingPipeExecption(parameter: Parameter, type?: ClassType, met
     return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
 }
 
-
-
-// export const primitiveResolvers: TransportArgumentResolver[] = [];
-
 export function createPayloadResolver<T extends EndpointContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: (param: TransportParameter, payload: any, ctx: T) => boolean): TransportArgumentResolver[] {
     return [
         composeResolver<TransportArgumentResolver, TransportParameter, T>(
-            (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx), //(parameter.scope || ctx instanceof AssetContext) && isDefined(getPayload(ctx)[parameter.scope ?? 'query']),
+            (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),
             composeResolver<TransportArgumentResolver, TransportParameter, T>(
                 (parameter, ctx) => isPrimitiveType(parameter.type),
                 {
@@ -43,7 +39,7 @@ export function createPayloadResolver<T extends EndpointContext>(getPayload: (ct
                 (parameter) => isPrimitiveType(parameter.provider) && (parameter.multi === true || parameter.type === Array),
                 {
                     canResolve(parameter, ctx) {
-                        return isList(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name)) // ctx.payload[parameter.scope]?.[field])
+                        return isList(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name))
                     },
                     resolve(parameter, ctx) {
                         const value = getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name);
@@ -57,10 +53,9 @@ export function createPayloadResolver<T extends EndpointContext>(getPayload: (ct
             {
                 canResolve(parameter, ctx) {
                     return isDefined(parameter.pipe) && isDefined(getPayload(ctx as T, parameter.scope, parameter.field))
-                    //  parameter.scope && (parameter.field ? ctx.payload[parameter.scope][parameter.field] : Object.keys(ctx.payload[parameter.scope]).length > 0)
                 },
                 resolve(parameter, ctx) {
-                    const value = getPayload(ctx as T, parameter.scope, parameter.field); //parameter.field ? ctx.payload[parameter.scope!][parameter.field] : ctx.payload[parameter.scope!];
+                    const value = getPayload(ctx as T, parameter.scope, parameter.field);
                     const pipe = getPipe(parameter, ctx);
                     if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
                     return pipe.transform(value, ...parameter.args || EMPTY)

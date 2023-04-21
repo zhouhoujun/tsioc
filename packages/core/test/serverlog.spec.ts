@@ -49,7 +49,7 @@ export class ServerBootTest {
     async canWriteLogFile() {
         const msg = 'log file test';
         this.ctx.getLogger('test').info(msg);
-        await lang.delay(15);
+        await lang.delay(20);
         expect(fs.existsSync(this.logfile)).toBeTruthy();
         const content = fs.readFileSync(this.logfile, 'utf-8');
         expect(isString(content)).toBeTruthy();
@@ -60,6 +60,6 @@ export class ServerBootTest {
     @After()
     async after() {
         await this.ctx.close();
-        // await del(this.logdir);
+        await del(this.logdir);
     }
 }
