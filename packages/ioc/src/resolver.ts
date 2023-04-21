@@ -19,10 +19,6 @@ export interface Parameter<T = any> extends ParameterMetadata {
      * provider type
      */
     provider?: Token<T>;
-    /**
-     * multi provider or not.
-     */
-    multi?: boolean;
 }
 
 /**

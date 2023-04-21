@@ -302,15 +302,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             }
         }
 
-        let canResolved = false;
+        let canResolved = meta.nullable;
         if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
                 result = r.resolve(meta, this, target);
                 if (!isNil(result)) {
                     canResolved = true;
                     return true;
-                } else if (meta.nullable) {
-                    canResolved = true;
                 }
             }
             return false
