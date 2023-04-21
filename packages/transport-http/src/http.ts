@@ -118,13 +118,14 @@ const defServerOpts = {
     middlewaresToken: HTTP_MIDDLEWARES,
     filtersToken: HTTP_EXECPTION_FILTERS,
     interceptors: [
-        LogInterceptor,
+        // LogInterceptor,
         // StatusInterceptorFilter,
         // PathHanlderFilter,
         // InOutInterceptorFilter,
         // HttpFinalizeFilter
     ],
     filters: [
+        LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
         ServerFinalizeFilter

@@ -3,7 +3,7 @@ import { Module } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
 import { TransportBackend } from './client/backend';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
-import { LogInterceptor } from './interceptors';
+import { LogInterceptor } from './logger';
 import {
     BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware,
     EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware

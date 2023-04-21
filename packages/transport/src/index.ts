@@ -12,7 +12,7 @@ export * from './utils';
 
 export * from './asset.ctx';
 export * from './asset.pdr';
-export * from './interceptors';
+export * from './logger';
 export * from './middlewares';
 
 export * from './impl';

@@ -55,7 +55,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
                     this.options.listenOpts = { port };
                 }
                 this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
-                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://127.0.0.1:${port}`, '!')
+                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
                 this._server.listen(port, listeningListener);
             }
         } else {
@@ -64,7 +64,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
                 this.options.listenOpts = opts;
             }
             this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
-            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host}:${opts?.port}${opts?.path ?? ''}`, '!');
+            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             this._server.listen(opts, listeningListener);
         }
         return this;
