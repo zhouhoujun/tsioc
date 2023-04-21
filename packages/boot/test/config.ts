@@ -29,7 +29,7 @@ export default {
         logging: false  // 日志
     },
     boot: {
-        serviceType: 'http2',
+        protocol: 'http2',
         // default load controllers from.
         controllers: ['./controllers/**/*.(ts|js)'],
     }

@@ -1,9 +1,9 @@
-import { ClassType, ctorName, Inject, lang, refl, Type } from '@tsdi/ioc';
+import { ClassType, ctorName, Injectable, lang, refl, Type } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
 import { Log, Logger } from '@tsdi/logs';
-import { EntityManager, getManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
-import { DEFAULT_CONNECTION } from './objectid.pipe';
+import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
+import { TypeormAdapter } from './TypeormAdapter';
 
 export class TypeormTransactionStatus extends TransactionStatus {
 
@@ -32,19 +32,17 @@ export class TypeormTransactionStatus extends TransactionStatus {
             this.logger.debug('begin transaction of', joinPoint?.fullName, 'active:', entityManager.queryRunner?.isTransactionActive, 'isolation:', isolation, 'propagation:', propagation);
             joinPoint.setValue(EntityManager, entityManager);
 
-            joinPoint.params?.length && targetRef.paramDefs.get(joinPoint.methodName!)?.filter(dec => {
-                if (dec.decor === InjectRepository) {
-                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
-                } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
-                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
-                } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager))
-                }
-            });
-
             const context = {} as any;
             targetRef.defs.forEach(dec => {
-                if (dec.decorType === 'property') {
+                if (dec.decorType === 'parameter' && dec.propertyKey === joinPoint.methodName) {
+                    if (dec.decor === InjectRepository) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
+                    } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
+                    } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager))
+                    }
+                } else if (dec.decorType === 'property') {
                     if (dec.decor === InjectRepository) {
                         context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
                     } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
@@ -77,9 +75,9 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
         const withNewTransaction = () => {
             if (isolation) {
-                return getManager(connection).transaction(isolation as any, runInTransaction)
+                return joinPoint.get(TypeormAdapter).getConnection(connection).manager.transaction(isolation as any, runInTransaction)
             } else {
-                return getManager(connection).transaction(runInTransaction)
+                return joinPoint.get(TypeormAdapter).getConnection(connection).manager.transaction(runInTransaction)
             }
         };
 
@@ -149,16 +147,16 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
 }
 
+@Injectable()
 export class TypeormTransactionManager extends TransactionManager {
 
     constructor(
-        @Inject(DEFAULT_CONNECTION, { nullable: true }) private conn: string,
         @Log() private logger: Logger) {
         super()
     }
 
     async getTransaction(definition: TransactionalMetadata): Promise<TypeormTransactionStatus> {
-        return new TypeormTransactionStatus({ connection: this.conn, ...definition }, this.logger)
+        return new TypeormTransactionStatus({ ...definition }, this.logger)
     }
 
     async commit(status: TypeormTransactionStatus): Promise<void> {

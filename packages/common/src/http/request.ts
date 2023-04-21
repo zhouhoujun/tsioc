@@ -1,6 +1,6 @@
 
 import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/core';
-import { isString, _tybool, _tynum, _tyobj, InvocationContext } from '@tsdi/ioc';
+import { isString, InvocationContext, EMPTY_OBJ } from '@tsdi/ioc';
 import { HttpParams } from './params';
 
 
@@ -108,7 +108,7 @@ export class HttpRequest<T = any> implements TransportRequest {
      */
     readonly urlWithParams: string;
 
-    readonly context: InvocationContext<any>|undefined;
+    readonly context: InvocationContext<any>;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: ReqHeaders,
@@ -158,22 +158,22 @@ export class HttpRequest<T = any> implements TransportRequest {
         this.method = method.toUpperCase();
         // Next, need to figure out which argument holds the HttpRequestInit
         // options, if any.
-        let options: HttpRequestInit | undefined;
+        let options: HttpRequestInit;
 
         // Check whether a body argument is expected. The only valid way to omit
         // the body argument is to use a known no-body method like GET.
         if (mightHaveBody(this.method) || !!fourth) {
             // Body is the third argument, options are the fourth.
             this.body = (third !== undefined) ? third as T : null;
-            options = fourth
+            options = fourth || EMPTY_OBJ;
         } else {
             // No body required, options are the third argument. The body stays null.
             options = third as HttpRequestInit
         }
 
         
-        this.observe = options?.observe || 'body';
-        this.context = options?.context;
+        this.observe = options.observe || 'body';
+        this.context = options.context!;
         // If options have been passed, interpret them.
         if (options) {
             // Normalize reportProgress and withCredentials.
@@ -246,7 +246,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             return this.body.toString()
         }
         // Check whether the body is an object or array, and serialize with JSON if so.
-        if (typeof this.body === _tyobj || typeof this.body === _tybool ||
+        if (typeof this.body === 'object' || typeof this.body === 'boolean' ||
             Array.isArray(this.body)) {
             return JSON.stringify(this.body)
         }
@@ -289,8 +289,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.
         const type = typeof this.body;
-        if (type === _tyobj || type === _tynum ||
-            type === _tybool) {
+        if (type === 'object' || type === 'number' || type === 'boolean') {
             return 'application/json'
         }
         // No type could be inferred.

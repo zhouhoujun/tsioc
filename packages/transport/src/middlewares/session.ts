@@ -1,4 +1,4 @@
-import { Middleware, ServerEndpointContext } from '@tsdi/core';
+import { AssetContext, Middleware } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 
 
@@ -99,7 +99,7 @@ const defOpts = {
  * session middleware.
  */
 @Injectable()
-export class SessionMiddleware implements Middleware {
+export class SessionMiddleware implements Middleware<AssetContext> {
 
     private options: SessionOptions;
     constructor(@Nullable() options: SessionOptions) {
@@ -109,9 +109,10 @@ export class SessionMiddleware implements Middleware {
         }
     }
 
-    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         ctx.setValue(SessionOptions, this.options);
-        const se = ctx.resolve(Session);
+        const se = ctx.get(Session);
+        if(!se) return await next();
         await se.load();
         try {
             await next();

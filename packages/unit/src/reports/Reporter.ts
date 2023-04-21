@@ -3,7 +3,7 @@ import { SuiteDescribe, ICaseDescribe } from './interface';
 
 
 /**
- * unit report mutil token.
+ * unit report multi token.
  */
 export const UNIT_REPORTES = tokenId<Reporter[]>('UNIT_REPORTES');
 

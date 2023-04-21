@@ -1,7 +1,7 @@
-import { ArgumentExecption, Injectable, MissingParameterExecption, Module } from '@tsdi/ioc';
+import { ArgumentExecption, Inject, Injectable, Injector, MissingParameterExecption, Module } from '@tsdi/ioc';
 import expect = require('expect');
-import { lastValueFrom } from 'rxjs';
-import { Application, ApplicationContext, ExecptionContext, PayloadApplicationEvent } from '../src';
+import { catchError, lastValueFrom, of } from 'rxjs';
+import { Application, ApplicationContext, ExecptionContext, ExecptionFilter, PayloadApplicationEvent } from '../src';
 import { Dispose, EventHandler, ExecptionHandler, Payload, Runner, Shutdown, Start } from '../src/metadata';
 
 
@@ -72,6 +72,8 @@ class TestService {
 @Module({
     imports: [
     ],
+    providers:[
+    ],
     declarations: [
         TestService,
         ExecptionHandlers
@@ -98,7 +100,7 @@ describe('Application Event Execption', () => {
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
         // console.log(runner.instance);
-        expect(testServiceRef!.getInstance().started).toBeTruthy();
+        expect(testServiceRef.getInstance().started).toBeTruthy();
 
     });
 
@@ -117,7 +119,7 @@ describe('Application Event Execption', () => {
 
     it('payload filed transport parameter arguments message execption', async () => {
 
-        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }));
+        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }).pipe(catchError(err=> of(err))));
         expect(result).toBeInstanceOf(MissingParameterExecption);
 
         expect((result as MissingParameterExecption).message.indexOf('name: "age"')).toBeGreaterThan(1);

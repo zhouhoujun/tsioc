@@ -1,13 +1,12 @@
 import { Abstract, Class, InvocationContext, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
-import { EndpointService } from './EndpointService';
-import { BootstrapOption } from './endpoints/endpoint.factory';
-import { Filter } from './filters/filter';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
+import { Filter } from './filters/filter';
 import { PipeTransform } from './pipes/pipe';
+import { EndpointOptions, EndpointService } from './endpoints/endpoint.service';
 
 /**
- * Application runner.
+ * Application runners.
  */
 @Abstract()
 export abstract class ApplicationRunners implements EndpointService, OnDestroy {
@@ -15,7 +14,7 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: BootstrapOption<TArg>): ReflectiveRef<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: EndpointOptions<TArg>): ReflectiveRef<T>;
 
   /**
    * detach runner
@@ -61,13 +60,13 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
     * @param interceptor 
     * @param order 
     */
-  abstract useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
+  abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
   /**
    * use filter
    * @param filter 
    * @param order 
    */
-  abstract useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+  abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 
   /**
    * destroy.

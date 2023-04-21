@@ -1,9 +1,9 @@
-import { ApplicationContext, EnvironmentOption } from '@tsdi/core';
+import { ApplicationArguments, ApplicationContext, EnvironmentOption } from '@tsdi/core';
 import { Abstract, Type } from '@tsdi/ioc';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 
 @Abstract()
-export abstract class BootApplicationContext extends ApplicationContext {
+export abstract class BootApplicationContext<T = any, TArg = ApplicationArguments> extends ApplicationContext<T, TArg> {
     /**
      * get application global configuration of type {@link Configuration}.
      */
@@ -21,12 +21,12 @@ export abstract class BootApplicationContext extends ApplicationContext {
 /**
  * boot context.
  */
- export const BootContext = BootApplicationContext;
+export const BootContext = BootApplicationContext;
 
 /**
  * BootApplication Environment option.
  */
-export interface BootEnvironmentOption extends EnvironmentOption {
+export interface BootEnvironmentOption<TArg = any> extends EnvironmentOption<TArg> {
 
     /**
      * custom configures
@@ -39,7 +39,7 @@ export interface BootEnvironmentOption extends EnvironmentOption {
 /**
  * BootApplicationOption option.
  */
-export interface BootApplicationOption<T = any> extends BootEnvironmentOption {
+export interface BootApplicationOption<T = any, TArg = any> extends BootEnvironmentOption<TArg> {
     /**
      * module type.
      *

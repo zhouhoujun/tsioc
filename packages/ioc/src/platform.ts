@@ -1,17 +1,17 @@
 import { Abstract } from './metadata/fac';
+import { Class } from './metadata/type';
 import { Handle } from './handle';
 import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
 import { ClassType, Type } from './types';
-import { Class } from './metadata/type';
 import { ProviderType } from './providers';
 import { ModuleRef } from './module.ref';
 
 
 /**
- * platform of {@link Container}.
+ * platform of {@link Injector}.
  */
 @Abstract()
 export abstract class Platform implements OnDestroy {
@@ -49,7 +49,7 @@ export abstract class Platform implements OnDestroy {
      * get injector the type registered in.
      * @param scope
      */
-    abstract getInjector(scope: InjectorScope): Injector;
+    abstract getInjector<T extends Injector = Injector>(scope?: InjectorScope, defaultInjector?: Injector): T;
     /**
      * remove injector of scope.
      * @param scope 
@@ -96,12 +96,17 @@ export abstract class Platform implements OnDestroy {
      */
     abstract getHandle<T extends Handle>(target: Token<Action>): T;
     /**
-     * set value.
+     * set action value.
      * @param token 
      * @param value 
      * @param provider 
      */
     abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    /**
+     * get action value
+     * @param token 
+     * @param notFoundValue 
+     */
     abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
     /**
      * destroy hook.

@@ -24,9 +24,9 @@ export abstract class LoggerManager {
     /**
      * config logger context.
      *
-     * @param {LoggerConfig} config
+     * @param {LoggerConfig|string} config
      */
-    abstract configure(config: LoggerConfig): void;
+    abstract configure(config: LoggerConfig | string): void;
     /**
      * get logger.
      *

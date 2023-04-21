@@ -18,8 +18,8 @@ import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ReflectiveFactory } from '../reflective';
-import { DefaultReflectiveFactory, hasContext } from './reflective';
-import { createContext, InvocationContext, InvokeArguments } from '../context';
+import { ReflectiveResolverImpl, hasContext } from './reflective';
+import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
 /**
@@ -50,7 +50,7 @@ export class DefaultInjector extends Injector {
             scope = this.scope = Scopes.platform
         }
         this.initScope(scope);
-        this.inject(providers)
+        this.inject(providers);
     }
 
     protected initScope(scope?: InjectorScope) {
@@ -154,7 +154,7 @@ export class DefaultInjector extends Injector {
 
     protected registerReflect(platform: Platform, def: Class, option?: RegOption) {
         const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
-        (providedIn ? platform.getInjector(providedIn) as DefaultInjector : this).processRegister(platform, def, option)
+        platform.getInjector<DefaultInjector>(providedIn, this).processRegister(platform, def, option)
     }
 
     protected processRegister(platform: Platform, def: Class, option?: RegOption) {
@@ -334,7 +334,7 @@ export class DefaultInjector extends Injector {
     }
 
 
-    resolve<T, TArg>(token: Token<T>, option?: InvokeArguments<TArg>): T;
+    resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
     resolve<T>(token: Token<T>, context?: InvocationContext): T;
     resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
@@ -391,7 +391,7 @@ export class DefaultInjector extends Injector {
     }
 
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeArguments<any>): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
@@ -438,8 +438,8 @@ export class DefaultInjector extends Injector {
             }
         }
         tgRefl = tgRefl ?? get(targetClass);
-        const factory = this.get(ReflectiveFactory).create(tgRefl, this);
-        return factory.invoke(propertyKey, context, instance)
+        const refti = this.get(ReflectiveFactory).create(tgRefl, this);
+        return refti.invoke(propertyKey, context, instance)
     }
 
     protected assertNotDestroyed(): void {
@@ -820,9 +820,9 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
-    const factory = new DefaultReflectiveFactory();
+    const factory = new ReflectiveResolverImpl();
     container.setValue(ReflectiveFactory, factory);
-    container.onDestroy(() => factory.destroy())
+    // container.onDestroy(factory)
     // bing action.
     container.platform().registerAction(
         DesignLifeScope,

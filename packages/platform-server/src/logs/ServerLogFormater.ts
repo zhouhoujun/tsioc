@@ -1,17 +1,19 @@
 import { Refs, Static } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
-import { LogAspect, LogFormater, Level, Logger } from '@tsdi/logs';
+import { LogAspect, JoinpointFormater, Level, Logger, DefaultJoinpointFormater, ConsoleLog } from '@tsdi/logs';
 import * as chalk from 'chalk';
 
 
 @NonePointcut()
 @Static()
-@Refs(LogAspect, LogFormater)
-export class ServerLogFormater extends LogFormater {
+@Refs(LogAspect, JoinpointFormater)
+export class ServerJoinpointLogFormater extends DefaultJoinpointFormater {
 
 
     format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[] {
-
+        if (!(logger instanceof ConsoleLog)) {
+            return super.format(joinPoint, level, logger, ...messages);
+        }
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:

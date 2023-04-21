@@ -1,29 +1,17 @@
-import { Injectable, InvocationContext, Nullable, promisify, ProviderType } from '@tsdi/ioc';
+import { createContext, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import {
-    RequestMethod, OnDispose, RequestOptions, ClientEndpointContext,
-    ResponseAs, mths, ReqHeaders, ReqHeadersLike
+    RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
 } from '@tsdi/core';
-import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpBackend } from '@tsdi/common';
-import { Observable } from 'rxjs';
+import { ev } from '@tsdi/transport';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
+import { mergeMap, Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { ev, TransportClient } from '@tsdi/transport';
-import { HttpPathInterceptor } from './path';
-import { HttpBodyInterceptor } from './body';
-import { HttpClientOpts, HTTP_INTERCEPTORS, CLIENT_HTTP2SESSION, HTTP_CLIENT_EXECPTION_FILTERS } from './option';
-import { HTTP_CLIENT_PROVIDERS } from './providers';
-import { HttpBackend2 } from './backend';
+import { HttpGuardsHandler } from './handler';
+import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option';
 
 
-
-
-const defOpts = {
-    backend: { provide: HttpBackend, useClass: HttpBackend2 },
-    interceptorsToken: HTTP_INTERCEPTORS,
-    interceptors: [HttpPathInterceptor, HttpBodyInterceptor],
-    filtersToken: HTTP_CLIENT_EXECPTION_FILTERS,
-} as HttpClientOpts;
 
 
 export interface HttpRequestOpts extends RequestOptions {
@@ -47,27 +35,37 @@ const NONE = {} as http2.ClientHttp2Session;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends TransportClient<http2.ClientHttp2Session, string, HttpReqOptions, HttpClientOpts, HttpRequest, HttpEvent> implements OnDispose {
+export class Http extends Client<HttpRequest, HttpEvent> {
 
-    constructor(@Nullable() option: HttpClientOpts) {
-        super(option)
-
-    }
-
-    protected override getDefaultOptions(): HttpClientOpts {
-        return defOpts
-    }
-
-    protected override defaultProviders(): ProviderType[] {
-        return HTTP_CLIENT_PROVIDERS
-    }
-
-    protected override initContext(options: HttpClientOpts): void {
-        super.initContext(options);
-        if (!options.authority) {
+    constructor(
+        readonly handler: HttpGuardsHandler,
+        @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
+        super()
+        if (!option?.authority) {
             this.connection = NONE;
         }
-        this.context.setValue(HttpClientOpts, options);
+    }
+
+    private connection?: http2.ClientHttp2Session | null;
+    private $conn?: Observable<http2.ClientHttp2Session> | null;
+    protected connect(): Observable<any> | Promise<any> {
+        if (this.connection && this.isValid(this.connection)) {
+            return of(this.$conn);
+        }
+
+        if (this.$conn) return this.$conn;
+
+        const opts = this.option;
+        this.$conn = of(this.createConnection(opts))
+            .pipe(
+                mergeMap(connection => this.onConnect(connection, opts)),
+                mergeMap(async connection => {
+                    this.connection = connection;
+                    this.$conn = null;
+                    return connection;
+                })
+            );
+        return this.$conn;
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {
@@ -79,15 +77,33 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         return http2.connect(opts.authority!, opts.options);
     }
 
-    protected override createContext(req: HttpRequest | string, options?: HttpReqOptions & ResponseAs): ClientEndpointContext {
-        const ctx = super.createContext(req, options);
-        if (this.connection && this.connection !== NONE) {
-            ctx.setValue(CLIENT_HTTP2SESSION, this.connection);
-        }
-        return ctx;
+    protected onConnect(connection: http2.ClientHttp2Session, opts: HttpClientOpts): Observable<http2.ClientHttp2Session> {
+        return new Observable((observer) => {
+            let cleaned = false;
+            const onError = (err: Error) => observer.error(err);
+            const onConnect = () => {
+                observer.next(connection);
+                observer.complete();
+            };
+            const onClose = () => {
+                observer.complete();
+            }
+            connection.on(ev.CONNECT, onConnect)
+                .on(ev.ERROR, onError)
+                .on(ev.END, onClose)
+                .on(ev.CLOSE, onClose);
+
+            return () => {
+                if (cleaned) return;
+                cleaned = true;
+                connection.off(ev.CONNECT, onConnect)
+                    .off(ev.ERROR, onError)
+                    .off(ev.CLOSE, onClose)
+            };
+        })
     }
 
-    protected override buildRequest(context: ClientEndpointContext, first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
+    protected override buildRequest(first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
         // First, check whether the primary argument is an instance of `HttpRequest`.
         if (first instanceof HttpRequest) {
             // It is. The other arguments must be undefined (per the signatures) and can be
@@ -117,12 +133,18 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
                 }
             }
 
+            const context = options.context ?? createContext(this.handler.injector, options);
+            context.setValue(Client, this);
+            if (this.connection && this.connection !== NONE) {
+                context.setValue(CLIENT_HTTP2SESSION, this.connection);
+            }
+
             // Construct the request.
-            return new HttpRequest(options.method ?? mths.GET, url!, (options.body !== undefined ? options.body : null), {
-                context,
+            return new HttpRequest(options.method ?? GET, url!, options.body ?? options.payload ?? null, {
                 ...options,
                 headers,
                 params,
+                context,
                 reportProgress: options.reportProgress,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json'
@@ -438,7 +460,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         body?: any | null,
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.DELETE));
+        return this.send<any>(url, merge(options, DELETE));
     }
 
 
@@ -733,7 +755,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.GET))
+        return this.send<any>(url, merge(options, GET))
     }
 
 
@@ -1041,7 +1063,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
 
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.HEAD))
+        return this.send<any>(url, merge(options, HEAD))
     }
 
     /**
@@ -1088,7 +1110,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
      */
     jsonp<T>(url: string, callbackParam: string): Observable<T> {
         return this.send<any>(url, {
-            method: mths.JSONP,
+            method: JSONP,
             params: new HttpParams().append(callbackParam, 'JSONP_CALLBACK'),
             observe: 'body',
             responseType: 'json',
@@ -1729,7 +1751,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
 
     } = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.PATCH, body))
+        return this.send<any>(url, merge(options, PATCH, body))
     }
 
     /**
@@ -2048,7 +2070,7 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } & HttpNodeOpts = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.POST, body))
+        return this.send<any>(url, merge(options, POST, body))
     }
 
     /**
@@ -2362,9 +2384,10 @@ export class Http extends TransportClient<http2.ClientHttp2Session, string, Http
         reportProgress?: boolean,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
     } & HttpNodeOpts = {}): Observable<any> {
-        return this.send<any>(url, merge(options, mths.PUT, body))
+        return this.send<any>(url, merge(options, PUT, body))
     }
 
+    @Shutdown()
     async close(): Promise<void> {
         if (this.connection) {
             if (this.connection === NONE) return;

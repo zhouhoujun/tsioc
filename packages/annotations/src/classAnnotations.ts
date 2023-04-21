@@ -68,7 +68,8 @@ export function iocAnnotations(contents: string): string {
                 const paramNames = node.parameters.map(param => {
                     return {
                         type: param.type?.getText(),
-                        name: param.name.getText()
+                        name: param.name.getText(),
+                        nullable: param.modifiers?.some(s => s.getText() === '?')
                     };
                 });
                 annations.methods[constructorName] = paramNames;
@@ -78,7 +79,8 @@ export function iocAnnotations(contents: string): string {
                 const params = node.parameters.map(param => {
                     return {
                         type: param.type?.getText(),
-                        name: param.name.getText()
+                        name: param.name.getText(),
+                        nullable: param.modifiers?.some(s => s.getText() === '?')
                     }
                 });
                 const method = node.name.getText();

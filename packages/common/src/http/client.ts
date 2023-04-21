@@ -1,5 +1,5 @@
 import { DELETE, GET, HEAD, HttpRequestMethod, JSONP, PATCH, POST, PUT, ReqHeaders, ReqHeadersLike } from '@tsdi/core';
-import { Injectable, InvocationContext, _tystr } from '@tsdi/ioc';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
 import { HttpParams } from './params';
@@ -491,7 +491,7 @@ export class HttpClient {
                     case 'text':
                         return res$.pipe(map((res: HttpResponse<any>) => {
                             // Validate that the body is a string.
-                            if (res.body !== null && typeof res.body !== _tystr) {
+                            if (res.body !== null && typeof res.body !== 'string') {
                                 throw new Error('Response is not a string.')
                             }
                             return res.body

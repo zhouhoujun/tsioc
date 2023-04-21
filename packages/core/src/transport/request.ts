@@ -1,7 +1,9 @@
-import { EMPTY_OBJ, InvocationContext, isNumber, isPlainObject, isString } from '@tsdi/ioc';
-import { IncomingHeaders, ReqHeaders } from './headers';
+import { Abstract, EMPTY_OBJ, InvocationContext } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+import { IncomingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
-import { Pattern, RequestMethod } from './protocols';
+import { Pattern, patternToPath } from './pattern';
+import { RequestMethod } from './protocols';
 
 
 /**
@@ -16,7 +18,7 @@ export class TransportRequest<T = any> {
     public body: T | null;
     readonly headers: ReqHeaders;
 
-    readonly context: InvocationContext | undefined;
+    readonly context: InvocationContext;
 
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response';
@@ -28,7 +30,7 @@ export class TransportRequest<T = any> {
         this.pattern = pattern;
         this.method = options.method;
         this.params = new TransportParams(options);
-        this.context = options.context;
+        this.context = options.context!;
         this.responseType = options.responseType ?? 'json';
         this.reportProgress = !!options.reportProgress;
         this.withCredentials = !!options.withCredentials;
@@ -39,40 +41,15 @@ export class TransportRequest<T = any> {
 
 }
 
-/**
- * Transforms the Pattern to Route.
- * 1. If Pattern is a `string`, it will be returned as it is.
- * 2. If Pattern is a `number`, it will be converted to `string`.
- * 3. If Pattern is a `JSON` object, it will be transformed to Route. For that end,
- * the function will sort properties of `JSON` Object and creates `route` string
- * according to the following template:
- * <key1>:<value1>/<key2>:<value2>/.../<keyN>:<valueN>
- *
- * @param  {Pattern} pattern - client pattern
- * @returns string
- */
-export function patternToPath(pattern: Pattern): string {
-    if (isString(pattern) || isNumber(pattern)) {
-        return `${pattern}`;
-    }
-    if (!isPlainObject(pattern)) {
-        return pattern;
-    }
 
-    const sortedKeys = Object.keys(pattern).sort((a, b) => a.localeCompare(b));
-
-    // Creates the array of Pattern params from sorted keys and their corresponding values
-    const sortedPatternParams = sortedKeys.map(key => {
-        let partialRoute = `"${key}":`;
-        partialRoute += isString(pattern[key])
-            ? `"${patternToPath(pattern[key])}"`
-            : patternToPath(pattern[key]);
-        return partialRoute;
-    });
-
-    const route = sortedPatternParams.join(',');
-    return `{${route}}`;
+@Abstract()
+export abstract class Redirector<TStatus = number> {
+    /**
+     * redirect.
+     */
+    abstract redirect<T>(req: TransportRequest, status: TStatus, headers: ResHeaders): Observable<T>
 }
+
 
 /**
  * restful request option.
@@ -109,6 +86,9 @@ export interface RequestOptions {
     | ReadonlyArray<[string, string | number | boolean]>
     | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
 
+    /**
+     * parameter codec.
+     */
     encoder?: ParameterCodec;
 }
 

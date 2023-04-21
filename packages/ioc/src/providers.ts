@@ -1,8 +1,8 @@
 import { Modules, Type, TypeOf } from './types';
 import { Token } from './tokens';
 import { Injector } from './injector';
-import { isArray, isDefined, isType } from './utils/chk';
 import { isPlainObject } from './utils/obj';
+import { isArray, isDefined, isType } from './utils/chk';
 
 /**
  * provide for {@link Injector }.
@@ -234,8 +234,16 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
     return target && isType(target.module) && isArray(target.providers)
 }
 
-export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number): StaticProvider<T> {
-    if (isType(useOf)) {
+/**
+ * parse to provider
+ * @param provide 
+ * @param useOf 
+ * @param multi 
+ * @param multiOrder 
+ * @returns 
+ */
+export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): StaticProvider<T> {
+    if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
         return { provide, useClass: useOf, multi, multiOrder };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)

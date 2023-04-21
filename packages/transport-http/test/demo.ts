@@ -1,9 +1,10 @@
-import { Injectable, lang, tokenId } from '@tsdi/ioc';
+import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Module,
-    ServerEndpointContext, Middleware, MiddlewareChain, BadRequestExecption, EndpointFilter, BadRequestStatus, OkStatus, EndpointHanlder
+    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, 
+    Middleware, BadRequestExecption,  EndpointHanlder, EndpointContext, TransportContext, compose, NEXT
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
+import { HttpContext } from '../src/server/context';
 
 
 @RouteMapping('/device')
@@ -16,7 +17,7 @@ export class DeviceController {
     }
 
     @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
@@ -70,20 +71,20 @@ export class DeviceController {
 
     }
 
-    @Handle(/dd./)
+    @Handle('dd*')
     async subMessage1() {
 
     }
 
-    @EndpointHanlder(OkStatus)
-    async OkEndpoint() {
-        console.log('OkStatus')
-    }
+    // @EndpointHanlder(OkStatus)
+    // async OkEndpoint() {
+    //     console.log('OkStatus')
+    // }
 
-    @EndpointHanlder(BadRequestStatus)
-    async badReqEndpoint() {
-        console.log('BadRequestStatus')
-    }
+    // @EndpointHanlder(BadRequestStatus)
+    // async badReqEndpoint() {
+    //     console.log('BadRequestStatus')
+    // }
 
 
 }
@@ -101,10 +102,12 @@ export class DeviceController {
 
 // }
 
-@Handle('/hdevice')
+@Handle({
+    route:'/hdevice'
+})
 export class DeviceQueue implements Middleware {
 
-    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: HttpContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -112,7 +115,7 @@ export class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await new MiddlewareChain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
@@ -134,10 +137,10 @@ export class DeviceQueue implements Middleware {
 @Injectable()
 export class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -149,9 +152,9 @@ export class DeviceStartupHandle implements Middleware {
 @Injectable()
 export class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.body.type)
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);

@@ -9,6 +9,7 @@ import { SecureContextOptions } from 'tls';
  * application Configuration.
  *
  */
+@Abstract()
 export abstract class ApplicationConfiguration implements Record<string, any> {
     /**
      * record
@@ -49,7 +50,7 @@ export abstract class ApplicationConfiguration implements Record<string, any> {
      *
      * @type {*}
      */
-    abstract logConfig?: LogConfigure;
+    abstract logConfig?: LogConfigure | LogConfigure[];
     /**
      * custom config key value setting.
      *
@@ -95,10 +96,10 @@ export interface BootServiceOptions extends SecureContextOptions, Record<string,
     /**
      * boot service type.
      */
-    serviceType: 'http2' | 'http1' | 'tcp' | 'amqp' | 'grpc' | 'mqtt' | 'modbus' | 'kafka' | 'nats' | 'redis' | 'ws' | Type;
+    protocol: 'http2' | 'http1' | 'tcp' | 'amqp' | 'grpc' | 'mqtt' | 'modbus' | 'kafka' | 'nats' | 'redis' | 'ws' | Type;
     /**
-     * service controllers.
-     * default  ['./controllers/**\/*.(ts|js)'],
+     * service controllers via dynamic loading. 
+     * simple as `['./controllers/**\/*.(ts|js)']`
      */
     controllers?: Array<string | Type>;
     /**
@@ -110,9 +111,9 @@ export interface BootServiceOptions extends SecureContextOptions, Record<string,
      */
     hostname?: string;
     /**
-     * subdomain offset.
+     * api global prefix.
      */
-    subdomainOffset?: number;
+    prefix?: number;
 }
 
 /**

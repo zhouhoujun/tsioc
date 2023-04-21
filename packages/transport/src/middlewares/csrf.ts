@@ -1,12 +1,11 @@
-import { AssetContext, ForbiddenExecption, Middleware, mths } from '@tsdi/core';
+import { AssetContext, ForbiddenExecption, GET, HEAD, Middleware, OPTIONS } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import * as Tokens from 'csrf';
 import { hdr } from '../consts';
 import { Session } from './session';
 
 
 @Abstract()
-export abstract class CsrfOptions implements Tokens.Options {
+export abstract class CsrfOptions {
     invalidTokenMessage?: string | ((ctx: AssetContext) => string);
     excludedMethods?: string[];
     disableQuery?: boolean;
@@ -23,20 +22,62 @@ export abstract class CsrfOptions implements Tokens.Options {
 
 const defOpts = {
     invalidTokenMessage: 'Invalid CSRF token',
-    excludedMethods: [mths.GET, mths.HEAD, mths.OPTIONS],
+    excludedMethods: [GET, HEAD, OPTIONS],
     disableQuery: false
 } as CsrfOptions;
 
 export const CSRF = tokenId<string>('CSRF');
 
+/**
+ * Csrf tokens.
+ */
+export interface Tokens {
+    /**
+     * Create a new CSRF token.
+     */
+    create(secret: string): string;
+
+    /**
+     * Create a new secret key.
+     */
+    secret(): Promise<string>;
+
+    /**
+     * Create a new secret key.
+     */
+    secret(callback: (err: Error | null, secret: string) => void): void;
+
+    /**
+     * Create a new secret key synchronously.
+     */
+    secretSync(): string;
+
+    /**
+     * Verify if a given token is valid for a given secret.
+     */
+    verify(secret: string, token: string): boolean;
+}
+
+/**
+ * csrf tokens factory.
+ */
+@Abstract()
+export abstract class CsrfTokensFactory {
+    /**
+     * create csrf tokens via options.
+     * @param options 
+     */
+    abstract create(options: CsrfOptions): Tokens;
+}
+
 @Injectable()
-export class CsrfMiddleware implements Middleware {
+export class CsrfMiddleware implements Middleware<AssetContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;
-    constructor(@Nullable() options: CsrfOptions) {
+    constructor(factory: CsrfTokensFactory, @Nullable() options: CsrfOptions) {
         this.options = { ...defOpts, ...options };
-        this.tokens = new Tokens(this.options);
+        this.tokens = factory.create(this.options);
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {

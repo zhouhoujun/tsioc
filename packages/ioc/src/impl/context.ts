@@ -7,10 +7,10 @@ import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '..
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
+import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
 import { ProviderType, toProvider } from '../providers';
-import { Execption } from '../execption';
 import { OperationInvoker } from '../operation';
 
 
@@ -142,13 +142,23 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected _payload?: T;
     /**
-     * the invocation payload.
+     * the invocation context payload.
+     * 
+     * 上下文负载对象
      */
     get payload(): T {
         if (!this._payload) {
             this._payload = this.injector.get(CONTEXT_PAYLOAD);
         }
         return this._payload!;
+    }
+
+    /**
+     * the invocation arguments.
+     * @deprecated use `payload` instead.
+     */
+    get arguments() {
+        return this.payload;
     }
 
     get used(): boolean {
@@ -161,6 +171,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * get value ify create by factory and register the value for the token.
+     * 
+     * 获取上下文中标记指令的值，如果没有注入，则根据工厂函数注入该标记指令，并返回值。
      * @param token the token to get value.
      * @param factory the factory to create value for token.
      * @returns the instance of token.
@@ -177,6 +189,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * has token in the context or not.
+     * 
+     * 上下文中是否有注入该标记指令
      * @param token the token to check.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns boolean.
@@ -190,6 +204,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
@@ -197,6 +213,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     get<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param context invcation context, type of {@link InvocationContext}.
      * @param flags inject flags, type of {@link InjectFlags}.
@@ -232,6 +250,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * set value.
+     * 
+     * 设置上下文中标记指令的实例值
      * @param token token
      * @param value value for the token.
      */
@@ -253,12 +273,21 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return meta.resolver
     }
 
+    /**
+     * resolve token.
+     * 
+     * 解析上下文中标记指令的实例值
+     * @param token 
+     * @returns 
+     */
     resolve<T>(token: Token<T>): T {
-        return this.resolveArgument({ provider: token }) as T
+        return this.resolveArgument({ provider: token }) as T;
     }
 
     /**
      * resolve the parameter value.
+     * 
+     * 解析调用参数
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
@@ -273,15 +302,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             }
         }
 
-        let canResolved = false;
+        let canResolved = meta.nullable;
         if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
                 result = r.resolve(meta, this, target);
                 if (!isNil(result)) {
                     canResolved = true;
                     return true;
-                } else if (meta.nullable) {
-                    canResolved = true;
                 }
             }
             return false
@@ -422,7 +449,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
         },
         {
             canResolve(parameter, ctx) {
-                if (parameter.mutil || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
+                if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
                     || getDef(parameter.provider).abstract) return false;
                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true
             },

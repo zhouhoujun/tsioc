@@ -1,12 +1,12 @@
-import { Abstract, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { GuardHandler } from '../handlers/guards';
 import { Middleware, MiddlewareFn } from './middleware';
-import { EndpointOptions } from '../EndpointService';
-import { Pattern } from './protocols';
+import { EndpointOptions } from '../endpoints/endpoint.service';
 
 /**
  * Route.
  */
-export interface Route<TArg= any> extends EndpointOptions<TArg> {
+export interface Route<TArg = any> extends EndpointOptions<TArg> {
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.
@@ -43,6 +43,11 @@ export interface Route<TArg= any> extends EndpointOptions<TArg> {
      * Can be empty if child routes specify controller.
      */
     controller?: Type;
+
+    /**
+     * ednpoint.
+     */
+    endpoint?: TypeOf<GuardHandler>;
     /**
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
@@ -62,13 +67,7 @@ export interface Route<TArg= any> extends EndpointOptions<TArg> {
 }
 
 export type LoadChildren = () => any;
-export type Routes = Route<any>[];
-
-
-@Abstract()
-export abstract class PatternFormatter {
-    abstract format(route: Pattern, method?: string, prefix?: string, version?: string): string;
-}
+export type Routes<T = any> = Route<T>[];
 
 /**
  * ROUTES
@@ -80,7 +79,7 @@ const staExp = /^\//;
 const endExp = /\/$/;
 
 export function joinprefix(...paths: (string | undefined)[]) {
-    const joined = paths.filter(p => p)
+    const joined = paths
         .map(p => {
             if (!p) return '';
             p = p.trim();
@@ -88,6 +87,7 @@ export function joinprefix(...paths: (string | undefined)[]) {
             const end = endExp.test(p) ? p.length - 1 : p.length;
             return p.slice(start, end)
         })
+        .filter(p => p)
         .join('/');
 
     return '/' + joined

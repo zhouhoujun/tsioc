@@ -1,13 +1,12 @@
-import { MiddlewareLike, mths, Throwable, ServerEndpointContext, Status, ListenOpts, ServerContext } from '@tsdi/core';
+import { MiddlewareLike, Throwable, ListenOpts, TransportContext, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { hdr, append, parseTokenList, AssetServerContext } from '@tsdi/transport';
+import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { HttpError, HttpInternalServerError } from './../errors';
-import { HttpServer } from './server';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -17,11 +16,11 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AssetServerContext<HttpServRequest, HttpServResponse> implements Throwable {
+export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number> implements Throwable {
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
-        if (!this.target.proxy) return httpPtl;
+        if (!this.proxy) return httpPtl;
         const proto = this.getHeader(hdr.X_FORWARDED_PROTO);
         return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
     }
@@ -43,7 +42,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     get update(): boolean {
-        return this.method === mths.PUT;
+        return this.method === PUT;
     }
 
     isAbsoluteUrl(url: string): boolean {
@@ -69,6 +68,31 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         }
     }
 
+    get status(): HttpStatusCode {
+        return this.response.statusCode
+    }
+
+    set status(code: HttpStatusCode) {
+        if (this.sent) return;
+
+        assert(Number.isInteger(code), 'status code must be a number');
+        assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
+        this._explicitStatus = true;
+        this.response.statusCode = code;
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
+        if (this.body && this.vaildator.isEmpty(code)) this.body = null;
+    }
+
+    get statusMessage() {
+        return this.response.statusMessage || statusMessage[this.status]
+    }
+
+    set statusMessage(msg: string) {
+        if (this.request.httpVersionMajor < 2) {
+            this.response.statusMessage = msg
+        }
+    }
+
     /**
      * When `httpServer.proxy` is `true`, parse
      * the "X-Forwarded-For" ip address list.
@@ -82,13 +106,13 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
      */
 
     get ips() {
-        const proxy = (this.target as HttpServer)?.proxy;
-        const val = this.getHeader((this.target as any)?.proxyIpHeader) as string;
+        const proxy = !!this.proxy;
+        const val = this.getHeader(this.proxy?.proxyIpHeader ?? '') as string;
         let ips = (proxy && val)
             ? val.split(/\s*,\s*/)
             : [];
-        if ((this.target as HttpServer)?.maxIpsCount > 0) {
-            ips = ips.slice(-(this.target as any)?.maxIpsCount)
+        if ((this.proxy?.maxIpsCount ?? 0) > 0) {
+            ips = ips.slice(-(this.proxy?.maxIpsCount ?? 0))
         }
         return ips
     }
@@ -136,10 +160,10 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
      */
     get fresh(): boolean {
         const method = this.methodName;
-        const s = this.status.status;
+        const s = this.status;
 
         // GET or HEAD for weak freshness validation only
-        if (mths.GET !== method && mths.HEAD !== method) return false;
+        if (GET !== method && HEAD !== method) return false;
 
         // 2xx or 304 as per rfc2616 14.26
         if ((s >= 200 && s < 300) || 304 === s) {
@@ -204,15 +228,6 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
         return true
     }
 
-    protected override onStatusChanged(status: Status<number>): void {
-        const code = status.status;
-        assert(Number.isInteger(code), 'status code must be a number');
-        assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
-        this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) {
-            this.response.statusMessage = statusMessage[code as HttpStatusCode];
-        }
-    }
 
     protected override onNullBody(): void {
         this._explicitNullBody = true;
@@ -274,7 +289,7 @@ export class HttpContext extends AssetServerContext<HttpServRequest, HttpServRes
     }
 
     protected isSelf(token: Token) {
-        return token === HttpContext || token === AssetServerContext || token == ServerContext || token === ServerEndpointContext;
+        return token === HttpContext || token === AbstractAssetContext || token == TransportContext;
     }
 
 
@@ -286,7 +301,7 @@ const httpPtl = 'http';
 const httptl = /^https?:\/\//i;
 const urlsplit = /\s*,\s*/;
 const no_cache = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
-const methods = [mths.GET, mths.HEAD, mths.PUT, mths.DELETE, mths.OPTIONS, mths.TRACE];
+const methods = [GET, HEAD, PUT, DELETE, OPTIONS, TRACE];
 
 
 function parseStamp(date?: string | number): number {

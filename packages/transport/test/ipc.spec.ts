@@ -1,5 +1,5 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -7,6 +7,7 @@ import path = require('path');
 import del = require('del');
 import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
 import { RedirectResult } from '../src';
+import { LoggerModule } from '@tsdi/logs';
 
 
 @RouteMapping('/device')
@@ -73,7 +74,7 @@ export class DeviceController {
 
     }
 
-    @Handle(/dd./, 'tcp')
+    @Handle('dd*', 'tcp')
     async subMessage1() {
 
     }

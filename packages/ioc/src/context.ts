@@ -11,10 +11,11 @@ import { OperationInvoker } from './operation';
 
 /**
  * The context for the {@link OperationInvoker invocation of an operation}.
+ * 
+ * 执行操作调用的接口上下文
  */
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
-    done?: boolean;
     /**
      * is this context injected in object or not.
      */
@@ -52,6 +53,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get payload(): T;
     /**
      * get value ify create by factory and register the value for the token.
+     * 
+     * 获取上下文中标记指令的值，如果没有注入，则根据工厂函数注入该标记指令，并返回值。
      * @param token the token to get value.
      * @param factory the factory to create value for token.
      * @returns the instance of token.
@@ -59,6 +62,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract getValueify<T>(token: Token<T>, factory: () => T): T;
     /**
      * has token in the context or not.
+     * 
+     * 上下文中是否有注入该标记指令
      * @param token the token to check.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns boolean.
@@ -66,6 +71,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract has(token: Token, flags?: InjectFlags): boolean;
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
@@ -73,6 +80,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get<T>(token: Token<T>, flags?: InjectFlags): T
     /**
      * get token value.
+     * 
+     * 获取上下文中标记指令的实例值
      * @param token the token to get value.
      * @param context invcation context, type of {@link InvocationContext}.
      * @param flags inject flags, type of {@link InjectFlags}.
@@ -81,17 +90,23 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get<T>(token: Token<T>, context?: InvocationContext<any>, flags?: InjectFlags): T;
     /**
      * set value.
+     * 
+     * 设置上下文中标记指令的实例值
      * @param token token
      * @param value value for the token.
      */
     abstract setValue<T>(token: Token<T>, value: T): this;
     /**
      * resolve token in context.
+     * 
+     * 解析上下文中标记指令的实例值
      * @param token 
      */
     abstract resolve<T>(token: Token<T>): T;
     /**
      * resolve the parameter value.
+     * 
+     * 解析调用参数
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
@@ -99,15 +114,21 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null;
     /**
      * context destroyed or not.
+     * 
+     * 上下文销毁与否
      */
     abstract get destroyed(): boolean;
     /**
      * register callback on destroy.
+     * 
+     * 传回调函数参数则注册销毁回调函数，否则执行销毁操作
      * @param callback destroy callback
      */
     abstract onDestroy(callback?: DestroyCallback): void;
     /**
      * destroy this.
+     * 
+     * 销毁上下文
      */
     abstract destroy(): void;
 }
@@ -115,6 +136,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
 
 /**
  * create invocation context.
+ * 
+ * 创建调用上下文
  * @param parent 
  * @param options 
  * @returns 
@@ -140,42 +163,61 @@ export const INVOCATION_CONTEXT_IMPL = {
 
 /**
  * token value pair.
+ * 
+ * 标记值键值对
  */
 export type TokenValue<T = any> = [Token<T>, T];
 
 /**
  * invoke options.
+ * 
+ * 调用接口配置项
  */
-export interface InvokeOptions<TArg> {
-    /**
-     * invocation payload data.
-     */
-    payload?: ProvdierOf<TArg>;
-    /**
-     * invocation payload data.
-     * @deprecated use payload instead.
-     */
-    arguments?: ProvdierOf<TArg>;
+export interface InvokeOptions {
     /**
      * token values.
+     * 
+     * 调用接口的标记值键值对
      */
     values?: TokenValue[];
     /**
      * custom resolvers.
+     * 
+     * 调用接口的参数解析器
      */
     resolvers?: ProvdierOf<ArgumentResolver>[];
     /**
      * custom providers.
+     * 
+     * 调用接口的提供者
      */
     providers?: ProviderType[];
 }
 
+
 /**
  * invoke arguments.
+ * 
+ * 调用接口配置项及负载
  */
-export interface InvokeArguments<TArg = any> extends InvokeOptions<TArg> {
+export interface InvokeArguments<TArg = any> extends InvokeOptions {
+    /**
+     * invocation payload data.
+     * 
+     * 调用接口负载对象
+     */
+    payload?: ProvdierOf<TArg>;
+    /**
+     * invocation payload data.
+     * 
+     * 调用接口负载对象
+     * @deprecated use `payload` instead.
+     */
+    arguments?: ProvdierOf<TArg>;
     /**
      * parent InvocationContext,
+     * 
+     * 上级上下文
      */
     parent?: InvocationContext;
 }

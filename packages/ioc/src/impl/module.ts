@@ -11,7 +11,7 @@ import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { isPlainObject } from '../utils/obj';
 import { DefaultInjector, processInjectorType } from './injector';
-import { DefaultReflectiveFactory } from './reflective';
+import { ReflectiveResolverImpl } from './reflective';
 
 
 /**
@@ -22,19 +22,19 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _type: Type;
     private _typeRefl: Class;
 
-    reflectiveFactory = new DefaultReflectiveFactory();
+    reflectiveFactory = new ReflectiveResolverImpl();
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
         const dedupStack: Type[] = [];
-        this.isStatic = (moduleType.getAnnotation().static || option.isStatic) === true;
+        this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type;
 
         this.inject(
             { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
         );
-
+        // this.onDestroy(this.reflectiveResolver);
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);

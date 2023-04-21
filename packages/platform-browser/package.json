@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/platform-browser-boot",
+  "name": "@tsdi/platform-browser",
   "version": "6.0.31",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "typings": "./lib/index.d.ts",
@@ -7,7 +7,6 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
-    "boot",
     "Application",
     "frameworks",
     "plarform",

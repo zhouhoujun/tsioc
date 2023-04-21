@@ -1,77 +1,81 @@
 import {
-    isNumber, Type, Injectable, InvocationContext, tokenId, Injector, Class, isFunction, refl, ProvdierOf,
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
     ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
-import { Endpoint } from '../Endpoint';
-import { FilterEndpoint } from '../filters/endpoint';
+import { PipeTransform } from '../pipes/pipe';
+import { CanActivate } from '../guard';
+import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
-import { BootstrapOption, EndpointFactoryResolver } from '../endpoints/endpoint.factory';
-import { getClassName } from 'packages/ioc/src/utils/lang';
-import { CanActivate } from '../guard';
-import { PipeTransform } from '../pipes/pipe';
-import { FnEndpoint } from '../endpoints/fn.endpoint';
-import { runEndpoints } from '../endpoints/runs';
+import { ExecptionHandlerFilter } from '../filters/execption.filter';
+import { GuardHandler } from '../handlers/guards';
+import { FnHandler } from '../handlers/handler';
+import { EndpointOptions } from '../endpoints/endpoint.service';
+import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
+import { runHandlers } from '../handlers/runs';
 import { EndpointContext } from '../endpoints/context';
-import { CatchFilter } from '../filters/execption.filter';
 
 
 /**
- *  Appplication runner interceptors mutil token
+ *  Appplication runner interceptors multi token
  */
 export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<EndpointContext>[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
- *  Appplication runner filters mutil token
+ *  Appplication runner filters multi token
  */
 export const APP_RUNNERS_FILTERS = tokenId<Filter[]>('APP_RUNNERS_FILTERS');
 
 /**
- *  Appplication runner guards mutil token
+ *  Appplication runner guards multi token
  */
 export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 
 
 @Injectable()
-export class DefaultApplicationRunners extends ApplicationRunners implements Endpoint {
+export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
     private _types: ClassType[];
-    private _maps: Map<ClassType, Endpoint[]>;
+    private _maps: Map<ClassType, Handler[]>;
     private _refs: Map<ClassType, ReflectiveRef>;
-    private _endpoint: FilterEndpoint;
+    private _handler: GuardHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._endpoint = new FilterEndpoint(injector, APP_RUNNERS_INTERCEPTORS, this, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
-        this._endpoint.useFilter(CatchFilter);
+        this._handler = new GuardHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._handler.useFilters(ExecptionHandlerFilter);
+    }
+
+    get handler(): Handler {
+        return this._handler
     }
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this._endpoint.usePipes(pipes);
+        this._handler.usePipes(pipes);
         return this;
     }
 
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
-        this._endpoint.useGuards(guards, order);
+        this._handler.useGuards(guards, order);
         return this;
     }
 
-    useInterceptor(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
-        this._endpoint.useInterceptor(interceptor, order);
+    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
+        this._handler.useInterceptors(interceptor, order);
         return this;
     }
 
-    useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._endpoint.useFilter(filter, order);
+    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
+        this._handler.useFilters(filter, order);
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: BootstrapOption<TArg> = {}): ReflectiveRef<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: EndpointOptions<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
         if (this._maps.has(target.type)) {
             return this._refs.get(target.type)!;
@@ -81,9 +85,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
         if (hasAdapter) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
-            const endpoint = new FnEndpoint((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
+            const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
+            targetRef.onDestroy(() => this.detach(target.type as Type));
             return targetRef;
         }
 
@@ -92,11 +97,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const facResolver = targetRef.resolve(EndpointFactoryResolver);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                const factory = facResolver.resolve(targetRef, 'runnable');
+                const factory = facResolver.resolve(targetRef);
                 return factory.create(runnable.method, options)
             });
             this._maps.set(target.type, endpoints);
             this.attachRef(targetRef, options.order);
+            targetRef.onDestroy(() => this.detach(target.type as Type));
             return targetRef;
         }
 
@@ -113,6 +119,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
     }
 
     detach<T>(type: Type<T>): void {
+        if (this._destroyed) return;
         this._maps.delete(type);
         this._refs.delete(type);
         const idx = this._types.indexOf(type);
@@ -126,18 +133,18 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
     }
 
     getRef<T>(type: Type<T>): ReflectiveRef<T> {
-       return this._refs.get(type) || null!;
+        return this._refs.get(type) || null!;
     }
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._endpoint.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -153,22 +160,25 @@ export class DefaultApplicationRunners extends ApplicationRunners implements End
         );
     }
 
+    private _destroyed = false;
     onDestroy(): void {
+        if (this._destroyed) return;
+        this._destroyed = true;
         this._maps.clear();
         this.multicaster.clear();
         this._types = null!;
     }
 
-    handle(context: InvocationContext<any>): Observable<any> {
+    handle(context: EndpointContext<any>): Observable<any> {
         if (isFunction(context.payload)) {
-            return runEndpoints(this._maps.get(context.payload), context, v => v.done === true)
+            return runHandlers(this._maps.get(context.payload), context, v => v.isDone() === true)
         }
         if (isArray(context.payload)) {
-            const endpoints: Endpoint[] = [];
+            const handlers: Handler[] = [];
             context.payload.forEach(type => {
-                endpoints.push(...this._maps.get(type) || []);
+                handlers.push(...this._maps.get(type) || []);
             })
-            return runEndpoints(endpoints, context, v => v.done === true)
+            return runHandlers(handlers, context, v => v.isDone() === true)
         }
         return throwError(() => new ArgumentExecption('input type unknow'))
     }

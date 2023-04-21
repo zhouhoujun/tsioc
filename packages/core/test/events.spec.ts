@@ -1,11 +1,11 @@
 import { ArgumentExecption, Injectable, InvocationContext, isPlainObject, isString, MissingParameterExecption, Module, ReflectiveRef } from '@tsdi/ioc';
 import expect = require('expect');
-import { lastValueFrom, Observable, of } from 'rxjs';
-import { Application, ApplicationArguments, ApplicationContext, Dispose, Endpoint, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+import { catchError, lastValueFrom, Observable, of } from 'rxjs';
+import { Application, ApplicationArguments, ApplicationContext, Dispose, GuardHandler, EndpointContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
-    intercept(context: EndpointContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+    intercept(context: EndpointContext<PayloadApplicationEvent>, next: GuardHandler<any, any>): Observable<any> {
         if(isString(context.payload.payload)){
             return next.handle(context);
         }
@@ -16,7 +16,7 @@ export class StringFilter implements Filter  {
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    intercept(context: EndpointContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+    intercept(context: EndpointContext<PayloadApplicationEvent>, next: GuardHandler<any, any>): Observable<any> {
         if(isPlainObject(context.payload.payload)){
             return next.handle(context);
         }
@@ -29,7 +29,7 @@ export class JsonFilter implements Filter  {
 
 @Injectable()
 export class PayloadInterceptor implements Interceptor {
-    intercept(context: InvocationContext<PayloadApplicationEvent>, next: Endpoint<any, any>): Observable<any> {
+    intercept(context: InvocationContext<PayloadApplicationEvent>, next: GuardHandler<any, any>): Observable<any> {
         if (isString(context.payload.payload)) {
             context.payload.payload = 'hi ' + context.payload.payload;
         }
@@ -166,7 +166,7 @@ describe('Application Event', () => {
 
     it('payload filed transport parameter missing arguments execption', async () => {
 
-        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }));
+        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }).pipe(catchError(err=> of(err))));
         expect(result).toBeInstanceOf(MissingParameterExecption);
 
         expect((result as MissingParameterExecption).message.indexOf('name: "age"')).toBeGreaterThan(1);
@@ -179,7 +179,7 @@ describe('Application Event', () => {
 
     it('payload filed transport parameter arguments execption', async () => {
 
-        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan1', age: 'zzz' }));
+        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan1', age: 'zzz' }).pipe(catchError(err=> of(err))));
         expect(result).toBeInstanceOf(ArgumentExecption);
 
         expect(result.message).toEqual(`InvalidPipeArgument: 'zzz' for pipe 'number'`);

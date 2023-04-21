@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { AbstractMetadata, ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
-import { getToken, Token } from '../tokens';
 import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPorpDecor, dispatchTypeDecor, MetadataFactory, regActionType, toDefine } from './refl';
 import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './type';
+import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
+import { getToken, Token } from '../tokens';
 import { EMPTY, Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Execption } from '../execption';
@@ -134,7 +134,7 @@ export interface IClassDecorator {
 /**
  * class method decorator.
  */
-export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
+export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol | undefined, descriptor?: TypedPropertyDescriptor<any>) => void;
 
 /**
  * method property decorator.
@@ -144,7 +144,7 @@ export type MethodPropDecorator = (target: Object, propertyKey: string | symbol,
 /**
  * property parameter decorator.
  */
-export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
+export type PropParamDecorator = (target: Object, propertyKey: string | symbol | undefined, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
 
 /**
  * method property parameter decorator.
@@ -196,12 +196,15 @@ export function createPropDecorator<T = PropertyMetadata>(name: string, options?
 
 /**
  * Abstract decorator. define the class as abstract class.
+ * 
+ * 抽象类修饰器，声明该类为抽象类。
  */
 export interface IAbstractDecorator {
     /**
-     * define class is abstract class.
+     * Abstract decorator. define class is abstract class.
      *
-     * @param {T} [metadata] metadata map.
+     * 抽象类修饰器，声明该类为抽象类。
+     * @param [metadata] metadata map.
      */
     (metadata?: AbstractMetadata): ClassDecorator;
 }

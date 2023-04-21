@@ -1,9 +1,8 @@
-
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
+import { ModuleWithProviders, ProviderType } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-import { ModuleWithProviders, ProviderType } from './providers';
 import { ReflectiveFactory } from './reflective';
 import { Modules, Type } from './types';
 import { isType } from './utils/chk';
@@ -15,8 +14,10 @@ export type ModuleType = Modules | ModuleWithProviders;
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
- * Provides access to the `Module` instance and related objects.
+ * Provides access to the `Module` instance and related objects. Default static Injector.
  *
+ * 模块类容器, 默认静态容器
+ * 
  * @publicApi
  */
 @Abstract()
@@ -30,7 +31,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract get moduleReflect(): Class<T>;
     /**
-     * reflective factory.
+     * reflectiveRef factory.
      */
     abstract get reflectiveFactory(): ReflectiveFactory;
     /**

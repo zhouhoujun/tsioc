@@ -1,11 +1,12 @@
-import { OnDispose, Pattern, RequestOptions } from '@tsdi/core';
-import { Injectable, lang, Nullable } from '@tsdi/ioc';
-import { Connection, ev, DuplexConnection, TransportClient } from '@tsdi/transport';
+import { AbstractGuardHandler, Client, OnDispose, Pattern, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Abstract, Injectable, lang, Nullable } from '@tsdi/ioc';
+import { Connection, ev, DuplexConnection } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TcpClientOpts, TCP_CLIENT_EXECPTION_FILTERS, TCP_CLIENT_INTERCEPTORS } from './options';
 import { TcpBackend } from './backend';
 import { TcpPackFactory } from '../transport';
+import { Observable } from 'rxjs';
 
 
 
@@ -24,18 +25,26 @@ export const TCP_CLIENT_OPTS = {
 } as TcpClientOpts;
 
 
+@Abstract()
+export abstract class TcpGuardHandler extends AbstractGuardHandler<TransportRequest, TransportEvent> {
+
+}
+
 /**
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends TransportClient<Connection<tls.TLSSocket | net.Socket>, Pattern, RequestOptions, TcpClientOpts> implements OnDispose {
+export class TcpClient extends Client<TransportRequest, RequestOptions> {
 
-    constructor(@Nullable() options: TcpClientOpts) {
-        super(options);
+    private options: TcpClientOpts;
+    constructor(readonly handler: TcpGuardHandler, @Nullable() options: TcpClientOpts) {
+        super();
+        this.options = { ...TCP_CLIENT_OPTS, ...options }
     }
 
-    protected override getDefaultOptions() {
-        return TCP_CLIENT_OPTS;
+    private connection: Connection<tls.TLSSocket | net.Socket>;
+    protected connect(): Promise<any> | Observable<any> {
+        
     }
 
     close(): Promise<void> {
@@ -43,13 +52,14 @@ export class TcpClient extends TransportClient<Connection<tls.TLSSocket | net.So
         this.connection.destroy(null, err => err ? defer.reject(err) : defer.resolve());
         return defer.promise;
     }
+
     protected isValid(connection: Connection<tls.TLSSocket | net.Socket>): boolean {
         return !connection.destroyed && !connection.isClosed
     }
 
     protected override createConnection(opts: TcpClientOpts): Connection<tls.TLSSocket | net.Socket> {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
-        const packet = this.context.get(TcpPackFactory);
+        const packet = this.handler.injector.get(TcpPackFactory);
         const conn = new DuplexConnection(socket, packet, { events: [ev.CONNECT], ...opts.connectionOpts });
         if (opts?.keepalive) {
             conn.setKeepAlive(true, opts.keepalive);

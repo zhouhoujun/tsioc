@@ -3,10 +3,10 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TypeOrmHelper } from '../src';
+import { TypeormAdapter } from '../src/TypeormAdapter';
 import { MockTransBootTest } from './app';
 import { Role, User } from './models/models';
-import { UserRepository } from './repositories/UserRepository';
+// import { UserRepository } from './repositories/UserRepository';
 
 
 @Suite()
@@ -21,17 +21,19 @@ export class TransactionTest {
             baseURL: __dirname
         });
 
+        const mgr = this.ctx.injector.get(TypeormAdapter).getConnection().manager;
+       
+        await mgr.createQueryBuilder()
+            .delete()
+            .from(User)
+            .where('account IN (:...acs)', { acs: ['test_111', 'post_test', 'test_112'] })
+            .execute();
 
-        const urep = this.ctx.injector.get(UserRepository);
-        const u1 = await urep.findByAccount('test_111');
-        if (u1) await urep.remove(u1);
-        const u2 = await urep.findByAccount('post_test');
-        if (u2) await urep.remove(u2);
-        const rrep = await this.ctx.injector.get(TypeOrmHelper).getRepository(Role);
-        const role1 = await rrep.find({ where: { name: 'opter_1' } });
-        if (role1) await rrep.remove(role1);
-        const role2 = await rrep.find({ where: { name: 'opter_2' } });
-        if (role2) await rrep.remove(role2);
+        await mgr.createQueryBuilder()
+            .delete()
+            .from(Role)
+            .where('name IN (:...acs)', { acs: ['opter_1', 'opter_2'] })
+            .execute();
 
         console.log('clean data');
     }
@@ -58,9 +60,9 @@ export class TransactionTest {
                     return of(err);
                 })
             ));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()
@@ -79,9 +81,9 @@ export class TransactionTest {
         expect(rep.body).toBeNull();
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_112', { observe: 'response' }));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()
@@ -127,9 +129,9 @@ export class TransactionTest {
         // await lang.delay(100);
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter_1', { observe: 'response' }));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()
@@ -149,9 +151,9 @@ export class TransactionTest {
         // await lang.delay(100);
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter_2', { observe: 'response' }));
-        expect(rep2.status).toEqual(200);
+        expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
-        expect(rep2.body).not.toHaveProperty('id');
+        expect(rep2.body).toBeNull();
     }
 
     @Test()

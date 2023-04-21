@@ -7,6 +7,8 @@ import { OperationInvoker } from './operation';
 
 /**
  * parameter argument of an {@link OperationArgumentResolver}.
+ * 
+ * 调用参数。
  */
 export interface Parameter<T = any> extends ParameterMetadata {
     /**
@@ -17,14 +19,12 @@ export interface Parameter<T = any> extends ParameterMetadata {
      * provider type
      */
     provider?: Token<T>;
-    /**
-     * mutil provider or not.
-     */
-    mutil?: boolean;
 }
 
 /**
  * Resolver for an argument of an `{@link OperationInvoker}`.
+ * 
+ * 调用参数解析器。
  */
 export interface OperationArgumentResolver<C = any> {
     /**
@@ -43,19 +43,25 @@ export interface OperationArgumentResolver<C = any> {
 
 /**
  * argument resolver type.
+ * 
+ * 参数解析器的类或参数解析器实例。
  */
 export type ArgumentResolver = TypeOf<OperationArgumentResolver>;
 
 /**
  * compose resolver for an argument of an {@link OperationInvoker}.
+ * 
+ * 组合合并参数解析器
+ * 
  * @param filter compose canResolver filter.
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter>(filter: (parameter: TP, ctx: InvocationContext) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext>(
+    filter: (parameter: TP, ctx: TCtx) => boolean, ...resolvers: T[]): OperationArgumentResolver {
     return {
-        canResolve: (parameter: TP, ctx: InvocationContext) => filter(parameter, ctx),
-        resolve: (parameter: TP, ctx: InvocationContext) => {
+        canResolve: (parameter: TP, ctx: TCtx) => filter(parameter, ctx),
+        resolve: (parameter: TP, ctx: TCtx) => {
             let result: any;
             resolvers.some(r => {
                 if (r.canResolve(parameter, ctx)) {
@@ -70,6 +76,8 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
 }
 
 /**
- * context resolvers {@link OperationArgumentResolver}. 
+ * context resolvers {@link OperationArgumentResolver} multi tokens. 
+ * 
+ * 调用参数解析器集合标记指令。
  */
 export const CONTEXT_RESOLVERS = tokenId<OperationArgumentResolver[]>('CONTEXT_RESOLVERS');

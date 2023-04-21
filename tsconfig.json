@@ -9,7 +9,7 @@
     "sourceMap": true,
     "declaration": true,
     "module": "commonjs",
-    "target": "es5",
+    "target": "ES2020",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -97,6 +97,12 @@
       ],
       "@tsdi/platform-server-common": [
         "packages/platform-server-common/src"
+      ],
+      "@tsdi/platform-server-transport": [
+        "packages/platform-server-transport/src"
+      ],
+      "@tsdi/platform-browser-transport": [
+        "packages/platform-browser-transport/src"
       ],
       "@tsdi/unit": [
         "packages/unit/src"

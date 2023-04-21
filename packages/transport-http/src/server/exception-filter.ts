@@ -1,128 +1,76 @@
 import {
-    BadRequestExecption,  ENOENT, ExecptionHandler, ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption,
-    MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, ExecptionFilter, ExecptionEndpoint, MessageExecption
+    BadRequestExecption, ExecptionHandler, ForbiddenExecption, InternalServerExecption,
+    NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
-import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
+import { HttpStatusCode } from '@tsdi/common';
 import { MissingModelFieldExecption } from '@tsdi/repository';
+import { ErrorRespondAdapter } from '@tsdi/transport';
 import { HttpBadRequestError, HttpError, HttpForbiddenError, HttpInternalServerError, HttpNotFoundError, HttpUnauthorizedError } from '../errors';
 import { HttpContext } from './context';
-import { HTTP_SERVEROPTIONS } from './options';
-import { map, Observable } from 'rxjs';
+import { HTTP_SERVER_OPTS } from './options';
 
-
-@Injectable({ static: true })
-export class HttpExecptionFinalizeFilter implements ExecptionFilter {
-    intercept(input: Error, next: ExecptionEndpoint, context: HttpContext): Observable<HttpError> {
-
-        return next.handle(input, context)
-            .pipe(
-                map(r => {
-                    if (!context.execption) return r;
-
-                    const err = context.execption;
-
-                    //finllay defalt send error.
-                    let headerSent = false;
-                    if (context.sent || !context.writable) {
-                        headerSent = err.headerSent = true
-                    }
-
-                    // nothing we can do here other
-                    // than delegate to the app-level
-                    // handler and log.
-                    if (headerSent) {
-                        return
-                    }
-
-                    const res = context.response;
-
-                    // first unset all headers
-                    if (isFunction(res.getHeaderNames)) {
-                        res.getHeaderNames().forEach(name => res.removeHeader(name))
-                    } else {
-                        (res as any)._headers = {} // Node < 7.7
-                    }
-
-                    // then set those specified
-                    if (err.headers) context.setHeader(err.headers);
-
-                    // force text/plain
-                    context.type = 'text';
-                    let statusCode = (err.status || err.statusCode) as HttpStatusCode;
-                    let msg;
-                    if (err instanceof MessageExecption) {
-                        msg = err.message
-                    } else {
-                        // ENOENT support
-                        if (ENOENT === err.code) statusCode = 404;
-
-                        // default to 500
-                        if (!isNumber(statusCode) || !statusMessage[statusCode]) statusCode = 500;
-
-                        // respond
-                        msg = statusMessage[statusCode]
-                    }
-
-                    context.status = context.statusFactory.createByCode(statusCode);
-                    msg = Buffer.from(msg);
-                    context.length = Buffer.byteLength(msg);
-                    res.end(msg);
-                    return err;
-                })
-            )
-
-    }
-
-}
 
 
 @Injectable({ static: true })
 export class HttpExecptionHandlers {
 
+    constructor(private adpater: ErrorRespondAdapter) {
+
+    }
+
     @ExecptionHandler(NotFoundExecption)
     notFoundExecption(ctx: HttpContext, execption: NotFoundExecption) {
-        ctx.execption = new HttpNotFoundError(execption.message)
+        execption = new HttpNotFoundError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(ForbiddenExecption)
     forbiddenExecption(ctx: HttpContext, execption: ForbiddenExecption) {
-        ctx.execption = new HttpForbiddenError(execption.message)
+        execption = new HttpForbiddenError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: HttpContext, execption: BadRequestExecption) {
-        ctx.execption = new HttpBadRequestError(execption.message)
+        execption = new HttpBadRequestError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(UnauthorizedExecption)
     unauthorized(ctx: HttpContext, execption: UnauthorizedExecption) {
-        ctx.execption = new HttpUnauthorizedError(execption.message)
+        execption = new HttpUnauthorizedError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(InternalServerExecption)
     internalServerError(ctx: HttpContext, execption: InternalServerExecption) {
-        ctx.execption = new HttpInternalServerError(execption.message)
+        execption = new HttpInternalServerError(execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: HttpContext, execption: UnsupportedMediaTypeExecption) {
-        ctx.execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message)
+        execption = new HttpError(HttpStatusCode.UnsupportedMediaType, execption.message);
+        this.adpater.respond(ctx, execption)
     }
 
-    @ExecptionHandler(MessageArgumentExecption)
-    anguExecption(ctx: HttpContext, execption: MessageArgumentExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
+    @ExecptionHandler(ArgumentExecption)
+    anguExecption(ctx: HttpContext, err: ArgumentExecption) {
+        const execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? err.message : undefined);
+        this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
-    missFieldExecption(ctx: HttpContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
+    missFieldExecption(ctx: HttpContext, err: MissingModelFieldExecption) {
+        const execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? err.message : undefined);
+        this.adpater.respond(ctx, execption)
     }
 
-    @ExecptionHandler(MessageMissingExecption)
-    missExecption(ctx: HttpContext, execption: MessageMissingExecption) {
-        ctx.execption = new HttpBadRequestError(ctx.get(HTTP_SERVEROPTIONS).detailError ? execption.message : undefined)
+    @ExecptionHandler(MissingParameterExecption)
+    missExecption(ctx: HttpContext, err: MissingParameterExecption) {
+        const execption = new HttpBadRequestError(ctx.get(HTTP_SERVER_OPTS).detailError ? err.message : undefined);
+        this.adpater.respond(ctx, execption)
     }
 
 }

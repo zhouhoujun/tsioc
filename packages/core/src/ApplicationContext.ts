@@ -1,24 +1,26 @@
 import {
     ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { BootstrapOption } from './endpoints/endpoint.factory';
+import { EndpointOptions } from './endpoints/endpoint.service';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';
-import { EndpointOptions, EndpointServiceOptions } from './EndpointService';
 
 /**
  * application context for global.
  * implements {@link Destroyable}.
+ * 
+ * 应用上下文环境
  */
 @Abstract()
-export abstract class ApplicationContext<T = any, TArg extends ApplicationArguments = ApplicationArguments> extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
+    extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
     /**
      * application root module injector.
      */
@@ -59,7 +61,7 @@ export abstract class ApplicationContext<T = any, TArg extends ApplicationArgume
      * get logger.
      * @param name 
      */
-    abstract getLogger(name?: string): Logger;
+    abstract getLogger(name?: string, adapter?: string | Type): Logger;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events
@@ -87,6 +89,12 @@ export abstract class ApplicationContext<T = any, TArg extends ApplicationArgume
 
 }
 
+/**
+ * bootstrap option for {@link RunnableRef}.
+ */
+export interface BootstrapOption<T = any> extends EndpointOptions<T> {
+}
+
 
 /**
  * appliaction boot process root path.
@@ -96,7 +104,7 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 /**
  * Environment option.
  */
-export interface EnvironmentOption<TArg = any> extends ModuleOption, EndpointOptions<TArg> {
+export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArguments<TArg> {
     /**
      * boot base url.
      *
@@ -127,17 +135,20 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, EndpointOpt
      * application providers.
      */
     platformProviders?: ProviderType[];
-
     /**
-     * event endpoint options.
+     * Application runners endpoint options.
      */
-    events?: EndpointServiceOptions;
+    runnersOptions?: EndpointOptions<TArg>;
+    /**
+     * Application events endpoint options.
+     */
+    eventsOptions?: EndpointOptions<TArg>;
 }
 
 /**
  * ApplicationOption option.
  */
-export interface ApplicationOption<T= any, TArg = any> extends EnvironmentOption<TArg> {
+export interface ApplicationOption<T = any, TArg = any> extends EnvironmentOption<TArg> {
     /**
      * target module type.
      *
@@ -158,5 +169,5 @@ export abstract class ApplicationFactory {
      * @param option application option.
      * @returns instance of {@link EnvironmentOption}
      */
-    abstract create<T, TArg extends ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg>;
+    abstract create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg>;
 }

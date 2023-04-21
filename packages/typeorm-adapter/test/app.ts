@@ -1,23 +1,24 @@
-import { Module, LoggerModule } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { HttpClientModule } from '@tsdi/common';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
+import { TransactionModule } from '@tsdi/repository';
+import { LoggerModule } from '@tsdi/logs';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Connection } from 'typeorm';
-import { TypeOrmModule } from '../src';
+import { DataSource } from 'typeorm';
+import { TypeormModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
-import { UserRepository } from './repositories/UserRepository';
-import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+// import { UserRepository } from './repositories/UserRepository';
 
 
 
 export const option = {
-    entities:[],
-    async initDb(connection: Connection) {
+    entities: [],
+    async initDb(connection: DataSource) {
         const userRep = connection.getRepository(User);
         const c = await userRep.count();
         if (c < 1) {
@@ -38,7 +39,7 @@ export const option = {
     // useNewUrlParser: true,
     synchronize: true, // 同步数据库
     logging: false  // 日志
-} as ConnectionOptions;
+} as TypeormOptions;
 
 
 export const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -51,19 +52,21 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: [
                 Role,
                 User
             ],
-            repositories: [
-                UserRepository
-            ]
+            // repositories: [
+            //     UserRepository
+            // ]
         })
     ],
     declarations: [
@@ -83,12 +86,14 @@ export class MockBootTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
         TransactionModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
@@ -112,12 +117,14 @@ export class MockBootLoadTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
         TransactionModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
@@ -139,14 +146,22 @@ export class MockTransBootTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 2,
+            clientOpts: {
+                authority: 'https://localhost:3000',
+                options: {
+                    ca: cert
+                }
+            },
             serverOpts: {
-                key,
-                cert
+                majorVersion: 2,
+                serverOpts: {
+                    key,
+                    cert
+                }
             }
         }),
         TransactionModule,
-        TypeOrmModule.withConnection({
+        TypeormModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']

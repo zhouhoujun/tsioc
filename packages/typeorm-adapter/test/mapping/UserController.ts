@@ -1,35 +1,37 @@
-import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
+import { Controller, Delete, Get, InternalServerExecption, Post, Put, RequestParam, RequestPath } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logs';
 import { Repository, Transactional } from '@tsdi/repository';
-import { HttpInternalServerError } from '@tsdi/transport-http';
+import { Repository as TypeormRepository } from 'typeorm';
 import { User } from '../models/models';
-import { UserRepository } from '../repositories/UserRepository';
+import { UserService } from './user.service';
 
 @Controller('/users')
 export class UserController {
 
-    // @Inject() injector!: Injector;
-    // @Log() logger!: ILogger;
-
-    constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
+    constructor(private usrService: UserService, @Log() private logger: Logger) {
 
     }
 
+    @Get('/')
+    search(@RequestParam({ nullable: true }) name: string) {
+        return this.usrService.search(name);
+    }
 
     @Get('/:name')
-    getUser(name: string) {
+    getUser(@RequestPath() name: string) {
         this.logger.log('name:', name);
-        return this.usrRep.findByAccount(name);
+        if (name == 'error') {
+            throw new InternalServerExecption('error');
+        }
+        return this.usrService.findByAccount(name);
     }
 
-    @Transactional()
     @Post('/')
     @Put('/')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
-        const val = await this.usrRep.save(user);
-        if(check) throw new HttpInternalServerError('check');
+        this.logger.log(lang.getClassName(this.usrService), user);
+        const val = await this.usrService.save(user, check);
         this.logger.log(val);
         return val;
     }
@@ -37,21 +39,19 @@ export class UserController {
     @Transactional()
     @Post('/save')
     @Put('/save')
-    async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+    async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam({ nullable: true }) check?: boolean) {
+        this.logger.log(lang.getClassName(this.usrService), user);
         const val = await userRepo.save(user);
-        if(check) throw new HttpInternalServerError('check');
+        if (check) throw new InternalServerExecption('check');
         this.logger.log(val);
         return val;
     }
 
-    @Transactional()
     @Delete('/:id')
-    async del(id: string) {
+    async del(@RequestPath() id: string, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log('id:', id);
-        await this.usrRep.delete(id);
+        await this.usrService.delete(id, check);
         return true;
     }
 
 }
-

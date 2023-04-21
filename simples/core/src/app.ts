@@ -2,21 +2,22 @@ import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
-import { Connection } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Role, User } from './models/models';
+import { User } from './models/User';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { LogConfigure } from '@tsdi/logs';
+import { Role } from './models/Role';
 
 
 
 const connections = {
-    async initDb(connection: Connection) {
+    async initDb(connection: DataSource) {
         const userRep = connection.getRepository(User);
         const c = await userRep.count();
         if (c < 1) {
@@ -97,11 +98,13 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         TransactionModule,
         TypeOrmModule.withConnection(connections),
         HttpModule.withOption({
-            majorVersion: 2,
-            cors: true,
             serverOpts: {
-                cert,
-                key
+                majorVersion: 2,
+                cors: true,
+                serverOpts: {
+                    cert,
+                    key
+                }
             }
         })
     ],

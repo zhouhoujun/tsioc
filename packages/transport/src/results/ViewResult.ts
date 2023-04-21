@@ -1,10 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { ResultValue } from '@tsdi/core';
-import { AssetServerContext } from '../asset.ctx';
+import { AssetContext, ResultValue } from '@tsdi/core';
 
 @Abstract()
 export abstract class ViewRenderer {
-    abstract render(ctx: AssetServerContext, name: string, model?: any): any;
+    abstract render(ctx: AssetContext, name: string, model?: any): any;
 }
 
 /**
@@ -19,7 +18,7 @@ export class ViewResult extends ResultValue {
         super('text/html')
     }
 
-    async sendValue(ctx: AssetServerContext) {
+    async sendValue(ctx: AssetContext) {
         const renderer = ctx.get(ViewRenderer);
         if (!renderer) {
             return Promise.reject('view engin middleware no configed!')

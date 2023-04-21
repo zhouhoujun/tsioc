@@ -1,16 +1,23 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, EndpointContext, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, Message, RedirectStatus, Status, mths, SeeOtherStatus, MovedPermanentlyStatus, FoundStatus } from '@tsdi/core';
+import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, GET, POST } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { Readable } from 'stream';
 import { hdr } from '../consts';
+import { StreamAdapter } from '../stream';
+import { StatusVaildator } from '../status';
 
 @Injectable()
-export class AssetRedirector extends Redirector {
+export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
 
-    redirect<T>(ctx: EndpointContext, req: Message, status: RedirectStatus, headers: ResHeaders): Observable<T> {
+    constructor(
+        private validator: StatusVaildator<TStatus>,
+        private adapter: StreamAdapter) {
+        super();
+    }
+
+    redirect<T>(req: TransportRequest, status: TStatus, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            const rdstatus = ctx.getValueify(RedirectState, () => new RedirectState());
+            const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
             const location = headers.get(hdr.LOCATION) as string;
 
@@ -72,14 +79,14 @@ export class AssetRedirector extends Redirector {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (this.redirectBodify(status) && req.body && req.body instanceof Readable) {
+                    if (this.validator.redirectBodify(status) && req.body && this.adapter.isReadable(req.body)) {
                         observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
                         break;
                     }
 
                     // HTTP-redirect fetch step 11
-                    if (!this.redirectBodify(status, req.method)) {
-                        method = this.redirectDefaultMethod() as RequestMethod;
+                    if (!this.validator.redirectBodify(status, req.method)) {
+                        method = this.validator.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
                         reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
                     }
@@ -90,11 +97,11 @@ export class AssetRedirector extends Redirector {
                         reqhdrs = reqhdrs.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = (ctx.target as Client).send(locationURL, {
+                    sub = req.context.get(Client).send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,
-                        context: ctx,
+                        context: req.context,
                         observe: 'response'
                     }).subscribe(observer as any);
 
@@ -111,14 +118,6 @@ export class AssetRedirector extends Redirector {
         });
     }
 
-    protected redirectBodify(status: Status, method?: string | undefined): boolean {
-        if (status instanceof SeeOtherStatus) return false;
-        return method ? (status instanceof MovedPermanentlyStatus || status instanceof FoundStatus) && method !== mths.POST : true;
-    }
-
-    protected redirectDefaultMethod(): string {
-        return mths.GET;
-    }
 
 
 }

@@ -1,0 +1,44 @@
+{
+  "name": "@tsdi/platform-server-transport",
+  "version": "6.0.31",
+  "description": "@tsdi/platform-server-transport is transport platform for server",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
+  },
+  "keywords": [
+    "IoC",
+    "AOP",
+    "dependency",
+    "injection",
+    "ts-ioc",
+    "@tsdi",
+    "tsioc",
+    "container",
+    "decorator",
+    "autofac",
+    "Inject",
+    "type",
+    "typescript"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "csrf": "^3.1.0",
+    "form-data": "^4.0.0",
+    "raw-body": "^2.5.1"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "devDependencies": {}
+}

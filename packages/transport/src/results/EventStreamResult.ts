@@ -1,8 +1,5 @@
-import { ResultValue } from '@tsdi/core';
-import { AssetServerContext } from '../asset.ctx';
-import { Stream } from 'stream';
+import { AssetContext, ResultValue, Stream } from '@tsdi/core';
 import { hdr } from '../consts';
-
 /**
  * EventStream Result
  *
@@ -14,7 +11,7 @@ export class EventStreamResult extends ResultValue {
     constructor(private message: string | Buffer | Stream) {
         super('text/event-stream')
     }
-    async sendValue(ctx: AssetServerContext) {
+    async sendValue(ctx: AssetContext) {
         ctx.contentType = this.contentType;
         ctx.setHeader(hdr.CACHE_CONTROL, "no-cache");
         ctx.setHeader(hdr.CONNECTION, "keep-alive");

@@ -4,17 +4,18 @@ import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
     PropertyMetadata, ParameterMetadata, MethodMetadata
 } from './meta';
-import { InvocationContext, InvokeArguments, InvokeOptions } from '../context';
-import { Token } from '../tokens';
+import { InvocationContext, InvokeArguments } from '../context';
+import { Token, tokenId } from '../tokens';
 import { ArgumentResolver } from '../resolver';
+import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isArray, isFunction, isString } from '../utils/chk';
-import { forIn, hasItem } from '../utils/lang';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
+import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
 import { MethodType } from '../injector';
 import { Handle } from '../handle';
-import { DesignContext, RuntimeContext } from '../actions/ctx';
+// import { ReflectiveRef } from '../reflective';
 
 
 
@@ -188,12 +189,37 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
  * type class reflective.
  */
 export class Class<T = any> {
+
+    /**
+     * class name.
+     */
     className: string;
 
+    /**
+     * all decorator defines.
+     */
     readonly defs: DecorDefine[];
+    /**
+     * class decorator defs
+     * keys is decoator name toString()
+     */
     readonly classDefs: Map<string, DecorDefine[]>;
+    /**
+     * property decorator defs
+     * keys is decoator name toString()
+     */
     readonly propDefs: Map<string, DecorDefine<PropertyMetadata>[]>;
+
+    /**
+     * method decorator defs
+     * keys is decoator name toString()
+     */
     readonly methodDefs: Map<string, DecorDefine<MethodMetadata>[]>;
+
+    /**
+     * Parameter decorator defs
+     * keys is decoator name toString()
+     */
     readonly paramDefs: Map<string, DecorDefine<ParameterMetadata>[]>;
 
     readonly classDecors: DecoratorFn[];
@@ -238,13 +264,21 @@ export class Class<T = any> {
     /**
      * method providers.
      *
-     * @type {Map<string, InvokeOptions<any>>}
+     * @type {Map<string, InvokeArguments>}
      */
-    private methodOptions: Map<string, InvokeOptions<any>>;
+    private methodOptions: Map<string, InvokeArguments>;
     /**
      * runnable defines.
      */
     readonly runnables: RunableDefine[];
+
+    // private _refToken?: Token<ReflectiveRef>;
+    // get refToken(): Token<ReflectiveRef> {
+    //     if (!this._refToken) {
+    //         this._refToken = tokenId<ReflectiveRef>(this.className + 'Ref');
+    //     }
+    //     return this._refToken;
+    // }
 
     constructor(public readonly type: ClassType<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
@@ -371,10 +405,10 @@ export class Class<T = any> {
     hasMethodOptions(method: string): boolean {
         return this.methodOptions.has(method)
     }
-    getMethodOptions<T>(method: string): InvokeOptions<T> | undefined {
+    getMethodOptions<T>(method: string): InvokeArguments<T> | undefined {
         return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodOptions<T>(method: string, options: InvokeOptions<T>) {
+    setMethodOptions<T>(method: string, options: InvokeArguments<T>) {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {

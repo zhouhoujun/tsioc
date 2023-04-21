@@ -1,11 +1,26 @@
-import { InvokeArguments, ModuleRef } from '@tsdi/ioc';
-import { ApplicationFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
+import { EMPTY_OBJ, InvokeArguments, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
+import { ApplicationArguments, ApplicationFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
 import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
 
 
-export class BootApplicationContextImpl extends DefaultApplicationContext implements BootApplicationContext {
+export class BootApplicationContextImpl<T = any, TArg = ApplicationArguments> extends DefaultApplicationContext<T, TArg> implements BootApplicationContext<T, TArg> {
 
+    
+    constructor(readonly injector: ModuleRef, options: BootEnvironmentOption<TArg> = EMPTY_OBJ) {
+        super(injector, options);
+
+        const mgr = this.getConfigureManager();
+        if (options.configures && options.configures.length) {
+            options.configures.forEach(cfg => {
+                mgr.useConfiguration(cfg)
+            })
+        } else {
+            // load default config.
+            mgr.useConfiguration()
+        }
+        
+    }
     /**
      * configuration merge metadata config and all application config.
      */
@@ -29,27 +44,21 @@ export class BootApplicationContextImpl extends DefaultApplicationContext implem
  */
 export class BootApplicationFactory extends ApplicationFactory {
 
-    create<T>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext {
-        if (root.moduleReflect.annotation?.baseURL) {
-            root.setValue(PROCESS_ROOT, root.moduleReflect.annotation.baseURL)
+    create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext<T, TArg> {
+        const ann = root.moduleReflect.getAnnotation<ModuleDef>();
+        if (ann?.baseURL) {
+            root.setValue(PROCESS_ROOT, ann.baseURL)
+        }
+        if (!option) {
+            option = {};
+        }
+        if (!option.payload) {
+            option.payload = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);
         return ctx
     }
 
-    initOption(ctx: BootApplicationContext, option?: BootEnvironmentOption) {
-        if (!option) return;
-
-        const mgr = ctx.getConfigureManager();
-        if (option.configures && option.configures.length) {
-            option.configures.forEach(cfg => {
-                mgr.useConfiguration(cfg)
-            })
-        } else {
-            // load default config.
-            mgr.useConfiguration()
-        }
-    }
 
     protected createInstance(inj: ModuleRef, option?: InvokeArguments) {
         return new BootApplicationContextImpl(inj, option)

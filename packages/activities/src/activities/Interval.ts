@@ -50,7 +50,7 @@ export class IntervalActivity<T> {
 /**
  * interval context
  */
- export class DirIntervalContext<T> {
+export class DirIntervalContext<T> {
     public $implicit: T = null!;
     public dirInterval: T = null!;
 }

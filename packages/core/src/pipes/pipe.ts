@@ -1,4 +1,4 @@
-import { ArgumentExecption, lang } from '@tsdi/ioc';
+import { ArgumentExecption, StaticProvider, lang } from '@tsdi/ioc';
 
 /**
  * pipe transform insterface.
@@ -27,4 +27,15 @@ export interface PipeTransform<TReturn = any, T = any> {
  */
 export function invalidPipeArgument(type: any, value: any, message?: string) {
     return new ArgumentExecption(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(type)}'${message || ''}`)
+}
+
+/**
+ * pipe service.
+ */
+export interface PipeService {
+    /**
+     * use pipes.
+     * @param guards 
+     */
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 }

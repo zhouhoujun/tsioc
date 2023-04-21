@@ -1,8 +1,8 @@
-import { RouteMapping, RequestParam } from '@tsdi/core';
+import { RouteMapping, RequestParam, RequestPath } from '@tsdi/core';
 import { Log, Logger } from '@tsdi/logs';
 import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
-import { Role } from '../models/models';
+import { Role } from '../models/Role';
 
 @RouteMapping('/roles')
 export class RoleController {
@@ -37,7 +37,7 @@ export class RoleController {
 
 
     @RouteMapping('/:name', 'GET')
-    async getRole(name: string) {
+    async getRole(@RequestPath() name: string) {
         this.logger.log('name:', name);
         console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         return await this.repo.findOne({ where: { name } });
@@ -46,7 +46,7 @@ export class RoleController {
 
     @Transactional()
     @RouteMapping('/:id', 'DELETE')
-    async del(id: string) {
+    async del(@RequestPath() id: string) {
         this.logger.log('id:', id);
         console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         await this.repo.delete(id);

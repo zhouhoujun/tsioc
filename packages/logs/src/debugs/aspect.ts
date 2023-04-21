@@ -2,7 +2,7 @@ import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Logger } from '../logger';
 import { LogAspect } from '../aspect';
 import { Level } from '../Level';
-import { Log } from '../metadata/log';
+import { Log } from '../metadata';
 
 /**
  * debug log aspect.

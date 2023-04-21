@@ -1,7 +1,6 @@
-import { Abstract, getTokenOf, InvocationContext, Token, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, getTokenOf, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Endpoint } from '../Endpoint';
-import { runEndpoints } from '../endpoints/runs';
+import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 
 
@@ -9,17 +8,33 @@ import { Interceptor } from '../Interceptor';
  * endpoint filter is a chainable behavior modifier for `endpoints`.
  */
 @Abstract()
-export abstract class Filter<TCtx extends InvocationContext = InvocationContext, TOutput = any> implements Interceptor<TCtx, TOutput> {
+export abstract class Filter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
     /**
      * the method to implemet interceptor filter.
-     * @param context request context.
+     * @param input request input data.
      * @param next The next interceptor in the chain, or the backend
-     * if no interceptors remain in the chain.
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract intercept(context: TCtx, next: Endpoint<TCtx, TOutput>): Observable<TOutput>;
+    abstract intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<TOutput>;
 }
+
+/**
+ * filter service.
+ */
+export interface FilterService {
+    /**
+     * use filters
+     * @param filters 
+     * @param order 
+     */
+    useFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+}
+
+/**
+ * multi filters token
+ */
+export const FILTERS_TOKEN = tokenId<Filter[]>('FILTERS_TOKEN');
 
 const FILTERS = 'FILTERS';
 /**
@@ -41,31 +56,20 @@ export abstract class FilterHandlerResolver {
      * resolve filter hanlde.
      * @param filter 
      */
-    abstract resolve<T>(filter: Type<T> | T | string): Endpoint[];
+    abstract resolve<T>(filter: Type<T> | T | string): Handler[];
     /**
      * add filter handle.
      * @param filter filter type
-     * @param endpoint filter endpoint.
+     * @param handler filter handler.
      * @param order order.
      */
-    abstract addHandle(filter: Type | string, endpoint: Endpoint, order?: number): this;
+    abstract addHandle(filter: Type | string, handler: Handler, order?: number): this;
     /**
      * remove filter handle.
      * @param filter filter type.
-     * @param endpoint filter endpoint.
+     * @param handler filter handler.
      */
-    abstract removeHandle(filter: Type | string, endpoint: Endpoint): this;
+    abstract removeHandle(filter: Type | string, handler: Handler): this;
 }
 
-
-/**
- * run handlers.
- * @param ctx 
- * @param filter 
- * @returns 
- */
-export function runHandlers(ctx: InvocationContext, filter: Type | string): Observable<any> {
-    const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
-    return runEndpoints(handles, ctx, c => c.done === true)
-}
 

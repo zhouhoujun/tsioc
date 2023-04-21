@@ -1,9 +1,8 @@
 import { AssetContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
-import { Stats } from 'fs';
 
 
-export interface SendOptions {
+export interface SendOptions<TStats = any> {
     root: string | string[];
     index?: string;
     maxAge?: number;
@@ -13,13 +12,13 @@ export interface SendOptions {
     extensions?: string[] | false;
     brotli?: boolean;
     gzip?: boolean;
-    setHeaders?: (ctx: AssetContext, path: string, stats: Stats) => void;
+    setHeaders?: (ctx: AssetContext, path: string, stats: TStats) => void;
 }
 
 /**
  * Content send adapter.
  */
 @Abstract()
-export abstract class ContentSendAdapter {
-    abstract send(ctx: AssetContext, options: SendOptions): Promise<string>;
+export abstract class ContentSendAdapter<TStats = any> {
+    abstract send(ctx: AssetContext, options: SendOptions<TStats>): Promise<string>;
 }

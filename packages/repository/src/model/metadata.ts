@@ -22,7 +22,7 @@ export interface RepositoryMetadata extends ParamPropMetadata {
     /**
      * Repository Decorator, to autowired repository for paramerter or filed.
      * @param modle the model type.
-     * @param connection the mutil connection name.
+     * @param connection the multi connection name.
      */
     (model?: Type, connection?: string): PropParamDecorator;
 }

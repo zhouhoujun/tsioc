@@ -1,85 +1,101 @@
 import {
-    ArgumentExecption, EMPTY_OBJ, getToken, Inject, Injectable,
-    Injector, isFunction, isString, Nullable, Token, Type
+    ArgumentExecption, getToken, Inject, Injectable,
+    Injector, isString, Nullable, Token, Type
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
-import { LogConfigure } from './LogConfigure';
+import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
 import { Level, Levels, levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
+import { config } from 'rxjs';
 
 /**
  * Configure logger manger. use to get configed logger manger.
  *
  * @export
  */
-@Injectable()
-export class ConfigureLoggerManager implements LoggerManager {
+@Injectable({
+    static: true,
+    providedIn: 'root'
+})
+export class LoggerManagers implements LoggerManager {
     static ƿNPT = true;
 
-    private _config!: LogConfigure;
-    private _logManger!: LoggerManager;
-
+    private maps: Map<string | Token<LoggerManager>, LoggerManager>;
+    private cfgs: Map<string | Token<LoggerManager>, LogConfigure>;
+    private _defaultLogMgr!: LoggerManager;
+    private _defaultCfg!: LogConfigure;
     constructor(@Inject() protected injector: Injector) {
+        this.maps = new Map();
+        this.cfgs = new Map();
     }
 
-    get config(): LogConfigure {
-        if (!this._config) {
-            if (this.injector.has(LogConfigure)) {
-                this._config = this.injector.get(LogConfigure)
-            } else {
-                this._config = { adapter: 'console' }
-            }
-        }
-        return this._config
+    hasConfigure(adapter?: string | Type): boolean {
+        return adapter ? this.cfgs.has(adapter) : this.cfgs.size > 0;
     }
 
-    setLogConfigure(config?: LogConfigure | Type<LogConfigure>) {
-        if (!config) {
-            return
+    getConfigure(adapter?: string | Type): LogConfigure {
+        return adapter ? this.cfgs.get(adapter)! : this._defaultCfg;
+    }
+
+    getLoggerManager(adapter?: string | Type): LoggerManager {
+        this.init();
+        if (!adapter) {
+            this._defaultCfg.config && this._defaultLogMgr.configure(this._defaultCfg.config);
+            return this._defaultLogMgr;
         }
-        if (isFunction(config)) {
-            if (!this.injector.has(LogConfigure)) {
-                this.injector.register({ provide: LogConfigure, useClass: config });
-                this._config = this.injector.get(LogConfigure)
-            } else if (!this.injector.has(config)) {
-                this.injector.register(config);
-                this._config = this.injector.get<LogConfigure>(config)
-            }
-        } else {
-            this._config = config
+        const mgr = this.maps.get(adapter);
+        if (!mgr) {
+            throw new ArgumentExecption(`has no provider for LoggerManager ${adapter.toString()}.`)
         }
-        this._logManger = null!
+        const cfg = this.cfgs.get(adapter);
+        cfg?.config && mgr.configure(config);
+        return mgr;
     }
 
 
-    protected get logManger(): LoggerManager {
-        if (!this._logManger) {
-            const cfg: LogConfigure = this.config || <LogConfigure>EMPTY_OBJ;
-            const adapter = cfg.adapter || 'console';
-            let token: Token;
+    configure(config: LoggerConfig, adapter?: string | Type) {
+        this.getLoggerManager(adapter).configure(config)
+    }
+
+    getLogger(name?: string, adapter?: string | Type): Logger {
+        return this.getLoggerManager(adapter)?.getLogger(name)
+    }
+
+    private inited = false;
+    protected init() {
+        if (this.inited) return;
+        if (!this.injector.has(LOG_CONFIGURES)) {
+            this.injector.inject({ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
+        }
+        this.inited = true;
+        const configs = this.injector.get(LOG_CONFIGURES);
+        if (configs.length === 1 || !configs.some(v => v.asDefault)) {
+            configs[0].asDefault = true;
+        }
+        configs.forEach(cfg => {
+            let token: Token<LoggerManager>;
+            const adapter = cfg.adapter;
             if (isString(adapter)) {
                 token = getToken(LoggerManager, adapter)
             } else {
                 token = adapter
             }
-            this._logManger = this.injector.get<LoggerManager>(token);
-            if (!this._logManger) {
+            const manager = this.injector.get(token);
+            if (!manager) {
                 throw new ArgumentExecption(`has no provider for LoggerManager ${token.toString()}.`)
             }
-            if (cfg.config) {
-                this._logManger.configure(cfg.config)
+
+            this.cfgs.set(adapter, cfg);
+
+            cfg.config && manager.configure(cfg.config);
+            if (cfg.asDefault) {
+                this._defaultLogMgr = manager;
+                this._defaultCfg = cfg;
             }
-        }
-        return this._logManger
+            this.maps.set(adapter, manager);
+        });
     }
 
-    configure(config: LoggerConfig) {
-        this.logManger.configure(config)
-    }
-
-    getLogger(name?: string): Logger {
-        return this.logManger.getLogger(name)
-    }
 }
 
 
@@ -125,13 +141,13 @@ export class ConsoleLogManager implements LoggerManager {
  * @class ConsoleLog
  * @implements {Logger}
  */
-class ConsoleLog implements Logger {
+export class ConsoleLog implements Logger {
     static ƿNPT = true;
-    readonly name: string | undefined;
+    readonly category: string;
     formatHeader = true;
 
     constructor(name?: string, public level: Level = 'debug', private headerFormater?: HeaderFormater | null) {
-        this.name = name;
+        this.category = name || 'default';
     }
 
     protected machLevel(level: Levels): boolean {
@@ -140,9 +156,9 @@ class ConsoleLog implements Logger {
 
     protected getHeader(level: string): string[] {
         if (this.headerFormater) {
-            return this.headerFormater.format(this.name ?? '', level.toUpperCase());
+            return this.headerFormater.format(this.category ?? '', level.toUpperCase());
         }
-        return [`[${new Date().toISOString()}]`, `[${level.toUpperCase()}]`, this.name ?? '', '-'];
+        return [`[${new Date().toISOString()}]`, `[${level.toUpperCase()}]`, this.category ?? '', '-'];
     }
 
     log(...args: any[]): void {

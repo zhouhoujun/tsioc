@@ -1,10 +1,13 @@
+import { Module } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logs';
+import { Application } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
+import { Http, HttpModule, HttpServer } from '@tsdi/transport-http';
+
 import expect = require('expect');
 import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Application, LoggerModule, Module } from '@tsdi/core';
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '@tsdi/transport-http';
 
 @Module({
     imports: [
@@ -28,20 +31,28 @@ describe('middleware', () => {
             uses: [
                 ServerModule,
                 HttpModule.withOption({
-                    majorVersion: 2,
-                    serverOpts: {
-                        allowHTTP1: true,
-                        key,
-                        cert
+                    clientOpts: {
+                        authority: 'https://localhost:3200',
+                        options: {
+                            ca: cert
+                        }
                     },
-                    listenOpts: {
-                        port: 3200
+                    serverOpts: {
+                        majorVersion: 2,
+                        serverOpts: {
+                            allowHTTP1: true,
+                            key,
+                            cert
+                        },
+                        listenOpts: {
+                            port: 3200
+                        }
                     }
                 })
             ]
         });
-        const runable = ctx.createRunnable(HttpServer);
-        runable.instance.use((ctx, next) => {
+        const runable = await ctx.runners.attach(HttpServer);
+        runable.getInstance().use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.payload);
@@ -52,17 +63,9 @@ describe('middleware', () => {
             return next();
         }, 0);
 
-        await runable.run();
+        await ctx.runners.run(runable.type);
 
-        const http = ctx.injector.resolve(Http, {
-            provide: HttpClientOpts,
-            useValue: {
-                authority: 'https://localhost:3200',
-                options: {
-                    ca: cert
-                }
-            } as HttpClientOpts
-        });
+        const http = ctx.injector.resolve(Http);
 
         // has no parent.
         const rep = await lastValueFrom(http.get('test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })

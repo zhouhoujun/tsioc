@@ -27,18 +27,6 @@ export type GrpcRequestMethod = 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM' | 'METHO
 export type RequestMethod = HttpRequestMethod | GrpcRequestMethod | 'EVENT' | 'MESSAGE';// event
 
 
-export interface CommandPattern {
-    [key: string]: string | number;
-    cmd: string;
-}
-
-export interface ObjectPattern {
-    [key: string]: string | number | ObjectPattern;
-}
-
-export type Pattern = string | number | CommandPattern | ObjectPattern;
-
-
 //http
 /**
  * HEAD method

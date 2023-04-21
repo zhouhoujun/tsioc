@@ -4,7 +4,7 @@ import { isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
-import { createContext, InvocationContext, InvokeArguments, InvokeOptions } from '../context';
+import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { ReflectiveRef, ReflectiveFactory, InvokerOptions } from '../reflective';
 import { Injector, MethodType } from '../injector';
 import { DestroyCallback } from '../destroy';
@@ -235,28 +235,57 @@ export function hasContext<TArg>(option: InvokeArguments<TArg>) {
     return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.payload)
 }
 
-export class DefaultReflectiveFactory extends ReflectiveFactory {
-    protected maps: Map<ClassType, ReflectiveRef>;
-    constructor() {
-        super()
-        this.maps = new Map();
-    }
+export class ReflectiveResolverImpl extends ReflectiveFactory {
+
     create<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
-        const cltype = isFunction(type) ? type : type.type;
-        let refle = this.maps.get(cltype);
-        if (!refle) {
-            refle = new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
-            injector.onDestroy(() => this.maps.delete(cltype));
-            this.maps.set(cltype, refle);
-        }
-        return refle
+        return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
     }
 
-    destroy(): void {
-        this.maps.forEach(ref => {
-            ref.destroy?.();
-        });
-        this.maps.clear();
-    }
+    // protected maps: Map<ClassType, ReflectiveRef>;
+    // constructor() {
+    //     super()
+    //     this.maps = new Map();
+    // }
+    
+    // resolve<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+    //     const cltype = isFunction(type) ? type : type.type;
+    //     let refle = this.maps.get(cltype);
+    //     if (!refle) {
+    //         refle = new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
+    //         injector.onDestroy(() => this.maps.delete(cltype));
+    //         this.maps.set(cltype, refle);
+    //     }
+    //     return refle
+    // }
+
+    // onDestroy(): void {
+    //     this.maps.forEach(ref => {
+    //         ref.destroy?.();
+    //     });
+    //     this.maps.clear();
+    // }
+
+    // resolve<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+    //     const clst = isFunction(type) ? get(type) : type;
+    //     let refle: ReflectiveRef | null;
+    //     if (option) {
+    //         refle = this.create(clst, injector, option)
+    //     } else {
+    //         refle = injector.get(clst.refToken, null);
+    //         if (!refle) {
+    //             refle = this.create(clst, injector, option)
+    //         }
+    //     }
+    //     return refle
+    // }
+
+    // create<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+    //     const clst = isFunction(type) ? get(type) : type;
+    //     const refle = new DefaultReflectiveRef<T>(clst, injector, option);
+    //     injector.onDestroy(refle);
+    //     injector.setValue(clst.refToken, refle);
+    //     return refle;
+    // }
+
 }
 

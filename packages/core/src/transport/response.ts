@@ -5,10 +5,10 @@ import { OutgoingHeader, ResHeaders, ResHeadersLike } from './headers';
  * Transport error response.
  * response for `TransportClient`.
  */
-export class TransportErrorResponse {
+export class TransportErrorResponse<TStatus = any> {
     readonly error: any;
     readonly url: string;
-    readonly status: number | string;
+    readonly status: TStatus;
     get statusText(): string {
         return this.statusMessage;
     }
@@ -18,7 +18,7 @@ export class TransportErrorResponse {
     constructor(options: {
         url?: string,
         headers?: Record<string, OutgoingHeader>;
-        status: number | string;
+        status: TStatus;
         error?: any;
         statusText?: string;
         statusMessage?: string;
@@ -35,10 +35,10 @@ export class TransportErrorResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportHeaderResponse {
+export class TransportHeaderResponse<TStatus = any> {
     readonly url: string;
     readonly ok: boolean;
-    readonly status: number | string;
+    readonly status: TStatus;
     get statusText(): string {
         return this.statusMessage;
     }
@@ -50,7 +50,7 @@ export class TransportHeaderResponse {
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
-        status: number | string;
+        status: TStatus;
         statusText?: string;
         statusMessage?: string;
     }) {
@@ -68,14 +68,14 @@ export class TransportHeaderResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportResponse<T = any> extends TransportHeaderResponse {
+export class TransportResponse<T = any, TStatus = any> extends TransportHeaderResponse<TStatus> {
     readonly body: T | null;
 
     constructor(options: {
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
-        status: number | string;
+        status: TStatus
         statusText?: string;
         statusMessage?: string;
         body?: T;
@@ -96,7 +96,7 @@ export interface ResponseEvent {
  * transport event.
  * response for `TransportClient`.
  */
-export type TransportEvent<T = any> = TransportErrorResponse | TransportHeaderResponse | TransportResponse<T> | ResponseEvent;
+export type TransportEvent<T = any, TStatus = any> = TransportErrorResponse<TStatus> | TransportHeaderResponse<TStatus> | TransportResponse<T, TStatus> | ResponseEvent;
 
 /**
  * An error that represents a failed attempt to JSON.parse text coming back

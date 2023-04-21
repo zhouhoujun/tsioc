@@ -2,13 +2,13 @@ import { Abstract, StaticProvider, Type, ProvdierOf, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
-import { Endpoint } from './Endpoint';
-import { EndpointService } from './EndpointService';
-import { EndpointContext } from './endpoints/context';
 import { Filter } from './filters/filter';
 import { CanActivate } from './guard';
+import { Handler } from './Handler';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
+import { EndpointContext } from './endpoints/context';
+import { EndpointService } from './endpoints/endpoint.service';
 
 
 /**
@@ -41,19 +41,25 @@ export abstract class ApplicationEventMulticaster implements EndpointService, Ap
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptor(interceptor: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
     /**
      * use filter
      * @param filter 
      * @param order 
      */
-    abstract useFilter(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
     /**
-     * add event endpoint.
+     * add event handler.
      * @param event 
-     * @param endpoint 
+     * @param handler 
      */
-    abstract addListener(event: Type<ApplicationEvent>, endpoint: Endpoint, order?: number): this;
+    abstract addListener(event: Type<ApplicationEvent>, handler: Handler, order?: number): this;
+    /**
+     * add event handler.
+     * @param event 
+     * @param handler 
+     */
+    abstract removeListener(event: Type<ApplicationEvent>, handler: Handler): this;
     /**
      * multicast emit event.
      * @param event 

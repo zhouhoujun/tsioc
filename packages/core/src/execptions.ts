@@ -9,11 +9,14 @@ import { Execption, isArray } from '@tsdi/ioc';
  */
 export class MessageExecption extends Execption {
 
-    constructor(message?: string | string[], public status?: number | string) {
+    headerSent?: boolean;
+    headers?: Record<string, any>;
+    code?: any;
+    constructor(message?: string | string[], public status?: any) {
         super(isArray(message) ? message.join('\n') : message || '')
     }
 
-    get statusCode(): number | string {
+    get statusCode(): any {
         return this.status ?? 0;
     }
 
@@ -23,7 +26,7 @@ export class MessageExecption extends Execption {
 }
 
 /**
- * transport about execption.
+ * about execption.
  */
 export class AboutExecption extends MessageExecption {
     constructor(message = 'About') {
@@ -133,6 +136,14 @@ export class UnsupportedMediaTypeExecption extends MessageExecption {
         super(message, status)
     }
 }
+
+const pushDisMsg = 'Push disabled';
+export class PushDisabledExecption extends Execption {
+    constructor(message = pushDisMsg) {
+        super(`PushDisabledExecption: ${message}`)
+    }
+}
+
 
 
 /**

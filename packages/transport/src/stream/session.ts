@@ -1,4 +1,4 @@
-import { TransportExecption } from '@tsdi/core';
+import { MessageExecption } from '@tsdi/core';
 import { EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
@@ -276,7 +276,7 @@ export abstract class Session extends EventEmitter implements Closeable {
 }
 
 
-export class TransportStreamCancel extends TransportExecption {
+export class TransportStreamCancel extends MessageExecption {
     constructor(message?: string | Error) {
         super(message instanceof Error ? message.message : message)
     }

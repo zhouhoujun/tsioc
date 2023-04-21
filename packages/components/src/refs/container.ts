@@ -1,4 +1,4 @@
-import { ModuleRef } from '@tsdi/core';
+import { ModuleRef } from '@tsdi/ioc';
 import { Abstract, Injector, InvocationContext, Type, TypeDef } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';

@@ -3,26 +3,31 @@ import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentO
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
-import { setOptions } from './EndpointService';
 import { FilterModule } from './filters/filter.module';
 import { ApplicationArguments } from './ApplicationArguments';
 
 
 /**
  * application.
+ * 
+ * 应用程序启动入口
  *
  * @export
  * @class Application
  */
-export class Application<T, TArg extends ApplicationArguments = any> {
+export class Application<T = any, TArg = ApplicationArguments> {
 
     private _loads?: Type[];
     /**
      * root module ref.
+     * 
+     * 应用程序启动根模块
      */
-    readonly root: ModuleRef;
+    readonly root: ModuleRef<T>;
     /**
      * application context.
+     * 
+     * 应用程序上下文
      */
     protected context!: ApplicationContext<T, TArg>;
 
@@ -55,6 +60,8 @@ export class Application<T, TArg extends ApplicationArguments = any> {
 
     /**
      * get application context.
+     * 
+     * 获取当前启动应用程序的上下文.
      *
      * @returns instance of {@link ApplicationContext}.
      */
@@ -64,6 +71,8 @@ export class Application<T, TArg extends ApplicationArguments = any> {
 
     /**
      * run application.
+     * 
+     * 根据配置启动运行应用程序
      *
      * @static
      * @param {ApplicationOption} option option of type {@link ApplicationOption}
@@ -72,6 +81,8 @@ export class Application<T, TArg extends ApplicationArguments = any> {
     static run<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>
     /**
      * run application.
+     * 
+     * 根据模块，环境变量启动运行应用程序
      *
      * @static
      * @param {Type<T>} target target class type.
@@ -85,6 +96,8 @@ export class Application<T, TArg extends ApplicationArguments = any> {
 
     /**
      * run application of module.
+     * 
+     * 启动应用程序
      *
      * @param {...string[]} args
      * @returns {Promise<ApplicationContext<T, TArg>>}
@@ -104,6 +117,9 @@ export class Application<T, TArg extends ApplicationArguments = any> {
 
     /**
      * close application.
+     * 
+     * 关闭应用程序
+     * 
      * @returns 
      */
     close() {
@@ -164,20 +180,13 @@ export class Application<T, TArg extends ApplicationArguments = any> {
                 if (target.loads) {
                     this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
                 }
-                this.context = modueRef.resolve(ApplicationFactory).create(root, target);
+                this.context = modueRef.resolve(ApplicationFactory).create(root, { ...target, providers: [] });
             }
         }
         return this.context
     }
 
     protected prepareContext(ctx: ApplicationContext<T, TArg>): any {
-        const target = this.target;
-        if (!isFunction(target)) {
-            if (target.events) {
-                setOptions(this.context.eventMulticaster, target.events);
-            }
-            setOptions(this.context.runners, target);
-        }
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
             bootstraps.forEach((type, order) => {

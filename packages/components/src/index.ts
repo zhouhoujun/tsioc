@@ -1,7 +1,7 @@
 export * from './type';
 export * from './state';
 
-export { EventEmitter } from '@tsdi/core';
+export * from './EventEmitter';
 // metadata
 export * from './metadata/meta';
 export * from './metadata/decor';

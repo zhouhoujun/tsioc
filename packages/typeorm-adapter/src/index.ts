@@ -1,4 +1,4 @@
-export * from './helper';
 export * from './objectid.pipe';
 export * from './typeorm.module';
-export * from './TypeormServer';
+export * from './TypeormAdapter';
+export { TypeormModule as TypeOrmModule } from './typeorm.module'

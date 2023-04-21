@@ -2,15 +2,15 @@ import {
     Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
     Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
-import { Logger, LoggerManager } from '@tsdi/logs';
+import { Logger, LoggerManagers } from '@tsdi/logs';
 import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
-import { ApplicationContext, ApplicationFactory, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
+import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
-import { BootstrapOption } from '../endpoints/endpoint.factory';
+import { setHandlerOptions } from '../handlers/handler.service';
 
 
 
@@ -22,19 +22,25 @@ import { BootstrapOption } from '../endpoints/endpoint.factory';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext extends DefaultInvocationContext implements ApplicationContext {
+export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> extends DefaultInvocationContext implements ApplicationContext<T, TArg> {
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;
 
     private _runners: ApplicationRunners;
 
-    constructor(readonly injector: ModuleRef, options: InvokeArguments<any> = EMPTY_OBJ) {
+    constructor(readonly injector: ModuleRef, options: EnvironmentOption<TArg> = EMPTY_OBJ) {
         super(injector, options);
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
         this._runners = injector.get(ApplicationRunners);
-        this.onDestroy(this._runners)
+        this.onDestroy(this._runners);
+        if (options.eventsOptions) {
+            setHandlerOptions(this.eventMulticaster, options.eventsOptions);
+        }
+        if (options.runnersOptions) {
+            setHandlerOptions(this.runners, options.runnersOptions);
+        }
     }
 
     protected override createInjector(injector: Injector, providers?: ProviderType[]): Injector {
@@ -66,32 +72,14 @@ export class DefaultApplicationContext extends DefaultInvocationContext implemen
         return typeRef;
     }
 
-    getLogger(name?: string): Logger {
-        return this.injector.get(LoggerManager, null)?.getLogger(name) ?? null!;
+    getLogger(name?: string, adapter?: string | Type): Logger {
+        return this.injector.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 
     publishEvent(event: ApplicationEvent): Observable<any>;
     publishEvent(event: Object): Observable<any>;
     publishEvent(obj: ApplicationEvent | Object): Observable<any> {
         return this.eventMulticaster.publishEvent(obj);
-        // if (!obj) throw new ArgumentExecption('Event must not be null');
-
-        // // Decorate event as an ApplicationEvent if necessary
-        // let event: ApplicationEvent;
-        // if (obj instanceof ApplicationEvent) {
-        //     event = obj
-        // }
-        // else {
-        //     event = new PayloadApplicationEvent(this, obj)
-        // }
-
-        // this._multicaster?.emit(event);
-
-        // // Publish event via parent context as well...
-        // const context = this.get(ApplicationContext, InjectFlags.SkipSelf);
-        // if (context) {
-        //     context.publishEvent(event)
-        // }
     }
 
     /**
@@ -125,15 +113,15 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         super()
     }
 
-    create<T, TArg extends ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
+    create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
         }
-        if(!option) {
+        if (!option) {
             option = {};
         }
-        if(!option.payload) {
+        if (!option.payload) {
             option.payload = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);

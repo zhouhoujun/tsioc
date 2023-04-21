@@ -21,7 +21,7 @@ import { EndpointContext } from './context';
 }
 
 /**
- * model argument resolvers mutil token.
+ * model argument resolvers multi token.
  * provider instances of {@link ModelArgumentResolver}
  */
 export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS');

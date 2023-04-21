@@ -6,20 +6,35 @@ import { ReflectiveRef } from './reflective';
 
 /**
  * asyc like
+ * 
+ * 异步数据
  */
 export type AsyncLike<T> = T | Promise<T> | Observable<T>;
 
 
 /**
  * Interface to perform an operation invocation.
+ * 
+ * 用于执行操作调用的接口。
  */
 export interface OperationInvoker<T = any> {
     /**
      * type ref.
+     * 
+     * 类反射
      */
     get typeRef(): ReflectiveRef;
+
+    /**
+     * `InvocationContext` of operation method
+     * 
+     * 调用类方法的上下文环境
+     */
+    get context(): InvocationContext;
     /**
      * invoker order.
+     * 
+     * 调用方法顺序
      */
     order?: number;
     /**
@@ -28,10 +43,14 @@ export interface OperationInvoker<T = any> {
     get returnType(): ClassType;
     /**
      * invoke method name
+     * 
+     * 调用类方法名称
      */
     get method(): string;
     /**
      * origin method descriptor.
+     * 
+     * 类方法描述符
      */
     get descriptor(): TypedPropertyDescriptor<T>;
     /**
@@ -64,5 +83,7 @@ export interface OperationInvoker<T = any> {
 
 /**
  * invoker like.
+ * 
+ * 类似执行操作调用的接口
  */
 export type InvokerLike<T = any> = OperationInvoker<T> | ((ctx: InvocationContext) => T);

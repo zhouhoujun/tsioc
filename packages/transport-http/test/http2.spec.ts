@@ -1,14 +1,16 @@
-import { Injector, isArray } from '@tsdi/ioc';
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { Application, ApplicationContext, Module, LoggerModule } from '@tsdi/core';
+import { Injector, Module, isArray } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
+
+import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServer } from '../src';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -20,15 +22,23 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 2,
-            protocol: 'http',
-            serverOpts: {
-                allowHTTP1: true,
-                key,
-                cert
+            clientOpts: {
+                authority: 'http://localhost:3200',
+                options: {
+                    ca: cert
+                }
             },
-            listenOpts: {
-                port: 3200
+            serverOpts: {
+                majorVersion: 2,
+                protocol: 'http',
+                serverOpts: {
+                    allowHTTP1: true,
+                    key,
+                    cert
+                },
+                listenOpts: {
+                    port: 3200
+                }
             }
         }),
         DeviceManageModule,
@@ -58,15 +68,7 @@ describe('http2 server, Http', () => {
 
         ctx = await Application.run(MainApp);
         injector = ctx.injector;
-        client = injector.resolve(Http, {
-            provide: HttpClientOpts,
-            useValue: {
-                authority: 'http://localhost:3200',
-                options: {
-                    ca: cert
-                }
-            } as HttpClientOpts
-        });
+        client = injector.get(Http);
     });
 
     it('make sure singleton', async () => {
@@ -114,7 +116,7 @@ describe('http2 server, Http', () => {
     it('not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
-                catchError(err=> {
+                catchError(err => {
                     console.log(err);
                     return of(err)
                 })
@@ -124,12 +126,12 @@ describe('http2 server, Http', () => {
 
     it('bad request', async () => {
         const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
-        .pipe(
-            catchError(err=> {
-                console.log(err);
-                return of(err)
-            })
-        ));
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
         expect(a.status).toEqual(400);
     })
 
@@ -181,7 +183,7 @@ describe('http2 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -210,7 +212,7 @@ describe('http2 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -239,7 +241,7 @@ describe('http2 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 

@@ -25,3 +25,11 @@ export abstract class ListenOpts {
     ipv6Only?: boolean | undefined;
     withCredentials?: boolean;
 }
+
+/**
+ * listen service.
+ */
+export interface ListenService<LOpt = ListenOpts> {
+    listen(options: LOpt, listeningListener?: () => void): this;
+    listen(port: number, host?: string, listeningListener?: () => void): this;
+}

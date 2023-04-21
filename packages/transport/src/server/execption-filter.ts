@@ -1,132 +1,18 @@
-import {
-    Outgoing, StatusFactory, Filter, Endpoint, EndpointContext, BadRequestExecption, ExecptionHandler,
-    ForbiddenExecption, InternalServerExecption, NotFoundExecption, MessageArgumentExecption, MessageExecption,
-    ENOENT, MessageMissingExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
-} from '@tsdi/core';
-import { Injectable, isFunction } from '@tsdi/ioc';
-import { MissingModelFieldExecption } from '@tsdi/repository';
-import { Buffer } from 'buffer';
-import { Observable, map } from 'rxjs';
-import { TransportContext } from './context';
+import { AssetContext, ExecptionFilter } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+import { ErrorRespondAdapter } from './error.respond';
 
 
 @Injectable({ static: true })
-export class ExecptionFinalizeFilter implements Filter {
-    intercept(input: any, next: Endpoint<any, any>, context: TransportContext): Observable<any> {
+export class ExecptionFinalizeFilter<TCtx extends AssetContext> extends ExecptionFilter<TCtx> {
 
-        return next.handle(input, context)
-            .pipe(
-                map(r => {
-
-                    if (!context.execption) return r;
-
-                    const err = context.execption;
-                    //finllay defalt send error.
-                    let headerSent = false;
-                    if (context.sent || !context.writable) {
-                        headerSent = err.headerSent = true
-                    }
-
-                    // nothing we can do here other
-                    // than delegate to the app-level
-                    // handler and log.
-                    if (headerSent) {
-                        return
-                    }
-
-                    const res = context.response as Outgoing;
-
-                    // first unset all headers
-                    if (isFunction(res.getHeaderNames)) {
-                        res.getHeaderNames().forEach(name => res.removeHeader(name))
-                    } else {
-                        (res as any)._headers = {} // Node < 7.7
-                    }
-
-                    // then set those specified
-                    if (err.headers) context.setHeader(err.headers);
-
-                    // force text/plain
-                    const factory = context.statusFactory;
-                    context.type = 'text';
-                    const code = err.status || err.statusCode;
-                    let status = code ? factory.createByCode(code) : factory.create('InternalServerError');
-                    let msg;
-                    if (err instanceof MessageExecption) {
-                        msg = err.message
-                    } else {
-                        // ENOENT support
-                        if (ENOENT === err.code) status = factory.create('NotFound');
-
-                        // respond
-                        msg = status.statusText;
-                    }
-                    context.status = status;
-                    msg = Buffer.from(msg ?? status.statusText ?? '');
-                    context.length = Buffer.byteLength(msg);
-                    res.end(msg)
-
-                    return res;
-
-                })
-            )
+    constructor(private respondAdatper: ErrorRespondAdapter<TCtx>) {
+        super()
     }
 
-}
-
-
-@Injectable({ static: true })
-export class TransportExecptionHandlers {
-
-    @ExecptionHandler(NotFoundExecption)
-    notFoundExecption(ctx: EndpointContext, execption: NotFoundExecption) {
-        execption.status = ctx.get(StatusFactory).getStatusCode('NotFound');
-        ctx.execption = execption;
-    }
-
-    @ExecptionHandler(ForbiddenExecption)
-    forbiddenExecption(ctx: EndpointContext, execption: ForbiddenExecption) {
-        execption.status = ctx.get(StatusFactory).getStatusCode('Forbidden');
-        ctx.execption = execption;
-    }
-
-    @ExecptionHandler(BadRequestExecption)
-    badReqExecption(ctx: EndpointContext, execption: BadRequestExecption) {
-        execption.status = ctx.get(StatusFactory).getStatusCode('BadRequest');
-        ctx.execption = execption;
-    }
-
-    @ExecptionHandler(UnauthorizedExecption)
-    unauthorized(ctx: EndpointContext, execption: UnauthorizedExecption) {
-        execption.status = ctx.get(StatusFactory).getStatusCode('Unauthorized');
-        ctx.execption = execption;
-    }
-
-    @ExecptionHandler(InternalServerExecption)
-    internalServerError(ctx: EndpointContext, execption: InternalServerExecption) {
-        execption.status = ctx.get(StatusFactory).getStatusCode('InternalServerError');
-        ctx.execption = execption;
-    }
-
-    @ExecptionHandler(UnsupportedMediaTypeExecption)
-    unsupported(ctx: EndpointContext, execption: UnsupportedMediaTypeExecption) {
-        execption.status = ctx.get(StatusFactory).getStatusCode('UnsupportedMediaType');
-        ctx.execption = execption;
-    }
-
-    @ExecptionHandler(MessageArgumentExecption)
-    anguExecption(ctx: EndpointContext, execption: MessageArgumentExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
-    }
-
-    @ExecptionHandler(MissingModelFieldExecption)
-    missFieldExecption(ctx: EndpointContext, execption: MissingModelFieldExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
-    }
-
-    @ExecptionHandler(MessageMissingExecption)
-    missExecption(ctx: EndpointContext, execption: MessageMissingExecption) {
-        ctx.execption = new BadRequestExecption(execption.message, ctx.get(StatusFactory).getStatusCode('BadRequest'))
+    catchError(context: TCtx, err: any, caught: Observable<any>): any {
+        return this.respondAdatper.respond(context, err);
     }
 
 }

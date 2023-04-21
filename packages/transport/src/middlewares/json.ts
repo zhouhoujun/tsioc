@@ -1,8 +1,7 @@
 import { AssetContext, Middleware } from '@tsdi/core';
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
+import { StreamAdapter } from '../stream';
 import { ctype, hdr } from '../consts';
-import { JsonStreamStringify } from '../stringify';
-import { isJson, isStream } from '../utils';
 
 @Abstract()
 export abstract class JsonMiddlewareOption {
@@ -13,11 +12,14 @@ export abstract class JsonMiddlewareOption {
 
 
 @Injectable()
-export class EncodeJsonMiddleware implements Middleware {
+export class EncodeJsonMiddleware implements Middleware<AssetContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
-    constructor(@Nullable() option: JsonMiddlewareOption) {
+    constructor(
+        private adapter: StreamAdapter,
+        @Nullable() option: JsonMiddlewareOption) {
+
         this.pretty = option?.pretty ?? true;
         this.spaces = option?.spaces ?? 2;
         this.paramName = option?.param ?? '';
@@ -28,8 +30,8 @@ export class EncodeJsonMiddleware implements Middleware {
         await next();
 
         const body = ctx.body;
-        const strm = isStream(body);
-        const json = isJson(body);
+        const strm = this.adapter.isStream(body);
+        const json = this.adapter.isJson(body);
 
         if (!json && !strm) {
             return;
@@ -40,7 +42,7 @@ export class EncodeJsonMiddleware implements Middleware {
         if (strm) {
             // resp.contentType = 'application/json';
             ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON);
-            ctx.body = new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
+            ctx.body = this.adapter.jsonSreamify(body, undefined, pretty ? this.spaces: 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
             // resp.contentType = 'application/json; charset=utf-8';
             ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON_UTF8);

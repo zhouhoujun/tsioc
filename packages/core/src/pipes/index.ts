@@ -20,7 +20,5 @@ export * from './parses/number';
 export * from './parses/string';
 export * from './parses/json';
 
-export * from './pipe.service';
-
 export * from './transform.module';
 

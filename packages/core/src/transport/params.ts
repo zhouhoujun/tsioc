@@ -1,5 +1,8 @@
 import { isArray, isNil, isPlainObject, isString } from '@tsdi/ioc';
 
+/**
+ * Parameter Codec
+ */
 export interface ParameterCodec {
     encodeKey(key: string): string;
     encodeValue(value: string): string;
@@ -8,6 +11,9 @@ export interface ParameterCodec {
     decodeValue(value: string): string;
 }
 
+/**
+ * empty coder.
+ */
 export const EMPTY_CODER = {
     encodeKey(key: string): string {
         return key

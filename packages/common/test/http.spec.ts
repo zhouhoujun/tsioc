@@ -1,4 +1,9 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
+import {
+    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
+    Middleware, BadRequestExecption, EndpointContext, AssetContext, compose, NEXT
+} from '@tsdi/core';
+import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
@@ -7,12 +12,7 @@ import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-    Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, Chain, BadRequestExecption, ServerEndpointContext
-} from '@tsdi/core';
 import { HttpClient, HttpClientModule } from '../src';
-import { LoggerModule } from '@tsdi/logs';
 
 
 @RouteMapping('/device')
@@ -25,7 +25,7 @@ class DeviceController {
     }
 
     @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
@@ -78,13 +78,10 @@ class DeviceController {
 
     }
 
-    @Handle(/dd./)
+    @Handle('dd*')
     async subMessage1() {
 
     }
-
-
-
 
 }
 
@@ -101,10 +98,12 @@ class DeviceController {
 
 // }
 
-@Handle('/hdevice')
+@Handle({
+    route: '/hdevice'
+})
 class DeviceQueue implements Middleware {
 
-    async invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -112,7 +111,7 @@ class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
@@ -134,10 +133,10 @@ class DeviceQueue implements Middleware {
 @Injectable()
 class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -149,9 +148,9 @@ class DeviceStartupHandle implements Middleware {
 @Injectable()
 class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: ServerEndpointContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -199,8 +198,8 @@ class DeviceAModule {
         LoggerModule,
         // TcpModule,
         HttpModule.withOption({
-            majorVersion: 1,
             serverOpts: {
+                majorVersion: 1,
                 // allowHTTP1: true,
                 // key,
                 // cert
@@ -347,7 +346,7 @@ describe('HttpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -376,7 +375,7 @@ describe('HttpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -405,7 +404,7 @@ describe('HttpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
