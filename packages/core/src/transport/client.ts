@@ -378,7 +378,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 ...options,
                 headers,
                 params,
-                body: options.body ?? null,
+                body: options.body ?? options.payload ?? null,
                 context,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json'

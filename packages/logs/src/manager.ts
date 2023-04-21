@@ -1,6 +1,5 @@
 import {
     ArgumentExecption, getToken, Inject, Injectable,
-    InjectFlags,
     Injector, isString, Nullable, Token, Type
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
@@ -27,10 +26,6 @@ export class LoggerManagers implements LoggerManager {
     constructor(@Inject() protected injector: Injector) {
         this.maps = new Map();
         this.cfgs = new Map();
-        if (!this.injector.has(LOG_CONFIGURES)) {
-            this.injector.inject({ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
-        }
-        this.init();
     }
 
     hasConfigure(adapter?: string | Type): boolean {
@@ -42,6 +37,7 @@ export class LoggerManagers implements LoggerManager {
     }
 
     getLoggerManager(adapter?: string | Type): LoggerManager {
+        this.init();
         if (!adapter) return this._defaultLogMgr;
         const mgr = this.maps.get(adapter);
         if (!mgr) {
@@ -62,15 +58,18 @@ export class LoggerManagers implements LoggerManager {
     private inited = false;
     protected init() {
         if (this.inited) return;
+        if (!this.injector.has(LOG_CONFIGURES)) {
+            this.injector.inject({ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
+        }
         this.inited = true;
         const configs = this.injector.get(LOG_CONFIGURES);
-        if (configs.length === 1 || !configs.some(v=> v.asDefault)) {
+        if (configs.length === 1 || !configs.some(v => v.asDefault)) {
             configs[0].asDefault = true;
         }
         configs.forEach(cfg => {
             let token: Token<LoggerManager>;
             const adapter = cfg.adapter;
-            if(this.maps.has(adapter)) return;
+            if (this.maps.has(adapter)) return;
             if (isString(adapter)) {
                 token = getToken(LoggerManager, adapter)
             } else {

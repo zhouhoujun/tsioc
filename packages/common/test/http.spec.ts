@@ -1,7 +1,7 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, BadRequestExecption, EndpointContext, AssetContext
+    Middleware, BadRequestExecption, EndpointContext, AssetContext, compose, NEXT
 } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -111,7 +111,7 @@ class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        // await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
@@ -136,7 +136,7 @@ class DeviceStartupHandle implements Middleware {
     invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -150,7 +150,7 @@ class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -266,12 +266,12 @@ describe('HttpClient', () => {
         const client = ctx.resolve(HttpClient);
         const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
         const device = rep.body['device'];
-        // const aState = rep.body['deviceA_state'];
-        // const bState = rep.body['deviceB_state'];
+        const aState = rep.body['deviceA_state'];
+        const bState = rep.body['deviceB_state'];
 
         expect(device).toBe('device next');
-        // expect(aState).toBe('startuped');
-        // expect(bState).toBe('startuped');
+        expect(aState).toBe('startuped');
+        expect(bState).toBe('startuped');
     });
 
     it('not found', async () => {

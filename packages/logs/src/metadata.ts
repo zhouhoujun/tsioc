@@ -152,7 +152,7 @@ const loggerResolver = {
             throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LoggerModule in package '@tsdi/logs',  please register LoggerModule first. `)
         }
         const adapter = pr.adapter;
-        if (!managers.hasConfigure(adapter)) {
+        if (!managers.getLoggerManager(adapter)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
                 local = ` method ${ctx.methodName} param ${pr.paramName} of class `

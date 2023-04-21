@@ -140,7 +140,7 @@ export class Http extends Client<HttpRequest, HttpEvent> {
             }
 
             // Construct the request.
-            return new HttpRequest(options.method ?? GET, url!, (options.body !== undefined ? options.body : null), {
+            return new HttpRequest(options.method ?? GET, url!, options.body ?? options.payload ?? null, {
                 ...options,
                 headers,
                 params,

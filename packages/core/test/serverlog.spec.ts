@@ -1,5 +1,5 @@
 import { isString, lang } from '@tsdi/ioc';
-import { LoggerManagers, ILogger, LogConfigure, LOG_CONFIGURES } from '@tsdi/logs';
+import { LoggerManagers, ILogger, LogConfigure, LOG_CONFIGURES, LoggerModule } from '@tsdi/logs';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
@@ -27,10 +27,10 @@ export class ServerBootTest {
             ]
         });
         console.log(this.ctx.baseURL);
-        this.logdir = path.join(this.ctx.baseURL, 'log-caches');
+        this.logdir = path.join(this.ctx.baseURL, 'log');
         await del(this.logdir);
         const now = new Date();
-        this.logfile = path.join(this.ctx.baseURL, `log-caches/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
+        this.logfile = path.join(this.ctx.baseURL, `log/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }
 
     @Test()
@@ -48,7 +48,7 @@ export class ServerBootTest {
     @Test()
     async canWriteLogFile() {
         const msg = 'log file test';
-        this.ctx.getLogger().info(msg);
+        this.ctx.getLogger('test').info(msg);
         await lang.delay(15);
         expect(fs.existsSync(this.logfile)).toBeTruthy();
         const content = fs.readFileSync(this.logfile, 'utf-8');
@@ -60,6 +60,6 @@ export class ServerBootTest {
     @After()
     async after() {
         await this.ctx.close();
-        await del(this.logdir);
+        // await del(this.logdir);
     }
 }

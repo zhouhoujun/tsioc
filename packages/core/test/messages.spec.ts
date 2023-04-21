@@ -10,10 +10,12 @@ import {
     EndpointContext,
     POST,
     GET,
-    RouterModule
+    RouterModule,
+    compose,
+    NEXT
 } from '../src';
 import { LoggerModule } from '@tsdi/logs';
-import { Http, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { Http, HttpContext, HttpModule, HttpServer } from '@tsdi/transport-http';
 
 
 @RouteMapping('/device')
@@ -92,11 +94,12 @@ class DeviceController {
 
 // }
 
-// @Handle('/hdevice')
-@Injectable()
+@Handle({
+    route: '/hdevice'
+})
 class DeviceQueue implements Middleware {
 
-    async invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: HttpContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -104,18 +107,18 @@ class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        // await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
         const deviceA_state = ctx.get('deviceA_state');
         const deviceB_state = ctx.get('deviceB_state');
 
-        Object.assign(ctx.payload, {
+       ctx.body = {
             device,
             deviceA_state,
             deviceB_state
-        });
+        };
 
         console.log('device sub msg done.');
         return await next();
@@ -129,7 +132,7 @@ class DeviceStartupHandle implements Middleware {
     invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -143,7 +146,7 @@ class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: EndpointContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.type === 'startup') {
+        if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -258,12 +261,12 @@ describe('app route mapping', () => {
             })));
 
         const device = rep.body['device'];
-        // const aState = rep.body['deviceA_state'];
-        // const bState = rep.body['deviceB_state'];
+        const aState = rep.body['deviceA_state'];
+        const bState = rep.body['deviceB_state'];
 
         expect(device).toBe('device next');
-        // expect(aState).toBe('startuped');
-        // expect(bState).toBe('startuped');
+        expect(aState).toBe('startuped');
+        expect(bState).toBe('startuped');
     });
 
     it('post route response object', async () => {
@@ -287,7 +290,12 @@ describe('app route mapping', () => {
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(Http).send('/device/usage', { observe: 'response', method: POST, payload: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
+        const a = await lastValueFrom(ctx.resolve(Http).send('/device/usage', { observe: 'response', method: POST, payload: { id: 'test1', age: '50', createAt: '2021-10-01' } })
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
         // a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();

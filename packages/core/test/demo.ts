@@ -150,8 +150,8 @@ export class StatupModule { }
 
 @Module({
     imports: [
-        ServerModule,
         SharedModule,
+        ServerModule,
         ServerLogsModule,
         StatupModule,
     ],
@@ -174,7 +174,7 @@ export const logConfig = {
             focas: {
                 type: 'dateFile',
                 pattern: '-yyyyMMdd.log',
-                filename: './log-caches/focas',
+                filename: './log/focas',
                 backups: 3,
                 alwaysIncludePattern: true,
                 category: 'focas'

@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, ProviderType, isArray } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { AnnotationLogAspect } from './aspect';
 import { LoggerManager } from './LoggerManager';
@@ -39,8 +39,8 @@ export class LoggerModule {
      * @param debug 
      * @returns 
      */
-    static withOptions(config: LogConfigure | LogConfigure[] | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
-        const providers: ProviderType[] = config ? (isArray(config) ? config : [config]).map(cfg => ({ provide: LOG_CONFIGURES, useValue: config, multi: true })) : [{ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true }] //[ { provide: LogConfigure, useValue: config }] : [];
+    static withOptions(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
+        const providers: ProviderType[] = config ? (isArray(config) ? config : [config]).map(cfg => toProvider(LOG_CONFIGURES, cfg, true)) : [{ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true }]
         if (debug) {
             providers.push(DebugLogAspect)
         }
