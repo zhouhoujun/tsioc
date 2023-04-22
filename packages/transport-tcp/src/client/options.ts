@@ -1,6 +1,5 @@
-import { ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, tokenId } from '@tsdi/ioc';
-import { TransportClientOpts } from '@tsdi/transport';
+import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter } from '@tsdi/core';
+import { tokenId } from '@tsdi/ioc';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ConnectionOptions } from 'tls';
 
@@ -9,35 +8,40 @@ import { ConnectionOptions } from 'tls';
 /**
  * tcp client options.
  */
-@Abstract()
-export abstract class TcpClientOpts extends TransportClientOpts<TransportRequest, TransportEvent> {
+export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest> {
     /**
      * packet size limit.
      */
-    abstract sizeLimit?: number;
+    sizeLimit?: number;
     /**
      * packet buffer encoding.
      */
-    abstract encoding?: BufferEncoding;
+    encoding?: BufferEncoding;
     /**
      * packet delimiter code.
      */
-    abstract delimiter?: string;
+    delimiter?: string;
     /**
      * socket options.
      */
-    abstract socketOpts?: SocketConstructorOpts;
+    socketOpts?: SocketConstructorOpts;
     /**
      * connect options.
      */
-    abstract connectOpts?: NetConnectOpts | ConnectionOptions;
+    connectOpts?: NetConnectOpts | ConnectionOptions;
 }
+
+
+/**
+ * TCP client opptions.
+ */
+export const TCP_CLIENT_OPTS = tokenId<TcpClientOpts>('TCP_CLIENT_OPTS');
 
 /**
  * tcp client interceptors.
  */
 export const TCP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('TCP_CLIENT_INTERCEPTORS');
 /**
- * tcp client execption filters.
+ * tcp client filters.
  */
-export const TCP_CLIENT_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('TCP_CLIENT_EXECPTION_FILTERS');
+export const TCP_CLIENT_FILTERS = tokenId<Filter[]>('TCP_CLIENT_FILTERS');

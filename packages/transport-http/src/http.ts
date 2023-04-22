@@ -9,7 +9,7 @@ import { ListenOptions } from 'net';
 import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
 import { HttpPathInterceptor } from './client/path';
-import { HttpServerOpts, HTTP_SERVER_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_EXECPTION_FILTERS, Http2ServerOpts } from './server/options';
+import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, Http2ServerOpts } from './server/options';
 import { HttpExecptionHandlers } from './server/exception-filter';
 import { HttpStatusVaildator } from './status';
 import { HttpRequestAdapter } from './client/request';
@@ -70,7 +70,7 @@ export class HttpModule {
     static withOption(options: HttpModuleOptions): ModuleWithProviders<HttpModule> {
         const providers: ProviderType[] = [
             { provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } },
-            { provide: HTTP_SERVER_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
+            { provide: HTTP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(HttpGuardsHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: HttpClientOpts) => {
                     return createHandler(injector, opts);
@@ -81,7 +81,7 @@ export class HttpModule {
                 useFactory: (injector: Injector, opts: HttpServerOpts) => {
                     return createTransportEndpoint(injector, opts)
                 },
-                deps: [Injector, HTTP_SERVER_OPTS]
+                deps: [Injector, HTTP_SERV_OPTS]
             })
         ];
         return {
@@ -116,7 +116,7 @@ const defServerOpts = {
     detailError: true,
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
-    filtersToken: HTTP_EXECPTION_FILTERS,
+    filtersToken: HTTP_SERV_FILTERS,
     interceptors: [
         // LogInterceptor,
         // StatusInterceptorFilter,

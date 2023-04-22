@@ -1,9 +1,7 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection } from '@tsdi/core';
 import { ArgumentExecption, Execption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { ev, hdr, HeandersSentExecption, InvalidStreamExecption } from '@tsdi/transport';
 import { Writable } from 'stream';
-import { Connection } from './connection';
-
 
 /**
  * outgoing message.

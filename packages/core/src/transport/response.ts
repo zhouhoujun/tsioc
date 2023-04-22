@@ -13,11 +13,11 @@ export class TransportErrorResponse<TStatus = any> {
         return this.statusMessage;
     }
     readonly statusMessage: string;
-    readonly headers: Record<string, OutgoingHeader>;
+    readonly headers: ResHeaders;
 
     constructor(options: {
         url?: string,
-        headers?: Record<string, OutgoingHeader>;
+        headers?: ResHeaders;
         status: TStatus;
         error?: any;
         statusText?: string;
@@ -27,7 +27,7 @@ export class TransportErrorResponse<TStatus = any> {
         this.status = options.status;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.error = options.error;
-        this.headers = options.headers ?? {};
+        this.headers = new ResHeaders(options.headers);
     }
 }
 
@@ -58,7 +58,7 @@ export class TransportHeaderResponse<TStatus = any> {
         this.status = options.status;
         this.ok = options.ok ?? false;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
-        this.headers = new ResHeaders(options.headers ?? {});
+        this.headers = new ResHeaders(options.headers);
     }
 
 }

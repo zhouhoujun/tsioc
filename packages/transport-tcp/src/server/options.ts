@@ -1,31 +1,47 @@
-import { Interceptor } from '@tsdi/core';
-import { Abstract, tokenId } from '@tsdi/ioc';
-import { SessionOptions, ContentOptions, MimeSource, TransportServerOpts, IncomingMessage, OutgoingMessage } from '@tsdi/transport';
+import { Interceptor, Filter, MiddlewareLike, AssetContext, TransportEndpointOptions, Incoming, Outgoing } from '@tsdi/core';
+import { tokenId } from '@tsdi/ioc';
+import { SessionOptions, ContentOptions, MimeSource } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
+import { TcpContext } from './context';
 
 
 
 /**
  * TCP server options.
  */
-@Abstract()
-export abstract class TcpServerOpts extends TransportServerOpts<IncomingMessage, OutgoingMessage> {
+export interface TcpServerOpts extends TransportEndpointOptions<TcpContext, Outgoing> {
 
-    abstract maxConnections?: number;
-    abstract proxy?: boolean;
+    autoListen?: boolean;
+    maxConnections?: number;
+    proxy?: boolean;
     /**
      * socket timeout.
      */
-    abstract timeout?: number;
-    abstract mimeDb?: Record<string, MimeSource>;
-    abstract content?: boolean | ContentOptions;
-    abstract session?: boolean | SessionOptions;
-    abstract serverOpts?: net.ServerOpts | tls.TlsOptions;
-    abstract listenOpts: net.ListenOptions;
+    timeout?: number;
+    mimeDb?: Record<string, MimeSource>;
+    content?: boolean | ContentOptions;
+    session?: boolean | SessionOptions;
+    serverOpts?: net.ServerOpts | tls.TlsOptions;
+    listenOpts: net.ListenOptions;
 }
+
+/**
+ * TCP server opptions.
+ */
+export const TCP_SERV_OPTS = tokenId<TcpServerOpts>('TCP_SERV_OPTS');
 
 /**
  * Tcp server interceptors.
  */
-export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<IncomingMessage, OutgoingMessage>[]>('TCP_SERV_INTERCEPTORS');
+export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<Incoming, Outgoing>[]>('TCP_SERV_INTERCEPTORS');
+
+/**
+ * TCP Middlewares.
+ */
+export const TCP_MIDDLEWARES = tokenId<MiddlewareLike<AssetContext>[]>('TCP_MIDDLEWARES');
+/**
+ * TCP execption filters.
+ */
+export const TCP_SERV_FILTERS = tokenId<Filter<Incoming, Outgoing>[]>('TCP_SERV_FILTERS');
+

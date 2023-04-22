@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
 import { ReadableStream, WritableStream, DuplexStream, EventEmitter } from './stream';
@@ -77,6 +78,10 @@ export interface Socket extends DuplexStream {
  */
 export interface Connection<TSocket extends EventEmitter = EventEmitter> extends DuplexStream {
     /**
+     * destroyed or not.
+     */
+    get destroyed(): boolean;
+    /**
      * socket.
      */
     get socket(): TSocket;
@@ -106,6 +111,20 @@ export interface Connection<TSocket extends EventEmitter = EventEmitter> extends
      * @param callback 
      */
     setTimeout(msecs: number, callback?: () => void): this;
+
+    /**
+     * destroy connection
+     * @param error 
+     * @param callback 
+     */
+    destroy(error?: any, callback?: (err?: any) => void): void;
+}
+
+@Abstract()
+export abstract class ConnectionFactory {
+
+    abstract create<TSocket extends EventEmitter, T = any>(options: T): Promise<Connection<TSocket>>;
+    abstract create<TSocket extends EventEmitter>(socket: TSocket): Promise<Connection<TSocket>>;
 }
 
 /**
@@ -134,6 +153,8 @@ export interface Incoming<T = any, TConn = any> extends Packet<T>, ReadableStrea
     readonly method?: string;
 
     readonly connection: TConn;
+
+    setTimeout?: (msecs: number, callback: () => void) => void;
 
     body?: any;
 

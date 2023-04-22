@@ -1,4 +1,4 @@
-import { MessageExecption } from '@tsdi/core';
+import { MessageExecption, Connection } from '@tsdi/core';
 import { Abstract, ArgumentExecption, EMPTY, EMPTY_OBJ, isFunction, lang } from '@tsdi/ioc';
 import { ev } from '@tsdi/transport';
 import { EventEmitter } from 'events';
@@ -38,46 +38,6 @@ export interface ConnectionOpts extends DuplexifyOptions, Record<string, any> {
 }
 
 /**
- * connection
- */
-@Abstract()
-export abstract class Connection<TSocket extends EventEmitter = EventEmitter> extends Duplexify {
-
-    /**
-     * socket.
-     */
-    abstract get socket(): TSocket;
-    /**
-     * Enable/disable keep-alive functionality, and optionally set the initial
-     * delay before the first keepalive probe is sent on an idle socket.
-     *
-     * Set `initialDelay` (in milliseconds) to set the delay between the last
-     * data packet received and the first keepalive probe. Setting `0` for`initialDelay` will leave the value unchanged from the default
-     * (or previous) setting.
-     *
-     * Enabling the keep-alive functionality will set the following socket options:
-     *
-     * * `SO_KEEPALIVE=1`
-     * * `TCP_KEEPIDLE=initialDelay`
-     * * `TCP_KEEPCNT=10`
-     * * `TCP_KEEPINTVL=1`
-     * @since v0.1.92
-     * @param [enable=false]
-     * @param [initialDelay=0]
-     * @return The socket itself.
-     */
-    abstract setKeepAlive(enable?: boolean, initialDelay?: number): this;
-    /**
-     * setTimeout
-     * @param msecs 
-     * @param callback 
-     */
-    abstract setTimeout(msecs: number, callback?: () => void): this;
-
-}
-
-
-/**
  * events maps.
  */
 export interface Events extends Record<string, (...args: any[]) => void> {
@@ -115,7 +75,7 @@ const evets = [ev.CLOSE, ev.ERROR];
 /**
  * Duplex Connection.
  */
-export class DuplexConnection<TSocket extends EventEmitter = EventEmitter> extends Connection<TSocket> {
+export class DuplexConnection<TSocket extends EventEmitter = EventEmitter> extends Duplexify implements Connection<TSocket> {
     private _timeout?: any;
     protected _parser: PacketParser;
     protected _generator: PacketGenerator;

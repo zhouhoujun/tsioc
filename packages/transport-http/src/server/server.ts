@@ -9,7 +9,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
-import { HttpServerOpts, HTTP_SERVER_OPTS } from './options';
+import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
 import { HttpEndpoint } from './endpoint';
 
 
@@ -21,7 +21,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
 
     @Log() logger!: Logger;
 
-    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERVER_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
+    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
     }
@@ -158,25 +158,6 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
         req.once(ev.ABOUT, () => cancel?.unsubscribe())
         return cancel;
     }
-
-    // protected async setupServe(server: http2.Http2Server | http.Server | https.Server, observer: Subscriber<http2.Http2Server | http.Server | https.Server>, opts: HttpServerOpts): Promise<Cleanup> {
-    //     // const cleanup = await super.setupServe(server, observer, opts);
-    //     const injector = this.endpoint.injector;
-    //     const sharing = opts.sharing;
-    //     //sharing servers
-    //     if (sharing) {
-    //         const factory = injector.get(RunnableFactory);
-    //         const providers = [
-    //             { provide: HttpServer, useValue: this },
-    //             { provide: HTTP_SERVEROPTIONS, useValue: opts }
-    //         ];
-    //         await Promise.all(sharing.map(sr => {
-    //             const runnable = factory.create(sr, injector, { providers });
-    //             return runnable.run()
-    //         }))
-    //     }
-    //     return cleanup;
-    // }
 
 
     protected validOptions(opts: HttpServerOpts) {
