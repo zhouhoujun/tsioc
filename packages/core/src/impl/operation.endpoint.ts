@@ -27,6 +27,11 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
 
     }
 
+    equals(target: OperationEndpoint): boolean {
+        if(target === this) return true;
+        return this.invoker.equals(target.invoker);
+    }
+
     protected override getBackend(): Backend<TInput, TOutput> {
         return new FnHandler(this.respond.bind(this));
     }

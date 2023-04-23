@@ -61,6 +61,12 @@ export abstract class OperationEndpoint<TInput extends InvocationContext = Invoc
      * opteration invoker.
      */
     abstract get invoker(): OperationInvoker;
+
+    /**
+     * is this equals to target or not
+     * @param target 
+     */
+    abstract equals(target: any): boolean;
 }
 
 

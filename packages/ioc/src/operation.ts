@@ -79,6 +79,11 @@ export interface OperationInvoker<T = any> {
      * @param context 
      */
     resolveArguments(context: InvocationContext): any[];
+    /**
+     * is equals to target or not.
+     * @param target 
+     */
+    equals(target: OperationInvoker): boolean;
 }
 
 /**

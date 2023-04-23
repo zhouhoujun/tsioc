@@ -2,7 +2,7 @@ import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, ClassType, EMPTY_OBJ, Type } from '../types';
 import { assign, cleanObj, getParentClass } from '../utils/lang';
-import { isFunction } from '../utils/chk';
+import { isBoolean, isFunction } from '../utils/chk';
 import { runChain, Handle } from '../handle';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
@@ -307,15 +307,15 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
         const meta = ctx.define.metadata as ClassMetadata & InjectableMetadata;
-        if (meta.abstract) {
-            def.getAnnotation().abstract = true
+        if (isBoolean(meta.abstract)) {
+            def.getAnnotation().abstract = meta.abstract
         }
 
-        if (meta.singleton) {
-            def.getAnnotation().singleton = true
+        if (isBoolean(meta.singleton)) {
+            def.getAnnotation().singleton = meta.singleton
         }
-        if (meta.static) {
-            def.getAnnotation().static = true
+        if (isBoolean(meta.static)) {
+            def.getAnnotation().static = meta.static
         }
         if (meta.provide && def.provides.indexOf(meta.provide) < 0) {
             def.provides.push(meta.provide)

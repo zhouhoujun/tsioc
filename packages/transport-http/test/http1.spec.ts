@@ -98,6 +98,8 @@ describe('http1.1 server, Http', () => {
     });
 
     it('not found', async () => {
+        
+        const client = injector.resolve(Http);
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
