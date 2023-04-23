@@ -1,6 +1,6 @@
 import * as http2 from 'http2';
-import { tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
+import { Token, tokenId } from '@tsdi/ioc';
+import { Client, ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 
@@ -19,6 +19,10 @@ export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTT
  */
 
 export interface HttpClientOpts extends ConfigableHandlerOptions<HttpRequest> {
+    /**
+     * client token.
+     */
+    client?: Token<Client>;
     /**
      * http2 authority.
      */

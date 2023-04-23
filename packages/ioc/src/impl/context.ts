@@ -210,38 +210,20 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
      */
-    get<T>(token: Token<T>, flags?: InjectFlags): T;
-    /**
-     * get token value.
-     * 
-     * 获取上下文中标记指令的实例值
-     * @param token the token to get value.
-     * @param context invcation context, type of {@link InvocationContext}.
-     * @param flags inject flags, type of {@link InjectFlags}.
-     * @returns the instance of token.
-     */
-    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
-    get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
+    get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
         if (this.isSelf(token)) {
             this._injected = true;
             return this as any
         }
-        let context: InvocationContext;
-        if (isNumber(contextOrFlag)) {
-            flags = contextOrFlag;
-            context = this as InvocationContext;
-        } else {
-            context = contextOrFlag ?? this
-        }
-        return (flags != InjectFlags.HostOnly ? this.injector.get(token, context, flags, null) : null)
-            ?? this.getFormRef(token, context, flags) ?? null as T;
+        return (flags != InjectFlags.HostOnly ? this.injector.get(token, this, flags, null) : null)
+            ?? this.getFormRef(token, flags) ?? null as T;
     }
 
-    protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
+    protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
         let val: T | undefined;
         this._refs.some(r => {
-            val = r.get(token, context, flags);
+            val = r.get(token, flags);
             return isDefined(val)
         });
 
@@ -302,7 +284,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             }
         }
 
-        let canResolved = meta.nullable;
+        let canResolved = meta.nullable || (meta.flags && (meta.flags & InjectFlags.Optional));
         if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
                 result = r.resolve(meta, this, target);
@@ -444,20 +426,22 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 return ctx.has(parameter.provider as Token, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.provider as Token, ctx, parameter.flags)
+                return ctx.get(parameter.provider as Token, parameter.flags)
             }
         },
         {
             canResolve(parameter, ctx) {
                 if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
                     || getDef(parameter.provider).abstract) return false;
-                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, parameter.flags) : true
             },
             resolve(parameter, ctx) {
                 const pdr = parameter.provider!;
-                const injector = ctx.injector?.parent ?? ctx.injector;
-                injector.register(pdr as Type);
-                return injector.get(pdr, ctx, parameter.flags)
+                if (parameter.name || parameter.propertyKey) {
+                    const injector = ctx.injector.parent ?? ctx.injector;
+                    injector.register(pdr as Type);
+                }
+                return ctx.get(pdr, parameter.flags)
             }
         }
     ),
@@ -468,7 +452,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 return ctx.has(parameter.name!, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.name!, ctx, parameter.flags) as any
+                return ctx.get(parameter.name!, parameter.flags) as any
             }
         }
     ),
@@ -479,37 +463,31 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 return ctx.has(parameter.type!, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.type!, ctx, parameter.flags)
+                return ctx.get(parameter.type!, parameter.flags)
             }
         },
         {
             canResolve(parameter, ctx) {
                 if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || getDef(parameter.type!).abstract) return false;
-                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, parameter.flags) : true
             },
             resolve(parameter, ctx) {
                 const ty = parameter.type!;
-                const injector = ctx.injector?.parent ?? ctx.injector;
-                injector.register(ty as Type);
-                return injector.get(ty, ctx, parameter.flags)
+                if (parameter.name || parameter.propertyKey) {
+                    const injector = ctx.injector.parent ?? ctx.injector;
+                    injector.register(ty as Type);
+                }
+                return ctx.get(ty, parameter.flags)
             }
         }
     ),
     // default value
     {
         canResolve(parameter) {
-            return isDefined(parameter.defaultValue)
+            return isDefined(parameter.defaultValue) || parameter.nullable === true || (parameter.flags && !!(parameter.flags & InjectFlags.Optional)) as boolean
         },
         resolve(parameter) {
-            return parameter.defaultValue as any
-        }
-    },
-    {
-        canResolve(parameter) {
-            return parameter.nullable === true
-        },
-        resolve(parameter) {
-            return null!
+            return parameter.defaultValue ?? null
         }
     }
 ];

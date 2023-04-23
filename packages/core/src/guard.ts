@@ -40,6 +40,8 @@ export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string)
 
 /**
  * guards service.
+ * 
+ * 守卫服务
  */
 export interface GuardsService {
     /**

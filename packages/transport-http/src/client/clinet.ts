@@ -1,4 +1,4 @@
-import { createContext, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { createContext, Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
 import {
     RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
 } from '@tsdi/core';
@@ -34,12 +34,12 @@ const NONE = {} as http2.ClientHttp2Session;
 /**
  * http client for nodejs
  */
-@Injectable()
+@Injectable({ static: false })
 export class Http extends Client<HttpRequest, HttpEvent> {
 
     constructor(
         readonly handler: HttpGuardsHandler,
-        @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
+        @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
         super()
         if (!option?.authority) {
             this.connection = NONE;

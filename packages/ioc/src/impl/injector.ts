@@ -343,10 +343,12 @@ export class DefaultInjector extends Injector {
             return this.get(token);
         }
         let context: InvocationContext | undefined;
+        let isCtx = false;
         if (args.length === 1) {
-            const arg1 = args[0]
+            const arg1 = args[0];
             if (arg1 instanceof InvocationContext) {
                 context = arg1;
+                isCtx = true;
             } else if (isArray(arg1)) {
                 context = arg1.length ? createContext(this, { providers: arg1 }) : undefined;
             } else if (arg1.provide) {
@@ -358,9 +360,9 @@ export class DefaultInjector extends Injector {
             context = createContext(this, { providers: args });
         }
 
-        const result = this.get(token, context);
+        const result = (context && !isCtx) ? context.resolve(token) : this.get(token, context);
 
-        if (context && context !== args[0] && !context.used) {
+        if (context && !isCtx && !context.used) {
             immediate(() => context!.destroy());
         }
         return result;
@@ -439,7 +441,10 @@ export class DefaultInjector extends Injector {
         }
         tgRefl = tgRefl ?? get(targetClass);
         const refti = this.get(ReflectiveFactory).create(tgRefl, this);
-        return refti.invoke(propertyKey, context, instance)
+        const val = refti.invoke(propertyKey, context, instance);
+        immediate(() => refti.destroy());
+        
+        return val;
     }
 
     protected assertNotDestroyed(): void {

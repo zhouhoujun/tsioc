@@ -7,6 +7,8 @@ import { TransportContext } from './context';
 
 /**
  * Transport endpoint.
+ * 
+ * 传输节点
  */
 @Abstract()
 export abstract class TransportEndpoint<TInput extends TransportContext, TOutput> extends ConfigableEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
@@ -14,6 +16,11 @@ export abstract class TransportEndpoint<TInput extends TransportContext, TOutput
     abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
 }
 
+/**
+ * Transport endpoint options.
+ * 
+ * 传输节点配置
+ */
 export interface TransportEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T, TArg> {
     middlewaresToken?: Token<MiddlewareLike<T>[]>;
     middlewares?: ProvdierOf<MiddlewareLike<T>>[];
@@ -21,6 +28,8 @@ export interface TransportEndpointOptions<T extends TransportContext = any, TArg
 
 /**
  * create transport endpoint.
+ * 
+ * 创建传输节点实例化对象
  * @param injector 
  * @param options 
  * @returns 

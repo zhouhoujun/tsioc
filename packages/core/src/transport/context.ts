@@ -6,6 +6,8 @@ import { createPayloadResolver } from '../endpoints/resolvers';
 
 /**
  * abstract transport context.
+ * 
+ * 传输节点上下文
  */
 @Abstract()
 export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {

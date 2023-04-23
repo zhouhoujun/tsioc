@@ -25,7 +25,7 @@ export interface HttpModuleOptions {
     /**
      * client options.
      */
-    clientOpts?: HttpClientOpts;
+    clientOpts?: HttpClientOpts | HttpClientOpts[];
     /**
      * client handler provider
      */

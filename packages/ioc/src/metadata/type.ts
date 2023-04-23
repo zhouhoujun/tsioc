@@ -5,7 +5,7 @@ import {
     PropertyMetadata, ParameterMetadata, MethodMetadata
 } from './meta';
 import { InvocationContext, InvokeArguments } from '../context';
-import { Token, tokenId } from '../tokens';
+import { Token } from '../tokens';
 import { ArgumentResolver } from '../resolver';
 import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
@@ -15,7 +15,6 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
 import { MethodType } from '../injector';
 import { Handle } from '../handle';
-// import { ReflectiveRef } from '../reflective';
 
 
 
@@ -271,14 +270,6 @@ export class Class<T = any> {
      * runnable defines.
      */
     readonly runnables: RunableDefine[];
-
-    // private _refToken?: Token<ReflectiveRef>;
-    // get refToken(): Token<ReflectiveRef> {
-    //     if (!this._refToken) {
-    //         this._refToken = tokenId<ReflectiveRef>(this.className + 'Ref');
-    //     }
-    //     return this._refToken;
-    // }
 
     constructor(public readonly type: ClassType<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};

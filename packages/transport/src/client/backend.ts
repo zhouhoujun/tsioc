@@ -2,7 +2,7 @@ import {
     TransportEvent, TransportRequest, Redirector,
     ResponseJsonParseError, Backend, Incoming, HEAD, DuplexStream
 } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Nullable, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer, XSSI_PREFIX } from '../utils';
 import { ev, hdr } from '../consts';
@@ -23,7 +23,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
         private reqAdapter: RequestAdapter<TRequest, TResponse, TStatus>,
         private streamAdapter: StreamAdapter,
         private mimeAdapter: MimeAdapter,
-        private redirector: Redirector<TStatus>) {
+        @Nullable() private redirector?: Redirector<TStatus>) {
     }
 
     handle(req: TRequest): Observable<TResponse> {
@@ -75,7 +75,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
 
                 if (this.vaildator.isRedirect(status)) {
                     // HTTP fetch step 5.2
-                    this.redirector.redirect<TResponse>(req, status, headers).subscribe(observer);
+                    this.redirector?.redirect<TResponse>(req, status, headers).subscribe(observer);
                     return;
                 }
                 ok = this.vaildator.isOk(status);
