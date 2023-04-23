@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Execption, Injector, InvokeArguments, ProvdierOf, StaticProvider, Token, Type } from '@tsdi/ioc';
+import { Abstract, EMPTY, Execption, Injector, InvokerOptions, ProvdierOf, StaticProvider, Token, Type } from '@tsdi/ioc';
 import { CanActivate, GuardsService } from '../guard';
 import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -9,7 +9,7 @@ import { Backend, Handler } from '../Handler';
 /**
  * handler service options.
  */
-export interface HandlerOptions<TInput = any, TArg = any> extends InvokeArguments<TArg> {
+export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions<any, TArg> {
     /**
      * An array of dependency-injection tokens used to look up `CanActivate()`
      * handlers, in order to determine if the current user is allowed to

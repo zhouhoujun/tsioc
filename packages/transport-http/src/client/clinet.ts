@@ -34,7 +34,7 @@ const NONE = {} as http2.ClientHttp2Session;
 /**
  * http client for nodejs
  */
-@Injectable()
+@Injectable({ static: false })
 export class Http extends Client<HttpRequest, HttpEvent> {
 
     constructor(
@@ -80,12 +80,16 @@ export class Http extends Client<HttpRequest, HttpEvent> {
     protected onConnect(connection: http2.ClientHttp2Session, opts: HttpClientOpts): Observable<http2.ClientHttp2Session> {
         return new Observable((observer) => {
             let cleaned = false;
-            const onError = (err: Error) => observer.error(err);
+            const onError = (err: Error) => {
+                connection.close();
+                observer.error(err);
+            }
             const onConnect = () => {
                 observer.next(connection);
                 observer.complete();
             };
             const onClose = () => {
+                connection.close();
                 observer.complete();
             }
             connection.on(ev.CONNECT, onConnect)

@@ -227,11 +227,12 @@ export interface EventHandler {
     <TArg>(event: Type<ApplicationEvent>, option?: EndpointOptions<TArg>): MethodDecorator;
 }
 
-function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler') {
+function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler', dynamic?: boolean) {
     return createDecorator(name, {
         props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
             method: (ctx, next) => {
+                if (ctx.class.getAnnotation().static === false) return;
                 const typeRef = ctx.class;
                 const decors = typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
                 const injector = ctx.injector;
@@ -246,7 +247,25 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                 });
                 next()
             }
-        }
+        },
+        runtime: dynamic ? {
+            method: (ctx, next) => {
+                if (ctx.class.getAnnotation().static !== false) return;
+                const typeRef = ctx.class;
+                const decors = typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
+                const injector = ctx.injector;
+                const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+                const multicaster = injector.get(ApplicationEventMulticaster);
+                decors.forEach(decor => {
+                    const { filter, order, ...options } = decor.metadata;
+
+                    const endpoint = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
+                    multicaster.addListener(filter ?? defaultFilter, endpoint, order ?? 0);
+                    factory.onDestroy(() => multicaster.removeListener(filter ?? defaultFilter, endpoint))
+                });
+                next()
+            }
+        } : undefined
     })
 }
 
@@ -354,7 +373,7 @@ export interface ShutdownEventHandler {
  * rasie after Application close invoked.
  * @Shutdown
  */
-export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown');
+export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown', true);
 
 
 /**
@@ -377,7 +396,7 @@ export interface DisposeEventHandler {
  * rasie after `ApplicationShutdownEvent`
  * @Dispose
  */
-export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose');
+export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose', true);
 
 
 /**
