@@ -1,10 +1,11 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, LoggerModule, Module, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
+import { LoggerModule } from '@tsdi/logs';
 
 
 
@@ -72,7 +73,7 @@ export class DeviceController {
 
     }
 
-    @Handle(/dd./, 'tcp')
+    @Handle('dd*', 'tcp')
     async subMessage1() {
 
     }
@@ -89,9 +90,11 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         TcpModule.withOptions({
-            timeout: 1000,
-            listenOpts: {
-                port: 2000
+            serverOpts: {
+                timeout: 1000,
+                listenOpts: {
+                    port: 2000
+                }
             }
         })
     ],
@@ -115,7 +118,7 @@ describe('TCP Server & TCP Client', () => {
         ctx = await Application.run(TcpTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
-            provide: TcpClientOpts,
+            provide: TCP_CLIENT_OPTS,
             useValue: {
                 connectOpts: {
                     port: 2000

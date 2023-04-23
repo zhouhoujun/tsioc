@@ -2,7 +2,7 @@ import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBo
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '../src';
@@ -90,9 +90,11 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         TcpModule.withOptions({
-            timeout: 1000,
-            listenOpts: {
-                port: 2000
+            serverOpts: {
+                timeout: 1000,
+                listenOpts: {
+                    port: 2000
+                }
             }
         })
     ],
@@ -116,7 +118,7 @@ describe('TCP Server & TCP Client', () => {
         ctx = await Application.run(TcpTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
-            provide: TcpClientOpts,
+            provide: TCP_CLIENT_OPTS,
             useValue: {
                 connectOpts: {
                     port: 2000

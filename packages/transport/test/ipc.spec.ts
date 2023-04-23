@@ -5,7 +5,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
 import { RedirectResult } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
@@ -93,9 +93,11 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         ServerModule,
         LoggerModule,
         TcpModule.withOptions({
-            timeout: 1000,
-            listenOpts: {
-                path: ipcpath
+            serverOpts: {
+                timeout: 1000,
+                listenOpts: {
+                    path: ipcpath
+                }
             }
         })
     ],
@@ -120,7 +122,7 @@ describe('IPC Server & IPC Client', () => {
         ctx = await Application.run(IPCTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
-            provide: TcpClientOpts,
+            provide: TCP_CLIENT_OPTS,
             useValue: {
                 connectOpts: {
                     path: ipcpath
