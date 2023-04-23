@@ -20,10 +20,6 @@ export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTT
 
 export interface HttpClientOpts extends ConfigableHandlerOptions<HttpRequest> {
     /**
-     * client token.
-     */
-    client?: Token<Client>;
-    /**
      * http2 authority.
      */
     authority?: string;
@@ -35,6 +31,13 @@ export interface HttpClientOpts extends ConfigableHandlerOptions<HttpRequest> {
      * request options.
      */
     requestOptions?: http2.ClientSessionRequestOptions;
+}
+
+export interface HttpClientsOpts extends HttpClientOpts {
+    /**
+     * client token.
+     */
+    client: Token<Client>;
 }
 
 /**

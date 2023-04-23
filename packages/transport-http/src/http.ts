@@ -1,5 +1,5 @@
 import { ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter,
     HelmetMiddleware, LOCALHOST, LogInterceptor, RequestAdapter, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, StatusVaildator, TransportBackend, TransportModule
@@ -16,7 +16,7 @@ import { HttpRequestAdapter } from './client/request';
 import { HttpRespondAdapter } from './server/respond';
 import { HttpGuardsHandler } from './client/handler';
 import { HttpEndpoint } from './server/endpoint';
-import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts } from './client/option';
+import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './client/option';
 import { HTTP_MIDDLEWARES } from './server/context';
 
 
@@ -25,7 +25,7 @@ export interface HttpModuleOptions {
     /**
      * client options.
      */
-    clientOpts?: HttpClientOpts | HttpClientOpts[];
+    clientOpts?: HttpClientOpts | HttpClientsOpts[];
     /**
      * client handler provider
      */
@@ -69,7 +69,14 @@ export class HttpModule {
 
     static withOption(options: HttpModuleOptions): ModuleWithProviders<HttpModule> {
         const providers: ProviderType[] = [
-            { provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } },
+            ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
+                provide: opts.client,
+                useFactory: (injector: Injector) => {
+                    return injector.resolve(Http, [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                },
+                deps: [Injector]
+            }))
+                : [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
             { provide: HTTP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(HttpGuardsHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: HttpClientOpts) => {

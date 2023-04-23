@@ -10,7 +10,7 @@ import { TcpGuardHandler } from './handler';
 /**
  * TcpClient. client of  `tcp` or `ipc`. 
  */
-@Injectable()
+@Injectable({ static: false })
 export class TcpClient extends Client<TransportRequest, TransportEvent> {
 
     private options: TcpClientOpts;

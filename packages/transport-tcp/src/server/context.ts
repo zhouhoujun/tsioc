@@ -1,35 +1,57 @@
 import { Incoming, ListenOpts, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import * as net from 'net';
+import * as tls from 'tls';
 
 
 export class TcpContext extends AbstractAssetContext<Incoming, Outgoing> {
 
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return tcptl.test(url.trim())
     }
+
     protected parseURL(req: Incoming<any, any>, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+        const url = req.url ?? '';
+        if (this.isAbsoluteUrl(url)) {
+            return new URL(url);
+        } else {
+            const { host, port, path } = listenOpts;
+            const isIPC = !host && !port;
+            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`tcp://${host}:${port ?? 3000}`, path);
+            const uri = new URL(url, baseUrl);
+            if (isIPC) {
+                uri.protocol = 'ipc';
+            }
+            return uri;
+        }
     }
+
     get writable(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.writable
     }
+    
     get secure(): boolean {
-        throw new Error('Method not implemented.');
+        return this.request.connection.socket instanceof tsl.TLSSocket;
     }
+
     get protocol(): string {
-        throw new Error('Method not implemented.');
+        return !this.listenOpts.host && !this.listenOpts.port? 'ipc' : 'tcp'
     }
+
     get status(): string | number {
-        throw new Error('Method not implemented.');
+        return this.response.statusCode
     }
+
     set status(status: string | number) {
-        throw new Error('Method not implemented.');
+        this.response.statusCode = status
     }
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage
     }
     set statusMessage(message: string) {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = message
     }
 
 }
+
+const tcptl = /^(tcp|ipc):\/\//i;
