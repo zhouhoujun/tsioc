@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, tokenId } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
 import { ReadableStream, WritableStream, DuplexStream, EventEmitter } from './stream';
@@ -72,6 +72,10 @@ export interface Socket extends DuplexStream {
      */
     setKeepAlive?(enable?: boolean, initialDelay?: number): this;
 }
+/**
+ * Socket token.
+ */
+export const SOCKET = tokenId<Socket>('SOCKET');
 
 /**
  * Connection interface.
@@ -120,12 +124,10 @@ export interface Connection<TSocket extends EventEmitter = EventEmitter> extends
     destroy(error?: any, callback?: (err?: any) => void): void;
 }
 
-@Abstract()
-export abstract class ConnectionFactory {
-
-    abstract create<TSocket extends EventEmitter, T = any>(options: T): Promise<Connection<TSocket>>;
-    abstract create<TSocket extends EventEmitter>(socket: TSocket): Promise<Connection<TSocket>>;
-}
+/**
+ * Connention token.
+ */
+export const CONNECTION = tokenId<Connection>('CONNECTION');
 
 /**
  * server side incoming message.

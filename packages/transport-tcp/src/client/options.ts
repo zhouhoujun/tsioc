@@ -14,6 +14,10 @@ export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest
      */
     sizeLimit?: number;
     /**
+     * keep alive
+     */
+    keepalive?: number;
+    /**
      * packet buffer encoding.
      */
     encoding?: BufferEncoding;

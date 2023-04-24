@@ -1,5 +1,5 @@
 import {
-    Incoming, Outgoing, ReqHeaders, ResHeaders, ResponsePacket, TransportErrorResponse, TransportEvent,
+    Incoming, Outgoing, ReqHeaders, ResHeaders, ResponsePacket, SOCKET, TransportErrorResponse, TransportEvent,
     TransportHeaderResponse, TransportParams, TransportRequest, TransportResponse, WritableStream
 } from '@tsdi/core';
 import { Injectable, InvocationContext } from '@tsdi/ioc';
@@ -30,7 +30,9 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
     }
 
     createRequest(req: TransportRequest<any>): Outgoing {
-        // req.context.get();
+       const socket = req.context.get(SOCKET);
+
+       
     }
 
     send(request: WritableStream<any>, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {

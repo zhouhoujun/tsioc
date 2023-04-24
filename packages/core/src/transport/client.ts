@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
@@ -373,7 +373,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
             }
 
             const context = options.context || createContext(this.handler.injector, options);
-            context.setValue(Client, this);
+            this.initContext(context);
             // Construct the request.
             req = new TransportRequest(first, {
                 ...options,
@@ -388,15 +388,23 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         return req as TRequest;
     }
 
-    /**
-     * connect service.
-     */
-    protected abstract connect(): Promise<any> | Observable<any>;
-
     @Shutdown()
     close(): Promise<void> {
         return this.onShutdown();
     }
+
+    /**
+     * init request context.
+     * @param context 
+     */
+    protected initContext(context: InvocationContext) {
+        context.setValue(Client, this);
+    }
+
+    /**
+     * connect service.
+     */
+    protected abstract connect(): Promise<any> | Observable<any>;
 
     protected abstract onShutdown(): Promise<void>;
 
