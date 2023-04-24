@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isFunction, isNil, isPrimitive, isPromise, isType } from './chk';
+import { getClass, isArray, isFunction, isNil, isObject, isPrimitive, isPromise, isType } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -102,6 +102,23 @@ export function deepForEach<T>(
         } else if (value) {
             fn(value as T)
         }
+    })
+}
+
+/**
+ * deep in object.
+ * @param input 
+ * @param fn 
+ * @param path 
+ * @returns 
+ */
+export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
+    if (isObject(input) == false) return;
+    Object.keys(input).forEach(name => {
+        const chpth = path ? name : `${path}.${name}`;
+        const val = input[name];
+        if (isNil(val) || fn(chpth, val) === false) return;
+        deepIn(val, fn, chpth);
     })
 }
 

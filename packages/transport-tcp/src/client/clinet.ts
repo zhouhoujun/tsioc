@@ -1,5 +1,6 @@
 import { Client, Connection, ConnectionFactory, Shutdown, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Injectable, lang, Nullable } from '@tsdi/ioc';
+import { Injectable, lang, Nullable, promisify } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { Observable, defer, of } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -12,6 +13,9 @@ import { TcpGuardHandler } from './handler';
  */
 @Injectable({ static: false })
 export class TcpClient extends Client<TransportRequest, TransportEvent> {
+
+    @InjectLog()
+    private logger!: Logger;
 
     private options: TcpClientOpts;
     constructor(readonly handler: TcpGuardHandler, private connFac: ConnectionFactory, @Nullable() options: TcpClientOpts) {
@@ -33,12 +37,13 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
         })
     }
 
-    @Shutdown()
-    close(): Promise<void> {
-        this.connection.destroy
-        const defer = lang.defer();
-        this.connection.destroy(null, err => err ? defer.reject(err) : defer.resolve());
-        return defer.promise;
+
+    protected override async onShutdown(): Promise<void> {
+        await promisify<void, Error>(this.connection.destroy, this.connection)(null!)
+            .catch(err=> {
+                this.logger?.error(err);
+                return err;
+            });
     }
 
     protected isValid(connection: Connection<tls.TLSSocket | net.Socket>): boolean {

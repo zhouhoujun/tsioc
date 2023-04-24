@@ -1,31 +1,34 @@
 import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, Token, tokenId } from '@tsdi/ioc';
-import { EndpointBackend, RequestOptions, TransportRequest } from '@tsdi/core';
-import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
+import { Client, ConfigableHandler, RequestOptions, TransportRequest } from '@tsdi/core';
 import { loadPackageDefinition, load, ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
-import { Duplex } from 'stream';
+import { HttpEvent, HttpRequest } from '@tsdi/common';
 import * as gload from '@grpc/proto-loader';
 import { Observable } from 'rxjs';
+import { GRPC_CLIENT_OPTS, GrpcClientOptions } from './options';
+import { GrpcHandler } from './handler';
 
-
-@Abstract()
-export abstract class GrpcClientOptions extends TransportClientOpts {
-    abstract packageDef: Record<string, ServiceDefinition | ProtobufTypeDefinition>;
-}
 
 /**
  * grpc client.
  */
 @Injectable()
-export class GrpcClient extends TransportClient<RequestOptions, GrpcClientOptions> {
-    constructor(@Inject() private options: GrpcClientOptions) {
-        super(options)
+export class GrpcClient extends Client<HttpRequest, HttpEvent> {
+
+    constructor(
+        readonly handler: GrpcHandler,
+        @Inject(GRPC_CLIENT_OPTS) private options: GrpcClientOptions) {
+        super()
     }
 
-    protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+
+    protected connect(): Observable<any> {
+        gload.load(this.options.packageDef)
+        gload.loadFileDescriptorSetFromObject(this.options.packageDef)
+    }
+
+    protected onShutdown(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    
-    protected createDuplex(opts: GrpcClientOptions): Duplex {
-        throw new Error('Method not implemented.');
-    }
+
+
 }

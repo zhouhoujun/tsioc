@@ -177,11 +177,13 @@ const loggerResolver = {
 
 
 /**
- * Logger decorator, for method or class.
+ * InjectLog decorator, for method or class.
+ * 
+ * 日志注入修饰器
  *
- * @Log
+ * @InjectLog
  */
-export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
+export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectLog', {
     actionType: [ActionTypes.paramInject, ActionTypes.propInject],
     init: (ctx) => {
         if (ctx.define.decorType === Decors.parameter || ctx.define.decorType === Decors.property) {
@@ -211,3 +213,5 @@ export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
         return EMPTY_OBJ
     }
 });
+
+export const Log = InjectLog;

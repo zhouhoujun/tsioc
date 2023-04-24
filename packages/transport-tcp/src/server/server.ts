@@ -1,6 +1,6 @@
 import { Inject, Injectable, isNumber, isString, lang } from '@tsdi/ioc';
 import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming } from '@tsdi/core';
-import { Log, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
@@ -20,7 +20,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> {
 
     private serv!: net.Server | tls.Server;
 
-    @Log() logger!: Logger;
+    @InjectLog() logger!: Logger;
     private isSecure: boolean;
     private options: TcpServerOpts;
     constructor(readonly endpoint: TcpEndpoint, @Inject(TCP_SERV_OPTS, {}) options: TcpServerOpts) {

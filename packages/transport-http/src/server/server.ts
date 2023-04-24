@@ -1,6 +1,6 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString } from '@tsdi/ioc';
 import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners, ListenOpts } from '@tsdi/core';
-import { Log, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -19,7 +19,7 @@ import { HttpEndpoint } from './endpoint';
 @Injectable()
 export class HttpServer extends Server<HttpContext, HttpServResponse> implements ListenService<ListenOptions>  {
 
-    @Log() logger!: Logger;
+    @InjectLog() logger!: Logger;
 
     constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()

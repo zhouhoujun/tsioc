@@ -1,6 +1,6 @@
 import { createContext, Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
 import {
-    RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
+    RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST
 } from '@tsdi/core';
 import { ev } from '@tsdi/transport';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
@@ -8,7 +8,7 @@ import { mergeMap, Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { HttpGuardsHandler } from './handler';
+import { HttpHandler } from './handler';
 import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option';
 
 
@@ -38,7 +38,7 @@ const NONE = {} as http2.ClientHttp2Session;
 export class Http extends Client<HttpRequest, HttpEvent> {
 
     constructor(
-        readonly handler: HttpGuardsHandler,
+        readonly handler: HttpHandler,
         @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
         super()
         if (!option?.authority) {
@@ -2391,8 +2391,7 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         return this.send<any>(url, merge(options, PUT, body))
     }
 
-    @Shutdown()
-    async close(): Promise<void> {
+    protected override async onShutdown(): Promise<void> {
         if (this.connection) {
             if (this.connection === NONE) return;
             await promisify(this.connection.close, this.connection)();

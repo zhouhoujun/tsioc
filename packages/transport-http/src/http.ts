@@ -9,14 +9,14 @@ import { ListenOptions } from 'net';
 import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
 import { HttpPathInterceptor } from './client/path';
+import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './client/option';
 import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, Http2ServerOpts } from './server/options';
 import { HttpExecptionHandlers } from './server/exception-filter';
 import { HttpStatusVaildator } from './status';
 import { HttpRequestAdapter } from './client/request';
 import { HttpRespondAdapter } from './server/respond';
-import { HttpGuardsHandler } from './client/handler';
+import { HttpHandler } from './client/handler';
 import { HttpEndpoint } from './server/endpoint';
-import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './client/option';
 import { HTTP_MIDDLEWARES } from './server/context';
 
 
@@ -29,7 +29,7 @@ export interface HttpModuleOptions {
     /**
      * client handler provider
      */
-    handler?: ProvdierOf<HttpGuardsHandler>;
+    handler?: ProvdierOf<HttpHandler>;
 
     /**
      * server endpoint provider
@@ -78,7 +78,7 @@ export class HttpModule {
             }))
                 : [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
             { provide: HTTP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
-            toProvider(HttpGuardsHandler, options.handler ?? {
+            toProvider(HttpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: HttpClientOpts) => {
                     return createHandler(injector, opts);
                 },

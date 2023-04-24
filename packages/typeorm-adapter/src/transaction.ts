@@ -1,7 +1,7 @@
 import { ClassType, ctorName, Injectable, lang, refl, Type } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
-import { Log, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { TypeormAdapter } from './TypeormAdapter';
 
@@ -151,7 +151,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 export class TypeormTransactionManager extends TransactionManager {
 
     constructor(
-        @Log() private logger: Logger) {
+        @InjectLog() private logger: Logger) {
         super()
     }
 

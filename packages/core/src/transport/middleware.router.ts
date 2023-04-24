@@ -253,11 +253,11 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
             url = ctx.url ?? '/'
         }
 
-        const route = this.getRouteByUrl(ctx.url);
+        const route = this.findRoute(ctx.url);
         return route
     }
 
-    getRouteByUrl(url: string): MiddlewareLike | Endpoint | undefined {
+    findRoute(url: string): MiddlewareLike | Endpoint | undefined {
         const paths = url.split('/');
         let route: MiddlewareLike | Endpoint | undefined;
         for (let i = paths.length; i > 0; i--) {

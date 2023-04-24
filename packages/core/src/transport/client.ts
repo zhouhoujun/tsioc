@@ -9,6 +9,7 @@ import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
 import { ConfigableHandler } from '../handlers';
+import { Shutdown } from '../metadata';
 
 
 /**
@@ -391,6 +392,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * connect service.
      */
     protected abstract connect(): Promise<any> | Observable<any>;
+
+    @Shutdown()
+    close(): Promise<void> {
+        return this.onShutdown();
+    }
+
+    protected abstract onShutdown(): Promise<void>;
 
 }
 

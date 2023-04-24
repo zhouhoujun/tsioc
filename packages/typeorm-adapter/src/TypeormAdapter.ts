@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Log, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
@@ -19,7 +19,7 @@ export class TypeormAdapter {
 
     private sources: Map<string, DataSource>;
 
-    @Log() private logger!: Logger;
+    @InjectLog() private logger!: Logger;
 
     constructor(protected injector: Injector) {
         this.sources = new Map();

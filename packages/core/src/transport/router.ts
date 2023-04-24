@@ -43,6 +43,11 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      * @param route 
      */
     abstract unuse(route: string): this;
+    /**
+     * find route by pattern
+     * @param url
+     */
+    abstract findRoute(pattern: Pattern): T | undefined;
 }
 
 

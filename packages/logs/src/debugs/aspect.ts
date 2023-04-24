@@ -2,7 +2,7 @@ import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Logger } from '../logger';
 import { LogAspect } from '../aspect';
 import { Level } from '../Level';
-import { Log } from '../metadata';
+import { InjectLog } from '../metadata';
 
 /**
  * debug log aspect.
@@ -14,7 +14,7 @@ import { Log } from '../metadata';
 @Aspect({ static: true })
 export class DebugLogAspect extends LogAspect {
 
-    @Log({ level: 'trace' }) logger!: Logger;
+    @InjectLog({ level: 'trace' }) logger!: Logger;
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {

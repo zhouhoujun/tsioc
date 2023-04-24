@@ -2,7 +2,6 @@ export * from './errors';
 export * from './status';
 
 export * from './client/handler';
-export * from './client/interceptor';
 export * from './client/option';
 export * from './client/clinet';
 
