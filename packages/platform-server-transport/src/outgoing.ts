@@ -1,8 +1,7 @@
 import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection, OutgoingFactory, ReqHeaders, Socket } from '@tsdi/core';
 import { ArgumentExecption, Execption, Injectable, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { ev, hdr, HeandersSentExecption, InvalidStreamExecption } from '@tsdi/transport';
-import { Duplex } from 'form-data';
-import { Writable } from 'stream';
+import { Writable, Duplex } from 'stream';
 
 @Injectable()
 export class OutgoingFactoryImpl implements OutgoingFactory {

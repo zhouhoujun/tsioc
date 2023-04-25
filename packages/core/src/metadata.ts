@@ -1,12 +1,12 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
-    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
+    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
     isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
-    ApplicationDisposeEvent, ApplicationShutdownEvent,
-    ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent, PayloadApplicationEvent
+    ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartupEvent,
+    ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterHandlerResolver } from './filters/filter';
 import { EndpointOptions } from './endpoints/endpoint.service';
@@ -234,7 +234,8 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
             method: (ctx, next) => {
                 if (ctx.class.getAnnotation().static === false) return;
                 const typeRef = ctx.class;
-                const decors = typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
+                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
+                //typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
                 const multicaster = injector.get(ApplicationEventMulticaster);
@@ -252,7 +253,8 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
             method: (ctx, next) => {
                 if (ctx.class.getAnnotation().static !== false) return;
                 const typeRef = ctx.class;
-                const decors = typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
+                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
+                // typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
                 const multicaster = injector.get(ApplicationEventMulticaster);
@@ -529,7 +531,7 @@ export interface TransportParameterDecorator {
 }
 
 /**
- * Request body param decorator.
+ * Subscribe payload param decorator.
  * 
  * @exports {@link TransportParameterDecorator}
  */
@@ -539,3 +541,17 @@ export const Payload: TransportParameterDecorator = createParamDecorator('Payloa
         meta.scope = 'payload'
     }
 });
+
+/**
+ * Subscribe topic param decorator.
+ * 
+ * @exports {@link TransportParameterDecorator}
+ */
+export const Topic: TransportParameterDecorator = createParamDecorator('Topic', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    appendProps: meta => {
+        meta.scope = 'topic'
+    }
+});
+
+

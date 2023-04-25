@@ -3,12 +3,10 @@ import { Execption, Injectable } from '@tsdi/ioc';
 import { Writable, Readable, Duplex } from 'stream';
 import { NumberAllocator } from 'number-allocator';
 
-const max = 65536;
-
 @Injectable()
 export class ClientStreamFactoryImpl<TSocket = any> implements ClientStreamFactory<TSocket> {
 
-    allocator = new NumberAllocator(1, max);
+    allocator = new NumberAllocator(1, 65536);
     last?: number;
     create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket> {
         return new ClientStreamImpl(this.getStreamId(), socket, headers.headers);

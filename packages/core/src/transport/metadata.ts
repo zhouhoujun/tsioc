@@ -16,11 +16,68 @@ import { ControllerRouteReolver } from './controller';
 
 
 
-export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
-
+/**
+ * Subscribe decorator, use to handle subscribe message event.
+ *
+ * @export
+ * @interface Subscribe
+ */
+export interface Subscribe {
+    /**
+     * Subscribe handle. use to handle subscribe message event.
+     *
+     * @param {string} pattern message match pattern.
+     * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
+     */
+    <TArg>(pattern: Pattern, option?: RouteOptions<TArg>): MethodDecorator;
+}
 
 /**
- * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+ * Subscribe decorator, use to handle subscribe message event.
+ * @Handle
+ * 
+ * @exports {@link Handle}
+ */
+export const Subscribe: Handle = createDecorator<HandleMetadata<any> & HandleMessagePattern>('Subscribe', {
+    actionType: [ActionTypes.annoation, ActionTypes.runnable],
+    props: (route: Pattern, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
+        ({ route, ...options }) as HandleMetadata<any> & HandleMessagePattern,
+    design: {
+        method: (ctx, next) => {
+
+            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
+            if (!defines || defines.length) return next();
+
+            const injector = ctx.injector;
+            const mapping = ctx.class.getAnnotation<MappingDef>();
+
+            const router = injector.get(mapping.router ?? Router);
+            if (!router) throw new Execption('has no router!');
+            if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+
+            const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
+            const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
+
+            defines.forEach(def => {
+                const metadata = def.metadata as RouteMappingMetadata;
+                const route = patternToPath(metadata.route!);
+                const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
+                router.use(route, endpoint);
+                factory.onDestroy(() => router.unuse(route));
+            });
+
+            return next();
+        }
+    },
+    appendProps: (meta) => {
+        meta.static = true;
+    }
+});
+
+export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
+
+/**
+ * Handle decorator. use to define the class as middleware or define method as message handler.
  *
  * @export
  * @interface Handle
@@ -49,7 +106,7 @@ export interface Handle {
 }
 
 /**
- * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
+ * Handle decorator. use to define the class as middleware or define method as message handler.
  * @Handle
  * 
  * @exports {@link Handle}
@@ -70,16 +127,10 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
             const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
             if (!defines || defines.length) return next();
 
+            const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const injector = ctx.injector;
-            let router: Router;
-            if (mapping.router) {
-                router = injector.get(mapping.router);
-            } else {
-                router = injector.get(Router);
-            }
-
+            const router =injector.get(mapping.router ?? Router);
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
@@ -102,16 +153,10 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
             const route = mapping.route;
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             const injector = ctx.injector;
-            let router: Router;
-            if (mapping.router) {
-                router = injector.get(mapping.router);
-            } else {
-                router = injector.get(Router);
-            }
 
+            const router =injector.get(mapping.router ?? Router);
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
-
 
             router.use({
                 path: route,
@@ -122,7 +167,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
         }
     },
     appendProps: (meta) => {
-        meta.singleton = true;
+        meta.static = true;
     }
 });
 
@@ -209,17 +254,11 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const mapping = ctx.class.getAnnotation<MappingDef>();
 
                 const injector = ctx.injector;
+                const mapping = ctx.class.getAnnotation<MappingDef>();
 
-                let router: Router;
-                if (mapping.router) {
-                    router = injector.get(mapping.router);
-                } else {
-                    router = injector.get(Router);
-                }
-
+                const router =injector.get(mapping.router ?? Router);
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
@@ -279,8 +318,6 @@ export const RequestBody: TransportParameterDecorator = createParamDecorator('Re
         meta.scope = 'body'
     }
 });
-
-
 
 /**
  * decorator used to define Request restful route mapping.
@@ -628,7 +665,7 @@ export interface HandleMetadata<TArg> extends TypeMetadata, PatternMetadata, Rou
     /**
      * handle route
      */
-    route?: string;
+    route?: Pattern;
 
     router?: Type<Router>;
 
@@ -646,3 +683,4 @@ export interface HandleMetadata<TArg> extends TypeMetadata, PatternMetadata, Rou
      */
     protocol?: string;
 }
+
