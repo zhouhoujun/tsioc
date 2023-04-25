@@ -4,7 +4,7 @@ import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { Pattern } from './pattern';
-import { RequestOptions, ResponseAs, TransportRequest } from './request';
+import { RequestOptions, ResponseAs, RequestInitOpts, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
@@ -346,9 +346,9 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @param options 
      */
     protected buildRequest(first: TRequest | Pattern, options: RequestOptions & ResponseAs = {}): TRequest {
-        let req: TransportRequest<any>;
-        // First, check whether the primary argument is an instance of `TransportRequest`.
-        if (first instanceof TransportRequest) {
+        let req: TRequest;
+        // First, check whether the primary argument is an instance of `TRequest`.
+        if (this.isRequest(first)) {
             // It is. The other arguments must be undefined (per the signatures) and can be
             // ignored.
             req = first
@@ -368,14 +368,14 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 if (options.params instanceof TransportParams) {
                     params = options.params
                 } else {
-                    params = new TransportParams({ params: options.params })
+                    params = this.createParams(options.params)
                 }
             }
 
             const context = options.context || createContext(this.handler.injector, options);
             this.initContext(context);
             // Construct the request.
-            req = new TransportRequest(first, {
+            req = this.createRequest(first, {
                 ...options,
                 headers,
                 params,
@@ -385,7 +385,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 responseType: options.responseType || 'json'
             })
         }
-        return req as TRequest;
+        return req;
     }
 
     @Shutdown()
@@ -399,6 +399,19 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      */
     protected initContext(context: InvocationContext) {
         context.setValue(Client, this);
+    }
+
+    protected isRequest(target: any): target is TRequest {
+        return target instanceof TransportRequest
+    }
+
+    protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
+        return new TransportRequest(pattern, options) as TRequest;
+    }
+
+    protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
+        | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {
+        return new TransportParams({ params })
     }
 
     /**

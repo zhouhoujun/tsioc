@@ -9,7 +9,7 @@ import { HttpParams } from './params';
  *
  * All values are optional and will override default values if provided.
  */
-interface HttpRequestInit {
+export interface HttpRequestInit {
     headers?: ReqHeaders;
     context?: InvocationContext;
     reportProgress?: boolean;

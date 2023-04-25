@@ -244,11 +244,6 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
             request.on(ev.TIMEOUT, onError);
 
 
-            // if (req.body === null) {
-            //     request.end();
-            // } else {
-            //     this.sendBody(request, req.body, onError);
-            // }
             this.reqAdapter.send(request, req, onError);
 
             return () => {

@@ -1,4 +1,4 @@
-import { OutgoingHeader, ResHeaders, ResHeadersLike } from './headers';
+import { ResHeaders, ResHeadersLike } from './headers';
 
 
 /**

@@ -1,5 +1,5 @@
 import { Abstract, Execption, Injectable, InvocationContext, Token, isArray, isUndefined } from '@tsdi/ioc';
-import { ListenOpts, ConfigableEndpointOptions, Server, TransportEndpoint, Router } from '@tsdi/core';
+import { ListenOpts, ConfigableEndpointOptions, Server, TransportEndpoint, Router, NO_STREAM, RX_STREAM, PT_STREAM } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Http2ServerRequest, Http2ServerResponse } from 'http2';
 import { Observable, Subscription } from 'rxjs';
@@ -9,7 +9,6 @@ import { GrpcContext } from './context';
 import { GrpcServOptions } from './options';
 import { GrpcEndpoint } from './endpoint';
 import { DefinitionLoader } from '../loader';
-import { NO_STREAMING, PT_STREAMING, RX_STREAMING } from '../status';
 
 
 @Injectable()
@@ -71,7 +70,7 @@ export class GrpcServer extends Server<GrpcContext, Http2ServerResponse>  {
         for (const methodName in grpcService.prototype) {
             let pattern = '';
             let methodHandler = null;
-            let streamingType = NO_STREAMING;
+            let streamingType = NO_STREAM;
 
             const methodFunction = grpcService.prototype[methodName];
             const methodReqStreaming = methodFunction.requestStream;
@@ -82,30 +81,30 @@ export class GrpcServer extends Server<GrpcContext, Http2ServerResponse>  {
                 pattern = this.createPattern(
                     name,
                     methodName,
-                    RX_STREAMING,
+                    RX_STREAM,
                 );
                 methodHandler = this.router.findRoute(pattern);
-                streamingType = RX_STREAMING;
+                streamingType = RX_STREAM;
                 // If first pattern didn't match to any of handlers then try
                 // pass-through handler to be presented
                 if (!methodHandler) {
                     pattern = this.createPattern(
                         name,
                         methodName,
-                        PT_STREAMING,
+                        PT_STREAM,
                     );
                     methodHandler = this.router.findRoute(pattern);
-                    streamingType = PT_STREAMING;
+                    streamingType = PT_STREAM;
                 }
             } else {
                 pattern = this.createPattern(
                     name,
                     methodName,
-                    NO_STREAMING,
+                    NO_STREAM,
                 );
                 // Select handler if any presented for No-Streaming pattern
                 methodHandler = this.router.findRoute(pattern);
-                streamingType = NO_STREAMING;
+                streamingType = NO_STREAM;
             }
             if (!methodHandler) {
                 continue;

@@ -1,11 +1,11 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { Router } from './router';
+import { TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { MappingRouter, MiddlewareRouter } from './middleware.router';
 import { ControllerRouteReolver } from './controller';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
-import { TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 
 

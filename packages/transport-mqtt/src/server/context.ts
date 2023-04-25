@@ -3,8 +3,9 @@ import { AbstractAssetContext } from '@tsdi/transport';
 
 
 export class MqttContext extends AbstractAssetContext {
+
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return absurl.test(url)
     }
     protected parseURL(req: Incoming<any, any>, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
         throw new Error('Method not implemented.');
@@ -32,3 +33,5 @@ export class MqttContext extends AbstractAssetContext {
     }
 
 }
+
+const absurl = /^(mqtt|mqtts|tcp|ssl|ws|wss|wx|wxs|alis):\/\//i;

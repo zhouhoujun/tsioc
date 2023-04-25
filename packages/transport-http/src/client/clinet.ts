@@ -1,9 +1,9 @@
 import { createContext, Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
 import {
-    RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST
+    RequestOptions, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, TransportParams, Pattern, TransportRequest, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/core';
 import { ev } from '@tsdi/transport';
-import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common';
 import { mergeMap, Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
@@ -16,7 +16,7 @@ import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option'
 
 export interface HttpRequestOpts extends RequestOptions {
     body?: any;
-    method?: RequestMethod | undefined;
+    method?: HttpRequestMethod | undefined;
     headers?: ReqHeadersLike;
     params?: HttpParams | string
     | ReadonlyArray<[string, string | number | boolean]>
@@ -107,53 +107,23 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         })
     }
 
-    protected override buildRequest(first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
-        // First, check whether the primary argument is an instance of `HttpRequest`.
-        if (first instanceof HttpRequest) {
-            // It is. The other arguments must be undefined (per the signatures) and can be
-            // ignored.
-            return first;
-        } else {
-            // It's a string, so it represents a URL. Construct a request based on it,
-            // and incorporate the remaining arguments (assuming `GET` unless a method is
-            // provided.
+    protected override isRequest(target: any): target is HttpRequest {
+        return target instanceof HttpRequest
+    }
 
-            const url = first as string;
-            // Figure out the headers.
-            let headers: ReqHeaders | undefined = undefined;
-            if (options.headers instanceof ReqHeaders) {
-                headers = options.headers
-            } else {
-                headers = new ReqHeaders(options.headers)
-            }
-
-            // Sort out parameters.
-            let params: HttpParams | undefined = undefined;
-            if (options.params) {
-                if (options.params instanceof HttpParams) {
-                    params = options.params
-                } else {
-                    params = new HttpParams({ params: options.params })
-                }
-            }
-
-            const context = options.context ?? createContext(this.handler.injector, options);
-            context.setValue(Client, this);
-            if (this.connection && this.connection !== NONE) {
-                context.setValue(CLIENT_HTTP2SESSION, this.connection);
-            }
-
-            // Construct the request.
-            return new HttpRequest(options.method ?? GET, url!, options.body ?? options.payload ?? null, {
-                ...options,
-                headers,
-                params,
-                context,
-                reportProgress: options.reportProgress,
-                // By default, JSON is assumed to be returned for all calls.
-                responseType: options.responseType || 'json'
-            })
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        if (this.connection && this.connection !== NONE) {
+            context.setValue(CLIENT_HTTP2SESSION, this.connection);
         }
+    }
+
+    protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): TransportParams {
+        return new HttpParams({ params });
+    }
+
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts): HttpRequest {
+        return new HttpRequest(options.method ?? GET, patternToPath(pattern), options.body ?? options.payload ?? null, options as HttpRequestInit);
     }
 
     /**

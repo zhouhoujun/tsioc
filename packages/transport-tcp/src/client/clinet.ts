@@ -1,12 +1,12 @@
-import { Client, SOCKET, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Injectable, InvocationContext, Nullable, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { Client, Pattern, SOCKET, TransportEvent, TransportRequest, RequestInitOpts } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
+import { ev } from '@tsdi/transport';
 import { Observable, of } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TcpClientOpts } from './options';
+import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpGuardHandler } from './handler';
-import { ev } from '@tsdi/transport';
 
 
 /**
@@ -19,9 +19,9 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     private logger!: Logger;
 
     private options: TcpClientOpts;
-    constructor(readonly handler: TcpGuardHandler, @Nullable() options: TcpClientOpts) {
+    constructor(readonly handler: TcpGuardHandler, @Inject(TCP_CLIENT_OPTS, {nullable: true}) options: TcpClientOpts) {
         super();
-        this.options = { ...options }
+        this.options = { ...options };
     }
 
     private connection!: tls.TLSSocket | net.Socket;
@@ -52,9 +52,14 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
         })
     }
 
-    protected override initContext(context: InvocationContext<any>): void {
-        super.initContext(context);
+    protected override initContext(context: InvocationContext): void {
+        context.setValue(Client, this);
         context.setValue(SOCKET, this.connection);
+    }
+
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {
+        options.withCredentials = this.connection instanceof tls.TLSSocket;
+        return new TransportRequest(pattern, options);
     }
 
     protected override async onShutdown(): Promise<void> {

@@ -54,4 +54,4 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing> {
 
 }
 
-const tcptl = /^(tcp|ipc):\/\//i;
+const tcptl = /^(tcp|ssl|ipc):\/\//i;

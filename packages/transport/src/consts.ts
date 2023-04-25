@@ -60,6 +60,8 @@ export namespace ev {
     export const READABLE = 'readable';
     export const PREFINISH = 'prefinish';
     export const PREEND = 'preend';
+
+    export const OFFLINE = 'offline';
 }
 
 /**

@@ -2,7 +2,7 @@
 /**
  * mqtt protocol.
  */
-export type MqttProtocols = 'mqtt' | 'mqtts' | 'tls' | 'ws' | 'wss' | 'wxs' | 'alis';
+export type MqttProtocols = 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'tcp' | 'ssl' | 'wx' | 'wxs';
 /**
  * http protocol.
  */

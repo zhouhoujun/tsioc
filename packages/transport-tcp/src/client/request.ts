@@ -3,7 +3,9 @@ import {
     TransportHeaderResponse, TransportParams, TransportRequest, TransportResponse, WritableStream
 } from '@tsdi/core';
 import { Injectable, InvocationContext } from '@tsdi/ioc';
+import { OutgoingMessage } from '@tsdi/platform-server-transport';
 import { RequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
+import {  } from 'net';
 
 
 @Injectable()
@@ -30,13 +32,22 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
     }
 
     createRequest(req: TransportRequest<any>): Outgoing {
-       const socket = req.context.get(SOCKET);
+        const socket = req.context.get(SOCKET);
+        
 
-       
     }
 
     send(request: WritableStream<any>, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
-
+        const data = req.body;
+        if (data === null) {
+            request.end();
+        } else {
+            this.streamAdapter.sendbody(
+                data,
+                request,
+                err => callback(err),
+                req.headers.get(hdr.CONTENT_ENCODING) as string);
+        }
     }
 
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {

@@ -3,7 +3,6 @@ import { Observable } from 'rxjs';
 import { IncomingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
 import { Pattern, patternToPath } from './pattern';
-import { RequestMethod } from './protocols';
 
 
 /**
@@ -11,7 +10,7 @@ import { RequestMethod } from './protocols';
  */
 export class TransportRequest<T = any> {
 
-    readonly url: string;
+    url: string;
     readonly method: string | undefined;
     readonly pattern?: Pattern;
     readonly params: TransportParams;
@@ -25,7 +24,7 @@ export class TransportRequest<T = any> {
     readonly reportProgress: boolean;
     readonly withCredentials: boolean;
 
-    constructor(pattern: Pattern, options: RequestInit = EMPTY_OBJ) {
+    constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
         this.url = patternToPath(pattern);
         this.pattern = pattern;
         this.method = options.method;
@@ -58,7 +57,7 @@ export interface RequestOptions {
     /**
      * request method.
      */
-    method?: RequestMethod;
+    method?: string;
     /**
      * request body.
      */
@@ -92,15 +91,6 @@ export interface RequestOptions {
     encoder?: ParameterCodec;
 }
 
-export interface RequestInit extends RequestOptions {
-    reportProgress?: boolean;
-    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
-    observe?: 'body' | 'events' | 'response';
-    withCredentials?: boolean;
-}
-
-
-
 /**
  * response option for request.
  */
@@ -114,3 +104,10 @@ export interface ResponseAs {
      */
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
 }
+
+export interface RequestInitOpts extends RequestOptions, ResponseAs {
+    reportProgress?: boolean;
+    withCredentials?: boolean;
+}
+
+
