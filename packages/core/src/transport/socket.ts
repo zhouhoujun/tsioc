@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { Packet } from './packet';
 import { ReadableStream, WritableStream, DuplexStream, EventEmitter } from './stream';
 
@@ -129,10 +129,11 @@ export interface Connection<TSocket extends EventEmitter = EventEmitter> extends
  */
 export const CONNECTION = tokenId<Connection>('CONNECTION');
 
+
 /**
  * server side incoming message.
  */
-export interface Incoming<T = any, TConn = any> extends Packet<T>, ReadableStream {
+export interface Incoming<T = any, TSocket = any> extends Packet<T>, ReadableStream {
     /**
      * packet id.
      */
@@ -153,8 +154,8 @@ export interface Incoming<T = any, TConn = any> extends Packet<T>, ReadableStrea
      * The outgoing request method.
      */
     readonly method?: string;
-
-    readonly connection: TConn;
+    
+    readonly socket: TSocket;
 
     setTimeout?: (msecs: number, callback: () => void) => void;
 
@@ -163,12 +164,22 @@ export interface Incoming<T = any, TConn = any> extends Packet<T>, ReadableStrea
     rawBody?: any;
 }
 
-/**
- * server outgoing message.
- */
-export interface Outgoing<TConn = any> extends WritableStream {
+@Abstract()
+export abstract class IncomingFactory<TSocket = any> {
+    /**
+     * create server incoming.
+     * @param socket 
+     * @param headers 
+     */
+    abstract create<T>(socket: TSocket, headers: ReqHeaders): Incoming<T, TSocket>;
+}
 
-    readonly connection: TConn;
+/**
+ * server outgoing message stream.
+ */
+export interface Outgoing<TSocket = any> extends WritableStream {
+
+    readonly socket: TSocket;
     /**
      * Get response status code.
      */
@@ -278,4 +289,58 @@ export interface Outgoing<TConn = any> extends WritableStream {
      */
     writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
 
+}
+
+
+@Abstract()
+export abstract class OutgoingFactory<TSocket = any> {
+    /**
+     * create server outgoing stream.
+     * @param socket 
+     * @param headers 
+     */
+    abstract create(socket: TSocket, headers: ResHeaders): Outgoing<TSocket>;
+}
+
+/**
+ * client duplex message stream.
+ */
+export interface ClientStream<TSocket = any> extends DuplexStream {
+    /**
+     * headers
+     */
+    readonly headers: OutgoingHeaders;
+
+    readonly socket?: TSocket;
+}
+@Abstract()
+export abstract class ClientStreamFactory<TSocket = any> {
+    /**
+     * create client duplex stream.
+     * @param socket 
+     * @param headers 
+     */
+    abstract create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket>;
+}
+
+/**
+ * Server duplex message stream.
+ */
+export interface ServerStream<TSocket = any> extends DuplexStream {
+    /**
+     * headers
+     */
+    readonly headers: IncomingHeaders;
+
+    readonly socket?: TSocket;
+}
+
+@Abstract()
+export abstract class ServerStreamFactory<TSocket = any> {
+    /**
+     * create client duplex stream.
+     * @param socket 
+     * @param headers 
+     */
+    abstract create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket>;
 }

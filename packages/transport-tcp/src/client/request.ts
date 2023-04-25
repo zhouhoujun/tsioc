@@ -1,11 +1,11 @@
 import {
-    Incoming, Outgoing, ReqHeaders, ResHeaders, ResponsePacket, SOCKET, TransportErrorResponse, TransportEvent,
-    TransportHeaderResponse, TransportParams, TransportRequest, TransportResponse, WritableStream
+    ClientStream, ClientStreamFactory,  DuplexStream, TransportEvent,
+    Incoming, ReqHeaders, ResHeaders, ResponsePacket, SOCKET, Socket, TransportErrorResponse,
+    TransportHeaderResponse, TransportParams, TransportRequest, TransportResponse
 } from '@tsdi/core';
 import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { OutgoingMessage } from '@tsdi/platform-server-transport';
 import { RequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
-import {  } from 'net';
+import { Readable, Writable } from 'stream';
 
 
 @Injectable()
@@ -31,13 +31,14 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
         return req;
     }
 
-    createRequest(req: TransportRequest<any>): Outgoing {
-        const socket = req.context.get(SOCKET);
-        
-
+    createRequest(req: TransportRequest<any>): ClientStream {
+        const context = req.context;
+        const socket = context.get(SOCKET);
+        const factory = context.get(ClientStreamFactory<Socket>);
+        return factory.create(socket, req.headers);
     }
 
-    send(request: WritableStream<any>, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
+    send(request: ClientStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
         const data = req.body;
         if (data === null) {
             request.end();
@@ -71,5 +72,30 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             status: headers.get(hdr.STATUS) ?? ''
         }
     }
+
+}
+
+export class RequestStream extends Readable implements DuplexStream<Buffer | string> {
+
+    constructor(readonly socket: Socket, private delimiter: string, private headers: ReqHeaders) {
+        super()
+    }
+    get writable(): boolean {
+        return this.socket.writable;
+    }
+
+    write(buffer: Buffer, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(str: string, encoding?: BufferEncoding | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
+    write(str: string | Buffer, encoding?: any, cb?: any): boolean {
+        return this.socket.write(str, encoding, cb)
+    }
+    end(cb?: (() => void) | undefined): this;
+    end(data: any, cb?: (() => void) | undefined): this;
+    end(str: string, encoding?: BufferEncoding | undefined, cb?: (() => void) | undefined): this;
+    end(str?: unknown, encoding?: unknown, cb?: unknown): this {
+        this.socket.write(this.delimiter);
+        return this;
+    }
+
 
 }

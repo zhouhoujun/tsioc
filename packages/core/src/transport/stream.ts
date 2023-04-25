@@ -333,7 +333,7 @@ export interface Stream extends EventEmitter {
     ): T;
 }
 
-export interface ReadableStream<T= any> extends Stream {
+export interface ReadableStream<T = any> extends Stream {
     readable: boolean;
     read(size?: number): T;
     setEncoding(encoding: BufferEncoding): this;
@@ -351,17 +351,17 @@ export interface ReadableStream<T= any> extends Stream {
 export interface WritableStream<T = any> extends Stream {
     writable: boolean;
     write(buffer: T, cb?: (err?: Error | null) => void): boolean;
-    write(str: string, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    write(str: string | T, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
     end(cb?: () => void): this;
     end(data: T, cb?: () => void): this;
     end(str: string, encoding?: BufferEncoding, cb?: () => void): this;
 }
 
-export interface DuplexStream extends ReadableStream, WritableStream {
+export interface DuplexStream<T = any> extends ReadableStream<T>, WritableStream<T> {
 
 }
 
-export interface TransformStream extends DuplexStream {
+export interface TransformStream<T = any> extends DuplexStream<T> {
     _transform(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
     _flush(callback: (error?: Error | null, data?: any) => void): void;
 }

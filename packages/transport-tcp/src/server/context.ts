@@ -31,7 +31,7 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing> {
     }
     
     get secure(): boolean {
-        return this.request.connection.socket instanceof tls.TLSSocket;
+        return this.request.socket instanceof tls.TLSSocket;
     }
 
     get protocol(): string {
