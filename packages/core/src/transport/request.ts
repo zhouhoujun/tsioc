@@ -38,6 +38,68 @@ export class TransportRequest<T = any> {
         this.headers = new ReqHeaders(options.headers ?? options.options);
     }
 
+    clone(update: {
+        headers?: ReqHeaders | undefined;
+        context?: InvocationContext<any> | undefined;
+        reportProgress?: boolean | undefined;
+        params?: TransportParams | undefined;
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+        withCredentials?: boolean | undefined; body?: any;
+        method?: string | undefined; 
+        url?: Pattern | undefined;
+        setHeaders?: { [name: string]: string | string[]; } | undefined;
+        setParams?: { [param: string]: string; } | undefined;
+    } = {}): TransportRequest<T> {
+        const method = update.method || this.method;
+        const url = update.url || this.url;
+        const responseType = update.responseType || this.responseType;
+
+        // The body is somewhat special - a `null` value in update.body means
+        // whatever current body is present is being overridden with an empty
+        // body, whereas an `undefined` value in update.body implies no
+        // override.
+        const body = (update.body !== undefined) ? update.body : this.body;
+
+        // Carefully handle the boolean options to differentiate between
+        // `false` and `undefined` in the update args.
+        const withCredentials =
+            (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
+        const reportProgress =
+            (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
+
+        // Headers and params may be appended to if `setHeaders` or
+        // `setParams` are used.
+        let headers = update.headers || this.headers;
+        let params = update.params || this.params;
+        const context = update.context ?? this.context;
+        // Check whether the caller has asked to add headers.
+        if (update.setHeaders !== undefined) {
+            // Set every requested header.
+            headers =
+                Object.keys(update.setHeaders)
+                    .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
+        }
+
+        // Check whether the caller has asked to set params.
+        if (update.setParams) {
+            // Set every requested param.
+            params = Object.keys(update.setParams)
+                .reduce((params, param) => params.set(param, update.setParams![param]), params)
+        }
+
+        // Finally, construct the new HttpRequest using the pieces from above.
+        return new TransportRequest(url, {
+            method,
+            body,
+            params,
+            headers,
+            reportProgress,
+            responseType,
+            withCredentials,
+            context
+        })
+    }
+
 }
 
 
@@ -102,7 +164,7 @@ export interface ResponseAs {
     /**
      * response data type.
      */
-    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
+    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
 export interface RequestInitOpts extends RequestOptions, ResponseAs {

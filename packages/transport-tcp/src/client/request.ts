@@ -1,9 +1,9 @@
 import {
-    ClientStream, ClientStreamFactory,  DuplexStream, TransportEvent,
+    ClientStream, ClientStreamFactory, DuplexStream, TransportEvent,
     Incoming, ReqHeaders, ResHeaders, ResponsePacket, SOCKET, Socket, TransportErrorResponse,
-    TransportHeaderResponse, TransportParams, TransportRequest, TransportResponse
+    TransportHeaderResponse, TransportRequest, TransportResponse
 } from '@tsdi/core';
-import { Injectable, InvocationContext } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { RequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
 import { Readable, Writable } from 'stream';
 
@@ -13,22 +13,6 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
 
     constructor(private streamAdapter: StreamAdapter) {
         super()
-    }
-
-    update(req: TransportRequest<any>,
-        update: {
-            headers?: ReqHeaders | undefined;
-            context?: InvocationContext<any> | undefined;
-            reportProgress?: boolean | undefined;
-            params?: TransportParams | undefined;
-            responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined;
-            withCredentials?: boolean | undefined; body?: any;
-            method?: string | undefined; url?: string | undefined;
-            setHeaders?: { [name: string]: string | string[]; } | undefined;
-            setParams?: { [param: string]: string; } | undefined;
-        }
-    ): TransportRequest<any> {
-        return req;
     }
 
     createRequest(req: TransportRequest<any>): ClientStream {
@@ -68,8 +52,8 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
     }
     parseStatus(incoming: any, headers: ResHeaders): ResponsePacket<number | string> {
         return {
-            statusText: '',
-            status: headers.get(hdr.STATUS) ?? ''
+            status: headers.get(hdr.STATUS) ?? '',
+            statusText: String(headers.get(hdr.STATUS_MESSAGE))
         }
     }
 

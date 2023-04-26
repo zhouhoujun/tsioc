@@ -4,7 +4,7 @@ import { Writable, Readable, Duplex } from 'stream';
 import { NumberAllocator } from 'number-allocator';
 
 @Injectable()
-export class ClientStreamFactoryImpl<TSocket = any> implements ClientStreamFactory<TSocket> {
+export class ClientStreamFactoryImpl<TSocket extends Duplex = any> implements ClientStreamFactory<TSocket> {
 
     allocator = new NumberAllocator(1, 65536);
     last?: number;
@@ -23,11 +23,39 @@ export class ClientStreamFactoryImpl<TSocket = any> implements ClientStreamFacto
 
 }
 
-export class ClientStreamImpl<TSocket> extends Duplex implements ClientStream<TSocket> {
+export class ClientStreamImpl<TSocket extends Duplex = any> extends Duplex implements ClientStream<TSocket> {
 
-    constructor(readonly id: number, readonly socket: TSocket, readonly headers: OutgoingHeaders) {
-        super()
+    constructor(readonly id: number, readonly socket: TSocket, readonly headers: OutgoingHeaders, private delimiter: string = '\n') {
+        super({
+            read(this: ClientStreamImpl, size: number) {
+                this.socket.read(size)
+            },
+            write(this: ClientStreamImpl, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+                if(!this.headerSent){
+                    this._write(JSON.stringify(this.headers), encoding, callback);
+                    this._headerSent = true;
+                }
+                this._write(chunk, encoding, callback)
+            }
+        })
     }
+
+    private _headerSent = false;
+    get headerSent(): boolean {
+        return this._headerSent;
+    }
+
+    
+    // end(cb?: (() => void) | undefined): this;
+    // end(data: Buffer, cb?: (() => void) | undefined): this;
+    // end(str: string, encoding?: BufferEncoding | undefined, cb?: (() => void) | undefined): this;
+    // end(str?: any, encoding?: any, cb?: any): this {
+    //     if(!this.headerSent) {
+    //         this.write(JSON.stringify(this.headers))
+    //     }
+    //     this.write(this.delimiter);
+    //     return this;
+    // }
 
 }
 

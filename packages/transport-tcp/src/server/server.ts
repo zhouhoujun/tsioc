@@ -68,7 +68,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> {
     protected async onStartup(): Promise<any> {
         const opts = this.options;
         const serv = this.serv = this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
-        // return serv;
+        return serv;
     }
 
     protected async onStart(): Promise<any> {

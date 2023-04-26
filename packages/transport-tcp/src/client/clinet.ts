@@ -71,7 +71,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected isValid(connection: tls.TLSSocket | net.Socket): boolean {
-        return !connection.destroyed && !connection.closed
+        return !connection.destroyed && connection.closed !== true
     }
 
     protected createConnection(opts: TcpClientOpts): tls.TLSSocket | net.Socket {

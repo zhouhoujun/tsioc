@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { ReqHeaders, TransportParams, WritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
+import { WritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
 import { RequestAdapter, StreamAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
 
@@ -14,22 +14,6 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
 
     constructor(private streamAdapter: StreamAdapter) {
         super()
-    }
-
-    update(req: HttpRequest<any>, update: {
-        headers?: ReqHeaders | undefined;
-        context?: InvocationContext<any> | undefined;
-        reportProgress?: boolean | undefined;
-        params?: TransportParams | undefined;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined;
-        withCredentials?: boolean | undefined;
-        body?: any;
-        method?: string | undefined;
-        url?: string | undefined;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        setParams?: { [param: string]: string; } | undefined;
-    }): HttpRequest<any> {
-        return req.clone(update);
     }
 
     createRequest(req: HttpRequest<any>): WritableStream {

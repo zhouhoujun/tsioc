@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { TransportEvent, TransportRequest, ResHeaders, ReqHeaders, TransportParams, ResponsePacket, WritableStream } from '@tsdi/core';
-import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, WritableStream } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
 
 
 /**
@@ -8,25 +8,6 @@ import { Abstract, InvocationContext } from '@tsdi/ioc';
  */
 @Abstract()
 export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> {
-
-    /**
-     * update req.
-     * @param req 
-     * @param update 
-     */
-    abstract update(req: TRequest, update: {
-        headers?: ReqHeaders,
-        context?: InvocationContext,
-        reportProgress?: boolean,
-        params?: TransportParams,
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-        body?: any | null,
-        method?: string,
-        url?: string,
-        setHeaders?: { [name: string]: string | string[] },
-        setParams?: { [param: string]: string },
-    }): TRequest;
 
     /**
      * create request stream by req.

@@ -8,7 +8,6 @@ import { Buffer } from 'buffer';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
 import { StreamAdapter, FormData } from '../stream';
-import { RequestAdapter } from './request';
 
 
 /**
@@ -17,9 +16,7 @@ import { RequestAdapter } from './request';
 @Injectable({ static: true })
 export class BodyContentInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Interceptor<TRequest, TResponse> {
 
-    constructor(
-        private requestAdpr: RequestAdapter<TRequest, TResponse, TStatus>,
-        private adapter: StreamAdapter) { }
+    constructor( private adapter: StreamAdapter) { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
@@ -49,7 +46,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
                 headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
             }
 
-            return this.requestAdpr.update(req, { body, headers });
+            return req.clone({ body, headers }) as TRequest;
 
         }).pipe(
             mergeMap(req => next.handle(req))

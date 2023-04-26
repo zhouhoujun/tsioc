@@ -18,7 +18,12 @@ export class OutgoingMessage<TSocket extends Socket = any> extends Duplex implem
     readonly headers: ResHeaders;
     constructor(readonly id: number, readonly socket: TSocket, headers: ResHeaders) {
         super({
+            read(this: Duplex, size: number) {
+                
+            },
+            write(this: Duplex, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
 
+            }
         })
         this.headers = new ResHeaders(headers);
     }
