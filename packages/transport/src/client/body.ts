@@ -1,6 +1,6 @@
 import {
     Handler, Interceptor, isArrayBuffer, isBlob, isFormData,
-    isUrlSearchParams, Stream, TransportEvent, TransportRequest
+    isUrlSearchParams, IStream, TransportEvent, TransportRequest
 } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { defer, mergeMap, Observable } from 'rxjs';
@@ -57,7 +57,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
      * Transform the free-form body into a serialized format suitable for
      * transmission to the server.
      */
-    serializeBody(body: any): ArrayBuffer | Stream | Buffer | Blob | FormData | string | null {
+    serializeBody(body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null {
         // If no body is present, no need to serialize it.
         if (body === null) {
             return null
@@ -129,7 +129,7 @@ export interface RequestSerialize {
      * Transform the free-form body into a serialized format suitable for
      * transmission to the server.
      */
-    serializeBody(body: any): ArrayBuffer | Stream | Buffer | Blob | FormData | string | null;
+    serializeBody(body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null;
     /**
      * Examine the body and attempt to infer an appropriate MIME type
      * for it.

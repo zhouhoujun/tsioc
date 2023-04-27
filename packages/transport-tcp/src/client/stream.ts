@@ -1,17 +1,21 @@
-import { ClientStream, ClientStreamFactory, OutgoingHeaders, ReqHeaders, Socket } from '@tsdi/core';
+import { ClientStream, ClientStreamFactory, OutgoingHeaders, PacketCoding, ReqHeaders, Socket } from '@tsdi/core';
 import { Execption, Injectable } from '@tsdi/ioc';
 import { Writable, Readable, Duplex, Transform, PassThrough } from 'stream';
 import { NumberAllocator } from 'number-allocator';
-import { ev } from '@tsdi/transport';
-import { Duplexify } from './duplexify';
+import { TcpClientOpts } from './options';
 
 @Injectable()
 export class ClientStreamFactoryImpl<TSocket extends Duplex = any> implements ClientStreamFactory<TSocket> {
 
+    constructor(private coding: PacketCoding) {
+
+    }
+
+
     allocator = new NumberAllocator(1, 65536);
     last?: number;
-    create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket> {
-        return new ClientStreamImpl(this.getStreamId(), socket, headers.headers);
+    create(socket: TSocket, headers: ReqHeaders, opts: TcpClientOpts): ClientStream<TSocket> {
+        return new ClientStreamImpl(this.getStreamId(), socket, headers.headers, this.coding.createGenerator(socket, opts), this.coding.createParser(opts));
     }
 
     getStreamId() {
@@ -29,36 +33,27 @@ export class ClientStreamImpl<TSocket extends Duplex = any> extends Duplex imple
 
     constructor(readonly id: number, readonly socket: TSocket, readonly headers: OutgoingHeaders, private generator: Writable, private parser: Transform) {
         super({
+            read(this: ClientStreamImpl, size: number) {
+                return this.parser.read(size)
+            },
             write(this: ClientStreamImpl, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
                 if (!this.headerSent) {
-                    this._write(JSON.stringify(this.headers), encoding, callback);
+                    this.generator.write(JSON.stringify(this.headers), encoding, callback);
                     this._headerSent = true;
                 }
-                this._write(chunk, encoding, callback)
+                this.generator.write(chunk, encoding, callback)
             }
         })
-        
-        this.generator.pipe(this.socket)
-        this.socket.pipe(this.parser);
-
+        process.nextTick(() => {
+            this.generator.pipe(this.socket)
+            this.socket.pipe(this.parser);
+        })
     }
 
     private _headerSent = false;
     get headerSent(): boolean {
         return this._headerSent;
     }
-
-
-    // end(cb?: (() => void) | undefined): this;
-    // end(data: Buffer, cb?: (() => void) | undefined): this;
-    // end(str: string, encoding?: BufferEncoding | undefined, cb?: (() => void) | undefined): this;
-    // end(str?: any, encoding?: any, cb?: any): this {
-    //     if(!this.headerSent) {
-    //         this.write(JSON.stringify(this.headers))
-    //     }
-    //     this.write(this.delimiter);
-    //     return this;
-    // }
 
 }
 

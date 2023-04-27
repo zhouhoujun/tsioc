@@ -1,4 +1,4 @@
-import { AssetContext, ResultValue, Stream } from '@tsdi/core';
+import { AssetContext, ResultValue, IStream } from '@tsdi/core';
 import { hdr } from '../consts';
 /**
  * EventStream Result
@@ -8,7 +8,7 @@ import { hdr } from '../consts';
  * @extends {ResultValue}
  */
 export class EventStreamResult extends ResultValue {
-    constructor(private message: string | Buffer | Stream) {
+    constructor(private message: string | Buffer | IStream) {
         super('text/event-stream')
     }
     async sendValue(ctx: AssetContext) {

@@ -1,5 +1,5 @@
 import { ArgumentExecption, TypeExecption } from '@tsdi/ioc';
-import { Outgoing, ReadableStream } from '@tsdi/core';
+import { Outgoing, IReadableStream } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { hdr } from './consts';
 
@@ -72,7 +72,7 @@ export function escapeHtml(content: string): string {
 }
 
 
-export async function toBuffer(body: ReadableStream, limit = 0, url?: string) {
+export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
   const data = [];
   let bytes = 0;
 
