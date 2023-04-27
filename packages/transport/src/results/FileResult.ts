@@ -1,5 +1,5 @@
 import { isString } from '@tsdi/ioc';
-import { ApplicationContext, AssetContext, ResultValue, Stream } from '@tsdi/core';
+import { ApplicationContext, AssetContext, ResultValue, IStream } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { StreamAdapter } from '../stream';
 import { FileAdapter } from '../file';
@@ -15,7 +15,7 @@ export class FileResult extends ResultValue {
         /**
          * file content or path.
          */
-        private file: string | Buffer | Stream,
+        private file: string | Buffer | IStream,
         /**
          * Set content type and Content-Disposition header
          */

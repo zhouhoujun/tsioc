@@ -1,5 +1,5 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { WritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
+import { InjectFlags, Injectable, InvocationContext } from '@tsdi/ioc';
+import { IWritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
 import { RequestAdapter, StreamAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
 
@@ -16,18 +16,18 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
         super()
     }
 
-    createRequest(req: HttpRequest<any>): WritableStream {
+    createRequest(req: HttpRequest<any>): IWritableStream {
         const url = req.urlWithParams.trim();
         const ac = this.getAbortSignal(req.context);
-        const option = req.context.get(HTTP_CLIENT_OPTS);
+        const option = req.context.get(HTTP_CLIENT_OPTS, InjectFlags.Self);
         if (option.authority) {
-            return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION), option, ac);
+            return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION, InjectFlags.Self), option, ac);
         } else {
             return this.request1(url, req, ac);
         }
     }
 
-    send(request: WritableStream, req: HttpRequest<any>, callback: (error?: Error | null | undefined) => void): void {
+    send(request: IWritableStream, req: HttpRequest<any>, callback: (error?: Error | null | undefined) => void): void {
         const data = req.serializeBody();
         if (data === null) {
             request.end();
@@ -99,7 +99,7 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
             }
         } else {
             status = incoming[hdr.STATUS2];
-            statusText = ''
+            statusText = incoming[hdr.STATUS_MESSAGE];
         }
         return {
             body,

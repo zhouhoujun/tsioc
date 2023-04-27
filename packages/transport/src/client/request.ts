@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, WritableStream } from '@tsdi/core';
+import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, IWritableStream } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 
 
@@ -13,7 +13,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * create request stream by req.
      * @param req 
      */
-    abstract createRequest(req: TRequest): WritableStream;
+    abstract createRequest(req: TRequest): IWritableStream;
 
     /**
      * send request.
@@ -21,7 +21,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * @param req 
      * @param callback 
      */
-    abstract send(request: WritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
+    abstract send(request: IWritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
 
     /**
      * create error response.

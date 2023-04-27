@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
+import { ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, PacketCoding, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, RequestAdapter, ServerFinalizeFilter, SessionMiddleware, TransportBackend, TransportModule, ev } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
@@ -61,16 +61,21 @@ export interface TcpModuleOptions {
     /**
      * client options.
      */
-    clientOpts?: TcpClientOpts;
+    clientOpts?: TcpClientOpts|TcpClientOpts[];
     /**
      * client handler provider
      */
     handler?: ProvdierOf<TcpGuardHandler>;
-
     /**
      * server endpoint provider
      */
     endpoint?: ProvdierOf<TcpEndpoint>;
+    
+    coding?:ProvdierOf<PacketCoding>;
+    clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
+    incomingFactory?: ProvdierOf<IncomingFactory>;
+    outgoingFactory?: ProvdierOf<OutgoingFactory>;
+
     /**
      * server options
      */

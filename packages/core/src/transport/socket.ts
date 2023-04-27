@@ -1,12 +1,12 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { Packet } from './packet';
-import { ReadableStream, WritableStream, DuplexStream, EventEmitter } from './stream';
+import { IReadableStream, IWritableStream, IDuplexStream, IEventEmitter, ITransformStream } from './stream';
 
 /**
  * Socket interface.
  */
-export interface Socket extends DuplexStream {
+export interface Socket extends IDuplexStream {
 
     /**
      * Set the encoding for the socket as a `Readable Stream`. See `readable.setEncoding()` for more information.
@@ -80,7 +80,7 @@ export const SOCKET = tokenId<Socket>('SOCKET');
 /**
  * Connection interface.
  */
-export interface Connection<TSocket extends EventEmitter = EventEmitter> extends DuplexStream {
+export interface Connection<TSocket extends IEventEmitter = IEventEmitter> extends IDuplexStream {
     /**
      * destroyed or not.
      */
@@ -133,7 +133,7 @@ export const CONNECTION = tokenId<Connection>('CONNECTION');
 /**
  * server side incoming message.
  */
-export interface Incoming<T = any, TSocket = any> extends Packet<T>, ReadableStream {
+export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableStream {
     /**
      * packet id.
      */
@@ -154,7 +154,7 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, ReadableStr
      * The outgoing request method.
      */
     readonly method?: string;
-    
+
     readonly socket: TSocket;
 
     setTimeout?: (msecs: number, callback: () => void) => void;
@@ -168,16 +168,16 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, ReadableStr
 export abstract class IncomingFactory<TSocket = any> {
     /**
      * create server incoming.
-     * @param socket 
-     * @param headers 
+     * @param stream 
+     * @param opts 
      */
-    abstract create<T>(socket: TSocket, headers: ReqHeaders): Incoming<T, TSocket>;
+    abstract create<T>(stream: ClientStream<TSocket>, opts: any): Incoming<T, TSocket>;
 }
 
 /**
  * server outgoing message stream.
  */
-export interface Outgoing<TSocket = any> extends WritableStream {
+export interface Outgoing<TSocket = any> extends IWritableStream {
 
     readonly socket: TSocket;
     /**
@@ -296,16 +296,16 @@ export interface Outgoing<TSocket = any> extends WritableStream {
 export abstract class OutgoingFactory<TSocket = any> {
     /**
      * create server outgoing stream.
-     * @param socket 
-     * @param headers 
+     * @param duplex 
+     * @param opts 
      */
-    abstract create(socket: TSocket, headers: ResHeaders): Outgoing<TSocket>;
+    abstract create(duplex: ServerStream<TSocket>, opts: any): Outgoing<TSocket>;
 }
 
 /**
  * client duplex message stream.
  */
-export interface ClientStream<TSocket = any> extends DuplexStream {
+export interface ClientStream<TSocket = any> extends IDuplexStream {
     /**
      * headers
      */
@@ -317,16 +317,16 @@ export interface ClientStream<TSocket = any> extends DuplexStream {
 export abstract class ClientStreamFactory<TSocket = any> {
     /**
      * create client duplex stream.
-     * @param socket 
+     * @param duplex 
      * @param headers 
      */
-    abstract create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket>;
+    abstract create(duplex: IDuplexStream, headers: ReqHeaders, opts: any): ClientStream<TSocket>;
 }
 
 /**
  * Server duplex message stream.
  */
-export interface ServerStream<TSocket = any> extends DuplexStream {
+export interface ServerStream<TSocket = any> extends IDuplexStream {
     /**
      * headers
      */
@@ -343,4 +343,24 @@ export abstract class ServerStreamFactory<TSocket = any> {
      * @param headers 
      */
     abstract create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket>;
+}
+
+
+
+/**
+ * packet stream coding.
+ */
+@Abstract()
+export abstract class PacketCoding<TOpts = any> {
+    /**
+     * create packet parser
+     * @param opts options of type {@link ConnectionOpts}.
+     */
+    abstract createParser<T extends ITransformStream>(opts: TOpts): T;
+    /**
+     * create packet generator
+     * @param output the connection wirte output.
+     * @param opts options of type {@link ConnectionOpts}.
+     */
+    abstract createGenerator<T extends IWritableStream>(output: T, opts: TOpts): T;
 }

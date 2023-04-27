@@ -1,11 +1,12 @@
 import {
-    ClientStream, ClientStreamFactory, DuplexStream, TransportEvent,
+    ClientStreamFactory, IDuplexStream, TransportEvent,
     Incoming, ReqHeaders, ResHeaders, ResponsePacket, SOCKET, Socket, TransportErrorResponse,
-    TransportHeaderResponse, TransportRequest, TransportResponse
+    TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream
 } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { InjectFlags, Injectable } from '@tsdi/ioc';
 import { RequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
 import { Readable, Writable } from 'stream';
+import { TCP_CLIENT_OPTS } from './options';
 
 
 @Injectable()
@@ -15,14 +16,15 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
         super()
     }
 
-    createRequest(req: TransportRequest<any>): ClientStream {
+    createRequest(req: TransportRequest<any>): IWritableStream {
         const context = req.context;
-        const socket = context.get(SOCKET);
+        const socket = context.get(SOCKET, InjectFlags.Self);
+        const opts = context.get(TCP_CLIENT_OPTS, InjectFlags.Self);
         const factory = context.get(ClientStreamFactory<Socket>);
-        return factory.create(socket, req.headers);
+        return factory.create(socket, req.headers, opts);
     }
 
-    send(request: ClientStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
+    send(request: IWritableStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
         const data = req.body;
         if (data === null) {
             request.end();
@@ -59,7 +61,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
 
 }
 
-export class RequestStream extends Readable implements DuplexStream<Buffer | string> {
+export class RequestStream extends Readable implements IDuplexStream<Buffer | string> {
 
     constructor(readonly socket: Socket, private delimiter: string, private headers: ReqHeaders) {
         super()

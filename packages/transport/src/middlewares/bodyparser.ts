@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, UnsupportedMediaTypeExecption, ReadableStream, BadRequestExecption } from '@tsdi/core';
+import { AssetContext, Middleware, UnsupportedMediaTypeExecption, IReadableStream, BadRequestExecption } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { HttpStatusCode } from '@tsdi/common';
 import * as qslib from 'qs';
@@ -123,7 +123,7 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
         }
     }
 
-    private getStream(ctx: AssetContext, encoding: string): ReadableStream {
+    private getStream(ctx: AssetContext, encoding: string): IReadableStream {
         return this.unzipify(ctx, encoding);
     }
 

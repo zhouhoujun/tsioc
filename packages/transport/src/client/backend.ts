@@ -1,6 +1,6 @@
 import {
     TransportEvent, TransportRequest, Redirector,
-    ResponseJsonParseError, Backend, Incoming, HEAD, DuplexStream
+    ResponseJsonParseError, Backend, Incoming, HEAD, IDuplexStream
 } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, Nullable, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
@@ -68,7 +68,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
                 }
 
                 // HTTP fetch step 5
-                body = this.streamAdapter.pipeline(this.streamAdapter.isStream(incoming) ? incoming : request as DuplexStream, this.streamAdapter.passThrough(), (err) => {
+                body = this.streamAdapter.pipeline(this.streamAdapter.isStream(incoming) ? incoming : request as IDuplexStream, this.streamAdapter.passThrough(), (err) => {
                     error = err;
                     ok = !err;
                 });

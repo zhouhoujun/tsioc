@@ -1,31 +1,26 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection, OutgoingFactory, ReqHeaders, Socket } from '@tsdi/core';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection, OutgoingFactory, ReqHeaders, Socket, ServerStream } from '@tsdi/core';
 import { ArgumentExecption, Execption, Injectable, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { ev, hdr, HeandersSentExecption, InvalidStreamExecption } from '@tsdi/transport';
-import { Writable, Duplex } from 'stream';
+import { Writable, WritableOptions } from 'stream';
 
 @Injectable()
 export class OutgoingFactoryImpl implements OutgoingFactory {
 
-    create(socket: any, headers: ReqHeaders): Outgoing<any> {
-        return new OutgoingMessage(~~headers.get(hdr.IDENTITY)!, socket, headers);
+    create(stream: ServerStream, options?: WritableOptions): Outgoing {
+        return new OutgoingMessage(stream, options);
     }
 
 }
 
 
-export class OutgoingMessage<TSocket extends Socket = any> extends Duplex implements Outgoing {
+export class OutgoingMessage extends Writable implements Outgoing {
 
-    readonly headers: ResHeaders;
-    constructor(readonly id: number, readonly socket: TSocket, headers: ResHeaders) {
-        super({
-            read(this: Duplex, size: number) {
-                
-            },
-            write(this: Duplex, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+    constructor(private stream: ServerStream, options?: WritableOptions) {
+        super(options)
+    }
 
-            }
-        })
-        this.headers = new ResHeaders(headers);
+    get socket() {
+        return this.stream.socket;
     }
 
     get statusCode(): string | number {
