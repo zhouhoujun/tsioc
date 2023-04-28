@@ -4,13 +4,13 @@ import {
     TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream
 } from '@tsdi/core';
 import { InjectFlags, Injectable } from '@tsdi/ioc';
-import { RequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
+import { StreamRequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
 import { Readable, Writable } from 'stream';
 import { TCP_CLIENT_OPTS } from './options';
 
 
 @Injectable()
-export class TcpRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
+export class TcpRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, number | string> {
 
     constructor(private streamAdapter: StreamAdapter) {
         super()
@@ -52,7 +52,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
     parseHeaders(incoming: Incoming): ResHeaders {
         return new ResHeaders(incoming.headers);
     }
-    parseStatus(incoming: any, headers: ResHeaders): ResponsePacket<number | string> {
+    parsePacket(incoming: any, headers: ResHeaders): ResponsePacket<number | string> {
         return {
             status: headers.get(hdr.STATUS) ?? '',
             statusText: String(headers.get(hdr.STATUS_MESSAGE))

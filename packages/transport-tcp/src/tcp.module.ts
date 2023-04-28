@@ -1,6 +1,6 @@
-import { ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, PacketCoding, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
+import { ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, StreamCoding, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, RequestAdapter, ServerFinalizeFilter, SessionMiddleware, TransportBackend, TransportModule, ev } from '@tsdi/transport';
+import { BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, StreamTransportBackend, TransportModule, ev } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
 // import { TcpVaildator, TcpPackFactory } from './transport';
 import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_MIDDLEWARES, TCP_SERV_OPTS } from './server/options';
@@ -22,7 +22,7 @@ import { TcpGuardHandler } from './client/handler';
         // TcpPackFactory,
         TcpClient,
         TcpServer,
-        { provide: RequestAdapter, useClass: TcpRequestAdapter }
+        { provide: StreamRequestAdapter, useClass: TcpRequestAdapter }
     ]
 })
 export class TcpModule {
@@ -71,7 +71,7 @@ export interface TcpModuleOptions {
      */
     endpoint?: ProvdierOf<TcpEndpoint>;
     
-    coding?:ProvdierOf<PacketCoding>;
+    coding?:ProvdierOf<StreamCoding>;
     clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
     incomingFactory?: ProvdierOf<IncomingFactory>;
     outgoingFactory?: ProvdierOf<OutgoingFactory>;
@@ -94,7 +94,7 @@ const defClientOpts = {
     },
     interceptors: [TcpPathInterceptor, BodyContentInterceptor],
     filtersToken: TCP_CLIENT_FILTERS,
-    backend: TransportBackend
+    backend: StreamTransportBackend
 
 } as TcpClientOpts;
 
@@ -140,4 +140,3 @@ const defServerOpts = {
     ]
 
 } as TcpServerOpts;
-

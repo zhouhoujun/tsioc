@@ -172,14 +172,14 @@ export class Duplexify extends Duplex {
 
     override _write(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void): void {
         if (this.destroyed) return
-        if (this._corked) return this.onuncork(() => this.pipeTo(chunk, encoding, cb))
+        if (this._corked) return this.onuncork(() => this._writing(chunk, encoding, cb))
         if (chunk === SIGNAL_FLUSH) return this._finish(cb)
 
-        this.pipeTo(chunk, encoding, cb);
+        this._writing(chunk, encoding, cb);
 
     }
 
-    protected pipeTo(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void) {
+    protected _writing(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void) {
         if (!this._writable) return cb();
         if (this._writable.write(chunk) === false) this._ondrain = cb;
         else if (!this.destroyed) cb()

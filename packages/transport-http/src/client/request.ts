@@ -1,6 +1,6 @@
 import { InjectFlags, Injectable, InvocationContext } from '@tsdi/ioc';
 import { IWritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
-import { RequestAdapter, StreamAdapter, ctype, ev, hdr } from '@tsdi/transport';
+import { StreamRequestAdapter, StreamAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
 
 import * as http from 'http';
@@ -10,7 +10,7 @@ import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './option'
 
 
 @Injectable()
-export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, number> {
+export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEvent, number> {
 
     constructor(private streamAdapter: StreamAdapter) {
         super()
@@ -86,7 +86,7 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
         }
     }
 
-    parseStatus(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): ResponsePacket<number> {
+    parsePacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): ResponsePacket<number> {
         let body: any, status: number, statusText: string;
         if (incoming instanceof http.IncomingMessage) {
             status = incoming.statusCode ?? 0;

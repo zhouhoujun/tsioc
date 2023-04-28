@@ -2,7 +2,7 @@ import { ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter,
-    HelmetMiddleware, LOCALHOST, LogInterceptor, RequestAdapter, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, StatusVaildator, TransportBackend, TransportModule
+    HelmetMiddleware, LOCALHOST, LogInterceptor, StreamRequestAdapter, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, StatusVaildator, StreamTransportBackend, TransportModule
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { ListenOptions } from 'net';
@@ -55,7 +55,7 @@ export interface HttpModuleOptions {
         HttpStatusVaildator,
         HttpRequestAdapter,
         HttpPathInterceptor,
-        { provide: RequestAdapter, useExisting: HttpRequestAdapter },
+        { provide: StreamRequestAdapter, useExisting: HttpRequestAdapter },
         { provide: StatusVaildator, useExisting: HttpStatusVaildator },
         Http,
 
@@ -102,7 +102,7 @@ const defClientOpts = {
     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
     interceptors: [HttpPathInterceptor, BodyContentInterceptor],
     filtersToken: HTTP_CLIENT_FILTERS,
-    backend: TransportBackend
+    backend: StreamTransportBackend
 
 } as HttpClientOpts;
 

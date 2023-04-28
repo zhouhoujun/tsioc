@@ -1,27 +1,13 @@
-/* eslint-disable no-case-declarations */
-import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, IWritableStream } from '@tsdi/core';
+import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, IWritableStream, Encoder } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 
 
 /**
  * request adapter.
  */
 @Abstract()
-export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> {
-
-    /**
-     * create request stream by req.
-     * @param req 
-     */
-    abstract createRequest(req: TRequest): IWritableStream;
-
-    /**
-     * send request.
-     * @param request 
-     * @param req 
-     * @param callback 
-     */
-    abstract send(request: IWritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
+export abstract class ResponseAdapter<TResponse = TransportEvent, TStatus = number> {
 
     /**
      * create error response.
@@ -64,20 +50,57 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
     }): TResponse;
 
     /**
-     * response event of request stream.
-     */
-    abstract getResponseEvenName(): string;
-
-    /**
      * parse headers of incoming message.
      * @param incoming 
      */
     abstract parseHeaders(incoming: any): ResHeaders;
 
     /**
-     * parse status and message of incoming message.
+     * parse packet via incoming message.
      * @param incoming 
      * @param headers 
      */
-    abstract parseStatus(incoming: any, headers: ResHeaders): ResponsePacket<TStatus>;
+    abstract parsePacket(incoming: any, headers: ResHeaders): ResponsePacket<TStatus>;
+}
+
+
+/**
+ * request adapter.
+ */
+@Abstract()
+export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> extends ResponseAdapter<TResponse, TStatus> {
+
+    /**
+     * send request.
+     * @param request 
+     * @param req 
+     * @param callback 
+     */
+    abstract send(req: TRequest, encoder?: Encoder): Observable<TResponse>;
+}
+
+/**
+ * streamable request adapter.
+ */
+@Abstract()
+export abstract class StreamRequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> extends ResponseAdapter<TResponse, TStatus> {
+
+    /**
+     * create request stream by req.
+     * @param req 
+     */
+    abstract createRequest(req: TRequest): IWritableStream;
+
+    /**
+     * send request.
+     * @param request 
+     * @param req 
+     * @param callback 
+     */
+    abstract send(request: IWritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
+
+    /**
+     * response event of request stream.
+     */
+    abstract getResponseEvenName(): string;
 }

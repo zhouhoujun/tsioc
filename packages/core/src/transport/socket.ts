@@ -346,12 +346,27 @@ export abstract class ServerStreamFactory<TSocket = any> {
 }
 
 
+@Abstract()
+export abstract class Encoder {
+    abstract encode<T>(input: any): T;
+}
+@Abstract()
+export abstract class Decoder {
+    abstract decode<T>(input: any): T;
+}
+
+@Abstract()
+export abstract class PacketCoding implements Encoder, Decoder {
+    abstract encode<T>(input: any): T;
+    abstract decode<T>(input: any): T;
+}
+
 
 /**
- * packet stream coding.
+ * stream packet coding.
  */
 @Abstract()
-export abstract class PacketCoding<TOpts = any> {
+export abstract class StreamCoding<TOpts = any> {
     /**
      * create packet parser
      * @param opts options of type {@link ConnectionOpts}.
