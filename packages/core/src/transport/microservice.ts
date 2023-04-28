@@ -6,12 +6,13 @@ import { Filter } from '../filters/filter';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
 import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
+import { Runner, Shutdown, Startup } from '../metadata';
 
 
 
 @Abstract()
 export abstract class MicroService<TInput extends EndpointContext, TOutput = any> implements EndpointService {
-    
+
     /**
      * micro service endpoint.
      */
@@ -36,4 +37,26 @@ export abstract class MicroService<TInput extends EndpointContext, TOutput = any
         this.endpoint.useInterceptors(interceptor, order);
         return this;
     }
+
+    @Startup()
+    startup() {
+        return this.onStartup()
+    }
+
+    @Runner()
+    start() {
+        return this.onStart()
+    }
+
+    @Shutdown()
+    close() {
+        return this.onShutdown()
+    }
+
+    protected abstract onStartup(): Promise<any>;
+
+    protected abstract onStart(): Promise<any>;
+
+    protected abstract onShutdown(): Promise<any>;
+
 }

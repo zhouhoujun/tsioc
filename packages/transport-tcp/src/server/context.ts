@@ -1,6 +1,5 @@
 import { Incoming, ListenOpts, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
-import * as net from 'net';
 import * as tls from 'tls';
 
 
@@ -35,7 +34,7 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing> {
     }
 
     get protocol(): string {
-        return !this.listenOpts.host && !this.listenOpts.port? 'ipc' : 'tcp'
+        return !this.listenOpts.host && !this.listenOpts.port? 'ipc' : this.secure? 'ssl' : 'tcp';
     }
 
     get status(): string | number {

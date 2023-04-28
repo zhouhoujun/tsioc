@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNumber, isString, lang } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -16,7 +16,7 @@ import { TcpEndpoint } from './endpoint';
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<TcpContext, Outgoing> {
+export class TcpServer extends Server<TcpContext, Outgoing> implements ListenService {
 
     private serv!: net.Server | tls.Server;
 
@@ -120,7 +120,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> {
 
     protected createContext(req: Incoming, res: Outgoing): TcpContext {
         const injector = this.endpoint.injector;
-        return new TcpContext(injector, req, res);
+        return new TcpContext(injector, req, res, this.options.proxy);
     }
 
     // protected override async setupServe(server: net.Server | tls.Server, observer: Subscriber<net.Server | tls.Server>, opts: TcpServerOpts): Promise<Cleanup> {

@@ -1,6 +1,6 @@
 import { Interceptor, Filter, MiddlewareLike, AssetContext, TransportEndpointOptions, Incoming, Outgoing } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { SessionOptions, ContentOptions, MimeSource } from '@tsdi/transport';
+import { SessionOptions, ContentOptions, MimeSource, ProxyOpts } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TcpContext } from './context';
@@ -14,7 +14,7 @@ export interface TcpServerOpts extends TransportEndpointOptions<TcpContext, Outg
 
     autoListen?: boolean;
     maxConnections?: number;
-    proxy?: boolean;
+    proxy?: ProxyOpts;
     /**
      * socket timeout.
      */
