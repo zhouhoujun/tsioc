@@ -13,14 +13,14 @@ import { joinprefix } from './route';
 import { Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
-import { TransportContext } from './context';
+import { AssetContext } from './context';
 
 const isRest = /\/:/;
 
 /**
  * Controller route.
  */
-export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<TransportContext>, Endpoint, OnDestroy {
+export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<AssetContext>, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[] | undefined;
@@ -44,12 +44,12 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         return this.factory?.typeRef;
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    protected getBackend(): Backend<TransportContext, any> {
+    protected getBackend(): Backend<AssetContext, any> {
         return new FnHandler((ctx) => {
             if (ctx.sent) return throwError(() => new PushDisabledExecption());
 
@@ -81,7 +81,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
 
 
 
-    protected getRouteMetaData(ctx: TransportContext) {
+    protected getRouteMetaData(ctx: AssetContext) {
         const subRoute = ctx.url.replace(this.prefix, '') || '/';
         if (!this.sortRoutes) {
             this.sortRoutes = this.ctrlRef.class.defs

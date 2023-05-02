@@ -10,7 +10,7 @@ import { createPayloadResolver } from '../endpoints/resolvers';
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {
+export abstract class TransportContext<TInput = any> extends EndpointContext<TInput> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [ ... primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -23,6 +23,43 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      * Set request url
      */
     abstract set url(value: string);
+    
+    /**
+     * The request method.
+     */
+    abstract get method(): string;
+
+}
+
+const primitiveResolvers = createPayloadResolver(
+    (ctx, scope, field) => {
+        let payload = ctx.payload;
+
+        if (field && !scope) {
+            scope = 'query'
+        }
+        if (scope) {
+            payload = payload[scope];
+            if (field) {
+                payload = isDefined(payload) ? payload[field] : null;
+            }
+        }
+        return payload;
+    },
+    (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
+
+/**
+ * abstract mime asset transport context.
+ * 
+ * 类型资源传输节点上下文
+ */
+@Abstract()
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any> extends TransportContext<TRequest> {
+
+    /**
+     * protocol name
+     */
+    abstract get protocol(): string;
 
     /**
      * transport request.
@@ -34,14 +71,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
     abstract get response(): TResponse;
 
     /**
-     * protocol name
+     * has sent or not.
      */
-    abstract get protocol(): string;
-    /**
-     * The request method.
-     */
-    abstract get method(): string;
-
+    abstract readonly sent: boolean;
     /**
      * Get response status.
      */
@@ -74,36 +106,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      * @api public
      */
     abstract get length(): number | undefined;
-
-    /**
-     * has sent or not.
-     */
-    abstract readonly sent: boolean;
-
-}
-
-const primitiveResolvers = createPayloadResolver(
-    (ctx, scope, field) => {
-        let payload = ctx.payload;
-
-        if (field && !scope) {
-            scope = 'query'
-        }
-        if (scope) {
-            payload = payload[scope];
-            if (field) {
-                payload = isDefined(payload) ? payload[field] : null;
-            }
-        }
-        return payload;
-    },
-    (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
-
-/**
- * abstract asset context.
- */
-@Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any> extends TransportContext<TRequest, TResponse, TStatus> {
 
     /**
      * is secure protocol or not.

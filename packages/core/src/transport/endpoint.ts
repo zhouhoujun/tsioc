@@ -1,9 +1,10 @@
-import { Abstract, Execption, Injector, ProvdierOf, Token } from '@tsdi/ioc';
+import { Abstract, Execption, Injector, ProvdierOf, Token, TypeOf } from '@tsdi/ioc';
 import { EndpointOptions, EndpointService } from '../endpoints/endpoint.service';
 import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { TransportContext } from './context';
+import { AssetContext, TransportContext } from './context';
+import { Backend } from '../Handler';
 
 /**
  * Transport endpoint.
@@ -11,9 +12,8 @@ import { TransportContext } from './context';
  * 传输节点
  */
 @Abstract()
-export abstract class TransportEndpoint<TInput extends TransportContext, TOutput> extends ConfigableEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
+export abstract class TransportEndpoint<TInput extends TransportContext, TOutput> extends ConfigableEndpoint<TInput, TOutput> implements EndpointService {
 
-    abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
 }
 
 /**
@@ -22,8 +22,10 @@ export abstract class TransportEndpoint<TInput extends TransportContext, TOutput
  * 传输节点配置
  */
 export interface TransportEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T, TArg> {
-    middlewaresToken?: Token<MiddlewareLike<T>[]>;
-    middlewares?: ProvdierOf<MiddlewareLike<T>>[];
+    /**
+     * backend of endpoint. defaut `Router`
+     */
+    backend?: TypeOf<Backend>;
 }
 
 /**
@@ -40,6 +42,45 @@ export function createTransportEndpoint<TCtx extends TransportContext, TOutput>(
 
 export const TRANSPORT_ENDPOINT_IMPL = {
     create<TCtx extends TransportContext, TOutput>(injector: Injector, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
+        throw new Execption('not implemented.')
+    }
+}
+
+/**
+ * Mime asset transport endpoint.
+ * 
+ * 类型资源传输节点
+ */
+@Abstract()
+export abstract class AssetEndpoint<TInput extends AssetContext, TOutput> extends TransportEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
+
+    abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
+}
+
+/**
+ * Asset transport endpoint options.
+ * 
+ * 类型资源传输节点配置
+ */
+export interface AssetEndpointOptions<T extends AssetContext = any, TArg = any> extends EndpointOptions<T, TArg> {
+    middlewaresToken?: Token<MiddlewareLike<T>[]>;
+    middlewares?: ProvdierOf<MiddlewareLike<T>>[];
+}
+
+/**
+ * create transport endpoint.
+ * 
+ * 创建传输节点实例化对象
+ * @param injector 
+ * @param options 
+ * @returns 
+ */
+export function createAssetEndpoint<TCtx extends AssetContext, TOutput>(injector: Injector, options: AssetEndpointOptions<TCtx>): AssetEndpoint<TCtx, TOutput> {
+    return ASSET_ENDPOINT_IMPL.create(injector, options)
+}
+
+export const ASSET_ENDPOINT_IMPL = {
+    create<TCtx extends AssetContext, TOutput>(injector: Injector, options: AssetEndpointOptions<TCtx>): AssetEndpoint<TCtx, TOutput> {
         throw new Execption('not implemented.')
     }
 }

@@ -1,4 +1,4 @@
-import { ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, StreamCoding, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
+import { ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, StreamCoding, RouterModule, TransformModule, createHandler, createAssetEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, StreamTransportBackend, TransportModule, ev } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
@@ -44,7 +44,7 @@ export class TcpModule {
             }),
             toProvider(TcpEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: TcpServerOpts) => {
-                    return createTransportEndpoint(injector, opts)
+                    return createAssetEndpoint(injector, opts)
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             })

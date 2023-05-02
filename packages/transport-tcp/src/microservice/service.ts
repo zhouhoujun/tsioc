@@ -1,12 +1,12 @@
 import { EndpointContext, InternalServerExecption, ListenOpts, MicroService, Packet } from '@tsdi/core';
-import { TcpMicroServiceEndpoint } from './endpoint';
-import { Inject, Injectable, isNumber, isString, lang } from '@tsdi/ioc';
-import * as net from 'net';
-import * as tls from 'tls';
-import { TCP_MICRO_SERV_OPTS, TcpMicroServiceOpts } from './options';
+import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
-import { InjectLog, Logger } from '@tsdi/logs';
+import * as net from 'net';
+import * as tls from 'tls';
+import { TcpMicroServiceEndpoint } from './endpoint';
+import { TCP_MICRO_SERV_OPTS, TcpMicroServiceOpts } from './options';
 
 
 @Injectable()
@@ -75,8 +75,8 @@ export class TcpMicroService extends MicroService<EndpointContext> {
         }
     }
 
-    protected async onShutdown(): Promise<any> {
-        throw new Error('Method not implemented.');
+    protected onShutdown(): Promise<any> {
+        return promisify(this.serv.close, this.serv)();
     }
 
     /**

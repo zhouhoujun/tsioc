@@ -1,4 +1,4 @@
-import { Interceptor, Server, Filter, TransportEndpointOptions } from '@tsdi/core';
+import { Interceptor, Server, Filter, AssetEndpointOptions } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -10,7 +10,7 @@ import { HttpServRequest, HttpServResponse } from './context';
 /**
  * http options.
  */
-export interface HttpOpts extends TransportEndpointOptions {
+export interface HttpOpts extends AssetEndpointOptions {
     majorVersion?: number;
     proxy?: ProxyOpts;
     /**

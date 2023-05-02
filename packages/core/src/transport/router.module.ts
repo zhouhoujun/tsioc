@@ -1,15 +1,18 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { Router } from './router';
-import { TRANSPORT_ENDPOINT_IMPL } from './endpoint';
+import { ASSET_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { MappingRouter, MiddlewareRouter } from './middleware.router';
 import { ControllerRouteReolver } from './controller';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
+import { AssetEndpointImpl } from '../impl/asset.endpoint';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 
 
 TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
+
+ASSET_ENDPOINT_IMPL.create = (injector, options) => new AssetEndpointImpl(injector, options);
 
 /*
  * Middleware module.

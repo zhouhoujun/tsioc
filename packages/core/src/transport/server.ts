@@ -6,8 +6,8 @@ import { PipeTransform } from '../pipes/pipe';
 import { EndpointService } from '../endpoints/endpoint.service';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { TransportEndpoint } from './endpoint';
-import { TransportContext } from './context';
+import { AssetEndpoint } from './endpoint';
+import { AssetContext } from './context';
 import { Runner, Shutdown, Startup } from '../metadata';
 
 
@@ -16,9 +16,9 @@ import { Runner, Shutdown, Startup } from '../metadata';
  * Server
  */
 @Abstract()
-export abstract class Server<TInput extends TransportContext, TOutput = any> implements EndpointService, MiddlewareService {
+export abstract class Server<TInput extends AssetContext, TOutput = any> implements EndpointService, MiddlewareService {
 
-    abstract get endpoint(): TransportEndpoint<TInput, TOutput>;
+    abstract get endpoint(): AssetEndpoint<TInput, TOutput>;
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
         this.endpoint.use(middlewares, order);

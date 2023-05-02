@@ -1,4 +1,4 @@
-import { AssetContext, ListenOpts, ListenService, Outgoing, Server } from '@tsdi/core';
+import { MicroService, Outgoing, Server, TransportContext } from '@tsdi/core';
 import { Inject, Injectable, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { MqttClient, connect } from 'mqtt';
@@ -8,7 +8,7 @@ import { MqttEndpoint } from './endpoint';
 
 
 @Injectable()
-export class MqttServer extends Server<AssetContext, Outgoing> {
+export class MqttServer extends MicroService<TransportContext, Outgoing> {
     
     @InjectLog()
     private logger?: Logger;

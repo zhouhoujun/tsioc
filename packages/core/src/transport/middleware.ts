@@ -1,12 +1,12 @@
 import { Handle, tokenId } from '@tsdi/ioc';
-import { TransportContext } from './context';
+import { AssetContext } from './context';
 
 
 
 /**
  * Middleware is a chainable behavior modifier for context.
  */
-export interface Middleware<Tx extends TransportContext = TransportContext> {
+export interface Middleware<Tx extends AssetContext = AssetContext> {
     /**
      * invoke the middleware.
      * @param ctx  context with request and response.
@@ -20,11 +20,11 @@ export interface Middleware<Tx extends TransportContext = TransportContext> {
 /**
  * middleware function
  */
-export type MiddlewareFn<T extends TransportContext = TransportContext> = Handle<T, Promise<void>>;
+export type MiddlewareFn<T extends AssetContext = AssetContext> = Handle<T, Promise<void>>;
 /**
  * middleware like. instance of middleware or middleware function.
  */
-export type MiddlewareLike<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends AssetContext = AssetContext> = Middleware<T> | MiddlewareFn<T>;
 
 /**
  * middlewares multi token.

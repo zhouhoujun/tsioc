@@ -69,7 +69,7 @@ export class DeviceController {
 
     }
 
-    @Handle(/dd./, 'tcp')
+    @Handle('dd*', 'tcp')
     async subMessage1() {
 
     }

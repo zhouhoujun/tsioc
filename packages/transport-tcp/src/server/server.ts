@@ -1,4 +1,4 @@
-import { Inject, Injectable, isNumber, isString, lang } from '@tsdi/ioc';
+import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
@@ -84,9 +84,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
     }
 
     protected onShutdown(): Promise<any> {
-        const defer = lang.defer();
-        this.serv.close(err => err ? defer.reject(err) : defer.resolve())
-        return defer.promise;
+        return promisify(this.serv.close, this.serv)();
     }
 
     protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
