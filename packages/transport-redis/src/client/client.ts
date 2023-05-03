@@ -1,52 +1,39 @@
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
-import { Client, ClientEndpointContext, OnDispose, Pattern, RequestOptions, TransportRequest } from '@tsdi/core';
+import { Inject, Injectable } from '@tsdi/ioc';
+import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
 import Redis, { RedisOptions } from 'ioredis';
-import { TransportClientOpts } from '@tsdi/transport';
-
-
-@Abstract()
-export abstract class RedisClientOpts extends TransportClientOpts {
-    /**
-     * connect options.
-     */
-    abstract connectOpts: RedisOptions;
-}
+import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
+import { RedisHandler } from './handler';
 
 
 
 @Injectable()
-export class RedisClient extends Client<Pattern, RequestOptions, RedisClientOpts> implements OnDispose {
+export class RedisClient extends Client<TransportRequest, TransportEvent> {
 
     private pubClient: Redis | null = null;
     private subClient: Redis | null = null;
-    constructor(@Nullable() options: RedisClientOpts) {
-        super(options);
+    constructor(
+        readonly handler: RedisHandler,
+        @Inject(REDIS_CLIENT_OPTS, { nullable: true }) private options: RedisClientOpts) {
+        super();
     }
 
-    protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: RequestOptions): TransportRequest {
-        return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
-    }
+    // protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: RequestOptions): TransportRequest {
+    //     return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
+    // }
 
     protected async connect(): Promise<void> {
         if (this.pubClient && this.subClient) return;
 
-        const opts = this.getOptions();
+        const opts = this.options;
         this.subClient = new Redis(opts.connectOpts);
         this.pubClient = new Redis(opts.connectOpts);
 
     }
 
-    async close(): Promise<void> {
-        this.subClient?.quit();
-        this.pubClient?.quit();
-        this.subClient = this.pubClient = null;
+    protected async onShutdown(): Promise<void> {
+        await this.subClient?.quit();
+        await this.pubClient?.quit();
     }
-
-    async onDispose(): Promise<void> {
-        await this.close();
-        await this.context.destroy();
-    }
-
 
     // protected createDuplex(opts: RedisClientOpts): Duplex {
     //     return createClient(opts.connectOpts!);

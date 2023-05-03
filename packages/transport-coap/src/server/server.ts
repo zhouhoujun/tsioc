@@ -1,111 +1,107 @@
 
-import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType, Router } from '@tsdi/core';
-import { Abstract, Injectable, lang, Nullable, promisify, tokenId } from '@tsdi/ioc';
-import {
-    LogInterceptor, TransportServer, TransportServerOpts,
-    ConnectionOpts, Connection, IncomingMessage, OutgoingMessage, TransportContext,
-    ExecptionFinalizeFilter, TransportExecptionHandlers, ContentMiddleware, SessionMiddleware,
-    EncodeJsonMiddleware, BodyparserMiddleware, DuplexConnection
-} from '@tsdi/transport';
+import { AssetContext, InternalServerExecption, ListenOpts, ListenService, Outgoing, Server } from '@tsdi/core';
+import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import * as net from 'net';
 import * as dgram from 'dgram';
-import { CoapPacketFactory, CoapVaildator } from '../transport';
-import { Duplex } from 'form-data';
-
-
-/**
- * Coap server options.
- */
-@Abstract()
-export abstract class CoapServerOpts extends TransportServerOpts<IncomingMessage, OutgoingMessage> {
-    /**
-     * is json or not.
-     */
-    abstract json?: boolean;
-    abstract baseOn?: 'tcp' | 'udp';
-    abstract encoding?: BufferEncoding;
-    abstract serverOpts: dgram.SocketOptions | net.ServerOpts;
-}
-
-/**
- * CoAP server interceptors.
- */
-export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor<IncomingMessage, OutgoingMessage>[]>('COAP_SERV_INTERCEPTORS');
-
-/**
- * CoAP server execption filters.
- */
-export const COAP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTION_FILTERS');
-/**
- * CoAP middlewares.
- */
-export const COAP_MIDDLEWARES = tokenId<MiddlewareType[]>('COAP_MIDDLEWARES');
-
-const defOpts = {
-    json: true,
-    encoding: 'utf8',
-    transport: {
-        strategy: CoapVaildator
-    },
-    interceptorsToken: COAP_SERV_INTERCEPTORS,
-    execptionsToken: COAP_EXECPTION_FILTERS,
-    middlewaresToken: COAP_MIDDLEWARES,
-    interceptors: [
-        LogInterceptor
-    ],
-    execptions: [
-        ExecptionFinalizeFilter,
-        TransportExecptionHandlers
-    ],
-    middlewares: [
-        ContentMiddleware,
-        SessionMiddleware,
-        EncodeJsonMiddleware,
-        BodyparserMiddleware,
-        Router
-    ],
-    serverOpts: {
-        type: 'udp4'
-    },
-    listenOpts: {
-        port: 4000,
-        host: 'localhost'
-    }
-} as CoapServerOpts;
-
+import { COAP_SERVER_OPTS, CoapServerOpts } from './options';
+import { CoapEndpoint } from './endpoint';
+import { InjectLog, Logger } from '@tsdi/logs';
 
 /**
  * Coap server.
  */
 @Injectable()
-export class CoapServer extends TransportServer<net.Server | dgram.Socket, IncomingMessage, OutgoingMessage, CoapServerOpts> {
+export class CoapServer extends Server<AssetContext, Outgoing> implements ListenService {
 
+    @InjectLog() logger!: Logger;
 
-    constructor(@Nullable() options: CoapServerOpts) {
-        super(options)
+    constructor(readonly endpoint: CoapEndpoint, @Inject(COAP_SERVER_OPTS, { nullable: true }) private options: CoapServerOpts) {
+        super()
     }
 
-    async close(): Promise<void> {
-        await promisify(this.server.close, this.server)();
+    private _secure?: boolean;
+    get isSecure() {
+        return this._secure === true
+    }
+    _server?: dgram.Socket | net.Server;
+
+
+    listen(options: ListenOpts, listeningListener?: () => void): this;
+    listen(port: number, host?: string, listeningListener?: () => void): this;
+    listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
+        if (!this._server) throw new InternalServerExecption();
+        const isSecure = this.isSecure;
+        if (isNumber(arg1)) {
+            const port = arg1;
+            if (isString(arg2)) {
+                const host = arg2;
+                if (!this.options.listenOpts) {
+                    this.options.listenOpts = { host, port };
+                }
+                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!');
+                if (this._server instanceof net.Server) {
+                    this._server.listen(port, host, listeningListener);
+                } else {
+                    this._server.bind(port, host, listeningListener);
+                }
+            } else {
+                listeningListener = arg2;
+                if (!this.options.listenOpts) {
+                    this.options.listenOpts = { port };
+                }
+                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
+                if (this._server instanceof net.Server) {
+                    this._server.listen(port, listeningListener);
+                } else {
+                    this._server.bind(port, listeningListener);
+                }
+            }
+        } else {
+            const opts = arg1;
+            if (!this.options.listenOpts) {
+                this.options.listenOpts = opts;
+            }
+            this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+            if (this._server instanceof net.Server) {
+                this._server.listen(opts, listeningListener);
+            } else {
+                this._server.bind(opts, listeningListener);
+            }
+        }
+        return this;
     }
 
-    protected override getDefaultOptions() {
-        return defOpts;
+    protected async onStartup(): Promise<any> {
+        this._server = this.createServer(this.options);
+    }
+    protected async onStart(): Promise<any> {
+        if(this.options.listenOpts){
+            this.listen(this.options.listenOpts);
+        }
+    }
+    protected async onShutdown(): Promise<any> {
+        if (!this._server) return;
+        await promisify(this._server.close, this._server)();
     }
 
-    protected override createServer(opts: CoapServerOpts): dgram.Socket | net.Server {
+    protected createServer(opts: CoapServerOpts): dgram.Socket | net.Server {
         return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
     }
 
-    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(CoapPacketFactory);
-        return new DuplexConnection(socket, packet, opts)
-    }
 
-    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
-        const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(CoapVaildator))
-    }
+
+    // protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    //     const packet = this.context.get(CoapPacketFactory);
+    //     return new DuplexConnection(socket, packet, opts)
+    // }
+
+    // protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
+    //     const injector = this.context.injector;
+    //     return new TransportContext(injector, req, res, this, injector.get(CoapVaildator))
+    // }
 
     // protected override onConnection(server: net.Server | dgram.Socket, opts?: ConnectionOpts): Observable<Connection> {
     //     const packetor = this.context.get(Packetor);
@@ -175,15 +171,5 @@ export class CoapServer extends TransportServer<net.Server | dgram.Socket, Incom
     //         }
     //     })
     // }
-
-    protected listen(opts: ListenOpts): Promise<void> {
-        const defer = lang.defer<void>();
-        if (this.server instanceof net.Server) {
-            this.server.listen(opts, defer.resolve);
-        } else {
-            this.server.bind(opts, defer.resolve);
-        }
-        return defer.promise;
-    }
 
 }
