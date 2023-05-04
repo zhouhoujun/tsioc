@@ -7,7 +7,7 @@ import { Interceptor } from '../Interceptor';
 /**
  * handler filter is a chainable behavior modifier for `handlers`.
  * 
- * 处理器过滤器
+ * 处理器过滤器。
  */
 @Abstract()
 export abstract class Filter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
@@ -24,7 +24,7 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
 /**
  * filter service.
  * 
- * 过滤器服务
+ * 过滤器服务。
  */
 export interface FilterService {
     /**

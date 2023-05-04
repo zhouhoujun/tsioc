@@ -1,9 +1,9 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { EndpointContext } from '../endpoints/context';
 import { patternToPath } from '../transport/pattern';
+import { AssetContext } from '../transport/context';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
-import { AssetContext } from '../transport';
 
 
 

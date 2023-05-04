@@ -1,14 +1,14 @@
 import { Abstract, EMPTY, Injector, isArray, isNumber, ProvdierOf, Token, toProvider } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import { Interceptor, INTERCEPTORS_TOKEN, InterceptorService } from '../Interceptor';
 import { Backend, Handler } from '../Handler';
-import { Observable } from 'rxjs';
 import { InterceptorHandler } from './handler';
 
 
 /**
  * abstract handler.
  * 
- * 抽象处理器
+ * 抽象处理器。
  */
 @Abstract()
 export abstract class AbstractHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {

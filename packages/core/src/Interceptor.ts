@@ -52,4 +52,3 @@ const INTERCEPTORS = 'INTERCEPTORS';
 export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
     return getTokenOf(type, INTERCEPTORS, propertyKey);
 }
-

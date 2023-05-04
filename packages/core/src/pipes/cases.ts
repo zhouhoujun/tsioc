@@ -32,6 +32,6 @@ export class UpperCasePipe implements PipeTransform {
     if (!isString(value)) {
       throw invalidPipeArgument(this, value)
     }
-    return value.toLowerCase()
+    return value.toUpperCase()
   }
 }

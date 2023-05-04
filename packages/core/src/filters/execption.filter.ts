@@ -8,6 +8,8 @@ import { EndpointContext } from '../endpoints/context';
 
 /**
  * execption context
+ * 
+ * 异常处理上下文
  */
 export class ExecptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
 
@@ -31,6 +33,8 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
 
 /**
  * execption filter
+ * 
+ * 异常处理过滤器
  */
 @Abstract()
 export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filter<TInput, TOutput> {

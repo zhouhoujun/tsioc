@@ -5,6 +5,8 @@ const _tyfunc = 'function';
 /**
  * Execption is Basic Error.
  * for custom extends.
+ * 
+ * 异常处理基础类，用于基础实现自定义异常。
  */
 export class Execption extends Error {
     constructor(message: string, readonly code?: any) {
@@ -31,6 +33,8 @@ export class Execption extends Error {
 
 /**
  * argument execption.
+ * 
+ * 参数异常。
  */
 export class ArgumentExecption extends Execption {
     constructor(message?: string | string[]) {
@@ -41,6 +45,8 @@ export class ArgumentExecption extends Execption {
 const tymgs = 'TypeExecption';
 /**
  * Type execption.
+ * 
+ * 类型异常。
  */
 export class TypeExecption extends Execption {
     constructor(message?: string) {

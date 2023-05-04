@@ -5,7 +5,7 @@ import { Abstract } from '@tsdi/ioc';
  * Class to be extended by all application events. Abstract as it
  * doesn't make sense for generic events to be published directly.
  * 
- * 应用程序事件抽象类， 直接发布通用事件没有意义
+ * 应用程序事件抽象类， 直接发布通用事件没有意义。
  */
 @Abstract()
 export abstract class ApplicationEvent {
