@@ -3,6 +3,6 @@ import { AbstractGuardHandler, TransportEvent, TransportRequest } from '@tsdi/co
 
 
 @Abstract()
-export abstract class TcpGuardHandler extends AbstractGuardHandler<TransportRequest, TransportEvent> {
+export abstract class TcpHandler extends AbstractGuardHandler<TransportRequest, TransportEvent> {
 
 }

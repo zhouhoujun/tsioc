@@ -1,42 +1,54 @@
-import { ListenOpts, TransportRequest } from '@tsdi/core';
-import { Abstract, Injectable, lang, Nullable } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, ev, IncomingMessage, IncomingUtil, OutgoingMessage, PacketFactory, TransportContext, TransportServer, TransportServerOpts } from '@tsdi/transport';
+import { ListenOpts, MicroService, TransportContext, TransportEndpointOptions, Packet, ConfigableEndpoint } from '@tsdi/core';
+import { Abstract, Inject, Injectable, lang, Nullable } from '@tsdi/ioc';
 import { Duplex } from 'stream';
 import *  as ws from 'ws';
-
-
-
-@Abstract()
-export abstract class WsServerOpts extends TransportServerOpts<IncomingMessage, OutgoingMessage> {
-    abstract serverOpts: ws.ServerOptions;
-}
+import { WS_SERV_OPTS, WsServerOpts } from './options';
+import { WsEndpoint } from './endpoint';
 
 
 @Injectable()
-export class WsServer extends TransportServer<IncomingMessage, OutgoingMessage, ws.Server, WsServerOpts> {
-    constructor(@Nullable() options: WsServerOpts) {
-        super(options);
+export class WsServer extends MicroService<TransportContext> {
+
+    private _server?: ws.Server;
+
+    constructor(
+        readonly endpoint: WsEndpoint,
+        @Inject(WS_SERV_OPTS, {nullable: true}) private options: WsServerOpts) {
+        super();
     }
 
-    protected createServer(opts: WsServerOpts): ws.Server<ws.WebSocket> {
-        return new ws.Server(opts.serverOpts);
-    }
-    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(PacketFactory);
-        return new Connection(duplex, packet, opts);
-    }
-    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
-        const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(IncomingUtil))
+    
+    protected async onStartup(): Promise<any> {
+        this._server = new ws.Server(this.options.serverOpts);
     }
 
-    protected override createDuplex(socket: ws.WebSocket): Duplex {
-        return ws.createWebSocketStream(socket, { objectMode: true });
+    protected async onStart(): Promise<any> {
+        
     }
+
+    protected async onShutdown(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
+    // protected createServer(opts: WsServerOpts): ws.Server<ws.WebSocket> {
+    //     return new ws.Server(opts.serverOpts);
+    // }
+    // protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    //     const packet = this.context.get(PacketFactory);
+    //     return new Connection(duplex, packet, opts);
+    // }
+    // protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
+    //     const injector = this.context.injector;
+    //     return new TransportContext(injector, req, res, this, injector.get(IncomingUtil))
+    // }
+
+    // protected override createDuplex(socket: ws.WebSocket): Duplex {
+    //     return ws.createWebSocketStream(socket, { objectMode: true });
+    // }
 
     protected listen(server: ws.Server<ws.WebSocket>, opts: ListenOpts): Promise<void> {
         const defer = lang.defer<void>();
-        const sropts = this.getOptions().serverOpts as ws.ServerOptions;
+        const sropts = this.options.serverOpts as ws.ServerOptions;
         if (sropts.server) {
             if (!sropts.server.listening) {
                 sropts.server.listen(opts, defer.resolve);

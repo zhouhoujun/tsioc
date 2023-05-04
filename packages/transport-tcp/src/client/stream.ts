@@ -1,10 +1,10 @@
 import { ClientStream, ClientStreamFactory, OutgoingHeaders, ReqHeaders, Socket } from '@tsdi/core';
 import { Execption, Injectable } from '@tsdi/ioc';
 import { StreamCoding } from '@tsdi/core';
-import { Writable, Duplex, Transform } from 'stream';
-import { NumberAllocator } from 'number-allocator';
 import { ev } from '@tsdi/transport';
 import { Duplexify } from '@tsdi/platform-server-transport';
+import { Writable, Duplex, Transform } from 'stream';
+import { NumberAllocator } from 'number-allocator';
 
 @Injectable()
 export class ClientStreamFactoryImpl<TSocket extends Duplex = any> implements ClientStreamFactory<TSocket> {

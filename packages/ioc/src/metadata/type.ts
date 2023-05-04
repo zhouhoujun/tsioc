@@ -150,6 +150,8 @@ export interface TypeDef<T = any> extends ProvidedInMetadata, PatternMetadata, A
 
 /**
  * module def metadata.
+ * 
+ * 模块元数据
  */
 export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
@@ -186,6 +188,8 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 
 /**
  * type class reflective.
+ * 
+ * 类反射
  */
 export class Class<T = any> {
 

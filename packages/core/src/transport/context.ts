@@ -1,7 +1,6 @@
-import { Abstract, EMPTY, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
-import { EndpointContext, MODEL_RESOLVERS } from '../endpoints';
+import { Abstract, EMPTY, EMPTY_OBJ, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
+import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS } from '../endpoints';
 import { createPayloadResolver } from '../endpoints/resolvers';
-
 
 
 /**
@@ -31,6 +30,31 @@ export abstract class TransportContext<TInput = any> extends EndpointContext<TIn
 
 }
 
+/**
+ * Transport context options.
+ */
+export interface TransportContextOpts<T = any> extends EndpointInvokeOpts<T> {
+    url?: string;
+    method?: string;
+}
+
+export const TRANSPORT_CONTEXT_IMPL = {
+    create<T>(injector: Injector, options?: TransportContextOpts<T>): TransportContext<T> {
+        throw new Execption('not implemented.')
+    }
+}
+
+/**
+ * create transport context
+ * @param injector 
+ * @param options 
+ * @returns 
+ */
+export function createTransportContext(injector: Injector, options?: TransportContextOpts): TransportContext {
+    return TRANSPORT_CONTEXT_IMPL.create(injector, options)
+}
+
+
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
         let payload = ctx.payload;
@@ -55,6 +79,20 @@ const primitiveResolvers = createPayloadResolver(
  */
 @Abstract()
 export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any> extends TransportContext<TRequest> {
+
+    /**
+     * Get request rul
+     */
+    abstract get url(): string;
+    /**
+     * Set request url
+     */
+    abstract set url(value: string);
+    
+    /**
+     * The request method.
+     */
+    abstract get method(): string;
 
     /**
      * protocol name

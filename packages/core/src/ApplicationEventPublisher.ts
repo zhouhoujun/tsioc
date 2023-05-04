@@ -5,7 +5,8 @@ import { ApplicationEvent } from './ApplicationEvent';
 /**
  * Interface that encapsulates event publication functionality.
  *
- * <p>Serves as a super-interface for {@link ApplicationContext}.
+ * 事件发布功能的接口。
+ * <p>Serves as a super-interface for {@link ApplicationContext}.</p>
  */
 export interface ApplicationEventPublisher {
     /**

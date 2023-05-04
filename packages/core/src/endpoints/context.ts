@@ -1,6 +1,9 @@
 import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, Token, getClass } from '@tsdi/ioc';
 import { getResolversToken } from './resolver';
 
+/**
+ * endpoint invoke options.
+ */
 export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
     isDone?(ctx: EndpointContext<T>): boolean;
 }

@@ -22,7 +22,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
 }
 
 /**
- * Resolver for an argument of an `{@link OperationInvoker}`.
+ * Resolver for an argument of an {@link OperationInvoker}.
  * 
  * 调用参数解析器。
  */

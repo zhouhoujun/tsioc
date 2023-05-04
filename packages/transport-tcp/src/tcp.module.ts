@@ -9,7 +9,7 @@ import { TcpRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts } from './client/options';
 import { TcpEndpoint } from './server/endpoint';
 import { TcpPathInterceptor } from './client/path';
-import { TcpGuardHandler } from './client/handler';
+import { TcpHandler } from './client/handler';
 
 @Module({
     imports: [
@@ -36,7 +36,7 @@ export class TcpModule {
         const providers: ProviderType[] = [
             { provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } },
             { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
-            toProvider(TcpGuardHandler, options.handler ?? {
+            toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
                     return createHandler(injector, opts);
                 },
@@ -65,7 +65,7 @@ export interface TcpModuleOptions {
     /**
      * client handler provider
      */
-    handler?: ProvdierOf<TcpGuardHandler>;
+    handler?: ProvdierOf<TcpHandler>;
     /**
      * server endpoint provider
      */

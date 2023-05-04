@@ -3,13 +3,13 @@ import { defer, Observable, throwError, catchError, finalize, mergeMap, of, conc
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
+import { ConfigableHandler } from '../handlers';
+import { Shutdown } from '../metadata';
 import { Pattern } from './pattern';
 import { RequestOptions, ResponseAs, RequestInitOpts, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
-import { ConfigableHandler } from '../handlers';
-import { Shutdown } from '../metadata';
 
 
 /**

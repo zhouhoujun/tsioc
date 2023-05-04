@@ -1,4 +1,4 @@
-import { EndpointContext, InternalServerExecption, ListenOpts, MicroService, Packet } from '@tsdi/core';
+import { InternalServerExecption, ListenOpts, MicroService, Packet, TransportContext, createTransportContext } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
@@ -10,7 +10,7 @@ import { TCP_MICRO_SERV_OPTS, TcpMicroServiceOpts } from './options';
 
 
 @Injectable()
-export class TcpMicroService extends MicroService<EndpointContext> {
+export class TcpMicroService extends MicroService<TransportContext> {
 
     @InjectLog() logger!: Logger;
 
@@ -86,7 +86,7 @@ export class TcpMicroService extends MicroService<EndpointContext> {
      * @param res 
      */
     protected requestHandler(packet: Packet): Subscription {
-        const ctx = new EndpointContext(this.endpoint.injector, {payload: packet});
+        const ctx = createTransportContext(this.endpoint.injector, {payload: packet});
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => ctx.destroy()))
             .subscribe({

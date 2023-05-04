@@ -37,6 +37,8 @@ export interface ConfigableEndpointOptions<T = any, TArg = any> extends Endpoint
 
 /**
  * endpoint service.
+ * 
+ * 终端传输节点服务
  */
 export interface EndpointService extends HandlerService {
 

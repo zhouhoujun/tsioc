@@ -39,6 +39,8 @@ export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends Hand
 
 /**
  * handler service.
+ * 
+ * 处理器服务
  */
 export interface HandlerService extends FilterService, PipeService, InterceptorService, GuardsService {
 
