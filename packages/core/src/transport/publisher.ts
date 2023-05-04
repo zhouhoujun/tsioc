@@ -3,6 +3,8 @@ export type PacketCallback<Packet> = (error?: Error, packet?: Packet) => any
 
 /**
  * publisher
+ * 
+ * 发布订阅模式的发布者。
  */
 export interface Publisher<PublishOptions = any, Packet = any> {
     /**

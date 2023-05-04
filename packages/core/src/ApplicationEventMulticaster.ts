@@ -23,6 +23,8 @@ export class ApplicationEventContext extends EndpointContext<ApplicationEvent> {
 
 /**
  * providing the basic listener registration facility.
+ * 
+ * 提供基本的事件侦听器注册工具。
  */
 @Abstract()
 export abstract class ApplicationEventMulticaster implements EndpointService, ApplicationEventPublisher {

@@ -57,12 +57,12 @@ export const Directive: Directive = createDecorator<DirectiveMetadata>('Directiv
                 return next();
             }
 
-            if (directivDef.def) {
+            if (directivDef.compiled) {
                 return next();
             }
 
             const compiler = ctx.injector.get(CompilerFacade);
-            directivDef.def = compiler.compileDirective(directivDef);
+            ctx.class.setAnnotation(compiler.compileDirective(directivDef));
 
             next();
         }
@@ -118,12 +118,12 @@ export const Component: Component = createDecorator<ComponentMetadata>('Componen
                 return next();
             }
 
-            if (compRefl.def) {
+            if (compRefl.compiled) {
                 return next();
             }
 
             const compiler = ctx.injector.get(CompilerFacade);
-            compRefl.def = compiler.compileComponent(compRefl);
+            ctx.class.setAnnotation(compiler.compileComponent(compRefl));
             next();
         }
     }

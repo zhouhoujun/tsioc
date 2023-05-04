@@ -2,6 +2,8 @@ import { PacketCallback } from './publisher'
 
 /**
  * subscriber.
+ * 
+ * 发布订阅模式的订阅者。
  */
 export interface Subscriber<SubscribeOpts = any, Grant = any, Packet = any> {
     /**

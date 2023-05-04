@@ -45,6 +45,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
     send(req: TRequest): Observable<TRespone>;
+
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in
      * an `ArrayBuffer`.
@@ -87,7 +88,6 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
-
 
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the

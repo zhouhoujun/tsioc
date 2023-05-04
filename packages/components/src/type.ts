@@ -86,6 +86,8 @@ export interface AnnotationDef<T = any> extends TypeDef<T> {
      * annoation decorator.
      */
     annoDecor?: string;
+
+    compiled?: boolean;
 }
 
 

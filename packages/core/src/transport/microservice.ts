@@ -9,7 +9,11 @@ import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
 import { Runner, Shutdown, Startup } from '../metadata';
 
 
-
+/**
+ * Micro Service
+ * 
+ * 微服务
+ */
 @Abstract()
 export abstract class MicroService<TInput extends EndpointContext, TOutput = any> implements EndpointService {
 

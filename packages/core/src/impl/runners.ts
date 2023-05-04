@@ -51,6 +51,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._handler.useFilters(ExecptionHandlerFilter);
     }
 
+    get size(): number {
+        return this._refs.size;
+    }
+
     get handler(): Handler {
         return this._handler
     }

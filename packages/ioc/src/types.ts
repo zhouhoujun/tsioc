@@ -45,6 +45,8 @@ export interface MethodAnnotation {
 
 /**
  * class annotation
+ * 
+ * 类注解
  *
  * @export
  */
@@ -91,6 +93,8 @@ export interface AbstractType<T = any> extends Function {
 
 /**
  * class type
+ * 
+ * 类
  * @export
  * @interface Type
  * @extends {Function}
@@ -102,6 +106,8 @@ export interface Type<T = any> extends Function {
 
 /**
  * annotation class type
+ * 
+ * 带注解的类
  */
 export interface AnnotationType<T = any> extends Function {
     new?(...args: any[]): T;

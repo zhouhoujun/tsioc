@@ -8,6 +8,7 @@ import { RootViewRef, ViewRefImpl } from './view_ref';
 import { ComponentDef } from '../type';
 import { NodeInjector } from './injector';
 import { stringifyForError } from '../util/stringify';
+import { setInputsForProperty } from './share';
 
 declare let devMode: any;
 

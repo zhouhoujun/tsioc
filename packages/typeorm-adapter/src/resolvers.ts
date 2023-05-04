@@ -76,7 +76,7 @@ export class TypeormTransactionResolver extends TransactionResolver {
                     if (ctx.has(TransactionManager)) {
                         return ctx.get(TransactionManager)
                     } else {
-                        const manager = ctx.get(TransactionManager, ctx);
+                        const manager = ctx.get(TransactionManager);
                         ctx.setValue(TransactionManager, manager);
                         return manager
                     }

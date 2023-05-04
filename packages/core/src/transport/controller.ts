@@ -19,6 +19,8 @@ const isRest = /\/:/;
 
 /**
  * Controller route.
+ * 
+ * 控制器路由终端
  */
 export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<AssetContext>, Endpoint, OnDestroy {
 
