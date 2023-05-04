@@ -12,9 +12,9 @@ import { Backend } from '../Handler';
  * 终结点配置
  */
 export interface EndpointOptions<T = any, TArg = any> extends HandlerOptions<T, TArg> {
-    interceptorsToken?: Token<Interceptor[]>;
-    guardsToken?: Token<CanActivate[]>;
-    filtersToken?: Token<Filter[]>;
+    interceptorsToken?: Token<Interceptor<T>[]>;
+    guardsToken?: Token<CanActivate<T>[]>;
+    filtersToken?: Token<Filter<T>[]>;
     /**
      * endpoint order
      */

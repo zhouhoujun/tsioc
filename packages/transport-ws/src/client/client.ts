@@ -1,17 +1,17 @@
-import { RequestOptions } from '@tsdi/core';
-import { Abstract, Injectable, Nullable, Token, tokenId } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, PacketFactory, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { Duplex } from 'stream';
+import { Client, ConfigableEndpointOptions,  TransportEvent, TransportRequest } from '@tsdi/core';
+import { Inject, Injectable } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import * as ws from 'ws';
+import { WsHandler } from './handler';
 
-@Abstract()
-export abstract class WSClitentOptions extends TransportClientOpts {
+
+export interface WSClitentOptions extends ConfigableEndpointOptions<TransportRequest> {
     /**
      * url
      * etg.` wss://webscocket.com/`
      */
-    abstract url: string;
-    abstract connectOpts?: ws.ClientOptions;
+    url: string;
+    connectOpts?: ws.ClientOptions;
 }
 
 const defs = {
@@ -20,25 +20,31 @@ const defs = {
 
 
 @Injectable()
-export class WsClient extends TransportClient<RequestOptions, WSClitentOptions> {
+export class WsClient extends Client<TransportRequest, TransportEvent> {
 
     private socket?: ws.WebSocket;
-    constructor(@Nullable() options: WSClitentOptions) {
-        super(options);
+    constructor(
+        readonly handler: WsHandler,
+        @Inject() private options: WSClitentOptions) {
+        super();
     }
 
-    protected override getDefaultOptions(): WSClitentOptions {
-        return defs 
+    protected connect(): Promise<any> | Observable<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected onShutdown(): Promise<void> {
+        throw new Error('Method not implemented.');
     }
 
-    protected override createDuplex(opts: WSClitentOptions): Duplex {
-        const socket = this.socket = new ws.WebSocket(opts.url, opts.connectOpts!)
-        const stream = ws.createWebSocketStream(socket, { objectMode: true });
-        return stream
 
-    }
-    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(PacketFactory);
-        return new Connection(duplex, packet, opts);
-    }
+    // protected override createDuplex(opts: WSClitentOptions): Duplex {
+    //     const socket = this.socket = new ws.WebSocket(opts.url, opts.connectOpts!)
+    //     const stream = ws.createWebSocketStream(socket, { objectMode: true });
+    //     return stream
+
+    // }
+    // protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
+    //     const packet = this.context.get(PacketFactory);
+    //     return new Connection(duplex, packet, opts);
+    // }
 }
