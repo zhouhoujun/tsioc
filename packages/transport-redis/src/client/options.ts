@@ -1,9 +1,11 @@
-import { ConfigableHandlerOptions, TransportEvent, TransportRequest } from '@tsdi/core';
+import { ConfigableHandlerOptions, TransportRequest } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import Redis, { RedisOptions } from 'ioredis';
 
-
-export interface RedisClientOpts extends ConfigableHandlerOptions<TransportRequest, TransportEvent> {
+/**
+ * Redis client options.
+ */
+export interface RedisClientOpts extends ConfigableHandlerOptions<TransportRequest> {
     /**
      * connect options.
      */

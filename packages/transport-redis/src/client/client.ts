@@ -17,10 +17,6 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
         super();
     }
 
-    // protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: RequestOptions): TransportRequest {
-    //     return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
-    // }
-
     protected async connect(): Promise<void> {
         if (this.pubClient && this.subClient) return;
 
