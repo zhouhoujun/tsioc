@@ -1,13 +1,18 @@
-import { ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, StreamCoding, RouterModule, TransformModule, createHandler, createAssetEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, StreamTransportBackend, TransportModule, ev } from '@tsdi/transport';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import {
+    ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, StreamCoding,
+    RouterModule, TransformModule, createHandler, createAssetEndpoint, ServerStreamFactory
+} from '@tsdi/core';
+import {
+    BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
+    StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, StreamTransportBackend, TransportModule, ev, TransportBackend
+} from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
-// import { TcpVaildator, TcpPackFactory } from './transport';
 import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_MIDDLEWARES, TCP_SERV_OPTS } from './server/options';
 import { TcpServer } from './server/server';
-import { TcpRequestAdapter } from './client/request';
-import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts } from './client/options';
 import { TcpEndpoint } from './server/endpoint';
+import { TcpRequestAdapter } from './client/request';
+import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
 
@@ -18,8 +23,6 @@ import { TcpHandler } from './client/handler';
         TransportModule
     ],
     providers: [
-        // TcpVaildator,
-        // TcpPackFactory,
         TcpClient,
         TcpServer,
         { provide: StreamRequestAdapter, useClass: TcpRequestAdapter }
@@ -33,8 +36,20 @@ export class TcpModule {
      * @returns 
      */
     static withOptions(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
+        const clopts = { ...defClientOpts };
+        if (!options.clientStreamFactory) {
+            clopts.backend = TransportBackend;
+        }
         const providers: ProviderType[] = [
-            { provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } },
+            ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
+                provide: opts.client,
+                useFactory: (injector: Injector) => {
+                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...opts } }]);
+                },
+                deps: [Injector]
+            }))
+                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } }],
+            { provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } },
             { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
@@ -61,7 +76,7 @@ export interface TcpModuleOptions {
     /**
      * client options.
      */
-    clientOpts?: TcpClientOpts|TcpClientOpts[];
+    clientOpts?: TcpClientOpts | TcpClientsOpts[];
     /**
      * client handler provider
      */
@@ -70,9 +85,11 @@ export interface TcpModuleOptions {
      * server endpoint provider
      */
     endpoint?: ProvdierOf<TcpEndpoint>;
-    
-    coding?:ProvdierOf<StreamCoding>;
+
+    coding?: ProvdierOf<StreamCoding>;
+
     clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
+    serverStreamFactory?: ProvdierOf<ServerStreamFactory>;
     incomingFactory?: ProvdierOf<IncomingFactory>;
     outgoingFactory?: ProvdierOf<OutgoingFactory>;
 
@@ -119,11 +136,6 @@ const defServerOpts = {
     middlewaresToken: TCP_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
     interceptors: [
-        // LogInterceptor,
-        // StatusInterceptorFilter,
-        // PathHanlderFilter,
-        // InOutInterceptorFilter,
-        // HttpFinalizeFilter
     ],
     filters: [
         LogInterceptor,

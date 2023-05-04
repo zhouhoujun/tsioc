@@ -1,10 +1,10 @@
 import { Module, ModuleWithProviders, ProvdierOf, Type, toProvider } from '@tsdi/ioc';
 import { ConnectionOptions, CONNECTIONS, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/repository';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import { ParseObjectIdPipe } from './objectid.pipe';
 import { TypeormAdapter } from './TypeormAdapter';
 import { TypeormTransactionManager } from './transaction';
 import { TypeormRepositoryArgumentResolver, TypeormTransactionResolver } from './resolvers';
-import { DataSource, DataSourceOptions } from 'typeorm';
 
 export interface TypeormOptions extends ConnectionOptions {
     initDb?(connection: DataSource): Promise<void>;

@@ -1,11 +1,9 @@
 import {
-    ClientStreamFactory, IDuplexStream, TransportEvent,
-    Incoming, ReqHeaders, ResHeaders, ResponsePacket, SOCKET, Socket, TransportErrorResponse,
-    TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream
+    ClientStreamFactory, TransportEvent, ResHeaders, ResponsePacket, SOCKET, Socket, TransportErrorResponse,
+    Incoming, TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream
 } from '@tsdi/core';
 import { InjectFlags, Injectable } from '@tsdi/ioc';
 import { StreamRequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
-import { Readable, Writable } from 'stream';
 import { TCP_CLIENT_OPTS } from './options';
 
 
@@ -58,30 +56,5 @@ export class TcpRequestAdapter extends StreamRequestAdapter<TransportRequest, Tr
             statusText: String(headers.get(hdr.STATUS_MESSAGE))
         }
     }
-
-}
-
-export class RequestStream extends Readable implements IDuplexStream<Buffer | string> {
-
-    constructor(readonly socket: Socket, private delimiter: string, private headers: ReqHeaders) {
-        super()
-    }
-    get writable(): boolean {
-        return this.socket.writable;
-    }
-
-    write(buffer: Buffer, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    write(str: string, encoding?: BufferEncoding | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean;
-    write(str: string | Buffer, encoding?: any, cb?: any): boolean {
-        return this.socket.write(str, encoding, cb)
-    }
-    end(cb?: (() => void) | undefined): this;
-    end(data: any, cb?: (() => void) | undefined): this;
-    end(str: string, encoding?: BufferEncoding | undefined, cb?: (() => void) | undefined): this;
-    end(str?: unknown, encoding?: unknown, cb?: unknown): this {
-        this.socket.write(this.delimiter);
-        return this;
-    }
-
 
 }
