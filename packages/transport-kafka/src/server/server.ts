@@ -2,7 +2,7 @@ import { Inject, Injectable, isNil, Injector, getClass, InvocationContext } from
 import { MicroService, ResponsePacket, TransportContext, TransportEndpointOptions } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
-import { DEFAULT_BROKERS } from '../const';
+import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 import { KafkaParser } from '../parser';
 
 
