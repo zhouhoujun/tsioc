@@ -12,7 +12,7 @@ export interface Packet<T = any> {
  * Response Packet.
  */
 export interface ResponsePacket<TStatus = any> {
-    error?: Error;
+    error?: Error | string;
     status: TStatus,
     statusText?: string;
     body?: any;

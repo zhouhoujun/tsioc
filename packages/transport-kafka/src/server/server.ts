@@ -1,14 +1,14 @@
 import { Inject, Injectable, isNil, Injector, getClass, InvocationContext } from '@tsdi/ioc';
-import { TransportServerOpts, TransportServer } from '@tsdi/transport';
+import { MicroService, ResponsePacket, TransportContext, TransportEndpointOptions } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
-import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord } from 'kafkajs';
+import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { DEFAULT_BROKERS } from '../const';
 import { KafkaParser } from '../parser';
 
 
 
 
-export interface KafkaOptions extends KafkaConfig, TransportServerOpts {
+export interface KafkaOptions extends KafkaConfig, TransportEndpointOptions<TransportContext> {
     postfixId?: string;
     client?: KafkaConfig;
     consumer?: ConsumerConfig;
@@ -21,7 +21,7 @@ export interface KafkaOptions extends KafkaConfig, TransportServerOpts {
 
 
 @Injectable()
-export class KafkaServer extends TransportServer {
+export class KafkaServer extends MicroService<TransportContext> {
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
@@ -32,14 +32,14 @@ export class KafkaServer extends TransportServer {
     protected groupId: string;
 
     constructor(private options: KafkaOptions) {
-        super(options);
+        super();
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
         this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 
-    protected override initOption(options: KafkaOptions): KafkaOptions {
+    protected initOption(options: KafkaOptions): KafkaOptions {
         this.options = options;
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
