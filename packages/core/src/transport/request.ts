@@ -23,9 +23,10 @@ export class TransportRequest<T = any> {
     readonly observe: 'body' | 'events' | 'response';
     readonly reportProgress: boolean;
     readonly withCredentials: boolean;
+    readonly urlWithParams: string;
 
     constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
-        this.url = patternToPath(pattern);
+        const url = this.url = patternToPath(pattern);
         this.pattern = pattern;
         this.method = options.method;
         this.params = new TransportParams(options);
@@ -36,7 +37,33 @@ export class TransportRequest<T = any> {
         this.observe = options.observe || 'body';
         this.body = options.body ?? options.payload ?? null;
         this.headers = new ReqHeaders(options.headers ?? options.options);
+
+        // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
+        if (!this.params.size) {
+            this.urlWithParams = url
+        } else {
+            // Encode the parameters to a string in preparation for inclusion in the URL.
+            const params = this.params.toString();
+            if (params.length === 0) {
+                // No parameters, the visible URL is just the URL given at creation time.
+                this.urlWithParams = url
+            } else {
+                // Does the URL already have query parameters? Look for '?'.
+                const qIdx = url.indexOf('?');
+                // There are 3 cases to handle:
+                // 1) No existing parameters -> append '?' followed by params.
+                // 2) '?' exists and is followed by existing query string ->
+                //    append '&' followed by params.
+                // 3) '?' exists at the end of the url -> append params directly.
+                // This basically amounts to determining the character, if any, with
+                // which to join the URL and parameters.
+                const sep: string = qIdx === -1 ? '?' : (qIdx < url.length - 1 ? '&' : '');
+                this.urlWithParams = url + sep + params
+            }
+        }
     }
+
+
 
     clone(update: {
         headers?: ReqHeaders | undefined;
@@ -45,7 +72,7 @@ export class TransportRequest<T = any> {
         params?: TransportParams | undefined;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         withCredentials?: boolean | undefined; body?: any;
-        method?: string | undefined; 
+        method?: string | undefined;
         url?: Pattern | undefined;
         setHeaders?: { [name: string]: string | string[]; } | undefined;
         setParams?: { [param: string]: string; } | undefined;

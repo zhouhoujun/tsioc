@@ -23,7 +23,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
     @InjectLog() logger!: Logger;
     private isSecure: boolean;
     private options: TcpServerOpts;
-    constructor(readonly endpoint: TcpEndpoint, @Inject(TCP_SERV_OPTS, {}) options: TcpServerOpts) {
+    constructor(readonly endpoint: TcpEndpoint, @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
         super()
         this.options = { ...options };
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert

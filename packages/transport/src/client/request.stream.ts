@@ -25,7 +25,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
      */
     send(req: TRequest): Observable<TResponse> {
         return new Observable((observer: Observer<TResponse>) => {
-            const url = req.url.trim();
+            const url = req.urlWithParams.trim();
             let status: TStatus;
             let statusText: string | undefined;
 

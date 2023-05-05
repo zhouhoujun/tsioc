@@ -16,7 +16,8 @@ export class TcpMicroService extends MicroService<TransportContext> {
 
     private serv!: net.Server | tls.Server;
     private isSecure: boolean;
-    constructor(readonly endpoint: TcpMicroServiceEndpoint, @Inject(TCP_MICRO_SERV_OPTS, {}) private options: TcpMicroServiceOpts) {
+
+    constructor(readonly endpoint: TcpMicroServiceEndpoint, @Inject(TCP_MICRO_SERV_OPTS) private options: TcpMicroServiceOpts) {
         super()
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert
     }

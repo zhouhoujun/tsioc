@@ -1,4 +1,4 @@
-import { ClientStream, ClientStreamFactory, OutgoingHeaders, ReqHeaders, Socket } from '@tsdi/core';
+import { ClientStream, ClientStreamFactory, OutgoingHeaders, ReqHeaders } from '@tsdi/core';
 import { Execption, Injectable } from '@tsdi/ioc';
 import { StreamCoding } from '@tsdi/core';
 import { ev } from '@tsdi/transport';
