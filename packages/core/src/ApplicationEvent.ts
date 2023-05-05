@@ -26,5 +26,3 @@ export abstract class ApplicationEvent {
         return this._timestamp
     }
 }
-
-

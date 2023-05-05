@@ -109,7 +109,6 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
             statusText = incoming[hdr.STATUS_MESSAGE];
         }
         return {
-            headers,
             body,
             status,
             statusText
