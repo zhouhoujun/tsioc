@@ -8,7 +8,7 @@ import { TCP_CLIENT_OPTS } from './options';
 
 
 @Injectable()
-export class TcpRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, number | string> {
+export class TcpStreamRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, number | string> {
 
     constructor(private streamAdapter: StreamAdapter) {
         super()
@@ -22,7 +22,7 @@ export class TcpRequestAdapter extends StreamRequestAdapter<TransportRequest, Tr
         return factory.create(socket, req.headers, opts);
     }
 
-    send(request: IWritableStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
+    protected write(request: IWritableStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
         const data = req.body;
         if (data === null) {
             request.end();

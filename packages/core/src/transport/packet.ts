@@ -1,3 +1,4 @@
+import { ResHeaders } from "./headers";
 
 /**
  * packet data.
@@ -14,6 +15,7 @@ export interface Packet<T = any> {
  * Response Packet.
  */
 export interface ResponsePacket<TStatus = any> {
+    headers?: ResHeaders;
     status: TStatus,
     statusText?: string;
     body?: any;

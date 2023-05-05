@@ -1,7 +1,7 @@
 import { RouterModule, TransformModule } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
-import { StreamTransportBackend } from './client/stream.backend';
+import { TransportBackend } from './client/backend';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './logger';
 import {
@@ -21,7 +21,7 @@ import { ErrorRespondAdapter } from './server/error.respond';
     ],
     providers: [
         ...ASSET_SERVR_PROVIDERS,
-        StreamTransportBackend,
+        TransportBackend,
         BodyContentInterceptor,
 
         LogInterceptor,

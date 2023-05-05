@@ -1,5 +1,5 @@
 export * from './body';
 export * from './backend';
-export * from './stream.backend';
 export * from './request';
+export * from './request.stream';
 

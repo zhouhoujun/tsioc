@@ -5,13 +5,13 @@ import {
 } from '@tsdi/core';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
-    StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, StreamTransportBackend, TransportModule, ev, TransportBackend
+    StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, TransportModule, ev, TransportBackend
 } from '@tsdi/transport';
 import { TcpClient } from './client/clinet';
-import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_MIDDLEWARES, TCP_SERV_OPTS } from './server/options';
+import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS } from './server/options';
 import { TcpServer } from './server/server';
 import { TcpEndpoint } from './server/endpoint';
-import { TcpRequestAdapter } from './client/request';
+import { TcpStreamRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
@@ -25,7 +25,7 @@ import { TcpHandler } from './client/handler';
     providers: [
         TcpClient,
         TcpServer,
-        { provide: StreamRequestAdapter, useClass: TcpRequestAdapter }
+        { provide: StreamRequestAdapter, useClass: TcpStreamRequestAdapter }
     ]
 })
 export class TcpModule {
@@ -64,6 +64,19 @@ export class TcpModule {
                 deps: [Injector, TCP_SERV_OPTS]
             })
         ];
+
+        if (options.clientStreamFactory) {
+            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        }
+        if (options.serverStreamFactory) {
+            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
+        }
+        if (options.incomingFactory) {
+            providers.push(toProvider(IncomingFactory, options.incomingFactory))
+        }
+        if (options.outgoingFactory) {
+            providers.push(toProvider(OutgoingFactory, options.serverStreamFactory))
+        }
         return {
             module: TcpModule,
             providers
@@ -111,7 +124,7 @@ const defClientOpts = {
     },
     interceptors: [TcpPathInterceptor, BodyContentInterceptor],
     filtersToken: TCP_CLIENT_FILTERS,
-    backend: StreamTransportBackend
+    backend: TransportBackend
 
 } as TcpClientOpts;
 
@@ -133,7 +146,7 @@ const defServerOpts = {
     },
     detailError: true,
     interceptorsToken: TCP_SERV_INTERCEPTORS,
-    middlewaresToken: TCP_MIDDLEWARES,
+    middlewaresToken: TCP_SERV_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
     interceptors: [
     ],

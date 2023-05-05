@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, IncomingFactory } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -26,7 +26,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
     constructor(readonly endpoint: TcpEndpoint, @Inject(TCP_SERV_OPTS, {}) options: TcpServerOpts) {
         super()
         this.options = { ...options };
-        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions) ?.cert
+        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -73,12 +73,23 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
 
     protected async onStart(): Promise<any> {
         if (!this.serv) throw new InternalServerExecption();
-        
+
         this.serv.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
         this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
+        if(this.serv instanceof tls.Server) {
+            this.serv.on(ev.SECURE_CONNECTION, (socket)=> {
+                // this.endpoint.injector.get().create(socket);
+                
+                socket.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
+            })
+        } else {
+            this.serv.on(ev.CONNECTION, (socket)=> {
 
-        if(this.options.listenOpts &&this.options.autoListen) {
+            })
+        }
+
+        if (this.options.listenOpts && this.options.autoListen) {
             this.listen(this.options.listenOpts)
         }
     }

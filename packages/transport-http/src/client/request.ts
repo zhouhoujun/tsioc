@@ -1,6 +1,6 @@
-import { InjectFlags, Injectable, InvocationContext } from '@tsdi/ioc';
-import { IWritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
-import { StreamRequestAdapter, StreamAdapter, ctype, ev, hdr } from '@tsdi/transport';
+import { InjectFlags, Injectable, InvocationContext, Nullable } from '@tsdi/ioc';
+import { IWritableStream, PacketCoding, Redirector, ResHeaders, ResponsePacket } from '@tsdi/core';
+import { MimeAdapter, MimeTypes, StatusVaildator, StreamAdapter, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
 
 import * as http from 'http';
@@ -12,8 +12,30 @@ import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './option'
 @Injectable()
 export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEvent, number> {
 
-    constructor(private streamAdapter: StreamAdapter) {
+    get coding(): PacketCoding | null {
+        return null;
+    }
+
+    constructor(
+        readonly mimeTypes: MimeTypes,
+        readonly vaildator: StatusVaildator<number>,
+        readonly streamAdapter: StreamAdapter,
+        readonly mimeAdapter: MimeAdapter,
+        @Nullable() readonly redirector: Redirector<number>) {
         super()
+    }
+
+    protected write(request: IWritableStream<any>, req: HttpRequest<any>, callback: (error?: Error | null | undefined) => void): void {
+        const data = req.serializeBody();
+        if (data === null) {
+            request.end();
+        } else {
+            this.streamAdapter.sendbody(
+                data,
+                request,
+                err => callback(err),
+                req.headers.get(hdr.CONTENT_ENCODING) as string);
+        }
     }
 
     createRequest(req: HttpRequest<any>): IWritableStream {
@@ -24,19 +46,6 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
             return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION, InjectFlags.Self), option, ac);
         } else {
             return this.request1(url, req, ac);
-        }
-    }
-
-    send(request: IWritableStream, req: HttpRequest<any>, callback: (error?: Error | null | undefined) => void): void {
-        const data = req.serializeBody();
-        if (data === null) {
-            request.end();
-        } else {
-            this.streamAdapter.sendbody(
-                data,
-                request,
-                err => callback(err),
-                req.headers.get(hdr.CONTENT_ENCODING) as string);
         }
     }
 
@@ -102,6 +111,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
             statusText = incoming[hdr.STATUS_MESSAGE];
         }
         return {
+            headers,
             body,
             status,
             statusText

@@ -21,6 +21,7 @@ export namespace ev {
     export const CONNECT_FAILED = 'connectFailed';
     export const DISCONNECT = 'disconnect';
     export const CONNECTION = 'connection';
+    export const SECURE_CONNECTION = 'secureConnection';
 
     export const PACKET = 'packet';
 

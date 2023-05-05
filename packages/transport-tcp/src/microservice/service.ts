@@ -16,9 +16,9 @@ export class TcpMicroService extends MicroService<TransportContext> {
 
     private serv!: net.Server | tls.Server;
     private isSecure: boolean;
-    constructor(readonly endpoint: TcpMicroServiceEndpoint,  @Inject(TCP_MICRO_SERV_OPTS, {}) private options: TcpMicroServiceOpts) {
+    constructor(readonly endpoint: TcpMicroServiceEndpoint, @Inject(TCP_MICRO_SERV_OPTS, {}) private options: TcpMicroServiceOpts) {
         super()
-        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions) ?.cert
+        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -65,12 +65,12 @@ export class TcpMicroService extends MicroService<TransportContext> {
 
     protected async onStart(): Promise<any> {
         if (!this.serv) throw new InternalServerExecption();
-        
+
         this.serv.on(ev.MESSAGE, (message) => this.requestHandler(message));
         this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
 
-        if(this.options.listenOpts &&this.options.autoListen) {
+        if (this.options.listenOpts && this.options.autoListen) {
             this.listen(this.options.listenOpts)
         }
     }
@@ -86,7 +86,7 @@ export class TcpMicroService extends MicroService<TransportContext> {
      * @param res 
      */
     protected requestHandler(packet: Packet): Subscription {
-        const ctx = createTransportContext(this.endpoint.injector, {payload: packet});
+        const ctx = createTransportContext(this.endpoint.injector, { payload: packet });
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => ctx.destroy()))
             .subscribe({

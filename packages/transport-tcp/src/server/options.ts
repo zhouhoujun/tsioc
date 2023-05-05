@@ -39,7 +39,7 @@ export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<Incoming, Outgoing>[]>(
 /**
  * TCP Middlewares.
  */
-export const TCP_MIDDLEWARES = tokenId<MiddlewareLike<AssetContext>[]>('TCP_MIDDLEWARES');
+export const TCP_SERV_MIDDLEWARES = tokenId<MiddlewareLike<AssetContext>[]>('TCP_SERV_MIDDLEWARES');
 /**
  * TCP execption filters.
  */

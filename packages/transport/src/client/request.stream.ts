@@ -1,32 +1,29 @@
-import {
-    TransportEvent, TransportRequest, Redirector,
-    ResponseJsonParseError, Backend, Incoming, HEAD, IDuplexStream
-} from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, Nullable, lang } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, IWritableStream } from '@tsdi/core';
+import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
-import { isBuffer, toBuffer, XSSI_PREFIX } from '../utils';
+import { toBuffer } from '../utils';
 import { ev, hdr } from '../consts';
-import { MimeAdapter, MimeTypes } from '../mime';
-import { StatusVaildator } from '../status';
-import { StreamAdapter } from '../stream';
-import { StreamRequestAdapter } from './request';
+import { RequestAdapter } from './request';
+
 
 /**
- * stream transport client endpoint backend.
+ * streamable request adapter.
  */
-@Injectable()
-export class StreamTransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Backend<TRequest, TResponse> {
+@Abstract()
+export abstract class StreamRequestAdapter<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> extends RequestAdapter<TRequest, TResponse, TStatus> {
+    /**
+     * create request stream by req.
+     * @param req 
+     */
+    protected abstract createRequest(req: TRequest): IWritableStream;
 
-    constructor(
-        private mimeTypes: MimeTypes,
-        private vaildator: StatusVaildator<TStatus>,
-        private reqAdapter: StreamRequestAdapter<TRequest, TResponse, TStatus>,
-        private streamAdapter: StreamAdapter,
-        private mimeAdapter: MimeAdapter,
-        @Nullable() private redirector?: Redirector<TStatus>) {
-    }
-
-    handle(req: TRequest): Observable<TResponse> {
+    /**
+     * send request.
+     * @param request 
+     * @param req 
+     * @param callback 
+     */
+    send(req: TRequest): Observable<TResponse> {
         return new Observable((observer: Observer<TResponse>) => {
             const url = req.url.trim();
             let status: TStatus;
@@ -35,10 +32,10 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
             let error: any;
             let ok = false;
 
-            const request = this.reqAdapter.createRequest(req);
+            const request = this.createRequest(req);
 
             const onError = (error?: Error | null) => {
-                const res = this.reqAdapter.createErrorResponse({
+                const res = this.createErrorResponse({
                     url,
                     error,
                     statusText: 'Unknown Error',
@@ -48,16 +45,16 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
             };
             const onResponse = async (incoming: Incoming) => {
                 let body: any;
-                const headers = this.reqAdapter.parseHeaders(incoming); 
-                const st = this.reqAdapter.parsePacket(incoming, headers);
+                const headers = this.parseHeaders(incoming);
+                const packet = this.parsePacket(incoming, headers);
 
-                body = st.body;
-                status = st.status;
-                statusText = st.statusText;
+                body = packet.body;
+                status = packet.status;
+                statusText = packet.statusText;
 
                 if (this.vaildator.isEmpty(status)) {
                     body = null;
-                    observer.next(this.reqAdapter.createResponse({
+                    observer.next(this.createResponse({
                         url,
                         headers,
                         status,
@@ -73,6 +70,8 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
                     ok = !err;
                 });
 
+
+
                 if (this.vaildator.isRedirect(status)) {
                     // HTTP fetch step 5.2
                     this.redirector?.redirect<TResponse>(req, status, headers).subscribe(observer);
@@ -85,7 +84,7 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
                         body = await toBuffer(body);
                         body = new TextDecoder().decode(body);
                     }
-                    return observer.error(this.reqAdapter.createErrorResponse({
+                    return observer.error(this.createErrorResponse({
                         url,
                         error: error ?? body,
                         status,
@@ -158,87 +157,16 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
                     }
                 }
 
-                let originalBody: any;
-                const contentType = headers.get(hdr.CONTENT_TYPE) as string;
-                let type = req.responseType;
-                if (contentType) {
-                    const adapter = this.mimeAdapter;
-                    const mity = this.mimeTypes;
-                    if (type === 'json' && !adapter.match(mity.json, contentType)) {
-                        if (adapter.match(mity.xml, contentType) || adapter.match(mity.text, contentType)) {
-                            type = 'text';
-                        } else {
-                            type = 'blob';
-                        }
-                    }
-                }
-                body = type !== 'stream' && this.streamAdapter.isReadable(body) ? await toBuffer(body) : body;
-                switch (type) {
-                    case 'json':
-                        // Save the original body, before attempting XSSI prefix stripping.
-                        if (isBuffer(body)) {
-                            body = new TextDecoder().decode(body);
-                        }
-                        originalBody = body;
-                        try {
-                            body = body.replace(XSSI_PREFIX, '');
-                            // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                            body = body !== '' ? JSON.parse(body) : null
-                        } catch (err) {
-                            // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                            // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                            // a better error response.
-                            body = originalBody;
-
-                            // If this was an error request to begin with, leave it as a string, it probably
-                            // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                            if (ok) {
-                                // Even though the response status was 2xx, this is still an error.
-                                ok = false;
-                                // The parse error contains the text of the body that failed to parse.
-                                error = { error: err, text: body } as ResponseJsonParseError
-                            }
-                        }
-                        break;
-
-                    case 'arraybuffer':
-                        body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
-                        break;
-                    case 'blob':
-                        body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                            type: headers.get(hdr.CONTENT_TYPE) as string
-                        });
-                        break;
-                    case 'stream':
-                        body = this.streamAdapter.isStream(body) ? body : this.streamAdapter.jsonSreamify(body);
-                        break;
-                    case 'text':
-                    default:
-                        body = new TextDecoder().decode(body);
-                        break;
-                }
-
-
-                if (ok) {
-                    observer.next(this.reqAdapter.createResponse({
-                        url,
-                        body,
-                        headers,
-                        status,
-                        statusText
-                    }));
-                    observer.complete();
+                const [success, res] = await this.parseResponse(url, body, headers, status, statusText, req.responseType);
+                if (success) {
+                    observer.next(res);
+                    observer.complete()
                 } else {
-                    observer.error(this.reqAdapter.createErrorResponse({
-                        url,
-                        error: error ?? body,
-                        status,
-                        statusText
-                    }));
+                    observer.error(res);
                 }
             };
 
-            const respEventName = this.reqAdapter.getResponseEvenName();
+            const respEventName = this.getResponseEvenName();
 
             request.on(respEventName, onResponse);
             request.on(ev.ERROR, onError);
@@ -247,7 +175,7 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
             request.on(ev.TIMEOUT, onError);
 
 
-            this.reqAdapter.send(request, req, onError);
+            this.write(request, req, onError);
 
             const unsub = () => {
                 request.off(respEventName, onResponse);
@@ -256,7 +184,7 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
                 if (!req.context.destroyed) {
-                    observer.error(this.reqAdapter.createErrorResponse({
+                    observer.error(this.createErrorResponse({
                         status: this.vaildator.none,
                         statusText: 'The operation was aborted.'
                     }));
@@ -266,7 +194,22 @@ export class StreamTransportBackend<TRequest extends TransportRequest = Transpor
             return unsub;
         });
     }
+
+    /**
+     * response event of request stream.
+     */
+    protected abstract getResponseEvenName(): string;
+
+    /**
+     * write request stream.
+     * @param request 
+     * @param req 
+     * @param callback 
+     */
+    protected abstract write(request: IWritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
+
 }
+
 
 
 export class RequestStauts {

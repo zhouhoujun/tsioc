@@ -171,7 +171,7 @@ export abstract class IncomingFactory<TSocket = any> {
      * @param stream 
      * @param opts 
      */
-    abstract create<T>(stream: ClientStream<TSocket>, opts: any): Incoming<T, TSocket>;
+    abstract create<T>(stream: ClientStream<TSocket>, opts?: any): Incoming<T, TSocket>;
 }
 
 /**
