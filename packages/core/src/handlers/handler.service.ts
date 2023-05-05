@@ -4,6 +4,7 @@ import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { Filter, FilterService } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
+import { Decoder, Encoder } from '../coding';
 
 
 /**
@@ -15,7 +16,7 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */
-    guards?: ProvdierOf<CanActivate>[];
+    guards?: ProvdierOf<CanActivate<TInput>>[];
     /**
      * interceptors of bootstrap.
      */
@@ -32,9 +33,13 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
 
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
     backend?: Type<Backend>;
-    interceptorsToken?: Token<Interceptor[]>;
-    guardsToken?: Token<CanActivate[]>;
-    filtersToken?: Token<Filter[]>;
+    
+    encoder?: ProvdierOf<Encoder>;
+    decoder?: ProvdierOf<Decoder>;
+
+    interceptorsToken?: Token<Interceptor<TInput>[]>;
+    guardsToken?: Token<CanActivate<TInput>[]>;
+    filtersToken?: Token<Filter<TInput>[]>;
 }
 
 /**

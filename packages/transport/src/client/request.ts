@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, Encoder, Redirector, PacketCoding, Packet, IReadableStream, ResponseJsonParseError } from '@tsdi/core';
+import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, Redirector, ResponseJsonParseError, Encoder, Decoder } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { StatusVaildator } from '../status';
@@ -12,7 +12,15 @@ import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
  * request adapter.
  */
 @Abstract()
-export abstract class ResponseAdapter<TResponse = TransportEvent, TStatus = number> {
+export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> {
+
+    abstract get mimeTypes(): MimeTypes;
+    abstract get mimeAdapter(): MimeAdapter;
+    abstract get vaildator(): StatusVaildator<TStatus>;
+    abstract get streamAdapter(): StreamAdapter;
+    abstract get encoder(): Encoder | null;
+    abstract get decoder(): Decoder | null;
+    abstract get redirector(): Redirector<TStatus> | null;
 
     /**
      * create error response.
@@ -66,21 +74,6 @@ export abstract class ResponseAdapter<TResponse = TransportEvent, TStatus = numb
      * @param headers 
      */
     abstract parsePacket(incoming: any, headers: ResHeaders): ResponsePacket<TStatus>;
-}
-
-
-/**
- * request adapter.
- */
-@Abstract()
-export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> extends ResponseAdapter<TResponse, TStatus> {
-
-    abstract get mimeTypes(): MimeTypes;
-    abstract get mimeAdapter(): MimeAdapter;
-    abstract get vaildator(): StatusVaildator<TStatus>;
-    abstract get streamAdapter(): StreamAdapter;
-    abstract get coding(): PacketCoding | null;
-    abstract get redirector(): Redirector<TStatus> | null;
 
     /**
      * send request.
@@ -90,7 +83,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      */
     abstract send(req: TRequest): Observable<TResponse>;
 
-    async parseResponse(url: string, body: any, headers: ResHeaders, status: TStatus, statusText: string | undefined, responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'): Promise<[boolean, TResponse]> {
+    protected async parseResponse(url: string, body: any, headers: ResHeaders, status: TStatus, statusText: string | undefined, responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'): Promise<[boolean, TResponse]> {
         let originalBody: any;
         let ok = true;
         let error;
@@ -105,7 +98,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
             }
         }
         body = responseType !== 'stream' && this.streamAdapter.isReadable(body) ? await toBuffer(body) : body;
-        body = this.coding ? this.coding.decode(body) : body;
+        body = this.decoder ? this.decoder.decode(body) : body;
         switch (responseType) {
             case 'json':
                 // Save the original body, before attempting XSSI prefix stripping.

@@ -7,7 +7,7 @@ import { RequestAdapter } from './request';
 
 
 /**
- * streamable request adapter.
+ * stream request adapter.
  */
 @Abstract()
 export abstract class StreamRequestAdapter<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> extends RequestAdapter<TRequest, TResponse, TStatus> {

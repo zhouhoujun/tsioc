@@ -1,16 +1,24 @@
 import {
     ClientStreamFactory, TransportEvent, ResHeaders, ResponsePacket, SOCKET, Socket, TransportErrorResponse,
-    Incoming, TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream
+    Incoming, TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream, Redirector, Encoder, Decoder
 } from '@tsdi/core';
-import { InjectFlags, Injectable } from '@tsdi/ioc';
-import { StreamRequestAdapter, StreamAdapter, ev, hdr } from '@tsdi/transport';
+import { InjectFlags, Injectable, Nullable } from '@tsdi/ioc';
+import { StreamRequestAdapter, StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter } from '@tsdi/transport';
 import { TCP_CLIENT_OPTS } from './options';
 
 
 @Injectable()
 export class TcpStreamRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, number | string> {
 
-    constructor(private streamAdapter: StreamAdapter) {
+
+    constructor(
+        readonly mimeTypes: MimeTypes,
+        readonly vaildator: StatusVaildator<number | string>,
+        readonly streamAdapter: StreamAdapter,
+        readonly mimeAdapter: MimeAdapter,
+        @Nullable() readonly redirector: Redirector<number | string>,
+        @Nullable() readonly encoder: Encoder,
+        @Nullable() readonly decoder: Decoder) {
         super()
     }
 

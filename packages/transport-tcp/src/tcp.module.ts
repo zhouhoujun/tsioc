@@ -82,6 +82,54 @@ export class TcpModule {
             providers
         }
     }
+
+    static withMicroService(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
+        const clopts = { ...defClientOpts };
+        if (!options.clientStreamFactory) {
+            clopts.backend = TransportBackend;
+        }
+        const providers: ProviderType[] = [
+            ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
+                provide: opts.client,
+                useFactory: (injector: Injector) => {
+                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...opts } }]);
+                },
+                deps: [Injector]
+            }))
+                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } }],
+            { provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } },
+            { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
+            toProvider(TcpHandler, options.handler ?? {
+                useFactory: (injector: Injector, opts: TcpClientOpts) => {
+                    return createHandler(injector, opts);
+                },
+                deps: [Injector, TCP_CLIENT_OPTS]
+            }),
+            toProvider(TcpEndpoint, options.endpoint ?? {
+                useFactory: (injector: Injector, opts: TcpServerOpts) => {
+                    return createAssetEndpoint(injector, opts)
+                },
+                deps: [Injector, TCP_SERV_OPTS]
+            })
+        ];
+
+        if (options.clientStreamFactory) {
+            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        }
+        if (options.serverStreamFactory) {
+            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
+        }
+        if (options.incomingFactory) {
+            providers.push(toProvider(IncomingFactory, options.incomingFactory))
+        }
+        if (options.outgoingFactory) {
+            providers.push(toProvider(OutgoingFactory, options.serverStreamFactory))
+        }
+        return {
+            module: TcpModule,
+            providers
+        }
+    }
 }
 
 

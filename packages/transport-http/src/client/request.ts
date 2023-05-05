@@ -1,5 +1,5 @@
 import { InjectFlags, Injectable, InvocationContext, Nullable } from '@tsdi/ioc';
-import { IWritableStream, PacketCoding, Redirector, ResHeaders, ResponsePacket } from '@tsdi/core';
+import { Decoder, Encoder, IWritableStream, Redirector, ResHeaders, ResponsePacket } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusVaildator, StreamAdapter, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
 
@@ -12,16 +12,14 @@ import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './option'
 @Injectable()
 export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEvent, number> {
 
-    get coding(): PacketCoding | null {
-        return null;
-    }
-
     constructor(
         readonly mimeTypes: MimeTypes,
         readonly vaildator: StatusVaildator<number>,
         readonly streamAdapter: StreamAdapter,
         readonly mimeAdapter: MimeAdapter,
-        @Nullable() readonly redirector: Redirector<number>) {
+        @Nullable() readonly redirector: Redirector<number>,
+        @Nullable() readonly encoder: Encoder,
+        @Nullable() readonly decoder: Decoder) {
         super()
     }
 
@@ -31,7 +29,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
             request.end();
         } else {
             this.streamAdapter.sendbody(
-                data,
+                this.encoder ? this.encoder.encode(data) : data,
                 request,
                 err => callback(err),
                 req.headers.get(hdr.CONTENT_ENCODING) as string);

@@ -5,6 +5,7 @@ import { Backend } from '../Handler';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { AssetContext, TransportContext } from './context';
+import { Decoder, Encoder } from '../coding';
 
 /**
  * Transport endpoint.
@@ -21,7 +22,9 @@ export abstract class TransportEndpoint<TInput extends TransportContext, TOutput
  * 
  * 传输节点配置
  */
-export interface TransportEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T, TArg> {
+export interface TransportEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T> {
+    encoder?: ProvdierOf<Encoder>;
+    decoder?: ProvdierOf<Decoder>;
     /**
      * backend of endpoint. defaut `Router`
      */
