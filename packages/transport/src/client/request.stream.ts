@@ -49,7 +49,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 const packet = this.parsePacket(incoming, headers);
 
                 body = packet.body;
-                status = packet.status;
+                status = packet.status!;
                 statusText = packet.statusText;
 
                 if (this.vaildator.isEmpty(status)) {

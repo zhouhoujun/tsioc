@@ -1,6 +1,6 @@
 import { InjectFlags, Injectable, InvocationContext, Nullable } from '@tsdi/ioc';
-import { Decoder, Encoder, IWritableStream, Redirector, ResHeaders, ResponsePacket } from '@tsdi/core';
-import { MimeAdapter, MimeTypes, StatusVaildator, StreamAdapter, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
+import { Decoder, Encoder, IWritableStream, Redirector, ResHeaders } from '@tsdi/core';
+import { MimeAdapter, MimeTypes, StatusPacket, StatusVaildator, StreamAdapter, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
 
 import * as http from 'http';
@@ -93,7 +93,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         }
     }
 
-    parsePacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): ResponsePacket<number> {
+    parsePacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): StatusPacket<number> {
         let body: any, status: number, statusText: string;
         if (incoming instanceof http.IncomingMessage) {
             status = incoming.statusCode ?? 0;

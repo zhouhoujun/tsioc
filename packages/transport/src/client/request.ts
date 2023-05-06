@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, ResHeaders, ResponsePacket, Redirector, ResponseJsonParseError, Encoder, Decoder } from '@tsdi/core';
+import { TransportEvent, TransportRequest, ResHeaders, Redirector, ResponseJsonParseError, Encoder, Decoder, Packet } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { StatusVaildator } from '../status';
@@ -7,6 +7,16 @@ import { MimeAdapter, MimeTypes } from '../mime';
 import { hdr } from '../consts';
 import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
 
+
+/**
+ * Packet with status
+ */
+export interface StatusPacket<TStatus> extends Packet {
+    error?: any;
+    status?: TStatus,
+    statusText?: string;
+    body?: any;
+}
 
 /**
  * request adapter.
@@ -73,7 +83,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * @param incoming 
      * @param headers 
      */
-    abstract parsePacket(incoming: any, headers: ResHeaders): ResponsePacket<TStatus>;
+    abstract parsePacket(incoming: any, headers: ResHeaders): StatusPacket<TStatus>;
 
     /**
      * send request.

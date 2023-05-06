@@ -1,48 +1,48 @@
-import { Connection, Incoming, IncomingFactory, IncomingHeaders, ReqHeaders, ResHeaders, Socket } from '@tsdi/core';
-import { Abstract, Injectable } from '@tsdi/ioc';
-import { ev, hdr } from '@tsdi/transport';
-import { Writable, Readable, Duplex } from 'stream';
-import { Duplexify } from './duplexify';
+// import { Connection, Incoming, IncomingHeaders, ReqHeaders, ResHeaders, Socket } from '@tsdi/core';
+// import { Abstract, Injectable } from '@tsdi/ioc';
+// import { ev, hdr } from '@tsdi/transport';
+// import { Writable, Readable, Duplex } from 'stream';
+// import { Duplexify } from './duplexify';
 
 
-@Injectable()
-export class IncomingFactoryImpl implements IncomingFactory {
-    create<T>(socket: any, headers: ReqHeaders): Incoming<T, any> {
-        return new IncomingMessage(~~headers.get(hdr.IDENTITY)!, socket, headers);
-    }
+// @Injectable()
+// export class IncomingFactoryImpl implements IncomingFactory {
+//     create<T>(socket: any, headers: ReqHeaders): Incoming<T, any> {
+//         return new IncomingMessage(~~headers.get(hdr.IDENTITY)!, socket, headers);
+//     }
 
-}
+// }
 
 
-export class IncomingMessage<TSocket extends Socket> extends Duplex implements Incoming {
+// export class IncomingMessage<TSocket extends Socket> extends Duplex implements Incoming {
 
-    readonly headers: IncomingHeaders;
-    body?: any;
-    rawBody?: any;
-    payload?: any;
-    constructor(id: number, readonly socket: TSocket, headers: ReqHeaders) {
-        super({
-            read(this: Duplex, size: number) {
+//     readonly headers: IncomingHeaders;
+//     body?: any;
+//     rawBody?: any;
+//     payload?: any;
+//     constructor(id: number, readonly socket: TSocket, headers: ReqHeaders) {
+//         super({
+//             read(this: Duplex, size: number) {
                 
-            },
-            write(this: Duplex, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+//             },
+//             write(this: Duplex, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
 
-            }
-        })
-        this.headers = headers.headers;
-    }
+//             }
+//         })
+//         this.headers = headers.headers;
+//     }
 
-    url?: string | undefined;
-    params?: Record<string, any> | undefined;
-    method?: string | undefined;
+//     url?: string | undefined;
+//     params?: Record<string, any> | undefined;
+//     method?: string | undefined;
 
-    setTimeout(msecs: number, callback: () => void): void {
-        this.socket.setTimeout?.(msecs, callback);
-    }
+//     setTimeout(msecs: number, callback: () => void): void {
+//         this.socket.setTimeout?.(msecs, callback);
+//     }
 
-    type?: number | undefined;
-    error?: Error | undefined;
-}
+//     type?: number | undefined;
+//     error?: Error | undefined;
+// }
 
 
 // /**

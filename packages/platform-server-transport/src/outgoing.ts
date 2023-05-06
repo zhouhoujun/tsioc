@@ -1,71 +1,71 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection, OutgoingFactory, ReqHeaders, Socket, ServerStream } from '@tsdi/core';
-import { ArgumentExecption, Execption, Injectable, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
-import { ev, hdr, HeandersSentExecption, InvalidStreamExecption } from '@tsdi/transport';
-import { Writable, WritableOptions } from 'stream';
+// import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection, OutgoingFactory, ReqHeaders, Socket, ServerStream } from '@tsdi/core';
+// import { ArgumentExecption, Execption, Injectable, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
+// import { ev, hdr, HeandersSentExecption, InvalidStreamExecption } from '@tsdi/transport';
+// import { Writable, WritableOptions } from 'stream';
 
-@Injectable()
-export class OutgoingFactoryImpl implements OutgoingFactory {
+// @Injectable()
+// export class OutgoingFactoryImpl implements OutgoingFactory {
 
-    create(stream: ServerStream, options?: WritableOptions): Outgoing {
-        return new OutgoingMessage(stream, options);
-    }
+//     create(stream: ServerStream, options?: WritableOptions): Outgoing {
+//         return new OutgoingMessage(stream, options);
+//     }
 
-}
+// }
 
 
-export class OutgoingMessage extends Writable implements Outgoing {
+// export class OutgoingMessage extends Writable implements Outgoing {
 
-    constructor(private stream: ServerStream, options?: WritableOptions) {
-        super(options)
-    }
+//     constructor(private stream: ServerStream, options?: WritableOptions) {
+//         super(options)
+//     }
 
-    get socket() {
-        return this.stream.socket;
-    }
+//     get socket() {
+//         return this.stream.socket;
+//     }
 
-    get statusCode(): string | number {
-        throw new Error('Method not implemented.');
-    }
-    set statusCode(status: string | number) {
-        throw new Error('Method not implemented.');
-    }
-    get statusMessage(): string {
-        throw new Error('Method not implemented.');
-    }
-    set statusMessage(msg: string) {
-        throw new Error('Method not implemented.');
-    }
-    get headersSent(): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeaders(): OutgoingHeaders {
-        throw new Error('Method not implemented.');
-    }
-    hasHeader(field: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    getHeader(field: string): OutgoingHeader {
-        throw new Error('Method not implemented.');
-    }
-    setHeader(field: string, val: OutgoingHeader): void {
-        throw new Error('Method not implemented.');
-    }
-    appendHeader?(field: string, val: OutgoingHeader): void {
-        throw new Error('Method not implemented.');
-    }
-    removeHeader(field: string): void {
-        throw new Error('Method not implemented.');
-    }
-    getHeaderNames?(): string[] {
-        throw new Error('Method not implemented.');
-    }
-    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
-    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
-    writeHead(statusCode: unknown, statusMessage?: unknown, headers?: unknown): this {
-        throw new Error('Method not implemented.');
-    }
+//     get statusCode(): string | number {
+//         throw new Error('Method not implemented.');
+//     }
+//     set statusCode(status: string | number) {
+//         throw new Error('Method not implemented.');
+//     }
+//     get statusMessage(): string {
+//         throw new Error('Method not implemented.');
+//     }
+//     set statusMessage(msg: string) {
+//         throw new Error('Method not implemented.');
+//     }
+//     get headersSent(): boolean {
+//         throw new Error('Method not implemented.');
+//     }
+//     getHeaders(): OutgoingHeaders {
+//         throw new Error('Method not implemented.');
+//     }
+//     hasHeader(field: string): boolean {
+//         throw new Error('Method not implemented.');
+//     }
+//     getHeader(field: string): OutgoingHeader {
+//         throw new Error('Method not implemented.');
+//     }
+//     setHeader(field: string, val: OutgoingHeader): void {
+//         throw new Error('Method not implemented.');
+//     }
+//     appendHeader?(field: string, val: OutgoingHeader): void {
+//         throw new Error('Method not implemented.');
+//     }
+//     removeHeader(field: string): void {
+//         throw new Error('Method not implemented.');
+//     }
+//     getHeaderNames?(): string[] {
+//         throw new Error('Method not implemented.');
+//     }
+//     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
+//     writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[] | undefined): this;
+//     writeHead(statusCode: unknown, statusMessage?: unknown, headers?: unknown): this {
+//         throw new Error('Method not implemented.');
+//     }
 
-}
+// }
 
 
 

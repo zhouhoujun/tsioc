@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders, ReqHeaders, ResHeaders } from './headers';
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
 import { IReadableStream, IWritableStream, IDuplexStream, IEventEmitter, ITransformStream } from './stream';
 
@@ -164,15 +164,6 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
     rawBody?: any;
 }
 
-@Abstract()
-export abstract class IncomingFactory<TSocket = any> {
-    /**
-     * create server incoming.
-     * @param stream 
-     * @param opts 
-     */
-    abstract create<T>(stream: ClientStream<TSocket>, opts?: any): Incoming<T, TSocket>;
-}
 
 /**
  * server outgoing message stream.
@@ -292,16 +283,6 @@ export interface Outgoing<TSocket = any> extends IWritableStream {
 }
 
 
-@Abstract()
-export abstract class OutgoingFactory<TSocket = any> {
-    /**
-     * create server outgoing stream.
-     * @param duplex 
-     * @param opts 
-     */
-    abstract create(duplex: ServerStream<TSocket>, opts: any): Outgoing<TSocket>;
-}
-
 /**
  * client duplex message stream.
  */
@@ -309,10 +290,73 @@ export interface ClientStream<TSocket = any> extends IDuplexStream {
     /**
      * headers
      */
-    readonly headers: OutgoingHeaders;
+    readonly headers?: OutgoingHeaders;
+    /**
+     * Adds the `listener` function to the end of the listeners array for the
+     * event named `eventName`. No checks are made to see if the `listener` has
+     * already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
+     * times.
+     *
+     * ```js
+     * server.on('connection', (stream) => {
+     *   console.log('someone connected!');
+     * });
+     * ```
+     *
+     * Returns a reference to the `EventEmitter`, so that calls can be chained.
+     *
+     * By default, event listeners are invoked in the order they are added. The`emitter.prependListener()` method can be used as an alternative to add the
+     * event listener to the beginning of the listeners array.
+     *
+     * ```js
+     * const myEE = new EventEmitter();
+     * myEE.on('foo', () => console.log('a'));
+     * myEE.prependListener('foo', () => console.log('b'));
+     * myEE.emit('foo');
+     * // Prints:
+     * //   b
+     * //   a
+     * ```
+     * @since v0.1.101
+     * @param eventName The name of the event.
+     * @param listener The callback function
+     */
+    on(eventName: string | symbol, listener: (...args: any[]) => void): this;
+    on(eventName: 'message', listener: (packet: Packet) => void): this;
+    on(eventName: 'response', listener: (req: any, res: any) => void): this;
 
     readonly socket?: TSocket;
 }
+
+/**
+ * client stream options.
+ */
+export interface ClientStreamOpts extends Record<string, any> {
+    /**
+     * headers
+     */
+    headers?: IncomingHeaders;
+    /**
+     * packet delimiter flag
+     */
+    delimiter?: string;
+    /**
+     * packet size limit.
+     */
+    maxSize?: number;
+    /**
+     * packet buffer encoding.
+     */
+    encoding?: BufferEncoding;
+    /**
+     * packet transformer
+     */
+    transformer?: PacketTransformer;
+}
+
+/**
+ * ClientStream factory.
+ */
 @Abstract()
 export abstract class ClientStreamFactory<TSocket = any> {
     /**
@@ -320,7 +364,7 @@ export abstract class ClientStreamFactory<TSocket = any> {
      * @param duplex 
      * @param headers 
      */
-    abstract create(duplex: IDuplexStream, headers: ReqHeaders, opts: any): ClientStream<TSocket>;
+    abstract create(duplex: IDuplexStream, opts?: ClientStreamOpts): ClientStream<TSocket>;
 }
 
 /**
@@ -330,11 +374,74 @@ export interface ServerStream<TSocket = any> extends IDuplexStream {
     /**
      * headers
      */
-    readonly headers: IncomingHeaders;
+    readonly headers?: IncomingHeaders;
+
+    /**
+     * Adds the `listener` function to the end of the listeners array for the
+     * event named `eventName`. No checks are made to see if the `listener` has
+     * already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
+     * times.
+     *
+     * ```js
+     * server.on('connection', (stream) => {
+     *   console.log('someone connected!');
+     * });
+     * ```
+     *
+     * Returns a reference to the `EventEmitter`, so that calls can be chained.
+     *
+     * By default, event listeners are invoked in the order they are added. The`emitter.prependListener()` method can be used as an alternative to add the
+     * event listener to the beginning of the listeners array.
+     *
+     * ```js
+     * const myEE = new EventEmitter();
+     * myEE.on('foo', () => console.log('a'));
+     * myEE.prependListener('foo', () => console.log('b'));
+     * myEE.emit('foo');
+     * // Prints:
+     * //   b
+     * //   a
+     * ```
+     * @since v0.1.101
+     * @param eventName The name of the event.
+     * @param listener The callback function
+     */
+    on(eventName: string | symbol, listener: (...args: any[]) => void): this;
+    on(eventName: 'message', listener: (packet: Packet) => void): this;
+    on(eventName: 'response', listener: (req: any, res: any) => void): this;
 
     readonly socket?: TSocket;
 }
 
+/**
+ * Server stream options.
+ */
+export interface ServerStreamOpts extends Record<string, any> {
+    /**
+     * headers.
+     */
+    headers?: IncomingHeaders;
+    /**
+     * packet delimiter flag
+     */
+    delimiter?: string;
+    /**
+     * packet size limit.
+     */
+    maxSize?: number;
+    /**
+     * packet buffer encoding.
+     */
+    encoding?: BufferEncoding;
+    /**
+     * packet transformer
+     */
+    transformer?: PacketTransformer;
+}
+
+/**
+ * ServerStream factory.
+ */
 @Abstract()
 export abstract class ServerStreamFactory<TSocket = any> {
     /**
@@ -342,15 +449,15 @@ export abstract class ServerStreamFactory<TSocket = any> {
      * @param socket 
      * @param headers 
      */
-    abstract create(socket: TSocket, headers: ReqHeaders): ClientStream<TSocket>;
+    abstract create(socket: IDuplexStream, opts?: ServerStreamOpts): ClientStream<TSocket>;
 }
 
 
 /**
- * stream packet coding.
+ * stream packet coding transform.
  */
 @Abstract()
-export abstract class StreamCoding<TOpts = any> {
+export abstract class PacketTransformer<TOpts = any> {
     /**
      * create packet parser
      * @param opts options of type {@link ConnectionOpts}.

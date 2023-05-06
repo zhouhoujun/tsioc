@@ -1,5 +1,5 @@
-import { Inject, Injectable, isNil, Injector, getClass, InvocationContext } from '@tsdi/ioc';
-import { MicroService, ResponsePacket, TransportContext, TransportEndpointOptions } from '@tsdi/core';
+import { Injectable, isNil, getClass } from '@tsdi/ioc';
+import { MicroService, Packet, TransportContext, TransportEndpointOptions } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
@@ -161,12 +161,12 @@ export class KafkaServer extends MicroService<TransportContext> {
     }
 
     public sendMessage(
-        message: ResponsePacket,
+        message: Packet,
         topic: string,
         replyPartition: string,
         correlationId: string,
     ): Promise<RecordMetadata[]> {
-        const response = this.serializer.serialize(message.response);
+        const response = this.serializer.serialize(message.payload);
         this.assignReplyPartition(replyPartition, response);
         this.assignCorrelationIdHeader(correlationId, response);
         this.assignErrorHeader(message, response);
@@ -182,7 +182,7 @@ export class KafkaServer extends MicroService<TransportContext> {
 
 
     public assigndisposedHeader(
-        outgoingResponse: ResponsePacket,
+        outgoingResponse: Packet,
         outgoingMessage: Message,
     ) {
         if (!outgoingResponse.disposed || !outgoingMessage.headers) {
@@ -192,7 +192,7 @@ export class KafkaServer extends MicroService<TransportContext> {
     }
 
     public assignErrorHeader(
-        outgoingResponse: ResponsePacket,
+        outgoingResponse: Packet,
         outgoingMessage: Message,
     ) {
         if (!outgoingResponse.err || !outgoingMessage.headers) {

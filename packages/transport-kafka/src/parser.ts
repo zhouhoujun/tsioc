@@ -1,4 +1,6 @@
-import { isNil, isObject } from "@tsdi/ioc";
+import { Packet } from "@tsdi/core";
+import { isNil, isObject, isPlainObject, isString, isUndefined } from "@tsdi/ioc";
+import { KafkaHeaders } from "./const";
 
 export class KafkaRequestSerializer implements Serializer<any, KafkaRequest> {
     serialize(value: any): KafkaRequest {
@@ -36,8 +38,8 @@ export class KafkaRequestSerializer implements Serializer<any, KafkaRequest> {
 }
 
 
-export class KafkaResponseDeserializer implements Deserializer<any, ResponsePacket> {
-    deserialize(message: any, options?: Record<string, any>): ResponsePacket {
+export class KafkaResponseDeserializer implements Deserializer<any, Packet> {
+    deserialize(message: any, options?: Record<string, any>): Packet {
         const id = message.headers[KafkaHeaders.CORRELATION_ID].toString();
         if (!isUndefined(message.headers[KafkaHeaders.NEST_ERR])) {
             return {

@@ -5,9 +5,6 @@ import { TransportSendAdapter } from './send';
 import { NodeResponseStatusFormater } from './formater';
 import { NodeFileAdapter } from './file';
 import { NodeCsrfTokensFactory } from './csrf';
-import { IncomingFactoryImpl } from './incoming';
-import { IncomingFactory, OutgoingFactory } from '@tsdi/core';
-import { OutgoingFactoryImpl } from './outgoing';
 
 @Module({
     providers: [
@@ -15,9 +12,7 @@ import { OutgoingFactoryImpl } from './outgoing';
         { provide: ContentSendAdapter, useClass: TransportSendAdapter },
         { provide: FileAdapter, useClass: NodeFileAdapter },
         { provide: CsrfTokensFactory, useClass: NodeCsrfTokensFactory },
-        { provide: ResponseStatusFormater, useClass: NodeResponseStatusFormater },
-        { provide: IncomingFactory, useClass: IncomingFactoryImpl },
-        { provide: OutgoingFactory, useClass: OutgoingFactoryImpl }
+        { provide: ResponseStatusFormater, useClass: NodeResponseStatusFormater }
     ]
 })
 export class ServerTransportModule {

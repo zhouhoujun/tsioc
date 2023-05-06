@@ -1,4 +1,4 @@
-import { InternalServerExecption, ListenOpts, MicroService, Packet, TransportContext, createTransportContext } from '@tsdi/core';
+import { InternalServerExecption, ListenOpts, MicroService, Packet, ServerStreamFactory, TransportContext, createTransportContext } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
@@ -67,9 +67,22 @@ export class TcpMicroService extends MicroService<TransportContext> {
     protected async onStart(): Promise<any> {
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.MESSAGE, (message) => this.requestHandler(message));
+
         this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
+
+        const factory = this.endpoint.injector.get(ServerStreamFactory);
+        if (this.serv instanceof tls.Server) {
+            this.serv.on(ev.SECURE_CONNECTION, (socket) => {
+                const stream = factory.create(socket);
+                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
+            })
+        } else {
+            this.serv.on(ev.CONNECTION, (socket) => {
+                const stream = factory.create(socket);
+                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
+            })
+        }
 
         if (this.options.listenOpts && this.options.autoListen) {
             this.listen(this.options.listenOpts)

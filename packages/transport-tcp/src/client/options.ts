@@ -1,4 +1,4 @@
-import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client } from '@tsdi/core';
+import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client, ClientStreamOpts } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ConnectionOptions } from 'tls';
@@ -9,22 +9,15 @@ import { ConnectionOptions } from 'tls';
  * tcp client options.
  */
 export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest> {
-    /**
-     * packet size limit.
-     */
-    sizeLimit?: number;
+
     /**
      * keep alive
      */
     keepalive?: number;
     /**
-     * packet buffer encoding.
+     * client stream options.
      */
-    encoding?: BufferEncoding;
-    /**
-     * packet delimiter code.
-     */
-    delimiter?: string;
+    streamOpts?: ClientStreamOpts;
     /**
      * socket options.
      */

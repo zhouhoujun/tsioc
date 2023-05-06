@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, IncomingFactory } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, ServerStreamFactory } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -74,18 +74,18 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
     protected async onStart(): Promise<any> {
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
         this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
+        const factory = this.endpoint.injector.get(ServerStreamFactory);
         if(this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket)=> {
-                // this.endpoint.injector.get().create(socket);
-                
-                socket.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
+                const serverStream = factory.create(socket);
+                serverStream.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket)=> {
-
+                const serverStream = factory.create(socket);
+                serverStream.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
             })
         }
 

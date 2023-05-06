@@ -1,4 +1,4 @@
-import { ClientStream, ClientStreamFactory, ClientStreamOpts, IncomingHeaders, PacketTransformer } from '@tsdi/core';
+import { ServerStream, ServerStreamFactory, ServerStreamOpts, IncomingHeaders, PacketTransformer } from '@tsdi/core';
 import { Execption, Injectable } from '@tsdi/ioc';
 import { ev } from '@tsdi/transport';
 import { Duplexify } from '@tsdi/platform-server-transport';
@@ -6,7 +6,7 @@ import { Writable, Duplex, Transform } from 'stream';
 import { NumberAllocator } from 'number-allocator';
 
 @Injectable()
-export class ClientStreamFactoryImpl<TSocket extends Duplex = any> implements ClientStreamFactory<TSocket> {
+export class ServerStreamFactoryImpl<TSocket extends Duplex = any> implements ServerStreamFactory<TSocket> {
 
     allocator = new NumberAllocator(1, 65536);
     last?: number;
@@ -15,9 +15,9 @@ export class ClientStreamFactoryImpl<TSocket extends Duplex = any> implements Cl
 
     }
 
-    create(socket: TSocket, opts: ClientStreamOpts): ClientStream<TSocket> {
+    create(socket: TSocket, opts: ServerStreamOpts): ServerStream<TSocket> {
         const transformer = opts.transformer ?? this.transformer;
-        return new ClientStreamImpl(this.getStreamId(), socket, opts.headers, transformer.createGenerator(socket, opts), transformer.createParser(opts));
+        return new ServerStreamImpl(opts.id ?? this.getStreamId(), socket, opts.headers, transformer.createGenerator(socket, opts), transformer.createParser(opts));
     }
 
     getStreamId() {
@@ -31,7 +31,7 @@ export class ClientStreamFactoryImpl<TSocket extends Duplex = any> implements Cl
 
 }
 
-export class ClientStreamImpl<TSocket extends Duplex = any> extends Duplexify implements ClientStream<TSocket> {
+export class ServerStreamImpl<TSocket extends Duplex = any> extends Duplexify implements ServerStream<TSocket> {
 
     constructor(readonly id: number, readonly socket: TSocket, readonly headers: IncomingHeaders | undefined, private generator: Writable, private parser: Transform) {
         super(generator, parser, { objectMode: true });

@@ -1,21 +1,16 @@
-import { Inject, Injectable, InvocationContext, isUndefined, ModuleLoader } from '@tsdi/ioc';
-import { EndpointBackend, RequestOptions } from '@tsdi/core';
-import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { Level } from '@tsdi/logs';
+import { Injectable } from '@tsdi/ioc';
+import { Client, ConfigableEndpointOptions, ConfigableHandler, TransportEvent, TransportRequest } from '@tsdi/core';
 import {
-    BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerGroupJoinEvent,
-    ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment,
-    GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer,
+    ConsumerConfig,  ConsumerRunConfig, ConsumerSubscribeTopic, KafkaConfig
     ProducerConfig, ProducerRecord
 } from 'kafkajs';
-import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
-import { Duplex } from 'form-data';
+import { Observable } from 'rxjs';
 
 
 let kafkajs: any;
 let uuid: any;
 
-export interface KafkaClientOption extends KafkaConfig, TransportClientOpts {
+export interface KafkaClientOption extends KafkaConfig, ConfigableEndpointOptions {
     postfixId?: string;
     client?: KafkaConfig;
     consumer?: ConsumerConfig;
@@ -28,14 +23,20 @@ export interface KafkaClientOption extends KafkaConfig, TransportClientOpts {
 
 
 @Injectable()
-export class KafkaClient extends TransportClient<RequestOptions, KafkaClientOption> {
+export class KafkaClient extends Client {
+
+    get handler(): ConfigableHandler<TransportRequest<any>, TransportEvent> {
+        throw new Error('Method not implemented.');
+    }
+
+    protected connect(): Promise<any> | Observable<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected onShutdown(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
     
-    protected createDuplex(opts: KafkaClientOption): Duplex {
-        throw new Error('Method not implemented.');
-    }
-    protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        throw new Error('Method not implemented.');
-    }
+
 
 }
 

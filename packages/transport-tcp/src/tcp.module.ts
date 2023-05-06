@@ -1,6 +1,6 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    ClientStreamFactory, ExecptionHandlerFilter, IncomingFactory, MiddlewareRouter, OutgoingFactory, StreamCoding,
+    ClientStreamFactory, ExecptionHandlerFilter, MiddlewareRouter, PacketTransformer,
     RouterModule, TransformModule, createHandler, createAssetEndpoint, ServerStreamFactory
 } from '@tsdi/core';
 import {
@@ -15,6 +15,8 @@ import { TcpStreamRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
+import { ClientStreamFactoryImpl } from './client/stream';
+import { ServerStreamFactoryImpl } from './microservice/stream';
 
 @Module({
     imports: [
@@ -23,6 +25,8 @@ import { TcpHandler } from './client/handler';
         TransportModule
     ],
     providers: [
+        ClientStreamFactoryImpl,
+        ServerStreamFactoryImpl,
         TcpClient,
         TcpServer,
         { provide: StreamRequestAdapter, useClass: TcpStreamRequestAdapter }
@@ -37,9 +41,6 @@ export class TcpModule {
      */
     static withOptions(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
         const clopts = { ...defClientOpts };
-        if (!options.clientStreamFactory) {
-            clopts.backend = TransportBackend;
-        }
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
@@ -62,21 +63,15 @@ export class TcpModule {
                     return createAssetEndpoint(injector, opts)
                 },
                 deps: [Injector, TCP_SERV_OPTS]
-            })
+            }),
+            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactoryImpl),
+            toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
         ];
 
-        if (options.clientStreamFactory) {
-            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        if (options.transformer) {
+            providers.push(toProvider(PacketTransformer, options.transformer))
         }
-        if (options.serverStreamFactory) {
-            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
-        }
-        if (options.incomingFactory) {
-            providers.push(toProvider(IncomingFactory, options.incomingFactory))
-        }
-        if (options.outgoingFactory) {
-            providers.push(toProvider(OutgoingFactory, options.serverStreamFactory))
-        }
+
         return {
             module: TcpModule,
             providers
@@ -110,21 +105,15 @@ export class TcpModule {
                     return createAssetEndpoint(injector, opts)
                 },
                 deps: [Injector, TCP_SERV_OPTS]
-            })
+            }),
+            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactoryImpl),
+            toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
         ];
 
-        if (options.clientStreamFactory) {
-            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        if (options.transformer) {
+            providers.push(toProvider(PacketTransformer, options.transformer))
         }
-        if (options.serverStreamFactory) {
-            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
-        }
-        if (options.incomingFactory) {
-            providers.push(toProvider(IncomingFactory, options.incomingFactory))
-        }
-        if (options.outgoingFactory) {
-            providers.push(toProvider(OutgoingFactory, options.serverStreamFactory))
-        }
+
         return {
             module: TcpModule,
             providers
@@ -146,13 +135,13 @@ export interface TcpModuleOptions {
      * server endpoint provider
      */
     endpoint?: ProvdierOf<TcpEndpoint>;
-
-    coding?: ProvdierOf<StreamCoding>;
+    /**
+     * packet transformer.
+     */
+    transformer?: ProvdierOf<PacketTransformer>;
 
     clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
     serverStreamFactory?: ProvdierOf<ServerStreamFactory>;
-    incomingFactory?: ProvdierOf<IncomingFactory>;
-    outgoingFactory?: ProvdierOf<OutgoingFactory>;
 
     /**
      * server options

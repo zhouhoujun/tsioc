@@ -1,19 +1,14 @@
+import { IncomingHeaders } from './headers';
+
 /**
  * packet data.
  */
 export interface Packet<T = any> {
     id?: any;
     url?: string;
+    topic?: string;
     type?: number;
+    headers?: IncomingHeaders;
     payload?: T;
-}
-
-/**
- * Response Packet.
- */
-export interface ResponsePacket<TStatus = any> {
-    error?: Error | string;
-    status: TStatus,
-    statusText?: string;
-    body?: any;
+    error?: any;
 }
