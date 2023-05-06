@@ -1,15 +1,12 @@
-import { MicroService, Outgoing, TransportContext, TransportEndpointOptions } from '@tsdi/core';
-import { Abstract, ArgumentExecption, Inject, Injectable, Token } from '@tsdi/ioc';
+import { MicroService, Outgoing, TransportContext } from '@tsdi/core';
+import { ArgumentExecption, Inject, Injectable } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
-import Redis, { RedisOptions } from 'ioredis';
+import Redis from 'ioredis';
 import { RedisEndpoint } from './endpoint';
-import { REDIS_SERV_OPTS } from './options';
 import { ev } from '@tsdi/transport';
+import { REDIS_SERV_OPTS, RedisOpts } from './options';
 
 
-export interface RedisOpts extends TransportEndpointOptions<TransportContext> {
-    connectOpts: RedisOptions;
-}
 
 @Injectable()
 export class RedisServer extends MicroService<TransportContext, Outgoing> {
@@ -18,7 +15,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
     
     constructor(
         readonly endpoint: RedisEndpoint,
-        @Inject(REDIS_SERV_OPTS, { nullable: true }) private options: RedisOpts
+        @Inject(REDIS_SERV_OPTS) private options: RedisOpts
     ) {
         super();
     }

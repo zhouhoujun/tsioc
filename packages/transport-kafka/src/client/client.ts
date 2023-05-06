@@ -1,32 +1,19 @@
-import { Injectable } from '@tsdi/ioc';
-import { Client, ConfigableEndpointOptions, ConfigableHandler, TransportEvent, TransportRequest } from '@tsdi/core';
-import {
-    ConsumerConfig,  ConsumerRunConfig, ConsumerSubscribeTopic, KafkaConfig
-    ProducerConfig, ProducerRecord
-} from 'kafkajs';
+import { Inject, Injectable } from '@tsdi/ioc';
+import { Client } from '@tsdi/core';
 import { Observable } from 'rxjs';
+import { KafkaHandler } from './handler';
+import { KAFKA_CLIENT_OPTS, KafkaClientOption } from './options';
 
 
 let kafkajs: any;
 let uuid: any;
 
-export interface KafkaClientOption extends KafkaConfig, ConfigableEndpointOptions {
-    postfixId?: string;
-    client?: KafkaConfig;
-    consumer?: ConsumerConfig;
-    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
-    subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
-    producer?: ProducerConfig;
-    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
-    keepBinary?: boolean;
-}
 
-
-@Injectable()
+@Injectable({ static: false })
 export class KafkaClient extends Client {
 
-    get handler(): ConfigableHandler<TransportRequest<any>, TransportEvent> {
-        throw new Error('Method not implemented.');
+    constructor(readonly handler: KafkaHandler, @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOption) {
+        super()
     }
 
     protected connect(): Promise<any> | Observable<any> {
@@ -35,7 +22,7 @@ export class KafkaClient extends Client {
     protected onShutdown(): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    
+
 
 
 }

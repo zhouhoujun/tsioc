@@ -1,19 +1,19 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
 import Redis, { RedisOptions } from 'ioredis';
-import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 import { RedisHandler } from './handler';
+import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 
 
 
-@Injectable()
+@Injectable({ static: false })
 export class RedisClient extends Client<TransportRequest, TransportEvent> {
 
     private pubClient: Redis | null = null;
     private subClient: Redis | null = null;
     constructor(
         readonly handler: RedisHandler,
-        @Inject(REDIS_CLIENT_OPTS, { nullable: true }) private options: RedisClientOpts) {
+        @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
         super();
     }
 

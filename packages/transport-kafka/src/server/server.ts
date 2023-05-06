@@ -1,23 +1,14 @@
-import { Injectable, isNil, getClass } from '@tsdi/ioc';
+import { Injectable, isNil, getClass, Inject } from '@tsdi/ioc';
 import { MicroService, Packet, TransportContext, TransportEndpointOptions } from '@tsdi/core';
 import { Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 import { KafkaParser } from '../parser';
+import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
+import { KafkaEndpoint } from './endpoint';
 
 
 
-
-export interface KafkaOptions extends KafkaConfig, TransportEndpointOptions<TransportContext> {
-    postfixId?: string;
-    client?: KafkaConfig;
-    consumer?: ConsumerConfig;
-    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
-    subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
-    producer?: ProducerConfig;
-    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
-    keepBinary?: boolean;
-}
 
 
 @Injectable()
@@ -31,7 +22,7 @@ export class KafkaServer extends MicroService<TransportContext> {
     protected clientId: string;
     protected groupId: string;
 
-    constructor(private options: KafkaOptions) {
+    constructor(readonly endpoint: KafkaEndpoint, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
@@ -39,7 +30,7 @@ export class KafkaServer extends MicroService<TransportContext> {
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 
-    protected initOption(options: KafkaOptions): KafkaOptions {
+    protected initOption(options: KafkaServerOptions): KafkaServerOptions {
         this.options = options;
         this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
