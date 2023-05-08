@@ -1,4 +1,4 @@
-import { InternalServerExecption, ListenOpts, MicroService, Packet, ServerStreamFactory, TransportContext, createTransportContext } from '@tsdi/core';
+import { InternalServerExecption, ListenOpts, ListenService, MicroService, Packet, ServerStreamFactory, TransportContext, createTransportContext } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
@@ -10,7 +10,7 @@ import { TCP_MICRO_SERV_OPTS, TcpMicroServiceOpts } from './options';
 
 
 @Injectable()
-export class TcpMicroService extends MicroService<TransportContext> {
+export class TcpMicroService extends MicroService<TransportContext> implements ListenService {
 
     @InjectLog() logger!: Logger;
 
@@ -90,7 +90,11 @@ export class TcpMicroService extends MicroService<TransportContext> {
     }
 
     protected onShutdown(): Promise<any> {
-        return promisify(this.serv.close, this.serv)();
+        return promisify(this.serv.close, this.serv)()
+        .catch(err => {
+            this.logger?.error(err);
+            return err;
+        });
     }
 
     /**

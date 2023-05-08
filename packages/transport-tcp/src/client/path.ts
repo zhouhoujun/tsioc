@@ -2,6 +2,9 @@ import { Handler, Interceptor, ListenOpts, TransportEvent, TransportRequest } fr
 import { Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
+/**
+ * Tcp path interceptor.
+ */
 @Injectable()
 export class TcpPathInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 

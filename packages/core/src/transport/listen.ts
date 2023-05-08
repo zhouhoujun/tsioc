@@ -33,3 +33,10 @@ export interface ListenService<LOpt = ListenOpts> {
     listen(options: LOpt, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
 }
+
+/**
+ * binding server.
+ */
+export interface ServerBinding<T = any> {
+    bind(server: T): void;
+}

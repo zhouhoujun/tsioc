@@ -21,7 +21,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     private options: TcpClientOpts;
     constructor(
         readonly handler: TcpHandler,
-        @Inject(TCP_CLIENT_OPTS, { nullable: true }) options: TcpClientOpts) {
+        @Inject(TCP_CLIENT_OPTS) options: TcpClientOpts) {
         super();
         this.options = { ...options };
     }

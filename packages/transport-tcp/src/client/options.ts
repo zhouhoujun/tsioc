@@ -28,6 +28,9 @@ export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest
     connectOpts?: NetConnectOpts | ConnectionOptions;
 }
 
+/**
+ * multi tcp client options.
+ */
 export interface TcpClientsOpts extends TcpClientOpts {
     /**
      * client token.

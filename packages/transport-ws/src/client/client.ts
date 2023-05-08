@@ -3,20 +3,8 @@ import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import * as ws from 'ws';
 import { WsHandler } from './handler';
+import { WsClientOpts } from './options';
 
-
-export interface WSClitentOptions extends ConfigableEndpointOptions<TransportRequest> {
-    /**
-     * url
-     * etg.` wss://webscocket.com/`
-     */
-    url: string;
-    connectOpts?: ws.ClientOptions;
-}
-
-const defs = {
-    url: 'wss://127.0.0.1/'
-} as WSClitentOptions;
 
 
 @Injectable()
@@ -25,7 +13,7 @@ export class WsClient extends Client<TransportRequest, TransportEvent> {
     private socket?: ws.WebSocket;
     constructor(
         readonly handler: WsHandler,
-        @Inject() private options: WSClitentOptions) {
+        @Inject() private options: WsClientOpts) {
         super();
     }
 
