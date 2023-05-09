@@ -30,7 +30,7 @@ export class TcpClientStreamFactoryImpl<TSocket extends Duplex = any> implements
 }
 
 
-export class ClientStreamImpl<TSocket extends Duplex = any> extends Writable implements ClientStream {
+export class ClientStreamImpl<TSocket extends Duplex = any> extends Duplex implements ClientStream {
 
 
     private buffer = '';

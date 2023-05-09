@@ -164,7 +164,6 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
     rawBody?: any;
 }
 
-
 /**
  * server outgoing message stream.
  */
@@ -284,9 +283,58 @@ export interface Outgoing<TSocket = any> extends IWritableStream {
 
 
 /**
+ * transport session.
+ */
+export interface TransportSession<TSocket = any> extends IEventEmitter {
+    /**
+     * socket.
+     */
+    readonly socket: TSocket;
+}
+
+/**
+ * transport session options.
+ */
+export interface TransportSessionOpts {
+    /**
+     * packet delimiter flag
+     */
+    delimiter?: string;
+    /**
+     * packet size limit.
+     */
+    maxSize?: number;
+    /**
+     * packet buffer encoding.
+     */
+    encoding?: BufferEncoding;
+}
+
+/**
+ * TransportSession factory.
+ */
+@Abstract()
+export abstract class TransportSessionFactory<TSocket = any> {
+    /**
+     * create transport session.
+     * @param socket 
+     * @param headers 
+     */
+    abstract create(socket: TSocket, opts?: TransportSessionOpts): TransportSession<TSocket>;
+}
+
+
+/**
+ * transport stream.
+ */
+export interface TransportStream extends IDuplexStream {
+
+}
+
+/**
  * client duplex message stream.
  */
-export interface ClientStream extends IEventEmitter {
+export interface ClientStream extends TransportStream {
     /**
      * headers
      */
@@ -324,14 +372,6 @@ export interface ClientStream extends IEventEmitter {
     on(eventName: string | symbol, listener: (...args: any[]) => void): this;
     on(eventName: 'message', listener: (packet: Packet) => void): this;
     on(eventName: 'response', listener: (req: any, res: any) => void): this;
-
-    write(chunk: any, cb?: (err?: Error | null) => void): boolean;
-    write(chunk: any, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
-    end(cb?: () => void): this;
-    end(chunk: any, cb?: () => void): this;
-    end(chunk: any, encoding?: BufferEncoding, cb?: () => void): this;
-    destroy?(error?: any): void;
-
 }
 
 
@@ -374,7 +414,7 @@ export abstract class ClientStreamFactory<TDuplex = any> {
 /**
  * Server duplex message.
  */
-export interface ServerStream extends IEventEmitter {
+export interface ServerStream extends TransportStream {
     /**
      * headers
      */
@@ -413,13 +453,6 @@ export interface ServerStream extends IEventEmitter {
     on(eventName: string | symbol, listener: (...args: any[]) => void): this;
     on(eventName: 'message', listener: (packet: Packet) => void): this;
     on(eventName: 'request', listener: (req: any, res: any) => void): this;
-
-    write(chunk: any, cb?: (err?: Error | null) => void): boolean;
-    write(chunk: any, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
-    end(cb?: () => void): this;
-    end(chunk: any, cb?: () => void): this;
-    end(chunk: any, encoding?: BufferEncoding, cb?: () => void): this;
-    destroy?(error?: any): void;
 }
 
 /**
