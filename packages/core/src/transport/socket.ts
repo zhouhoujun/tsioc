@@ -286,7 +286,7 @@ export interface Outgoing<TSocket = any> extends IWritableStream {
 /**
  * client duplex message stream.
  */
-export interface ClientStream<TSocket = any> extends IDuplexStream {
+export interface ClientStream extends IEventEmitter {
     /**
      * headers
      */
@@ -325,15 +325,21 @@ export interface ClientStream<TSocket = any> extends IDuplexStream {
     on(eventName: 'message', listener: (packet: Packet) => void): this;
     on(eventName: 'response', listener: (req: any, res: any) => void): this;
 
-    readonly socket?: TSocket;
+    write(chunk: any, cb?: (err?: Error | null) => void): boolean;
+    write(chunk: any, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    end(cb?: () => void): this;
+    end(chunk: any, cb?: () => void): this;
+    end(chunk: any, encoding?: BufferEncoding, cb?: () => void): this;
+
 }
 
+
 /**
- * client stream options.
+ * Server stream options.
  */
-export interface ClientStreamOpts extends Record<string, any> {
+export interface StreamOpts extends Record<string, any> {
     /**
-     * headers
+     * headers.
      */
     headers?: IncomingHeaders;
     /**
@@ -348,29 +354,26 @@ export interface ClientStreamOpts extends Record<string, any> {
      * packet buffer encoding.
      */
     encoding?: BufferEncoding;
-    /**
-     * packet transformer
-     */
-    transformer?: PacketTransformer;
 }
+
 
 /**
  * ClientStream factory.
  */
 @Abstract()
-export abstract class ClientStreamFactory<TSocket = any> {
+export abstract class ClientStreamFactory<TDuplex = any> {
     /**
      * create client duplex stream.
      * @param duplex 
      * @param headers 
      */
-    abstract create(duplex: IDuplexStream, opts?: ClientStreamOpts): ClientStream<TSocket>;
+    abstract create(duplex: TDuplex, opts?: StreamOpts): ClientStream;
 }
 
 /**
- * Server duplex message stream.
+ * Server duplex message.
  */
-export interface ServerStream<TSocket = any> extends IDuplexStream {
+export interface ServerStream extends IEventEmitter {
     /**
      * headers
      */
@@ -408,65 +411,24 @@ export interface ServerStream<TSocket = any> extends IDuplexStream {
      */
     on(eventName: string | symbol, listener: (...args: any[]) => void): this;
     on(eventName: 'message', listener: (packet: Packet) => void): this;
-    on(eventName: 'response', listener: (req: any, res: any) => void): this;
+    on(eventName: 'request', listener: (req: any, res: any) => void): this;
 
-    readonly socket?: TSocket;
-}
-
-/**
- * Server stream options.
- */
-export interface ServerStreamOpts extends Record<string, any> {
-    /**
-     * headers.
-     */
-    headers?: IncomingHeaders;
-    /**
-     * packet delimiter flag
-     */
-    delimiter?: string;
-    /**
-     * packet size limit.
-     */
-    maxSize?: number;
-    /**
-     * packet buffer encoding.
-     */
-    encoding?: BufferEncoding;
-    /**
-     * packet transformer
-     */
-    transformer?: PacketTransformer;
+    write(chunk: any, cb?: (err?: Error | null) => void): boolean;
+    write(chunk: any, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    end(cb?: () => void): this;
+    end(chunk: any, cb?: () => void): this;
+    end(chunk: any, encoding?: BufferEncoding, cb?: () => void): this;
 }
 
 /**
  * ServerStream factory.
  */
 @Abstract()
-export abstract class ServerStreamFactory<TSocket = any> {
+export abstract class ServerStreamFactory<TDuplex = any> {
     /**
      * create client duplex stream.
      * @param socket 
      * @param headers 
      */
-    abstract create(socket: IDuplexStream, opts?: ServerStreamOpts): ClientStream<TSocket>;
-}
-
-
-/**
- * stream packet coding transform.
- */
-@Abstract()
-export abstract class PacketTransformer<TOpts = any> {
-    /**
-     * create packet parser
-     * @param opts options of type {@link ConnectionOpts}.
-     */
-    abstract createParser<T extends ITransformStream>(opts: TOpts): T;
-    /**
-     * create packet generator
-     * @param output the connection wirte output.
-     * @param opts options of type {@link ConnectionOpts}.
-     */
-    abstract createGenerator<T extends IWritableStream>(output: T, opts: TOpts): T;
+    abstract create(socket: TDuplex, opts?: StreamOpts): ServerStream;
 }

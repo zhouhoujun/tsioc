@@ -57,6 +57,12 @@ export class WsModule {
         if (options.transformer) {
             providers.push(toProvider(PacketTransformer, options.transformer))
         }
+        if(options.clientStreamFactory){
+            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        }
+        if(options.serverStreamFactory) {
+            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
+        }
 
         return {
             module: WsModule,

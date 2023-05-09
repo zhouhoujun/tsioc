@@ -1,6 +1,6 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    ClientStreamFactory, ExecptionHandlerFilter, MiddlewareRouter, PacketTransformer,
+    ClientStreamFactory, ExecptionHandlerFilter, MiddlewareRouter,
     RouterModule, TransformModule, createHandler, createAssetEndpoint, ServerStreamFactory
 } from '@tsdi/core';
 import {
@@ -15,7 +15,6 @@ import { TcpStreamRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
-import { ClientStreamFactoryImpl } from './client/stream';
 import { ServerStreamFactoryImpl } from './microservice/stream';
 
 @Module({
@@ -25,8 +24,6 @@ import { ServerStreamFactoryImpl } from './microservice/stream';
         TransportModule
     ],
     providers: [
-        ClientStreamFactoryImpl,
-        ServerStreamFactoryImpl,
         TcpClient,
         TcpServer,
         { provide: StreamRequestAdapter, useClass: TcpStreamRequestAdapter }
@@ -64,12 +61,15 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),
-            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactoryImpl),
+            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactory),
             toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
         ];
 
-        if (options.transformer) {
-            providers.push(toProvider(PacketTransformer, options.transformer))
+        if(options.clientStreamFactory){
+            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        }
+        if(options.serverStreamFactory) {
+            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
         }
 
         return {
@@ -106,13 +106,9 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),
-            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactoryImpl),
+            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactory),
             toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
         ];
-
-        if (options.transformer) {
-            providers.push(toProvider(PacketTransformer, options.transformer))
-        }
 
         return {
             module: TcpModule,
@@ -135,10 +131,6 @@ export interface TcpModuleOptions {
      * server endpoint provider
      */
     endpoint?: ProvdierOf<TcpEndpoint>;
-    /**
-     * packet transformer.
-     */
-    transformer?: ProvdierOf<PacketTransformer>;
 
     clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
     serverStreamFactory?: ProvdierOf<ServerStreamFactory>;

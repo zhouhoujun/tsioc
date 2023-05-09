@@ -46,3 +46,10 @@ export class NestedPushExecption extends Execption {
         super(`NestedPushExecption: ${message}`)
     }
 }
+
+
+
+export class PacketLengthException extends Execption {
+
+}
+

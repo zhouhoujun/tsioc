@@ -91,10 +91,10 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
 
     protected onShutdown(): Promise<any> {
         return promisify(this.serv.close, this.serv)()
-        .catch(err => {
-            this.logger?.error(err);
-            return err;
-        });
+            .catch(err => {
+                this.logger?.error(err);
+                return err;
+            });
     }
 
     /**

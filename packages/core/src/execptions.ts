@@ -61,6 +61,16 @@ export class SecurityExecption extends MessageExecption {
     }
 }
 
+/**
+ * Invalid Json execption.
+ */
+export class InvalidJsonException extends Execption {
+    constructor(err: any, source: string) {
+        super(`is invalid JSON: ${err.message}\nSource data: ${source}`);
+    }
+}
+
+
 
 
 /**
