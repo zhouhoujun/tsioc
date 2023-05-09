@@ -31,6 +31,9 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
     filters?: ProvdierOf<Filter<TInput>>[];
 }
 
+/**
+ * Configable handler options.
+ */
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
     backend?: Type<Backend>;
     

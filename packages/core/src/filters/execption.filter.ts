@@ -1,5 +1,5 @@
-import { Abstract, DefaultInvocationContext, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
-import { catchError, finalize, isObservable, Observable, of, throwError } from 'rxjs';
+import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
+import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
 import { runHandlers } from '../handlers/runs';
@@ -48,9 +48,33 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filte
         return next.handle(input)
             .pipe(
                 catchError((err, caught) => {
-                    const res = this.catchError(input, err, caught);
-                    if (isObservable(res) || isPromise(res)) return res;
-                    return of(res);
+                    let res: any;
+                    try {
+                        res = this.catchError(input, err, caught);
+                    } catch (err) {
+                        return throwError(() => res);
+                    }
+                    if (isObservable(res)) {
+                        return res.pipe(
+                            mergeMap(r => {
+                                if (r instanceof Error || r instanceof Execption) {
+                                    return throwError(() => r);
+                                }
+                                return of(r);
+                            })
+                        )
+                    } else if (isPromise(res)) {
+                        return res.then(r => {
+                            if (r instanceof Error || r instanceof Execption) {
+                                throw r;
+                            }
+                            return r;
+                        });
+                    } else if (res instanceof Error || res instanceof Execption) {
+                        return throwError(() => res);
+                    } else {
+                        return of(res);
+                    }
                 })
             )
     }

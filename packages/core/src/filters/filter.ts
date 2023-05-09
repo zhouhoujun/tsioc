@@ -75,5 +75,3 @@ export abstract class FilterHandlerResolver {
      */
     abstract removeHandle(filter: Type | string, handler: Handler): this;
 }
-
-
