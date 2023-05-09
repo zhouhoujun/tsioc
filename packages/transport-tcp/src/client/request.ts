@@ -139,7 +139,7 @@ export class TcpStreamRequestAdapter extends StreamRequestAdapter<TransportReque
         return factory.create(socket, {
             headers: req.headers.headers,
             ...opts
-        });
+        }) as IWritableStream;
     }
 
     protected write(request: IWritableStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {

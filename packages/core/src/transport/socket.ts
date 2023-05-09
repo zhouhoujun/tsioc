@@ -330,6 +330,7 @@ export interface ClientStream extends IEventEmitter {
     end(cb?: () => void): this;
     end(chunk: any, cb?: () => void): this;
     end(chunk: any, encoding?: BufferEncoding, cb?: () => void): this;
+    destroy?(error?: any): void;
 
 }
 
@@ -418,6 +419,7 @@ export interface ServerStream extends IEventEmitter {
     end(cb?: () => void): this;
     end(chunk: any, cb?: () => void): this;
     end(chunk: any, encoding?: BufferEncoding, cb?: () => void): this;
+    destroy?(error?: any): void;
 }
 
 /**

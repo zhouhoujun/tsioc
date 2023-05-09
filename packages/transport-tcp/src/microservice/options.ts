@@ -1,4 +1,4 @@
-import { Interceptor, Filter, Incoming, Outgoing, EndpointContext, EndpointOptions } from '@tsdi/core';
+import { Interceptor, Filter, Incoming, Outgoing, EndpointContext, EndpointOptions, StreamOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { SessionOptions, ContentOptions, MimeSource, ProxyOpts } from '@tsdi/transport';
 import * as net from 'net';
@@ -14,6 +14,10 @@ export interface TcpMicroServiceOpts extends EndpointOptions<EndpointContext, Ou
     autoListen?: boolean;
     maxConnections?: number;
     proxy?: ProxyOpts;
+    /**
+     * client stream options.
+     */
+    streamOpts?: StreamOpts;
     /**
      * socket timeout.
      */
