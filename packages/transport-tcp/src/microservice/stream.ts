@@ -6,7 +6,7 @@ import { Duplex } from 'stream';
 import { NumberAllocator } from 'number-allocator';
 
 @Injectable()
-export class ServerStreamFactoryImpl<TSocket extends Duplex = any> implements ServerStreamFactory<TSocket> {
+export class TcpServerStreamFactory<TSocket extends Duplex = any> implements ServerStreamFactory<TSocket> {
 
     allocator = new NumberAllocator(1, 65536);
     last?: number;

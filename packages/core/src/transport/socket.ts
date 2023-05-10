@@ -290,6 +290,8 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * socket.
      */
     readonly socket: TSocket;
+
+    send(data: any): Promise<void>;
 }
 
 /**

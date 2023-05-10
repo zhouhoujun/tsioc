@@ -15,7 +15,8 @@ import { TcpStreamRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
-import { ServerStreamFactoryImpl } from './microservice/stream';
+import { TcpClientStreamFactory } from './client/stream';
+import { TcpServerStreamFactory } from './microservice/stream';
 
 @Module({
     imports: [
@@ -61,16 +62,9 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),
-            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactory),
-            toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
+            toProvider(ClientStreamFactory, options.clientStreamFactory ?? TcpClientStreamFactory),
+            toProvider(ServerStreamFactory, options.serverStreamFactory ?? TcpServerStreamFactory)
         ];
-
-        if(options.clientStreamFactory){
-            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
-        }
-        if(options.serverStreamFactory) {
-            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
-        }
 
         return {
             module: TcpModule,
@@ -106,8 +100,8 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),
-            toProvider(ClientStreamFactory, options.clientStreamFactory ?? ClientStreamFactory),
-            toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
+            toProvider(ClientStreamFactory, options.clientStreamFactory ?? TcpClientStreamFactory),
+            toProvider(ServerStreamFactory, options.serverStreamFactory ?? TcpServerStreamFactory)
         ];
 
         return {

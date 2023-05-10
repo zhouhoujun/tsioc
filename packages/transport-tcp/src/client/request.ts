@@ -1,6 +1,6 @@
 import {
-    ClientStreamFactory, TransportEvent, ResHeaders, SOCKET, Socket, TransportErrorResponse,
-    Incoming, TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream, Redirector, Encoder, Decoder, Packet
+    ClientStreamFactory, TransportEvent, ResHeaders, SOCKET, Socket, TransportErrorResponse, Packet, Incoming,
+    TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream, Redirector, Encoder, Decoder
 } from '@tsdi/core';
 import { InjectFlags, Injectable, Nullable } from '@tsdi/ioc';
 import { StreamRequestAdapter, StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket } from '@tsdi/transport';
