@@ -1,6 +1,7 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS } from '../endpoints';
 import { createPayloadResolver } from '../endpoints/resolvers';
+import { Socket } from './socket';
 
 
 /**
@@ -28,6 +29,11 @@ export abstract class TransportContext<TInput = any> extends EndpointContext<TIn
      */
     abstract get method(): string;
 
+    /**
+     * socket.
+     */
+    abstract get socket(): Socket;
+
 }
 
 /**
@@ -36,6 +42,7 @@ export abstract class TransportContext<TInput = any> extends EndpointContext<TIn
 export interface TransportContextOpts<T = any> extends EndpointInvokeOpts<T> {
     url?: string;
     method?: string;
+    socket?: Socket;
 }
 
 export const TRANSPORT_CONTEXT_IMPL = {

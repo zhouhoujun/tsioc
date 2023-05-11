@@ -17,7 +17,7 @@ export interface TcpMicroServiceOpts extends EndpointOptions<EndpointContext, Ou
     /**
      * transport session options.
      */
-    transportSession?: TransportSessionOpts;
+    transportOpts?: TransportSessionOpts;
     /**
      * socket timeout.
      */

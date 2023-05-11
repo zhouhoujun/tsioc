@@ -1,54 +1,41 @@
-// import { Connection, Incoming, IncomingHeaders, ReqHeaders, ResHeaders, Socket } from '@tsdi/core';
-// import { Abstract, Injectable } from '@tsdi/ioc';
-// import { ev, hdr } from '@tsdi/transport';
-// import { Writable, Readable, Duplex } from 'stream';
-// import { Duplexify } from './duplexify';
+import { Incoming, IncomingHeaders } from '@tsdi/core';
+import { ev } from '@tsdi/transport';
+import * as net from 'net';
+import * as tls from 'tls';
+import { Readable } from 'stream';
 
 
-// @Injectable()
-// export class IncomingFactoryImpl implements IncomingFactory {
-//     create<T>(socket: any, headers: ReqHeaders): Incoming<T, any> {
-//         return new IncomingMessage(~~headers.get(hdr.IDENTITY)!, socket, headers);
-//     }
+export class TcpIncoming extends Readable implements Incoming<tls.TLSSocket | net.Socket> {
 
-// }
+    readonly headers: IncomingHeaders;
+    body?: any;
+    rawBody?: any;
+    payload?: any;
+
+    constructor(readonly socket: tls.TLSSocket | net.Socket, readonly id: number, readonly url: string, readonly method: string, headers?: IncomingHeaders) {
+        super({ objectMode: true })
+        this.headers = headers || {};
+        socket.on(ev.END, this.emit.bind(this, ev.END));
+        socket.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        socket.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        socket.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        socket.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+    }
 
 
-// export class IncomingMessage<TSocket extends Socket> extends Duplex implements Incoming {
+    setTimeout(msecs: number, callback: () => void): void {
+        this.socket.setTimeout(msecs, callback);
+    }
 
-//     readonly headers: IncomingHeaders;
-//     body?: any;
-//     rawBody?: any;
-//     payload?: any;
-//     constructor(id: number, readonly socket: TSocket, headers: ReqHeaders) {
-//         super({
-//             read(this: Duplex, size: number) {
-                
-//             },
-//             write(this: Duplex, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
-
-//             }
-//         })
-//         this.headers = headers.headers;
-//     }
-
-//     url?: string | undefined;
-//     params?: Record<string, any> | undefined;
-//     method?: string | undefined;
-
-//     setTimeout(msecs: number, callback: () => void): void {
-//         this.socket.setTimeout?.(msecs, callback);
-//     }
-
-//     type?: number | undefined;
-//     error?: Error | undefined;
-// }
+    type?: number | undefined;
+    error?: Error | undefined;
+}
 
 
 // /**
 //  * incoming message.
 //  */
-// export class IncomingMessage extends Readable implements Incoming {
+// export class IncomingMessage extends Readable implements Incoming<tls.TLSSocket | net.Socket> {
 //     readonly url: string;
 //     readonly method: string;
 //     readonly authority: string;

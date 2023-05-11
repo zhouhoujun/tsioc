@@ -8,6 +8,8 @@ import * as tls from 'tls';
 import { TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpContext } from './context';
 import { TcpEndpoint } from './endpoint';
+import { TcpIncoming } from './incoming';
+import { TcpOutgoing } from './outgoing';
 
 
 
@@ -79,13 +81,13 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
         const factory = this.endpoint.injector.get(TransportSessionFactory);
         if(this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket)=> {
-                const serverStream = factory.create(socket, this.options.transportSession);
-                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
+                const serverStream = factory.create(socket, this.options.transportOpts);
+                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(socket, packet));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket)=> {
-                const serverStream = factory.create(socket, this.options.transportSession);
-                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
+                const serverStream = factory.create(socket, this.options.transportOpts);
+                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(socket, packet));
             })
         }
 
@@ -109,8 +111,9 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
      * @param req 
      * @param res 
      */
-    protected requestHandler(packet: Packet): Subscription {
-        let req: Incoming, res: Outgoing;
+    protected requestHandler(socket: tls.TLSSocket | net.Socket,  packet: Packet): Subscription {
+        const req = new TcpIncoming(socket, packet.id, packet.url ?? '', (packet.headers?.[':method'] ?? packet.headers?.['method'] ?? 'GET') as string, packet.headers);
+        const res = new TcpOutgoing(socket, packet.id);
         
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

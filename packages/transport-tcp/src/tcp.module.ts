@@ -133,7 +133,7 @@ export interface TcpModuleOptions {
  */
 const defClientOpts = {
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
-    connectionOpts: {
+    transportOpts: {
         events: [ev.CONNECT],
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024,
@@ -152,8 +152,7 @@ const defClientOpts = {
 const defServerOpts = {
     autoListen: true,
     listenOpts: { port: 3200, host: LOCALHOST },
-    connectionOpts: {
-        events: [ev.CONNECTION],
+    transportOpts: {
         delimiter: '\r\n',
         maxSize: 10 * 1024 * 1024
     },

@@ -18,7 +18,7 @@ export interface TcpServerOpts extends AssetEndpointOptions<TcpContext, Outgoing
     /**
      * transport session options.
      */
-    transportSession?: TransportSessionOpts;
+    transportOpts?: TransportSessionOpts;
     /**
      * socket timeout.
      */

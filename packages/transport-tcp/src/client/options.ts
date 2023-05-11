@@ -17,7 +17,7 @@ export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest
     /**
      * transport session options.
      */
-    transportSession?: TransportSessionOpts;
+    transportOpts?: TransportSessionOpts;
     /**
      * socket options.
      */

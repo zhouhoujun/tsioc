@@ -74,13 +74,13 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
         const factory = this.endpoint.injector.get(TransportSessionFactory);
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const stream = factory.create(socket, this.options.transportSession);
-                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
+                const stream = factory.create(socket, this.options.transportOpts);
+                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet, socket));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const stream = factory.create(socket, this.options.transportSession);
-                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
+                const stream = factory.create(socket, this.options.transportOpts);
+                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet, socket));
             })
         }
 
@@ -103,8 +103,8 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
      * @param req 
      * @param res 
      */
-    protected requestHandler(packet: Packet): Subscription {
-        const ctx = createTransportContext(this.endpoint.injector, { payload: packet });
+    protected requestHandler(packet: Packet, socket: tls.TLSSocket | net.Socket): Subscription {
+        const ctx = createTransportContext(this.endpoint.injector, { socket, url: packet.url, method: packet.method, payload: packet });
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => ctx.destroy()))
             .subscribe({

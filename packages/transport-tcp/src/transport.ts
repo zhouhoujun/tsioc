@@ -69,12 +69,12 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
         }
     }
 
-    protected async formatMessage(data: Packet) {
+    protected formatMessage(data: Packet) {
         let msg = JSON.stringify(data);
         const messageData = JSON.stringify(msg);
         const length = messageData.length;
         msg = length + this.delimiter + messageData;
-        return data;
+        return msg;
     }
 
     destroy(error?: any): void {

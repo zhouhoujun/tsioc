@@ -31,7 +31,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             const context = req.context;
             const socket = context.get(SOCKET, InjectFlags.Self);
             const opts = context.get(TCP_CLIENT_OPTS);
-            const clientStream = context.get(TransportSessionFactory).create(socket, opts.transportSession);
+            const clientStream = context.get(TransportSessionFactory).create(socket, opts.transportOpts);
             const onError = (error?: Error | null) => {
                 const res = this.createErrorResponse({
                     url,

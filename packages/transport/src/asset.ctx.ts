@@ -53,7 +53,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
                 this._url = this._url.slice(0, sidx);
             }
         }
-        (this.request as any) ['query'] = this.query;
+        (this.request as any)['query'] = this.query;
     }
 
 
@@ -91,6 +91,9 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this.status = ok ? this.vaildator.ok : this.vaildator.notFound
     }
 
+    get socket() {
+        return this.request.socket;
+    }
 
     /**
      * Get WHATWG parsed URL.
