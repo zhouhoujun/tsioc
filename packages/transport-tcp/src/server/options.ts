@@ -1,4 +1,4 @@
-import { Interceptor, Filter, MiddlewareLike, AssetContext, AssetEndpointOptions, Incoming, Outgoing, StreamOpts } from '@tsdi/core';
+import { Interceptor, Filter, MiddlewareLike, AssetContext, AssetEndpointOptions, Incoming, Outgoing, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { SessionOptions, ContentOptions, MimeSource, ProxyOpts } from '@tsdi/transport';
 import * as net from 'net';
@@ -16,9 +16,9 @@ export interface TcpServerOpts extends AssetEndpointOptions<TcpContext, Outgoing
     maxConnections?: number;
     proxy?: ProxyOpts;
     /**
-     * client stream options.
+     * transport session options.
      */
-    streamOpts?: StreamOpts;
+    transportSession?: TransportSessionOpts;
     /**
      * socket timeout.
      */

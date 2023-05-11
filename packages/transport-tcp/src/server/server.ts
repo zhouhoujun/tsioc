@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, ServerStreamFactory } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -76,16 +76,16 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
 
         this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
-        const factory = this.endpoint.injector.get(ServerStreamFactory);
+        const factory = this.endpoint.injector.get(TransportSessionFactory);
         if(this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket)=> {
-                const serverStream = factory.create(socket);
-                serverStream.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
+                const serverStream = factory.create(socket, this.options.transportSession);
+                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket)=> {
-                const serverStream = factory.create(socket);
-                serverStream.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
+                const serverStream = factory.create(socket, this.options.transportSession);
+                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(packet));
             })
         }
 
@@ -109,7 +109,9 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
      * @param req 
      * @param res 
      */
-    protected requestHandler(req: Incoming, res: Outgoing): Subscription {
+    protected requestHandler(packet: Packet): Subscription {
+        let req: Incoming, res: Outgoing;
+        
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => ctx.destroy()))
@@ -131,93 +133,5 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
         const injector = this.endpoint.injector;
         return new TcpContext(injector, req, res, this.options.proxy);
     }
-
-    // protected override async setupServe(server: net.Server | tls.Server, observer: Subscriber<net.Server | tls.Server>, opts: TcpServerOpts): Promise<Cleanup> {
-    //     const clean = await super.setupServe(server, observer, opts);
-    //     const onRequest = this.onRequest.bind(this);
-    //     const onConnection = (socket: net.Socket | tls.TLSSocket) => {
-    //         const packet = this.context.get(TcpPackFactory);
-    //         const conn = new DuplexConnection(socket, packet, opts.connectionOpts);
-    //         conn.on(ev.REQUEST, onRequest);
-    //     }
-    //     server.on(ev.CONNECTION, onConnection);
-    //     return () => {
-    //         server.off(ev.CONNECTION, onConnection);
-    //         clean();
-    //     };
-    // }
-
-
-
-
-    // protected override onConnection(server: net.Server | tls.Server, opts?: ConnectionOpts): Observable<Connection> {
-    //     const packetor = this.context.get(Packetor);
-    //     return new Observable((observer) => {
-    //         const onError = (err: Error) => {
-    //             observer.error(err);
-    //         };
-    //         const onConnection = (socket: net.Socket) => {
-    //             observer.next(new Connection(socket, packetor, opts));
-    //         }
-    //         const onClose = () => {
-    //             observer.complete();
-    //         }
-    //         server.on(ev.ERROR, onError);
-    //         server.on(ev.CONNECTION, onConnection);
-    //         server.on(ev.CLOSE, onClose)
-
-    //         return () => {
-    //             server.off(ev.ERROR, onError);
-    //             server.off(ev.CLOSE, onClose);
-    //             server.off(ev.CONNECTION, onConnection);
-    //         }
-    //     })
-    // }
-
-
-
-    // protected onRequest(conn: Connection, endpoint: Endpoint): Observable<any> {
-    //     return new Observable((observer) => {
-    //         const subs: Set<Subscription> = new Set();
-    //         const injector = this.context.injector;
-    //         const onRequest = (req: ServerRequest, res: ServerResponse) => {
-    //             const ctx = new TransportContext(injector, req, res, this, injector.get(IncomingUtil));
-    //             const sub = endpoint.handle(req, ctx)
-    //                 .pipe(finalize(() => ctx.destroy()))
-    //                 .subscribe({
-    //                     next: (val) => observer.next(val),
-    //                     // error: (err)=> observer.error(err),
-    //                     complete: () => {
-    //                         subs.delete(sub);
-    //                         if (!subs.size) {
-    //                             observer.complete();
-    //                         }
-    //                     }
-    //                 });
-    //             const opts = ctx.target.getOptions();
-    //             opts.timeout && req.setTimeout(opts.timeout, () => {
-    //                 req.emit(ev.TIMEOUT);
-    //                 sub?.unsubscribe()
-    //             });
-    //             req.once(ev.CLOSE, async () => {
-    //                 await lang.delay(500);
-    //                 sub?.unsubscribe();
-    //                 if (!ctx.sent) {
-    //                     ctx.response.end()
-    //                 }
-    //             });
-    //             subs.add(sub);
-    //         };
-
-    //         conn.on(ev.REQUEST, onRequest);
-    //         return () => {
-    //             subs.forEach(s => {
-    //                 s && s.unsubscribe();
-    //             });
-    //             subs.clear();
-    //             conn.off(ev.REQUEST, onRequest);
-    //         }
-    //     });
-    // }
 
 }

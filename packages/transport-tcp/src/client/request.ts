@@ -1,12 +1,11 @@
 import {
-    ClientStreamFactory, TransportEvent, ResHeaders, SOCKET, Socket, TransportErrorResponse, Packet, Incoming,
-    TransportHeaderResponse, TransportRequest, TransportResponse, IWritableStream, Redirector, Encoder, Decoder
+    TransportEvent, ResHeaders, SOCKET, TransportErrorResponse, Packet, Incoming, Encoder, Decoder,
+    TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory
 } from '@tsdi/core';
-import { InjectFlags, Injectable, Nullable } from '@tsdi/ioc';
-import { StreamRequestAdapter, StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket } from '@tsdi/transport';
-import { TCP_CLIENT_OPTS } from './options';
+import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
+import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
-
+import { TCP_CLIENT_OPTS } from './options';
 
 @Injectable()
 export class TcpRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
@@ -16,9 +15,9 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
         readonly vaildator: StatusVaildator<number | string>,
         readonly streamAdapter: StreamAdapter,
         readonly mimeAdapter: MimeAdapter,
-        @Nullable() readonly redirector: Redirector<number | string>,
-        @Nullable() readonly encoder: Encoder,
-        @Nullable() readonly decoder: Decoder) {
+        @Optional() readonly redirector: Redirector<number | string>,
+        @Optional() readonly encoder: Encoder,
+        @Optional() readonly decoder: Decoder) {
         super()
     }
 
@@ -31,8 +30,8 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             let error: any;
             const context = req.context;
             const socket = context.get(SOCKET, InjectFlags.Self);
-            const opts = context.get(TCP_CLIENT_OPTS, InjectFlags.Self);
-            const clientStream = context.get(ClientStreamFactory).create(socket, opts);
+            const opts = context.get(TCP_CLIENT_OPTS);
+            const clientStream = context.get(TransportSessionFactory).create(socket, opts.transportSession);
             const onError = (error?: Error | null) => {
                 const res = this.createErrorResponse({
                     url,
@@ -67,7 +66,6 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
 
             }
             clientStream.on(ev.MESSAGE, onResponse);
-            clientStream.on(ev.RESPONSE, onResponse);
             clientStream.on(ev.ERROR, onError);
             clientStream.on(ev.CLOSE, onError);
             clientStream.on(ev.ABOUT, onError);
@@ -79,11 +77,10 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                 payload: req.body,
             } as Packet;
 
-            clientStream.write(this.encoder ? this.encoder.encode(packet) : JSON.stringify(packet));
+            clientStream.send(packet, this.encoder);
 
             return () => {
                 clientStream.off(ev.MESSAGE, onResponse);
-                clientStream.off(ev.RESPONSE, onResponse);
                 clientStream.off(ev.ERROR, onError);
                 clientStream.off(ev.CLOSE, onError);
                 clientStream.off(ev.ABOUT, onError);
@@ -117,64 +114,3 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
     }
 }
 
-@Injectable()
-export class TcpStreamRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, number | string> {
-
-    constructor(
-        readonly mimeTypes: MimeTypes,
-        readonly vaildator: StatusVaildator<number | string>,
-        readonly streamAdapter: StreamAdapter,
-        readonly mimeAdapter: MimeAdapter,
-        @Nullable() readonly redirector: Redirector<number | string>,
-        @Nullable() readonly encoder: Encoder,
-        @Nullable() readonly decoder: Decoder) {
-        super()
-    }
-
-    createRequest(req: TransportRequest<any>): IWritableStream {
-        const context = req.context;
-        const socket = context.get(SOCKET, InjectFlags.Self);
-        const opts = context.get(TCP_CLIENT_OPTS, InjectFlags.Self);
-        const factory = context.get(ClientStreamFactory<Socket>);
-        return factory.create(socket, {
-            headers: req.headers.headers,
-            ...opts
-        }) as IWritableStream;
-    }
-
-    protected write(request: IWritableStream, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
-        const data = req.body;
-        if (data === null) {
-            request.end();
-        } else {
-            this.streamAdapter.sendbody(
-                data,
-                request,
-                err => callback(err),
-                req.headers.get(hdr.CONTENT_ENCODING) as string);
-        }
-    }
-
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportErrorResponse(options);
-    }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportHeaderResponse(options);
-    }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TransportEvent {
-        return new TransportResponse(options);
-    }
-    getResponseEvenName(): string {
-        return ev.RESPONSE
-    }
-    parseHeaders(incoming: Incoming): ResHeaders {
-        return new ResHeaders(incoming.headers);
-    }
-    parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
-        return {
-            status: headers.get(hdr.STATUS) ?? '',
-            statusText: String(headers.get(hdr.STATUS_MESSAGE))
-        }
-    }
-
-}

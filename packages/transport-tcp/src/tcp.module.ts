@@ -1,33 +1,35 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    ClientStreamFactory, ExecptionHandlerFilter, MiddlewareRouter,
-    RouterModule, TransformModule, createHandler, createAssetEndpoint, ServerStreamFactory
+    ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint, TransportSessionFactory
 } from '@tsdi/core';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
-    StreamRequestAdapter, ServerFinalizeFilter, SessionMiddleware, TransportModule, ev, TransportBackend
+    ServerFinalizeFilter, SessionMiddleware, TransportModule, ev, TransportBackend, RequestAdapter, StatusVaildator
 } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { TcpClient } from './client/clinet';
 import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS } from './server/options';
 import { TcpServer } from './server/server';
 import { TcpEndpoint } from './server/endpoint';
-import { TcpStreamRequestAdapter } from './client/request';
+import { TcpRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
-import { TcpClientStreamFactory } from './client/stream';
-import { TcpServerStreamFactory } from './microservice/stream';
+import { TcpStatusVaildator } from './status';
+import { TcpTransportSessionFactory } from './transport';
 
 @Module({
     imports: [
         TransformModule,
         RouterModule,
-        TransportModule
+        TransportModule,
+        ServerTransportModule
     ],
     providers: [
         TcpClient,
         TcpServer,
-        { provide: StreamRequestAdapter, useClass: TcpStreamRequestAdapter }
+        { provide: StatusVaildator, useClass: TcpStatusVaildator },
+        { provide: RequestAdapter, useClass: TcpRequestAdapter }
     ]
 })
 export class TcpModule {
@@ -38,21 +40,20 @@ export class TcpModule {
      * @returns 
      */
     static withOptions(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
-        const clopts = { ...defClientOpts };
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...opts } }]);
+                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } }],
-            { provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } },
+                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
+
             { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
-                    return createHandler(injector, opts);
+                    return createHandler(injector, { ...defClientOpts, ...opts });
                 },
                 deps: [Injector, TCP_CLIENT_OPTS]
             }),
@@ -62,8 +63,7 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),
-            toProvider(ClientStreamFactory, options.clientStreamFactory ?? TcpClientStreamFactory),
-            toProvider(ServerStreamFactory, options.serverStreamFactory ?? TcpServerStreamFactory)
+            toProvider(TransportSessionFactory, options.transportFactory ?? TcpTransportSessionFactory)
         ];
 
         return {
@@ -73,24 +73,19 @@ export class TcpModule {
     }
 
     static withMicroService(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
-        const clopts = { ...defClientOpts };
-        if (!options.clientStreamFactory) {
-            clopts.backend = TransportBackend;
-        }
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...opts } }]);
+                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } }],
-            { provide: TCP_CLIENT_OPTS, useValue: { ...clopts, ...options.clientOpts } },
+                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
             { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
-                    return createHandler(injector, opts);
+                    return createHandler(injector, { ...defClientOpts, ...opts });
                 },
                 deps: [Injector, TCP_CLIENT_OPTS]
             }),
@@ -100,8 +95,7 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),
-            toProvider(ClientStreamFactory, options.clientStreamFactory ?? TcpClientStreamFactory),
-            toProvider(ServerStreamFactory, options.serverStreamFactory ?? TcpServerStreamFactory)
+            toProvider(TransportSessionFactory, options.transportFactory ?? TcpTransportSessionFactory)
         ];
 
         return {
@@ -126,8 +120,7 @@ export interface TcpModuleOptions {
      */
     endpoint?: ProvdierOf<TcpEndpoint>;
 
-    clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
-    serverStreamFactory?: ProvdierOf<ServerStreamFactory>;
+    transportFactory?: ProvdierOf<TransportSessionFactory>;
 
     /**
      * server options

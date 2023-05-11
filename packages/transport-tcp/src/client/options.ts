@@ -1,4 +1,4 @@
-import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client, StreamOpts } from '@tsdi/core';
+import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client, TransportSessionOpts } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ConnectionOptions } from 'tls';
@@ -15,9 +15,9 @@ export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest
      */
     keepalive?: number;
     /**
-     * client stream options.
+     * transport session options.
      */
-    streamOpts?: StreamOpts;
+    transportSession?: TransportSessionOpts;
     /**
      * socket options.
      */

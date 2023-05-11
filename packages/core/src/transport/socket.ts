@@ -1,7 +1,8 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
-import { IReadableStream, IWritableStream, IDuplexStream, IEventEmitter, ITransformStream } from './stream';
+import { IReadableStream, IWritableStream, IDuplexStream, IEventEmitter } from './stream';
+import { Encoder } from '../coding';
 
 /**
  * Socket interface.
@@ -290,8 +291,52 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * socket.
      */
     readonly socket: TSocket;
+    /**
+     * send packet.
+     * @param data 
+     * @param encoder 
+     */
+    send(data: Packet, encoder?: Encoder): Promise<void>;
+    /**
+     * Adds the `listener` function to the end of the listeners array for the
+     * event named `eventName`. No checks are made to see if the `listener` has
+     * already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
+     * times.
+     *
+     * ```js
+     * server.on('connection', (stream) => {
+     *   console.log('someone connected!');
+     * });
+     * ```
+     *
+     * Returns a reference to the `EventEmitter`, so that calls can be chained.
+     *
+     * By default, event listeners are invoked in the order they are added. The`emitter.prependListener()` method can be used as an alternative to add the
+     * event listener to the beginning of the listeners array.
+     *
+     * ```js
+     * const myEE = new EventEmitter();
+     * myEE.on('foo', () => console.log('a'));
+     * myEE.prependListener('foo', () => console.log('b'));
+     * myEE.emit('foo');
+     * // Prints:
+     * //   b
+     * //   a
+     * ```
+     * @since v0.1.101
+     * @param eventName The name of the event.
+     * @param listener The callback function
+     */
+    on(eventName: string | symbol, listener: (...args: any[]) => void): this;
+    on(eventName: 'message', listener: (packet: Packet) => void): this;
+    /**
+     * Alias for `emitter.on(eventName, listener)`.
+     * @since v0.1.26
+     */
+    addListener(eventName: string | symbol, listener: (...args: any[]) => void): this;
+    addListener(eventName: 'message', listener: (packet: Packet) => void): this;
 
-    send(data: any): Promise<void>;
+    destroy?(error?: any): void;
 }
 
 /**
@@ -325,147 +370,3 @@ export abstract class TransportSessionFactory<TSocket = any> {
     abstract create(socket: TSocket, opts?: TransportSessionOpts): TransportSession<TSocket>;
 }
 
-
-/**
- * transport stream.
- */
-export interface TransportStream extends IDuplexStream {
-
-}
-
-/**
- * client duplex message stream.
- */
-export interface ClientStream extends TransportStream {
-    /**
-     * headers
-     */
-    readonly headers?: OutgoingHeaders;
-    /**
-     * Adds the `listener` function to the end of the listeners array for the
-     * event named `eventName`. No checks are made to see if the `listener` has
-     * already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
-     * times.
-     *
-     * ```js
-     * server.on('connection', (stream) => {
-     *   console.log('someone connected!');
-     * });
-     * ```
-     *
-     * Returns a reference to the `EventEmitter`, so that calls can be chained.
-     *
-     * By default, event listeners are invoked in the order they are added. The`emitter.prependListener()` method can be used as an alternative to add the
-     * event listener to the beginning of the listeners array.
-     *
-     * ```js
-     * const myEE = new EventEmitter();
-     * myEE.on('foo', () => console.log('a'));
-     * myEE.prependListener('foo', () => console.log('b'));
-     * myEE.emit('foo');
-     * // Prints:
-     * //   b
-     * //   a
-     * ```
-     * @since v0.1.101
-     * @param eventName The name of the event.
-     * @param listener The callback function
-     */
-    on(eventName: string | symbol, listener: (...args: any[]) => void): this;
-    on(eventName: 'message', listener: (packet: Packet) => void): this;
-    on(eventName: 'response', listener: (req: any, res: any) => void): this;
-}
-
-
-/**
- * Server stream options.
- */
-export interface StreamOpts extends Record<string, any> {
-    /**
-     * headers.
-     */
-    headers?: IncomingHeaders;
-    /**
-     * packet delimiter flag
-     */
-    delimiter?: string;
-    /**
-     * packet size limit.
-     */
-    maxSize?: number;
-    /**
-     * packet buffer encoding.
-     */
-    encoding?: BufferEncoding;
-}
-
-
-/**
- * ClientStream factory.
- */
-@Abstract()
-export abstract class ClientStreamFactory<TDuplex = any> {
-    /**
-     * create client duplex stream.
-     * @param duplex 
-     * @param headers 
-     */
-    abstract create(duplex: TDuplex, opts?: StreamOpts): ClientStream;
-}
-
-/**
- * Server duplex message.
- */
-export interface ServerStream extends TransportStream {
-    /**
-     * headers
-     */
-    readonly headers?: IncomingHeaders;
-
-    /**
-     * Adds the `listener` function to the end of the listeners array for the
-     * event named `eventName`. No checks are made to see if the `listener` has
-     * already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
-     * times.
-     *
-     * ```js
-     * server.on('connection', (stream) => {
-     *   console.log('someone connected!');
-     * });
-     * ```
-     *
-     * Returns a reference to the `EventEmitter`, so that calls can be chained.
-     *
-     * By default, event listeners are invoked in the order they are added. The`emitter.prependListener()` method can be used as an alternative to add the
-     * event listener to the beginning of the listeners array.
-     *
-     * ```js
-     * const myEE = new EventEmitter();
-     * myEE.on('foo', () => console.log('a'));
-     * myEE.prependListener('foo', () => console.log('b'));
-     * myEE.emit('foo');
-     * // Prints:
-     * //   b
-     * //   a
-     * ```
-     * @since v0.1.101
-     * @param eventName The name of the event.
-     * @param listener The callback function
-     */
-    on(eventName: string | symbol, listener: (...args: any[]) => void): this;
-    on(eventName: 'message', listener: (packet: Packet) => void): this;
-    on(eventName: 'request', listener: (req: any, res: any) => void): this;
-}
-
-/**
- * ServerStream factory.
- */
-@Abstract()
-export abstract class ServerStreamFactory<TDuplex = any> {
-    /**
-     * create client duplex stream.
-     * @param socket 
-     * @param headers 
-     */
-    abstract create(socket: TDuplex, opts?: StreamOpts): ServerStream;
-}

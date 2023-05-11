@@ -1,4 +1,4 @@
-import { InjectFlags, Injectable, InvocationContext, Nullable } from '@tsdi/ioc';
+import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import { Decoder, Encoder, IWritableStream, Redirector, ResHeaders } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusPacket, StatusVaildator, StreamAdapter, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
@@ -17,9 +17,9 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         readonly vaildator: StatusVaildator<number>,
         readonly streamAdapter: StreamAdapter,
         readonly mimeAdapter: MimeAdapter,
-        @Nullable() readonly redirector: Redirector<number>,
-        @Nullable() readonly encoder: Encoder,
-        @Nullable() readonly decoder: Decoder) {
+        @Optional() readonly redirector: Redirector<number>,
+        @Optional() readonly encoder: Encoder,
+        @Optional() readonly decoder: Decoder) {
         super()
     }
 
@@ -39,7 +39,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
     createRequest(req: HttpRequest<any>): IWritableStream {
         const url = req.urlWithParams.trim();
         const ac = this.getAbortSignal(req.context);
-        const option = req.context.get(HTTP_CLIENT_OPTS, InjectFlags.Self);
+        const option = req.context.get(HTTP_CLIENT_OPTS);
         if (option.authority) {
             return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION, InjectFlags.Self), option, ac);
         } else {

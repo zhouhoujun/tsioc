@@ -8,7 +8,7 @@ import { promisify } from 'util';
 const statify = promisify(stat);
 
 @Injectable({ static: true })
-export class TransportSendAdapter extends ContentSendAdapter {
+export class ContentSendAdapterImpl extends ContentSendAdapter {
     async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;
         const endSlash = path[path.length - 1] === '/';

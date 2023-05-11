@@ -18,12 +18,10 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     @InjectLog()
     private logger!: Logger;
 
-    private options: TcpClientOpts;
     constructor(
         readonly handler: TcpHandler,
-        @Inject(TCP_CLIENT_OPTS) options: TcpClientOpts) {
+        @Inject(TCP_CLIENT_OPTS) private options: TcpClientOpts) {
         super();
-        this.options = { ...options };
     }
 
     private connection!: tls.TLSSocket | net.Socket;
