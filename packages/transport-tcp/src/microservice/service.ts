@@ -1,11 +1,11 @@
 import { InternalServerExecption, ListenOpts, ListenService, MicroService, Packet, TransportContext, TransportSessionFactory, createTransportContext } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { ev, hdr } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TcpMicroServiceEndpoint } from './endpoint';
+import { TcpMicroEndpoint } from './endpoint';
 import { TCP_MICRO_SERV_OPTS, TcpMicroServiceOpts } from './options';
 
 
@@ -17,7 +17,7 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
     private serv!: net.Server | tls.Server;
     private isSecure: boolean;
 
-    constructor(readonly endpoint: TcpMicroServiceEndpoint, @Inject(TCP_MICRO_SERV_OPTS) private options: TcpMicroServiceOpts) {
+    constructor(readonly endpoint: TcpMicroEndpoint, @Inject(TCP_MICRO_SERV_OPTS) private options: TcpMicroServiceOpts) {
         super()
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert
     }
@@ -104,7 +104,12 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
      * @param res 
      */
     protected requestHandler(packet: Packet, socket: tls.TLSSocket | net.Socket): Subscription {
-        const ctx = createTransportContext(this.endpoint.injector, { socket, url: packet.url, method: packet.method, payload: packet });
+        const ctx = createTransportContext(this.endpoint.injector, {
+            socket,
+            url: packet.url ?? packet.headers?.[hdr.PATH] ?? '',
+            method: packet.method ?? packet.headers?.[hdr.METHOD] ?? 'GET',
+            payload: packet
+        });
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => ctx.destroy()))
             .subscribe({

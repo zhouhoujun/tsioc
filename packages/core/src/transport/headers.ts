@@ -3,24 +3,26 @@ import { isArray, isNil, isString } from '@tsdi/ioc';
 /**
  * incoming header.
  */
-export type IncomingHeader = string | readonly string[] | undefined;
+export type IncomingHeader = string | readonly string[] | undefined | number;
 /**
  * outgoing header.
  */
-export type OutgoingHeader = IncomingHeader | number;
+export type OutgoingHeader = IncomingHeader;
 
 export interface IncomingHeaders extends Record<string, IncomingHeader> {
-    [x: string]: IncomingHeader;
+    [x: string]: IncomingHeader | number;
     'content-type'?: string;
     'Content-Type'?: string;
-    'content-length'?: string;
-    'Content-Length'?: string;
+    'content-length'?: string | number;
+    'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
     ':method'?: string | undefined;
     ':path'?: string | undefined;
     ':authority'?: string | undefined;
     ':scheme'?: string | undefined;
+    ':topic'?: string | undefined;
+
 }
 
 export interface IncomingStatusHeaders {
@@ -32,13 +34,15 @@ export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
     [x: string]: OutgoingHeader;
     'content-type'?: string;
     'Content-Type'?: string;
-    'content-length'?: string;
-    'Content-Length'?: string;
+    'content-length'?: string | number;
+    'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
     ':authority'?: string;
     ':path'?: string;
     ':method'?: string;
+    ':type'?: string | number;
+    ':topic'?: string | undefined;
 }
 
 

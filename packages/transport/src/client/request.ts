@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, ResHeaders, Redirector, ResponseJsonParseError, Encoder, Decoder, Packet } from '@tsdi/core';
+import { TransportEvent, TransportRequest, ResHeaders, Redirector, ResponseJsonParseError, Encoder, Decoder, Packet, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { StatusVaildator } from '../status';
@@ -11,11 +11,18 @@ import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
 /**
  * Packet with status
  */
-export interface StatusPacket<TStatus> extends Packet {
+export interface StatusPacket<TStatus> {
+    id?: any;
+    url?: string;
+    topic?: string;
+    method?: string;
+    type?: number;
+    headers?: IncomingHeaders | OutgoingHeaders;
     error?: any;
     status?: TStatus,
     statusText?: string;
     body?: any;
+    payload?: any;
 }
 
 /**

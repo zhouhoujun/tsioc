@@ -1,7 +1,7 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { ev, hdr } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -79,13 +79,13 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
         this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const factory = this.endpoint.injector.get(TransportSessionFactory);
-        if(this.serv instanceof tls.Server) {
-            this.serv.on(ev.SECURE_CONNECTION, (socket)=> {
+        if (this.serv instanceof tls.Server) {
+            this.serv.on(ev.SECURE_CONNECTION, (socket) => {
                 const serverStream = factory.create(socket, this.options.transportOpts);
                 serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(socket, packet));
             })
         } else {
-            this.serv.on(ev.CONNECTION, (socket)=> {
+            this.serv.on(ev.CONNECTION, (socket) => {
                 const serverStream = factory.create(socket, this.options.transportOpts);
                 serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(socket, packet));
             })
@@ -111,10 +111,14 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
      * @param req 
      * @param res 
      */
-    protected requestHandler(socket: tls.TLSSocket | net.Socket,  packet: Packet): Subscription {
-        const req = new TcpIncoming(socket, packet.id, packet.url ?? '', (packet.headers?.[':method'] ?? packet.headers?.['method'] ?? 'GET') as string, packet.headers);
+    protected requestHandler(socket: tls.TLSSocket | net.Socket, packet: Packet): Subscription {
+        const req = new TcpIncoming(
+            socket, packet.id,
+            packet.url ?? packet.headers?.[hdr.PATH] ?? '',
+            packet.method ?? packet.headers?.[hdr.METHOD] ?? 'GET',
+            packet.headers);
         const res = new TcpOutgoing(socket, packet.id);
-        
+
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => ctx.destroy()))

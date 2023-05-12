@@ -43,7 +43,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
                     }
                     body = (body as any).getBuffer();
                 }
-                headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
+                headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer));
             }
 
             return req.clone({ body, headers }) as TRequest;

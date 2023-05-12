@@ -2,7 +2,7 @@ import { Abstract, tokenId } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
 import { IReadableStream, IWritableStream, IDuplexStream, IEventEmitter } from './stream';
-import { Encoder } from '../coding';
+import { Decoder, Encoder } from '../coding';
 
 /**
  * Socket interface.
@@ -348,6 +348,10 @@ export interface TransportSessionOpts {
      */
     delimiter?: string;
     /**
+     * data size delimiter flag
+     */
+    sizeDelimiter?: string;
+    /**
      * packet size limit.
      */
     maxSize?: number;
@@ -355,6 +359,10 @@ export interface TransportSessionOpts {
      * packet buffer encoding.
      */
     encoding?: BufferEncoding;
+
+    encoder?: Encoder;
+
+    decoder?: Decoder;
 }
 
 /**

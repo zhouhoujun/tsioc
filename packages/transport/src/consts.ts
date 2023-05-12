@@ -82,6 +82,7 @@ export namespace hdr {
     export const PATH = ':path';
     export const AUTHORITY = ':authority';
     export const SCHEME = ':scheme';
+    export const TOPIC = ':topic';
 
     /**
      * header Accept

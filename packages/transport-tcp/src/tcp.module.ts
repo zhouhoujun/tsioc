@@ -26,6 +26,7 @@ import { TcpTransportSessionFactory } from './transport';
         ServerTransportModule
     ],
     providers: [
+        TcpTransportSessionFactory,
         TcpClient,
         TcpServer,
         { provide: StatusVaildator, useClass: TcpStatusVaildator },

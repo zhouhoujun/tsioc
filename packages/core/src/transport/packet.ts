@@ -1,4 +1,4 @@
-import { IncomingHeaders } from './headers';
+import { IncomingHeaders, OutgoingHeaders } from './headers';
 
 /**
  * packet data.
@@ -9,7 +9,7 @@ export interface Packet<T = any> {
     topic?: string;
     method?: string;
     type?: number;
-    headers?: IncomingHeaders;
+    headers: IncomingHeaders | OutgoingHeaders;
     payload?: T;
     error?: any;
 }
