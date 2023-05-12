@@ -1,5 +1,5 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Execption, Injectable, Optional } from '@tsdi/ioc';
+import { Execption, Injectable, Optional, isString } from '@tsdi/ioc';
 import { PacketLengthException, StreamAdapter, ev, hdr, isBuffer } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import { NumberAllocator } from 'number-allocator';
@@ -64,22 +64,25 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
             if (!headers.headers) {
                 headers.headers = {};
             }
+            const id = headers.id = headers.id ?? this.getStreamId();
+            let len = isString(headers.headers[hdr.CONTENT_LENGTH]) ? ~~headers.headers[hdr.CONTENT_LENGTH] : headers.headers[hdr.CONTENT_LENGTH]!;
 
             let hmsg = JSON.stringify(headers);
             let body = payload;
             if (encoder) {
                 hmsg = encoder.encode(hmsg);
                 body = encoder.encode(payload);
-                headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+                len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
             }
 
-            this.socket.write(hmsg.length);
+            this.socket.write(hmsg.length + 1);
             this.socket.write(this.sizeDelimiter);
             this.socket.write(this._header);
             this.socket.write(hmsg);
-            this.socket.write(headers.headers[hdr.CONTENT_LANGUAGE])
+            this.socket.write(len + 17)
             this.socket.write(this.sizeDelimiter);
             this.socket.write(this._body);
+            this.socket.write(Buffer.alloc(16, id))
             this.socket.write(body);
             // this.socket.write(this.delimiter);
 
@@ -89,8 +92,9 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
                 msg = encoder.encode(msg);
             }
             const length = msg.length;
-            this.socket.write(length);
+            this.socket.write(length + 1);
             this.socket.write(this.sizeDelimiter);
+            this.socket.write(this._header);
             this.socket.write(msg);
             // this.socket.write(this.delimiter);
             // msg = length + this.sizeDelimiter + msg + this.delimiter;
