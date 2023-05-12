@@ -45,6 +45,14 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
         this.cachePkg = new Map();
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
+        
+        socket.on(ev.DATA, this.onData.bind(this));
+        socket.on(ev.MESSAGE, this.emit.bind(this, ev.MESSAGE));
+        socket.on(ev.END, this.emit.bind(this, ev.END));
+        socket.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        socket.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        socket.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        socket.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
     }
 
     getStreamId() {
@@ -75,11 +83,11 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
                 len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
             }
 
-            this.socket.write(hmsg.length + 1);
+            this.socket.write(String(hmsg.length + 1));
             this.socket.write(this.sizeDelimiter);
             this.socket.write(this._header);
             this.socket.write(hmsg);
-            this.socket.write(len + 17)
+            this.socket.write(String(len + 17));
             this.socket.write(this.sizeDelimiter);
             this.socket.write(this._body);
             this.socket.write(Buffer.alloc(16, id))
@@ -92,7 +100,7 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
                 msg = encoder.encode(msg);
             }
             const length = msg.length;
-            this.socket.write(length + 1);
+            this.socket.write(String(length + 1));
             this.socket.write(this.sizeDelimiter);
             this.socket.write(this._header);
             this.socket.write(msg);
