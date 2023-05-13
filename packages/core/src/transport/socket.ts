@@ -282,7 +282,6 @@ export interface Outgoing<TSocket = any> extends IWritableStream {
 
 }
 
-
 /**
  * transport session.
  */
@@ -296,7 +295,7 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * @param data 
      * @param encoder 
      */
-    send(data: Packet, encoder?: Encoder): Promise<void>;
+    send(data: Packet): Promise<void>;
     /**
      * Adds the `listener` function to the end of the listeners array for the
      * event named `eventName`. No checks are made to see if the `listener` has
@@ -328,12 +327,14 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * @param listener The callback function
      */
     on(eventName: string | symbol, listener: (...args: any[]) => void): this;
+    on(eventName: 'headers', listener: (headers: IncomingHeaders) => void): this;
     on(eventName: 'message', listener: (packet: Packet) => void): this;
     /**
      * Alias for `emitter.on(eventName, listener)`.
      * @since v0.1.26
      */
     addListener(eventName: string | symbol, listener: (...args: any[]) => void): this;
+    addListener(eventName: 'headers', listener: (headers: IncomingHeaders) => void): this;
     addListener(eventName: 'message', listener: (packet: Packet) => void): this;
 
     destroy?(error?: any): void;
@@ -347,10 +348,6 @@ export interface TransportSessionOpts {
      * packet delimiter flag
      */
     delimiter?: string;
-    /**
-     * data size delimiter flag
-     */
-    sizeDelimiter?: string;
     /**
      * packet size limit.
      */

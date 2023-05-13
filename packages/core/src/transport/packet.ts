@@ -8,7 +8,7 @@ export interface Packet<T = any> {
     url?: string;
     topic?: string;
     method?: string;
-    type?: number;
+    type?: number | string;
     headers: IncomingHeaders | OutgoingHeaders;
     payload?: T;
     error?: any;

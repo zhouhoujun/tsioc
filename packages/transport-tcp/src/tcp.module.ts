@@ -136,7 +136,7 @@ const defClientOpts = {
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     transportOpts: {
         events: [ev.CONNECT],
-        delimiter: '\r\n',
+        delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },
     interceptors: [TcpPathInterceptor, BodyContentInterceptor],
@@ -154,7 +154,7 @@ const defServerOpts = {
     autoListen: true,
     listenOpts: { port: 3200, host: LOCALHOST },
     transportOpts: {
-        delimiter: '\r\n',
+        delimiter: '#',
         maxSize: 10 * 1024 * 1024
     },
     content: {

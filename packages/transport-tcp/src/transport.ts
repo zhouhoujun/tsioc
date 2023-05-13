@@ -1,27 +1,27 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Execption, Injectable, Optional, isString } from '@tsdi/ioc';
-import { PacketLengthException, StreamAdapter, ev, hdr, isBuffer } from '@tsdi/transport';
-import { Duplex } from 'stream';
+import { Execption, Injectable, Optional, isNil, isString } from '@tsdi/ioc';
+import { PacketLengthException, ev, hdr } from '@tsdi/transport';
+import * as net from 'net';
+import * as tls from 'tls';
 import { NumberAllocator } from 'number-allocator';
 import { EventEmitter } from 'events';
 
 @Injectable()
-export class TcpTransportSessionFactory<TSocket extends Duplex = any> implements TransportSessionFactory<TSocket> {
+export class TcpTransportSessionFactory implements TransportSessionFactory<tls.TLSSocket | net.Socket> {
 
     constructor(
-        private streamAdapter: StreamAdapter,
         @Optional() private encoder: Encoder,
         @Optional() private decoder: Decoder) {
 
     }
 
-    create(socket: TSocket, opts: TransportSessionOpts): TransportSession<TSocket> {
-        return new TcpTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.sizeDelimiter);
+    create(socket: tls.TLSSocket | net.Socket, opts: TransportSessionOpts): TransportSession<tls.TLSSocket | net.Socket> {
+        return new TcpTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
     }
 
 }
 
-export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmitter implements TransportSession<TSocket> {
+export class TcpTransportSession extends EventEmitter implements TransportSession<tls.TLSSocket | net.Socket> {
 
     allocator = new NumberAllocator(1, 65536);
     last?: number;
@@ -29,7 +29,6 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
     private contentLength: number | null = null;
 
     private readonly delimiter: Buffer;
-    private readonly sizeDelimiter: Buffer;
 
     private cachePkg: Map<number, Packet>;
 
@@ -38,15 +37,15 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
     private _body: Buffer;
 
 
-    constructor(readonly socket: TSocket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '\r\n', sizeDelimiter = '#') {
+    constructor(readonly socket: tls.TLSSocket | net.Socket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
         this.delimiter = Buffer.from(delimiter);
-        this.sizeDelimiter = Buffer.from(sizeDelimiter);
         this.cachePkg = new Map();
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
-        
+
         socket.on(ev.DATA, this.onData.bind(this));
+        socket.on(ev.HEADERS, this.emit.bind(this, ev.HEADERS));
         socket.on(ev.MESSAGE, this.emit.bind(this, ev.MESSAGE));
         socket.on(ev.END, this.emit.bind(this, ev.END));
         socket.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
@@ -84,11 +83,11 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
             }
 
             this.socket.write(String(hmsg.length + 1));
-            this.socket.write(this.sizeDelimiter);
+            this.socket.write(this.delimiter);
             this.socket.write(this._header);
             this.socket.write(hmsg);
             this.socket.write(String(len + 17));
-            this.socket.write(this.sizeDelimiter);
+            this.socket.write(this.delimiter);
             this.socket.write(this._body);
             this.socket.write(Buffer.alloc(16, id))
             this.socket.write(body);
@@ -101,7 +100,7 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
             }
             const length = msg.length;
             this.socket.write(String(length + 1));
-            this.socket.write(this.sizeDelimiter);
+            this.socket.write(this.delimiter);
             this.socket.write(this._header);
             this.socket.write(msg);
             // this.socket.write(this.delimiter);
@@ -132,7 +131,7 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
         const buffer = this.buffer = this.buffer ? Buffer.concat([this.buffer, data], this.buffer.length + data.length) : Buffer.from(data);
 
         if (this.contentLength == null) {
-            const i = buffer.indexOf(this.sizeDelimiter);
+            const i = buffer.indexOf(this.delimiter);
             if (i !== -1) {
                 const rawContentLength = buffer.slice(0, i).toString();
                 this.contentLength = parseInt(rawContentLength, 10);
@@ -176,8 +175,13 @@ export class TcpTransportSession<TSocket extends Duplex = any> extends EventEmit
                 throw new InvalidJsonException(e, str);
             }
             message = message || {};
-            if (message.id && message.headers?.[hdr.CONTENT_LENGTH]) {
-                this.cachePkg.set(message.id, message);
+            if (message.headers?.[hdr.CONTENT_LENGTH]) {
+                if (isNil(message.payload)) {
+                    this.socket.emit(ev.HEADERS, message);
+                    this.cachePkg.set(message.id, message);
+                } else {
+                    this.socket.emit(ev.MESSAGE, message);
+                }
             } else {
                 this.socket.emit(ev.MESSAGE, message);
             }
