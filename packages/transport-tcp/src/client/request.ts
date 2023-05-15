@@ -27,7 +27,6 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             let status: number | string;
             let statusText: string | undefined;
 
-            let error: any;
             const context = req.context;
             const socket = context.get(SOCKET, InjectFlags.Self);
             const opts = context.get(TCP_CLIENT_OPTS);
@@ -53,13 +52,13 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                 const [ok, result] = await this.parseResponse(url, body, headers, status, statusText, req.responseType);
 
                 if (ok) {
-                    observer.next(result)
+                    observer.next(result);
                     observer.complete();
                 } else {
                     observer.error(result);
                 }
+            };
 
-            }
             clientStream.on(ev.MESSAGE, onResponse);
             clientStream.on(ev.ERROR, onError);
             clientStream.on(ev.CLOSE, onError);
@@ -75,7 +74,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
 
             clientStream.send(packet);
 
-            return () => {
+            const unsub = () => {
                 clientStream.off(ev.MESSAGE, onResponse);
                 clientStream.off(ev.ERROR, onError);
                 clientStream.off(ev.CLOSE, onError);
@@ -87,9 +86,9 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                         statusText: 'The operation was aborted.'
                     }));
                 }
-                clientStream.destroy?.();
             }
-
+            req.context?.onDestroy(unsub);
+            return unsub;
         });
     }
 

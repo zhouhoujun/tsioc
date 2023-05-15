@@ -47,64 +47,56 @@ export class Http extends Client<HttpRequest, HttpEvent> {
     }
 
     private connection?: http2.ClientHttp2Session | null;
-    private $conn?: Observable<http2.ClientHttp2Session> | null;
-    protected connect(): Observable<any> | Promise<any> {
-        if (this.connection && this.isValid(this.connection)) {
-            return of(this.$conn);
-        }
+    protected connect(): Observable<any> {
+        if (this.connection === NONE) return of(this.connection);
 
-        if (this.$conn) return this.$conn;
+        return new Observable((observer) => {
+            const valid = this.connection && this.isValid(this.connection);
+            if (!valid) {
+                this.connection = this.createConnection(this.option);
+            }
+            const conn = this.connection!;
+            let cleaned = false;
+            const onError = (err: Error) => {
+                conn.close();
+                observer.error(err);
+            }
+            const onConnect = () => {
+                observer.next(conn);
+                observer.complete();
+            };
+            const onClose = () => {
+                conn.close();
+                observer.complete();
+            }
 
-        const opts = this.option;
-        this.$conn = of(this.createConnection(opts))
-            .pipe(
-                mergeMap(connection => this.onConnect(connection, opts)),
-                mergeMap(async connection => {
-                    this.connection = connection;
-                    this.$conn = null;
-                    return connection;
-                })
-            );
-        return this.$conn;
+            conn.on(ev.ERROR, onError)
+                .on(ev.END, onClose)
+                .on(ev.CLOSE, onClose);
+
+            if (valid) {
+                onConnect();
+            } else {
+                conn.on(ev.CONNECT, onConnect)
+            }
+
+            return () => {
+                if (cleaned) return;
+                cleaned = true;
+                conn.off(ev.CONNECT, onConnect)
+                    .off(ev.ERROR, onError)
+                    .off(ev.END, onClose)
+                    .off(ev.CLOSE, onClose)
+            };
+        })
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {
-        if (connection === NONE) return true;
         return !connection.closed && !connection.destroyed;
     }
 
     protected createConnection(opts: HttpClientOpts): http2.ClientHttp2Session {
         return http2.connect(opts.authority!, opts.options);
-    }
-
-    protected onConnect(connection: http2.ClientHttp2Session, opts: HttpClientOpts): Observable<http2.ClientHttp2Session> {
-        return new Observable((observer) => {
-            let cleaned = false;
-            const onError = (err: Error) => {
-                connection.close();
-                observer.error(err);
-            }
-            const onConnect = () => {
-                observer.next(connection);
-                observer.complete();
-            };
-            const onClose = () => {
-                connection.close();
-                observer.complete();
-            }
-            connection.on(ev.CONNECT, onConnect)
-                .on(ev.ERROR, onError)
-                .on(ev.END, onClose)
-                .on(ev.CLOSE, onClose);
-
-            return () => {
-                if (cleaned) return;
-                cleaned = true;
-                connection.off(ev.CONNECT, onConnect)
-                    .off(ev.ERROR, onError)
-                    .off(ev.CLOSE, onClose)
-            };
-        })
     }
 
     protected override isRequest(target: any): target is HttpRequest {

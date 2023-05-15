@@ -2,7 +2,7 @@ import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { Client, Pattern, SOCKET, TransportEvent, TransportRequest, RequestInitOpts } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
-import { Observable, of } from 'rxjs';
+import { Observable, mergeMap, of } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
@@ -25,31 +25,45 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     }
 
     private connection!: tls.TLSSocket | net.Socket;
-    private $conn?: Observable<tls.TLSSocket | net.Socket> | null;
     protected connect(): Observable<tls.TLSSocket | net.Socket> {
-        if (this.connection && this.isValid(this.connection)) {
-            return of(this.connection)
-        }
-        if (this.$conn) return this.$conn;
-        return this.$conn = new Observable((sbscriber) => {
-            const client = this.createConnection(this.options);
-
+        return new Observable<tls.TLSSocket | net.Socket>((observer) => {
+            const valid = this.connection && this.isValid(this.connection);
+            if (!valid) {
+                this.connection = this.createConnection(this.options);
+            }
+            let cleaned = false;
+            const conn = this.connection;
             const onError = (err: any) => {
                 this.logger?.error(err);
-                sbscriber.error(err);
+                observer.error(err);
             }
             const onConnect = () => {
-                this.connection = client;
-                sbscriber.next(client);
+                observer.next(conn);
+                observer.complete();
             }
-            client.on(ev.ERROR, onError);
-            client.on(ev.CONNECT, onConnect)
+            const onClose = () => {
+                conn.end();
+                observer.complete();
+            }
+            conn.on(ev.ERROR, onError)
+                .on(ev.END, onClose)
+                .on(ev.CLOSE, onClose);
+
+            if (valid) {
+                onConnect();
+            } else {
+                conn.on(ev.CONNECT, onConnect)
+            }
 
             return () => {
-                client.off(ev.ERROR, onError);
-                client.off(ev.CONNECT, onConnect);
+                if (cleaned) return;
+                cleaned = true;
+                conn.off(ev.CONNECT, onConnect)
+                    .off(ev.ERROR, onError)
+                    .off(ev.END, onClose)
+                    .off(ev.CLOSE, onClose);
             }
-        })
+        });
     }
 
     protected override initContext(context: InvocationContext): void {
