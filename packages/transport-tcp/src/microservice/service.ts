@@ -1,4 +1,4 @@
-import { InternalServerExecption, ListenOpts, ListenService, MicroService, Packet, TransportContext, TransportSessionFactory, createTransportContext } from '@tsdi/core';
+import { InternalServerExecption, ListenOpts, ListenService, MicroService, Packet, TransportContext, TransportSession, TransportSessionFactory, createTransportContext } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev, hdr } from '@tsdi/transport';
@@ -74,13 +74,13 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
         const factory = this.endpoint.injector.get(TransportSessionFactory);
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const stream = factory.create(socket, this.options.transportOpts);
-                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet, socket));
+                const session = factory.create(socket, this.options.transportOpts);
+                session.on(ev.MESSAGE, (packet) => this.requestHandler(packet, session));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const stream = factory.create(socket, this.options.transportOpts);
-                stream.on(ev.MESSAGE, (packet) => this.requestHandler(packet, socket));
+                const session = factory.create(socket, this.options.transportOpts);
+                session.on(ev.MESSAGE, (packet) => this.requestHandler(packet, session));
             })
         }
 
@@ -103,7 +103,7 @@ export class TcpMicroService extends MicroService<TransportContext> implements L
      * @param req 
      * @param res 
      */
-    protected requestHandler(packet: Packet, socket: tls.TLSSocket | net.Socket): Subscription {
+    protected requestHandler(packet: Packet, socket: TransportSession<tls.TLSSocket | net.Socket>): Subscription {
         const ctx = createTransportContext(this.endpoint.injector, {
             socket,
             url: packet.url ?? packet.headers?.[hdr.PATH] ?? '',

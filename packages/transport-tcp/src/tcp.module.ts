@@ -135,7 +135,6 @@ export interface TcpModuleOptions {
 const defClientOpts = {
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     transportOpts: {
-        events: [ev.CONNECT],
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },

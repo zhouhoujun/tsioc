@@ -38,9 +38,9 @@ export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
     'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
-    ':authority'?: string;
-    ':path'?: string;
-    ':method'?: string;
+    ':authority'?: string | undefined;
+    ':path'?: string | undefined;
+    ':method'?: string | undefined;
     ':type'?: string | number;
     ':topic'?: string | undefined;
 }

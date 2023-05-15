@@ -1,16 +1,16 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, MessageExecption, Outgoing, Connection } from '@tsdi/core';
-import { ArgumentExecption, Execption, Injectable, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
-import { ev, hdr, HeandersSentExecption, InvalidStreamExecption } from '@tsdi/transport';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, TransportSession } from '@tsdi/core';
+import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
+import { ev, hdr } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Writable, WritableOptions } from 'stream';
+import { PassThrough } from 'stream';
 
 
 
 /**
  * outgoing message.
  */
-export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | net.Socket> {
+export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket | net.Socket> {
 
     _closed = false;
     ending = false;
@@ -22,38 +22,25 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
 
     writable = true;
     constructor(
-        readonly socket: tls.TLSSocket | net.Socket,
+        readonly session: TransportSession<tls.TLSSocket | net.Socket>,
         readonly id: number) {
         super({ objectMode: true });
         this._hdr = new ResHeaders();
         this.init();
     }
 
-    protected init() {
-        const socket = this.socket;
-        socket.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
-        socket.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
-        socket.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-        socket.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+    get socket() {
+        return this.session.socket;
     }
 
+    protected init() {
+        const session = this.session;
+        session.on(ev.DRAIN, this.emit.bind(this, ev.DRAIN));
+        session.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        session.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        session.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+    }
 
-
-    // get writableCorked() {
-    //     return this.stream.writableCorked;
-    // }
-
-    // get writableHighWaterMark() {
-    //     return this.stream.writableHighWaterMark;
-    // }
-
-    // get writableFinished() {
-    //     return this.stream.writableFinished;
-    // }
-
-    // get writableLength() {
-    //     return this.stream.writableLength;
-    // }
 
     getHeaderNames(): string[] {
         return this._hdr.getHeaderNames();
@@ -114,9 +101,7 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
             cb = encoding
             encoding = 'utf8';
         }
-        if (!this.headersSent) {
-            this.writeHead(this.statusCode, this.statusMessage, this.getHeaders());
-        }
+        super.end(chunk, encoding, cb);
         if (this._closed || this.ending) {
             if (isFunction(cb)) {
                 process.nextTick(cb);
@@ -124,29 +109,19 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
             return this;
         }
 
-        if (!isNil(chunk))
-            this.write(chunk, encoding);
+        // if (!this.headersSent) {
+        //     this.writeHead(this.statusCode, this.statusMessage, this.getHeaders());
+        // }
+
+        this.session.send({
+            id: this.id,
+            headers: this.getHeaders(),
+            payload: this,
+        });
 
         this.ending = true;
 
-        // if (isFunction(cb)) {
-        //     if (this.writableEnded)
-        //         this.once(ev.FINISH, cb);
-        //     else
-        //         this.connection.once(ev.FINISH, cb);
-        // }
-
-        // if (!this.headersSent)
-        //     this.writeHead(this.statusCode);
-
-        // if (this.isClosed || this.connection.destroyed) {
-        //     this.onStreamClose()
-        // } else {
-        //     super.end(cb);
-        // }
-        // return this;
-
-        return super.end(cb)
+        return this;
 
     }
 
@@ -175,33 +150,12 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
         this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
 
-        this.respond(this.getHeaders(), { endStream: this.ending, waitForTrailers: true, sendDate: this.sendDate });
-        this._headersSent = true;
+        // this.session.send({
+        //     id: this.id,
+        //     headers: this.getHeaders()
+        // });
+        // this._headersSent = true;
         return this;
-    }
-
-    override _write(chunk: any, encoding: BufferEncoding, cb: (error?: Error | null | undefined) => void): void {
-
-        let err: Execption | undefined;
-        if (this.ending) {
-            err = new MessageExecption('write after end');
-        } else if (this._closed) {
-            err = new MessageExecption('The stream has been destroyed');
-        } else if (this.destroyed) {
-            return;
-        }
-        if (err) {
-            if (isFunction(cb)) {
-                process.nextTick(cb, err);
-            }
-            this.destroy(err);
-            return;
-        }
-        if (!this.headersSent) {
-            this.writeHead(this.statusCode, this.statusMessage);
-        }
-
-        this.socket.write(chunk, encoding, cb);
     }
 
     setTimeout(msecs: number, callback?: () => void): this {
@@ -209,28 +163,6 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
             return this;
         this.socket.setTimeout(msecs, callback);
         return this;
-    }
-
-    respond(headers: OutgoingHeaders, options?: {
-        endStream?: boolean;
-        waitForTrailers?: boolean;
-        sendDate?: boolean;
-    }): void {
-        if (this.destroyed || this._closed) throw new InvalidStreamExecption();
-        if (this.headersSent) throw new HeandersSentExecption();
-        const opts = { ...options };
-
-        this._sentHeaders = headers;
-        this._headersSent = true;
-        const id = this.id;
-        this.write({ id, headers }, () => {
-            const len = headers[hdr.CONTENT_LENGTH];
-            const hasPayload = len ? true : false;
-            if (opts.endStream == true || !hasPayload) {
-                opts.endStream = true;
-                this.end();
-            }
-        });
     }
 
 }

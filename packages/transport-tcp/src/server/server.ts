@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev, hdr } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -81,13 +81,13 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
         const factory = this.endpoint.injector.get(TransportSessionFactory);
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const serverStream = factory.create(socket, this.options.transportOpts);
-                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(socket, packet));
+                const session = factory.create(socket, this.options.transportOpts);
+                session.on(ev.MESSAGE, (packet) => this.requestHandler(session, packet));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const serverStream = factory.create(socket, this.options.transportOpts);
-                serverStream.on(ev.MESSAGE, (packet) => this.requestHandler(socket, packet));
+                const session = factory.create(socket, this.options.transportOpts);
+                session.on(ev.MESSAGE, (packet) => this.requestHandler(session, packet));
             })
         }
 
@@ -111,13 +111,9 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
      * @param req 
      * @param res 
      */
-    protected requestHandler(socket: tls.TLSSocket | net.Socket, packet: Packet): Subscription {
-        const req = new TcpIncoming(
-            socket, packet.id,
-            packet.url ?? packet.headers?.[hdr.PATH] ?? '',
-            packet.method ?? packet.headers?.[hdr.METHOD] ?? 'GET',
-            packet.headers);
-        const res = new TcpOutgoing(socket, packet.id);
+    protected requestHandler(session: TransportSession<tls.TLSSocket | net.Socket>, packet: Packet): Subscription {
+        const req = new TcpIncoming(session, packet);
+        const res = new TcpOutgoing(session, packet.id);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

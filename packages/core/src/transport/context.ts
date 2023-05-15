@@ -1,7 +1,6 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS } from '../endpoints';
 import { createPayloadResolver } from '../endpoints/resolvers';
-import { Socket } from './socket';
 
 
 /**
@@ -10,10 +9,10 @@ import { Socket } from './socket';
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TInput = any> extends EndpointContext<TInput> {
+export abstract class TransportContext<TInput = any, TSocket = any> extends EndpointContext<TInput> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        return [ ... primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
+        return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
     /**
      * Get request rul
@@ -23,7 +22,7 @@ export abstract class TransportContext<TInput = any> extends EndpointContext<TIn
      * Set request url
      */
     abstract set url(value: string);
-    
+
     /**
      * The request method.
      */
@@ -32,17 +31,17 @@ export abstract class TransportContext<TInput = any> extends EndpointContext<TIn
     /**
      * socket.
      */
-    abstract get socket(): Socket;
+    abstract get socket(): TSocket;
 
 }
 
 /**
  * Transport context options.
  */
-export interface TransportContextOpts<T = any> extends EndpointInvokeOpts<T> {
+export interface TransportContextOpts<T = any, TSocket = any> extends EndpointInvokeOpts<T> {
     url?: string;
     method?: string;
-    socket?: Socket;
+    socket?: TSocket;
 }
 
 export const TRANSPORT_CONTEXT_IMPL = {
@@ -57,7 +56,7 @@ export const TRANSPORT_CONTEXT_IMPL = {
  * @param options 
  * @returns 
  */
-export function createTransportContext(injector: Injector, options?: TransportContextOpts): TransportContext {
+export function createTransportContext<TInput, TSocket>(injector: Injector, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TSocket> {
     return TRANSPORT_CONTEXT_IMPL.create(injector, options)
 }
 
@@ -95,7 +94,7 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
      * Set request url
      */
     abstract set url(value: string);
-    
+
     /**
      * The request method.
      */

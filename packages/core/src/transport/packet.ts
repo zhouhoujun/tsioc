@@ -9,7 +9,7 @@ export interface Packet<T = any> {
     topic?: string;
     method?: string;
     type?: number | string;
-    headers: IncomingHeaders | OutgoingHeaders;
+    headers?: IncomingHeaders | OutgoingHeaders;
     payload?: T;
     error?: any;
 }

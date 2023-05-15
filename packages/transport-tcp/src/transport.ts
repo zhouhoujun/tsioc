@@ -1,8 +1,10 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Execption, Injectable, Optional, isNil, isString } from '@tsdi/ioc';
-import { PacketLengthException, ev, hdr } from '@tsdi/transport';
+import { PacketLengthException, ev, hdr, toBuffer } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
+import { Buffer } from 'buffer';
+import { Readable } from 'stream';
 import { NumberAllocator } from 'number-allocator';
 import { EventEmitter } from 'events';
 
@@ -29,9 +31,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
     private contentLength: number | null = null;
 
     private readonly delimiter: Buffer;
-
     private cachePkg: Map<number, Packet>;
-
 
     private _header: Buffer;
     private _body: Buffer;
@@ -40,9 +40,9 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
     constructor(readonly socket: tls.TLSSocket | net.Socket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
         this.delimiter = Buffer.from(delimiter);
-        this.cachePkg = new Map();
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
+        this.cachePkg = new Map();
 
         socket.on(ev.DATA, this.onData.bind(this));
         socket.on(ev.HEADERS, this.emit.bind(this, ev.HEADERS));
@@ -65,17 +65,34 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
 
 
     async send(data: Packet): Promise<void> {
+        if (!data.id) {
+            data.id = this.getStreamId();
+        }
         const encoder = this.encoder;
-        if (data.headers?.[hdr.CONTENT_LENGTH]) {
+
+        if (!isNil(data.payload)) {
             const { payload, ...headers } = data;
+            const id = data.id;
             if (!headers.headers) {
                 headers.headers = {};
             }
-            const id = headers.id = headers.id ?? this.getStreamId();
             let len = isString(headers.headers[hdr.CONTENT_LENGTH]) ? ~~headers.headers[hdr.CONTENT_LENGTH] : headers.headers[hdr.CONTENT_LENGTH]!;
 
+            let body: string | Buffer;
+            if (isString(payload) || Buffer.isBuffer(payload)) {
+                body = payload;
+            } else if (payload instanceof Readable) {
+                body = await toBuffer(payload);
+            } else {
+                body = JSON.stringify(payload);
+            }
+
+            if (!headers.headers[hdr.CONTENT_LENGTH]) {
+                headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            }
+            
             let hmsg = JSON.stringify(headers);
-            let body = payload;
+
             if (encoder) {
                 hmsg = encoder.encode(hmsg);
                 body = encoder.encode(payload);
@@ -89,7 +106,9 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             this.socket.write(String(len + 17));
             this.socket.write(this.delimiter);
             this.socket.write(this._body);
-            this.socket.write(Buffer.alloc(16, id))
+            const bufId = Buffer.alloc(16);
+            bufId.writeUInt16BE(id);
+            this.socket.write(bufId)
             this.socket.write(body);
             // this.socket.write(this.delimiter);
 
@@ -186,11 +205,19 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
                 this.socket.emit(ev.MESSAGE, message);
             }
         } else if (data.indexOf(this._body) == 0) {
-            const id = parseInt(data.slice(1, 17).toString(), 10);
-            const pkg = this.cachePkg.get(id);
-            if (pkg) {
-                pkg.payload = data.slice(17);
-                this.cachePkg.delete(id);
+            const id = data.readUInt16BE(1);
+            if (id) {
+                const payload = data.slice(17);
+                let pkg = this.cachePkg.get(id);
+                if (pkg) {
+                    pkg.payload = payload;
+                    this.cachePkg.delete(id);
+                } else {
+                    pkg = {
+                        id,
+                        payload
+                    }
+                }
                 this.socket.emit(ev.MESSAGE, pkg);
             }
 
