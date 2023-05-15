@@ -64,6 +64,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             clientStream.on(ev.ERROR, onError);
             clientStream.on(ev.CLOSE, onError);
             clientStream.on(ev.ABOUT, onError);
+            clientStream.on(ev.ABORTED, onError);
 
 
             const packet = {
@@ -79,6 +80,13 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                 clientStream.off(ev.ERROR, onError);
                 clientStream.off(ev.CLOSE, onError);
                 clientStream.off(ev.ABOUT, onError);
+                clientStream.off(ev.ABORTED, onError);
+                if (!req.context.destroyed) {
+                    observer.error(this.createErrorResponse({
+                        status: this.vaildator.none,
+                        statusText: 'The operation was aborted.'
+                    }));
+                }
                 clientStream.destroy?.();
             }
 
