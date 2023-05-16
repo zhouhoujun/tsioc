@@ -4,7 +4,7 @@ import {
 } from '@tsdi/core';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
-    ServerFinalizeFilter, SessionMiddleware, TransportModule, ev, TransportBackend, RequestAdapter, StatusVaildator
+    ServerFinalizeFilter, SessionMiddleware, TransportModule, TransportBackend, RequestAdapter, StatusVaildator, RespondAdapter
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { TcpClient } from './client/clinet';
@@ -17,6 +17,8 @@ import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
 import { TcpStatusVaildator } from './status';
 import { TcpTransportSessionFactory } from './transport';
+import { TcpExecptionHandlers } from './server/execption-filter';
+import { TcpRespondAdapter } from './server/respond';
 
 @Module({
     imports: [
@@ -27,10 +29,14 @@ import { TcpTransportSessionFactory } from './transport';
     ],
     providers: [
         TcpTransportSessionFactory,
-        TcpClient,
-        TcpServer,
         { provide: StatusVaildator, useClass: TcpStatusVaildator },
-        { provide: RequestAdapter, useClass: TcpRequestAdapter }
+        { provide: RequestAdapter, useClass: TcpRequestAdapter },
+        TcpClient,
+
+        TcpRespondAdapter,
+        TcpExecptionHandlers,
+        { provide: RespondAdapter, useExisting: TcpRespondAdapter },
+        TcpServer
     ]
 })
 export class TcpModule {
@@ -163,8 +169,7 @@ const defServerOpts = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     middlewaresToken: TCP_SERV_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
-    interceptors: [
-    ],
+    interceptors: [],
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,

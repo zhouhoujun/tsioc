@@ -10,7 +10,7 @@ import { PassThrough } from 'stream';
 /**
  * outgoing message.
  */
-export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket | net.Socket> {
+export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket | net.Socket, number> {
 
     _closed = false;
     ending = false;

@@ -102,7 +102,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
 
     protected async parseResponse(url: string, body: any, headers: ResHeaders, status: TStatus, statusText: string | undefined, responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'): Promise<[boolean, TResponse]> {
         let originalBody: any;
-        let ok = true;
+        let ok = this.vaildator.isOk(status);
         let error;
         const contentType = headers.get(hdr.CONTENT_TYPE) as string;
         if (contentType) {

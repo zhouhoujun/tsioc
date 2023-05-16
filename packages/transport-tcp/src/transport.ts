@@ -1,11 +1,10 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Execption, Injectable, Optional, isNil, isString } from '@tsdi/ioc';
+import { Injectable, Optional, isNil, isString } from '@tsdi/ioc';
 import { PacketLengthException, ev, hdr, toBuffer } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { Buffer } from 'buffer';
 import { Readable } from 'stream';
-import { NumberAllocator } from 'number-allocator';
 import { EventEmitter } from 'events';
 
 @Injectable()
@@ -25,8 +24,6 @@ export class TcpTransportSessionFactory implements TransportSessionFactory<tls.T
 
 export class TcpTransportSession extends EventEmitter implements TransportSession<tls.TLSSocket | net.Socket> {
 
-    allocator = new NumberAllocator(1, 65536);
-    last?: number;
     private buffer: Buffer | null = null;
     private contentLength: number | null = null;
 
@@ -54,20 +51,8 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
         socket.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
     }
 
-    getStreamId() {
-        const id = this.allocator.alloc();
-        if (!id) {
-            throw new Execption('alloc stream id failed');
-        }
-        this.last = id;
-        return id;
-    }
-
-
     async send(data: Packet): Promise<void> {
-        if (!data.id) {
-            data.id = this.getStreamId();
-        }
+
         const encoder = this.encoder;
 
         if (!isNil(data.payload)) {
@@ -129,7 +114,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
     }
 
     destroy(error?: any): void {
-        this.socket.end();
+        // this.socket.end();
     }
 
     onData(chunk: any) {

@@ -76,7 +76,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
     protected async onStart(): Promise<any> {
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info('Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const factory = this.endpoint.injector.get(TransportSessionFactory);
         if (this.serv instanceof tls.Server) {

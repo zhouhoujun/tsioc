@@ -2,7 +2,7 @@ import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { Client, Pattern, SOCKET, TransportEvent, TransportRequest, RequestInitOpts } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
-import { Observable, mergeMap, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
@@ -50,7 +50,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
                 .on(ev.CLOSE, onClose);
 
             if (valid) {
-                onConnect();
+                onConnect()
             } else {
                 conn.on(ev.CONNECT, onConnect)
             }

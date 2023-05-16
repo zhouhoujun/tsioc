@@ -168,17 +168,17 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
 /**
  * server outgoing message stream.
  */
-export interface Outgoing<TSocket = any> extends IWritableStream {
+export interface Outgoing<TSocket = any, TStatus = any> extends IWritableStream {
 
     readonly socket: TSocket;
     /**
      * Get response status code.
      */
-    get statusCode(): number | string;
+    get statusCode(): TStatus;
     /**
      * Set response status code.
      */
-    set statusCode(status: number | string);
+    set statusCode(status: TStatus);
     /**
      * Textual description of response status code, defaults to OK.
      *

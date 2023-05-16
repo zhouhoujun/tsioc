@@ -3,7 +3,7 @@ import { AbstractAssetContext } from '@tsdi/transport';
 import * as tls from 'tls';
 
 
-export class TcpContext extends AbstractAssetContext<Incoming, Outgoing> {
+export class TcpContext extends AbstractAssetContext<Incoming, Outgoing, number> {
 
     isAbsoluteUrl(url: string): boolean {
         return tcptl.test(url.trim())
@@ -28,20 +28,20 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing> {
     get writable(): boolean {
         return this.response.writable
     }
-    
+
     get secure(): boolean {
         return this.request.socket instanceof tls.TLSSocket;
     }
 
     get protocol(): string {
-        return !this.listenOpts.host && !this.listenOpts.port? 'ipc' : this.secure? 'ssl' : 'tcp';
+        return !this.listenOpts.host && !this.listenOpts.port ? 'ipc' : this.secure ? 'ssl' : 'tcp';
     }
 
-    get status(): string | number {
+    get status(): number {
         return this.response.statusCode
     }
 
-    set status(status: string | number) {
+    set status(status: number) {
         this.response.statusCode = status
     }
     get statusMessage(): string {

@@ -9,7 +9,6 @@ export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
 
     respond(context: TCtx, err: MessageExecption): any {
 
-
         //finllay defalt send error.
         let headerSent = false;
         if (context.sent || !context.response.writable) {

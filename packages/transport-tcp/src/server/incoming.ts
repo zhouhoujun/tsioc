@@ -22,7 +22,7 @@ export class TcpIncoming extends Readable implements Incoming<tls.TLSSocket | ne
         this.id = packet.id;
         const headers = this.headers = packet.headers || {};
         this.url = packet.url ?? headers[hdr.PATH] ?? '',
-        this.method = packet.method ?? packet.headers?.[hdr.METHOD] ?? 'GET';
+        this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';
 
         this._payloadIndex = 0
         session.on(ev.END, this.emit.bind(this, ev.END));

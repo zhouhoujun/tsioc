@@ -1,10 +1,11 @@
 import { Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
 import {
-    RequestOptions, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, TransportParams, Pattern, TransportRequest, patternToPath, HttpRequestMethod, RequestInitOpts
+    RequestOptions, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST,
+    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/core';
 import { ev } from '@tsdi/transport';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common';
-import { mergeMap, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
@@ -75,7 +76,7 @@ export class Http extends Client<HttpRequest, HttpEvent> {
                 .on(ev.CLOSE, onClose);
 
             if (valid) {
-                onConnect();
+                onConnect()
             } else {
                 conn.on(ev.CONNECT, onConnect)
             }

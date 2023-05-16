@@ -2,13 +2,17 @@ import {
     TransportEvent, ResHeaders, SOCKET, TransportErrorResponse, Packet, Incoming, Encoder, Decoder,
     TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory
 } from '@tsdi/core';
-import { InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
+import { Execption, InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
 import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket, isBuffer } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
+import { NumberAllocator } from 'number-allocator';
 import { TCP_CLIENT_OPTS } from './options';
 
 @Injectable()
 export class TcpRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
+
+    allocator = new NumberAllocator(1, 65536);
+    last?: number;
 
     constructor(
         readonly mimeTypes: MimeTypes,
@@ -41,14 +45,21 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                 observer.error(res)
             };
 
+            const id = this.getPacketId();
             const onResponse = async (res: any) => {
                 res = isString(res) ? JSON.parse(res) : res;
+                if(res.id !== id) return;
                 const headers = this.parseHeaders(res);
                 const pkg = this.parsePacket(res, headers);
                 status = pkg.status ?? 200;
                 statusText = pkg.statusText ?? 'OK';
                 const body = res.body ?? res.payload;
 
+                if (this.vaildator.isRedirect(status)) {
+                    // fetch step 5.2
+                    this.redirector?.redirect<TransportEvent>(req, status, headers).subscribe(observer);
+                    return;
+                }
                 const [ok, result] = await this.parseResponse(url, body, headers, status, statusText, req.responseType);
 
                 if (ok) {
@@ -67,6 +78,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
 
 
             const packet = {
+                id,
                 headers: req.headers.headers,
                 url,
                 payload: req.body,
@@ -113,6 +125,15 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             status: headers.get(hdr.STATUS) ?? '',
             statusText: String(headers.get(hdr.STATUS_MESSAGE))
         }
+    }
+
+    protected getPacketId() {
+        const id = this.allocator.alloc();
+        if (!id) {
+            throw new Execption('alloc stream id failed');
+        }
+        this.last = id;
+        return id;
     }
 }
 
