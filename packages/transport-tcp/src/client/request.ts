@@ -122,7 +122,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
 
     parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
         return {
-            status: headers.get(hdr.STATUS) ?? '',
+            status: headers.get(hdr.STATUS) ?? 0,
             statusText: String(headers.get(hdr.STATUS_MESSAGE))
         }
     }

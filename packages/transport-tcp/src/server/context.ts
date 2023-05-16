@@ -42,7 +42,9 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing, number>
     }
 
     set status(status: number) {
-        this.response.statusCode = status
+        this._explicitStatus = true;
+        this.response.statusCode = status;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
     get statusMessage(): string {
         return this.response.statusMessage

@@ -41,11 +41,6 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         return EMPTY
     }
 
-    // protected override getDefaultResolvers(): OperationArgumentResolver<any>[] {
-    //     const revls = this.injector.get(MODEL_RESOLVERS, EMPTY);
-    //     return revls.length ? [...revls, BASE_RESOLVERS] : BASE_RESOLVERS;
-    // }
-
     protected override clear(): void {
         super.clear();
         this.execption = null;

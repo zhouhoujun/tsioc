@@ -12,7 +12,7 @@ export class TcpPathInterceptor implements Interceptor<TransportRequest, Transpo
 
     intercept(req: TransportRequest<any>, next: Handler<TransportRequest<any>, TransportEvent>): Observable<TransportEvent> {
         let url = req.url.trim();
-        if (tcptl.test(url)) {
+        if (!tcptl.test(url)) {
             const { host, port, path } = this.listenOpts;
             const isIPC = !host && !port;
             const protocol = req.withCredentials ? 'ssl' : 'tcp';
