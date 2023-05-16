@@ -1,11 +1,11 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { CoapClient, CoapModule, CoapServer } from '../src';
+import { CoapClient, CoapModule, CoapServer, CoapClientOpts, COAP_CLIENT_OPTS } from '../src';
 import { DeviceController } from './controller';
-import { LoggerModule } from '@tsdi/logs';
 
 
 
@@ -44,7 +44,7 @@ describe('CoAP Server & CoAP Client', () => {
         ctx = await Application.run(CoapTestModule);
         injector = ctx.injector;
         client = injector.resolve(CoapClient, {
-            provide: CoapClientOpts,
+            provide: COAP_CLIENT_OPTS,
             useValue: {
                 connectOpts: {
                     type: 'udp4',

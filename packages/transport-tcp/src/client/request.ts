@@ -3,7 +3,7 @@ import {
     TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory
 } from '@tsdi/core';
 import { Execption, InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
-import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket, isBuffer } from '@tsdi/transport';
+import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { TCP_CLIENT_OPTS } from './options';

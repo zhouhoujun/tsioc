@@ -1,12 +1,61 @@
-import { Incoming, ListenOpts } from '@tsdi/core';
+import { Connection, Incoming, ListenOpts } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { isBuffer } from '@tsdi/transport';
+import { StatusVaildator, isBuffer } from '@tsdi/transport';
 import { Duplex, Writable, TransformCallback } from 'stream';
 import { parse, generate, ParsedPacket } from 'coap-packet';
+import { ConnectionOpts, PacketParser } from '@tsdi/platform-server-transport';
 
 
 @Injectable()
-export class CoapVaildator extends MessageVaildator {
+export class CoapVaildator extends StatusVaildator {
+    get noContent(): number {
+        throw new Error('Method not implemented.');
+    }
+    get notFound(): number {
+        throw new Error('Method not implemented.');
+    }
+    get found(): number {
+        throw new Error('Method not implemented.');
+    }
+    get ok(): number {
+        throw new Error('Method not implemented.');
+    }
+    get none(): number {
+        throw new Error('Method not implemented.');
+    }
+    get serverError(): number {
+        throw new Error('Method not implemented.');
+    }
+    isStatus(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isOk(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isNotFound(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isEmpty(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isRedirect(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isRequestFailed(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isServerError(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    isRetry(status: number): boolean {
+        throw new Error('Method not implemented.');
+    }
+    redirectBodify(status: number, method?: string | undefined): boolean {
+        throw new Error('Method not implemented.');
+    }
+    redirectDefaultMethod(): string {
+        throw new Error('Method not implemented.');
+    }
     private _protocol = 'coap';
 
     protocol(incoming: Incoming<any>): string {
@@ -18,7 +67,7 @@ export class CoapVaildator extends MessageVaildator {
     }
 
     isSecure(req: Incoming<Connection>): boolean {
-        return (req.connection.stream as any).encrypted === true
+        return (req.socket as any).encrypted === true
     }
 
     parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {

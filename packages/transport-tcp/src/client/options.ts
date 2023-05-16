@@ -1,7 +1,7 @@
 import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client, TransportSessionOpts } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
-import { SocketConstructorOpts, NetConnectOpts } from 'net';
 import { ConnectionOptions } from 'tls';
+import { SocketConstructorOpts, NetConnectOpts } from 'net';
 
 
 
