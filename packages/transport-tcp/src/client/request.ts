@@ -101,6 +101,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                         statusText: 'The operation was aborted.'
                     }));
                 }
+                request.destroy?.();
             }
             req.context?.onDestroy(unsub);
             return unsub;

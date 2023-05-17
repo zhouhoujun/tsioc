@@ -117,7 +117,10 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements ListenSer
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)
-            .pipe(finalize(() => ctx.destroy()))
+            .pipe(finalize(() => {
+                ctx.destroy();
+                if (session.destroy) setTimeout(() => session.destroy?.(), 2000);
+            }))
             .subscribe({
                 error: (err) => {
                     this.logger.error(err)

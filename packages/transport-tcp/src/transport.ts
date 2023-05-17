@@ -32,6 +32,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
 
     private _header: Buffer;
     private _body: Buffer;
+    private _evs: Array<[string, Function]>;
 
 
     constructor(readonly socket: tls.TLSSocket | net.Socket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
@@ -41,14 +42,12 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
         this._body = Buffer.alloc(1, '1');
         this.cachePkg = new Map();
 
-        socket.on(ev.DATA, this.onData.bind(this));
-        socket.on(ev.HEADERS, this.emit.bind(this, ev.HEADERS));
-        socket.on(ev.MESSAGE, this.emit.bind(this, ev.MESSAGE));
-        socket.on(ev.END, this.emit.bind(this, ev.END));
-        socket.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        socket.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
-        socket.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-        socket.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+        this._evs = [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].map(e=> [e, this.emit.bind(this, e)]);
+        this._evs.push([ev.DATA, this.onData.bind(this)]);
+        this._evs.forEach(it=> {
+           const [e, event] = it;
+           socket.on(e, event as any);
+        });
     }
 
     async send(data: Packet): Promise<void> {
@@ -95,7 +94,6 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             bufId.writeUInt16BE(id);
             this.socket.write(bufId)
             this.socket.write(body);
-            // this.socket.write(this.delimiter);
 
         } else {
             let msg = JSON.stringify(data);
@@ -107,14 +105,15 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             this.socket.write(this.delimiter);
             this.socket.write(this._header);
             this.socket.write(msg);
-            // this.socket.write(this.delimiter);
-            // msg = length + this.sizeDelimiter + msg + this.delimiter;
-            // this.socket.write(msg);
         }
     }
 
     destroy(error?: any): void {
-        // this.socket.end();
+        this._evs.forEach(it=> {
+            const [e, event] = it;
+            this.socket.off(e, event as any);
+         });
+        this.removeAllListeners();
     }
 
     onData(chunk: any) {
@@ -184,10 +183,10 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
                     this.socket.emit(ev.HEADERS, message);
                     this.cachePkg.set(message.id, message);
                 } else {
-                    this.socket.emit(ev.MESSAGE, message);
+                    this.emit(ev.MESSAGE, message);
                 }
             } else {
-                this.socket.emit(ev.MESSAGE, message);
+                this.emit(ev.MESSAGE, message);
             }
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
@@ -203,7 +202,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
                         payload
                     }
                 }
-                this.socket.emit(ev.MESSAGE, pkg);
+                this.emit(ev.MESSAGE, pkg);
             }
 
         }
