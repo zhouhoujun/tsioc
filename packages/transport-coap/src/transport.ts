@@ -157,43 +157,43 @@ export class CoapPacketParser extends PacketParser {
 const empty = Buffer.allocUnsafe(0);
 const maxSize = 32768 * 1024;
 
-export class CoapPacketGenerator extends PacketGenerator {
-    private delimiter: Buffer;
-    private maxSize: number;
-    private packet: Buffer;
-    constructor(private output: Writable, private opts: ConnectionOpts) {
-        super(opts);
-        this.delimiter = Buffer.from(opts.delimiter!);
-        this.maxSize = opts.maxSize || maxSize;
-        this.packet = empty;
-    }
+// export class CoapPacketGenerator extends PacketGenerator {
+//     private delimiter: Buffer;
+//     private maxSize: number;
+//     private packet: Buffer;
+//     constructor(private output: Writable, private opts: ConnectionOpts) {
+//         super(opts);
+//         this.delimiter = Buffer.from(opts.delimiter!);
+//         this.maxSize = opts.maxSize || maxSize;
+//         this.packet = empty;
+//     }
 
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        try {
-            const buffer = generate(chunk, this.maxSize);
-            this.output.write(buffer);
-            this.output.write(this.delimiter);
+//     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+//         try {
+//             const buffer = generate(chunk, this.maxSize);
+//             this.output.write(buffer);
+//             this.output.write(this.delimiter);
 
-        } catch (err) {
-            callback(err as Error);
-        }
-    }
+//         } catch (err) {
+//             callback(err as Error);
+//         }
+//     }
 
-    setOptions(opts: ConnectionOpts): void {
-        this.delimiter = Buffer.from(opts.delimiter!);
-        this.maxSize = opts.maxSize || maxSize;
-    }
+//     setOptions(opts: ConnectionOpts): void {
+//         this.delimiter = Buffer.from(opts.delimiter!);
+//         this.maxSize = opts.maxSize || maxSize;
+//     }
 
-}
+// }
 
-@Injectable()
-export class CoapPacketFactory extends PacketFactory {
+// @Injectable()
+// export class CoapPacketFactory extends PacketFactory {
     
-    createParser(opts: ConnectionOpts): PacketParser {
-        return new CoapPacketParser(opts);
-    }
+//     createParser(opts: ConnectionOpts): PacketParser {
+//         return new CoapPacketParser(opts);
+//     }
     
-    createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator {
-        return new CoapPacketGenerator(output, opts);
-    }
-}
+//     createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator {
+//         return new CoapPacketGenerator(output, opts);
+//     }
+// }

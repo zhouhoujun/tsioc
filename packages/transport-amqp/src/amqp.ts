@@ -1,9 +1,10 @@
 
-import { Module, RouterModule, TransformModule } from '@tsdi/core';
-import { ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { RouterModule, TransformModule } from '@tsdi/core';
+import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
 import { TransportModule } from '@tsdi/transport';
 import { AmqpClient } from './client/client';
-import { AmqpServer, AmqpServerOpts } from './server/server';
+import { AmqpServer } from './server/server';
+import { AMQP_SERV_OPTS, AmqpServerOpts } from './server/options';
 
 
 @Module({
@@ -24,7 +25,7 @@ export class AmqpModule {
      * @returns 
      */
     static withOptions(options: AmqpServerOpts): ModuleWithProviders<AmqpModule> {
-        const providers: ProviderType[] = [{ provide: AmqpServerOpts, useValue: options }];
+        const providers: ProviderType[] = [{ provide: AMQP_SERV_OPTS, useValue: options }];
         return {
             module: AmqpModule,
             providers

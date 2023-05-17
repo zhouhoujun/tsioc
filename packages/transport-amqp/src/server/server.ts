@@ -1,26 +1,9 @@
-import { ExecptionFilter, Interceptor } from '@tsdi/core';
-import { Abstract, Injectable, tokenId } from '@tsdi/ioc';
-import {  ServerRequest, ServerResponse, TransportServer, TransportServerOpts } from '@tsdi/transport';
+import { ExecptionFilter, Interceptor, Server, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Abstract, Inject, Injectable, tokenId } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
-
-export type amqpURL = string | amqp.Options.Connect;
-
-@Abstract()
-export abstract class AmqpServerOpts extends TransportServerOpts {
-    url?: amqpURL;
-    queue?: string;
-    queueOptions?: amqp.Options.AssertQueue;
-}
-
-/**
- * Amqp server interceptors.
- */
-export const AMQP_SERV_INTERCEPTORS = tokenId<Interceptor<ServerRequest, ServerResponse>[]>('AMQP_SERV_INTERCEPTORS');
-
-/**
- * Amqp server execption filters.
- */
-export const AMQP_SERV_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('AMQP_SERV_EXECPTION_FILTERS');
+import { AMQP_SERV_EXECPTION_FILTERS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS, AmqpServerOpts } from './options';
+import { AmqpContext } from './context';
+import { AmqpEndpoint } from './endpoint';
 
 
 
@@ -32,14 +15,23 @@ const defaults = {
 } as AmqpServerOpts;
 
 @Injectable()
-export class AmqpServer extends TransportServer {
+export class AmqpServer extends Server<AmqpContext> {
 
-    constructor(options: AmqpServerOpts) {
-        super(options);
+    constructor(
+        readonly endpoint: AmqpEndpoint,
+        @Inject(AMQP_SERV_OPTS) private options: AmqpServerOpts) {
+        super();
     }
 
-    protected override getDefaultOptions() {
-        return defaults;
+    
+    protected onStartup(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected onStart(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected onShutdown(): Promise<any> {
+        throw new Error('Method not implemented.');
     }
 
 }

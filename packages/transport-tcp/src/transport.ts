@@ -37,6 +37,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
 
     constructor(readonly socket: tls.TLSSocket | net.Socket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
+        this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');

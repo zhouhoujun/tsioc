@@ -23,10 +23,9 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         ]
     }
 
-
     private formatStatus(ctx: AssetContext): [string, string] {
         const { status, statusMessage } = ctx;
-        return [status, statusMessage];
+        return [String(status), statusMessage];
 
         // if (this.vaildator.isOk(status)) {
         //     return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];

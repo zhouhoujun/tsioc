@@ -1,13 +1,11 @@
-import { IDuplexStream, IReadableStream, isFormData, ITransformStream, IWritableStream } from '@tsdi/core';
+import { global, IDuplexStream, IReadableStream, isFormData, ITransformStream, IWritableStream } from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { BrotliOptions, PipeSource, StreamAdapter, ZipOptions, ev, isBuffer } from '@tsdi/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform } from 'readable-stream';
 import * as pumpify from 'pumpify';
-import zlib = require('browserify-zlib');
 import * as FormData from 'form-data';
 import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
-
 
 @Injectable({ static: true })
 export class BrowserStreamAdapter extends StreamAdapter {
@@ -78,28 +76,34 @@ export class BrowserStreamAdapter extends StreamAdapter {
 
 
     getZipConstants<T = any>(): T {
-        return zlib.constants as T;
+        return {} as T;
     }
 
     gzip(options?: ZipOptions): ITransformStream {
-        return zlib.createGzip(options);
+        return new global.CompressionStream('gzip');
+        // return zlib.createGzip(options);
     }
     gunzip(options?: ZipOptions): ITransformStream {
-        return zlib.createGunzip(options);
+        return new global.DecompressionStream('gzip');
+        // return zlib.createGunzip(options);
     }
 
     inflate(options?: ZipOptions | undefined): ITransformStream {
-        return zlib.createInflate(options);
+        return new global.CompressionStream('deflate');
+        // return zlib.createInflate(options);
     }
     inflateRaw(options?: ZipOptions | undefined): ITransformStream {
-        return zlib.createInflateRaw(options);
+        return new global.CompressionStream('deflate-raw');
+        // return zlib.createInflateRaw(options);
     }
 
     brotliCompress(options?: BrotliOptions | undefined): ITransformStream {
-        return zlib.createBrotliCompress(options);
+        return new global.CompressionStream('deflate');
+        // return zlib.createBrotliCompress(options);
     }
     brotliDecompress(options?: BrotliOptions | undefined): ITransformStream {
-        return zlib.createBrotliDecompress(options);
+        return new global.DecompressionStream('deflate');
+        // return zlib.createBrotliDecompress(options);
     }
 
     rawbody(

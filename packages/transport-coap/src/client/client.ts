@@ -4,7 +4,6 @@ import { ConnectionOpts, DuplexConnection, parseToDuplex } from '@tsdi/platform-
 import * as dgram from 'dgram';
 import * as net from 'net';
 import { Observable } from 'rxjs';
-import { CoapPacketFactory } from '../transport';
 import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';
 import { CoapHandler } from './handler';
 
