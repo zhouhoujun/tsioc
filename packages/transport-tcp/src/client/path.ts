@@ -17,7 +17,8 @@ export class TcpPathInterceptor implements Interceptor<TransportRequest, Transpo
             const isIPC = !host && !port;
             const protocol = req.withCredentials ? 'ssl' : 'tcp';
             const urlPrefix = isIPC ? new URL(`${protocol}://${host ?? 'localhost'}`) : `${protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
-            const baseUrl = new URL(urlPrefix, path);
+
+            const baseUrl = isIPC ? urlPrefix : new URL(urlPrefix, path);
             const uri = new URL(url, baseUrl);
             // if (isIPC) {
             //     uri.protocol = 'ipc';

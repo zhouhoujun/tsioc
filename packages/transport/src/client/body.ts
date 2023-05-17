@@ -25,7 +25,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         }
         return defer(async () => {
             let headers = req.headers;
-            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(body) : this.detectContentTypeHeader(body);
+            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(req.body);
             if (!headers.get(hdr.CONTENT_TYPE) && contentType) {
                 headers = headers.set(hdr.CONTENT_TYPE, contentType);
             }

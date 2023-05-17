@@ -3,7 +3,7 @@ import {
     TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory
 } from '@tsdi/core';
 import { Execption, InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
-import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket } from '@tsdi/transport';
+import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket, ctype } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { TCP_CLIENT_OPTS } from './options';
@@ -48,7 +48,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             const id = this.getPacketId();
             const onResponse = async (res: any) => {
                 res = isString(res) ? JSON.parse(res) : res;
-                if(res.id !== id) return;
+                if (res.id !== id) return;
                 const headers = this.parseHeaders(res);
                 const pkg = this.parsePacket(res, headers);
                 status = pkg.status ?? 200;
@@ -76,11 +76,13 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
 
-
             const packet = {
                 id,
                 method: req.method,
-                headers: req.headers.getHeaders(),
+                headers: {
+                    'accept': ctype.REQUEST_ACCEPT,
+                    ...req.headers.getHeaders()
+                },
                 url,
                 payload: req.body,
             } as Packet;

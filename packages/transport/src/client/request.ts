@@ -167,6 +167,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
                 url,
                 body,
                 headers,
+                ok,
                 status,
                 statusText
             })];
