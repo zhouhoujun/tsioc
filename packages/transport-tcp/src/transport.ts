@@ -88,10 +88,10 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             this.socket.write(this.delimiter);
             this.socket.write(this._header);
             this.socket.write(hmsg);
-            this.socket.write(String(len + 17));
+            this.socket.write(String(len + 3));
             this.socket.write(this.delimiter);
             this.socket.write(this._body);
-            const bufId = Buffer.alloc(16);
+            const bufId = Buffer.alloc(2);
             bufId.writeUInt16BE(id);
             this.socket.write(bufId)
             this.socket.write(body);
@@ -192,7 +192,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
-                const payload = data.slice(17);
+                const payload = data.slice(3);
                 let pkg = this.cachePkg.get(id);
                 if (pkg) {
                     pkg.payload = payload;
