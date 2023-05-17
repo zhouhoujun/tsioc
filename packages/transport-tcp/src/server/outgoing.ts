@@ -101,13 +101,13 @@ export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket |
             cb = encoding
             encoding = 'utf8';
         }
-        super.end(chunk, encoding, cb);
         if (this._closed || this.ending) {
             if (isFunction(cb)) {
                 process.nextTick(cb);
             }
             return this;
         }
+        super.end(chunk, encoding, cb);
 
         // if (!this.headersSent) {
         //     this.writeHead(this.statusCode, this.statusMessage, this.getHeaders());

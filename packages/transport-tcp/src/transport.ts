@@ -43,11 +43,15 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
         this._body = Buffer.alloc(1, '1');
         this.cachePkg = new Map();
 
-        this._evs = [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].map(e=> [e, this.emit.bind(this, e)]);
+        this._evs = [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].map(e => [e, (...args: any[]) => {
+            this.emit(e, ...args);
+            this.destroy();
+        }]);
+
         this._evs.push([ev.DATA, this.onData.bind(this)]);
-        this._evs.forEach(it=> {
-           const [e, event] = it;
-           socket.on(e, event as any);
+        this._evs.forEach(it => {
+            const [e, event] = it;
+            socket.on(e, event as any);
         });
     }
 
@@ -75,7 +79,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             if (!headers.headers[hdr.CONTENT_LENGTH]) {
                 headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
             }
-            
+
             let hmsg = JSON.stringify(headers);
 
             if (encoder) {
@@ -110,10 +114,10 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
     }
 
     destroy(error?: any): void {
-        this._evs.forEach(it=> {
+        this._evs.forEach(it => {
             const [e, event] = it;
             this.socket.off(e, event as any);
-         });
+        });
         this.removeAllListeners();
     }
 
