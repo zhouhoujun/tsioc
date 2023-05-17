@@ -2,6 +2,9 @@ import { Incoming, ListenOpts, TransportContext } from '@tsdi/core';
 
 
 export class MqttContext extends TransportContext {
+    get socket(): any {
+        throw new Error('Method not implemented.');
+    }
     get method(): string {
         throw new Error('Method not implemented.');
     }

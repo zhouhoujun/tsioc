@@ -39,14 +39,8 @@ export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
         context.type = 'text';
         let status = err.status || err.statusCode;
         let msg;
-        // if (err instanceof MessageExecption) {
-        //     msg = err.message
-        //     if (isNil(status)) {
-        //         status = vaildator.serverError;
-        //     }
-        // } else {
         // ENOENT support
-        if (ENOENT === err.code) status = vaildator.notFound; //factory.create('NotFound');
+        if (ENOENT === err.code) status = vaildator.notFound;
 
         // default to 500
         if (!isNumber(status) || !vaildator.isStatus(status)) status = vaildator.serverError;
