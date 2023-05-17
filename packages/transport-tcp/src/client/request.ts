@@ -34,7 +34,7 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
             const context = req.context;
             const socket = context.get(SOCKET, InjectFlags.Self);
             const opts = context.get(TCP_CLIENT_OPTS);
-            const clientStream = context.get(TransportSessionFactory).create(socket, opts.transportOpts);
+            const request = context.get(TransportSessionFactory).create(socket, opts.transportOpts);
             const onError = (error?: Error | null) => {
                 const res = this.createErrorResponse({
                     url,
@@ -70,28 +70,29 @@ export class TcpRequestAdapter extends RequestAdapter<TransportRequest, Transpor
                 }
             };
 
-            clientStream.on(ev.MESSAGE, onResponse);
-            clientStream.on(ev.ERROR, onError);
-            clientStream.on(ev.CLOSE, onError);
-            clientStream.on(ev.ABOUT, onError);
-            clientStream.on(ev.ABORTED, onError);
+            request.on(ev.MESSAGE, onResponse);
+            request.on(ev.ERROR, onError);
+            request.on(ev.CLOSE, onError);
+            request.on(ev.ABOUT, onError);
+            request.on(ev.ABORTED, onError);
 
 
             const packet = {
                 id,
-                headers: req.headers.headers,
+                method: req.method,
+                headers: req.headers.getHeaders(),
                 url,
                 payload: req.body,
             } as Packet;
 
-            clientStream.send(packet);
+            request.send(packet);
 
             const unsub = () => {
-                clientStream.off(ev.MESSAGE, onResponse);
-                clientStream.off(ev.ERROR, onError);
-                clientStream.off(ev.CLOSE, onError);
-                clientStream.off(ev.ABOUT, onError);
-                clientStream.off(ev.ABORTED, onError);
+                request.off(ev.MESSAGE, onResponse);
+                request.off(ev.ERROR, onError);
+                request.off(ev.CLOSE, onError);
+                request.off(ev.ABOUT, onError);
+                request.off(ev.ABORTED, onError);
                 if (!req.context.destroyed) {
                     observer.error(this.createErrorResponse({
                         status: this.vaildator.none,

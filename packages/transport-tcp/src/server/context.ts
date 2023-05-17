@@ -16,11 +16,11 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing, number>
         } else {
             const { host, port, path } = listenOpts;
             const isIPC = !host && !port;
-            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`tcp://${host}:${port ?? 3000}`, path);
+            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
-            if (isIPC) {
-                uri.protocol = 'ipc';
-            }
+            // if (isIPC) {
+            //     uri.protocol = 'ipc';
+            // }
             return uri;
         }
     }
@@ -34,7 +34,7 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing, number>
     }
 
     get protocol(): string {
-        return !this.listenOpts.host && !this.listenOpts.port ? 'ipc' : this.secure ? 'ssl' : 'tcp';
+        return !this.listenOpts.host && !this.listenOpts.port ? 'tcp' : this.secure ? 'ssl' : 'tcp';
     }
 
     get status(): number {
