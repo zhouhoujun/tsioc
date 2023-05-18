@@ -87,7 +87,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         if (!this.sortRoutes) {
             this.sortRoutes = this.ctrlRef.class.defs
                 .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
-                .sort((ra, rb) => (rb.metadata.route || '').length - (ra.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[]
+                .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[]
         }
 
         return this.sortRoutes.find(m => m
