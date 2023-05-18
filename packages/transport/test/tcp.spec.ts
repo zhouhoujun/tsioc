@@ -19,18 +19,18 @@ export class DeviceController {
     }
 
     @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'MESSAGE')
+    @RouteMapping('/usege/find', "GET")
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'MESSAGE')
+    @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
@@ -53,7 +53,7 @@ export class DeviceController {
         return await defer.promise;
     }
 
-    @RouteMapping('/status', 'MESSAGE')
+    @RouteMapping('/status', 'GET')
     getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
         if (redirect === 'reload') {
             return new RedirectResult('/device/reload');
@@ -61,7 +61,7 @@ export class DeviceController {
         return of('working');
     }
 
-    @RouteMapping('/reload', 'MESSAGE')
+    @RouteMapping('/reload', 'GET')
     redirect() {
         return 'reload';
     }
@@ -141,7 +141,18 @@ describe('TCP Server & TCP Client', () => {
     })
 
 
-    it('not found', async () => {
+    it('post not found', async () => {
+        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('get not found', async () => {
         const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
@@ -210,7 +221,7 @@ describe('TCP Server & TCP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -237,7 +248,7 @@ describe('TCP Server & TCP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -264,7 +275,7 @@ describe('TCP Server & TCP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
 

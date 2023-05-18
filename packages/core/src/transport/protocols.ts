@@ -7,10 +7,6 @@ export type MqttProtocols = 'wss' | 'ws' | 'mqtt' | 'mqtts' | 'tcp' | 'ssl' | 'w
  * http protocol.
  */
 export type HttpProtocols = 'http' | 'https';
-/**
- * transport protocol.
- */
-export type Protocols = 'tcp' | 'udp' | 'grpc' | 'rmq' | 'modbus' | 'kafka' | 'redis' | 'amqp' | 'ssl' | 'msg' | HttpProtocols | MqttProtocols;
 
 /**
  * http request method.
@@ -26,6 +22,10 @@ export type GrpcRequestMethod = 'NO_STREAM' | 'RX_STREAM' | 'PT_STREAM' | 'METHO
  */
 export type RequestMethod = HttpRequestMethod | GrpcRequestMethod | 'EVENT' | 'MESSAGE';// event
 
+/**
+ * transport protocol types.
+ */
+export type Protocol ='tcp' | 'grpc' | 'rmq' | 'modbus' | 'mqtt' |  'kafka' | 'redis';
 
 //http
 /**

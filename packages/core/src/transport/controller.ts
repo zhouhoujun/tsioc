@@ -15,7 +15,6 @@ import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endp
 import { MappingDef, RouteMappingMetadata } from './router';
 import { AssetContext } from './context';
 
-const isRest = /\/:/;
 
 /**
  * Controller route.
@@ -89,26 +88,11 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
             this.sortRoutes = this.ctrlRef.class.defs
                 .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
                 .sort((ra, rb) => (rb.metadata.route || '').length - (ra.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[]
-
         }
 
-        const allMethods = this.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
-
-        let meta = allMethods.find(d => (d.metadata.route || '') === subRoute);
-        if (!meta) {
-            meta = allMethods.find(route => {
-                const uri = (route.metadata.route || '') as string;
-                if (isRest.test(uri)) {
-                    const idex = uri.indexOf('/:');
-                    const url = uri.substring(0, idex);
-                    if (url !== subRoute && subRoute.indexOf(url) === 0) {
-                        return true
-                    }
-                }
-                return false
-            })
-        }
-        return meta
+        return this.sortRoutes.find(m => m
+            && m.metadata.method === ctx.method
+            && ((m.metadata.route || '') === subRoute || (m.metadata.regExp && m.metadata.regExp.test(subRoute))))
     }
 }
 

@@ -15,10 +15,10 @@ import { ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
 
 /**
- * abstract router.
+ * Hybrid router.
  */
 @Abstract()
-export abstract class MiddlewareRouter extends Router<Endpoint | MiddlewareLike> implements Middleware {
+export abstract class HybridRouter extends Router<Endpoint | MiddlewareLike> implements Middleware {
     /**
      * invoke middleware.
      *
@@ -65,12 +65,12 @@ export class MappingRoute implements Middleware, Endpoint {
         return this.route.path
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    handle(ctx: AssetContext): Observable<any> {
+    handle(ctx: TransportContext): Observable<any> {
         return of(ctx)
             .pipe(
                 mergeMap(async ctx => {
@@ -160,7 +160,7 @@ export class MappingRoute implements Middleware, Endpoint {
  * Mapping router.
  */
 @Injectable()
-export class MappingRouter extends MiddlewareRouter implements OnDestroy {
+export class MappingRouter extends HybridRouter implements OnDestroy {
 
     readonly routes: Map<string, Endpoint | MiddlewareLike>;
 
@@ -212,7 +212,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
         return this
     }
 
-    handle(ctx: AssetContext): Observable<any> {
+    handle(ctx: TransportContext): Observable<any> {
         if (ctx.isDone()) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
@@ -229,9 +229,7 @@ export class MappingRouter extends MiddlewareRouter implements OnDestroy {
         }
     }
 
-
-
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (ctx.isDone()) return next()
         const route = this.getRoute(ctx);
         if (route) {

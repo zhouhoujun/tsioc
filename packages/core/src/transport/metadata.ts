@@ -7,8 +7,8 @@ import { PipeTransform } from '../pipes/pipe';
 import { TransportParameterDecorator } from '../metadata';
 import { TransportParameter } from '../endpoints/resolver';
 import { joinprefix, normalize } from './route';
-import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, RouteMappingMetadata, RouteOptions, Router } from './router';
-import { DELETE, GET, HEAD, PATCH, POST, Protocols, PUT, RequestMethod } from './protocols';
+import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router';
+import { DELETE, GET, HEAD, PATCH, POST, Protocol, PUT, RequestMethod } from './protocols';
 import { Middleware, MiddlewareFn } from './middleware';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { Pattern, patternToPath } from './pattern';
@@ -93,16 +93,16 @@ export interface Handle {
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {string} pattern message match pattern.
-     * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
+     * @param {ProtocolRouteOptions} option message match option.
      */
-    <TArg>(pattern: Pattern, option?: RouteOptions<TArg>): MethodDecorator;
+    <TArg>(pattern: Pattern, option?: ProtocolRouteOptions<TArg>): MethodDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Pattern} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    <TArg>(pattern: Pattern, protocol?: Protocols, option?: RouteOptions<TArg>): MethodDecorator;
+    <TArg>(pattern: Pattern, protocol?: Protocol, option?: RouteOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -130,7 +130,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const router =injector.get(mapping.router ?? Router);
+            const router = injector.get(mapping.router ?? Router);
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
@@ -154,7 +154,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             const injector = ctx.injector;
 
-            const router =injector.get(mapping.router ?? Router);
+            const router = injector.get(mapping.router ?? Router);
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
@@ -246,6 +246,12 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 return { ...arg2 as T, route };
             }
         },
+        appendProps: (meta) => {
+            if (meta.route) {
+                const regExp = createRestfulMatcher(meta.route);
+                if (regExp) (meta as RouteMappingMetadata).regExp = regExp;
+            }
+        },
         def: controllerOnly ? undefined : {
             class: (ctx, next) => {
                 ctx.class.setAnnotation(ctx.define.metadata);
@@ -258,7 +264,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const injector = ctx.injector;
                 const mapping = ctx.class.getAnnotation<MappingDef>();
 
-                const router =injector.get(mapping.router ?? Router);
+                const router = injector.get(mapping.router ?? Router);
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
@@ -406,11 +412,19 @@ export function createRouteDecorator<TArg>(method: RequestMethod) {
             arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
-            return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as ProtocolRouteMappingMetadata<TArg>
+            const regExp = createRestfulMatcher(route);
+            return (isString(arg2) ? { route, regExp, contentType: arg2, method } : { route, regExp, ...arg2, method }) as ProtocolRouteMappingMetadata<TArg>
         }
     });
 }
-
+const isRest = /\/:/;
+function createRestfulMatcher(route: string) {
+    if (isRest.test(route)) {
+        const routes = route.split('/').map(r => r.startsWith(':') ? '\\S*' : r).join('\\/');
+        return new RegExp('^' + routes);
+    }
+    return undefined;
+}
 
 
 /**

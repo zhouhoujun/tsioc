@@ -97,10 +97,19 @@ describe('http1.1 server, Http', () => {
         expect(bState).toBe('startuped');
     });
 
-    it('not found', async () => {
-        
-        const client = injector.resolve(Http);
+    it('post not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('get not found', async () => {
+        const a = await lastValueFrom(client.get<any>('/device/init5', { observe: 'response', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);

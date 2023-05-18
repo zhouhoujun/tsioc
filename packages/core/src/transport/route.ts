@@ -24,10 +24,6 @@ export interface Route<TArg = any> extends EndpointOptions<TArg> {
      * When not present, router does not redirect.
      */
     redirectTo?: string;
-    /**
-     * transport protocol
-     */
-    protocol?: string;
 
     /**
      * An array of child `Route` objects that specifies a nested route

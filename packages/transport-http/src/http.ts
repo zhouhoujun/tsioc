@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter,
@@ -139,7 +139,7 @@ const defServerOpts = {
         CsrfMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
-        MiddlewareRouter
+        HybridRouter
     ]
 
 } as Http2ServerOpts;

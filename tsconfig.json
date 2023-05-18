@@ -50,6 +50,9 @@
       "@tsdi/transport-kafka": [
         "packages/transport-kafka/src"
       ],
+      "@tsdi/transport-modbus": [
+        "packages/transport-modbus/src"
+      ],
       "@tsdi/transport-mqtt": [
         "packages/transport-mqtt/src"
       ],

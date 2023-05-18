@@ -1,6 +1,6 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint, TransportSessionFactory
+    ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint, TransportSessionFactory
 } from '@tsdi/core';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
@@ -181,7 +181,7 @@ const defServerOpts = {
         ContentMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
-        MiddlewareRouter
+        HybridRouter
     ]
 
 } as TcpServerOpts;

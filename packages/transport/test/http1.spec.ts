@@ -84,7 +84,12 @@ describe('http1.1 server, Http', () => {
 
     it('msg work', async () => {
 
-        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
+        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } })
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
 
         const device = rep.body['device'];
         const aState = rep.body['deviceA_state'];
@@ -95,8 +100,19 @@ describe('http1.1 server, Http', () => {
         expect(bState).toBe('startuped');
     });
 
-    it('not found', async () => {
+    it('post not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('get not found', async () => {
+        const a = await lastValueFrom(client.get<any>('/device/init5', { observe: 'response', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -164,7 +180,7 @@ describe('http1.1 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -191,7 +207,7 @@ describe('http1.1 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -218,7 +234,7 @@ describe('http1.1 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
 

@@ -1,5 +1,5 @@
 import { Abstract, Type, TypeDef } from '@tsdi/ioc';
-import { Protocols, RequestMethod } from './protocols';
+import { Protocol, RequestMethod } from './protocols';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 import { Endpoint } from '../endpoints/endpoint';
@@ -56,10 +56,6 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
  */
 export interface RouteOptions<TArg = any> extends EndpointOptions<TArg> {
     /**
-     * protocol
-     */
-    protocol?: Protocols | string;
-    /**
      * pipe extends args.
      */
     args?: any[];
@@ -77,6 +73,10 @@ export interface RouteMappingMetadata<TArg = any> extends RouteOptions<TArg> {
      */
     route?: Pattern;
     /**
+     * route `RegExp` matcher.
+     */
+    regExp?: RegExp;
+    /**
      * request method.
      */
     method?: RequestMethod;
@@ -89,10 +89,17 @@ export interface RouteMappingMetadata<TArg = any> extends RouteOptions<TArg> {
     contentType?: string;
 }
 
+export interface ProtocolRouteOptions<TArg = any> extends RouteOptions<TArg> {
+    /**
+     * transport protocol
+     */
+    protocol?: Protocol;
+}
+
 /**
  * Protocol route mapping options.
  */
-export interface ProtocolRouteMappingOptions<TArg = any> extends RouteOptions<TArg> {
+export interface ProtocolRouteMappingOptions<TArg = any> extends ProtocolRouteOptions<TArg> {
     /**
      * parent router.
      * default register in root handle queue.

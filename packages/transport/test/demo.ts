@@ -16,7 +16,7 @@ export class DeviceController {
     }
 
     @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
@@ -130,7 +130,7 @@ export class DeviceStartupHandle implements Middleware {
 
     invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.payload.body.type)
+        console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.body.type)
         if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
@@ -144,7 +144,7 @@ export class DeviceStartupHandle implements Middleware {
 export class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.body.type, 'req:', ctx.payload.body.type)
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.body.type)
         if (ctx.payload.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
