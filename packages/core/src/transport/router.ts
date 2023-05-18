@@ -40,9 +40,10 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
 
     /**
      * unuse route.
-     * @param route 
+     * @param route
+     * @param endpoint endpoint.
      */
-    abstract unuse(route: string): this;
+    abstract unuse(route: string, endpoint?: T): this;
     /**
      * find route by pattern
      * @param url

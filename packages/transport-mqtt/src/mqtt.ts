@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule } from '@tsdi/core';
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, SessionMiddleware, TransportBackend, TransportModule } from '@tsdi/transport';
 import { MqttClient } from './client/client';
@@ -72,6 +72,6 @@ const defaultServer = {
         ContentMiddleware,
         EncodeJsonMiddleware,
         BodyparserMiddleware,
-        MiddlewareRouter
+        HybridRouter
     ]
 } as MqttServerOpts;

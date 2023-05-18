@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
-import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, Publisher, Subscriber, TransportEvent, TransportRequest } from '@tsdi/core';
 import Redis, { RedisOptions } from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
@@ -7,10 +7,10 @@ import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 
 
 @Injectable({ static: false })
-export class RedisClient extends Client<TransportRequest, TransportEvent> {
+export class RedisClient extends Client<TransportRequest, TransportEvent>
+    implements Subscriber, Publisher {
 
-    private pubClient: Redis | null = null;
-    private subClient: Redis | null = null;
+    private redis: Redis | null = null;
     constructor(
         readonly handler: RedisHandler,
         @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
@@ -18,26 +18,13 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected async connect(): Promise<void> {
-        if (this.pubClient && this.subClient) return;
+        if (this.redis) return;
 
         const opts = this.options;
-        this.subClient = new Redis(opts.connectOpts);
-        this.pubClient = new Redis(opts.connectOpts);
-
+        this.redis = new Redis(opts.connectOpts);
     }
 
     protected async onShutdown(): Promise<void> {
-        await this.subClient?.quit();
-        await this.pubClient?.quit();
+        await this.redis?.quit();
     }
-
-    // protected createDuplex(opts: RedisClientOpts): Duplex {
-    //     return createClient(opts.connectOpts!);
-    // }
-
-    // protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
-    //     const packet = this.context.get(PacketFactory);
-    //     return new Connection(duplex, packet, opts);
-    // }
-
 }

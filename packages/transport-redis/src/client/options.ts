@@ -1,6 +1,6 @@
 import { ConfigableHandlerOptions, TransportRequest } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import Redis, { RedisOptions } from 'ioredis';
+import { RedisOptions } from 'ioredis';
 
 /**
  * Redis client options.
