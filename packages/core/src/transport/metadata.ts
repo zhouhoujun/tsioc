@@ -421,7 +421,7 @@ const isRest = /\/:/;
 function createRestfulMatcher(route: string) {
     if (isRest.test(route)) {
         const routes = route.split('/').map(r => r.startsWith(':') ? '\\S*' : r).join('\\/');
-        return new RegExp('^' + routes);
+        return new RegExp('^' + routes + '$');
     }
     return undefined;
 }
