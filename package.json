@@ -42,6 +42,8 @@
     "@types/mocha": "^7.0.2",
     "@types/pumpify": "^1.4.1",
     "@types/shelljs": "^0.8.0",
+    "@types/swagger-ui-dist": "^3.30.1",
+    "@types/swagger-ui-express": "^4.1.3",
     "@types/through2": "^2.0.36",
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.23.0",
@@ -119,6 +121,8 @@
     "nats": "^2.9.0",
     "pumpify": "^2.0.1",
     "qs": "^6.10.3",
+    "swagger-ui-dist": "^4.18.3",
+    "swagger-ui-express": "^4.6.3",
     "uuid": "^8.3.2",
     "ws": "^8.5.0"
   }
