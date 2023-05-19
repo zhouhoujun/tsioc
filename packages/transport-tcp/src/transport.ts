@@ -84,32 +84,37 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
 
             if (encoder) {
                 hmsg = encoder.encode(hmsg);
-                body = encoder.encode(payload);
+                body = encoder.encode(body);
                 len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
             }
 
-            this.socket.write(String(hmsg.length + 1));
-            this.socket.write(this.delimiter);
-            this.socket.write(this._header);
-            this.socket.write(hmsg);
-            this.socket.write(String(len + 3));
-            this.socket.write(this.delimiter);
-            this.socket.write(this._body);
             const bufId = Buffer.alloc(2);
             bufId.writeUInt16BE(id);
-            this.socket.write(bufId)
-            this.socket.write(body);
+
+            this.socket.write(Buffer.concat([
+                Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
+                this.delimiter,
+                this._header,
+                Buffer.from(hmsg),
+                Buffer.from(String(len + 3)),
+                this.delimiter,
+                this._body,
+                bufId,
+                isString(body) ? Buffer.from(body) : body
+            ]));
 
         } else {
             let msg = JSON.stringify(data);
             if (encoder) {
                 msg = encoder.encode(msg);
             }
-            const length = msg.length;
-            this.socket.write(String(length + 1));
-            this.socket.write(this.delimiter);
-            this.socket.write(this._header);
-            this.socket.write(msg);
+
+            this.socket.write(Buffer.concat([
+                Buffer.from(String(Buffer.byteLength(msg) + 1)),
+                this.delimiter,
+                this._header,
+                isString(msg) ? Buffer.from(msg) : msg
+            ]));
         }
     }
 
