@@ -1,5 +1,5 @@
-import { Bean, Configuration } from '@tsdi/core';
 import { Inject, tokenId } from '@tsdi/ioc';
+import { Bean, Configuration } from '@tsdi/core';
 import { SwaggerOptions, JsonObject, SwaggerUiOptions } from 'swagger-ui-express';
 
 
@@ -8,8 +8,17 @@ import { SwaggerOptions, JsonObject, SwaggerUiOptions } from 'swagger-ui-express
  * Swagger setup options
  */
 export interface SwaggerSetupOptions {
+    /**
+     * custom title for a page.
+     */
     title: string;
+    /**
+     * descripton.
+     */
     description?: string;
+    /**
+     * api version.
+     */
     version?: string;
     /**
      * document api prefix.
@@ -18,27 +27,27 @@ export interface SwaggerSetupOptions {
     /**
      * swagger-ui-express options.
      */
-    opts?: SwaggerUiOptions,
+    opts?: SwaggerUiOptions;
     /**
      * custom Swagger options.
      */
-    options?: SwaggerOptions,
+    options?: SwaggerOptions;
     /**
      * string with a custom CSS to embed into the page.
      */
-    customCss?: string,
+    customCss?: string;
     /**
      * link to a custom favicon.
      */
-    customfavIcon?: string,
+    customfavIcon?: string;
     /**
      * URL of the Swagger API schema, can be specified instead of the swaggerDoc.
      */
-    swaggerUrl?: string,
+    swaggerUrl?: string;
     /**
      * custom title for a page.
      */
-    customSiteTitle?: string,
+    customSiteTitle?: string;
 }
 
 export const SWAGGER_SETUP_OPTIONS = tokenId<SwaggerSetupOptions>('SWAGGER_SETUP_OPTIONS');

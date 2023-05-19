@@ -14,22 +14,22 @@ export class UserController {
     }
 
     @ApiOperation('get users.')
-    @RouteMapping('/:name', 'get')
+    @RouteMapping('/:name', 'GET')
     getUser(name: string) {
         console.log('name:', name);
         return this.usrRep.findByAccount(name);
     }
 
-    @RouteMapping('/', 'post')
-    @RouteMapping('/', 'put')
+    @RouteMapping('/', 'POST')
+    @RouteMapping('/', 'PUT')
     async modify(user: User) {
         console.log(lang.getClassName(this.usrRep), user);
-        let val = await this.usrRep.save(user);
+        const val = await this.usrRep.save(user);
         console.log(val);
         return val;
     }
 
-    @RouteMapping('/:id', 'delete')
+    @RouteMapping('/:id', 'DELETE')
     async del(id: string) {
         console.log('id:', id);
         await this.usrRep.delete(id);

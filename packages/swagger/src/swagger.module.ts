@@ -8,9 +8,9 @@ import { SwaggerService } from './swagger.service';
         SwaggerService
     ]
 })
-export class SwaggerModuel {
+export class SwaggerModule {
 
-    static withOptions(options: ProvdierOf<SwaggerSetupOptions>): ModuleWithProviders<SwaggerModuel> {
+    static withOptions(options: ProvdierOf<SwaggerSetupOptions>): ModuleWithProviders<SwaggerModule> {
 
         const providers: ProviderType[] = [
             toProvider(SWAGGER_SETUP_OPTIONS, options)
@@ -18,7 +18,7 @@ export class SwaggerModuel {
         
         return {
             providers,
-            module: SwaggerModuel
+            module: SwaggerModule
         }
     }
 }
