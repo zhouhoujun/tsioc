@@ -420,7 +420,8 @@ export function createRouteDecorator<TArg>(method: RequestMethod) {
 const isRest = /\/:/;
 function createRestfulMatcher(route: string) {
     if (isRest.test(route)) {
-        const routes = route.split('/').map(r => r.startsWith(':') ? '\\S*' : r).join('\\/');
+        const paths = route.split('/')
+        const routes = paths.map((r, idx) => r.startsWith(':') ? (idx == (paths.length - 1) ? '\\S+' : '\\S*') : r).join('\\/');
         return new RegExp('^' + routes + '$');
     }
     return undefined;
