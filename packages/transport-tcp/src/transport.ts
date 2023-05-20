@@ -67,24 +67,28 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             }
             let len = isString(headers.headers[hdr.CONTENT_LENGTH]) ? ~~headers.headers[hdr.CONTENT_LENGTH] : headers.headers[hdr.CONTENT_LENGTH]!;
 
-            let body: string | Buffer;
-            if (isString(payload) || Buffer.isBuffer(payload)) {
+            let body: Buffer;
+            if (isString(payload)) {
+                body = Buffer.from(payload);
+            } else if (Buffer.isBuffer(payload)) {
                 body = payload;
             } else if (payload instanceof Readable) {
                 body = await toBuffer(payload);
             } else {
-                body = JSON.stringify(payload);
+                body = Buffer.from(JSON.stringify(payload));
             }
 
             if (!headers.headers[hdr.CONTENT_LENGTH]) {
                 headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
             }
 
-            let hmsg = JSON.stringify(headers);
+            let hmsg = Buffer.from(JSON.stringify(headers));
 
             if (encoder) {
                 hmsg = encoder.encode(hmsg);
+                if (isString(hmsg)) hmsg = Buffer.from(hmsg);
                 body = encoder.encode(body);
+                if (isString(body)) body = Buffer.from(body);
                 len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
             }
 
@@ -95,12 +99,12 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
                 Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
                 this.delimiter,
                 this._header,
-                Buffer.from(hmsg),
+                hmsg,
                 Buffer.from(String(len + 3)),
                 this.delimiter,
                 this._body,
                 bufId,
-                isString(body) ? Buffer.from(body) : body
+                body
             ]));
 
         } else {
@@ -108,12 +112,12 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             if (encoder) {
                 msg = encoder.encode(msg);
             }
-
+            const buffers = isString(msg) ? Buffer.from(msg) : msg;
             this.socket.write(Buffer.concat([
-                Buffer.from(String(Buffer.byteLength(msg) + 1)),
+                Buffer.from(String(Buffer.byteLength(buffers) + 1)),
                 this.delimiter,
                 this._header,
-                isString(msg) ? Buffer.from(msg) : msg
+                buffers
             ]));
         }
     }

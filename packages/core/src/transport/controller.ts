@@ -24,7 +24,7 @@ import { AssetContext } from './context';
 export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<AssetContext>, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
-    protected sortRoutes: DecorDefine<RouteMappingMetadata>[] | undefined;
+    protected sortRoutes: DecorDefine<RouteMappingMetadata>[];
     readonly prefix: string;
 
     constructor(readonly factory: RouteEndpointFactory<T>,
@@ -38,6 +38,10 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
         prefix = this.prefix = joinprefix(prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
+        this.sortRoutes = factory.typeRef.class.defs
+            .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
+            .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
+
         factory.onDestroy(this);
     }
 
@@ -72,7 +76,6 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         })
     }
 
-
     protected clear() {
         this.routes.clear();
         super.clear();
@@ -80,15 +83,8 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         (this as any).factory = null!;
     }
 
-
-
     protected getRouteMetaData(ctx: AssetContext) {
         const subRoute = ctx.url.replace(this.prefix, '') || '/';
-        if (!this.sortRoutes) {
-            this.sortRoutes = this.ctrlRef.class.defs
-                .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
-                .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[]
-        }
 
         return this.sortRoutes.find(m => m
             && m.metadata.method === ctx.method
