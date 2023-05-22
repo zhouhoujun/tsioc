@@ -29,7 +29,7 @@ export interface Subscribe {
      * @param {string} pattern message match pattern.
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    <TArg>(pattern: Pattern, option?: RouteOptions<TArg>): MethodDecorator;
+    (pattern: Pattern, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -88,21 +88,21 @@ export interface Handle {
      *
      * @param {RouteMappingMetadata} option message match option.
      */
-    <TArg>(option: ProtocolRouteMappingMetadata<TArg>): HandleDecorator;
+    (option: ProtocolRouteMappingMetadata): HandleDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {string} pattern message match pattern.
      * @param {ProtocolRouteOptions} option message match option.
      */
-    <TArg>(pattern: Pattern, option?: ProtocolRouteOptions<TArg>): MethodDecorator;
+    (pattern: Pattern, option?: ProtocolRouteOptions): MethodDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Pattern} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    <TArg>(pattern: Pattern, protocol?: Protocol, option?: RouteOptions<TArg>): MethodDecorator;
+    (pattern: Pattern, protocol?: Protocol, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -200,7 +200,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: ProtocolRouteMappingOptions<TArg>): ClassDecorator;
+    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -215,20 +215,20 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 
     /**
      * route decorator. define the controller as an route.
      *
      * @param {ProtocolRouteMappingMetadata} [metadata] route metadata.
      */
-    <TArg>(metadata: ProtocolRouteMappingMetadata<TArg>): ClassDecorator;
+    (metadata: ProtocolRouteMappingMetadata): ClassDecorator;
     /**
      * route decorator. define the method as an route.
      *
      * @param {RouteMappingMetadata} [metadata] route metadata.
      */
-    <TArg>(metadata: RouteMappingMetadata<TArg>): MethodDecorator;
+    (metadata: RouteMappingMetadata): MethodDecorator;
 }
 
 
@@ -353,13 +353,13 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: ProtocolRouteMappingOptions<TArg>): ClassDecorator;
+    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    <TArg>(metadata: ProtocolRouteMappingMetadata<TArg>): ClassMethodDecorator;
+    (metadata: ProtocolRouteMappingMetadata): ClassMethodDecorator;
 }
 
 
@@ -393,7 +393,7 @@ export interface RouteMethodDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 
@@ -405,15 +405,15 @@ export interface RouteMethodDecorator {
  * @param {RequestMethod} [method]
  * @param { MetadataExtends<T>} [metaExtends]
  */
-export function createRouteDecorator<TArg>(method: RequestMethod) {
-    return createDecorator<RouteMappingMetadata<TArg>>('Route', {
+export function createRouteDecorator(method: RequestMethod) {
+    return createDecorator<RouteMappingMetadata>('Route', {
         props: (
             route: string,
             arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
             const regExp = createRestfulMatcher(route);
-            return (isString(arg2) ? { route, regExp, contentType: arg2, method } : { route, regExp, ...arg2, method }) as ProtocolRouteMappingMetadata<TArg>
+            return (isString(arg2) ? { route, regExp, contentType: arg2, method } : { route, regExp, ...arg2, method }) as ProtocolRouteMappingMetadata
         }
     });
 }
@@ -452,7 +452,7 @@ export interface HeadDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 
@@ -484,7 +484,7 @@ export interface OptionsDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -515,7 +515,7 @@ export interface GetDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -547,7 +547,7 @@ export interface DeleteDecorator {
      * @param {string} route route sub path.
      * @param options route metadata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 
 }
 /**
@@ -579,7 +579,7 @@ export interface PatchDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -612,7 +612,7 @@ export interface PostDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 /**
  * Post decorator. define the route method as post.
@@ -643,7 +643,7 @@ export interface PutDecorator {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    <TArg>(route: string, options: RouteOptions<TArg>): MethodDecorator;
+    (route: string, options: RouteOptions): MethodDecorator;
 }
 /**
  * Put decorator. define the route method as put.

@@ -1,4 +1,4 @@
-import { Abstract, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, Token, Type, TypeDef } from '@tsdi/ioc';
 import { Protocol, RequestMethod } from './protocols';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions } from '../endpoints/endpoint.service';
@@ -70,6 +70,10 @@ export interface RouteOptions<TArg = any> extends EndpointOptions<TArg> {
      * pipe extends args.
      */
     args?: any[];
+    /**
+     * dynamic tokens for path of topic.  
+     */
+    paths?: Record<string, Token>;
 }
 
 /**
@@ -133,7 +137,7 @@ export interface ProtocolRouteMappingOptions<TArg = any> extends ProtocolRouteOp
 /**
  * protocol route mapping metadata.
  */
-export interface ProtocolRouteMappingMetadata<TArg> extends ProtocolRouteMappingOptions<TArg> {
+export interface ProtocolRouteMappingMetadata<TArg = any> extends ProtocolRouteMappingOptions<TArg> {
     /**
      * route.
      *

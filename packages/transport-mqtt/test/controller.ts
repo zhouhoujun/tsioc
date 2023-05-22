@@ -1,12 +1,17 @@
-import { BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { lang } from '@tsdi/ioc';
+import { BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/core';
+import { lang, tokenId } from '@tsdi/ioc';
 import { RedirectResult } from '@tsdi/transport';
 import {  of } from 'rxjs';
+import { MqttClient } from '../src';
 
-
+const SENSORS = tokenId<string[]>('SENSORS')
 
 @RouteMapping('/device')
 export class DeviceController {
+
+    constructor(private client: MqttClient){
+
+    }
 
     @RouteMapping('/init', 'POST')
     req(name: string) {
@@ -65,13 +70,24 @@ export class DeviceController {
 
 
     @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
+    async handleMessage() {
 
     }
 
-    @Handle('dd*', 'tcp')
-    async subMessage1() {
+    @Handle('dd/**', 'tcp')
+    async handleMessage1() {
 
+    }
+
+    @Subscribe('sensor/:id/dd/**', 'tcp', {
+        paths: {
+            id: SENSORS
+        }
+    })
+    async subsMessage(@Payload() id: string) {
+        //todo sth
+        this.client.send('');
+        this.client.publish('', '');
     }
 
 }
