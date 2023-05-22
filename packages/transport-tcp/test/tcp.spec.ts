@@ -12,6 +12,11 @@ import { LoggerModule } from '@tsdi/logs';
 @RouteMapping('/device')
 export class DeviceController {
 
+    @RouteMapping('/', 'GET')
+    list(@RequestParam({ nullable: true }) name: string) {
+        return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
+    }
+
     @RouteMapping('/init', 'POST')
     req(name: string) {
         console.log('DeviceController init:', name);
@@ -136,6 +141,31 @@ describe('TCP Server & TCP Client', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
+    it('query all', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device')
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
+
+    it('query with params ', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
 
     it('not found', async () => {
         const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })

@@ -21,6 +21,11 @@ import { Http, HttpContext, HttpModule, HttpServer } from '@tsdi/transport-http'
 @RouteMapping('/device')
 class DeviceController {
 
+    @RouteMapping('/', 'GET')
+    list(@RequestParam({ nullable: true }) name: string) {
+        return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
+    }
+
     @RouteMapping('/init', 'POST')
     req(name: string) {
         console.log('DeviceController init:', name);
@@ -114,7 +119,7 @@ class DeviceQueue implements Middleware {
         const deviceA_state = ctx.get('deviceA_state');
         const deviceB_state = ctx.get('deviceB_state');
 
-       ctx.body = {
+        ctx.body = {
             device,
             deviceA_state,
             deviceB_state
@@ -269,6 +274,32 @@ describe('app route mapping', () => {
         expect(bState).toBe('startuped');
     });
 
+    it('query all', async () => {
+        const a = await lastValueFrom(ctx.resolve(Http).get<any[]>('/device')
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
+
+    it('query with params ', async () => {
+        const a = await lastValueFrom(ctx.resolve(Http).get<any[]>('/device', { params: { name: '2' } })
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
+
     it('post route response object', async () => {
         const a = await lastValueFrom(ctx.resolve(Http).send('/device/init', { observe: 'response', method: POST, params: { name: 'test' } }));
         expect(a.status).toEqual(200);
@@ -291,11 +322,11 @@ describe('app route mapping', () => {
 
     it('route with request body pipe', async () => {
         const a = await lastValueFrom(ctx.resolve(Http).send('/device/usage', { observe: 'response', method: POST, payload: { id: 'test1', age: '50', createAt: '2021-10-01' } })
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
         // a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();

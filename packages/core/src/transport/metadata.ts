@@ -269,7 +269,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
                 const endpoint = injector.get(ControllerRouteReolver).resolve(ctx.class, injector);
-                const route =  `${normalize(endpoint.prefix)}/**`;
+                const route =  `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
 
                 endpoint.factory.onDestroy(() => {
