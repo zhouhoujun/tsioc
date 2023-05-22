@@ -38,13 +38,25 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      * @param endpoint endpoint.
      */
     abstract unuse(route: string, endpoint?: T): this;
-    /**
-     * find route by pattern
-     * @param url
-     */
-    abstract findRoute(pattern: Pattern): T | undefined;
+
 }
 
+@Abstract()
+export abstract class RouteMatcher {
+    /**
+     * register route matcher. 
+     * @param route
+     * @returns is registered or not. 
+     */
+    abstract register(route: string): boolean;
+
+    /**
+     * get the url path match route
+     * @param path url path
+     * @returns matched route.
+     */
+    abstract match(path: string): string | null;
+}
 
 /**
  * route options

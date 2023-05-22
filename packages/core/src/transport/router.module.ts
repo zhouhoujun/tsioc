@@ -1,8 +1,8 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
-import { Router } from './router';
+import { RouteMatcher, Router } from './router';
 import { ASSET_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
-import { MappingRouter } from './router.mapping';
+import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteReolver } from './controller';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
@@ -28,6 +28,7 @@ ASSET_ENDPOINT_IMPL.create = (injector, options) => new AssetEndpointImpl(inject
         { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
         { provide: Router, useExisting: MappingRouter },
         { provide: HybridRouter, useExisting: MappingRouter },
+        { provide: RouteMatcher, useClass: DefaultRouteMatcher, asDefault: true },
         ControllerRouteReolver
     ]
 })
