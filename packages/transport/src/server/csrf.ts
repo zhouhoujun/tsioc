@@ -1,7 +1,7 @@
 import { AssetContext, ForbiddenExecption, GET, HEAD, Middleware, OPTIONS } from '@tsdi/core';
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { hdr } from '../consts';
-import { Session } from './session';
+import { SessionAdapter } from './session';
 
 
 @Abstract()
@@ -85,7 +85,7 @@ export class CsrfMiddleware implements Middleware<AssetContext> {
         ctx.injector.inject({
             provide: CSRF,
             useFactory: () => {
-                const se = ctx.injector.get(Session, null);
+                const se = ctx.injector.get(SessionAdapter, null);
                 if (!se) {
                     return null
                 }
@@ -96,7 +96,7 @@ export class CsrfMiddleware implements Middleware<AssetContext> {
             }
         });
 
-        const session = ctx.injector.get(Session, null);
+        const session = ctx.injector.get(SessionAdapter, null);
         if (!session || this.options.excludedMethods?.indexOf(ctx.method) !== -1) {
             return await next()
         }

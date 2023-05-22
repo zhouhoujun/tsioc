@@ -3,7 +3,7 @@ import {
     ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint, TransportSessionFactory
 } from '@tsdi/core';
 import {
-    BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
+    BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, JsonMiddleware, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
     ServerFinalizeFilter, SessionMiddleware, TransportModule, TransportBackend, RequestAdapter, StatusVaildator, RespondAdapter
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -179,7 +179,7 @@ const defServerOpts = {
     middlewares: [
         SessionMiddleware,
         ContentMiddleware,
-        EncodeJsonMiddleware,
+        JsonMiddleware,
         BodyparserMiddleware,
         HybridRouter
     ]

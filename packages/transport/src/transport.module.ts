@@ -5,8 +5,8 @@ import { StreamTransportBackend, TransportBackend } from './client/backend';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './logger';
 import {
-    Bodyparser, StaticContent, CorsMiddleware, CsrfMiddleware,
-    EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware,
+    Bodyparser, StaticContent, Json, Session, 
+    CorsMiddleware, CsrfMiddleware, HelmetMiddleware,
     ExecptionFinalizeFilter, ServerFinalizeFilter, RespondAdapter, ErrorRespondAdapter
 } from './server';
 
@@ -27,11 +27,12 @@ import {
 
         Bodyparser,
         StaticContent,
+        Json,
+        Session,
+
         CorsMiddleware,
         CsrfMiddleware,
         HelmetMiddleware,
-        EncodeJsonMiddleware,
-        SessionMiddleware,
 
         RespondAdapter,
         ErrorRespondAdapter,

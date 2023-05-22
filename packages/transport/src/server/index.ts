@@ -6,17 +6,20 @@ export * from './error.respond';
 
 
 export * from './helmet';
-export * from './json';
 export * from './cors';
 export * from './csrf';
+
+export * from './json';
+export { Json as JsonMiddleware, Json as JsonInterceptor } from './json';
 
 export * from './bodyparser';
 export { Bodyparser as BodyparserMiddleware, Bodyparser as BodyparserInterceptor } from './bodyparser';
 
 export * from './send';
-
 export * from './content';
 export { StaticContent as ContentMiddleware, StaticContent as ContentInterceptor } from './content';
+
 export * from './session';
+export { Session as SessionMiddleware, Session as SessionInterceptor } from './session';
 
 export * from './results';
