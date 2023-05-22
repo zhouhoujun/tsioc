@@ -1,5 +1,6 @@
-import { Middleware, AssetContext, HEAD, GET } from '@tsdi/core';
+import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { Observable, from, mergeMap } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
 import { StatusVaildator } from '../status';
 
@@ -24,10 +25,10 @@ export abstract class ContentOptions implements SendOptions {
  * static content resources.
  */
 @Injectable()
-export class ContentMiddleware implements Middleware<AssetContext> {
+export class StaticContent implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
-    private options: ContentOptions
-    constructor(private vaildator: StatusVaildator, @Nullable() options: ContentOptions) {
+    protected readonly options: ContentOptions
+    constructor(protected readonly vaildator: StatusVaildator, @Nullable() options: ContentOptions) {
         this.options = { ...defOpts, ...options };
     }
 
@@ -35,6 +36,32 @@ export class ContentMiddleware implements Middleware<AssetContext> {
         if (this.options.defer) {
             await next()
         }
+        const file = await this.send(ctx);
+        if (!this.options.defer && !file) {
+            await next()
+        }
+    }
+
+    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+        if (this.options.defer) {
+            return next.handle(input)
+                .pipe(
+                    mergeMap(res => {
+                        return this.send(input)
+                    })
+                )
+        } else {
+            return from(this.send(input))
+                .pipe(
+                    mergeMap(file => {
+                        if (!file) return next.handle(input)
+                        return file;
+                    })
+                )
+        }
+    }
+
+    protected async send(ctx: AssetContext) {
         let file = '';
         if (ctx.method === HEAD || ctx.method === GET) {
             try {
@@ -46,11 +73,8 @@ export class ContentMiddleware implements Middleware<AssetContext> {
                 }
             }
         }
-        if (!this.options.defer && !file) {
-            await next()
-        }
+        return file;
     }
-
 }
 
 export const defOpts: ContentOptions = {

@@ -1,12 +1,12 @@
 /* eslint-disable no-control-regex */
-import { AssetContext, Middleware, UnsupportedMediaTypeExecption, IReadableStream, BadRequestExecption } from '@tsdi/core';
+import { AssetContext, Middleware, UnsupportedMediaTypeExecption, IReadableStream, BadRequestExecption, Interceptor, Handler } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { HttpStatusCode } from '@tsdi/common';
+import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
 import { MimeTypes } from '../mime';
 import { StreamAdapter } from '../stream';
-
 
 @Abstract()
 export class PayloadOptions {
@@ -30,7 +30,7 @@ export class PayloadOptions {
 }
 
 @Injectable()
-export class BodyparserMiddleware implements Middleware<AssetContext> {
+export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
     private options: {
         json: {
@@ -68,6 +68,18 @@ export class BodyparserMiddleware implements Middleware<AssetContext> {
         this.enableJson = this.enableType('json');
         this.enableText = this.enableType('text');
         this.enableXml = this.enableType('xml');
+    }
+
+    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+        if (!isUndefined(input.payload.body)) return next.handle(input);
+        return from(this.parseBody(input))
+            .pipe(
+                mergeMap(res => {
+                    input.payload.body = res.body ?? {};
+                    if (isUndefined(input.payload.rawBody)) input.payload.rawBody = res.raw;
+                    return next.handle(input)
+                })
+            )
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {

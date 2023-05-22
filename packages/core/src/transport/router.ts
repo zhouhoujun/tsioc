@@ -29,7 +29,6 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      * @param endpoint endpoint. 
      */
     abstract use(route: string, endpoint: T): this;
-
     /**
      * unuse route.
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -41,11 +40,16 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
 
 }
 
+/**
+ * math url path with register route.
+ */
 @Abstract()
 export abstract class RouteMatcher {
     /**
      * register route matcher. 
-     * @param route
+     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @returns is registered or not. 
      */
     abstract register(route: string): boolean;
@@ -96,6 +100,9 @@ export interface RouteMappingMetadata<TArg = any> extends RouteOptions<TArg> {
     contentType?: string;
 }
 
+/**
+ * Protocol route options.
+ */
 export interface ProtocolRouteOptions<TArg = any> extends RouteOptions<TArg> {
     /**
      * transport protocol

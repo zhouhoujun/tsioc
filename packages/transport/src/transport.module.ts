@@ -5,13 +5,11 @@ import { StreamTransportBackend, TransportBackend } from './client/backend';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './logger';
 import {
-    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware,
-    EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware
-} from './middlewares';
-import { ExecptionFinalizeFilter } from './server/execption-filter';
-import { ServerFinalizeFilter } from './server/filter';
-import { RespondAdapter } from './server/respond';
-import { ErrorRespondAdapter } from './server/error.respond';
+    Bodyparser, StaticContent, CorsMiddleware, CsrfMiddleware,
+    EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware,
+    ExecptionFinalizeFilter, ServerFinalizeFilter, RespondAdapter, ErrorRespondAdapter
+} from './server';
+
 
 
 @Module({
@@ -26,8 +24,9 @@ import { ErrorRespondAdapter } from './server/error.respond';
         BodyContentInterceptor,
 
         LogInterceptor,
-        BodyparserMiddleware,
-        ContentMiddleware,
+
+        Bodyparser,
+        StaticContent,
         CorsMiddleware,
         CsrfMiddleware,
         HelmetMiddleware,

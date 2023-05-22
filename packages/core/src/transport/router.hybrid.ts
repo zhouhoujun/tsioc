@@ -23,12 +23,12 @@ export abstract class HybridRouter extends Router<HybridRoute> implements Middle
      * @returns {Observable<T>}
      */
     abstract invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
+    
     /**
      * use route.
      * @param route 
      */
     abstract use(route: Route): this;
-
     /**
      * use route.
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
