@@ -269,7 +269,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
                 const endpoint = injector.get(ControllerRouteReolver).resolve(ctx.class, injector);
-                const route = endpoint.prefix;
+                const route =  `${normalize(endpoint.prefix)}/**`;
                 router.use(route, endpoint);
 
                 endpoint.factory.onDestroy(() => {
@@ -421,7 +421,7 @@ const isRest = /\/:/;
 function createRestfulMatcher(route: string) {
     if (isRest.test(route)) {
         const paths = route.split('/')
-        const routes = paths.map((r, idx) => r.startsWith(':') ? (idx == (paths.length - 1) ? '\\S+' : '\\S*') : r).join('\\/');
+        const routes = paths.map((r, idx) => r.startsWith(':') ? (idx == (paths.length - 1) ? '(\\w|-|%)+' : '(\\w|-|%)*') : r).join('\\/');
         return new RegExp('^' + routes + '$');
     }
     return undefined;

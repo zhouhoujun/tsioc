@@ -1,4 +1,7 @@
-import { EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable, OnDestroy, pomiseOf, Injector, Execption, isArray, isPromise, isObservable } from '@tsdi/ioc';
+import {
+    EMPTY, Inject, Injectable, InjectFlags, ModuleRef, isFunction, isString, lang, Nullable,
+    OnDestroy, pomiseOf, Injector, Execption, isArray, isPromise, isObservable
+} from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate, getGuardsToken } from '../guard';
 import { getInterceptorsToken } from '../Interceptor';
@@ -16,6 +19,7 @@ import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
 
 
+
 /**
  * Mapping router.
  */
@@ -23,6 +27,7 @@ import { AssetContext, TransportContext } from './context';
 export class MappingRouter extends HybridRouter implements Middleware, OnDestroy {
 
     readonly routes: Map<string, Endpoint | MiddlewareLike | Array<Endpoint | MiddlewareLike>>;
+    private matchers: Map<RegExp, string>;
 
     constructor(
         private injector: Injector,
@@ -30,13 +35,10 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
         this.routes = new Map<string, MiddlewareFn>();
+        this.matchers = new Map();
         if (routes) {
             routes.forEach(r => this.use(r));
         }
-    }
-
-    has(route: string | Route): boolean {
-        return this.routes.has(isString(route) ? route : route.path)
     }
 
     /**
@@ -68,7 +70,8 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     protected addEndpoint(route: string, endpoint: Endpoint | MiddlewareLike) {
-        if (this.has(route)) {
+        this.regMatcherify(route);
+        if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
             if (handles instanceof ControllerRoute) throw new Execption(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
             if (isArray(handles)) {
@@ -78,6 +81,21 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
             }
         } else {
             this.routes.set(route, endpoint)
+        }
+    }
+
+    protected regMatcherify(route: string) {
+        if (route.indexOf('*') >= 0) {
+            const exp = route.split('/').map(r => {
+                if (r.indexOf('**') >= 0) {
+                    return r.replace('**', '\\S*')
+                } else if (r.indexOf('*') >= 0) {
+                    return r.replace('*', '(\\w|-|%)+')
+                } else {
+                    return r;
+                }
+            }).join('\\/');
+            this.matchers.set(new RegExp('^' + exp + '$'), route);
         }
     }
 
@@ -144,13 +162,14 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     findRoute(url: string): HybridRoute | undefined {
-        const paths = url.split('/');
-        let route: HybridRoute | undefined;
-        for (let i = paths.length; i > 0; i--) {
-            route = this.routes.get(paths.slice(0, i).join('/'));
-            if (route) break
+        let route = this.routes.get(url);
+        if (!route) {
+            const exp = Array.from(this.matchers.keys()).find(reg => reg.test(url));
+            if (exp) {
+                route = this.routes.get(this.matchers.get(exp)!)
+            }
         }
-        return route
+        return route;
     }
 
     onDestroy(): void {

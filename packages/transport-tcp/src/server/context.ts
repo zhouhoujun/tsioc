@@ -18,9 +18,6 @@ export class TcpContext extends AbstractAssetContext<Incoming, Outgoing, number>
             const isIPC = !host && !port;
             const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
-            // if (isIPC) {
-            //     uri.protocol = 'ipc';
-            // }
             return uri;
         }
     }

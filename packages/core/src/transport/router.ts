@@ -17,30 +17,24 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      */
     abstract get prefix(): string;
     /**
-     * routes.
-     */
-    abstract get routes(): Map<string, T>;
-
-    /**
-     * has route or not.
-     * @param route route
-     */
-    abstract has(route: string): boolean;
-    /**
      * use route.
      * @param route 
      */
     abstract use(route: Route): this;
     /**
      * use route.
-     * @param route
+     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param endpoint endpoint. 
      */
     abstract use(route: string, endpoint: T): this;
 
     /**
      * unuse route.
-     * @param route
+     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param endpoint endpoint.
      */
     abstract unuse(route: string, endpoint?: T): this;

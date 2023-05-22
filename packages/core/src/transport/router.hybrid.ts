@@ -5,7 +5,9 @@ import { Route } from './route';
 import { Middleware, MiddlewareLike } from './middleware';
 import { TransportContext } from './context';
 
-
+/**
+ * Hybird route.
+ */
 export type HybridRoute = Endpoint | MiddlewareLike | Array<Endpoint | MiddlewareLike>;
 
 /**
@@ -29,15 +31,18 @@ export abstract class HybridRouter extends Router<HybridRoute> implements Middle
 
     /**
      * use route.
-     * @param route
+     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param endpoint endpoint. 
      */
     abstract use(route: string, endpoint: Endpoint): this;
     /**
      * use route.
-     * @param route 
+     * @param route  The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param middleware middleware. 
      */
     abstract use(route: string, middleware: MiddlewareLike): this;
 }
-
