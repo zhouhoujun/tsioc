@@ -1,5 +1,5 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev, hdr } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -18,7 +18,7 @@ import { TcpOutgoing } from './outgoing';
  * TCP server. server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<TcpContext, Outgoing> implements ListenService {
+export class TcpServer extends Server<TcpContext, Outgoing> implements MicroService<TcpContext, Outgoing>, ListenService {
 
     private serv!: net.Server | tls.Server;
 

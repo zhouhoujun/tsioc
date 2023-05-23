@@ -1,8 +1,8 @@
-import { AssetContext, Incoming, ListenOpts, TransportContext } from '@tsdi/core';
+import { Incoming, ListenOpts } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
 
 
-export class MqttContext extends AbstractAssetContext {
+export class CoapContext extends AbstractAssetContext {
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }
@@ -30,6 +30,5 @@ export class MqttContext extends AbstractAssetContext {
     get secure(): boolean {
         throw new Error('Method not implemented.');
     }
-}
 
-const absurl = /^(mqtt|mqtts|tcp|ssl|ws|wss|wx|wxs|alis):\/\//i;
+}

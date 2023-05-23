@@ -1,4 +1,4 @@
-import { Interceptor, Filter, MiddlewareLike, AssetContext, AssetEndpointOptions, Incoming, Outgoing, TransportSessionOpts } from '@tsdi/core';
+import { Interceptor, Filter, MiddlewareLike, AssetContext, AssetEndpointOptions, Incoming, Outgoing, TransportSessionOpts, ConfigableEndpointOptions } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { SessionOptions, ContentOptions, MimeSource, ProxyOpts } from '@tsdi/transport';
 import * as net from 'net';
@@ -11,6 +11,31 @@ import { TcpContext } from './context';
  * TCP server options.
  */
 export interface TcpServerOpts extends AssetEndpointOptions<TcpContext, Outgoing> {
+
+    autoListen?: boolean;
+    maxConnections?: number;
+    proxy?: ProxyOpts;
+    /**
+     * transport session options.
+     */
+    transportOpts?: TransportSessionOpts;
+    /**
+     * socket timeout.
+     */
+    timeout?: number;
+    mimeDb?: Record<string, MimeSource>;
+    content?: boolean | ContentOptions;
+    session?: boolean | SessionOptions;
+    serverOpts?: net.ServerOpts | tls.TlsOptions;
+    listenOpts: net.ListenOptions;
+
+    detailError?: boolean;
+}
+
+/**
+ * TCP Microservice options.
+ */
+export interface TcpMicroServiceOpts extends ConfigableEndpointOptions<TcpContext, Outgoing> {
 
     autoListen?: boolean;
     maxConnections?: number;

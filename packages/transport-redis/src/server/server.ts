@@ -12,7 +12,9 @@ import { REDIS_SERV_OPTS, RedisOpts } from './options';
 export class RedisServer extends MicroService<TransportContext, Outgoing> {
 
     @InjectLog() logger!: Logger;
-    
+
+    private redis: Redis | null = null;
+
     constructor(
         readonly endpoint: RedisEndpoint,
         @Inject(REDIS_SERV_OPTS) private options: RedisOpts
@@ -20,26 +22,23 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         super();
     }
 
-    private pubClient: Redis | null = null;
-    private subClient: Redis | null = null;
-
     protected createServer(opts: RedisOpts) {
-        this.pubClient = new Redis(opts.connectOpts);
-        this.subClient = new Redis(opts.connectOpts);
+        this.redis = new Redis(opts.connectOpts);
     }
+
     protected async onStartup(): Promise<any> {
         const logger = this.logger;
-        if (!this.pubClient || !this.subClient) throw new ArgumentExecption('redis client not created');
-        this.pubClient.on(ev.ERROR, (err) => logger.error(err));
-        this.subClient.on(ev.ERROR, (err) => logger.error(err));
+        if (!this.redis) throw new ArgumentExecption('redis client not created');
+        this.redis.on(ev.ERROR, (err) => logger.error(err));
     }
+
     protected async onStart(): Promise<any> {
         throw new Error('Method not implemented.');
     }
+
     protected async onShutdown(): Promise<any> {
-        this.subClient?.quit();
-        this.pubClient?.quit();
-        this.subClient = this.pubClient = null;
+        this.redis?.quit();
+        this.redis = null;
     }
 
     // protected async listen(server: RedisClient, opts: ListenOpts): Promise<void> {

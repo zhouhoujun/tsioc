@@ -1,4 +1,4 @@
-import { Abstract, Token, Type } from '@tsdi/ioc';
+import { Abstract, ClassType, Token, Type } from '@tsdi/ioc';
 import { HandlerOptions, HandlerService } from '../handlers/handler.service';
 import { Interceptor } from '../Interceptor';
 import { CanActivate } from '../guard';
@@ -40,7 +40,7 @@ export interface EndpointOptions<T = any, TArg = any> extends HandlerOptions<T, 
  * 可配置结点配置
  */
 export interface ConfigableEndpointOptions<T = any, TArg = any> extends EndpointOptions<T, TArg> {
-    backend: Type<Backend>;
+    backend?: ClassType<Backend>;
 }
 
 

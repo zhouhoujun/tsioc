@@ -1,16 +1,20 @@
-import { EndpointBackend} from '@tsdi/core';
-import { Token } from '@tsdi/ioc';
-import { TransportClient } from '@tsdi/transport';
+import { Injectable } from '@tsdi/ioc';
+import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Observable } from 'rxjs';
+import { NatsHandler } from './handler';
 
-export class NatsClient extends TransportClient {
-    
-    protected buildRequest(url: any, options?: RequstOption | undefined) {
+
+@Injectable({ static: false })
+export class NatsClient extends Client<TransportRequest, TransportEvent> {
+
+    constructor(readonly handler: NatsHandler) {
+        super()
+    }
+
+    protected connect(): Promise<any> | Observable<any> {
         throw new Error('Method not implemented.');
     }
-    protected connect(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    protected getBackend(): EndpointBackend<any, any> {
+    protected onShutdown(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 

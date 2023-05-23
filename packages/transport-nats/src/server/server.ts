@@ -1,21 +1,27 @@
-import { TransportContext, TransportServer } from '@tsdi/core';
+import { MicroService } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
-import { Subscription } from 'rxjs';
+import { NatsContext } from './context';
+import { NatsEndpoint } from './endpoint';
 
 
 @Injectable()
-export class NatsServer extends TransportServer {
-    start(): Promise<void> {
+export class NatsServer extends MicroService<NatsContext> {
+    
+    constructor(
+        readonly endpoint: NatsEndpoint
+    ) {
+        super()
+    }
+    
+    protected onStartup(): Promise<any> {
         throw new Error('Method not implemented.');
     }
-    protected createContext(request: any, response: any): TransportContext<any, any> {
+    protected onStart(): Promise<any> {
         throw new Error('Method not implemented.');
     }
-    protected bindEvent(ctx: TransportContext<any, any>, cancel: Subscription): void {
+    protected onShutdown(): Promise<any> {
         throw new Error('Method not implemented.');
     }
-    close(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
+
     
 }

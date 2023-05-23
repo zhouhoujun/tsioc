@@ -8,6 +8,9 @@ import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { TCP_CLIENT_OPTS } from './options';
 
+/**
+ * tcp request adapter.
+ */
 @Injectable()
 export class TcpRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
 

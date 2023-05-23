@@ -1,8 +1,8 @@
-import { AssetContext, Incoming, ListenOpts, TransportContext } from '@tsdi/core';
+import { Incoming, ListenOpts, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
 
 
-export class MqttContext extends AbstractAssetContext {
+export class NatsContext extends AbstractAssetContext<Incoming, Outgoing, number> {
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }
@@ -15,10 +15,10 @@ export class MqttContext extends AbstractAssetContext {
     get protocol(): string {
         throw new Error('Method not implemented.');
     }
-    get status(): string | number {
+    get status(): number {
         throw new Error('Method not implemented.');
     }
-    set status(status: string | number) {
+    set status(status: number) {
         throw new Error('Method not implemented.');
     }
     get statusMessage(): string {
@@ -30,6 +30,5 @@ export class MqttContext extends AbstractAssetContext {
     get secure(): boolean {
         throw new Error('Method not implemented.');
     }
-}
 
-const absurl = /^(mqtt|mqtts|tcp|ssl|ws|wss|wx|wxs|alis):\/\//i;
+}

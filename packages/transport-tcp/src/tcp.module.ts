@@ -1,14 +1,15 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler, createAssetEndpoint, TransportSessionFactory
+    ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler,
+    createAssetEndpoint, TransportSessionFactory, createTransportEndpoint, ConfigableEndpointOptions
 } from '@tsdi/core';
 import {
-    BodyContentInterceptor, Bodyparser, StaticContent, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
+    BodyContentInterceptor, Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
     ServerFinalizeFilter, Session, TransportModule, TransportBackend, RequestAdapter, StatusVaildator, RespondAdapter
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { TcpClient } from './client/clinet';
-import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS } from './server/options';
+import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts } from './server/options';
 import { TcpServer } from './server/server';
 import { TcpEndpoint } from './server/endpoint';
 import { TcpRequestAdapter } from './client/request';
@@ -19,8 +20,7 @@ import { TcpStatusVaildator } from './status';
 import { TcpTransportSessionFactory } from './transport';
 import { TcpExecptionHandlers } from './server/execption-filter';
 import { TcpRespondAdapter } from './server/respond';
-import { TCP_MICRO_SERV_OPTS, TcpMicroServiceOpts } from './microservice/options';
-import { TcpMicroEndpoint } from './microservice/endpoint';
+
 
 @Module({
     imports: [
@@ -44,8 +44,8 @@ import { TcpMicroEndpoint } from './microservice/endpoint';
 export class TcpModule {
 
     /**
-     * Tcp Server options.
-     * @param options 
+     * import tcp server module with options.
+     * @param options module options.
      * @returns 
      */
     static withOptions(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
@@ -81,6 +81,11 @@ export class TcpModule {
         }
     }
 
+    /**
+     * import tcp mirco service module with options.
+     * @param options mirco service module options.
+     * @returns 
+     */
     static forMicroService(options: TcpMircoModuleOptions): ModuleWithProviders<TcpModule> {
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
@@ -91,18 +96,18 @@ export class TcpModule {
                 deps: [Injector]
             }))
                 : [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
-            { provide: TCP_MICRO_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serviceOpts } },
+            { provide: TCP_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
                     return createHandler(injector, { ...defClientOpts, ...opts });
                 },
                 deps: [Injector, TCP_CLIENT_OPTS]
             }),
-            toProvider(TcpMicroEndpoint, options.endpoint ?? {
+            toProvider(TcpEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: TcpMicroServiceOpts) => {
-                    return createAssetEndpoint(injector, opts)
+                    return createTransportEndpoint(injector, opts)
                 },
-                deps: [Injector, TCP_MICRO_SERV_OPTS]
+                deps: [Injector, TCP_SERV_OPTS]
             }),
             toProvider(TransportSessionFactory, options.transportFactory ?? TcpTransportSessionFactory)
         ];
@@ -112,9 +117,12 @@ export class TcpModule {
             providers
         }
     }
+
 }
 
-
+/**
+ * tcp module options.
+ */
 export interface TcpModuleOptions {
     /**
      * client options.
@@ -137,7 +145,9 @@ export interface TcpModuleOptions {
     serverOpts?: TcpServerOpts;
 }
 
-
+/**
+ * tcp mirco service module options.
+ */
 export interface TcpMircoModuleOptions {
     /**
      * client options.
@@ -150,13 +160,13 @@ export interface TcpMircoModuleOptions {
     /**
      * service endpoint provider
      */
-    endpoint?: ProvdierOf<TcpMicroEndpoint>;
+    endpoint?: ProvdierOf<TcpEndpoint>;
 
     transportFactory?: ProvdierOf<TransportSessionFactory>;
     /**
-     * service options
+     * server options
      */
-    serviceOpts?: TcpMicroServiceOpts;
+    serverOpts?: TcpMicroServiceOpts;
 }
 
 
@@ -193,12 +203,18 @@ const defMicroOpts = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     middlewaresToken: TCP_SERV_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
+    backend: HybridRouter,
+    filters: [
+        LogInterceptor,
+        ExecptionFinalizeFilter,
+        ExecptionHandlerFilter,
+        ServerFinalizeFilter
+    ],
     interceptors: [
         Session,
-        StaticContent,
+        Content,
         Json,
-        Bodyparser,
-        HybridRouter
+        Bodyparser
     ]
 } as TcpMicroServiceOpts
 
@@ -229,7 +245,7 @@ const defServerOpts = {
     ],
     middlewares: [
         Session,
-        StaticContent,
+        Content,
         Json,
         Bodyparser,
         HybridRouter

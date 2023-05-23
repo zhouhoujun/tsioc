@@ -25,7 +25,7 @@ export abstract class ContentOptions implements SendOptions {
  * static content resources.
  */
 @Injectable()
-export class StaticContent implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
     protected readonly options: ContentOptions
     constructor(protected readonly vaildator: StatusVaildator, @Nullable() options: ContentOptions) {

@@ -1,4 +1,4 @@
-import { Client, ConfigableEndpointOptions,  TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import * as ws from 'ws';

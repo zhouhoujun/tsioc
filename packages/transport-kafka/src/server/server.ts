@@ -6,13 +6,14 @@ import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 import { KafkaParser } from '../parser';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
+import { KafkaContext } from './context';
 
 
 
 
 
 @Injectable()
-export class KafkaServer extends MicroService<TransportContext> {
+export class KafkaServer extends MicroService<KafkaContext> {
 
     protected client: Kafka | undefined;
     protected consumer!: Consumer;
@@ -39,6 +40,15 @@ export class KafkaServer extends MicroService<TransportContext> {
         return this.options;
     }
 
+    protected onStartup(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected onStart(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+    protected onShutdown(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
 
     async start(): Promise<void> {
 
