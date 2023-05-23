@@ -99,11 +99,11 @@ describe('http1.1 server, Http', () => {
 
     it('query all', async () => {
         const a = await lastValueFrom(client.get<any[]>('/device')
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(isArray(a)).toBeTruthy();
         expect(a.length).toEqual(2);
@@ -112,11 +112,11 @@ describe('http1.1 server, Http', () => {
 
     it('query with params ', async () => {
         const a = await lastValueFrom(client.get<any[]>('/device', { params: { name: '2' } })
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(isArray(a)).toBeTruthy();
         expect(a.length).toEqual(1);
@@ -166,7 +166,7 @@ describe('http1.1 server, Http', () => {
     });
 
     it('post route response string', async () => {
-        
+
         const b = await lastValueFrom(client.post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {

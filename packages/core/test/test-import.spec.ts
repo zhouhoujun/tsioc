@@ -1,13 +1,13 @@
 import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
+// import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { HttpClient, HttpClientModule } from '@tsdi/common';
+import { LoggerModule } from '@tsdi/logs';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import { ModuleA, ModuleB, ClassSevice, SocketService, StatupModule, TestService } from './demo';
 import { Application } from '../src';
-// import { HttpModule, HttpServer } from '@tsdi/transport-http';
-import { HttpClient, HttpClientModule } from '@tsdi/common';
-import { LoggerModule } from '@tsdi/logs';
 
 
 describe('di module', () => {

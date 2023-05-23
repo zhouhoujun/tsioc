@@ -1,8 +1,7 @@
 import {
-    ApplicationContext, Configuration, OnDispose,
-    RunnableRef, Bean, Runner, OnApplicationStart, Start, Dispose
+    Configuration, Bean, Runner, Start, Dispose
 } from '../src';
-import { Injectable, Inject, lang, Abstract, Module, Singleton, Static } from '@tsdi/ioc';
+import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logs';
 import * as net from 'net';

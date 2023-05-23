@@ -43,7 +43,7 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
         this.streamify(ctx);
     }
 
-    streamify(ctx: AssetContext) {
+    protected streamify(ctx: AssetContext) {
         const body = ctx.body;
         const strm = this.adapter.isStream(body);
         const json = this.adapter.isJson(body);

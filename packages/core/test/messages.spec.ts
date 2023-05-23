@@ -10,7 +10,6 @@ import {
     EndpointContext,
     POST,
     GET,
-    RouterModule,
     compose,
     NEXT
 } from '../src';
@@ -276,11 +275,11 @@ describe('app route mapping', () => {
 
     it('query all', async () => {
         const a = await lastValueFrom(ctx.resolve(Http).get<any[]>('/device')
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(isArray(a)).toBeTruthy();
         expect(a.length).toEqual(2);
@@ -289,11 +288,11 @@ describe('app route mapping', () => {
 
     it('query with params ', async () => {
         const a = await lastValueFrom(ctx.resolve(Http).get<any[]>('/device', { params: { name: '2' } })
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(isArray(a)).toBeTruthy();
         expect(a.length).toEqual(1);

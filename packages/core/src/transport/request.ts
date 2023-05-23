@@ -63,8 +63,6 @@ export class TransportRequest<T = any> {
         }
     }
 
-
-
     clone(update: {
         headers?: ReqHeaders | undefined;
         context?: InvocationContext<any> | undefined;

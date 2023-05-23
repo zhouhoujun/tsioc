@@ -114,11 +114,11 @@ describe('http2 Secure server, Secure Http', () => {
 
     it('query all', async () => {
         const a = await lastValueFrom(client.get<any[]>('/device')
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(isArray(a)).toBeTruthy();
         expect(a.length).toEqual(2);
@@ -127,11 +127,11 @@ describe('http2 Secure server, Secure Http', () => {
 
     it('query with params ', async () => {
         const a = await lastValueFrom(client.get<any[]>('/device', { params: { name: '2' } })
-        .pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
         expect(isArray(a)).toBeTruthy();
         expect(a.length).toEqual(1);
