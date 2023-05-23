@@ -1,8 +1,9 @@
 import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
-import { of } from 'rxjs'; import {
+import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
     Middleware, BadRequestExecption, AssetContext, compose, NEXT, Get
 } from '@tsdi/core';
+import { of } from 'rxjs'; 
 import { RedirectResult } from '../src';
 
 

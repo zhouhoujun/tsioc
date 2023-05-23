@@ -1,4 +1,4 @@
 
 export * from './client/client';
 export * from './server/server';
-export * from './redis';
+export * from './redis.module';

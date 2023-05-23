@@ -1,4 +1,4 @@
 
 export * from './client/client';
 export * from './server/server';
-export * from './nats';
+export * from './nats.module';

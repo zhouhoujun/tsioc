@@ -1,6 +1,9 @@
-import { ExecptionHandlerFilter, MiddlewareRouter, RouterModule, TransformModule } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule } from '@tsdi/core';
 import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
-import { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, EncodeJsonMiddleware, ExecptionFinalizeFilter, HelmetMiddleware, LogInterceptor, ServerFinalizeFilter, SessionMiddleware, TransportModule } from '@tsdi/transport';
+import {
+    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware,
+    ExecptionFinalizeFilter, HelmetMiddleware, LogInterceptor, ServerFinalizeFilter, SessionMiddleware, TransportModule
+} from '@tsdi/transport';
 import { CoapClient } from './client/client';
 import { CoapVaildator } from './transport';
 import { CoapServer } from './server/server';
@@ -74,9 +77,9 @@ const defOpts = {
         ContentMiddleware,
         SessionMiddleware,
         CsrfMiddleware,
-        EncodeJsonMiddleware,
+        JsonMiddleware,
         BodyparserMiddleware,
-        MiddlewareRouter
+        HybridRouter
     ],
     serverOpts: {
         type: 'udp4'

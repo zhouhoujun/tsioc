@@ -1,4 +1,5 @@
 
 export * from './client/client';
 export * from './server/server';
-export * from './mqtt';
+export * from './transport';
+export * from './mqtt.module';

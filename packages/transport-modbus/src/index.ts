@@ -1,4 +1,4 @@
 
 export * from './server/server';
 export * from './client/client';
-export * from './modbus';
+export * from './modbus.module';

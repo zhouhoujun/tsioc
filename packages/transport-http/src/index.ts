@@ -10,4 +10,4 @@ export * from './server/context';
 export * from './server/endpoint';
 export * from './server/server';
 
-export * from './http';
+export * from './http.module';

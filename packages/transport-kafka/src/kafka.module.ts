@@ -1,4 +1,5 @@
-import { Module, RouterModule, TransformModule } from '@tsdi/core';
+import { RouterModule, TransformModule } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 import { KafkaClient } from './client/client';
 import { KafkaServer } from './server/server';
 

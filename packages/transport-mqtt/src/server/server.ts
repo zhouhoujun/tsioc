@@ -1,8 +1,8 @@
-import { MicroService, Outgoing, Server, TransportContext } from '@tsdi/core';
+import { MicroService, Outgoing, TransportContext } from '@tsdi/core';
 import { Inject, Injectable, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { MqttClient, connect } from 'mqtt';
-import { MQTT_SERV_OPTS, MqttServerOpts } from './options';
+import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
 
 
@@ -13,7 +13,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
     @InjectLog()
     private logger?: Logger;
 
-    constructor(readonly endpoint: MqttEndpoint, @Inject(MQTT_SERV_OPTS, { nullable: true }) private options: MqttServerOpts) {
+    constructor(readonly endpoint: MqttEndpoint, @Inject(MQTT_SERV_OPTS, { nullable: true }) private options: MqttServiceOpts) {
         super();
     }
 

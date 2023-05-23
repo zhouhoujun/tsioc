@@ -1,4 +1,5 @@
-import { Module, RouterModule, TransformModule } from '@tsdi/core';
+import { RouterModule, TransformModule } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 import { GrpcClient } from './client/client';
 import { GrpcServer } from './server/server';
 

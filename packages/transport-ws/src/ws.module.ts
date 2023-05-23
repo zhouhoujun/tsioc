@@ -1,4 +1,4 @@
-import { ClientStreamFactory, ExecptionHandlerFilter, PacketTransformer, RouterModule, ServerStreamFactory, TransformModule, createAssetEndpoint, createHandler } from '@tsdi/core';
+import { ExecptionHandlerFilter, RouterModule, TransformModule, createAssetEndpoint, createHandler } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { WsClient } from './client/client';
 import { WsServer } from './server/server';
@@ -54,15 +54,15 @@ export class WsModule {
             // toProvider(ServerStreamFactory, options.serverStreamFactory ?? ServerStreamFactoryImpl)
         ];
 
-        if (options.transformer) {
-            providers.push(toProvider(PacketTransformer, options.transformer))
-        }
-        if(options.clientStreamFactory){
-            providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
-        }
-        if(options.serverStreamFactory) {
-            providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
-        }
+        // if (options.transformer) {
+        //     providers.push(toProvider(PacketTransformer, options.transformer))
+        // }
+        // if(options.clientStreamFactory){
+        //     providers.push(toProvider(ClientStreamFactory, options.clientStreamFactory))
+        // }
+        // if(options.serverStreamFactory) {
+        //     providers.push(toProvider(ServerStreamFactory, options.serverStreamFactory))
+        // }
 
         return {
             module: WsModule,
@@ -88,10 +88,10 @@ export interface WsModuleOptions {
     /**
      * packet transformer.
      */
-    transformer?: ProvdierOf<PacketTransformer>;
+    // transformer?: ProvdierOf<PacketTransformer>;
 
-    clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
-    serverStreamFactory?: ProvdierOf<ServerStreamFactory>;
+    // clientStreamFactory?: ProvdierOf<ClientStreamFactory>;
+    // serverStreamFactory?: ProvdierOf<ServerStreamFactory>;
 
     /**
      * server options

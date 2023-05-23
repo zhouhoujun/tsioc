@@ -3,4 +3,4 @@ export * from './client/options';
 export * from './server/server';
 export * from './server/options';
 export * from './transport';
-export * from './coap';
+export * from './coap.module';

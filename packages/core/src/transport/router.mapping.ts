@@ -131,7 +131,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
             url = ctx.url ?? '/'
         }
 
-        const route = this.findRoute(ctx.url);
+        const route = this.findRoute(url);
         return route
     }
 

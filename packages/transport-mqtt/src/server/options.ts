@@ -1,5 +1,4 @@
-
-import { AssetContext, ExecptionFilter, Interceptor, MiddlewareLike, TransportEvent, TransportRequest } from '@tsdi/core';
+import { AssetContext, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { TransportEndpointOptions } from '@tsdi/core';
 import { IClientOptions } from 'mqtt';
@@ -7,11 +6,11 @@ import { IClientOptions } from 'mqtt';
 
 
 
-export interface MqttServerOpts extends TransportEndpointOptions<AssetContext> {
+export interface MqttServiceOpts extends TransportEndpointOptions<AssetContext> {
     serverOpts: IClientOptions;
 }
 
-export const MQTT_SERV_OPTS = tokenId<MqttServerOpts>('MQTT_SERV_OPTS');
+export const MQTT_SERV_OPTS = tokenId<MqttServiceOpts>('MQTT_SERV_OPTS');
 
 /**
  * Mqtt server interceptors.
@@ -23,9 +22,4 @@ export const MQTT_SERV_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Tran
  */
 export const MQTT_SERV_FILTERS = tokenId<ExecptionFilter[]>('MQTT_SERV_FILTERS');
 
-
-/**
- * Mqtt server middlewares.
- */
-export const MQTT_SERV_MIDDLEWARES = tokenId<MiddlewareLike[]>('MQTT_SERV_MIDDLEWARES');
 
