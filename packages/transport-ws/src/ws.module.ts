@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, RouterModule, TransformModule, createAssetEndpoint, createHandler } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { WsClient } from './client/client';
 import { WsServer } from './server/server';
@@ -46,7 +46,7 @@ export class WsModule {
             }),
             toProvider(WsEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: WsServerOpts) => {
-                    return createAssetEndpoint(injector, opts)
+                    return createTransportEndpoint(injector, opts)
                 },
                 deps: [Injector, WS_SERV_OPTS]
             }),
@@ -118,6 +118,7 @@ const defServerOpts = {
     detailError: true,
     interceptorsToken: WS_SERV_INTERCEPTORS,
     filtersToken: WS_SERV_FILTERS,
+    backend: HybridRouter,
     interceptors: [
     ],
     filters: [

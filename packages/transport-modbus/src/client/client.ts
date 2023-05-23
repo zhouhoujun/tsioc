@@ -1,21 +1,36 @@
 import { Injectable, Token } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { Duplex } from 'stream';
+import { Client, ConfigableHandler, TransportEvent, TransportRequest } from '@tsdi/core';
 import { EventEmitter } from 'events';
 import ModbusRTU from 'modbus-serial';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 @Injectable()
-export class ModbusClient extends TransportClient {
+export class ModbusClient extends Client<TransportRequest, TransportEvent> {
 
-    protected createSocket(opts: TransportClientOpts): EventEmitter {
-        const modbus = new ModbusRTU();
-        modbus.connectTCP()
-        modbus.open()
-        // return modbus.connectRTU('');
-    }
-    protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+    get handler(): ConfigableHandler<TransportRequest<any>, TransportEvent> {
         throw new Error('Method not implemented.');
     }
+    protected connect(): Observable<any> {
+        const modbus = new ModbusRTU();
+        // modbus.connectTCP()
+        // modbus.open();
+
+        return of(modbus);
+        // return modbus.connectRTU('');
+    }
+
+    protected onShutdown(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
+    // protected createSocket(opts: TransportClientOpts): EventEmitter {
+    //     const modbus = new ModbusRTU();
+    //     modbus.connectTCP()
+    //     modbus.open()
+    //     // return modbus.connectRTU('');
+    // }
+    // protected onConnect(duplex: Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
+    //     throw new Error('Method not implemented.');
+    // }
 
 }
