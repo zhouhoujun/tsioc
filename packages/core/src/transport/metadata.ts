@@ -75,9 +75,6 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscr
 
             return next();
         }
-    },
-    appendProps: (meta) => {
-        meta.static = true;
     }
 });
 
@@ -175,9 +172,6 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             return next();
         }
-    },
-    appendProps: (meta) => {
-        meta.static = true;
     }
 });
 
@@ -427,12 +421,10 @@ export function createRouteDecorator(method: RequestMethod) {
         }
     });
 }
-const isRest = /\/:/;
+
 function createRestfulMatcher(route: string) {
-    if (isRest.test(route)) {
-        const paths = route.split('/')
-        const routes = paths.map((r, idx) => r.startsWith(':') ? (idx == (paths.length - 1) ? '(\\w|-|%)+' : '(\\w|-|%)*') : r).join('\\/');
-        return new RegExp('^' + routes + '$');
+    if ( /\/:\w+(\/)?/.test(route)) {
+        return new RegExp('^' + route.replace(/\/:\w+/g, '\\/[^/]*').replace(/\/:\w+$/g, '\\/[^/]+') + '$');
     }
     return undefined;
 }

@@ -174,32 +174,15 @@ export class DefaultRouteMatcher extends RouteMatcher {
 
     register(route: string): boolean {
         if (wildcard.test(route)) {
-            const exp = route.split('/').map(r => {
-                switch (r) {
-                    case '**':
-                    case '#':
-                        return mutilPath
-                    case '*':
-                    case '+':
-                        return singlePath
+            const $exp = route
+                .replace(/\/\$\{\w+\}/g, '\\/[^/]+')
+                .replace(/\/:\w+/g, '\\/[^/]+')
+                .replace(/\+/g,'[^/]+')
+                .replace(/\+/g,'[^/]+')
+                .replace(/\/#$/,'(\\/.*)?')
+                .replace(/\*\*/g, '.*')
 
-                    default:
-                        if (r.indexOf('**') >= 0) {
-                            return r.replace('**', mutilPath)
-                        }
-                        if (r.indexOf('*') >= 0) {
-                            return r.replace('*', singlePath)
-                        }
-                        if (restPath.test(r)) {
-                            return singlePath
-                        }
-                        if (topicPath.test(r)) {
-                            return singlePath
-                        }
-                        return r;
-                }
-            }).join('\\/');
-            this.matchers.set(new RegExp('^' + exp + '$'), route);
+            this.matchers.set(new RegExp('^' + $exp + '$'), route);
             return true;
         }
         return false;
@@ -215,11 +198,8 @@ export class DefaultRouteMatcher extends RouteMatcher {
 
 }
 
-const singlePath = '(\\w|-|%)+';
-const mutilPath = '.*';
 const wildcard = /(\/:\w+(\/)?)|(\/#$)|(\/\+\/)|(\/\+$)|(\*)|(\/\$\{\w+\}\/)|(\/\$\{\w+\}$)/;
-const restPath = /:\w+/;
-const topicPath = /\$\{\w+\}/
+
 
 /**
  * run hybird routes.
