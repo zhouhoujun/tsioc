@@ -172,15 +172,36 @@ export class DefaultRouteMatcher extends RouteMatcher {
         this.matchers = new Map();
     }
 
-    register(route: string): boolean {
+    register(route: string, params?: Record<string, any>): boolean {
         if (wildcard.test(route)) {
-            const $exp = route
-                .replace(/\/\$\{\w+\}/g, '\\/[^/]+')
-                .replace(/\/:\w+/g, '\\/[^/]+')
-                .replace(/\+/g,'[^/]+')
-                .replace(/\+/g,'[^/]+')
-                .replace(/\/#$/,'(\\/.*)?')
+            let $exp = route.replace(/\+/g, '/[^/]+')
+                .replace(/\/#$/, '(\\/.*)?')
                 .replace(/\*\*/g, '.*')
+
+            if (params) {
+                $exp.match(/\/\$\{\w+\}/g)?.forEach(v => {
+                    const name = v.slice(3, v.length - 1);
+                    if (params[name]) {
+                        const data = params[name];
+                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+                    } else {
+                        $exp = $exp.replace(v, '\\/[^/]+')
+                    }
+                });
+                $exp.match(/\/:\w+/g)?.forEach(v => {
+                    const name = v.slice(2, v.length - 1);
+                    if (params[name]) {
+                        const data = params[name];
+                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+                    } else {
+                        $exp = $exp.replace(v, '\\/[^/]+')
+                    }
+                });
+            } else {
+                $exp = $exp.replace(/\/\$\{\w+\}/g, '\\/[^/]+')
+                    .replace(/\/:\w+/g, '\\/[^/]+')
+            }
+
 
             this.matchers.set(new RegExp('^' + $exp + '$'), route);
             return true;

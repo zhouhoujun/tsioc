@@ -117,7 +117,7 @@ export interface Handle {
  */
 export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    isMatadata: (args)=> {
+    isMatadata: (args) => {
         return isMetadataObject(args) && isString(args.route)
     },
     props: (route: Pattern, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
@@ -423,7 +423,7 @@ export function createRouteDecorator(method: RequestMethod) {
 }
 
 function createRestfulMatcher(route: string) {
-    if ( /\/:\w+(\/)?/.test(route)) {
+    if (/\/:\w+(\/)?/.test(route)) {
         return new RegExp('^' + route.replace(/\/:\w+/g, '\\/[^/]*').replace(/\/:\w+$/g, '\\/[^/]+') + '$');
     }
     return undefined;
