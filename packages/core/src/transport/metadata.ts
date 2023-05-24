@@ -1,6 +1,6 @@
 import {
     isArray, isString, lang, Type, isRegExp, createDecorator, ActionTypes, PatternMetadata,
-    ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf, Execption
+    ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf, Execption, isMetadataObject
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -26,10 +26,17 @@ export interface Subscribe {
     /**
      * Subscribe handle. use to handle subscribe message event.
      *
-     * @param {string} pattern message match pattern.
+     * @param {string} topic message match pattern.
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    (pattern: Pattern, option?: RouteOptions): MethodDecorator;
+    (topic: string, option?: RouteOptions): MethodDecorator;
+    /**
+     * Subscribe handle. use to handle subscribe message event.
+     *
+     * @param {string} topic message match pattern.
+     * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
+     */
+    (topic: string, protocol?: Protocol, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -38,15 +45,15 @@ export interface Subscribe {
  * 
  * @exports {@link Handle}
  */
-export const Subscribe: Handle = createDecorator<HandleMetadata<any> & HandleMessagePattern>('Subscribe', {
+export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscribe', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (route: Pattern, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
-        ({ route, ...options }) as HandleMetadata<any> & HandleMessagePattern,
+    props: (route: string, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
+        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...option })) as HandleMetadata<any>,
     design: {
         method: (ctx, next) => {
 
             const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
-            if (!defines || defines.length) return next();
+            if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
@@ -111,10 +118,13 @@ export interface Handle {
  * 
  * @exports {@link Handle}
  */
-export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessagePattern>('Handle', {
+export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (parent?: Type<Router> | Pattern, options?: { guards?: Type<CanActivate>[], parent?: Type<Router> | string }) =>
-        (isString(parent) || isRegExp(parent) ? ({ route: parent, ...options }) : ({ parent, ...options })) as HandleMetadata<any> & HandleMessagePattern,
+    isMatadata: (args)=> {
+        return isMetadataObject(args) && isString(args.route)
+    },
+    props: (route: Pattern, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
+        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...option })) as HandleMetadata<any>,
     def: {
         class: (ctx, next) => {
             ctx.class.setAnnotation(ctx.define.metadata);
@@ -125,7 +135,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any> & HandleMessag
         method: (ctx, next) => {
 
             const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
-            if (!defines || defines.length) return next();
+            if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
@@ -269,7 +279,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
                 const endpoint = injector.get(ControllerRouteReolver).resolve(ctx.class, injector);
-                const route =  `${normalize(endpoint.prefix)}**`;
+                const route = `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
 
                 endpoint.factory.onDestroy(() => {
@@ -652,21 +662,6 @@ export interface PutDecorator {
  */
 export const Put: PutDecorator = createRouteDecorator(PUT);
 
-
-
-/**
- * handle message pattern.
- */
-export interface HandleMessagePattern {
-    /**
-     * message handle pattern for route mapping.
-     */
-    route?: string | RegExp;
-    /**
-     * message handle command for route mapping.
-     */
-    cmd?: string;
-}
 
 
 /**

@@ -155,6 +155,10 @@ export interface DecorRegisterOption<T = any> {
  */
 export interface MetadataFactory<T = any> extends ProvidersMetadata {
     /**
+     * is metadata or not.
+     */
+    isMatadata?(arg: any): boolean;
+    /**
      * parse args as metadata props.
      * @param args
      */

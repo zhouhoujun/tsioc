@@ -1,6 +1,6 @@
 import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
-import { Observable, from, mergeMap } from 'rxjs';
+import { Observable, from, mergeMap, of } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
 import { StatusVaildator } from '../status';
 
@@ -46,8 +46,9 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         if (this.options.defer) {
             return next.handle(input)
                 .pipe(
-                    mergeMap(res => {
-                        return this.send(input)
+                    mergeMap(async res => {
+                        await this.send(input)
+                        return res;
                     })
                 )
         } else {
@@ -55,7 +56,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
                 .pipe(
                     mergeMap(file => {
                         if (!file) return next.handle(input)
-                        return file;
+                        return of(file);
                     })
                 )
         }

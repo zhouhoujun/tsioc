@@ -50,6 +50,19 @@ export abstract class RouteMatcher {
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.
      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
+     * 
+     * #### Examples
+     * 
+     * ```ts
+     * 'path/#'
+     * 'path/**'
+     * 'path/*'
+     * 'path/+'
+     * 'path/:id'
+     * 'path/${id}'
+     * 
+     * ```
+     *  
      * @returns is registered or not. 
      */
     abstract register(route: string): boolean;

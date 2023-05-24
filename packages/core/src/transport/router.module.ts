@@ -39,11 +39,19 @@ export class RouterModule {
      * without creating a new Router service.
      * When registering for submodules and lazy-loaded submodules, create the Module as follows:
      *
-     * ```
+     * @usageNotes
+     * 
+     * #### Examples:
+     * 
+     * module examples.
+     * 
+     * ```ts
+     * 
      * @Module({
      *   imports: [RouterModule.forChild(ROUTES)]
      * })
      * class MyNgModule {}
+     * 
      * ```
      *
      * @param routes An array of `Route` objects that define the navigation paths for the submodule.
