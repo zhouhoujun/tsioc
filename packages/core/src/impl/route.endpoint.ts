@@ -11,7 +11,7 @@ export class RouteEndpointImpl<TInput extends EndpointContext = EndpointContext,
 
     private _prefix: string;
     readonly route: string;
-    constructor(invoker: OperationInvoker, options: RouteEndpointOptions = {}) {
+    constructor(invoker: OperationInvoker, readonly options: RouteEndpointOptions = {}) {
         super(invoker, options);
         this._prefix = options.prefix || '';
         this.route = patternToPath(options.route || '');

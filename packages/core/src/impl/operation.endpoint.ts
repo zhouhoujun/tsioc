@@ -17,7 +17,7 @@ import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../
 export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> implements OperationEndpoint<TInput, TOutput> {
 
     constructor(
-        public readonly invoker: OperationInvoker, private options: EndpointOptions = {}) {
+        public readonly invoker: OperationInvoker, readonly options: EndpointOptions = {}) {
         super(invoker.context.injector,
             options.interceptorsToken ?? INTERCEPTORS_TOKEN,
             options.guardsToken ?? GUARDS_TOKEN,

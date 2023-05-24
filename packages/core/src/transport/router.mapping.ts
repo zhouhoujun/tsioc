@@ -17,6 +17,7 @@ import { RouteMatcher, Router } from './router';
 import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
+import { RouteEndpoint } from './route.endpoint';
 
 
 
@@ -147,7 +148,18 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     protected addEndpoint(route: string, endpoint: Endpoint | MiddlewareLike) {
-        this.matcher.register(route);
+        const redpt = endpoint as RouteEndpoint;
+        if (redpt.injector && redpt.options && redpt.options.paths) {
+            const params: Record<string, any> = {};
+            const paths = redpt.options.paths;
+            const injector = redpt.injector;
+            Object.keys(paths).forEach(n => {
+                params[n] = injector.get(paths[n]);
+            })
+            this.matcher.register(route, params);
+        } else {
+            this.matcher.register(route);
+        }
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
             if (handles instanceof ControllerRoute) throw new Execption(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
