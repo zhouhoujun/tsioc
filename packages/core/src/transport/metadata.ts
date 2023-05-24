@@ -422,9 +422,15 @@ export function createRouteDecorator(method: RequestMethod) {
     });
 }
 
+const rest$ = /\/:\w+(\/)?/;
+const pthRest$ = /\/:\w+/g;
+const endRest$ = /\/:\w+$/g;
+const pthRest = '\\/[^/]*';
+const endRest = '\\/[^/]+';
+
 function createRestfulMatcher(route: string) {
-    if (/\/:\w+(\/)?/.test(route)) {
-        return new RegExp('^' + route.replace(/\/:\w+/g, '\\/[^/]*').replace(/\/:\w+$/g, '\\/[^/]+') + '$');
+    if (rest$.test(route)) {
+        return new RegExp('^' + route.replace(pthRest$, pthRest).replace(endRest$, endRest) + '$');
     }
     return undefined;
 }
