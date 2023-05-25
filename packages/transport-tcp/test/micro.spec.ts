@@ -21,13 +21,13 @@ export class TcpMicroService {
 
 
     @Handle({ cmd: 'xxx' })
-    async handleMessage() {
-
+    async handleMessage(@Payload() message: string) {
+        return message;
     }
 
     @Handle('sensor/message/**', 'tcp')
-    async handleMessage1() {
-
+    async handleMessage1(@Payload() message: string) {
+        return message;
     }
 
     @Subscribe('sensor/:id/start', 'tcp', {
@@ -105,6 +105,54 @@ describe('TCP Micro Service', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
+    it('cmd message', async () => {
+        const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor/message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor/message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a.status).toEqual(404);
+    });
+
+    it('sensor/message/** message', async () => {
+        const a = await lastValueFrom(client.send('sensor/message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
     it('Subscribe sensor message', async () => {
         const a = await lastValueFrom(client.send('sensor/sensor01/start', {
             payload: {
@@ -121,7 +169,7 @@ describe('TCP Micro Service', () => {
         expect(a).toEqual('ble');
     });
 
-    it('Subscribe sensor message', async () => {
+    it('Subscribe sensor message not found', async () => {
         const a = await lastValueFrom(client.send('sensor/sensor03/start', {
             payload: {
                 message: 'ble'
@@ -137,73 +185,7 @@ describe('TCP Micro Service', () => {
         expect(a.status).toEqual(404);
     });
 
-    // it('query all', async () => {
-    //     const a = await lastValueFrom(client.send<any[]>('/device')
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
 
-    //     expect(isArray(a)).toBeTruthy();
-    //     expect(a.length).toEqual(2);
-    //     expect(a[0].name).toEqual('1');
-    // });
-
-    // it('query with params ', async () => {
-    //     const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
-
-    //     expect(isArray(a)).toBeTruthy();
-    //     expect(a.length).toEqual(1);
-    //     expect(a[0].name).toEqual('2');
-    // });
-
-    // it('not found', async () => {
-    //     const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
-    //         .pipe(
-    //             catchError(err => {
-    //                 console.log(err);
-    //                 return of(err)
-    //             })
-    //         ));
-    //     expect(a.status).toEqual(404);
-    // });
-
-    // it('bad request', async () => {
-    //     const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
-    //         .pipe(
-    //             catchError(err => {
-    //                 console.log(err);
-    //                 return of(err)
-    //             })
-    //         ));
-    //     expect(a.status).toEqual(400);
-    // })
-
-    // it('post route response object', async () => {
-    //     const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
-    //     expect(a.status).toEqual(200);
-    //     expect(a.ok).toBeTruthy();
-    //     expect(a.body).toBeDefined();
-    //     expect(a.body.name).toEqual('test');
-    // });
-
-    // it('post route response string', async () => {
-    //     const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
-    //     expect(b.status).toEqual(200);
-    //     expect(b.ok).toBeTruthy();
-    //     expect(b.body).toEqual('1.0.0');
-    // });
 
     after(() => {
         return ctx.destroy();

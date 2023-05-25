@@ -77,6 +77,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected override async onShutdown(): Promise<void> {
+        if (!this.connection || this.connection.destroyed) return;
         await promisify<void, Error>(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);

@@ -195,16 +195,16 @@ export class DefaultRouteMatcher extends RouteMatcher {
                     const name = v.slice(3, v.length - 1);
                     if (params[name]) {
                         const data = params[name];
-                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+                        $exp = $exp.replace(v, isArray(data) ? `/(${data.map(r => String(r)).join('|')})` : String(data))
                     } else {
                         $exp = $exp.replace(v, tplPth)
                     }
                 });
                 $exp.match(rest$)?.forEach(v => {
-                    const name = v.slice(2, v.length - 1);
+                    const name = v.slice(2);
                     if (params[name]) {
                         const data = params[name];
-                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+                        $exp = $exp.replace(v, isArray(data) ? `/(${data.map(r => String(r)).join('|')})` : String(data))
                     } else {
                         $exp = $exp.replace(v, tplPth)
                     }
@@ -237,10 +237,10 @@ const sg = '/[^/]+';
 
 const tval$ = /\/\$\{\w+\}/g;
 const rest$ = /\/:\w+/g;
-const tplPth = '\\/[^/]+';
+const tplPth = '/[^/]+';
 
 const mtlPth$ = /\/#$/;
-const mtlPth = '(\\/.*)?';
+const mtlPth = '(/.*)?';
 
 const mtlall$ = /\*\*/g;
 const mtlall = '.*';

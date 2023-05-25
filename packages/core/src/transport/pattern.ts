@@ -38,7 +38,10 @@ export abstract class PatternFormatter {
  * @returns string
  */
 export function patternToPath(pattern: Pattern): string {
-    if (isString(pattern) || isNumber(pattern)) {
+    if (isString(pattern)) {
+        return pattern;
+    }
+    if (isNumber(pattern)) {
         return `${pattern}`;
     }
     if (!isPlainObject(pattern)) {
@@ -57,5 +60,5 @@ export function patternToPath(pattern: Pattern): string {
     });
 
     const route = sortedPatternParams.join(',');
-    return `{${route}}`;
+    return encodeURIComponent(route);
 }

@@ -1,10 +1,16 @@
-import { GET, POST } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc'
+import { GET, MESSAGE, POST } from '@tsdi/core';
+import { Inject, Injectable, tokenId } from '@tsdi/ioc'
 import { StatusVaildator } from '@tsdi/transport'
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 
+export const TCP_MICRO_SERV = tokenId<boolean>('TCP_MICRO_SERV');
+
 @Injectable({ static: true })
 export class TcpStatusVaildator implements StatusVaildator<number> {
+
+    constructor(@Inject(TCP_MICRO_SERV) private micro: boolean) {
+
+    }
 
     get ok(): number {
         return HttpStatusCode.Ok
@@ -57,7 +63,7 @@ export class TcpStatusVaildator implements StatusVaildator<number> {
     }
 
     redirectDefaultMethod(): string {
-        return GET;
+        return this.micro? MESSAGE : GET;
     }
 
 }

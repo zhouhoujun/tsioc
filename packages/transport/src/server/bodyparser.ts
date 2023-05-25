@@ -75,7 +75,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.payload.body = res.body ?? {};
+                    input.payload.payload = input.payload.body = res.body ?? {};
                     if (isUndefined(input.payload.rawBody)) input.payload.rawBody = res.raw;
                     return next.handle(input)
                 })
@@ -85,7 +85,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         if (!isUndefined(ctx.payload.body)) return await next();
         const res = await this.parseBody(ctx);
-        ctx.payload.body = res.body ?? {};
+        ctx.payload.payload = ctx.payload.body = res.body ?? {};
         if (isUndefined(ctx.payload.rawBody)) ctx.payload.rawBody = res.raw;
         await next()
     }

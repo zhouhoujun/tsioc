@@ -1,7 +1,7 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService } from '@tsdi/core';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService, MESSAGE, GET } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev, hdr } from '@tsdi/transport';
+import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -10,6 +10,7 @@ import { TcpContext } from './context';
 import { TcpEndpoint } from './endpoint';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
+import { TCP_MICRO_SERV } from '../status';
 
 
 
@@ -25,7 +26,11 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements MicroServ
     @InjectLog() logger!: Logger;
     private isSecure: boolean;
     private options: TcpServerOpts;
-    constructor(readonly endpoint: TcpEndpoint, @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
+
+    constructor(
+        readonly endpoint: TcpEndpoint,
+        @Inject(TCP_MICRO_SERV) readonly micro: boolean,
+        @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
         super()
         this.options = { ...options };
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert
@@ -112,6 +117,9 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements MicroServ
      * @param res 
      */
     protected requestHandler(session: TransportSession<tls.TLSSocket | net.Socket>, packet: Packet): Subscription {
+        if (!packet.method) {
+            packet.method = this.micro ? MESSAGE : GET;
+        }
         const req = new TcpIncoming(session, packet);
         const res = new TcpOutgoing(session, packet.id);
 

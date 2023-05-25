@@ -1,4 +1,4 @@
-import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler } from '@tsdi/core';
+import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler, MESSAGE } from '@tsdi/core';
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Observable, from, mergeMap, of } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
@@ -64,7 +64,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
 
     protected async send(ctx: AssetContext) {
         let file = '';
-        if (ctx.method === HEAD || ctx.method === GET) {
+        if (ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE) {
             try {
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)

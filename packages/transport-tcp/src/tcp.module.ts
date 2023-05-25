@@ -16,7 +16,7 @@ import { TcpRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
 import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
-import { TcpStatusVaildator } from './status';
+import { TCP_MICRO_SERV, TcpStatusVaildator } from './status';
 import { TcpTransportSessionFactory } from './transport';
 import { TcpExecptionHandlers } from './server/execption-filter';
 import { TcpRespondAdapter } from './server/respond';
@@ -50,6 +50,7 @@ export class TcpModule {
      */
     static withOptions(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
         const providers: ProviderType[] = [
+            { provide: TCP_MICRO_SERV, useValue: false },
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
@@ -88,6 +89,7 @@ export class TcpModule {
      */
     static forMicroService(options: TcpMircoModuleOptions): ModuleWithProviders<TcpModule> {
         const providers: ProviderType[] = [
+            { provide: TCP_MICRO_SERV, useValue: true },
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

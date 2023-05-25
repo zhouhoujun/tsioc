@@ -48,7 +48,7 @@ export interface Subscribe {
 export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscribe', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (route: string, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
-        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...option })) as HandleMetadata<any>,
+        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     design: {
         method: (ctx, next) => {
 
@@ -67,7 +67,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscr
 
             defines.forEach(def => {
                 const metadata = def.metadata as RouteMappingMetadata;
-                const route = patternToPath(metadata.route!);
+                const route = normalize(patternToPath(metadata.route!));
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
                 router.use(route, endpoint);
                 factory.onDestroy(() => router.unuse(route));
@@ -121,7 +121,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         return isMetadataObject(args) && isString(args.route)
     },
     props: (route: Pattern, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
-        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...option })) as HandleMetadata<any>,
+        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx, next) => {
             ctx.class.setAnnotation(ctx.define.metadata);
@@ -146,7 +146,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             defines.forEach(def => {
                 const metadata = def.metadata as RouteMappingMetadata;
-                const route = patternToPath(metadata.route!);
+                const route = normalize(patternToPath(metadata.route!));
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
                 router.use(route, endpoint);
                 factory.onDestroy(() => router.unuse(route));
@@ -425,8 +425,8 @@ export function createRouteDecorator(method: RequestMethod) {
 const rest$ = /\/:\w+(\/)?/;
 const pthRest$ = /\/:\w+/g;
 const endRest$ = /\/:\w+$/g;
-const pthRest = '\\/[^/]*';
-const endRest = '\\/[^/]+';
+const pthRest = '/[^/]*';
+const endRest = '/[^/]+';
 
 function createRestfulMatcher(route: string) {
     if (rest$.test(route)) {
