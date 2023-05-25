@@ -1,6 +1,7 @@
 version: "3"
 services:
   postgres:
+    container_name: test-postgres
     image: postgres:14
     restart: always
     environment:
@@ -27,7 +28,7 @@ services:
   #   restart: always
 
   redis:
-    container_name: remoting_redis
+    container_name: test_redis
     image: redis:6.2.5
     ports:
       - "6379:6379"
@@ -36,8 +37,17 @@ services:
       - ./data/redis/data:/data
     restart: always
 
+  nats:
+    container_name: test-nats
+    image: nats
+    ports:
+      - "8222:8222"
+      - "4222:4222"
+      - "6222:6222"
+    restart: always
+
   # mqtt:
-  #   container_name: remoting_mqtt
+  #   container_name: test_mqtt
   #   image: eclipse-mosquitto
   #   volumes:
   #     - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
@@ -48,8 +58,8 @@ services:
 
 
   emqx:
+    container_name: test-emqx
     image: emqx/emqx:5.0.4
-    container_name: emqx
     environment:
       - EMQX_LOADED_PLUGINS="emqx_management,emqx_auth_http,emqx_dashboard"
       - EMQX_DASHBOARD__DEFAULT_USER__LOGIN=zyhh
@@ -65,6 +75,42 @@ services:
       - ./logs:/opt/emqx/log
     restart: always
 
+  rabbit:
+    container_name: test-rabbit
+    hostname: rabbit
+    image: "rabbitmq:management"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    tty: true
+
+  zookeeper:
+    container_name: test-zookeeper
+    hostname: zookeeper
+    image: confluentinc/cp-zookeeper:7.3.2
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    container_name: test-kafka
+    hostname: kafka
+    image: confluentinc/cp-kafka:7.3.2
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
 
   # networks:
   #   emqx-bridge:

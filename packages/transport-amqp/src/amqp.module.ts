@@ -20,11 +20,11 @@ import { AMQP_SERV_OPTS, AmqpServerOpts } from './server/options';
 })
 export class AmqpModule {
     /**
-     * Amqp Server options.
-     * @param options 
+     * import Amqp mirco service module with options.
+     * @param options mirco service module options.
      * @returns 
      */
-    static withOptions(options: AmqpServerOpts): ModuleWithProviders<AmqpModule> {
+    static forMicroService(options: AmqpServerOpts): ModuleWithProviders<AmqpModule> {
         const providers: ProviderType[] = [{ provide: AMQP_SERV_OPTS, useValue: options }];
         return {
             module: AmqpModule,

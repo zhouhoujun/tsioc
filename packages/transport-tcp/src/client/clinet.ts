@@ -29,6 +29,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
         return new Observable<tls.TLSSocket | net.Socket>((observer) => {
             const valid = this.connection && this.isValid(this.connection);
             if (!valid) {
+                if (this.connection) this.connection.removeAllListeners();
                 this.connection = this.createConnection(this.options);
             }
             let cleaned = false;
@@ -46,6 +47,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
                 observer.complete();
             }
             conn.on(ev.ERROR, onError)
+                .on(ev.DISCONNECT, onError)
                 .on(ev.END, onClose)
                 .on(ev.CLOSE, onClose);
 
@@ -60,6 +62,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
                 cleaned = true;
                 conn.off(ev.CONNECT, onConnect)
                     .off(ev.ERROR, onError)
+                    .off(ev.DISCONNECT, onError)
                     .off(ev.END, onClose)
                     .off(ev.CLOSE, onClose);
             }

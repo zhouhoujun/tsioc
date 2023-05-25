@@ -25,6 +25,7 @@ export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket |
         readonly session: TransportSession<tls.TLSSocket | net.Socket>,
         readonly id: number) {
         super({ objectMode: true });
+        this.setMaxListeners(0);
         this._hdr = new ResHeaders();
         this.init();
     }

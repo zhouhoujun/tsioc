@@ -20,6 +20,7 @@ export class TcpIncoming extends Readable implements Incoming<tls.TLSSocket | ne
     constructor(readonly session: TransportSession<tls.TLSSocket | net.Socket>, private packet: Packet) {
         super({ objectMode: true })
         this.id = packet.id;
+        this.setMaxListeners(0);
         const headers = this.headers = packet.headers || {};
         this.url = packet.url ?? headers[hdr.PATH] ?? '',
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';

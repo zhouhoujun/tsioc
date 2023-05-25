@@ -20,7 +20,7 @@ export interface AmqpClientOpts extends ConfigableHandlerOptions<TransportReques
     /**
      * connect options.
      */
-    connectOpts?: amqp.Options.Connect;
+    connectOpts?: string | amqp.Options.Connect;
 }
 
 /**

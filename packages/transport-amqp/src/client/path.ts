@@ -15,7 +15,7 @@ export class AmqpPathInterceptor implements Interceptor<TransportRequest, Transp
         if (!tcptl.test(url)) {
             const { host, port, path } = this.listenOpts;
             const isIPC = !host && !port;
-            const protocol = req.withCredentials ? 'ssl' : 'tcp';
+            const protocol = req.withCredentials ? 'rmqs' : 'rmq';
             const urlPrefix = isIPC ? new URL(`${protocol}://${host ?? 'localhost'}`) : `${protocol}://${host ?? 'localhost'}:${port ?? 3000}`;
 
             const baseUrl = isIPC ? urlPrefix : new URL(urlPrefix, path);

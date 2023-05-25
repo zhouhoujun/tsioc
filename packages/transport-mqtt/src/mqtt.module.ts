@@ -23,6 +23,11 @@ import { MqttTransportSessionFactory } from './transport';
 })
 export class MqttModule {
 
+    /**
+     * import mqtt mirco service module with options.
+     * @param options mirco service module options.
+     * @returns 
+     */
     static forMicroService(options: MqttModuleOptions): ModuleWithProviders<MqttModule> {
 
         const providers: ProviderType[] = [
