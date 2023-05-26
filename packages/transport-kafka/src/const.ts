@@ -1,4 +1,10 @@
+import { tokenId } from '@tsdi/ioc';
+import { Consumer, Producer } from 'kafkajs';
 
+
+
+export const CONSUMER = tokenId<Consumer>('CONSUMER');
+export const PRODUCER = tokenId<Producer>('PRODUCER');
 
 
 export const DEFAULT_BROKERS = ['localhost:9092'];

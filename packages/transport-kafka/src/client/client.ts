@@ -1,29 +1,84 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, isUndefined } from '@tsdi/ioc';
 import { Client } from '@tsdi/core';
 import { Observable } from 'rxjs';
-import { Kafka } from 'kafkajs';
+import { BrokersFunction, Cluster, Consumer, ConsumerGroupJoinEvent, EachMessagePayload, Kafka, KafkaMessage, PartitionAssigner, Producer } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOption } from './options';
+import { KafkaReplyPartitionAssigner } from '../transport';
+import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 
 
 
 @Injectable({ static: false })
 export class KafkaClient extends Client {
 
-    private client?: Kafka;
+    private client: Kafka | undefined;
+    private consumer!: Consumer;
+    private producer!: Producer;
+    private brokers!: string[] | BrokersFunction;
+    private responsePatterns: string[] = [];
+    private consumerAssignments: { [key: string]: number } = {};
+    private clientId!: string;
+    private groupId!: string;
+
     constructor(
-        readonly handler: KafkaHandler, 
+        readonly handler: KafkaHandler,
         @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOption) {
         super()
+        this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
+        const postfixId = options.postfixId = options.postfixId ?? '-client';
+        this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
+        this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 
     protected connect(): Observable<any> {
-        this.client = new Kafka(this.options);
+        return new Observable((observer) => {
+            if (!this.client) {
+                this.client = new Kafka(this.options);
+            }
+
+            this.client.producer(this.options.producer);
+            const partitionAssigners = [
+                (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(this.getConsumerAssignments.bind(this), config),
+            ] as PartitionAssigner[];
+            const groupId = this.groupId;
+            this.consumer = this.client.consumer({
+                partitionAssigners,
+                ...this.options.consumer,
+                groupId
+            });
+
+
+            this.consumer.on(
+                this.consumer.events.GROUP_JOIN,
+                (data: ConsumerGroupJoinEvent) => {
+                    const consumerAssignments: { [key: string]: number } = {};
+                    // only need to set the minimum
+                    Object.keys(data.payload.memberAssignment).forEach(memberId => {
+                        const minimumPartition = Math.min(
+                            ...data.payload.memberAssignment[memberId],
+                        );
+                        consumerAssignments[memberId] = minimumPartition;
+                    });
+                    this.consumerAssignments = consumerAssignments;
+                });
+
+            (async () => {
+                await this.producer.connect();
+                await this.consumer.connect();
+                observer.next(this.consumer);
+            })();
+        });
+
     }
+
     protected onShutdown(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
+    public getConsumerAssignments() {
+        return this.consumerAssignments;
+    }
 
 
 }
