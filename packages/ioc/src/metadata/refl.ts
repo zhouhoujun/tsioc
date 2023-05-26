@@ -1,6 +1,6 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { AnnotationType, ClassType, EMPTY_OBJ, Type } from '../types';
+import { AnnotationType, Type, EMPTY_OBJ } from '../types';
 import { assign, cleanObj, getParentClass } from '../utils/lang';
 import { isBoolean, isFunction } from '../utils/chk';
 import { runChain, Handle } from '../handle';
@@ -443,7 +443,7 @@ paramDecorActions.use(
     ExecuteDecorHandle
 );
 
-function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
+function dispatch(actions: Actions<DecorContext>, target: any, type: Type, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
         define,
         target,
@@ -457,7 +457,7 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
     cleanObj(ctx)
 }
 
-export function dispatchTypeDecor(type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
+export function dispatchTypeDecor(type: Type, define: DecorDefine, options: DecoratorOption<any>) {
     dispatch(typeDecorActions, type, type, define, options)
 }
 
@@ -486,7 +486,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
  * get type def.
  * @param type class type.
  */
-export function getDef<T extends TypeDef>(type: ClassType): T {
+export function getDef<T extends TypeDef>(type: Type): T {
     let tagAnn = (type as AnnotationType).ƿAnn?.() as TypeDef;
     if (tagAnn?.type !== type) {
         tagAnn = {
@@ -504,7 +504,7 @@ export function getDef<T extends TypeDef>(type: ClassType): T {
  * get type Reflective.
  * @param type class type.
  */
-export function get<T = any>(type: ClassType<T>): Class<T> {
+export function get<T = any>(type: Type): Class<T> {
     let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T>;
     if (tagRefl?.type !== type) {
         let prRef: Class = tagRefl;

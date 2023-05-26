@@ -1,4 +1,4 @@
-import { Modules, Type, TypeOf } from './types';
+import { CtorType, Modules, Type, TypeOf } from './types';
 import { Token } from './tokens';
 import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';
@@ -147,9 +147,9 @@ export interface FactoryProvider<T = any> extends Provide<T>, UseFactory<T> { }
  */
 export interface ConstructorProvider<T = any> {
     /**
-     * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
+     * An injection token. Typically an instance of `CtorType` or `InjectionToken`, but can be `any`.
      */
-    provide: Type<T>;
+    provide: CtorType<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      */
@@ -218,7 +218,7 @@ export interface ModuleWithProviders<T = any> {
     /**
      * module type
      */
-    module: Type<T>;
+    module: CtorType<T>;
     /**
      * providers for the module
      */

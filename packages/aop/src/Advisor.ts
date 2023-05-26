@@ -31,7 +31,7 @@ export class Advisor implements OnDestroy {
     register(type: Type | Class): void {
         const matcher = this.platform.getAction(AdviceMatcher);
         const typeRefl = isFunction(type) ? refl.get(type) : type as Class;
-        const ClassType = typeRefl.type as Type;
+        const ClassType = typeRefl.type;
         this.aspects.forEach(aspect => {
             const aopRef = aspect.class as Class;
             const matchpoints = matcher.match(aopRef, typeRefl, aopRef.getAnnotation<AopDef>().advices);
@@ -110,7 +110,7 @@ export class Advisor implements OnDestroy {
     }
 
     attach<T>(typeRef: Class<T>, instance: T): void {
-        const type = typeRef.type as Type;
+        const type = typeRef.type;
         const advicesMap = this.advices.get(type);
         if (advicesMap && advicesMap.size) {
             const className = typeRef.className;
@@ -132,7 +132,7 @@ export class Advisor implements OnDestroy {
     }
 
     detach<T>(typeRef: Class<T>, instance: T): void {
-        const advicesMap = this.advices.get(typeRef.type as Type);
+        const advicesMap = this.advices.get(typeRef.type);
         if (advicesMap && advicesMap.size) {
             const decorators = typeRef.getPropertyDescriptors();
             advicesMap.forEach((advices, name) => {

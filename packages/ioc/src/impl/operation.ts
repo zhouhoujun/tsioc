@@ -1,4 +1,4 @@
-import { ClassType } from '../types';
+import { Type } from '../types';
 import { InvocationContext } from '../context';
 import { OperationInvoker } from '../operation';
 import { isTypeObject } from '../utils/obj';
@@ -14,7 +14,7 @@ import { OnDestroy } from '../destroy';
  */
 export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>, OnDestroy {
 
-    private _returnType!: ClassType;
+    private _returnType!: Type;
     constructor(
         private _typeRef: ReflectiveRef<T>,
         readonly method: string,
@@ -55,7 +55,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>,
         return this.typeRef.class.getDescriptor(this.method)
     }
 
-    get returnType(): ClassType {
+    get returnType(): Type {
         if (!this._returnType) {
             this._returnType = this.typeRef.class.getReturnning(this.method) ?? Object
         }

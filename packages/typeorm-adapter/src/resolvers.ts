@@ -27,7 +27,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
 
     resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T {
         const { model, type, connection } = parameter as RepositoryMetadata;
-        return this.getRepository(model, type as Type, connection) as T;
+        return this.getRepository(model, type, connection) as T;
     }
 
     protected getLocal(parameter: Parameter<any>, ctx: InvocationContext<any>) {

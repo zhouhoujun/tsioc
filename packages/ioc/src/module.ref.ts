@@ -4,7 +4,7 @@ import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ReflectiveFactory } from './reflective';
-import { Modules, Type } from './types';
+import { CtorType, Modules, Type } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';
@@ -101,11 +101,11 @@ export interface ModuleOption {
 
 }
 
-export function getModuleType(input: any[]): (Type | ModuleWithProviders)[] {
-    const types: (Type | ModuleWithProviders)[] = [];
+export function getModuleType(input: any[]): (CtorType | ModuleWithProviders)[] {
+    const types: (CtorType | ModuleWithProviders)[] = [];
     deepForEach<Type | ModuleWithProviders>(input, ty => {
         if (isType(ty) || (ty as ModuleWithProviders).module) {
-            types.push(ty)
+            types.push(ty as CtorType | ModuleWithProviders)
         }
     }, v => isPlainObject(v) && !(v as ModuleWithProviders).module);
     return types

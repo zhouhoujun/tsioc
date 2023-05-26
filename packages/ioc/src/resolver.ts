@@ -1,4 +1,4 @@
-import { ClassType, TypeOf } from './types';
+import { Type, TypeOf } from './types';
 import { Token, tokenId } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
@@ -14,7 +14,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
     /**
      * type.
      */
-    type?: ClassType<T>;
+    type?: Type<T>;
     /**
      * provider type
      */
@@ -38,7 +38,7 @@ export interface OperationArgumentResolver<C = any> {
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>, target?: ClassType): T;
+    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>, target?: Type): T;
 }
 
 /**

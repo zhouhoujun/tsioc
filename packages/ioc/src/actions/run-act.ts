@@ -1,4 +1,4 @@
-import { ClassType, EMPTY } from '../types';
+import { Type, EMPTY } from '../types';
 import { isDefined } from '../utils/chk';
 import { runChain } from '../handle';
 import { ActionSetup } from '../action';
@@ -59,7 +59,7 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
     next()
 };
 
-const onError = (target: ClassType, propertyKey: string) => {
+const onError = (target: Type, propertyKey: string) => {
     throw new ArgumentExecption(`can not autowride property ${propertyKey} of class ${target}`)
 }
 

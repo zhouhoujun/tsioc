@@ -1,7 +1,7 @@
 /**
  * module object.
  */
-export type Modules = Type | Type[] | Record<string, Type | Object>;
+export type Modules<T extends Type = Type> = T | T[] | Record<string, T | Object>;
 
 /**
  * empty array.
@@ -32,7 +32,7 @@ export interface DesignParam {
     /**
      * param design type.
      */
-    type?: ClassType;
+    type?: Type;
 }
 
 /**
@@ -40,7 +40,7 @@ export interface DesignParam {
  */
 export interface MethodAnnotation {
     params: DesignParam[];
-    returnType?: ClassType;
+    returnType?: Type;
 }
 
 /**
@@ -65,7 +65,7 @@ export interface Annotation<T = any> {
     /**
      * class type.
      */
-    readonly type: ClassType<T>;
+    readonly type: Type<T>;
     /**
      * class params declaration.
      *
@@ -78,21 +78,7 @@ export interface Annotation<T = any> {
 
 
 /**
- * abstract type
- *
- * @export
- * @interface AbstractType
- * @extends {Function}
- * @template T
- */
-export interface AbstractType<T = any> extends Function {
-    new?(...args: any[]): T;
-    prototype: T;
-}
-
-
-/**
- * class type
+ * type
  * 
  * 类
  * @export
@@ -101,6 +87,20 @@ export interface AbstractType<T = any> extends Function {
  * @template T
  */
 export interface Type<T = any> extends Function {
+    new?(...args: any[]): T;
+    prototype: T;
+}
+
+/**
+ * class type
+ * 
+ * 可实例化类
+ * @export
+ * @interface CtorType
+ * @extends {Type}
+ * @template T
+ */
+export interface CtorType<T = any> extends Type<T> {
     new(...args: any[]): T;
 }
 
@@ -109,7 +109,7 @@ export interface Type<T = any> extends Function {
  * 
  * 带注解的类
  */
-export interface AnnotationType<T = any> extends Function {
+export interface AnnotationType<T = any> extends Type<T> {
     new?(...args: any[]): T;
     /**
      * class design annotation
@@ -125,13 +125,9 @@ export interface AnnotationType<T = any> extends Function {
     ƿNPT?: boolean;
 }
 
-/**
- * class type.
- */
-export type ClassType<T = any> = Type<T> | AbstractType<T>;
 
 /**
  * type or type instance.
  */
-export type TypeOf<T> = ClassType<T> | T;
+export type TypeOf<T> = Type<T> | T;
 

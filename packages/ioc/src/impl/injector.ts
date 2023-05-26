@@ -1,4 +1,4 @@
-import { Modules, Type, EMPTY } from '../types';
+import { Modules, Type, EMPTY, CtorType } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -159,7 +159,7 @@ export class DefaultInjector extends Injector {
 
     protected processRegister(platform: Platform, def: Class, option?: RegOption) {
         // make sure class register once.
-        const type = def.type as Type;
+        const type = def.type;
         if (this.has(def.type, InjectFlags.Default)) {
             return false
         }
@@ -430,7 +430,7 @@ export class DefaultInjector extends Injector {
         } else {
             if (target instanceof Class) {
                 tgRefl = target;
-                targetClass = target.type as Type
+                targetClass = target.type
             } else {
                 instance = this.get(target as Token, context);
                 targetClass = getClass(instance);
@@ -782,7 +782,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         }
         switch (rd.fy) {
             case FnType.Cotr:
-                return new (rd.fn as Type)(...deps)
+                return new (rd.fn as CtorType)(...deps)
             case FnType.Fac:
                 if (value === EMPTY) {
                     return rd.value = value = rd.fn?.(...deps)

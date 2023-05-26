@@ -1,4 +1,4 @@
-import { ClassType, EMPTY, EMPTY_OBJ } from '../types';
+import { Type, EMPTY, EMPTY_OBJ, CtorType } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
@@ -63,8 +63,8 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     def.debug = metadata.debug;
                     def.providers = metadata.providers;
                     if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = getTypes(metadata.exports);
-                    if (metadata.declarations) def.declarations = getTypes(metadata.declarations);
+                    if (metadata.exports) def.exports = getTypes<CtorType>(metadata.exports);
+                    if (metadata.declarations) def.declarations = getTypes<CtorType>(metadata.declarations);
                     if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
                     return next()
                 },
@@ -708,20 +708,20 @@ export interface ProviderIn {
      *
      * @Refs
      *
-     * @param {ClassType} target reference to target token.
+     * @param {Type} target reference to target token.
      */
-    (target: ClassType): ClassDecorator;
+    (target: Type): ClassDecorator;
 
     /**
      * Refs decorator, for class. use to define the class as service of target.
      *
      * @Refs
      *
-     * @param {ClassType} target reference to target token.
+     * @param {Type} target reference to target token.
      * @param {Token} provide define this class ref provider for provide.
      * @param {string} [alias] define this class ref provider with alias for provide.
     */
-    (target: ClassType, provide: Token, alias?: string): ClassDecorator;
+    (target: Type, provide: Token, alias?: string): ClassDecorator;
 
     /**
      * Refs decorator, for class. use to define the class as service of target.
@@ -739,7 +739,7 @@ export interface ProviderIn {
  * @Refs
  */
 export const ProviderIn: ProviderIn = createDecorator<ProviderInMetadata>('ProviderIn', {
-    props: (target: ClassType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
+    props: (target: Type, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx, next) => {
             const meta = ctx.class.getMetadata<ProviderInMetadata>(ctx.currDecor!);

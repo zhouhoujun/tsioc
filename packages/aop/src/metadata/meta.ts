@@ -1,4 +1,4 @@
-import { MethodMetadata, ClassType, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
+import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
 
 
 /**
@@ -64,9 +64,9 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
     /**
      * advice within.
      *
-     * @type {(ClassType | ClassType[])}
+     * @type {(Type | Type[])}
      */
-    within?: ClassType | ClassType[];
+    within?: Type | Type[];
 
     /**
      * advice type name.
@@ -130,13 +130,13 @@ export interface AspectMetadata extends ClassMetadata {
     /**
      * set pointcut in the type only.
      *
-     * @type {(ClassType | ClassType[])}
+     * @type {(Type | Type[])}
      */
-    within?: ClassType | ClassType[];
+    within?: Type | Type[];
     /**
      * aspnet with out.
      */
-    without?: ClassType | ClassType[];
+    without?: Type | Type[];
     /**
      *  aspect way for method.
      *  default static.

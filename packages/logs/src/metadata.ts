@@ -1,6 +1,6 @@
 import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
-    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, ClassType, isDefined
+    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, isDefined
 } from '@tsdi/ioc';
 import { Level } from './Level';
 import { LoggerManagers } from './manager';
@@ -27,7 +27,7 @@ export interface LogMetadata extends TypeMetadata {
     /**
      * log for target type.
      */
-    target?: ClassType;
+    target?: Type;
     /**
      * param name.
      */
@@ -166,7 +166,7 @@ const loggerResolver = {
 
         return isDefined(pr.logname || pr.target)
     },
-    resolve: (pr: LogMetadata, ctx, target?: ClassType) => {
+    resolve: (pr: LogMetadata, ctx, target?: Type) => {
         const managers = ctx.get(LoggerManagers);
         const level = pr.level;
         const logger = managers.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target), pr.adapter);

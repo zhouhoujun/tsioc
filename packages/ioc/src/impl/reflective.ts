@@ -1,7 +1,7 @@
-import { ClassType, Type } from '../types';
+import { CtorType, Type } from '../types';
 import { Class } from '../metadata/type';
 import { isFunction, isPromise } from '../utils/chk';
-import { InjectFlags, Token } from '../tokens';
+import { Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
@@ -27,9 +27,9 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _mthCtx: Map<string, InvocationContext | null>;
     constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments<any>) {
         super()
-        this._type = _class.type as Type<T>;
+        this._type = _class.type;
         this._typeName = getClassName(this._type);
-        injector.register(this.type);
+        injector.register(this.type as CtorType);
         this._ctx = this.createContext(injector, options);
         this._mthCtx = new Map();
         this._ctx.setValue(ReflectiveRef, this);
@@ -238,7 +238,7 @@ export function hasContext<TArg>(option: InvokeArguments<TArg>) {
 
 export class ReflectiveResolverImpl extends ReflectiveFactory {
 
-    create<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+    create<T, TArg>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
         return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
     }
 

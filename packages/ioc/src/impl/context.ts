@@ -1,4 +1,4 @@
-import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
+import { Type, EMPTY, EMPTY_OBJ, CtorType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
@@ -35,7 +35,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     /**
      * invocation target type.
      */
-    readonly targetType: ClassType | undefined;
+    readonly targetType: Type | undefined;
 
     /**
      * named of invocation method.
@@ -273,7 +273,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
+    resolveArgument<T>(meta: Parameter<T>, target?: Type, failed?: (target: Type, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         let result: T | null | undefined;
         const metaRvr = this.getMetaReolver(meta);
@@ -309,7 +309,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return null;
     }
 
-    protected missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
+    protected missingExecption(missings: Parameter<any>[], type: Type<any>, method: string): Execption {
         throw new MissingParameterExecption(missings, type, method)
     }
 
@@ -365,7 +365,7 @@ export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
  * Missing argument execption.
  */
 export class MissingParameterExecption extends Execption {
-    constructor(parameters: Parameter[], type: ClassType, method: string) {
+    constructor(parameters: Parameter[], type: Type, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }
 }
@@ -439,7 +439,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 const pdr = parameter.provider!;
                 if (parameter.name || parameter.propertyKey) {
                     const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(pdr as Type);
+                    injector.register(pdr as CtorType);
                 }
                 return ctx.get(pdr, parameter.flags)
             }
@@ -475,7 +475,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 const ty = parameter.type!;
                 if (parameter.name || parameter.propertyKey) {
                     const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(ty as Type);
+                    injector.register(ty as CtorType);
                 }
                 return ctx.get(ty, parameter.flags)
             }

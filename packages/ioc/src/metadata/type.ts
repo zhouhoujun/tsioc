@@ -1,4 +1,4 @@
-import { ClassType, Annotation, EMPTY, Type } from '../types';
+import { Type, Annotation, EMPTY, CtorType } from '../types';
 import { ModuleWithProviders, ProvdierOf, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
@@ -157,25 +157,25 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
      * is module or not.
      */
-    module: boolean;
+    module?: boolean;
     baseURL?: string,
     debug?: boolean,
     /**
      * imports types.
      */
-    imports?: (Type | ModuleWithProviders)[];
+    imports?: (CtorType | ModuleWithProviders)[];
     /**
      * exports.
      */
-    exports?: Type[];
+    exports?: CtorType[];
     /**
      *  components, directives, pipes ... of current module.
      */
-    declarations?: Type[];
+    declarations?: CtorType[];
     /**
      * the module bootstraps.
      */
-    bootstrap?: Type[];
+    bootstrap?: Type[]|null;
     /**
     * module extends providers.
     */
@@ -263,7 +263,7 @@ export class Class<T = any> {
      *
      * @type {Map<IParameter[]>}
      */
-    private methodReturns: Map<string, ClassType>;
+    private methodReturns: Map<string, Type>;
     /**
      * method providers.
      *
@@ -275,7 +275,7 @@ export class Class<T = any> {
      */
     readonly runnables: RunableDefine[];
 
-    constructor(public readonly type: ClassType<T>, annotation: TypeDef<T>, private parent?: Class) {
+    constructor(public readonly type: Type<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         this.classDefs = new Map();
@@ -370,11 +370,11 @@ export class Class<T = any> {
         return this.methodReturns.has(method)
     }
 
-    getReturnning(method: string): ClassType | undefined {
+    getReturnning(method: string): Type | undefined {
         return this.methodReturns.get(method) ?? this.parent?.getReturnning(method)
     }
 
-    setReturnning(method: string, returnType: ClassType) {
+    setReturnning(method: string, returnType: Type) {
         this.methodReturns.set(method, returnType)
     }
 
@@ -587,8 +587,8 @@ export class Class<T = any> {
         return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d)
     }
 
-    private _extends!: ClassType[];
-    get extendTypes(): ClassType[] {
+    private _extends!: Type[];
+    get extendTypes(): Type[] {
         if (!this._extends) {
             if (this.parent) {
                 this._extends = this.parent.extendTypes.slice(0);
@@ -683,7 +683,7 @@ export class Class<T = any> {
         return this.descriptos
     }
 
-    isExtends(type: ClassType): boolean {
+    isExtends(type: Type): boolean {
         return this.extendTypes.indexOf(type) >= 0
     }
 }

@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
+    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -38,9 +38,9 @@ export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 
 @Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
-    private _types: ClassType[];
-    private _maps: Map<ClassType, Handler[]>;
-    private _refs: Map<ClassType, ReflectiveRef>;
+    private _types: Type[];
+    private _maps: Map<Type, Handler[]>;
+    private _refs: Map<Type, ReflectiveRef>;
     private _handler: GuardHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
@@ -92,7 +92,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(() => this.detach(target.type as Type));
+            targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
         }
 
@@ -106,7 +106,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             });
             this._maps.set(target.type, endpoints);
             this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(() => this.detach(target.type as Type));
+            targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
         }
 

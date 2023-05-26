@@ -1,4 +1,4 @@
-import { AbstractType, Type, ClassType, TypeOf } from './types';
+import { Type, TypeOf } from './types';
 import { isFunction } from './utils/chk';
 import { getClassName } from './utils/lang';
 
@@ -31,12 +31,12 @@ export class InjectToken<T = any> {
  * 
  * 标记令牌
  */
-export type Token<T = any> = string | symbol | InjectToken<T> | ClassType<T>;
+export type Token<T = any> = string | symbol | InjectToken<T> | Type<T>;
 
 /**
  * provide token
  */
-export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
+export type ProvideToken<T> = string | symbol | InjectToken<T> | Type<T>;
 
 /**
  * parse id string to token, type of {@link Token}.

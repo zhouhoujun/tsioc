@@ -5,7 +5,7 @@ import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
-import { ClassType, Type } from './types';
+import { Type } from './types';
 import { ProviderType } from './providers';
 import { ModuleRef } from './module.ref';
 
@@ -59,18 +59,18 @@ export abstract class Platform implements OnDestroy {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: ClassType | Class): ProviderType[];
+    abstract getTypeProvider(type: Type | Class): ProviderType[];
     /**
      * set type providers.
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: ClassType | Class, providers: ProviderType[]): void;
+    abstract setTypeProvider(type: Type | Class, providers: ProviderType[]): void;
     /**
      * clear type provider.
      * @param type 
      */
-    abstract clearTypeProvider(type: ClassType): void;
+    abstract clearTypeProvider(type: Type): void;
     /**
     * register action, simple create instance via `new type(this)`.
     * @param types

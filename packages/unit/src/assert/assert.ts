@@ -1,4 +1,4 @@
-import { Abstract, Type, tokenId, Token } from '@tsdi/ioc';
+import { Abstract, Type, tokenId, Token, CtorType } from '@tsdi/ioc';
 
 /**
  * assertion error options.
@@ -44,7 +44,7 @@ export const RunCaseToken = tokenId<Function>('runCase');
  */
 @Abstract()
 export abstract class Assert {
-    AssertionError!: Type<IAssertionError>;
+    AssertionError!: CtorType<IAssertionError>;
     abstract fail(message: string): never;
     /** @deprecated since v10.0.0 */
     abstract fail(actual: any, expected: any, message?: string, operator?: string): never;

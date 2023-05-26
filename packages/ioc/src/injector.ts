@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { ClassType, EMPTY, Modules, Type } from './types';
+import { Type, EMPTY, Modules, CtorType } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -66,6 +66,16 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {boolean}
      */
     abstract has<T>(token: Token<T>, flags?: InjectFlags): boolean;
+    /**
+     * get token factory resolve instace in current.
+     *
+     * 获取标记令牌的实例。
+     * @template T
+     * @param {Token<T>} token token id {@link Token}.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @returns {T} token value.
+     */
+    abstract get<T>(token: Token<T>,  flags?: InjectFlags): T;
     /**
      * get token factory resolve instace in current.
      *
@@ -204,16 +214,16 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 注册类
      * 
-     * @param {Type<any>[]} types class type array.
+     * @param {CtorType<any>[]} types class type array.
      */
-    abstract register(types: (Type | RegisterOption)[]): this;
+    abstract register(types: (CtorType | RegisterOption)[]): this;
     /**
      * register types.
      * 
      * 注册类
      * @param types class type params.
      */
-    abstract register(...types: (Type | RegisterOption)[]): this;
+    abstract register(...types: (CtorType | RegisterOption)[]): this;
     /**
      * unregister the token
      *
@@ -401,7 +411,7 @@ export const enum FnType {
 /**
  * injector scope.
  */
-export type InjectorScope = ClassType | 'platform' | 'root' | 'static' | 'configuration';
+export type InjectorScope = Type | 'platform' | 'root' | 'static' | 'configuration';
 
 /**
  * injector scopes.

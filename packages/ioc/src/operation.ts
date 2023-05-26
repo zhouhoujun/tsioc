@@ -1,4 +1,4 @@
-import { ClassType } from './types';
+import { Type } from './types';
 import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
 import { ReflectiveRef } from './reflective';
@@ -40,7 +40,7 @@ export interface OperationInvoker<T = any> {
     /**
      * method return type.
      */
-    get returnType(): ClassType;
+    get returnType(): Type;
     /**
      * invoke method name
      * 
