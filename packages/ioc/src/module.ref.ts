@@ -4,7 +4,7 @@ import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ReflectiveFactory } from './reflective';
-import { CtorType, Modules, Type } from './types';
+import { Type, CtorType, Modules } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';

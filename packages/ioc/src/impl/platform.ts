@@ -1,5 +1,5 @@
 import { Token } from '../tokens';
-import { CtorType, Type } from '../types';
+import { Type, CtorType } from '../types';
 import { Handle } from '../handle';
 import { isFunction } from '../utils/chk';
 import { Action, ActionSetup } from '../action';

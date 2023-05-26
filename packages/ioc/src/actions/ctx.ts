@@ -1,5 +1,5 @@
 import { Token } from '../tokens';
-import { CtorType, Type } from '../types';
+import { Type, CtorType } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { Class, DecoratorFn } from '../metadata/type';
 import { FactoryRecord, Injector } from '../injector';

@@ -1,4 +1,4 @@
-import { Type, DesignParam, Modules, CtorType } from '../types';
+import { Type, CtorType, DesignParam, Modules } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import { ArgumentResolver } from '../resolver';

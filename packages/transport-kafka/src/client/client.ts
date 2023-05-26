@@ -1,23 +1,24 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Client } from '@tsdi/core';
 import { Observable } from 'rxjs';
+import { Kafka } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOption } from './options';
 
-
-let kafkajs: any;
-let uuid: any;
 
 
 @Injectable({ static: false })
 export class KafkaClient extends Client {
 
-    constructor(readonly handler: KafkaHandler, @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOption) {
+    private client?: Kafka;
+    constructor(
+        readonly handler: KafkaHandler, 
+        @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOption) {
         super()
     }
 
-    protected connect(): Promise<any> | Observable<any> {
-        throw new Error('Method not implemented.');
+    protected connect(): Observable<any> {
+        this.client = new Kafka(this.options);
     }
     protected onShutdown(): Promise<void> {
         throw new Error('Method not implemented.');

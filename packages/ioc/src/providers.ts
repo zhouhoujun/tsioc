@@ -1,4 +1,4 @@
-import { CtorType, Modules, Type, TypeOf } from './types';
+import { Type, CtorType, Modules, TypeOf } from './types';
 import { Token } from './tokens';
 import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';

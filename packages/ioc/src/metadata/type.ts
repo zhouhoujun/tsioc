@@ -1,4 +1,4 @@
-import { Type, Annotation, EMPTY, CtorType } from '../types';
+import { Type, CtorType, Annotation, EMPTY } from '../types';
 import { ModuleWithProviders, ProvdierOf, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,

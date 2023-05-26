@@ -1,4 +1,4 @@
-import { Type, EMPTY, EMPTY_OBJ, CtorType } from '../types';
+import { Type, CtorType, EMPTY, EMPTY_OBJ } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {

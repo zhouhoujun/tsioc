@@ -1,4 +1,4 @@
-import { Abstract, Type, tokenId, Token, CtorType } from '@tsdi/ioc';
+import { Abstract, CtorType, tokenId, Token } from '@tsdi/ioc';
 
 /**
  * assertion error options.

@@ -1,4 +1,4 @@
-import { ActionTypes, createDecorator, MethodMetadata, Type } from '@tsdi/ioc';
+import { Type, ActionTypes, createDecorator, MethodMetadata } from '@tsdi/ioc';
 import { TransactionResolver } from './resolver';
 
 /**

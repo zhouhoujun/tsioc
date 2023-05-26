@@ -1,4 +1,4 @@
-import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef, CtorType } from '@tsdi/ioc';
+import { isFunction, Type, CtorType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';

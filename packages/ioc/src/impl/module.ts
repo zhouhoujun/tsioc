@@ -6,7 +6,7 @@ import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { ReflectiveFactory } from '../reflective';
-import { CtorType, EMPTY, EMPTY_OBJ, Type } from '../types';
+import { Type, EMPTY, EMPTY_OBJ } from '../types';
 import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { isPlainObject } from '../utils/obj';

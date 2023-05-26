@@ -6,9 +6,6 @@ import {
 } from 'kafkajs';
 
 
-let kafkajs: any;
-let uuid: any;
-
 export interface KafkaClientOption extends KafkaConfig, ConfigableEndpointOptions {
     postfixId?: string;
     client?: KafkaConfig;

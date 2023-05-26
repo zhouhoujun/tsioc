@@ -1,4 +1,4 @@
-import { Type, EMPTY, EMPTY_OBJ, CtorType } from '../types';
+import { Type, CtorType, EMPTY, EMPTY_OBJ } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';

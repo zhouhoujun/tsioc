@@ -1,4 +1,4 @@
-import { Modules, Type, EMPTY, CtorType } from '../types';
+import { Type, CtorType, Modules, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';

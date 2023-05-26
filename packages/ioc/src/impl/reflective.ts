@@ -1,4 +1,4 @@
-import { CtorType, Type } from '../types';
+import { Type, CtorType } from '../types';
 import { Class } from '../metadata/type';
 import { isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
