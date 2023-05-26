@@ -1,7 +1,7 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
     ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler,
-    createAssetEndpoint, TransportSessionFactory, createTransportEndpoint, ConfigableEndpointOptions
+    createAssetEndpoint, TransportSessionFactory, createTransportEndpoint
 } from '@tsdi/core';
 import {
     BodyContentInterceptor, Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
@@ -10,7 +10,7 @@ import {
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { TcpClient } from './client/clinet';
 import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts } from './server/options';
-import { TcpServer } from './server/server';
+import { TcpMicroService, TcpServer } from './server/server';
 import { TcpEndpoint } from './server/endpoint';
 import { TcpRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
@@ -38,7 +38,8 @@ import { TcpRespondAdapter } from './server/respond';
         TcpRespondAdapter,
         TcpExecptionHandlers,
         { provide: RespondAdapter, useExisting: TcpRespondAdapter },
-        TcpServer
+        TcpServer,
+        { provide: TcpMicroService, useClass: TcpServer }
     ]
 })
 export class TcpModule {

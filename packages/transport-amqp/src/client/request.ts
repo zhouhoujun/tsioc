@@ -25,7 +25,7 @@ export class AmqpRequestAdapter extends RequestAdapter<TransportRequest, Transpo
         super()
     }
 
-    send(req: TransportRequest<any>): Observable<TransportEvent> {
+    send(req: TransportRequest): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent>) => {
             const url = req.urlWithParams.trim();
             let status: number | string;

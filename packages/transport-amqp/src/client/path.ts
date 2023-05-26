@@ -10,7 +10,7 @@ export class AmqpPathInterceptor implements Interceptor<TransportRequest, Transp
 
     constructor(private listenOpts: ListenOpts) { }
 
-    intercept(req: TransportRequest<any>, next: Handler<TransportRequest<any>, TransportEvent>): Observable<TransportEvent> {
+    intercept(req: TransportRequest, next: Handler<TransportRequest, TransportEvent>): Observable<TransportEvent> {
         let url = req.url.trim();
         if (!tcptl.test(url)) {
             const { host, port, path } = this.listenOpts;

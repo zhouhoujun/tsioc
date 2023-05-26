@@ -1,6 +1,5 @@
-import { ExecptionFilter, Interceptor, Server, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, Inject, Injectable, tokenId } from '@tsdi/ioc';
-import * as amqp from 'amqplib';
+import { MicroService } from '@tsdi/core';
+import { Inject, Injectable } from '@tsdi/ioc';
 import { AMQP_SERV_EXECPTION_FILTERS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS, AmqpServerOpts } from './options';
 import { AmqpContext } from './context';
 import { AmqpEndpoint } from './endpoint';
@@ -14,8 +13,9 @@ const defaults = {
     execptionsToken: AMQP_SERV_EXECPTION_FILTERS,
 } as AmqpServerOpts;
 
+
 @Injectable()
-export class AmqpServer extends Server<AmqpContext> {
+export class AmqpServer extends MicroService<AmqpContext> {
 
     constructor(
         readonly endpoint: AmqpEndpoint,

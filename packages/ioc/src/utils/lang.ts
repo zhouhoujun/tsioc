@@ -275,7 +275,7 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  * @param {...Express<Type, boolean>[]} filters
  * @returns {Type[]}
  */
-export function getTypes(mds: Modules | Modules[]): Type[] {
+export function getTypes(mds: ClassType | Modules | Modules[]): Type[] {
     const types: Type[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
         isType(ty) && types.push(ty)

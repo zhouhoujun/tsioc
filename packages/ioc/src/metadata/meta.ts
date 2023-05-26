@@ -312,7 +312,7 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Type<T>}
      */
-    bootstrap?: Modules;
+    bootstrap?: Modules | ClassType;
     /**
      * imports dependens modules
      *

@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpMicroService, TcpModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -13,7 +13,7 @@ const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class TcpMicroService {
+export class TcpService {
 
     constructor(private client: TcpClient) {
 
@@ -58,9 +58,9 @@ export class TcpMicroService {
         })
     ],
     declarations: [
-        TcpMicroService
+        TcpService
     ],
-    bootstrap: TcpServer
+    bootstrap: TcpMicroService
 })
 export class MicroTcpTestModule {
 

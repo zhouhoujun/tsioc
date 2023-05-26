@@ -31,6 +31,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
 
             const onError = (err: any) => {
                 this._connected = false;
+                this.logger.error(err);
                 observer.error(err);
             };
             const onConnect = () => {
@@ -78,10 +79,6 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
         this._conn = null;
     }
 
-    protected isValid(connection: amqp.Connection): boolean {
-        return this._connected
-    }
-
     protected createConnection(opts: AmqpClientOpts): Observable<amqp.Connection> {
         return from(amqp.connect(opts.connectOpts!))
             .pipe(
@@ -89,25 +86,6 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     return conn;
                 })
             );
-    }
-
-
-    // protected override createConnectionEvents(connection: amqp.Connection, observer: Subscriber<amqp.Connection>): Events {
-    //     const events = super.createConnectionEvents(connection, observer);
-    //     events[ev.DISCONNECT] = (err?: Error) => {
-    //         err && observer.error(err);
-    //         this.onDisconnected();
-    //     }
-
-    //     return events;
-    // }
-
-    protected onDisconnected(): void {
-        this._connected = false;
-    }
-
-    protected onConnected(): void {
-        this._connected = true;
     }
 
 }

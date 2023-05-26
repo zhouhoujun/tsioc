@@ -1,4 +1,4 @@
-import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService, MESSAGE, GET } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
@@ -13,6 +13,13 @@ import { TcpOutgoing } from './outgoing';
 import { TCP_MICRO_SERV } from '../status';
 
 
+/**
+ * tcp micro service.
+ */
+@Abstract()
+export abstract class TcpMicroService extends MicroService<TcpContext, Outgoing> {
+
+}
 
 
 /**
