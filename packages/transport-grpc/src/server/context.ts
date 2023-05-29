@@ -1,4 +1,3 @@
-import { Incoming, ListenOpts } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
 import { Http2ServerRequest, Http2ServerResponse } from 'http2';
 
@@ -7,7 +6,7 @@ export class GrpcContext extends AbstractAssetContext<Http2ServerRequest, Http2S
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }
-    protected parseURL(req: Http2ServerRequest, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
+    protected parseURL(req: Http2ServerRequest, proxy?: boolean | undefined): URL {
         throw new Error('Method not implemented.');
     }
     get writable(): boolean {

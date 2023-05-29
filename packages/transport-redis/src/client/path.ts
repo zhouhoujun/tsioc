@@ -1,6 +1,7 @@
-import { Handler, Interceptor, ListenOpts, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Handler, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Inject, Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 
 /**
  * Redis path interceptor.
@@ -8,16 +9,15 @@ import { Observable } from 'rxjs';
 @Injectable()
 export class RedisPathInterceptor implements Interceptor<TransportRequest, TransportEvent> {
 
-    constructor(private listenOpts: ListenOpts) { }
+    constructor(@Inject(REDIS_CLIENT_OPTS) private clientOpts: RedisClientOpts) { }
 
     intercept(req: TransportRequest, next: Handler<TransportRequest, TransportEvent>): Observable<TransportEvent> {
         let url = req.url.trim();
         if (!urlExp.test(url)) {
-            const { host, port, path } = this.listenOpts;
+            const { host, port } = this.clientOpts.connectOpts?.tls ?? {};
             const protocol = 'redis';
-            const urlPrefix =  `${protocol}://${host ?? 'localhost'}:${port ?? 6379}`;
+            const baseUrl =  `${protocol}://${host ?? 'localhost'}:${port ?? 6379}`;
 
-            const baseUrl = new URL(urlPrefix, path);
             const uri = new URL(url, baseUrl);
             url = uri.toString();
             req.url = url;

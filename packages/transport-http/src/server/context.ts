@@ -49,7 +49,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         return httptl.test(url.trim())
     }
 
-    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
+    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, proxy?: boolean): URL {
         const url = req.url?.trim() ?? '';
         if (httptl.test(url)) {
             return new URL(url);

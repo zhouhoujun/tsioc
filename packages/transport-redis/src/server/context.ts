@@ -9,12 +9,12 @@ export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgo
         return redistl.test(url.trim())
     }
 
-    protected parseURL(req: RedisIncoming, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
+    protected parseURL(req: RedisIncoming, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = listenOpts;
+            const { host, port, path } = this.getListenOpts();
             const isIPC = !host && !port;
             const baseUrl = isIPC ? new URL(`redis://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
@@ -27,7 +27,7 @@ export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgo
     }
 
     get secure(): boolean {
-        return this.request.socket instanceof tls.TLSSocket;
+        return this.request.socket.stream instanceof tls.TLSSocket;
     }
 
     get protocol(): string {

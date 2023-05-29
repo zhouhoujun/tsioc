@@ -11,12 +11,12 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
         return tcptl.test(url.trim())
     }
 
-    protected parseURL(req: Incoming<any, any>, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
+    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = listenOpts;
+            const { host, port, path } = this.getListenOpts();
             const isIPC = !host && !port;
             const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
@@ -33,7 +33,8 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
     }
 
     get protocol(): string {
-        return !this.listenOpts.host && !this.listenOpts.port ? 'tcp' : this.secure ? 'ssl' : 'tcp';
+        const opts = this.getListenOpts();
+        return !opts.host && !opts.port ? 'tcp' : this.secure ? 'ssl' : 'tcp';
     }
 
     get status(): number {

@@ -40,7 +40,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         this.redis.on(ev.ERROR, (err) => logger.error(err));
 
         const factory = this.endpoint.injector.get(TransportSessionFactory);
-        const session = factory.create(this.redis);
+        const session = factory.create(this.redis, opts.transportOpts);
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
             this.requestHandler(session, packet)
@@ -104,11 +104,11 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
                     this.logger.error(err)
                 }
             });
-        // const opts = this.options;
-        // opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
-        //     req.emit?.(ev.TIMEOUT);
-        //     cancel?.unsubscribe()
-        // });
+        const opts = this.options;
+        opts.timeout && req.socket.stream.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
+            req.emit?.(ev.TIMEOUT);
+            cancel?.unsubscribe()
+        });
         req.once(ev.ABOUT, () => cancel?.unsubscribe())
         return cancel;
     }
@@ -117,16 +117,5 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         const injector = this.endpoint.injector;
         return new RedisContext(injector, req, res);
     }
-
-
-    // protected async listen(server: RedisClient, opts: ListenOpts): Promise<void> {
-
-    // }
-    // protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
-    //     throw new Error('Method not implemented.');
-    // }
-    // protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
-    //     throw new Error('Method not implemented.');
-    // }
 
 }

@@ -6,7 +6,7 @@ import Redis, { RedisOptions } from 'ioredis';
 export interface RedisServerOpts extends TransportEndpointOptions<TransportContext> {
     connectOpts?: RedisOptions;
     detailError?: boolean;
-    
+    timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
     transportOpts?: TransportSessionOpts;

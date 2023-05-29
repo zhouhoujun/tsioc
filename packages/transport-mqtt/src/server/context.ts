@@ -1,4 +1,4 @@
-import { Incoming, ListenOpts } from '@tsdi/core';
+import { Incoming } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
 
 
@@ -6,7 +6,7 @@ export class MqttContext extends AbstractAssetContext {
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }
-    protected parseURL(req: Incoming<any, any>, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
+    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
         throw new Error('Method not implemented.');
     }
     get writable(): boolean {

@@ -30,12 +30,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     protected vaildator: StatusVaildator<TStatus>;
     protected streamAdapter: StreamAdapter;
-    protected listenOpts: ListenOpts;
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
-        this.listenOpts = injector.get(ListenOpts);
         this.streamAdapter = injector.get(StreamAdapter);
         this.originalUrl = request.url?.toString() ?? '';
         this.init(request);
@@ -54,6 +52,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
             }
         }
         (this.request as any)['query'] = this.query;
+    }
+
+    getListenOpts() {
+        return this.injector.get(ListenOpts);
     }
 
 
@@ -112,7 +114,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     protected createURL() {
         try {
-            return this.parseURL(this.request, this.listenOpts, !!this.proxy);
+            return this.parseURL(this.request, !!this.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -127,7 +129,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     /**
      * parse URL.
      */
-    protected abstract parseURL(req: TRequest, listenOpts: ListenOpts, proxy?: boolean): URL;
+    protected abstract parseURL(req: TRequest, proxy?: boolean): URL;
 
     get pathname(): string {
         return this.URL.pathname

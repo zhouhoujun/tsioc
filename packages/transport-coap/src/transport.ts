@@ -56,36 +56,6 @@ export class CoapVaildator extends StatusVaildator {
     redirectDefaultMethod(): string {
         throw new Error('Method not implemented.');
     }
-    private _protocol = 'coap';
-
-    protocol(incoming: Incoming<any>): string {
-        return this._protocol;
-    }
-
-    isUpdate(incoming: Incoming): boolean {
-        return incoming.method === 'put';
-    }
-
-    isSecure(req: Incoming<Connection>): boolean {
-        return (req.socket as any).encrypted === true
-    }
-
-    parseURL(req: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
-        const url = req.url?.trim() ?? '';
-        if (coapPfx.test(url)) {
-            return new URL(url);
-        } else {
-            const { host, port, path } = opts;
-            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
-            const uri = new URL(url, baseUrl);
-            return uri;
-        }
-
-    }
-
-    isAbsoluteUrl(url: string): boolean {
-        return coapPfx.test(url.trim())
-    }
 
 
 }
