@@ -35,13 +35,15 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                 observer.error(err);
             };
             const onConnect = () => {
+                this._connected = true;
                 observer.next(this._channel!);
                 observer.complete();
             };
 
             const onConnectFailed = () => {
-
+                this._connected = false;
             };
+
 
             Promise.resolve(
                 this._conn && this._connected ? this._conn : amqp.connect(this.options.connectOpts!)
@@ -51,6 +53,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     this._connected = true;
                     this._conn = conn;
                 }
+                this._conn.on(ev.CONNECT, onConnect);
                 this._conn.on(ev.ERROR, onError);
                 this._conn.on(ev.DISCONNECT, onError);
                 this._conn.on(ev.CONNECT_FAILED, onConnectFailed);

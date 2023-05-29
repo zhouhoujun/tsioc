@@ -22,13 +22,13 @@ import { RedisEndpoint } from './server/endpoint';
         TransportModule,
         ServerTransportModule
     ],
-    providers: [ 
-        RedisPathInterceptor,
+    providers: [
+        // RedisPathInterceptor,
         RedisTransportSessionFactory,
         { provide: StatusVaildator, useClass: RedisStatusVaildator },
         { provide: RequestAdapter, useClass: RedisRequestAdapter },
         RedisClient,
-        
+
         RedisExecptionHandlers,
         RedisServer
     ]
@@ -106,7 +106,8 @@ const defClientOpts = {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },
-    interceptors: [RedisPathInterceptor, BodyContentInterceptor],
+    retryAttempts: 3,
+    interceptors: [BodyContentInterceptor],
     filtersToken: REDIS_CLIENT_FILTERS,
     backend: TransportBackend
 

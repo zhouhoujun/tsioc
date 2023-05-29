@@ -10,7 +10,7 @@ import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { GuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinprefix, Route, ROUTES, Routes } from './route';
+import { joinprefix, normalize, Route, ROUTES, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { RouteMatcher, Router } from './router';
@@ -119,9 +119,9 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         let url: string;
         if (this.prefix) {
             if (!ctx.url.startsWith(this.prefix)) return;
-            url = ctx.url.slice(this.prefix.length)
+            url = normalize(ctx.url.slice(this.prefix.length));
         } else {
-            url = ctx.url ?? '/'
+            url = ctx.url ?? ''
         }
 
         const route = this.findRoute(url);

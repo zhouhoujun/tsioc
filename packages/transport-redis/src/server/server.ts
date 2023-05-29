@@ -50,7 +50,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
 
     protected async onStart(): Promise<any> {
         const router = this.endpoint.injector.get(Router);
-        this.redis?.subscribe(...Array.from(router.subscribes.values()), (err, count) => {
+        await this.redis?.subscribe(...Array.from(router.subscribes.values()), (err, count) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -92,7 +92,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
             packet.method = MESSAGE;
         }
         const req = new RedisIncoming(session, packet);
-        const res = new RedisOutgoing(session, packet.id);
+        const res = new RedisOutgoing(session, packet.url!, packet.id);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

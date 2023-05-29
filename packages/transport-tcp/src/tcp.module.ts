@@ -14,7 +14,6 @@ import { TcpMicroService, TcpServer } from './server/server';
 import { TcpEndpoint } from './server/endpoint';
 import { TcpRequestAdapter } from './client/request';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
-import { TcpPathInterceptor } from './client/path';
 import { TcpHandler } from './client/handler';
 import { TCP_MICRO_SERV, TcpStatusVaildator } from './status';
 import { TcpTransportSessionFactory } from './transport';
@@ -182,7 +181,7 @@ const defClientOpts = {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },
-    interceptors: [TcpPathInterceptor, BodyContentInterceptor],
+    interceptors: [BodyContentInterceptor],
     filtersToken: TCP_CLIENT_FILTERS,
     backend: TransportBackend
 

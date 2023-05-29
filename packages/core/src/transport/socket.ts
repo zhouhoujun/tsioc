@@ -282,6 +282,13 @@ export interface Outgoing<TSocket = any, TStatus = any> extends IWritableStream 
 
 }
 
+export interface SendOpts extends Record<string, any> {
+    /**
+     * send from server side or not.
+     */
+    server?: boolean;
+}
+
 /**
  * transport session.
  */
@@ -295,7 +302,7 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * @param data 
      * @param encoder 
      */
-    send(data: Packet): Promise<void>;
+    send(data: Packet, options?: SendOpts): Promise<void>;
     /**
      * Adds the `listener` function to the end of the listeners array for the
      * event named `eventName`. No checks are made to see if the `listener` has

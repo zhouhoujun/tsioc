@@ -157,7 +157,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
         afterAnnoation: (ctx, next) => {
             const mapping = ctx.class.getAnnotation<MappingDef>();
-            const route = mapping.route;
+            const route = normalize(patternToPath(mapping.route!));
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             const injector = ctx.injector;
 
@@ -422,11 +422,11 @@ export function createRouteDecorator(method: RequestMethod) {
     });
 }
 
-const rest$ = /\/:\w+(\/)?/;
-const pthRest$ = /\/:\w+/g;
-const endRest$ = /\/:\w+$/g;
-const pthRest = '/[^/]*';
-const endRest = '/[^/]+';
+const rest$ = /(^:\w+)|(\/:\w+)/;
+const pthRest$ = /:\w+/g;
+const endRest$ = /:\w+$/g;
+const pthRest = '[^/]*';
+const endRest = '[^/]+';
 
 function createRestfulMatcher(route: string) {
     if (rest$.test(route)) {

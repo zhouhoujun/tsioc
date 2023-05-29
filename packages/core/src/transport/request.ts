@@ -10,7 +10,7 @@ import { Pattern, patternToPath } from './pattern';
  */
 export class TransportRequest<T = any> {
 
-    url: string;
+    readonly url: string;
     readonly method: string | undefined;
     readonly pattern?: Pattern;
     readonly params: TransportParams;

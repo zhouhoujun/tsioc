@@ -1,5 +1,5 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, TransportContext, ListenOpts, EndpointInvokeOpts
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, TransportContext, ListenOpts, EndpointInvokeOpts, normalize
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
 import { extname } from 'path';
@@ -44,12 +44,13 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this._url = request.url ?? '';
 
         if (this.isAbsoluteUrl(this._url)) {
-            this._url = this.URL.pathname;
+            this._url = normalize(this.URL.pathname);
         } else {
             const sidx = this._url.indexOf('?');
             if (sidx > 0) {
                 this._url = this._url.slice(0, sidx);
             }
+            this.url = normalize(this._url);
         }
         (this.request as any)['query'] = this.query;
     }

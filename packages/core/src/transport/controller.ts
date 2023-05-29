@@ -9,7 +9,7 @@ import { AbstractGuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinprefix } from './route';
+import { joinprefix, normalize } from './route';
 import { Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
@@ -84,7 +84,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
     }
 
     protected getRouteMetaData(ctx: AssetContext) {
-        const subRoute = ctx.url.replace(this.prefix, '') || '/';
+        const subRoute = normalize(ctx.url, this.prefix);
 
         return this.sortRoutes.find(m => m
             && m.metadata.method === ctx.method

@@ -84,7 +84,7 @@ describe('Redis Micro Service', () => {
             provide: REDIS_CLIENT_OPTS,
             useValue: {
                 connectOpts: {
-                    port: 2000
+                    port: 6379
                 }
             } as RedisClientOpts
         });

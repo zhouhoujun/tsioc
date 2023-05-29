@@ -86,7 +86,7 @@ export function joinprefix(...paths: (string | undefined)[]) {
         .filter(p => p)
         .join('/');
 
-    return '/' + joined
+    return joined
 }
 
 /**
@@ -94,13 +94,22 @@ export function joinprefix(...paths: (string | undefined)[]) {
  * @param route 
  * @returns 
  */
-export function normalize(route: string): string {
-    if (!route) return '/';
-    if (route === '/') return route;
+export function normalize(route: string, prefix?: string): string {
+    if (!route) return '';
+    if (route === '') return route;
 
     let path = route.trim();
     if (endExp.test(route)) {
         path = path.substring(0, path.length - 1)
     }
-    return staExp.test(path) ? path : `/${path}`
+    if(staExp.test(path)) {
+        path = path.substring(1);
+    }
+    if(prefix){
+        path = path.replace(staExp.test(prefix) ? prefix.substring(1) : prefix, '');
+        if(staExp.test(path)) {
+            path = path.substring(1);
+        }
+    }
+    return path;
 }

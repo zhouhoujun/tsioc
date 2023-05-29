@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, GET, POST } from '@tsdi/core';
+import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { hdr } from '../consts';
@@ -25,7 +25,7 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
             // HTTP fetch step 5.3
             let locationURL = null;
             try {
-                locationURL = location === null ? null : new URL(location, req.url).toString();
+                locationURL = location === null ? null : (absUrl.test(req.url) ? new URL(location, req.url).toString() : location);
             } catch {
                 // error here can only be invalid URL in Location: header
                 // do not throw when options.redirect == manual
@@ -71,7 +71,7 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
                     // that is not a subdomain match or exact match of the initial domain.
                     // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
                     // will forward the sensitive headers, but a redirect to "bar.com" will not.
-                    if (!isDomainOrSubdomain(req.url, locationURL)) {
+                    if (absUrl.test(req.url) && !isDomainOrSubdomain(req.url, locationURL)) {
                         reqhdrs.delete(hdr.AUTHORIZATION)
                             .delete(hdr.WWW_AUTHENTICATE)
                             .delete(hdr.COOKIE)
@@ -117,10 +117,9 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
             }
         });
     }
-
-
-
 }
+
+const absUrl = /\w+\/\/:/;
 
 const isDomainOrSubdomain = (destination: string | URL, original: string | URL) => {
     const orig = new URL(original).hostname;

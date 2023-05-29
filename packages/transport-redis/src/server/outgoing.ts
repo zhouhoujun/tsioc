@@ -22,6 +22,7 @@ export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number
     writable = true;
     constructor(
         readonly session: TransportSession<Redis>,
+        readonly topic: string,
         readonly id: number) {
         super({ objectMode: true });
         this.setMaxListeners(0);
@@ -109,8 +110,10 @@ export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number
         }
         super.end(chunk, encoding, cb);
 
+        const url = this.getReply(this.topic);
         this.session.send({
             id: this.id,
+            url,
             headers: this.getHeaders(),
             payload: this,
         });
@@ -119,6 +122,10 @@ export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number
 
         return this;
 
+    }
+
+    getReply(topic: string) {
+       return topic + '/reply';
     }
 
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;

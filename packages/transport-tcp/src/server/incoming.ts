@@ -22,7 +22,8 @@ export class TcpIncoming extends Readable implements Incoming<tls.TLSSocket | ne
         this.id = packet.id;
         this.setMaxListeners(0);
         const headers = this.headers = packet.headers || {};
-        this.url = packet.url ?? headers[hdr.PATH] ?? '',
+        this.url = packet.url ?? headers[hdr.PATH] ?? '';
+    
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';
 
         this._payloadIndex = 0
@@ -58,3 +59,5 @@ export class TcpIncoming extends Readable implements Incoming<tls.TLSSocket | ne
     type?: number | undefined;
     error?: Error | undefined;
 }
+
+const tcptl = /^(tcp|ssl|ipc):\/\//i;
