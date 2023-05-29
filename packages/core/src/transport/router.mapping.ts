@@ -27,7 +27,9 @@ import { RouteEndpoint } from './route.endpoint';
 @Injectable()
 export class MappingRouter extends HybridRouter implements Middleware, OnDestroy {
 
-    readonly routes: Map<string, Endpoint | MiddlewareLike | Array<Endpoint | MiddlewareLike>>;
+    readonly routes: Map<string, HybridRoute>;
+
+    readonly subscribes: Set<string>;
 
     constructor(
         private injector: Injector,
@@ -35,36 +37,24 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         @Optional() public prefix: string = '',
         @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
+        this.subscribes = new Set();
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
             routes.forEach(r => this.use(r));
         }
     }
 
-    /**
-     * use route.
-     * @param route 
-     */
     use(route: Route): this;
-    /**
-     * use route.
-     * @param route 
-     * @param middleware
-     */
-    use(route: string, middleware: MiddlewareLike): this;
-    /**
-     * use route.
-     * @param route 
-     * @param endpoint
-     */
-    use(route: string, endpoint: Endpoint): this;
-    use(route: Route | string, endpoint?: MiddlewareLike | Endpoint): this {
+    use(route: string, middleware: HybridRoute, subscribe?: boolean): this;
+    use(route: Route | string, endpoint?: HybridRoute, subscribe?: boolean): this {
         if (isString(route)) {
             if (!endpoint) return this;
             this.addEndpoint(route, endpoint);
+            subscribe && this.subscribes.add(route);
             return this;
         } else {
-            this.addEndpoint(route.path, new MappingRoute(this.injector, route))
+            this.addEndpoint(route.path, new MappingRoute(this.injector, route));
+            subscribe && this.subscribes.add(route.path);
         }
         return this
     }
@@ -76,10 +66,12 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
                 const idx = handles.findIndex(i => i === endpoint || (isFunction((i as Endpoint).equals) && (i as Endpoint).equals?.(endpoint)))
                 if (idx >= 0) handles.splice(idx, 1);
             } else {
-                this.routes.delete(route)
+                this.routes.delete(route);
+                this.subscribes.delete(route)
             }
         } else {
-            this.routes.delete(route)
+            this.routes.delete(route);
+            this.subscribes.delete(route)
         }
         return this
     }
@@ -147,7 +139,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         return route;
     }
 
-    protected addEndpoint(route: string, endpoint: Endpoint | MiddlewareLike) {
+    protected addEndpoint(route: string, endpoint: HybridRoute) {
         const redpt = endpoint as RouteEndpoint;
         if (redpt.injector && redpt.options && redpt.options.paths) {
             const params: Record<string, any> = {};
@@ -164,9 +156,13 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
             const handles = this.routes.get(route)!;
             if (handles instanceof ControllerRoute) throw new Execption(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
             if (isArray(handles)) {
-                handles.push(endpoint);
+                if (isArray(endpoint)) {
+                    handles.push(...endpoint);
+                } else {
+                    handles.push(endpoint);
+                }
             } else {
-                this.routes.set(route, [handles, endpoint]);
+                this.routes.set(route, [handles, ...isArray(endpoint) ? endpoint : [endpoint]]);
             }
         } else {
             this.routes.set(route, endpoint)

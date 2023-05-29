@@ -1,5 +1,5 @@
 import {
-    isArray, isString, lang, Type, isRegExp, createDecorator, ActionTypes, PatternMetadata,
+    isArray, isString, lang, Type, createDecorator, ActionTypes, PatternMetadata,
     ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf, Execption, isMetadataObject
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
@@ -69,7 +69,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscr
                 const metadata = def.metadata as RouteMappingMetadata;
                 const route = normalize(patternToPath(metadata.route!));
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
-                router.use(route, endpoint);
+                router.use(route, endpoint, true);
                 factory.onDestroy(() => router.unuse(route));
             });
 
@@ -148,7 +148,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                 const metadata = def.metadata as RouteMappingMetadata;
                 const route = normalize(patternToPath(metadata.route!));
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
-                router.use(route, endpoint);
+                router.use(route, endpoint, true);
                 factory.onDestroy(() => router.unuse(route));
             });
 

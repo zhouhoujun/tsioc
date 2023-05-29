@@ -149,7 +149,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements MicroServ
         return cancel;
     }
 
-    protected createContext(req: Incoming, res: Outgoing): TcpContext {
+    protected createContext(req: TcpIncoming, res: TcpOutgoing): TcpContext {
         const injector = this.endpoint.injector;
         return new TcpContext(injector, req, res, this.options.proxy);
     }

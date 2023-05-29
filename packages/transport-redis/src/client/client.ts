@@ -3,12 +3,16 @@ import { Client, ClientSubscribeCallback, PacketCallback, Publisher, Subscriber,
 import Redis, { RedisOptions } from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
+import { LOCALHOST } from '@tsdi/transport';
+import { InjectLog, Logger } from '@tsdi/logs';
 
 
 
 @Injectable({ static: false })
-export class RedisClient extends Client<TransportRequest, TransportEvent>
-    implements Subscriber, Publisher {
+export class RedisClient extends Client<TransportRequest, TransportEvent> {
+
+    @InjectLog()
+    private logger!: Logger;
 
     private redis: Redis | null = null;
     constructor(
@@ -16,25 +20,31 @@ export class RedisClient extends Client<TransportRequest, TransportEvent>
         @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
         super();
     }
-    publish(topic: string, message: string | Buffer, opts: any, callback?: PacketCallback<any> | undefined): this;
-    publish(topic: string, message: string | Buffer, callback?: PacketCallback<any> | undefined): this;
-    publish(topic: unknown, message: unknown, opts?: unknown, callback?: unknown): this {
-        throw new Error('Method not implemented.');
-    }
-    subscribe(topic: string | string[], opts: any, callback?: ClientSubscribeCallback<any> | undefined): this;
-    subscribe(topic: string | string[] | Record<string, any>, callback?: ClientSubscribeCallback<any> | undefined): this;
-    subscribe(topic: unknown, opts?: unknown, callback?: unknown): this {
-        throw new Error('Method not implemented.');
-    }
-    unsubscribe(topic: string | string[], opts?: Object | undefined, callback?: PacketCallback<any> | undefined): this {
-        throw new Error('Method not implemented.');
-    }
 
     protected async connect(): Promise<void> {
         if (this.redis) return;
 
         const opts = this.options;
-        this.redis = new Redis(opts.connectOpts);
+        const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
+        this.redis = new Redis({
+            host: LOCALHOST,
+            port: 6379,
+            retryStrategy,
+            ...opts.connectOpts
+        });
+        await this.redis.connect();
+    }
+
+    protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
+        return (times: number) => {
+            const retryAttempts = options.retryAttempts;
+            if (!retryAttempts || times > retryAttempts) {
+                this.logger.error('Retry time exhausted');
+                return;
+            }
+
+            return options.retryDelay ?? 0;
+        }
     }
 
     protected async onShutdown(): Promise<void> {

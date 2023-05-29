@@ -17,6 +17,10 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      */
     abstract get prefix(): string;
     /**
+     * subscribe topics
+     */
+    abstract get subscribes(): Set<string>;
+    /**
      * use route.
      * @param route 
      */
@@ -27,8 +31,9 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      * A URL string that uses router matching notation.
      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param endpoint endpoint. 
+     * @param subscribe as subscribe or not.
      */
-    abstract use(route: string, endpoint: T): this;
+    abstract use(route: string, endpoint: T, subscribe?: boolean): this;
     /**
      * unuse route.
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.

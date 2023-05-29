@@ -1,48 +1,45 @@
 import { Execption } from '@tsdi/ioc';
 
 
-const invalidStreamMsg = 'Invalid stream error';
 export class InvalidStreamExecption extends Execption {
-    constructor(message = invalidStreamMsg) {
+    constructor(message = 'Invalid stream error') {
         super(message)
     }
 }
 
-const heandersSentMsg = 'Headers has sent';
 export class HeandersSentExecption extends Execption {
-    constructor(message = heandersSentMsg) {
+    constructor(message = 'Headers has sent') {
         super(`HeandersSentExecption: ${message}`)
     }
 }
 
-
-const invalidSessionMsg = 'Invalid session error';
 export class InvalidSessionExecption extends Execption {
-    constructor(message = invalidSessionMsg) {
+    constructor(message = 'Invalid session error') {
         super(`InvalidSessionExecption: ${message}`)
     }
 }
 
 
-const goawayMsg = 'Connection gowary';
 export class GoawayExecption extends Execption {
-    constructor(message = goawayMsg) {
+    constructor(message = 'Connection gowary') {
         super(`GoawayExecption: ${message}`)
     }
 }
 
+export class OfflineExecption extends Execption {
+    constructor(message = 'Connection offline') {
+        super(`OfflineExecption: ${message}`)
+    }
+}
 
-const pushDisMsg = 'Push disabled';
 export class PushDisabledExecption extends Execption {
-    constructor(message = pushDisMsg) {
+    constructor(message = 'Push disabled') {
         super(`PushDisabledExecption: ${message}`)
     }
 }
 
-
-const nestPushMsg = 'Nest push';
 export class NestedPushExecption extends Execption {
-    constructor(message = nestPushMsg) {
+    constructor(message = 'Nest push') {
         super(`NestedPushExecption: ${message}`)
     }
 }

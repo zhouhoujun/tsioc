@@ -1,24 +1,22 @@
-import { Incoming, ListenOpts, Outgoing } from '@tsdi/core';
+import { ListenOpts } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import { RedisIncoming } from './incoming';
+import { RedisOutgoing } from './outgoing';
 import * as tls from 'tls';
-import { TcpIncoming } from './incoming';
-import { TcpOutgoing } from './outgoing';
 
-
-export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, number> {
-
+export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgoing, number> {
     isAbsoluteUrl(url: string): boolean {
-        return tcptl.test(url.trim())
+        return redistl.test(url.trim())
     }
 
-    protected parseURL(req: Incoming<any, any>, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
+    protected parseURL(req: RedisIncoming, listenOpts: ListenOpts, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
             const { host, port, path } = listenOpts;
             const isIPC = !host && !port;
-            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
+            const baseUrl = isIPC ? new URL(`redis://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -33,7 +31,7 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
     }
 
     get protocol(): string {
-        return !this.listenOpts.host && !this.listenOpts.port ? 'tcp' : this.secure ? 'ssl' : 'tcp';
+        return 'redis';
     }
 
     get status(): number {
@@ -54,4 +52,4 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
 
 }
 
-const tcptl = /^(tcp|ssl|ipc):\/\//i;
+const redistl = /^redis:\/\//i;

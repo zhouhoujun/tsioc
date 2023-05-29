@@ -1,4 +1,4 @@
-import { ExecptionFilter, Interceptor, TransportRequest, TransportEndpointOptions } from '@tsdi/core';
+import { Interceptor, TransportRequest, TransportEndpointOptions, Filter } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { AmqpContext } from './context';
@@ -26,5 +26,5 @@ export const AMQP_SERV_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Tran
 /**
  * Amqp server filters.
  */
-export const AMQP_SERV_FILTERS = tokenId<ExecptionFilter[]>('AMQP_SERV_FILTERS');
+export const AMQP_SERV_FILTERS = tokenId<Filter[]>('AMQP_SERV_FILTERS');
 

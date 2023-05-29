@@ -147,9 +147,9 @@ export class UnsupportedMediaTypeExecption extends MessageExecption {
     }
 }
 
-const pushDisMsg = 'Push disabled';
+
 export class PushDisabledExecption extends Execption {
-    constructor(message = pushDisMsg) {
+    constructor(message = 'Push disabled') {
         super(`PushDisabledExecption: ${message}`)
     }
 }
