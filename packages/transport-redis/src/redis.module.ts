@@ -52,7 +52,11 @@ export class RedisModule {
             { provide: REDIS_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } },
             toProvider(RedisHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: RedisClientOpts) => {
-                    return createHandler(injector, { ...defClientOpts, ...opts });
+                    if (!opts.interceptors || !opts.interceptorsToken) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(REDIS_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts);
                 },
                 deps: [Injector, REDIS_CLIENT_OPTS]
             }),

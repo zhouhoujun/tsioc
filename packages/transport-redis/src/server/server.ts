@@ -69,15 +69,17 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         ]);
 
         const router = this.endpoint.injector.get(Router);
-        await this.subscriber.subscribe(...Array.from(router.subscribes.values()), (err, count) => {
+        const subscribes = Array.from(router.subscribes.values());
+        await this.subscriber.subscribe(...subscribes, (err, count) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
                 this.logger.error("Failed to subscribe: %s", err.message);
             } else {
-                // `count` represents the number of channels this client are currently subscribed to.
+                // `count` represents the number of channels this server are currently subscribed to.
                 this.logger.info(
-                    `Subscribed successfully! This client is currently subscribed to ${count} channels.`
+                    `Subscribed successfully! This client is currently subscribed to ${count} channels.`,
+                    subscribes
                 );
             }
         })

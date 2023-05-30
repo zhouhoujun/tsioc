@@ -49,12 +49,10 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     use(route: Route | string, endpoint?: HybridRoute, subscribe?: boolean): this {
         if (isString(route)) {
             if (!endpoint) return this;
-            this.addEndpoint(route, endpoint);
-            subscribe && this.subscribes.add(route);
+            this.addEndpoint(route, endpoint, subscribe);
             return this;
         } else {
-            this.addEndpoint(route.path, new MappingRoute(this.injector, route));
-            subscribe && this.subscribes.add(route.path);
+            this.addEndpoint(route.path, new MappingRoute(this.injector, route), subscribe);
         }
         return this
     }
@@ -139,8 +137,9 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         return route;
     }
 
-    protected addEndpoint(route: string, endpoint: HybridRoute) {
+    protected addEndpoint(route: string, endpoint: HybridRoute, subscribe?: boolean) {
         const redpt = endpoint as RouteEndpoint;
+        let subs: string[];
         if (redpt.injector && redpt.options && redpt.options.paths) {
             const params: Record<string, any> = {};
             const paths = redpt.options.paths;
@@ -148,9 +147,13 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
             Object.keys(paths).forEach(n => {
                 params[n] = injector.get(paths[n]);
             })
-            this.matcher.register(route, params);
+            subs = this.matcher.register(route, params);
         } else {
-            this.matcher.register(route);
+            subs = this.matcher.register(route);
+        }
+
+        if (subscribe && subs?.length) {
+            subs.forEach(s => this.subscribes.add(s));
         }
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
@@ -180,21 +183,24 @@ export class DefaultRouteMatcher extends RouteMatcher {
         this.matchers = new Map();
     }
 
-    register(route: string, params?: Record<string, any>): boolean {
+    register(route: string, params?: Record<string, any>): string[] {
         if (wildcard.test(route)) {
+            let subs: string[] = [route.slice(0)];
             let $exp = this.replaceTopic(route);
             if (params) {
-                $exp = this.replaceTopicParams($exp, params);
-                $exp = this.replaceRestParams($exp, params);
+                const opts = { subs };
+                $exp = this.replaceTopicParams($exp, params, opts);
+                $exp = this.replaceRestParams($exp, params, opts);
+                subs = opts.subs
             } else {
                 $exp = $exp.replace(tval$, tplPth)
                     .replace(rest$, tplPth)
             }
 
             this.matchers.set(new RegExp('^' + $exp + '$'), route);
-            return true;
+            return subs;
         }
-        return false;
+        return [route]
     }
 
     match(path: string): string | null {
@@ -212,12 +218,28 @@ export class DefaultRouteMatcher extends RouteMatcher {
             .replace(words$, words)
     }
 
-    protected replaceTopicParams(route: string, params: Record<string, any>) {
+    protected replaceTopicParams(route: string, params: Record<string, any>, opts: { subs: string[] }) {
         route.match(tval$)?.forEach(v => {
             const name = v.slice(2, v.length - 1);
             if (params[name]) {
                 const data = params[name];
-                route = route.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+                if (isArray(data)) {
+                    const orgs = opts.subs;
+                    const subs: string[] = [];
+                    const repl = data.map((d, idx) => {
+                        const rp = this.format(d);
+                        orgs.forEach(r => {
+                            subs.push(r.replace(v, rp));
+                        })
+                        return rp;
+                    }).join('|');
+                    route = route.replace(v, `(${repl})`);
+                    opts.subs = subs;
+                } else {
+                    const repl = this.format(data);
+                    opts.subs = opts.subs.map(r => r.replace(v, repl));
+                    route = route.replace(v, repl);
+                }
             } else {
                 route = route.replace(v, tplPth)
             }
@@ -225,12 +247,32 @@ export class DefaultRouteMatcher extends RouteMatcher {
         return route;
     }
 
-    protected replaceRestParams(route: string, params: Record<string, any>) {
+    format(val: any) {
+        return String(val);
+    }
+
+    protected replaceRestParams(route: string, params: Record<string, any>, opts: { subs: string[] }) {
         route.match(rest$)?.forEach(v => {
             const name = v.slice(1);
             if (params[name]) {
                 const data = params[name];
-                route = route.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+                if (isArray(data)) {
+                    const orgs = opts.subs;
+                    const subs: string[] = [];
+                    const repl = data.map((d, idx) => {
+                        const rp = this.format(d);
+                        orgs.forEach(r => {
+                            subs.push(r.replace(v, rp));
+                        })
+                        return rp;
+                    }).join('|');
+                    route = route.replace(v, `(${repl})`);
+                    opts.subs = subs;
+                } else {
+                    const repl = this.format(data);
+                    opts.subs = opts.subs.map(r => r.replace(v, repl));
+                    route = route.replace(v, repl);
+                }
             } else {
                 route = route.replace(v, tplPth)
             }

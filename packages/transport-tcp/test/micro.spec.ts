@@ -49,6 +49,11 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         TcpModule.forMicroService({
+            clientOpts: {
+                connectOpts: {
+                    port: 2000
+                }
+            },
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
@@ -82,14 +87,7 @@ describe('TCP Micro Service', () => {
             ]
         });
         injector = ctx.injector;
-        client = injector.resolve(TcpClient, {
-            provide: TCP_CLIENT_OPTS,
-            useValue: {
-                connectOpts: {
-                    port: 2000
-                }
-            } as TcpClientOpts
-        });
+        client = injector.get(TcpClient);
     });
 
 

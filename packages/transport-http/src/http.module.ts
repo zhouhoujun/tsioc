@@ -80,7 +80,11 @@ export class HttpModule {
             { provide: HTTP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(HttpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: HttpClientOpts) => {
-                    return createHandler(injector, opts);
+                    if (!opts.interceptors || !opts.interceptorsToken) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(HTTP_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts)
                 },
                 deps: [Injector, HTTP_CLIENT_OPTS]
             }),

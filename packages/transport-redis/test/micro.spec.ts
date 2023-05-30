@@ -47,6 +47,12 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         RedisModule.forMicroService({
+            clientOpts: {
+                // connectOpts: {
+                //     port: 6379
+                // },
+                timeout: 1000
+            },
             serverOpts: {
                 // timeout: 1000,
                 // connectOpts: {
@@ -80,14 +86,7 @@ describe('Redis Micro Service', () => {
             ]
         });
         injector = ctx.injector;
-        client = injector.resolve(RedisClient, {
-            provide: REDIS_CLIENT_OPTS,
-            useValue: {
-                connectOpts: {
-                    port: 6379
-                }
-            } as RedisClientOpts
-        });
+        client = injector.get(RedisClient);
     });
 
 
@@ -135,7 +134,7 @@ describe('Redis Micro Service', () => {
         expect(a.status).toEqual(404);
     });
 
-    it('sensor/message/** message', async () => {
+    it('sensor/message/# message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
             payload: {
                 message: 'ble'

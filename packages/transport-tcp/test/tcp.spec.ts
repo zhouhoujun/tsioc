@@ -91,6 +91,11 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         TcpModule.withOptions({
+            clientOpts: {
+                connectOpts: {
+                    port: 2000
+                }
+            },
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
@@ -118,14 +123,7 @@ describe('TCP Server & TCP Client', () => {
     before(async () => {
         ctx = await Application.run(TcpTestModule);
         injector = ctx.injector;
-        client = injector.resolve(TcpClient, {
-            provide: TCP_CLIENT_OPTS,
-            useValue: {
-                connectOpts: {
-                    port: 2000
-                }
-            } as TcpClientOpts
-        });
+        client = injector.get(TcpClient);
     });
 
 

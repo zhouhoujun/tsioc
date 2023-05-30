@@ -14,6 +14,10 @@ export interface RedisClientOpts extends ConfigableHandlerOptions<TransportReque
     retryAttempts?: number;
     retryDelay?: number;
     transportOpts?: TransportSessionOpts;
+    /**
+     * request timeout.
+     */
+    timeout?: number;
 }
 
 /**

@@ -63,7 +63,11 @@ export class TcpModule {
             { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
-                    return createHandler(injector, { ...defClientOpts, ...opts });
+                    if (!opts.interceptors || !opts.interceptorsToken) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(TCP_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts);
                 },
                 deps: [Injector, TCP_CLIENT_OPTS]
             }),
@@ -101,7 +105,11 @@ export class TcpModule {
             { provide: TCP_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
-                    return createHandler(injector, { ...defClientOpts, ...opts });
+                    if (!opts.interceptors) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(TCP_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts);
                 },
                 deps: [Injector, TCP_CLIENT_OPTS]
             }),

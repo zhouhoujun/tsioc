@@ -113,6 +113,19 @@ export class BadRequestExecption extends MessageExecption {
 }
 
 /**
+ * Timeout request execption.
+ *
+ * @export
+ * @class TimeoutExecption
+ * @extends {MessageExecption}
+ */
+export class TimeoutExecption extends MessageExecption {
+    constructor(message = 'Timeout', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
  * unauthorized execption.
  *
  * @export

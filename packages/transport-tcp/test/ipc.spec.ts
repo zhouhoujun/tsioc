@@ -98,6 +98,11 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         ServerModule,
         LoggerModule,
         TcpModule.withOptions({
+            // clientOpts:{
+            //     connectOpts: {
+            //         path: ipcpath
+            //     }
+            // },
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
@@ -134,6 +139,8 @@ describe('IPC Server & IPC Client', () => {
                 }
             } as TcpClientOpts
         });
+        // //or 
+        // client = injector.get(TcpClient);
     });
 
 

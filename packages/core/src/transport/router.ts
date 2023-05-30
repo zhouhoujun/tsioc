@@ -69,9 +69,9 @@ export abstract class RouteMatcher {
      * 
      * ```
      *  
-     * @returns is registered or not. 
+     * @returns subscribe topics. 
      */
-    abstract register(route: string, params?: Record<string, any>): boolean;
+    abstract register(route: string, params?: Record<string, any>): string[];
 
     /**
      * get the url path match route

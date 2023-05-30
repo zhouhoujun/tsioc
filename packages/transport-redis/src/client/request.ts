@@ -1,11 +1,10 @@
 import {
     TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming, Encoder, Decoder,
-    TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory, Subscriber, Publisher
+    TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory, Subscriber, Publisher, TimeoutExecption
 } from '@tsdi/core';
 import { Execption, InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
 import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket, ctype } from '@tsdi/transport';
 import { Observable, Observer } from 'rxjs';
-import Redis, { RedisOptions } from 'ioredis';
 import { NumberAllocator } from 'number-allocator';
 import { REDIS_CLIENT_OPTS } from './options';
 
@@ -105,6 +104,19 @@ export class RedisRequestAdapter extends RequestAdapter<TransportRequest, Transp
             } as Packet;
 
             request.send(packet);
+
+            if(opts.timeout){
+                setTimeout(()=>{
+                    const res = this.createErrorResponse({
+                        url,
+                        error: new TimeoutExecption(),
+                        statusText: 'Not Found',
+                        status: 404
+                    });
+                    observer.error(res);
+                }, opts.timeout)
+            }
+            
 
             const unsub = () => {
                 request.off(ev.MESSAGE, onMessage);
