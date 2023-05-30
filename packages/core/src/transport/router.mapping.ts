@@ -182,34 +182,14 @@ export class DefaultRouteMatcher extends RouteMatcher {
 
     register(route: string, params?: Record<string, any>): boolean {
         if (wildcard.test(route)) {
-            let $exp = route.replace(sg$, sg)
-                .replace(mtlPth$, mtlPth)
-                .replace(mtlall$, mtlall)
-
+            let $exp = this.replaceTopic(route);
             if (params) {
-                $exp.match(tval$)?.forEach(v => {
-                    const name = v.slice(2, v.length - 1);
-                    if (params[name]) {
-                        const data = params[name];
-                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
-                    } else {
-                        $exp = $exp.replace(v, tplPth)
-                    }
-                });
-                $exp.match(rest$)?.forEach(v => {
-                    const name = v.slice(1);
-                    if (params[name]) {
-                        const data = params[name];
-                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
-                    } else {
-                        $exp = $exp.replace(v, tplPth)
-                    }
-                });
+                $exp = this.replaceTopicParams($exp, params);
+                $exp = this.replaceRestParams($exp, params);
             } else {
                 $exp = $exp.replace(tval$, tplPth)
                     .replace(rest$, tplPth)
             }
-
 
             this.matchers.set(new RegExp('^' + $exp + '$'), route);
             return true;
@@ -225,21 +205,57 @@ export class DefaultRouteMatcher extends RouteMatcher {
         return null
     }
 
+    protected replaceTopic(route: string) {
+        return route.replace(sg$, sg)
+            .replace(mtlPth$, mtlPth)
+            .replace(mtlall$, mtlall)
+            .replace(words$, words)
+    }
+
+    protected replaceTopicParams(route: string, params: Record<string, any>) {
+        route.match(tval$)?.forEach(v => {
+            const name = v.slice(2, v.length - 1);
+            if (params[name]) {
+                const data = params[name];
+                route = route.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+            } else {
+                route = route.replace(v, tplPth)
+            }
+        });
+        return route;
+    }
+
+    protected replaceRestParams(route: string, params: Record<string, any>) {
+        route.match(rest$)?.forEach(v => {
+            const name = v.slice(1);
+            if (params[name]) {
+                const data = params[name];
+                route = route.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
+            } else {
+                route = route.replace(v, tplPth)
+            }
+        });
+        return route;
+    }
+
 }
 
-const wildcard = /(:\w+)|(\/#$)|(\+)|(\*)|(\$\{\w+\})/;
-const sg$ = /\+/g;
-const sg = '[^/]+';
+const wildcard = /(:\w+)|(\/#$)|(\/\+)|(\*)|(\$\{\w+\})/;
+const sg$ = /\/\+/g;
+const sg = '/[^/]+';
 
 const tval$ = /\$\{\w+\}/g;
 const rest$ = /:\w+/g;
 const tplPth = '[^/]+';
 
 const mtlPth$ = /\/#$/;
-const mtlPth = '(/.*)?';
+const mtlPth = '(/.{0,})?';
 
 const mtlall$ = /\*\*/g;
-const mtlall = '.*';
+const mtlall = '.{0,}';
+
+const words$ = /\*/g;
+const words = '\\w+';
 
 /**
  * run hybird routes.
