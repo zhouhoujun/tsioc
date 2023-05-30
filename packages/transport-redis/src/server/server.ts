@@ -78,7 +78,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
             } else {
                 // `count` represents the number of channels this server are currently subscribed to.
                 this.logger.info(
-                    `Subscribed successfully! This client is currently subscribed to ${count} channels.`,
+                    `Subscribed successfully! This server is currently subscribed to ${count} channels.`,
                     subscribes
                 );
             }
