@@ -71,17 +71,14 @@ export type Routes<T = any> = Route<T>[];
 export const ROUTES = tokenId<Routes>('ROUTES');
 
 
-const staExp = /^\//;
-const endExp = /\/$/;
+const sta$ = /^\s*\//;
+const trim$ = /(?:^\s*\/)|(?:\/\s+$)/;
 
 export function joinprefix(...paths: (string | undefined)[]) {
     const joined = paths
         .map(p => {
-            if (!p) return '';
-            p = p.trim();
-            const start = staExp.test(p) ? 1 : 0;
-            const end = endExp.test(p) ? p.length - 1 : p.length;
-            return p.slice(start, end)
+            if (!p) return undefined;
+            return p.replace(trim$, '')
         })
         .filter(p => p)
         .join('/');
@@ -96,20 +93,15 @@ export function joinprefix(...paths: (string | undefined)[]) {
  */
 export function normalize(route: string, prefix?: string): string {
     if (!route) return '';
-    if (route === '') return route;
 
-    let path = route.trim();
-    if (endExp.test(route)) {
-        path = path.substring(0, path.length - 1)
-    }
-    if(staExp.test(path)) {
-        path = path.substring(1);
-    }
-    if(prefix){
-        path = path.replace(staExp.test(prefix) ? prefix.substring(1) : prefix, '');
-        if(staExp.test(path)) {
-            path = path.substring(1);
+    let path = route.replace(trim$, '');
+
+    if (prefix) {
+        prefix = prefix.replace(sta$, '');
+        if(path.startsWith(prefix)){
+            path = path.substring(prefix.length).replace(sta$, '')
         }
+
     }
     return path;
 }
