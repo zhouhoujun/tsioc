@@ -188,19 +188,19 @@ export class DefaultRouteMatcher extends RouteMatcher {
 
             if (params) {
                 $exp.match(tval$)?.forEach(v => {
-                    const name = v.slice(3, v.length - 1);
+                    const name = v.slice(2, v.length - 1);
                     if (params[name]) {
                         const data = params[name];
-                        $exp = $exp.replace(v, isArray(data) ? `/(${data.map(r => String(r)).join('|')})` : String(data))
+                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
                     } else {
                         $exp = $exp.replace(v, tplPth)
                     }
                 });
                 $exp.match(rest$)?.forEach(v => {
-                    const name = v.slice(2);
+                    const name = v.slice(1);
                     if (params[name]) {
                         const data = params[name];
-                        $exp = $exp.replace(v, isArray(data) ? `/(${data.map(r => String(r)).join('|')})` : String(data))
+                        $exp = $exp.replace(v, isArray(data) ? `(${data.map(r => String(r)).join('|')})` : String(data))
                     } else {
                         $exp = $exp.replace(v, tplPth)
                     }
@@ -227,13 +227,13 @@ export class DefaultRouteMatcher extends RouteMatcher {
 
 }
 
-const wildcard = /(\/:\w+(\/)?)|(\/#$)|(\/\+\/)|(\/\+$)|(\*)|(\/\$\{\w+\}\/)|(\/\$\{\w+\}$)/;
+const wildcard = /(:\w+)|(\/#$)|(\+)|(\*)|(\$\{\w+\})/;
 const sg$ = /\+/g;
-const sg = '/[^/]+';
+const sg = '[^/]+';
 
-const tval$ = /\/\$\{\w+\}/g;
-const rest$ = /\/:\w+/g;
-const tplPth = '/[^/]+';
+const tval$ = /\$\{\w+\}/g;
+const rest$ = /:\w+/g;
+const tplPth = '[^/]+';
 
 const mtlPth$ = /\/#$/;
 const mtlPth = '(/.*)?';

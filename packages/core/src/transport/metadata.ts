@@ -422,15 +422,14 @@ export function createRouteDecorator(method: RequestMethod) {
     });
 }
 
-const rest$ = /(^:\w+)|(\/:\w+)/;
-const pthRest$ = /:\w+/g;
+const rest$ = /(^:\w+)|(\/:\w+)/g;
 const endRest$ = /:\w+$/g;
 const pthRest = '[^/]*';
 const endRest = '[^/]+';
 
 function createRestfulMatcher(route: string) {
     if (rest$.test(route)) {
-        return new RegExp('^' + route.replace(pthRest$, pthRest).replace(endRest$, endRest) + '$');
+        return new RegExp('^' + route.replace(rest$, pthRest).replace(endRest$, endRest) + '$');
     }
     return undefined;
 }

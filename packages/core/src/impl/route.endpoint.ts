@@ -49,7 +49,7 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
 }
 
 const isRest = /(^:\w+)|(\/:\w+)/;
-const restParms = /^\S*:/;
+const restParms = /^:\w+/;
 
 
 @Injectable()
