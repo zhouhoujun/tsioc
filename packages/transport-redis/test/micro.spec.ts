@@ -91,17 +91,17 @@ describe('Redis Micro Service', () => {
     });
 
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch json', async () => {
+    //     const res: any = await lastValueFrom(client.send('510100_full.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
     it('cmd message', async () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {

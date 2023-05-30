@@ -125,7 +125,7 @@ export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number
     }
 
     getReply(topic: string) {
-       return topic + '/reply';
+       return topic + '.reply';
     }
 
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;

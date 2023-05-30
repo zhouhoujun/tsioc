@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 
 export type PacketCallback<Packet> = (error?: Error, packet?: Packet) => any
 
@@ -6,7 +7,8 @@ export type PacketCallback<Packet> = (error?: Error, packet?: Packet) => any
  * 
  * 发布订阅模式的发布者。
  */
-export interface Publisher<PublishOptions = any, Packet = any> {
+@Abstract()
+export abstract class Publisher<PublishOptions = any, Packet = any> {
     /**
      * publish - publish <message> to <topic>
      *
@@ -30,8 +32,6 @@ export interface Publisher<PublishOptions = any, Packet = any> {
      *     client.publish('topic', 'message', {qos: 1, retain: true})
      * @example client.publish('topic', 'message', console.log)
      */
-    publish(topic: string, message: string | Buffer,
-        opts: PublishOptions, callback?: PacketCallback<Packet>): this
-    publish(topic: string, message: string | Buffer,
-        callback?:  PacketCallback<Packet>): this
+    abstract publish(topic: string, message: string | Buffer, callback?: Function): any
+
 }

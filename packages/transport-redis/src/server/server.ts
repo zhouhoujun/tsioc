@@ -1,5 +1,5 @@
 import { MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import Redis from 'ioredis';
@@ -17,7 +17,8 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
 
     @InjectLog() logger!: Logger;
 
-    private redis: Redis | null = null;
+    private subscriber: Redis | null = null;
+    private publisher: Redis | null = null;
 
     constructor(
         readonly endpoint: RedisEndpoint,
@@ -27,30 +28,48 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
     }
 
     protected async onStartup(): Promise<any> {
-        const logger = this.logger;
-
         const opts = this.options;
         const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
-        this.redis = new Redis({
+        const subscriber = this.subscriber = new Redis({
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
-            ...opts.connectOpts
+            ...opts.connectOpts,
+            lazyConnect: true
         });
-        this.redis.on(ev.ERROR, (err) => logger.error(err));
+        this.subscriber.on(ev.ERROR, (err) => this.logger.error(err));
+
+        const publisher = this.publisher = new Redis({
+            host: LOCALHOST,
+            port: 6379,
+            retryStrategy,
+            ...opts.connectOpts,
+            lazyConnect: true
+        });
+        this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
 
         const factory = this.endpoint.injector.get(TransportSessionFactory);
-        const session = factory.create(this.redis, opts.transportOpts);
+        const session = factory.create({
+            subscriber,
+            publisher
+        }, opts.transportOpts);
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
             this.requestHandler(session, packet)
-        })
+        });
 
     }
 
     protected async onStart(): Promise<any> {
+        if (!this.subscriber || !this.publisher) throw new Execption('Subscriber and Publisher cannot be null');
+
+        await Promise.all([
+            this.subscriber.connect(),
+            this.publisher.connect()
+        ]);
+
         const router = this.endpoint.injector.get(Router);
-        await this.redis?.subscribe(...Array.from(router.subscribes.values()), (err, count) => {
+        await this.subscriber.subscribe(...Array.from(router.subscribes.values()), (err, count) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -65,8 +84,8 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
     }
 
     protected async onShutdown(): Promise<any> {
-        this.redis?.quit();
-        this.redis = null;
+        this.subscriber?.quit();
+        this.subscriber = null;
     }
 
     protected createRetryStrategy(options: RedisServerOpts): (times: number) => undefined | number {

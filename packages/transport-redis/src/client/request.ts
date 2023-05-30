@@ -1,6 +1,6 @@
 import {
     TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming, Encoder, Decoder,
-    TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory
+    TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory, Subscriber, Publisher
 } from '@tsdi/core';
 import { Execption, InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
 import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket, ctype } from '@tsdi/transport';
@@ -14,6 +14,7 @@ export class RedisRequestAdapter extends RequestAdapter<TransportRequest, Transp
 
     allocator = new NumberAllocator(1, 65536);
     last?: number;
+    subs: Set<string>;
 
     constructor(
         readonly mimeTypes: MimeTypes,
@@ -24,6 +25,7 @@ export class RedisRequestAdapter extends RequestAdapter<TransportRequest, Transp
         @Optional() readonly encoder: Encoder,
         @Optional() readonly decoder: Decoder) {
         super()
+        this.subs = new Set();
     }
 
     send(req: TransportRequest): Observable<TransportEvent> {
@@ -33,10 +35,20 @@ export class RedisRequestAdapter extends RequestAdapter<TransportRequest, Transp
             let statusText: string | undefined;
 
             const context = req.context;
-            const redis = context.get(Redis, InjectFlags.Self);
+            const subscriber = context.get(Subscriber, InjectFlags.Self);
+            const publisher = context.get(Publisher, InjectFlags.Self);
             const opts = context.get(REDIS_CLIENT_OPTS);
 
-            const request = context.get(TransportSessionFactory).create(redis, opts.transportOpts);
+            const reply = req.observe === 'events' ? url : url + '.reply';
+            if (!this.subs.has(reply)) {
+                this.subs.add(reply);
+                subscriber.subscribe(reply);
+            }
+
+            const request = context.get(TransportSessionFactory).create({
+                subscriber,
+                publisher
+            }, opts.transportOpts);
 
             const onError = (error?: Error | null) => {
                 const res = this.createErrorResponse({
@@ -49,7 +61,6 @@ export class RedisRequestAdapter extends RequestAdapter<TransportRequest, Transp
             };
 
             const id = this.getPacketId();
-            const reply = req.observe === 'events' ? url : url + '/reply';
             const onMessage = async (channel: string, res: any) => {
                 if (channel !== reply) return;
 

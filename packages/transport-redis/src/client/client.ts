@@ -1,9 +1,9 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, Publisher, Subscriber, TransportEvent, TransportRequest } from '@tsdi/core';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
-import { LOCALHOST } from '@tsdi/transport';
+import { LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 
 
@@ -14,7 +14,8 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     @InjectLog()
     private logger!: Logger;
 
-    private redis: Redis | null = null;
+    private subscriber: Redis | null = null;
+    private publisher: Redis | null = null;
     constructor(
         readonly handler: RedisHandler,
         @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
@@ -22,22 +23,38 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected async connect(): Promise<void> {
-        if (this.redis) return;
+        if (this.subscriber) return;
 
         const opts = this.options;
         const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
-        this.redis = new Redis({
+        this.subscriber = new Redis({
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
-            ...opts.connectOpts
+            ...opts.connectOpts,
+            lazyConnect: true
         });
-        await this.redis.connect();
+        this.subscriber.on(ev.ERROR, (err) => this.logger.error(err));
+
+        this.publisher = new Redis({
+            host: LOCALHOST,
+            port: 6379,
+            retryStrategy,
+            ...opts.connectOpts,
+            lazyConnect: true
+        });
+        this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
+        
+        await Promise.all([
+            this.subscriber.connect(),
+            this.publisher.connect()
+        ]);
     }
-    
+
     protected override initContext(context: InvocationContext<any>): void {
         super.initContext(context);
-        context.setValue(Redis, this.redis);
+        this.subscriber && context.setValue(Subscriber, this.subscriber);
+        this.publisher && context.setValue(Publisher, this.publisher);
     }
 
     protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
@@ -53,6 +70,6 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected async onShutdown(): Promise<void> {
-        await this.redis?.quit();
+        await this.subscriber?.quit();
     }
 }

@@ -7,8 +7,13 @@ import { Readable } from 'stream';
 import { EventEmitter } from 'events';
 
 
+export interface ReidsPipeline {
+    publisher: Redis;
+    subscriber: Redis;
+}
+
 @Injectable()
-export class RedisTransportSessionFactory implements TransportSessionFactory<Redis> {
+export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsPipeline> {
 
     constructor(
         @Optional() private encoder: Encoder,
@@ -16,7 +21,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Red
 
     }
 
-    create(socket: Redis, opts: TransportSessionOpts): TransportSession<Redis> {
+    create(socket: ReidsPipeline, opts: TransportSessionOpts): TransportSession<ReidsPipeline> {
         return new RedisTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
     }
 
@@ -30,7 +35,7 @@ export interface ChannelBuffer {
 }
 
 
-export class RedisTransportSession extends EventEmitter implements TransportSession<Redis> {
+export class RedisTransportSession extends EventEmitter implements TransportSession<ReidsPipeline> {
 
     private readonly delimiter: Buffer;
 
@@ -39,28 +44,31 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
     private _header: Buffer;
     private _body: Buffer;
     private _evs: Array<[string, Function]>;
-    private subs: Set<string>;
 
 
-    constructor(readonly socket: Redis, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
+    constructor(readonly socket: ReidsPipeline, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
         this.channels = new Map();
-        this.subs = new Set();
 
         this._evs = [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].map(e => [e, (...args: any[]) => {
             this.emit(e, ...args);
             this.destroy();
         }]);
 
-        this._evs.push([ev.MESSAGE, this.onData.bind(this)]);
         this._evs.forEach(it => {
             const [e, event] = it;
-            socket.on(e, event as any);
+            socket.publisher.on(e, event as any);
+            socket.subscriber.on(e, event as any);
         });
+
+        const e = ev.MESSAGE_BUFFER;
+        const event = this.onData.bind(this);
+        socket.subscriber.on(e, event);
+        this._evs.push([e, event]);
     }
 
     async send(data: Packet): Promise<void> {
@@ -103,7 +111,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
             const bufId = Buffer.alloc(2);
             bufId.writeUInt16BE(id);
 
-            this.socket.publish(data.url!, Buffer.concat([
+            this.socket.publisher.publish(data.url!, Buffer.concat([
                 Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
                 this.delimiter,
                 this._header,
@@ -121,7 +129,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
                 msg = encoder.encode(msg);
             }
             const buffers = isString(msg) ? Buffer.from(msg) : msg;
-            this.socket.publish(data.url!, Buffer.concat([
+            this.socket.publisher.publish(data.url!, Buffer.concat([
                 Buffer.from(String(Buffer.byteLength(buffers) + 1)),
                 this.delimiter,
                 this._header,
@@ -133,14 +141,14 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
     destroy(error?: any): void {
         this._evs.forEach(it => {
             const [e, event] = it;
-            this.socket.off(e, event as any);
+            this.socket.publisher.off(e, event as any);
+            this.socket.subscriber.off(e, event as any);
         });
-        this.socket.unsubscribe(...Array.from(this.subs.values()));
-        this.subs.clear();
         this.removeAllListeners();
     }
 
-    onData(channel: string, chunk: string | Buffer) {
+    onData(topic: string | Buffer, chunk: string | Buffer) {
+        const channel = isString(topic) ? topic : topic.toString();
         try {
             let chl = this.channels.get(channel);
             if (!chl) {
@@ -155,8 +163,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
             this.handleData(chl, chunk);
         } catch (ev) {
             const e = ev as any;
-            this.socket.emit(e.ERROR, e.message);
-            this.socket.end();
+            this.emit(e.ERROR, e.message);
         }
     }
 
@@ -215,7 +222,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
             message = message || {};
             if (message.headers?.[hdr.CONTENT_LENGTH]) {
                 if (isNil(message.payload)) {
-                    this.socket.emit(ev.HEADERS, message);
+                    this.emit(ev.HEADERS, message);
                     chl.cachePkg.set(message.id, message);
                 } else {
                     this.emit(ev.MESSAGE, chl.channel, message);

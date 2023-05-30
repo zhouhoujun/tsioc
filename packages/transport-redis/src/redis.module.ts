@@ -11,7 +11,6 @@ import { RedisExecptionHandlers } from './server/execption-filter';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS, RedisClientOpts, RedisClientsOpts } from './client/options';
 import { REDIS_SERV_FILTERS, REDIS_SERV_INTERCEPTORS, REDIS_SERV_OPTS, RedisServerOpts } from './server/options';
 import { RedisHandler } from './client/handler';
-import { RedisPathInterceptor } from './client/path';
 import { RedisEndpoint } from './server/endpoint';
 
 

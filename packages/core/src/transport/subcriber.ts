@@ -1,11 +1,12 @@
-import { PacketCallback } from './publisher'
+import { Abstract } from '@tsdi/ioc';
 
 /**
  * subscriber.
  * 
  * 发布订阅模式的订阅者。
  */
-export interface Subscriber<SubscribeOpts = any, Grant = any, Packet = any> {
+@Abstract()
+export abstract class Subscriber {
     /**
      * subscribe - subscribe to <topic>
      *
@@ -22,13 +23,7 @@ export interface Subscriber<SubscribeOpts = any, Grant = any, Packet = any> {
      * @example client.subscribe({'topic': 0, 'topic2': 1}, console.log)
      * @example client.subscribe('topic', console.log)
      */
-    subscribe(topic:
-        string
-        | string[], opts: SubscribeOpts, callback?: ClientSubscribeCallback<Grant>): this
-    subscribe(topic:
-        string
-        | string[]
-        | Record<string, SubscribeOpts>, callback?: ClientSubscribeCallback<Grant>): this
+    abstract subscribe(...topic: string[]): any;
 
     /**
      * unsubscribe - unsubscribe from topic(s)
@@ -42,7 +37,7 @@ export interface Subscriber<SubscribeOpts = any, Grant = any, Packet = any> {
      * @example client.unsubscribe('topic', console.log)
      * @example client.unsubscribe('topic', opts, console.log)
      */
-    unsubscribe(topic: string | string[], opts?: Object, callback?: PacketCallback<Packet>): this
+    abstract unsubscribe(...topic: string[]): any;
 }
 
 

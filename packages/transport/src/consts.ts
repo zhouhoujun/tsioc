@@ -33,6 +33,7 @@ export namespace ev {
     export const CONTINUE = 'continue';
 
     export const MESSAGE = 'message';
+    export const MESSAGE_BUFFER = 'messageBuffer';
     export const PAUSE = 'pause';
     export const RESUME = 'resume';
     export const RESPONSE = 'response';
