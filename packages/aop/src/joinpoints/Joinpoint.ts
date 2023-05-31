@@ -79,10 +79,6 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
         return this._fullName
     }
 
-    protected override isSelf(token: Token) {
-        return token === InvocationContext || token === Joinpoint
-    }
-
     /**
      * parse option to instance of {@link Joinpoint}
      * @param injector 

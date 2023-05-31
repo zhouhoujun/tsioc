@@ -1,6 +1,6 @@
 import { Type, CtorType, EMPTY, EMPTY_OBJ } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { remove, getClassName } from '../utils/lang';
+import { remove, getClassName, getClassChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
@@ -71,6 +71,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
                 this.injector.setValue(argType, payload);
             }
         }
+
+        getClassChain(getClass(this)).forEach(c => {
+            this.setValue(c, this);
+        });
 
         this.targetType = options.targetType;
         this.methodName = options.methodName;
@@ -165,10 +169,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this._injected
     }
 
-    protected isSelf(token: Token) {
-        return token === InvocationContext
-    }
-
     /**
      * get value ify create by factory and register the value for the token.
      * 
@@ -197,7 +197,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     has(token: Token, flags?: InjectFlags): boolean {
         this.assertNotDestroyed();
-        if (this.isSelf(token)) return true;
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs.some(i => i.has(token, flags))
     }
@@ -212,10 +211,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
-        if (this.isSelf(token)) {
-            this._injected = true;
-            return this as any
-        }
         return (flags != InjectFlags.HostOnly ? this.injector.get(token, this, flags, null) : null)
             ?? this.getFormRef(token, flags) ?? null as T;
     }

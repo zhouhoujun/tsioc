@@ -61,10 +61,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return this._instance
     }
 
-    protected override isself(token: Token): boolean {
-        return token === ModuleRef || super.isself(token)
-    }
-
     import(typeOrDef: Type | ModuleWithProviders, children?: boolean) {
         if (children) {
             createModuleRef(typeOrDef, this)

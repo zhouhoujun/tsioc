@@ -1,4 +1,4 @@
-import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, Token, getClass } from '@tsdi/ioc';
+import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, getClass } from '@tsdi/ioc';
 import { getResolversToken } from './resolver';
 
 /**
@@ -45,10 +45,5 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         super.clear();
         this.execption = null;
     }
-
-    protected override isSelf(token: Token) {
-        return token === EndpointContext;
-    }
-
 
 }

@@ -1,5 +1,5 @@
-import { MiddlewareLike, Throwable, TransportContext, HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/core';
-import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
+import { MiddlewareLike, Throwable, HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/core';
+import { isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
@@ -285,10 +285,6 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
             return new HttpError(status, message ?? statusMessage[status as HttpStatusCode])
         }
         return new HttpError((status as HttpError).statusCode ?? 500, status.message ?? statusMessage[(status as HttpError).statusCode ?? 500]);
-    }
-
-    protected isSelf(token: Token) {
-        return token === HttpContext || token === AbstractAssetContext || token == TransportContext;
     }
 
 
