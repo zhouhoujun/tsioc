@@ -9,28 +9,39 @@ export class MqttContext extends AbstractAssetContext {
     }
 
     protected parseURL(req: Incoming<any, any>, prooxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+        const url = req.url ?? '';
+        if (this.isAbsoluteUrl(url)) {
+            return new URL(url);
+        } else {
+            const { host, port, withCredentials } = this.getListenOpts();
+            const baseUrl = new URL(`${withCredentials ? 'mqtts' : 'mqtt'}://${host}:${port ?? 3000}`);
+            const uri = new URL(url, baseUrl);
+            return uri;
+        }
     }
     get writable(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.writable
     }
     get protocol(): string {
-        throw new Error('Method not implemented.');
+        return this.secure ? 'mqtts' : 'mqtt'
     }
-    get status(): string | number {
-        throw new Error('Method not implemented.');
+    get status(): number {
+        return this.response.statusCode
     }
-    set status(status: string | number) {
-        throw new Error('Method not implemented.');
+
+    set status(status: number) {
+        this._explicitStatus = true;
+        this.response.statusCode = status;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage
     }
     set statusMessage(message: string) {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = message
     }
     get secure(): boolean {
-        throw new Error('Method not implemented.');
+        return this.getListenOpts()?.withCredentials === true;
     }
 }
 

@@ -34,6 +34,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
+            withCredentials: !!opts.connectOpts?.tls,
             ...opts.connectOpts,
             lazyConnect: true
         };

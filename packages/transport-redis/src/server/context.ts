@@ -26,7 +26,7 @@ export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgo
     }
 
     get secure(): boolean {
-        return this.request.socket.stream instanceof tls.TLSSocket;
+        return this.getListenOpts()?.withCredentials === true;
     }
 
     get protocol(): string {

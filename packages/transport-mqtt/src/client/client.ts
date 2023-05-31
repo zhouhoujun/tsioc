@@ -1,4 +1,4 @@
-import { Injectable, promisify } from '@tsdi/ioc';
+import { Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
 import { OfflineExecption, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
@@ -25,7 +25,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     }
 
 
-    protected isValidate(mqtt: mqtt.MqttClient|undefined): boolean {
+    protected isValidate(mqtt: mqtt.MqttClient | undefined): boolean {
         return (mqtt && !mqtt.disconnected && mqtt.connected) as boolean
     }
 
@@ -70,6 +70,11 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
 
     }
 
+    protected override initContext(context: InvocationContext<any>): void {
+        super.initContext(context);
+        this.mqtt && context.setValue(mqtt.Client, this.mqtt);
+    }
+
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt || this.mqtt.disconnected) return;
         await promisify<void, boolean | undefined, Object | undefined>(this.mqtt.end, this.mqtt)(true, undefined)
@@ -78,73 +83,5 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
                 return err;
             });
     }
-
-
-    // protected createSocket(opts: MqttClientOpts): net.Socket | tls.TLSSocket | ws.WebSocket {
-    //     const connOpts = opts.connectOpts;
-    //     switch (connOpts.protocol) {
-    //         case 'mqtt':
-    //         case 'tcp':
-    //             if (!connOpts.options.port) {
-    //                 connOpts.options.port = 1883;
-    //             }
-    //             return net.connect(connOpts.options);
-    //         case 'mqtts':
-    //         case 'tls':
-    //             if (!connOpts.options.key || !connOpts.options.cert) {
-    //                 throw new Execption('Missing secure protocol key')
-    //             }
-    //             if (!connOpts.options.port) {
-    //                 connOpts.options.port = 8883;
-    //             }
-    //             return tls.connect(connOpts.options);
-    //         case 'ws':
-    //         case 'wss':
-    //             return new ws.WebSocket(connOpts.url, connOpts.options);
-    //         default:
-    //             throw new Execption('Unknown protocol for secure connection: "' + (connOpts as any).protocol + '"!')
-    //     }
-    // }
-
-
-    // protected override createConnection(opts: MqttClientOpts): MqttConnection {
-    //     const socket = this.createSocket(opts);
-    //     const packet = this.context.get(MqttPacketFactory);
-    //     const conn = new MqttConnection(socket, packet, opts.connectionOpts);
-    //     return conn;
-    // }
-
-    // protected onConnect(duplex: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Observable<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>> {
-    //     const logger = this.logger;
-    //     const packetor = this.context.get(MqttPacketFactory);
-    //     return new Observable((observer: Observer<Connection<net.Socket | tls.TLSSocket | ws.WebSocket>>) => {
-    //         const client = new DuplexConnection(duplex, packetor, opts);
-    //         if (opts?.keepalive) {
-    //             client.setKeepAlive(true, opts.keepalive);
-    //         }
-
-    //         const onError = (err: Error) => {
-    //             logger.error(err);
-    //             observer.error(err);
-    //         }
-    //         const onClose = () => {
-    //             client.end();
-    //         };
-    //         const onConnected = () => {
-    //             observer.next(client);
-    //         }
-    //         client.on(ev.ERROR, onError);
-    //         client.on(ev.CLOSE, onClose);
-    //         client.on(ev.END, onClose);
-    //         client.on(ev.CONNECT, onConnected);
-
-    //         return () => {
-    //             client.off(ev.ERROR, onError);
-    //             client.off(ev.CLOSE, onClose);
-    //             client.off(ev.END, onClose);
-    //             client.off(ev.CONNECT, onConnected);
-    //         }
-    //     });
-    // }
 
 }

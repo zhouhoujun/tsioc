@@ -27,6 +27,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
     private mqtt?: MqttClient;
     protected override async onStartup(): Promise<any> {
         const opts = {
+            withCredentials: !!this.options.connectOpts.cert,
             ...this.options.connectOpts
         };
         this.endpoint.injector.setValue(ListenOpts, opts);
