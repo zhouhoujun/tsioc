@@ -1,4 +1,5 @@
 export * from './execption-filter';
+export * from './execption-handlers';
 export * from './providers';
 export * from './filter';
 export * from './respond';

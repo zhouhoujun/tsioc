@@ -13,7 +13,7 @@ import { MqttRequestAdapter } from './client/request';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts, MqttClientsOpts } from './client/options';
 import { MqttServer } from './server/server';
 import { MqttEndpoint } from './server/endpoint';
-import { MqttExecptionHandlers } from './server/execption-filter';
+import { MqttExecptionHandlers } from './server/execption.handles';
 import { MQTT_SERV_FILTERS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './server/options';
 import { MqttTransportSessionFactory } from './transport';
 import { MqttStatusVaildator } from './status';

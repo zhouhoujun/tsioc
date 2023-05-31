@@ -844,7 +844,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     protected override isSelf(token: Token<any>): boolean {
-        return token === AssetContext || token === AssetContext || token === TransportContext;
+        return token === AbstractAssetContext || token === AssetContext || token === TransportContext;
     }
 
 }

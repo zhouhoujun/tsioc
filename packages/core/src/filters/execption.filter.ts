@@ -1,4 +1,4 @@
-import { Abstract, DefaultInvocationContext, Execption, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
@@ -15,9 +15,10 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
 
     constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
         super(injector, { ...options, payload: execption })
-        const token = getClass(execption);
-        this.setValue(token, execption);
-        this.setValue(getClass(host), host);
+
+        this.setValue(getClass(execption), execption);
+        const tokens = lang.getClassChain(getClass(host));
+        tokens.forEach(token => this.setValue(token, host));
     }
 
     override isSelf(token: Token) {

@@ -7,7 +7,7 @@ import { RedisRequestAdapter } from './client/request';
 import { RedisClient } from './client/client';
 import { RedisServer } from './server/server';
 import { RedisStatusVaildator } from './status';
-import { RedisExecptionHandlers } from './server/execption-filter';
+import { RedisExecptionHandlers } from './server/execption.handles';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS, RedisClientOpts, RedisClientsOpts } from './client/options';
 import { REDIS_SERV_FILTERS, REDIS_SERV_INTERCEPTORS, REDIS_SERV_OPTS, RedisServerOpts } from './server/options';
 import { RedisHandler } from './client/handler';
