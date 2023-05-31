@@ -7,6 +7,7 @@ import {
     BodyContentInterceptor, BodyparserInterceptor, ContentInterceptor, JsonInterceptor, ExecptionFinalizeFilter,
     LogInterceptor, ServerFinalizeFilter, SessionInterceptor, TransportBackend, TransportModule, StatusVaildator, RequestAdapter
 } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { MqttClient } from './client/client';
 import { MqttHandler } from './client/handler';
 import { MqttRequestAdapter } from './client/request';
@@ -23,7 +24,8 @@ import { MqttStatusVaildator } from './status';
     imports: [
         TransformModule,
         RouterModule,
-        TransportModule
+        TransportModule,
+        ServerTransportModule
     ],
     providers: [
         MqttTransportSessionFactory,
@@ -53,7 +55,7 @@ export class MqttModule {
                 deps: [Injector]
             }))
                 : [{ provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
-            { provide: MQTT_SERV_OPTS, useValue: { ...defClientOpts, ...options.serviceOpts } },
+            { provide: MQTT_SERV_OPTS, useValue: { ...defaultServOpts, ...options.serverOpts } },
             toProvider(MqttHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: MqttClientOpts) => {
                     if (!opts.interceptors || !opts.interceptorsToken) {
@@ -114,23 +116,24 @@ const defClientOpts = {
     interceptors: [
         BodyContentInterceptor
     ],
-    connectOpts: {
-        protocol: 'mqtt',
-        options: {
-            host: 'localhost',
-            port: 1883
-        }
+    transportOpts: {
+        delimiter: '#',
+        maxSize: 10 * 1024 * 1024,
     },
 } as MqttClientOpts;
 
 
-const defaultServer = {
+const defaultServOpts = {
     json: true,
     encoding: 'utf8',
-    connectOpts: {
-        protocol: 'mqtt',
-        options: {}
+    transportOpts: {
+        delimiter: '#',
+        maxSize: 10 * 1024 * 1024,
     },
+    content: {
+        root: 'public'
+    },
+    detailError: true,
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_FILTERS,
     filters: [

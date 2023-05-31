@@ -87,7 +87,6 @@ export class DeviceController {
     async subsMessage(@Payload() id: string) {
         //todo sth
         this.client.send('');
-        this.client.publish('', '');
     }
 
 }

@@ -1,10 +1,10 @@
 import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Execption, Inject, Injectable, promisify } from '@tsdi/ioc';
+import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { MqttClient, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
-import { LOCALHOST, ev } from '@tsdi/transport';
+import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
@@ -35,13 +35,19 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
         this.endpoint.injector.setValue(ListenOpts, opts);
         this.mqtt = opts.url ? connect(opts.url, opts) : connect(opts);
 
+        this.mqtt.on(ev.ERROR, (err) => this.logger.error(err));
+
+        const defer = lang.defer();
+        this.mqtt.on(ev.CONNECT, defer.resolve);
+        await defer.promise;
+
         const factory = this.endpoint.injector.get(TransportSessionFactory);
         const session = factory.create(this.mqtt, this.options.transportOpts);
+
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
             this.requestHandler(session, packet)
         });
-
 
     }
 
@@ -50,7 +56,21 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
         const router = this.endpoint.injector.get(Router);
         const subscribes = Array.from(router.subscribes.values());
-        this.mqtt.subscribe(subscribes);
+        if (this.options.interceptors!.indexOf(Content) >= 0) {
+            subscribes.push('#');
+        }
+        this.mqtt.subscribe(subscribes, (err) => {
+            if (err) {
+                // Just like other commands, subscribe() can fail for some reasons,
+                // ex network issues.
+                this.logger.error("Failed to subscribe: %s", err.message);
+            } else {
+                this.logger.info(
+                    `Subscribed successfully! This server is currently subscribed topics.`,
+                    subscribes
+                );
+            }
+        });
 
     }
 

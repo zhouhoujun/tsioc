@@ -1,11 +1,11 @@
-import { Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
 import { LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import * as mqtt from 'mqtt';
 import { Observable, of } from 'rxjs';
 import { MqttHandler } from './handler';
-import { MqttClientOpts } from './options';
+import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
 
 
 /**
@@ -20,7 +20,9 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     private mqtt?: mqtt.MqttClient;
 
     private clientId?: string;
-    constructor(readonly handler: MqttHandler, private options: MqttClientOpts) {
+    constructor(
+        readonly handler: MqttHandler, 
+        @Inject(MQTT_CLIENT_OPTS) private options: MqttClientOpts) {
         super()
     }
 
