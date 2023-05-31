@@ -1,13 +1,22 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createHandler, createAssetEndpoint } from '@tsdi/core';
+import {
+    ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory,
+    createHandler, createAssetEndpoint
+} from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, BodyparserInterceptor, ContentInterceptor, JsonInterceptor, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, SessionInterceptor, TransportBackend, TransportModule } from '@tsdi/transport';
+import {
+    BodyContentInterceptor, BodyparserInterceptor, ContentInterceptor, JsonInterceptor, ExecptionFinalizeFilter,
+    LogInterceptor, ServerFinalizeFilter, SessionInterceptor, TransportBackend, TransportModule, StatusVaildator, RequestAdapter
+} from '@tsdi/transport';
 import { MqttClient } from './client/client';
+import { MqttHandler } from './client/handler';
+import { MqttRequestAdapter } from './client/request';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts, MqttClientsOpts } from './client/options';
 import { MqttServer } from './server/server';
-import { MQTT_SERV_FILTERS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './server/options';
-import { MqttHandler } from './client/handler';
 import { MqttEndpoint } from './server/endpoint';
+import { MqttExecptionHandlers } from './server/execption-filter';
+import { MQTT_SERV_FILTERS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './server/options';
 import { MqttTransportSessionFactory } from './transport';
+import { MqttStatusVaildator } from './status';
 
 
 @Module({
@@ -17,7 +26,12 @@ import { MqttTransportSessionFactory } from './transport';
         TransportModule
     ],
     providers: [
+        MqttTransportSessionFactory,
+        { provide: StatusVaildator, useClass: MqttStatusVaildator },
+        { provide: RequestAdapter, useClass: MqttRequestAdapter },
         MqttClient,
+
+        MqttExecptionHandlers,
         MqttServer
     ]
 })
@@ -42,7 +56,11 @@ export class MqttModule {
             { provide: MQTT_SERV_OPTS, useValue: { ...defClientOpts, ...options.serviceOpts } },
             toProvider(MqttHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: MqttClientOpts) => {
-                    return createHandler(injector, { ...defClientOpts, ...opts });
+                    if (!opts.interceptors || !opts.interceptorsToken) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(MQTT_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts);
                 },
                 deps: [Injector, MQTT_CLIENT_OPTS]
             }),
@@ -109,7 +127,7 @@ const defClientOpts = {
 const defaultServer = {
     json: true,
     encoding: 'utf8',
-    serverOpts: {
+    connectOpts: {
         protocol: 'mqtt',
         options: {}
     },

@@ -1,7 +1,7 @@
-import { GET, MESSAGE, POST } from '@tsdi/core';
+import { GET, MESSAGE, POST, HttpStatusCode, statusMessage } from '@tsdi/core';
 import { Inject, Injectable, tokenId } from '@tsdi/ioc'
-import { StatusVaildator } from '@tsdi/transport'
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { StatusVaildator } from '@tsdi/transport';
+
 
 export const TCP_MICRO_SERV = tokenId<boolean>('TCP_MICRO_SERV');
 

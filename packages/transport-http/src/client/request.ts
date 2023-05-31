@@ -1,7 +1,7 @@
 import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
-import { Decoder, Encoder, IWritableStream, Redirector, ResHeaders } from '@tsdi/core';
+import { Decoder, Encoder, IWritableStream, Redirector, ResHeaders, HttpStatusCode } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusPacket, StatusVaildator, StreamAdapter, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
-import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
+import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common';
 
 import * as http from 'http';
 import * as https from 'https';

@@ -1,5 +1,6 @@
 export * from './protocols';
 export * from './pattern';
+export * from './status';
 export * from './headers';
 export * from './middleware';
 export * from './middleware.compose';

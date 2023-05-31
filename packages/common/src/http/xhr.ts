@@ -1,7 +1,6 @@
 import { Execption, Injectable, isArray, isString, isUndefined } from '@tsdi/ioc';
-import { JSONP, ReqHeaders } from '@tsdi/core';
+import { JSONP, ReqHeaders, HttpStatusCode, statusMessage } from '@tsdi/core';
 import { Observable, Observer } from 'rxjs';
-import { HttpStatusCode, statusMessage } from './status';
 import { HttpBackend, XhrFactory } from './handler';
 import { HttpRequest } from './request';
 import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpJsonParseError, HttpResponse, HttpUploadProgressEvent } from './response';

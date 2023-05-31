@@ -1,10 +1,10 @@
-import { MESSAGE, POST, HttpStatusCode, statusMessage } from '@tsdi/core';
+import { MESSAGE, POST, HttpStatusCode, statusMessage  } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc'
 import { StatusVaildator } from '@tsdi/transport';
 
 
 @Injectable({ static: true })
-export class RedisStatusVaildator implements StatusVaildator<number> {
+export class MqttStatusVaildator implements StatusVaildator<number> {
 
     constructor() {
 

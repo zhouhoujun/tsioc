@@ -1,5 +1,4 @@
-import { HttpStatusCode } from './status';
-import { ResHeaders, TransportHeaderResponse, TransportResponse } from '@tsdi/core';
+import { ResHeaders, TransportHeaderResponse, TransportResponse, HttpStatusCode } from '@tsdi/core';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.

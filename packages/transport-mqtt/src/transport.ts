@@ -1,14 +1,14 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Injectable, Optional, isNil, isString } from '@tsdi/ioc';
 import { PacketLengthException, ev, hdr, toBuffer } from '@tsdi/transport';
-import * as net from 'net';
-import * as tls from 'tls';
+import { MqttClient } from 'mqtt';
 import { Buffer } from 'buffer';
 import { Readable } from 'stream';
 import { EventEmitter } from 'events';
 
+
 @Injectable()
-export class MqttTransportSessionFactory implements TransportSessionFactory<tls.TLSSocket | net.Socket> {
+export class MqttTransportSessionFactory implements TransportSessionFactory<MqttClient> {
 
     constructor(
         @Optional() private encoder: Encoder,
@@ -16,43 +16,57 @@ export class MqttTransportSessionFactory implements TransportSessionFactory<tls.
 
     }
 
-    create(socket: tls.TLSSocket | net.Socket, opts: TransportSessionOpts): TransportSession<tls.TLSSocket | net.Socket> {
-        return new TcpTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
+    create(socket: MqttClient, opts: TransportSessionOpts): TransportSession<MqttClient> {
+        return new MqttTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
     }
 
 }
 
-export class TcpTransportSession extends EventEmitter implements TransportSession<tls.TLSSocket | net.Socket> {
+export interface TopicBuffer {
+    topic: string;
+    buffer: Buffer | null;
+    contentLength: number | null;
+    cachePkg: Map<number, Packet>;
+}
 
-    private buffer: Buffer | null = null;
-    private contentLength: number | null = null;
+
+export class MqttTransportSession extends EventEmitter implements TransportSession<MqttClient> {
 
     private readonly delimiter: Buffer;
-    private cachePkg: Map<number, Packet>;
+
+    private channels: Map<string, TopicBuffer>;
 
     private _header: Buffer;
     private _body: Buffer;
     private _evs: Array<[string, Function]>;
 
 
-    constructor(readonly socket: tls.TLSSocket | net.Socket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
+    constructor(readonly socket: MqttClient, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
-        this.cachePkg = new Map();
+        this.channels = new Map();
 
         this._evs = [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].map(e => [e, (...args: any[]) => {
             this.emit(e, ...args);
             this.destroy();
         }]);
 
-        this._evs.push([ev.DATA, this.onData.bind(this)]);
         this._evs.forEach(it => {
             const [e, event] = it;
             socket.on(e, event as any);
         });
+
+
+        const pe = ev.MESSAGE;
+        const pevent = (topic: string, chunk: Buffer) => {
+            if (topic.endsWith('.reply')) return;
+            this.onData(topic, chunk);
+        }
+        socket.on(pe, pevent);
+        this._evs.push([pe, pevent]);
     }
 
     async send(data: Packet): Promise<void> {
@@ -95,7 +109,7 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             const bufId = Buffer.alloc(2);
             bufId.writeUInt16BE(id);
 
-            this.socket.write(Buffer.concat([
+            this.socket.publish(data.url!, Buffer.concat([
                 Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
                 this.delimiter,
                 this._header,
@@ -113,12 +127,12 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
                 msg = encoder.encode(msg);
             }
             const buffers = isString(msg) ? Buffer.from(msg) : msg;
-            this.socket.write(Buffer.concat([
+            this.socket.publish(data.url!, Buffer.concat([
                 Buffer.from(String(Buffer.byteLength(buffers) + 1)),
                 this.delimiter,
                 this._header,
                 buffers
-            ]));
+            ]))
         }
     }
 
@@ -130,58 +144,68 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
         this.removeAllListeners();
     }
 
-    onData(chunk: any) {
+    onData(topic: string, chunk: string | Buffer) {
         try {
-            this.handleData(chunk);
+            let chl = this.channels.get(topic);
+            if (!chl) {
+                chl = {
+                    topic,
+                    buffer: null,
+                    contentLength: null,
+                    cachePkg: new Map()
+                }
+                this.channels.set(topic, chl)
+            }
+            this.handleData(chl, chunk);
         } catch (ev) {
             const e = ev as any;
-            this.socket.emit(e.ERROR, e.message);
-            this.socket.end();
+            this.emit(e.ERROR, e.message);
         }
     }
 
 
-    handleData(dataRaw: string | Buffer) {
+    handleData(chl: TopicBuffer, dataRaw: string | Buffer) {
+
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
-        const buffer = this.buffer = this.buffer ? Buffer.concat([this.buffer, data], this.buffer.length + data.length) : Buffer.from(data);
+        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
 
-        if (this.contentLength == null) {
+        if (chl.contentLength == null) {
             const i = buffer.indexOf(this.delimiter);
             if (i !== -1) {
                 const rawContentLength = buffer.slice(0, i).toString();
-                this.contentLength = parseInt(rawContentLength, 10);
+                chl.contentLength = parseInt(rawContentLength, 10);
 
-                if (isNaN(this.contentLength)) {
-                    this.contentLength = null;
-                    this.buffer = null;
+                if (isNaN(chl.contentLength)) {
+                    chl.contentLength = null;
+                    chl.buffer = null;
                     throw new PacketLengthException(rawContentLength);
                 }
-                this.buffer = buffer.slice(i + 1);
+                chl.buffer = buffer.slice(i + 1);
             }
         }
 
-        if (this.contentLength !== null) {
+        if (chl.contentLength !== null) {
             const length = buffer.length;
-            if (length === this.contentLength) {
-                this.handleMessage(this.buffer);
-            } else if (length > this.contentLength) {
-                const message = this.buffer.slice(0, this.contentLength);
-                const rest = this.buffer.slice(this.contentLength);
-                this.handleMessage(message);
-                this.handleData(rest);
+            if (length === chl.contentLength) {
+                this.handleMessage(chl, chl.buffer);
+            } else if (length > chl.contentLength) {
+                const message = chl.buffer.slice(0, chl.contentLength);
+                const rest = chl.buffer.slice(chl.contentLength);
+                this.handleMessage(chl, message);
+                this.handleData(chl, rest);
             }
         }
     }
 
-    private handleMessage(message: any) {
-        this.contentLength = null;
-        this.buffer = null;
-        this.emitMessage(message);
+    private handleMessage(chl: TopicBuffer, message: any) {
+        chl.contentLength = null;
+        chl.buffer = null;
+        this.emitMessage(chl, message);
     }
 
-    protected emitMessage(chunk: Buffer) {
+    protected emitMessage(chl: TopicBuffer, chunk: Buffer) {
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         if (data.indexOf(this._header) == 0) {
             let message: Packet;
@@ -194,35 +218,32 @@ export class TcpTransportSession extends EventEmitter implements TransportSessio
             message = message || {};
             if (message.headers?.[hdr.CONTENT_LENGTH]) {
                 if (isNil(message.payload)) {
-                    this.socket.emit(ev.HEADERS, message);
-                    this.cachePkg.set(message.id, message);
+                    this.emit(ev.HEADERS, message);
+                    chl.cachePkg.set(message.id, message);
                 } else {
-                    this.emit(ev.MESSAGE, message);
+                    this.emit(ev.MESSAGE, chl.topic, message);
                 }
             } else {
-                this.emit(ev.MESSAGE, message);
+                this.emit(ev.MESSAGE, chl.topic, message);
             }
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
                 const payload = data.slice(3);
-                let pkg = this.cachePkg.get(id);
+                let pkg = chl.cachePkg.get(id);
                 if (pkg) {
                     pkg.payload = payload;
-                    this.cachePkg.delete(id);
+                    chl.cachePkg.delete(id);
                 } else {
                     pkg = {
                         id,
                         payload
                     }
                 }
-                this.emit(ev.MESSAGE, pkg);
+                this.emit(ev.MESSAGE, chl.topic, pkg);
             }
 
         }
     }
 
 }
-
-
-

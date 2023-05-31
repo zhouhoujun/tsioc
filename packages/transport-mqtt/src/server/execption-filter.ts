@@ -5,69 +5,69 @@ import {
 import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { ErrorRespondAdapter } from '@tsdi/transport';
-import { TcpContext } from './context';
-import { TCP_SERV_OPTS } from './options';
+import { MqttContext } from './context';
+import { MQTT_SERV_OPTS } from './options';
 
 
 
 @Injectable({ static: true })
-export class TcpExecptionHandlers {
+export class MqttExecptionHandlers {
 
     constructor(private adpater: ErrorRespondAdapter) {
 
     }
 
     @ExecptionHandler(NotFoundExecption)
-    notFoundExecption(ctx: TcpContext, execption: NotFoundExecption) {
+    notFoundExecption(ctx: MqttContext, execption: NotFoundExecption) {
         execption.status = HttpStatusCode.NotFound;
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(ForbiddenExecption)
-    forbiddenExecption(ctx: TcpContext, execption: ForbiddenExecption) {
+    forbiddenExecption(ctx: MqttContext, execption: ForbiddenExecption) {
         execption.status = HttpStatusCode.Forbidden;
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(BadRequestExecption)
-    badReqExecption(ctx: TcpContext, execption: BadRequestExecption) {
+    badReqExecption(ctx: MqttContext, execption: BadRequestExecption) {
         execption.status = HttpStatusCode.BadRequest;
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(UnauthorizedExecption)
-    unauthorized(ctx: TcpContext, execption: UnauthorizedExecption) {
+    unauthorized(ctx: MqttContext, execption: UnauthorizedExecption) {
         execption.status = HttpStatusCode.Unauthorized;
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(InternalServerExecption)
-    internalServerError(ctx: TcpContext, execption: InternalServerExecption) {
+    internalServerError(ctx: MqttContext, execption: InternalServerExecption) {
         execption.status = HttpStatusCode.InternalServerError;
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
-    unsupported(ctx: TcpContext, execption: UnsupportedMediaTypeExecption) {
+    unsupported(ctx: MqttContext, execption: UnsupportedMediaTypeExecption) {
         execption = new MessageExecption(execption.message, HttpStatusCode.UnsupportedMediaType);
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(ArgumentExecption)
-    anguExecption(ctx: TcpContext, err: ArgumentExecption) {
-        const execption = new BadRequestExecption(ctx.get(TCP_SERV_OPTS).detailError ? err.message : undefined, HttpStatusCode.BadRequest);
+    anguExecption(ctx: MqttContext, err: ArgumentExecption) {
+        const execption = new BadRequestExecption(ctx.get(MQTT_SERV_OPTS).detailError ? err.message : undefined, HttpStatusCode.BadRequest);
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
-    missFieldExecption(ctx: TcpContext, err: MissingModelFieldExecption) {
-        const execption = new BadRequestExecption(ctx.get(TCP_SERV_OPTS).detailError ? err.message : undefined, HttpStatusCode.BadRequest);
+    missFieldExecption(ctx: MqttContext, err: MissingModelFieldExecption) {
+        const execption = new BadRequestExecption(ctx.get(MQTT_SERV_OPTS).detailError ? err.message : undefined, HttpStatusCode.BadRequest);
         this.adpater.respond(ctx, execption)
     }
 
     @ExecptionHandler(MissingParameterExecption)
-    missExecption(ctx: TcpContext, err: MissingParameterExecption) {
-        const execption = new BadRequestExecption(ctx.get(TCP_SERV_OPTS).detailError ? err.message : undefined, HttpStatusCode.BadRequest);
+    missExecption(ctx: MqttContext, err: MissingParameterExecption) {
+        const execption = new BadRequestExecption(ctx.get(MQTT_SERV_OPTS).detailError ? err.message : undefined, HttpStatusCode.BadRequest);
         this.adpater.respond(ctx, execption)
     }
 
