@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
-import { OfflineExecption, ev } from '@tsdi/transport';
+import { LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import * as mqtt from 'mqtt';
 import { Observable, of } from 'rxjs';
@@ -35,7 +35,12 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
         }
 
         return new Observable((sbscriber) => {
-            const client = this.mqtt ?? mqtt.connect(this.options.connectOpts);
+            const opts = {
+                host: LOCALHOST,
+                port: 1883,
+                ...this.options.connectOpts
+            };
+            const client = this.mqtt ?? (opts.url? mqtt.connect(opts.url): mqtt.connect(opts));
             const onError = (err: any) => {
                 this.logger?.error(err);
                 sbscriber.error(err);

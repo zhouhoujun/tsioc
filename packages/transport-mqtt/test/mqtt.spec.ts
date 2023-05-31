@@ -1,10 +1,11 @@
-import { Application, ApplicationContext, LoggerModule, Module } from '@tsdi/core';
-import { Injector, isArray } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { Injector, Module, isArray } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { MqttClient, MqttClientOpts, MqttModule, MqttServer } from '../src';
+import { MqttClient, MqttModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
+import { LoggerModule } from '@tsdi/logs';
 
 
 
@@ -13,16 +14,16 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        MqttModule.withOptions({
-            serverOpts: {
-                protocol: 'mqtt',
-                options: {
-                    
+        MqttModule.forMicroService({
+            clientOpts: {
+                connectOpts: {
+                    protocol: 'mqtt'
                 }
             },
-            listenOpts: {
-                host: 'localhost',
-                port: 2000
+            serverOpts: {
+                connectOpts: {
+                    protocol: 'mqtt'
+                }
             }
         })
     ],
@@ -45,17 +46,7 @@ describe('Mqtt Server & Mqtt Client', () => {
     before(async () => {
         ctx = await Application.run(MqttTestModule);
         injector = ctx.injector;
-        client = injector.resolve(MqttClient, {
-            provide: MqttClientOpts,
-            useValue: {
-                connectOpts: {
-                    protocol: 'mqtt',
-                    options: { 
-                        host: 'localhost'
-                    }
-                }
-            } as MqttClientOpts
-        });
+        client = injector.get(MqttClient);
     });
 
 

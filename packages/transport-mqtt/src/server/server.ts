@@ -1,10 +1,10 @@
-import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Inject, Injectable, promisify } from '@tsdi/ioc';
+import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Execption, Inject, Injectable, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { MqttClient, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
-import { ev } from '@tsdi/transport';
+import { LOCALHOST, ev } from '@tsdi/transport';
 import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
@@ -27,7 +27,9 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
     private mqtt?: MqttClient;
     protected override async onStartup(): Promise<any> {
         const opts = {
-            withCredentials: !!this.options.connectOpts.cert,
+            host: LOCALHOST,
+            port: 1883,
+            withCredentials: !!this.options.connectOpts?.cert,
             ...this.options.connectOpts
         };
         this.endpoint.injector.setValue(ListenOpts, opts);
@@ -44,6 +46,11 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
     }
 
     protected override async onStart(): Promise<any> {
+        if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
+
+        const router = this.endpoint.injector.get(Router);
+        const subscribes = Array.from(router.subscribes.values());
+        this.mqtt.subscribe(subscribes);
 
     }
 
@@ -56,7 +63,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
             });
     }
 
-    
+
     /**
      * request handler.
      * @param observer 

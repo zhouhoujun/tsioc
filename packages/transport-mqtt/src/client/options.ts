@@ -2,9 +2,13 @@ import { Token, tokenId } from '@tsdi/ioc';
 import { Interceptor, RequestOptions, TransportEvent, TransportRequest, ConfigableEndpointOptions, Filter, TransportSessionOpts } from '@tsdi/core';
 import { IClientOptions, Packet } from 'mqtt';
 
+export interface MqttClientOpts extends IClientOptions {
+    url?: string;
+}
+
 
 export interface MqttClientOpts extends ConfigableEndpointOptions {
-    connectOpts: IClientOptions;
+    connectOpts?: MqttClientOpts;
     transportOpts?: TransportSessionOpts;
     timeout?: number;
 }

@@ -9,7 +9,7 @@ export interface MqttClientOpts extends IClientOptions {
 }
 
 export interface MqttServiceOpts extends TransportEndpointOptions<AssetContext> {
-    connectOpts: MqttClientOpts;
+    connectOpts?: MqttClientOpts;
     detailError?: boolean;
     timeout?: number;
     retryAttempts?: number;

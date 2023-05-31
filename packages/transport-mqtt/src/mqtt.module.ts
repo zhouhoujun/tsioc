@@ -101,7 +101,7 @@ export interface MqttModuleOptions {
     /**
      * service options
      */
-    serviceOpts?: MqttServiceOpts;
+    serverOpts?: MqttServiceOpts;
 }
 
 
