@@ -3,10 +3,12 @@ import { AbstractAssetContext } from '@tsdi/transport';
 
 
 export class MqttContext extends AbstractAssetContext {
+
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return mqttabs.test(url)
     }
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
+
+    protected parseURL(req: Incoming<any, any>, prooxy?: boolean | undefined): URL {
         throw new Error('Method not implemented.');
     }
     get writable(): boolean {
@@ -32,4 +34,4 @@ export class MqttContext extends AbstractAssetContext {
     }
 }
 
-const absurl = /^(mqtt|mqtts|tcp|ssl|ws|wss|wx|wxs|alis):\/\//i;
+const mqttabs = /^(mqtt|mqtts|tcp|ssl|ws|wss|wx|wxs|alis):\/\//i;

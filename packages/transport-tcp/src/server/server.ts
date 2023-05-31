@@ -82,6 +82,7 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements MicroServ
     protected async onStartup(): Promise<any> {
         const opts = this.options;
         const serv = this.serv = this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
+        this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
         return serv;
     }
 
