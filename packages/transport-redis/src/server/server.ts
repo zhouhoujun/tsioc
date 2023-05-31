@@ -1,6 +1,6 @@
-import { MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
-import { LOCALHOST, ev } from '@tsdi/transport';
+import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import Redis from 'ioredis';
 import { Subscription, finalize } from 'rxjs';
@@ -30,22 +30,19 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
     protected async onStartup(): Promise<any> {
         const opts = this.options;
         const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
-        const subscriber = this.subscriber = new Redis({
+        const options = {
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
             ...opts.connectOpts,
             lazyConnect: true
-        });
+        };
+        this.endpoint.injector.setValue(ListenOpts, options);
+
+        const subscriber = this.subscriber = new Redis(options);
         this.subscriber.on(ev.ERROR, (err) => this.logger.error(err));
 
-        const publisher = this.publisher = new Redis({
-            host: LOCALHOST,
-            port: 6379,
-            retryStrategy,
-            ...opts.connectOpts,
-            lazyConnect: true
-        });
+        const publisher = this.publisher = new Redis(options);
         this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
 
         const factory = this.endpoint.injector.get(TransportSessionFactory);
@@ -69,7 +66,10 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         ]);
 
         const router = this.endpoint.injector.get(Router);
-        const subscribes = Array.from(router.subscribes.values());
+        const routes = Array.from(router.subscribes.values());
+        const subscribes: string[] = [];
+        const psubscribes: string[] = [];
+        routes.forEach(r => router.matcher.isPattern(r) ? psubscribes.push(r) : subscribes.push(r));
         await this.subscriber.subscribe(...subscribes, (err, count) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
@@ -82,12 +82,29 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
                     subscribes
                 );
             }
-        })
+        });
+        if (this.options.interceptors!.indexOf(Content) >= 0) {
+            psubscribes.push('**.*');
+        }
+        await this.subscriber.psubscribe(...psubscribes, (err, count) => {
+            if (err) {
+                // Just like other commands, subscribe() can fail for some reasons,
+                // ex network issues.
+                this.logger.error("Failed to subscribe: %s", err.message);
+            } else {
+                // `count` represents the number of channels this server are currently subscribed to.
+                this.logger.info(
+                    `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.`,
+                    psubscribes
+                );
+            }
+        });
     }
 
     protected async onShutdown(): Promise<any> {
-        this.subscriber?.quit();
-        this.subscriber = null;
+        await this.subscriber?.quit();
+        await this.publisher?.quit();
+        this.publisher = this.subscriber = null;
     }
 
     protected createRetryStrategy(options: RedisServerOpts): (times: number) => undefined | number {

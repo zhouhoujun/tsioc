@@ -21,6 +21,10 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      */
     abstract get subscribes(): Set<string>;
     /**
+     * route matcher.
+     */
+    abstract get matcher(): RouteMatcher;
+    /**
      * use route.
      * @param route 
      */
@@ -50,6 +54,12 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
  */
 @Abstract()
 export abstract class RouteMatcher {
+    /**
+     * is pattern route or not.
+     * @param route 
+     */
+    abstract isPattern(route: string): boolean;
+
     /**
      * register route matcher. 
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.

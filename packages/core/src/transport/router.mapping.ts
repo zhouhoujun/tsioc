@@ -33,7 +33,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 
     constructor(
         private injector: Injector,
-        @Inject() private matcher: RouteMatcher,
+        @Inject() readonly matcher: RouteMatcher,
         @Optional() public prefix: string = '',
         @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
         super()
@@ -183,14 +183,19 @@ export class DefaultRouteMatcher extends RouteMatcher {
         this.matchers = new Map();
     }
 
+    isPattern(route: string): boolean {
+        return pattern$.test(route)
+    }
+
     register(route: string, params?: Record<string, any>): string[] {
-        if (wildcard.test(route)) {
+        if (this.isPattern(route)) {
             let subs: string[] = [route.slice(0)];
             let $exp = this.replaceTopic(route);
             if (params) {
-                const opts = { subs };
-                $exp = this.replaceTopicParams($exp, params, opts);
-                $exp = this.replaceRestParams($exp, params, opts);
+                let opts = { match: tval$, start: 2, end: 1, subs };
+                $exp = this.replaceWithParams($exp, params, opts);
+                opts = { ...opts, match: rest$, start: 1, end: 0 };
+                $exp = this.replaceWithParams($exp, params, opts);
                 subs = opts.subs
             } else {
                 $exp = $exp.replace(tval$, tplPth)
@@ -218,9 +223,9 @@ export class DefaultRouteMatcher extends RouteMatcher {
             .replace(words$, words)
     }
 
-    protected replaceTopicParams(route: string, params: Record<string, any>, opts: { subs: string[] }) {
-        route.match(tval$)?.forEach(v => {
-            const name = v.slice(2, v.length - 1);
+    protected replaceWithParams(route: string, params: Record<string, any>, opts: { match: RegExp, start: number, end: number, subs: string[] }) {
+        route.match(opts.match)?.forEach(v => {
+            const name = v.slice(opts.start, v.length - opts.end);
             if (params[name]) {
                 const data = params[name];
                 if (isArray(data)) {
@@ -247,42 +252,13 @@ export class DefaultRouteMatcher extends RouteMatcher {
         return route;
     }
 
-    format(val: any) {
+    protected format(val: any) {
         return String(val);
-    }
-
-    protected replaceRestParams(route: string, params: Record<string, any>, opts: { subs: string[] }) {
-        route.match(rest$)?.forEach(v => {
-            const name = v.slice(1);
-            if (params[name]) {
-                const data = params[name];
-                if (isArray(data)) {
-                    const orgs = opts.subs;
-                    const subs: string[] = [];
-                    const repl = data.map((d, idx) => {
-                        const rp = this.format(d);
-                        orgs.forEach(r => {
-                            subs.push(r.replace(v, rp));
-                        })
-                        return rp;
-                    }).join('|');
-                    route = route.replace(v, `(${repl})`);
-                    opts.subs = subs;
-                } else {
-                    const repl = this.format(data);
-                    opts.subs = opts.subs.map(r => r.replace(v, repl));
-                    route = route.replace(v, repl);
-                }
-            } else {
-                route = route.replace(v, tplPth)
-            }
-        });
-        return route;
     }
 
 }
 
-const wildcard = /(:\w+)|(\/#$)|(\/\+)|(\*)|(\$\{\w+\})/;
+const pattern$ = /(:\w+)|(\/#$)|(\/\+)|(\*)|(\$\{\w+\})/;
 const sg$ = /\/\+/g;
 const sg = '/[^/]+';
 

@@ -23,8 +23,13 @@ export class TcpService {
         return message;
     }
 
-    @Handle('sensor/message/**', 'tcp')
+    @Handle('sensor.message.*', 'tcp')
     async handleMessage1(@Payload() message: string) {
+        return message;
+    }
+
+    @Handle('sensor/message/*', 'tcp')
+    async handleMessage2(@Payload() message: string) {
         return message;
     }
 
@@ -90,20 +95,64 @@ describe('Redis Micro Service', () => {
     });
 
 
-    // it('fetch json', async () => {
-    //     const res: any = await lastValueFrom(client.send('510100_full.json')
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch json', async () => {
+        const res: any = await lastValueFrom(client.send('510100_full.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(isArray(res.features)).toBeTruthy();
-    // })
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch json 2', async () => {
+        const res: any = await lastValueFrom(client.send('test1/jsons/data1.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(res.test).toEqual('ok');
+    })
 
     it('cmd message', async () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor.message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor.message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a.status).toEqual(404);
+    });
+
+    it('sensor.message.* message', async () => {
+        const a = await lastValueFrom(client.send('sensor.message.update', {
             payload: {
                 message: 'ble'
             }
@@ -134,7 +183,7 @@ describe('Redis Micro Service', () => {
         expect(a.status).toEqual(404);
     });
 
-    it('sensor/message/# message', async () => {
+    it('sensor/message/* message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
             payload: {
                 message: 'ble'

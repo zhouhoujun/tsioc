@@ -22,7 +22,6 @@ import { RedisEndpoint } from './server/endpoint';
         ServerTransportModule
     ],
     providers: [
-        // RedisPathInterceptor,
         RedisTransportSessionFactory,
         { provide: StatusVaildator, useClass: RedisStatusVaildator },
         { provide: RequestAdapter, useClass: RedisRequestAdapter },

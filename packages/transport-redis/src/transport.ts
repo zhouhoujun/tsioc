@@ -7,13 +7,13 @@ import { Readable } from 'stream';
 import { EventEmitter } from 'events';
 
 
-export interface ReidsPipeline {
+export interface ReidsStream {
     publisher: Redis;
     subscriber: Redis;
 }
 
 @Injectable()
-export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsPipeline> {
+export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsStream> {
 
     constructor(
         @Optional() private encoder: Encoder,
@@ -21,7 +21,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
 
     }
 
-    create(socket: ReidsPipeline, opts: TransportSessionOpts): TransportSession<ReidsPipeline> {
+    create(socket: ReidsStream, opts: TransportSessionOpts): TransportSession<ReidsStream> {
         return new RedisTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
     }
 
@@ -35,7 +35,7 @@ export interface ChannelBuffer {
 }
 
 
-export class RedisTransportSession extends EventEmitter implements TransportSession<ReidsPipeline> {
+export class RedisTransportSession extends EventEmitter implements TransportSession<ReidsStream> {
 
     private readonly delimiter: Buffer;
 
@@ -46,7 +46,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
     private _evs: Array<[string, Function]>;
 
 
-    constructor(readonly socket: ReidsPipeline, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
+    constructor(readonly socket: ReidsStream, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
@@ -69,6 +69,15 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
         const event = this.onData.bind(this);
         socket.subscriber.on(e, event);
         this._evs.push([e, event]);
+
+        const pe = 'pmessageBuffer';
+        const pevent = (pattern: string, topic: string | Buffer, chunk: string | Buffer) => {
+            const channel = isString(topic) ? topic : topic.toString();
+            if (channel.endsWith('.reply')) return;
+            this.onData(channel, chunk);
+        }
+        socket.subscriber.on(pe, pevent);
+        this._evs.push([pe, pevent]);
     }
 
     async send(data: Packet): Promise<void> {

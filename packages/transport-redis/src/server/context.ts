@@ -14,9 +14,8 @@ export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgo
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.getListenOpts();
-            const isIPC = !host && !port;
-            const baseUrl = isIPC ? new URL(`redis://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
+            const { host, port } = this.getListenOpts();
+            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }

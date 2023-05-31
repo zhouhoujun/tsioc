@@ -1,10 +1,10 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { Client, Publisher, Subscriber, TransportEvent, TransportRequest } from '@tsdi/core';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { LOCALHOST, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
-import { LOCALHOST, ev } from '@tsdi/transport';
-import { InjectLog, Logger } from '@tsdi/logs';
 
 
 
@@ -70,6 +70,8 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected async onShutdown(): Promise<void> {
+        await this.publisher?.quit();
         await this.subscriber?.quit();
+        this.publisher = this.subscriber = null;
     }
 }
