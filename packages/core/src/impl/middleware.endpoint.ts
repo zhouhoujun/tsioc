@@ -7,18 +7,18 @@ import { AbstractGuardHandler } from '../handlers/guards';
 import { AssetContext } from '../transport/context';
 import { MIDDLEWARES_TOKEN, MiddlewareLike } from '../transport/middleware';
 import { MiddlewareBackend } from '../transport/middleware.compose';
-import { AssetEndpoint, AssetEndpointOptions } from '../transport/endpoint';
+import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../transport/endpoint';
 import { setHandlerOptions } from '../handlers';
 
 
-export class AssetEndpointImpl<TInput extends AssetContext = AssetContext, TOutput = any>
-    extends AbstractGuardHandler<TInput, TOutput> implements AssetEndpoint<TInput, TOutput> {
+export class MiddlewareEndpointImpl<TInput extends AssetContext = AssetContext, TOutput = any>
+    extends AbstractGuardHandler<TInput, TOutput> implements MiddlewareEndpoint<TInput, TOutput> {
 
     protected midddlesToken: Token<MiddlewareLike<TInput>[]>;
 
     constructor(
         injector: Injector,
-        options: AssetEndpointOptions<TInput>) {
+        options: MiddlewareEndpointOptions<TInput>) {
         super(injector,
             options.interceptorsToken ?? INTERCEPTORS_TOKEN,
             options.guardsToken ?? GUARDS_TOKEN,

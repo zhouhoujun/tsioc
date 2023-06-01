@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, RouterModule, TransformModule, createHandler, createAssetEndpoint, HybridRouter } from '@tsdi/core';
+import { ExecptionHandlerFilter, RouterModule, TransformModule, createHandler, createMiddlewareEndpoint, HybridRouter } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
     BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter,
@@ -90,7 +90,7 @@ export class HttpModule {
             }),
             toProvider(HttpEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: HttpServerOpts) => {
-                    return createAssetEndpoint(injector, opts)
+                    return createMiddlewareEndpoint(injector, opts)
                 },
                 deps: [Injector, HTTP_SERV_OPTS]
             })

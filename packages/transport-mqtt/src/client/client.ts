@@ -21,7 +21,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
 
     private clientId?: string;
     constructor(
-        readonly handler: MqttHandler, 
+        readonly handler: MqttHandler,
         @Inject(MQTT_CLIENT_OPTS) private options: MqttClientOpts) {
         super()
     }
@@ -42,7 +42,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
                 port: 1883,
                 ...this.options.connectOpts
             };
-            const client = this.mqtt ?? (opts.url? mqtt.connect(opts.url): mqtt.connect(opts));
+            const client = this.mqtt ?? (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
             const onError = (err: any) => {
                 this.logger?.error(err);
                 sbscriber.error(err);
@@ -83,8 +83,8 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected override async onShutdown(): Promise<void> {
-        if (!this.mqtt || this.mqtt.disconnected) return;
-        await promisify<void, boolean | undefined, Object | undefined>(this.mqtt.end, this.mqtt)(true, undefined)
+        if (!this.mqtt) return;
+        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;

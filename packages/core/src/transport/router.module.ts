@@ -1,7 +1,7 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
-import { ASSET_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
+import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteReolver } from './controller';
@@ -9,7 +9,7 @@ import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
 import { TransportContextIml } from '../impl/transport.context';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
-import { AssetEndpointImpl } from '../impl/asset.endpoint';
+import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
 
 
@@ -17,7 +17,7 @@ TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImp
 
 TRANSPORT_CONTEXT_IMPL.create = (injector, options) => new TransportContextIml(injector, options);
 
-ASSET_ENDPOINT_IMPL.create = (injector, options) => new AssetEndpointImpl(injector, options);
+MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointImpl(injector, options);
 
 /*
  * Middleware module.

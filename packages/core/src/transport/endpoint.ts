@@ -50,22 +50,22 @@ export const TRANSPORT_ENDPOINT_IMPL = {
 }
 
 /**
- * Mime asset transport endpoint.
+ * transport middleware endpoint.
  * 
- * 类型资源传输节点
+ * 含中间件的传输节点
  */
 @Abstract()
-export abstract class AssetEndpoint<TInput extends AssetContext, TOutput> extends TransportEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
+export abstract class MiddlewareEndpoint<TInput extends AssetContext, TOutput> extends TransportEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
 
     abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
 }
 
 /**
- * Asset transport endpoint options.
+ * transport middleware endpoint options.
  * 
- * 类型资源传输节点配置
+ * 含中间件的传输节点配置
  */
-export interface AssetEndpointOptions<T extends AssetContext = any, TArg = any> extends EndpointOptions<T, TArg> {
+export interface MiddlewareEndpointOptions<T extends AssetContext = any, TArg = any> extends EndpointOptions<T, TArg> {
     middlewaresToken?: Token<MiddlewareLike<T>[]>;
     middlewares?: ProvdierOf<MiddlewareLike<T>>[];
 }
@@ -73,17 +73,17 @@ export interface AssetEndpointOptions<T extends AssetContext = any, TArg = any> 
 /**
  * create transport endpoint.
  * 
- * 创建传输节点实例化对象
+ * 创建含中间件的传输节点实例化对象
  * @param injector 
  * @param options 
  * @returns 
  */
-export function createAssetEndpoint<TCtx extends AssetContext, TOutput>(injector: Injector, options: AssetEndpointOptions<TCtx>): AssetEndpoint<TCtx, TOutput> {
-    return ASSET_ENDPOINT_IMPL.create(injector, options)
+export function createMiddlewareEndpoint<TCtx extends AssetContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
+    return MIDDLEEARE_ENDPOINT_IMPL.create(injector, options)
 }
 
-export const ASSET_ENDPOINT_IMPL = {
-    create<TCtx extends AssetContext, TOutput>(injector: Injector, options: AssetEndpointOptions<TCtx>): AssetEndpoint<TCtx, TOutput> {
+export const MIDDLEEARE_ENDPOINT_IMPL = {
+    create<TCtx extends AssetContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
         throw new Execption('not implemented.')
     }
 }

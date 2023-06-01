@@ -41,21 +41,15 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
         this.mqtt.on(ev.CONNECT, defer.resolve);
         await defer.promise;
 
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
-        const session = factory.create(this.mqtt, this.options.transportOpts);
-
-
-        session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
-            this.requestHandler(session, packet)
-        });
-
     }
 
     protected toPatterns(patterns: string[]): string[] {
+        const dotp = /.\*/g;
         const restp = /\/:\w+/g;
         const msgp = /\/\*/g;
         const msgmp = /\/\*\*$/;
-        return patterns.map(p => p.replace(restp, '/+')
+        return patterns.map(p => p.replace(dotp, '/+')
+            .replace(restp, '/+')
             .replace(msgp, '/+')
             .replace(msgmp, '/#'))
     }
@@ -67,28 +61,37 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
         const subscribes = Array.from(router.subscribes.values());
         const psubscribes = this.toPatterns(subscribes);
         if (this.options.interceptors!.indexOf(Content) >= 0) {
-            subscribes.push('#.#');
+            subscribes.push('#.+');
         }
-        this.mqtt.subscribe(psubscribes, (err) => {
-            if (err) {
+
+        await promisify(this.mqtt.subscribe, this.mqtt)(psubscribes)
+            .catch(err => {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
                 this.logger.error("Failed to subscribe: %s", err.message);
-            } else {
-                this.logger.info(
-                    `Subscribed successfully! This server is currently subscribed topics.`,
-                    psubscribes,
-                    '\norigin patterns\n',
-                    subscribes
-                );
-            }
+                throw err;
+            });
+
+        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const session = factory.create(this.mqtt, this.options.transportOpts);
+
+        session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
+            this.requestHandler(session, packet)
         });
+
+        this.logger.info(
+            `Subscribed successfully! This server is currently subscribed topics.`,
+            psubscribes,
+            '\norigin patterns\n',
+            subscribes
+        );
 
     }
 
     protected override async onShutdown(): Promise<any> {
-        if (!this.mqtt || this.mqtt.disconnected) return;
-        await promisify<void, boolean | undefined, Object | undefined>(this.mqtt.end, this.mqtt)(true, undefined)
+        if (!this.mqtt) return;
+        // this.mqtt.end();
+        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;

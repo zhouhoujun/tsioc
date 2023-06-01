@@ -1,7 +1,7 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
     ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler,
-    createAssetEndpoint, TransportSessionFactory, createTransportEndpoint
+    createMiddlewareEndpoint, TransportSessionFactory, createTransportEndpoint
 } from '@tsdi/core';
 import {
     BodyContentInterceptor, Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor,
@@ -73,7 +73,7 @@ export class TcpModule {
             }),
             toProvider(TcpEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: TcpServerOpts) => {
-                    return createAssetEndpoint(injector, opts)
+                    return createMiddlewareEndpoint(injector, opts)
                 },
                 deps: [Injector, TCP_SERV_OPTS]
             }),

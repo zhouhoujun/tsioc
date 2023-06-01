@@ -426,12 +426,12 @@ export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> 
 }
 
 export function promisify(func: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
-export function promisify<T = void>(func: (callback: (err: any, result?: void | T) => void) => void, owner?: any): () => Promise<T>;
-export function promisify<T = void, A1 = any>(func: (arg1: A1, callback: (err: any, result?: void | T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any, A3 = any>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any, A3 = any, A4 = any>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any, A3 = any, A4 = any, A5 = any>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Promise<T>;
+export function promisify<T>(func: (callback: (err: any, result?: T) => void) => void, owner?: any): () => Promise<T>;
+export function promisify<T, A1>(func: (arg1: A1, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
+export function promisify<T, A1, A2>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
+export function promisify<T, A1, A2, A3>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
+export function promisify<T, A1, A2, A3, A4>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
+export function promisify<T, A1, A2, A3, A4, A5>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Promise<T>;
 export function promisify(nodeFunction: (...args: any[]) => void, owner?: any): (...args: any[]) => Promise<any> {
     if (owner) {
         nodeFunction = nodeFunction.bind(owner);

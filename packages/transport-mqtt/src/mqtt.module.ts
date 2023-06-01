@@ -1,6 +1,6 @@
 import {
     ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory,
-    createHandler, createAssetEndpoint
+    createHandler, createTransportEndpoint
 } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
@@ -68,7 +68,7 @@ export class MqttModule {
             }),
             toProvider(MqttEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: MqttServiceOpts) => {
-                    return createAssetEndpoint(injector, opts)
+                    return createTransportEndpoint(injector, opts)
                 },
                 deps: [Injector, MQTT_SERV_OPTS]
             }),
@@ -113,9 +113,7 @@ const defClientOpts = {
     interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
     filtersToken: MQTT_CLIENT_FILTERS,
     backend: TransportBackend,
-    interceptors: [
-        BodyContentInterceptor
-    ],
+    interceptors: [BodyContentInterceptor],
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
@@ -136,6 +134,7 @@ const defaultServOpts = {
     detailError: true,
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     execptionsToken: MQTT_SERV_FILTERS,
+    backend: HybridRouter,
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -147,6 +146,5 @@ const defaultServOpts = {
         ContentInterceptor,
         JsonInterceptor,
         BodyparserInterceptor,
-        HybridRouter
     ]
 } as MqttServiceOpts;
