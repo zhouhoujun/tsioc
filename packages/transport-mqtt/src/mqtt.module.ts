@@ -129,7 +129,8 @@ const defaultServOpts = {
         maxSize: 10 * 1024 * 1024,
     },
     content: {
-        root: 'public'
+        root: 'public',
+        prefix: '/content'
     },
     detailError: true,
     interceptorsToken: MQTT_SERV_INTERCEPTORS,

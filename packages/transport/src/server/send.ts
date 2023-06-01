@@ -4,6 +4,7 @@ import { Abstract } from '@tsdi/ioc';
 
 export interface SendOptions<TStats = any> {
     root: string | string[];
+    prefix?: string;
     index?: string;
     maxAge?: number;
     immutable?: boolean;

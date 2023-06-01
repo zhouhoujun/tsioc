@@ -380,6 +380,10 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
  */
 export interface TransportSessionOpts {
     /**
+     * server side or not.
+     */
+    serverSide?: boolean;
+    /**
      * packet delimiter flag
      */
     delimiter?: string;

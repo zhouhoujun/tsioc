@@ -10,6 +10,7 @@ import { StatusVaildator } from '../status';
 @Abstract()
 export abstract class ContentOptions implements SendOptions {
     abstract root: string | string[];
+    abstract prefix?: string;
     abstract defer?: boolean;
     abstract index?: string;
     abstract maxAge?: number;

@@ -96,7 +96,7 @@ describe('Redis Micro Service', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json')
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -108,7 +108,7 @@ describe('Redis Micro Service', () => {
     })
 
     it('fetch json 2', async () => {
-        const res: any = await lastValueFrom(client.send('test1/jsons/data1.json')
+        const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

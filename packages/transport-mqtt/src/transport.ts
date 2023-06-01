@@ -17,7 +17,7 @@ export class MqttTransportSessionFactory implements TransportSessionFactory<Mqtt
     }
 
     create(socket: MqttClient, opts: TransportSessionOpts): TransportSession<MqttClient> {
-        return new MqttTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
+        return new MqttTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.serverSide);
     }
 
 }
@@ -41,7 +41,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
     private _evs: Array<[string, Function]>;
 
 
-    constructor(readonly socket: MqttClient, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
+    constructor(readonly socket: MqttClient, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#', private serverSide = false) {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
@@ -62,7 +62,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
 
         const pe = ev.MESSAGE;
         const pevent = (topic: string, chunk: Buffer) => {
-            if (topic.endsWith('.reply')) return;
+            if (this.serverSide && topic.endsWith('.reply')) return;
             this.onData(topic, chunk);
         }
         socket.on(pe, pevent);

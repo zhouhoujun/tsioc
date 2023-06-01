@@ -22,7 +22,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
     }
 
     create(socket: ReidsStream, opts: TransportSessionOpts): TransportSession<ReidsStream> {
-        return new RedisTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
+        return new RedisTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.serverSide);
     }
 
 }
@@ -46,7 +46,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
     private _evs: Array<[string, Function]>;
 
 
-    constructor(readonly socket: ReidsStream, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
+    constructor(readonly socket: ReidsStream, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#', private serverSide = false) {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
@@ -73,7 +73,7 @@ export class RedisTransportSession extends EventEmitter implements TransportSess
         const pe = 'pmessageBuffer';
         const pevent = (pattern: string, topic: string | Buffer, chunk: string | Buffer) => {
             const channel = isString(topic) ? topic : topic.toString();
-            if (channel.endsWith('.reply')) return;
+            if (this.serverSide && channel.endsWith('.reply')) return;
             this.onData(channel, chunk);
         }
         socket.subscriber.on(pe, pevent);

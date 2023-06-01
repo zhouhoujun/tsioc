@@ -2,6 +2,7 @@ import { AssetContext, Filter, Interceptor, TransportEvent, TransportRequest, Tr
 import { tokenId } from '@tsdi/ioc';
 import { TransportEndpointOptions } from '@tsdi/core';
 import { MqttConnectOpts } from '../connect';
+import { ContentOptions } from '@tsdi/transport';
 
 
 
@@ -9,7 +10,7 @@ export interface MqttServiceOpts extends TransportEndpointOptions<AssetContext> 
     connectOpts?: MqttConnectOpts;
     detailError?: boolean;
     timeout?: number;
-    retryAttempts?: number;
+    content?: ContentOptions;
     retryDelay?: number;
     transportOpts?: TransportSessionOpts;
 }

@@ -23,12 +23,12 @@ export class TcpService {
         return message;
     }
 
-    @Handle('sensor.message.*', 'tcp')
+    @Handle('sensor.message/+', 'tcp')
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Handle('sensor/message/*', 'tcp')
+    @Handle('sensor/message/+', 'tcp')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
@@ -56,7 +56,7 @@ export class TcpService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 1000
+                timeout: 2000
             },
             serverOpts: {
                 // timeout: 1000,
@@ -96,7 +96,7 @@ describe('Mqtt Micro Service', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json')
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -108,7 +108,7 @@ describe('Mqtt Micro Service', () => {
     })
 
     it('fetch json 2', async () => {
-        const res: any = await lastValueFrom(client.send('test1/jsons/data1.json')
+        const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -151,8 +151,8 @@ describe('Mqtt Micro Service', () => {
         expect(a.status).toEqual(404);
     });
 
-    it('sensor.message.* message', async () => {
-        const a = await lastValueFrom(client.send('sensor.message.update', {
+    it('sensor.message/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor.message/update', {
             payload: {
                 message: 'ble'
             }
@@ -183,7 +183,7 @@ describe('Mqtt Micro Service', () => {
         expect(a.status).toEqual(404);
     });
 
-    it('sensor/message/* message', async () => {
+    it('sensor/message/+ message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
             payload: {
                 message: 'ble'

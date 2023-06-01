@@ -1,11 +1,13 @@
 import { Filter, Interceptor, TransportContext, TransportEndpointOptions, TransportRequest, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
+import { ContentOptions } from '@tsdi/transport';
 import Redis, { RedisOptions } from 'ioredis';
 
 
 export interface RedisServerOpts extends TransportEndpointOptions<TransportContext> {
     connectOpts?: RedisOptions;
     detailError?: boolean;
+    content?: ContentOptions;
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;

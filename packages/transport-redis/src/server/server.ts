@@ -1,6 +1,6 @@
 import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
-import { Content, LOCALHOST, ev } from '@tsdi/transport';
+import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import Redis from 'ioredis';
 import { Subscription, finalize } from 'rxjs';
@@ -25,6 +25,10 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         @Inject(REDIS_SERV_OPTS) private options: RedisServerOpts
     ) {
         super();
+
+        if (this.options.content) {
+            this.endpoint.injector.setValue(ContentOptions, this.options.content);
+        }
     }
 
     protected async onStartup(): Promise<any> {
@@ -50,21 +54,12 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         const session = factory.create({
             subscriber,
             publisher
-        }, opts.transportOpts);
+        }, { ...opts.transportOpts, serverSide: true });
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
             this.requestHandler(session, packet)
         });
 
-    }
-
-    protected toPatterns(patterns: string[]): string[] {
-        const restp = /:\w+/g;
-        const mqttp = /\/\+/g;
-        const mqttmp = /\/#$/;
-        return patterns.map(p => p.replace(restp, '*')
-            .replace(mqttp, '/*')
-            .replace(mqttmp, '/**'))
     }
 
     protected async onStart(): Promise<any> {
@@ -94,11 +89,11 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
             }
         });
 
-        if (this.options.interceptors!.indexOf(Content) >= 0) {
-            psubscribes.push('**.*');
+        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
+            psubscribes.push(`${this.options.content.prefix}/**`);
         }
-        const redisPsubscribes = this.toPatterns(psubscribes);
-        await this.subscriber.psubscribe(...redisPsubscribes, (err, count) => {
+
+        await this.subscriber.psubscribe(...psubscribes, (err, count) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -107,8 +102,6 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
                 // `count` represents the number of channels this server are currently subscribed to.
                 this.logger.info(
                     `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.\n`,
-                    redisPsubscribes,
-                    '\norigin patterns\n',
                     psubscribes
                 );
             }

@@ -28,7 +28,6 @@ export interface TcpServerOpts extends MiddlewareEndpointOptions<TcpContext, Out
     session?: boolean | SessionOptions;
     serverOpts?: net.ServerOpts | tls.TlsOptions;
     listenOpts: net.ListenOptions;
-
     detailError?: boolean;
 }
 

@@ -12,6 +12,10 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
     async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;
         if (!isString(path)) return '';
+        if(opts.prefix){
+            if(!path.startsWith(opts.prefix)) return '';
+            path = path.slice(opts.prefix.length);
+        }
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
         const roots = isArray(opts.root) ? opts.root : [opts.root];

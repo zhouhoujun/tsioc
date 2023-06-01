@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logs';
 import { MqttClient, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
-import { Content, LOCALHOST, ev } from '@tsdi/transport';
+import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
 import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
@@ -17,12 +17,17 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
     @InjectLog()
     private logger!: Logger;
+    private subscribes?: string[];
 
     constructor(
         readonly endpoint: MqttEndpoint,
         @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts) {
         super();
+        if (this.options.content) {
+            this.endpoint.injector.setValue(ContentOptions, this.options.content);
+        }
     }
+
 
     private mqtt?: MqttClient;
     protected override async onStartup(): Promise<any> {
@@ -43,28 +48,16 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
     }
 
-    protected toPatterns(patterns: string[]): string[] {
-        const dotp = /.\*/g;
-        const restp = /\/:\w+/g;
-        const msgp = /\/\*/g;
-        const msgmp = /\/\*\*$/;
-        return patterns.map(p => p.replace(dotp, '/+')
-            .replace(restp, '/+')
-            .replace(msgp, '/+')
-            .replace(msgmp, '/#'))
-    }
-
     protected override async onStart(): Promise<any> {
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
         const router = this.endpoint.injector.get(Router);
-        const subscribes = Array.from(router.subscribes.values());
-        const psubscribes = this.toPatterns(subscribes);
-        if (this.options.interceptors!.indexOf(Content) >= 0) {
-            subscribes.push('#.+');
+        const subscribes = this.subscribes = Array.from(router.subscribes.values());
+        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
+            subscribes.push(`${this.options.content.prefix}/#`);
         }
 
-        await promisify(this.mqtt.subscribe, this.mqtt)(psubscribes)
+        await promisify(this.mqtt.subscribe, this.mqtt)(subscribes)
             .catch(err => {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -73,7 +66,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
             });
 
         const factory = this.endpoint.injector.get(TransportSessionFactory);
-        const session = factory.create(this.mqtt, this.options.transportOpts);
+        const session = factory.create(this.mqtt, { ...this.options.transportOpts, serverSide: true });
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
             this.requestHandler(session, packet)
@@ -81,8 +74,6 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
-            psubscribes,
-            '\norigin patterns\n',
             subscribes
         );
 
@@ -90,6 +81,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
     protected override async onShutdown(): Promise<any> {
         if (!this.mqtt) return;
+        if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
         // this.mqtt.end();
         await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
