@@ -1,8 +1,8 @@
 import { AssetContext, Filter, Interceptor, TransportEvent, TransportRequest, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { TransportEndpointOptions } from '@tsdi/core';
-import { MqttConnectOpts } from '../connect';
 import { ContentOptions } from '@tsdi/transport';
+import { MqttConnectOpts } from '../connect';
 
 
 

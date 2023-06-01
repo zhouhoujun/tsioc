@@ -4,8 +4,8 @@ import {
 } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    BodyContentInterceptor, BodyparserInterceptor, ContentInterceptor, JsonInterceptor, ExecptionFinalizeFilter,
-    LogInterceptor, ServerFinalizeFilter, SessionInterceptor, TransportBackend, TransportModule, StatusVaildator, RequestAdapter
+    BodyContentInterceptor, Bodyparser, Content, Json, Session, ExecptionFinalizeFilter,
+    LogInterceptor, ServerFinalizeFilter, TransportBackend, TransportModule, StatusVaildator, RequestAdapter
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { MqttClient } from './client/client';
@@ -143,9 +143,9 @@ const defaultServOpts = {
         ServerFinalizeFilter
     ],
     interceptors: [
-        SessionInterceptor,
-        ContentInterceptor,
-        JsonInterceptor,
-        BodyparserInterceptor,
+        Session,
+        Content,
+        Json,
+        Bodyparser,
     ]
 } as MqttServiceOpts;

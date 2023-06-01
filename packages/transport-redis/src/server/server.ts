@@ -25,7 +25,6 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
         @Inject(REDIS_SERV_OPTS) private options: RedisServerOpts
     ) {
         super();
-
         if (this.options.content) {
             this.endpoint.injector.setValue(ContentOptions, this.options.content);
         }

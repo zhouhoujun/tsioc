@@ -17,7 +17,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     @InjectLog()
     private logger?: Logger;
 
-    private mqtt?: mqtt.MqttClient;
+    private mqtt?: mqtt.Client | null;
 
     private clientId?: string;
     constructor(
@@ -27,7 +27,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     }
 
 
-    protected isValidate(mqtt: mqtt.MqttClient | undefined): boolean {
+    protected isValidate(mqtt: mqtt.Client | null | undefined): boolean {
         return (mqtt && !mqtt.disconnected && mqtt.connected) as boolean
     }
 
@@ -89,6 +89,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
                 this.logger?.error(err);
                 return err;
             });
+        this.mqtt = null;
     }
 
 }

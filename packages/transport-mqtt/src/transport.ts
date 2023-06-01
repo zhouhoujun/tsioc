@@ -34,7 +34,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
 
     private readonly delimiter: Buffer;
 
-    private channels: Map<string, TopicBuffer>;
+    private topics: Map<string, TopicBuffer>;
 
     private _header: Buffer;
     private _body: Buffer;
@@ -47,7 +47,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
         this.delimiter = Buffer.from(delimiter);
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
-        this.channels = new Map();
+        this.topics = new Map();
 
         this._evs = [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].map(e => [e, (...args: any[]) => {
             this.emit(e, ...args);
@@ -146,7 +146,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
 
     onData(topic: string, chunk: string | Buffer) {
         try {
-            let chl = this.channels.get(topic);
+            let chl = this.topics.get(topic);
             if (!chl) {
                 chl = {
                     topic,
@@ -154,7 +154,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
                     contentLength: null,
                     cachePkg: new Map()
                 }
-                this.channels.set(topic, chl)
+                this.topics.set(topic, chl)
             }
             this.handleData(chl, chunk);
         } catch (ev) {

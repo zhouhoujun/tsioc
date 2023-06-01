@@ -1,7 +1,7 @@
 import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { MqttClient, connect } from 'mqtt';
+import { Client, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
 import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
@@ -17,19 +17,20 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
     @InjectLog()
     private logger!: Logger;
+
     private subscribes?: string[];
+    private mqtt?: Client | null;
 
     constructor(
         readonly endpoint: MqttEndpoint,
-        @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts) {
+        @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
+    ) {
         super();
         if (this.options.content) {
             this.endpoint.injector.setValue(ContentOptions, this.options.content);
         }
     }
 
-
-    private mqtt?: MqttClient;
     protected override async onStartup(): Promise<any> {
         const opts = {
             host: LOCALHOST,
@@ -88,6 +89,8 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
                 this.logger?.error(err);
                 return err;
             });
+
+        this.mqtt = null;
     }
 
 
@@ -97,7 +100,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: TransportSession<MqttClient>, packet: Packet): Subscription {
+    protected requestHandler(session: TransportSession<Client>, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = MESSAGE;
         }
