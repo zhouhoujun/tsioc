@@ -20,7 +20,7 @@ import { OperationInvoker } from '../operation';
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
 
-    protected _refs: InvocationContext[];
+    protected _refs: InvocationContext[] | null;
     protected _methodName?: string;
     private _injected = false;
 
@@ -89,7 +89,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return EMPTY;
     }
 
-    private _resolvers?: OperationArgumentResolver[];
+    private _resolvers?: OperationArgumentResolver[] | null;
     /**
      * the invocation arguments resolver.
      */
@@ -124,7 +124,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.assertNotDestroyed();
         contexts.forEach(j => {
             if (!this.hasRef(j)) {
-                this._refs.unshift(j)
+                this._refs!.unshift(j)
             }
         })
     }
@@ -140,7 +140,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     hasRef(ctx: InvocationContext): boolean {
         this.assertNotDestroyed();
-        return ctx === this && this._refs.indexOf(ctx) >= 0;
+        return ctx === this && this._refs!.indexOf(ctx) >= 0;
     }
 
 
@@ -198,7 +198,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     has(token: Token, flags?: InjectFlags): boolean {
         this.assertNotDestroyed();
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
-            || this._refs.some(i => i.has(token, flags))
+            || this._refs!.some(i => i.has(token, flags))
     }
 
     /**
@@ -217,7 +217,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
         let val: T | undefined;
-        this._refs.some(r => {
+        this._refs!.some(r => {
             val = r.get(token, flags);
             return isDefined(val)
         });
@@ -345,8 +345,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected clear() {
-        this._resolvers = null!;
-        this._refs = null!;
+        this._resolvers = null;
+        this._refs = null;
     }
 
 }

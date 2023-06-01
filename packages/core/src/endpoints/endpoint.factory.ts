@@ -1,6 +1,6 @@
 import {
     Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback,
-    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption
+    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption, tokenId
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
@@ -54,6 +54,10 @@ export function createEndpoint<TInput extends InvocationContext = InvocationCont
 }
 
 
+
+export const OPERA_INTERCEPTORS = tokenId<Interceptor[]>('OPERA_INTERCEPTORS');
+export const OPERA_GUARDS = tokenId<CanActivate[]>('OPERA_GUARDS');
+export const OPERA_FILTERS = tokenId<Filter[]>('OPERA_FILTERS');
 
 /**
  * Opteration Endpoint

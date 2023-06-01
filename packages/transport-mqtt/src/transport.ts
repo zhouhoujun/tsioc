@@ -1,14 +1,14 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Injectable, Optional, isNil, isString } from '@tsdi/ioc';
 import { PacketLengthException, ev, hdr, toBuffer } from '@tsdi/transport';
-import { MqttClient } from 'mqtt';
+import { Client } from 'mqtt';
 import { Buffer } from 'buffer';
 import { Readable } from 'stream';
 import { EventEmitter } from 'events';
 
 
 @Injectable()
-export class MqttTransportSessionFactory implements TransportSessionFactory<MqttClient> {
+export class MqttTransportSessionFactory implements TransportSessionFactory<Client> {
 
     constructor(
         @Optional() private encoder: Encoder,
@@ -16,7 +16,7 @@ export class MqttTransportSessionFactory implements TransportSessionFactory<Mqtt
 
     }
 
-    create(socket: MqttClient, opts: TransportSessionOpts): TransportSession<MqttClient> {
+    create(socket: Client, opts: TransportSessionOpts): TransportSession<Client> {
         return new MqttTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.serverSide);
     }
 
@@ -30,7 +30,7 @@ export interface TopicBuffer {
 }
 
 
-export class MqttTransportSession extends EventEmitter implements TransportSession<MqttClient> {
+export class MqttTransportSession extends EventEmitter implements TransportSession<Client> {
 
     private readonly delimiter: Buffer;
 
@@ -41,7 +41,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
     private _evs: Array<[string, Function]>;
 
 
-    constructor(readonly socket: MqttClient, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#', private serverSide = false) {
+    constructor(readonly socket: Client, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#', private serverSide = false) {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);

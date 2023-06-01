@@ -1,14 +1,11 @@
-import { Injector, ProvdierOf, Token, refl } from '@tsdi/ioc';
+import { ArgumentExecption, Injector, ProvdierOf, Token, getClassName, refl } from '@tsdi/ioc';
 import { Backend } from '../Handler';
-import { GUARDS_TOKEN } from '../guard';
-import { INTERCEPTORS_TOKEN } from '../Interceptor';
-import { FILTERS_TOKEN } from '../filters/filter';
 import { AbstractGuardHandler } from '../handlers/guards';
 import { AssetContext } from '../transport/context';
-import { MIDDLEWARES_TOKEN, MiddlewareLike } from '../transport/middleware';
+import { MiddlewareLike } from '../transport/middleware';
 import { MiddlewareBackend } from '../transport/middleware.compose';
 import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../transport/endpoint';
-import { setHandlerOptions } from '../handlers';
+import { setHandlerOptions } from '../handlers/handler.service';
 
 
 export class MiddlewareEndpointImpl<TInput extends AssetContext = AssetContext, TOutput = any>
@@ -20,10 +17,12 @@ export class MiddlewareEndpointImpl<TInput extends AssetContext = AssetContext, 
         injector: Injector,
         options: MiddlewareEndpointOptions<TInput>) {
         super(injector,
-            options.interceptorsToken ?? INTERCEPTORS_TOKEN,
-            options.guardsToken ?? GUARDS_TOKEN,
-            options.filtersToken ?? FILTERS_TOKEN);
-        this.midddlesToken = options.middlewaresToken ?? MIDDLEWARES_TOKEN;
+            options.interceptorsToken!,
+            options.guardsToken,
+            options.filtersToken);
+
+        if (!options.middlewaresToken) throw new ArgumentExecption(`Middleware token missing of ${getClassName(this)}.`)
+        this.midddlesToken = options.middlewaresToken;
         setHandlerOptions(this, options);
         options.middlewares && this.use(options.middlewares)
 

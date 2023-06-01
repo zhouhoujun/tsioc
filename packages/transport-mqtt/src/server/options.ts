@@ -1,4 +1,4 @@
-import { AssetContext, Filter, Interceptor, TransportEvent, TransportRequest, TransportSessionOpts } from '@tsdi/core';
+import { AssetContext, CanActivate, Filter, Interceptor, TransportEvent, TransportRequest, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { TransportEndpointOptions } from '@tsdi/core';
 import { ContentOptions } from '@tsdi/transport';
@@ -27,4 +27,7 @@ export const MQTT_SERV_INTERCEPTORS = tokenId<Interceptor<TransportRequest, Tran
  */
 export const MQTT_SERV_FILTERS = tokenId<Filter[]>('MQTT_SERV_FILTERS');
 
-
+/**
+ * MQTT Guards.
+ */
+export const MQTT_SERV_GUARDS = tokenId<CanActivate[]>('MQTT_SERV_GUARDS');

@@ -10,7 +10,7 @@ import { HttpServer } from './server/server';
 import { Http } from './client/clinet';
 import { HttpPathInterceptor } from './client/path';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './client/option';
-import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, Http2ServerOpts } from './server/options';
+import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, Http2ServerOpts, HTTP_SERV_GUARDS } from './server/options';
 import { HttpExecptionHandlers } from './server/exception.handles';
 import { HttpStatusVaildator } from './status';
 import { HttpRequestAdapter } from './client/request';
@@ -128,6 +128,7 @@ const defServerOpts = {
     interceptorsToken: HTTP_SERV_INTERCEPTORS,
     middlewaresToken: HTTP_MIDDLEWARES,
     filtersToken: HTTP_SERV_FILTERS,
+    guardsToken: HTTP_SERV_GUARDS,
     interceptors: [],
     filters: [
         LogInterceptor,

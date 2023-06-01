@@ -9,7 +9,7 @@ import {
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { TcpClient } from './client/clinet';
-import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts } from './server/options';
+import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts, TCP_SERV_GUARDS } from './server/options';
 import { TcpMicroService, TcpServer } from './server/server';
 import { TcpEndpoint } from './server/endpoint';
 import { TcpRequestAdapter } from './client/request';
@@ -213,6 +213,7 @@ const defMicroOpts = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     middlewaresToken: TCP_SERV_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
+    guardsToken: TCP_SERV_GUARDS,
     backend: HybridRouter,
     filters: [
         LogInterceptor,
@@ -246,6 +247,7 @@ const defServerOpts = {
     interceptorsToken: TCP_SERV_INTERCEPTORS,
     middlewaresToken: TCP_SERV_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
+    guardsToken: TCP_SERV_GUARDS,
     interceptors: [],
     filters: [
         LogInterceptor,

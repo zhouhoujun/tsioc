@@ -1,16 +1,15 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString, tokenId } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { Backend } from '../Handler';
-import { INTERCEPTORS_TOKEN } from '../Interceptor';
-import { GUARDS_TOKEN } from '../guard';
-import { FILTERS_TOKEN } from '../filters/filter';
 import { FnHandler } from '../handlers/handler';
 import { AbstractGuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { ResultValue } from '../endpoints/ResultValue';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';
-import { EndpointFactory, EndpointFactoryResolver, OperationEndpoint } from '../endpoints/endpoint.factory';
+import { EndpointFactory, EndpointFactoryResolver, OPERA_FILTERS, OPERA_GUARDS, OPERA_INTERCEPTORS, OperationEndpoint } from '../endpoints/endpoint.factory';
+
+
 
 
 
@@ -19,16 +18,16 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
     constructor(
         public readonly invoker: OperationInvoker, readonly options: EndpointOptions = {}) {
         super(invoker.context.injector,
-            options.interceptorsToken ?? INTERCEPTORS_TOKEN,
-            options.guardsToken ?? GUARDS_TOKEN,
-            options.filtersToken ?? FILTERS_TOKEN)
+            options.interceptorsToken ?? OPERA_INTERCEPTORS,
+            options.guardsToken ?? OPERA_GUARDS,
+            options.filtersToken ?? OPERA_FILTERS)
         setHandlerOptions(this, options);
         invoker.context.onDestroy(this);
 
     }
 
     equals(target: OperationEndpoint): boolean {
-        if(target === this) return true;
+        if (target === this) return true;
         return this.invoker.equals(target.invoker);
     }
 

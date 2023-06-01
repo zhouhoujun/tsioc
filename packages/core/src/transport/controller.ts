@@ -1,9 +1,9 @@
-import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
+import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, tokenId, Type } from '@tsdi/ioc';
 import { lastValueFrom, throwError } from 'rxjs';
 import { Backend } from '../Handler';
-import { CanActivate, GUARDS_TOKEN } from '../guard';
-import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
-import { Filter, FILTERS_TOKEN } from '../filters/filter';
+import { CanActivate } from '../guard';
+import { Interceptor } from '../Interceptor';
+import { Filter } from '../filters/filter';
 import { FnHandler } from '../handlers/handler';
 import { AbstractGuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
@@ -15,6 +15,10 @@ import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endp
 import { MappingDef, RouteMappingMetadata } from './router';
 import { AssetContext } from './context';
 
+
+export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');
+export const CTRL_GUARDS = tokenId<CanActivate[]>('CTRL_GUARDS');
+export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
 
 /**
  * Controller route.
@@ -29,10 +33,10 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
 
     constructor(readonly factory: RouteEndpointFactory<T>,
         prefix?: string,
-        protected interceptorsToken: Token<Interceptor[]> = INTERCEPTORS_TOKEN,
-        protected guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
-        protected filtersToken: Token<Filter[]> = FILTERS_TOKEN) {
-        super(factory.typeRef.injector);
+        interceptorsToken: Token<Interceptor[]> = CTRL_INTERCEPTORS,
+        guardsToken: Token<CanActivate[]> = CTRL_GUARDS,
+        filtersToken: Token<Filter[]> = CTRL_FILTERS) {
+        super(factory.typeRef.injector, interceptorsToken, guardsToken, filtersToken);
         this.routes = new Map();
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();

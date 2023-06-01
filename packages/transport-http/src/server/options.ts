@@ -1,4 +1,4 @@
-import { Interceptor, Server, Filter, MiddlewareEndpointOptions } from '@tsdi/core';
+import { Interceptor, Server, Filter, MiddlewareEndpointOptions, CanActivate } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -61,3 +61,8 @@ export const HTTP_SERV_FILTERS = tokenId<Filter[]>('HTTP_SERV_FILTERS');
  * http server Interceptor tokens for {@link HttpServer}.
  */
 export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+
+/**
+ * HTTP Guards.
+ */
+export const HTTP_SERV_GUARDS = tokenId<CanActivate[]>('HTTP_SERV_GUARDS');

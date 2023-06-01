@@ -3,7 +3,7 @@ import { GuardHandler } from '../handlers/guards';
 import { ConfigableHandler, ConfigableHandlerOptions, setHandlerOptions } from '../handlers/handler.service';
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
 import { GUARDS_TOKEN } from '../guard';
-import { FILTERS_TOKEN } from '../filters';
+import { FILTERS_TOKEN } from '../filters/filter';
 import { Decoder, Encoder } from '../coding';
 
 

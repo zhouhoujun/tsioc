@@ -9,7 +9,7 @@ import { RedisServer } from './server/server';
 import { RedisStatusVaildator } from './status';
 import { RedisExecptionHandlers } from './server/execption.handles';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS, RedisClientOpts, RedisClientsOpts } from './client/options';
-import { REDIS_SERV_FILTERS, REDIS_SERV_INTERCEPTORS, REDIS_SERV_OPTS, RedisServerOpts } from './server/options';
+import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS, REDIS_SERV_OPTS, RedisServerOpts } from './server/options';
 import { RedisHandler } from './client/handler';
 import { RedisEndpoint } from './server/endpoint';
 
@@ -131,6 +131,7 @@ const defMicroOpts = {
     detailError: true,
     interceptorsToken: REDIS_SERV_INTERCEPTORS,
     filtersToken: REDIS_SERV_FILTERS,
+    guardsToken: REDIS_SERV_GUARDS,
     backend: HybridRouter,
     filters: [
         LogInterceptor,

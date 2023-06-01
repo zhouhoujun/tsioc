@@ -15,7 +15,7 @@ import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttCl
 import { MqttServer } from './server/server';
 import { MqttEndpoint } from './server/endpoint';
 import { MqttExecptionHandlers } from './server/execption.handles';
-import { MQTT_SERV_FILTERS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './server/options';
+import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './server/options';
 import { MqttTransportSessionFactory } from './transport';
 import { MqttStatusVaildator } from './status';
 
@@ -134,7 +134,8 @@ const defaultServOpts = {
     },
     detailError: true,
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
-    execptionsToken: MQTT_SERV_FILTERS,
+    filtersToken: MQTT_SERV_FILTERS,
+    guardsToken: MQTT_SERV_GUARDS,
     backend: HybridRouter,
     filters: [
         LogInterceptor,
@@ -146,6 +147,6 @@ const defaultServOpts = {
         Session,
         Content,
         Json,
-        Bodyparser,
+        Bodyparser
     ]
 } as MqttServiceOpts;

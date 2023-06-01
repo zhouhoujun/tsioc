@@ -1,11 +1,11 @@
-import { Abstract, ArgumentExecption, EMPTY, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, getClassName, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
-import { CanActivate, GUARDS_TOKEN } from '../guard';
-import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
+import { CanActivate } from '../guard';
+import { Interceptor } from '../Interceptor';
 import { ForbiddenExecption } from '../execptions';
 import { PipeTransform } from '../pipes/pipe';
-import { Filter, FILTERS_TOKEN } from '../filters/filter';
+import { Filter } from '../filters/filter';
 import { DynamicHandler } from './chain';
 import { InterceptorHandler } from './handler';
 import { HandlerService } from './handler.service';
@@ -24,9 +24,9 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 
     constructor(
         injector: Injector,
-        interceptorsToken: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN,
-        protected guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
-        protected filtersToken: Token<Filter<TInput, TOutput>[]> = FILTERS_TOKEN) {
+        interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
+        protected guardsToken?: Token<CanActivate[]>,
+        protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
         super(injector, interceptorsToken);
         if (!guardsToken) {
             this.guards = null;
@@ -124,10 +124,11 @@ export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHand
     constructor(
         injector: Injector,
         protected backend: TypeOf<Backend<TInput, TOutput>>,
-        interceptorsToken: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN,
-        guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
-        filtersToken: Token<Filter<TInput, TOutput>[]> = FILTERS_TOKEN) {
+        interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
+        guardsToken?: Token<CanActivate[]>,
+        filtersToken?: Token<Filter<TInput, TOutput>[]>) {
         super(injector, interceptorsToken, guardsToken, filtersToken);
+        if (!backend) throw new ArgumentExecption(`Backend token missing of ${getClassName(this)}.`)
 
     }
 

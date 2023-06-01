@@ -1,4 +1,4 @@
-import { Interceptor, Filter, MiddlewareLike, AssetContext, MiddlewareEndpointOptions, Incoming, Outgoing, TransportSessionOpts, ConfigableEndpointOptions } from '@tsdi/core';
+import { Interceptor, Filter, MiddlewareLike, AssetContext, MiddlewareEndpointOptions, Incoming, Outgoing, TransportSessionOpts, ConfigableEndpointOptions, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { SessionOptions, ContentOptions, MimeSource, ProxyOpts } from '@tsdi/transport';
 import * as net from 'net';
@@ -74,4 +74,9 @@ export const TCP_SERV_MIDDLEWARES = tokenId<MiddlewareLike<AssetContext>[]>('TCP
  * TCP execption filters.
  */
 export const TCP_SERV_FILTERS = tokenId<Filter<Incoming, Outgoing>[]>('TCP_SERV_FILTERS');
+
+/**
+ * TCP Guards.
+ */
+export const TCP_SERV_GUARDS = tokenId<CanActivate[]>('TCP_SERV_GUARDS');
 
