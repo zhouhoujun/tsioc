@@ -62,7 +62,7 @@ export class MqttTransportSession extends EventEmitter implements TransportSessi
 
         const pe = ev.MESSAGE;
         const pevent = (topic: string, chunk: Buffer) => {
-            if (this.serverSide && topic.endsWith('.reply')) return;
+            if (this.serverSide && topic.endsWith('/reply')) return;
             this.onData(topic, chunk);
         }
         socket.on(pe, pevent);

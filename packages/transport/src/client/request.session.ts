@@ -109,9 +109,9 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     protected abstract bindMessageEvent(session: TransportSession<T>, id: number, url: string, req: TransportRequest, observer: Observer<TransportEvent>): [string, (...args: any[]) => void]
 
     protected getReply(url: string, observe: 'body' | 'events' | 'response'): string {
-        return observe === 'events' ? url : url + '.reply';
+        return observe === 'events' ? url : url + '/reply';
     }
-
+    
     protected async handleMessage(id: number, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
         res = isString(res) ? JSON.parse(res) : res;
         if (res.id !== id) return;

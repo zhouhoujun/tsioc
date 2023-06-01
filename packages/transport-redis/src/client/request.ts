@@ -32,8 +32,12 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, Redi
             subscriber,
             publisher
         }, opts.transportOpts);
-
     }
+
+    protected override getReply(url: string, observe: 'body' | 'events' | 'response'): string {
+        return observe === 'events' ? url : url + '.reply';
+    }
+
     protected getClientOpts(req: TransportRequest<any>) {
         return req.context.get(REDIS_CLIENT_OPTS)
     }

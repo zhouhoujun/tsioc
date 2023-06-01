@@ -125,7 +125,7 @@ export class MqttOutgoing extends PassThrough implements Outgoing<MqttClient, nu
     }
 
     getReply(topic: string) {
-       return topic + '.reply';
+       return topic + '/reply';
     }
 
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
