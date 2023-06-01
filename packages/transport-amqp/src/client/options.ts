@@ -33,6 +33,8 @@ export interface AmqpClientsOpts extends AmqpClientOpts {
     client: Token<Client>;
 }
 
+export const AMQP_CHANNEL = tokenId<amqp.Channel>('AMQP_CHANNEL');
+
 
 /**
  * AMQP client opptions.

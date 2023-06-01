@@ -1,15 +1,14 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Injectable, Optional, isNil, isString } from '@tsdi/ioc';
 import { PacketLengthException, ev, hdr, toBuffer } from '@tsdi/transport';
-import * as net from 'net';
-import * as tls from 'tls';
+import { Channel } from 'amqplib';
 import { Buffer } from 'buffer';
 import { Readable } from 'stream';
 import { EventEmitter } from 'events';
 
 
 @Injectable()
-export class AmqpTransportSessionFactory implements TransportSessionFactory<tls.TLSSocket | net.Socket> {
+export class AmqpTransportSessionFactory implements TransportSessionFactory<Channel> {
 
     constructor(
         @Optional() private encoder: Encoder,
@@ -17,14 +16,14 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<tls.
 
     }
 
-    create(socket: tls.TLSSocket | net.Socket, opts: TransportSessionOpts): TransportSession<tls.TLSSocket | net.Socket> {
+    create(socket: Channel, opts: TransportSessionOpts): TransportSession<Channel> {
         return new AmqpTransportSession(socket, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter);
     }
 
 }
 
 
-export class AmqpTransportSession extends EventEmitter implements TransportSession<tls.TLSSocket | net.Socket> {
+export class AmqpTransportSession extends EventEmitter implements TransportSession<Channel> {
 
     private buffer: Buffer | null = null;
     private contentLength: number | null = null;
@@ -37,7 +36,7 @@ export class AmqpTransportSession extends EventEmitter implements TransportSessi
     private _evs: Array<[string, Function]>;
 
 
-    constructor(readonly socket: tls.TLSSocket | net.Socket, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
+    constructor(readonly socket: Channel, private encoder: Encoder | undefined, private decoder: Decoder | undefined, delimiter = '#') {
         super()
         this.setMaxListeners(0);
         this.delimiter = Buffer.from(delimiter);
@@ -50,7 +49,7 @@ export class AmqpTransportSession extends EventEmitter implements TransportSessi
             this.destroy();
         }]);
 
-        this._evs.push([ev.DATA, this.onData.bind(this)]);
+        this._evs.push([ev.MESSAGE, this.onData.bind(this)]);
         this._evs.forEach(it => {
             const [e, event] = it;
             socket.on(e, event as any);
@@ -97,7 +96,7 @@ export class AmqpTransportSession extends EventEmitter implements TransportSessi
             const bufId = Buffer.alloc(2);
             bufId.writeUInt16BE(id);
 
-            this.socket.write(Buffer.concat([
+            this.socket.publish(data.id, data.url ?? data.topic!, Buffer.concat([
                 Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
                 this.delimiter,
                 this._header,
@@ -115,7 +114,7 @@ export class AmqpTransportSession extends EventEmitter implements TransportSessi
                 msg = encoder.encode(msg);
             }
             const buffers = isString(msg) ? Buffer.from(msg) : msg;
-            this.socket.write(Buffer.concat([
+            this.socket.publish(data.id, data.url ?? data.topic!, Buffer.concat([
                 Buffer.from(String(Buffer.byteLength(buffers) + 1)),
                 this.delimiter,
                 this._header,
@@ -138,7 +137,7 @@ export class AmqpTransportSession extends EventEmitter implements TransportSessi
         } catch (ev) {
             const e = ev as any;
             this.socket.emit(e.ERROR, e.message);
-            this.socket.end();
+            this.socket.close();
         }
     }
 

@@ -28,7 +28,6 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
 
         return new Observable((observer) => {
 
-
             const onError = (err: any) => {
                 this._connected = false;
                 this.logger.error(err);

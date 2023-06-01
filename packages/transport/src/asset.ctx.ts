@@ -2,7 +2,6 @@ import {
     OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, ListenOpts, EndpointInvokeOpts, normalize
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
-import { extname } from 'path';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
@@ -11,6 +10,7 @@ import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from './utils';
 import { StatusVaildator } from './status';
 import { StreamAdapter } from './stream';
+import { FileAdapter } from './file';
 
 
 export interface ProxyOpts {
@@ -30,11 +30,13 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     protected vaildator: StatusVaildator<TStatus>;
     protected streamAdapter: StreamAdapter;
+    protected fileAdapter: FileAdapter;
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
         this.streamAdapter = injector.get(StreamAdapter);
+        this.fileAdapter = injector.get(FileAdapter);
         this.originalUrl = request.url?.toString() ?? '';
         this.init(request);
     }
@@ -638,7 +640,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if (options?.contentType) {
             this.contentType = options.contentType;
         } else if (filename) {
-            this.type = extname(filename);
+            this.type = this.fileAdapter.extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION);
         this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
