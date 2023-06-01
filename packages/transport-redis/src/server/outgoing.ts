@@ -131,11 +131,10 @@ export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
     writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
     writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
-        let msg: string;
         if (isString(statusMessage)) {
-            msg = statusMessage
+            this.setHeader(hdr.STATUS_MESSAGE, statusMessage)
         } else {
-            headers = statusMessage;
+            headers = statusMessage
         }
         if (headers) {
             if (isArray(headers)) {

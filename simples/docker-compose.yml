@@ -46,34 +46,34 @@ services:
       - "6222:6222"
     restart: always
 
-  # mqtt:
-  #   container_name: test_mqtt
-  #   image: eclipse-mosquitto
-  #   volumes:
-  #     - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-  #   ports:
-  #     - "1883:1883"
-  #     - "9001:9001"
-  #   restart: always
-
-
-  emqx:
-    container_name: test-emqx
-    image: emqx/emqx:5.0.4
-    environment:
-      - EMQX_LOADED_PLUGINS="emqx_management,emqx_auth_http,emqx_dashboard"
-      - EMQX_DASHBOARD__DEFAULT_USER__LOGIN=zyhh
-      - EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=zyhh.com
-      - EMQX_NODE__MAX_PORTS=65535
-      - EMQX_MQTT__MAX_PACKET_SIZE=16MB
-    ports:
-      - "18083:18083"
-      - "1883:1883"
-      - "8083:8083"
-      - "8883:8883"
+  mqtt:
+    container_name: test_mqtt
+    image: eclipse-mosquitto
     volumes:
-      - ./logs:/opt/emqx/log
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    ports:
+      - "1883:1883"
+      - "9001:9001"
     restart: always
+
+
+  # emqx:
+  #   container_name: test-emqx
+  #   image: emqx/emqx:5.0.4
+  #   environment:
+  #     - EMQX_LOADED_PLUGINS="emqx_management,emqx_auth_http,emqx_dashboard"
+  #     - EMQX_DASHBOARD__DEFAULT_USER__LOGIN=zyhh
+  #     - EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=zyhh.com
+  #     - EMQX_NODE__MAX_PORTS=65535
+  #     - EMQX_MQTT__MAX_PACKET_SIZE=16MB
+  #   ports:
+  #     - "18083:18083"
+  #     - "1883:1883"
+  #     - "8083:8083"
+  #     - "8883:8883"
+  #   volumes:
+  #     - ./logs:/opt/emqx/log
+  #   restart: always
 
   rabbit:
     container_name: test-rabbit

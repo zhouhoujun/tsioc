@@ -51,15 +51,25 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
 
     }
 
+    protected toPatterns(patterns: string[]): string[] {
+        const restp = /\/:\w+/g;
+        const msgp = /\/\*/g;
+        const msgmp = /\/\*\*$/;
+        return patterns.map(p => p.replace(restp, '/+')
+            .replace(msgp, '/+')
+            .replace(msgmp, '/#'))
+    }
+
     protected override async onStart(): Promise<any> {
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
         const router = this.endpoint.injector.get(Router);
         const subscribes = Array.from(router.subscribes.values());
+        const psubscribes = this.toPatterns(subscribes);
         if (this.options.interceptors!.indexOf(Content) >= 0) {
-            subscribes.push('#');
+            subscribes.push('#.#');
         }
-        this.mqtt.subscribe(subscribes, (err) => {
+        this.mqtt.subscribe(psubscribes, (err) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -67,6 +77,8 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
             } else {
                 this.logger.info(
                     `Subscribed successfully! This server is currently subscribed topics.`,
+                    psubscribes,
+                    '\norigin patterns\n',
                     subscribes
                 );
             }

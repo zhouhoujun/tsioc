@@ -59,7 +59,6 @@ export abstract class RouteMatcher {
      * @param route 
      */
     abstract isPattern(route: string): boolean;
-
     /**
      * register route matcher. 
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -81,7 +80,29 @@ export abstract class RouteMatcher {
      *  
      * @returns subscribe topics. 
      */
-    abstract register(route: string, params?: Record<string, any>): string[];
+    abstract register(route: string, subscribe?: boolean): string[] | null;
+    /**
+     * register route matcher. 
+     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
+     * @param params dynamic token values for route path.  
+     * 
+     * #### Examples
+     * 
+     * ```ts
+     * 'path/#'
+     * 'path/**'
+     * 'path/*'
+     * 'path/+'
+     * 'path/:id'
+     * 'path/${id}'
+     * 
+     * ```
+     *  
+     * @returns subscribe topics. 
+     */
+    abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): string[] | null;
 
     /**
      * get the url path match route

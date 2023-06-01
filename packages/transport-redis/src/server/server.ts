@@ -58,6 +58,15 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
 
     }
 
+    protected toPatterns(patterns: string[]): string[] {
+        const restp = /:\w+/g;
+        const mqttp = /\/\+/g;
+        const mqttmp = /\/#$/;
+        return patterns.map(p => p.replace(restp, '*')
+            .replace(mqttp, '/*')
+            .replace(mqttmp, '/**'))
+    }
+
     protected async onStart(): Promise<any> {
         if (!this.subscriber || !this.publisher) throw new Execption('Subscriber and Publisher cannot be null');
 
@@ -84,10 +93,12 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
                 );
             }
         });
+
         if (this.options.interceptors!.indexOf(Content) >= 0) {
             psubscribes.push('**.*');
         }
-        await this.subscriber.psubscribe(...psubscribes, (err, count) => {
+        const redisPsubscribes = this.toPatterns(psubscribes);
+        await this.subscriber.psubscribe(...redisPsubscribes, (err, count) => {
             if (err) {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -95,7 +106,9 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
             } else {
                 // `count` represents the number of channels this server are currently subscribed to.
                 this.logger.info(
-                    `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.`,
+                    `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.\n`,
+                    redisPsubscribes,
+                    '\norigin patterns\n',
                     psubscribes
                 );
             }
