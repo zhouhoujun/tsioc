@@ -101,7 +101,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             ext && context.addRef(ctx);
             destroy = () => {
                 if (context.used) return;
-                ext && context.removeRef(ctx);
+                ext && !context.destroyed && context.removeRef(ctx);
             }
         } else if (option) {
             if (option.parent && option.parent !== ctx) {
