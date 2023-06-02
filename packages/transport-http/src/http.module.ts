@@ -1,8 +1,8 @@
 import { ExecptionHandlerFilter, RouterModule, TransformModule, createHandler, createMiddlewareEndpoint, HybridRouter } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter,
-    HelmetMiddleware, LOCALHOST, LogInterceptor, StreamRequestAdapter, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, StatusVaildator, TransportBackend, TransportModule, RequestAdapter, StreamTransportBackend
+    BodyContentInterceptor, BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter, StatusVaildator, HttpStatusVaildator,
+    HelmetMiddleware, LOCALHOST, LogInterceptor, StreamRequestAdapter, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, TransportModule, StreamTransportBackend
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { ListenOptions } from 'net';
@@ -12,7 +12,6 @@ import { HttpPathInterceptor } from './client/path';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './client/option';
 import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, Http2ServerOpts, HTTP_SERV_GUARDS } from './server/options';
 import { HttpExecptionHandlers } from './server/exception.handles';
-import { HttpStatusVaildator } from './status';
 import { HttpRequestAdapter } from './client/request';
 import { HttpRespondAdapter } from './server/respond';
 import { HttpHandler } from './client/handler';

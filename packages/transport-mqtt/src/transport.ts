@@ -20,15 +20,6 @@ export class MqttTransportSessionFactory implements TransportSessionFactory<Clie
     }
 
 }
-
-export interface TopicBuffer {
-    topic: string;
-    buffer: Buffer | null;
-    contentLength: number | null;
-    cachePkg: Map<number, Packet>;
-}
-
-
 export class MqttTransportSession extends TopicTransportSession<Client> {
     protected writeBuffer(buffer: Buffer, packet: Packet<any>) {
         this.socket.publish(packet.url!, buffer);

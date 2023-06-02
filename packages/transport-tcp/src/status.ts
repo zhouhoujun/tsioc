@@ -1,101 +1,19 @@
-import { GET, MESSAGE, POST, HttpStatusCode, statusMessage } from '@tsdi/core';
+import { GET, MESSAGE } from '@tsdi/core';
 import { Inject, Injectable, tokenId } from '@tsdi/ioc'
-import { StatusVaildator } from '@tsdi/transport';
+import { HttpStatusVaildator } from '@tsdi/transport';
 
 
 export const TCP_MICRO_SERV = tokenId<boolean>('TCP_MICRO_SERV');
 
 @Injectable({ static: true })
-export class TcpStatusVaildator implements StatusVaildator<number> {
+export class TcpStatusVaildator extends HttpStatusVaildator {
 
     constructor(@Inject(TCP_MICRO_SERV) private micro: boolean) {
-
-    }
-
-    get ok(): number {
-        return HttpStatusCode.Ok
-    }
-    get found(): number {
-        return HttpStatusCode.Found
-    }
-    get notFound(): number {
-        return HttpStatusCode.NotFound
-    }
-    get serverError(): number {
-        return HttpStatusCode.InternalServerError
-    }
-    get none(): number {
-        return 0;
-    }
-    get noContent(): number {
-        return HttpStatusCode.NoContent;
-    }
-
-    isStatus(status: number): boolean {
-        return !!statusMessage[status as HttpStatusCode]
-    }
-    isOk(status: number): boolean {
-        return status == HttpStatusCode.Ok;
-    }
-    isNotFound(status: number): boolean {
-        return status == HttpStatusCode.NotFound;
-    }
-    isEmpty(status: number): boolean {
-        return emptyStatus[status];
-    }
-    isRedirect(status: number): boolean {
-        return redirectStatus[status];
-    }
-    isRequestFailed(status: number): boolean {
-        return status >= 400 && status < 500;
-    }
-    isServerError(status: number): boolean {
-        return status >= 500;
-    }
-    isRetry(status: number): boolean {
-        return retryStatus[status];
-    }
-
-
-    redirectBodify(status: string | number, method?: string | undefined): boolean {
-        if (!method) return status === 303;
-        return status === 303 || ((status === 301 || status === 302) && method === POST)
+        super()
     }
 
     redirectDefaultMethod(): string {
-        return this.micro? MESSAGE : GET;
+        return this.micro ? MESSAGE : GET;
     }
 
-}
-
-
-/**
- * status codes for redirects
- */
-const redirectStatus: Record<number | string, boolean> = {
-    300: true,
-    301: true,
-    302: true,
-    303: true,
-    305: true,
-    307: true,
-    308: true
-}
-
-/**
- * status codes for empty bodies
- */
-const emptyStatus: Record<number | string, boolean> = {
-    204: true,
-    205: true,
-    304: true
-}
-
-/**
- * status codes for when you should retry the request
- */
-const retryStatus: Record<number | string, boolean> = {
-    502: true,
-    503: true,
-    504: true
 }
