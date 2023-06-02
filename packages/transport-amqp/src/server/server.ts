@@ -17,7 +17,6 @@ export class AmqpServer extends MicroService<AmqpContext> {
         super();
     }
 
-
     protected async onStartup(): Promise<any> {
         const conn = await amqp.connect(this.options.connectOpts!);
 

@@ -119,7 +119,6 @@ const defClientOpts = {
  * amqp microservice default options.
  */
 const defMicroOpts = {
-    autoListen: true,
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024

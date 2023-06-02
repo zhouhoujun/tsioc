@@ -122,7 +122,6 @@ const defClientOpts = {
 
 
 const defaultServOpts = {
-    json: true,
     encoding: 'utf8',
     transportOpts: {
         delimiter: '#',

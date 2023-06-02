@@ -1,7 +1,7 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString } from '@tsdi/ioc';
 import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners, ListenOpts } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
+import { CONTENT_DISPOSITION, ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -24,6 +24,9 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
     constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
+        if (this.options.content) {
+            this.endpoint.injector.setValue(ContentOptions, this.options.content);
+        }
     }
 
     private _secure?: boolean;

@@ -92,7 +92,7 @@ describe('TCP Micro Service', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json')
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

@@ -1,25 +1,35 @@
 
 import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createHandler, createTransportEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportBackend, TransportModule } from '@tsdi/transport';
-import { AmqpClient } from './client/client';
-import { AmqpServer } from './server/server';
-import { AMQP_SERV_FILTERS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './server/options';
-import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS, AmqpClientOpts, AmqpClientsOpts } from './client/options';
-import { AmqpHandler } from './client/handler';
-import { AmqpEndpoint } from './server/endpoint';
+import { BodyContentInterceptor, Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, RequestAdapter, ServerFinalizeFilter, Session, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { AmqpTransportSessionFactory } from './transport';
+import { AmqpStatusVaildator } from './status';
+import { AmqpClient } from './client/client';
+import { AmqpHandler } from './client/handler';
 import { AmqpPathInterceptor } from './client/path';
+import { AmqpRequestAdapter } from './client/request';
+import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS, AmqpClientOpts, AmqpClientsOpts } from './client/options';
+import { AmqpServer } from './server/server';
+import { AmqpEndpoint } from './server/endpoint';
+import { AmqpExecptionHandlers } from './server/execption.handles';
+import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './server/options';
 
 
 @Module({
     imports: [
         TransformModule,
         RouterModule,
-        TransportModule
+        TransportModule,
+        ServerTransportModule
     ],
     providers: [
+        AmqpTransportSessionFactory,
+        { provide: StatusVaildator, useClass: AmqpStatusVaildator },
+        { provide: RequestAdapter, useClass: AmqpRequestAdapter },
         AmqpClient,
+
+        AmqpExecptionHandlers,
         AmqpServer
     ]
 })
@@ -42,7 +52,11 @@ export class AmqpModule {
             { provide: AMQP_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } },
             toProvider(AmqpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: AmqpClientOpts) => {
-                    return createHandler(injector, { ...defClientOpts, ...opts });
+                    if (!opts.interceptors || !opts.interceptorsToken) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(AMQP_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts);
                 },
                 deps: [Injector, AMQP_CLIENT_OPTS]
             }),
@@ -104,17 +118,18 @@ const defClientOpts = {
  * amqp microservice default options.
  */
 const defMicroOpts = {
-    autoListen: true,
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024
     },
     content: {
-        root: 'public'
+        root: 'public',
+        prefix: '/content'
     },
     detailError: true,
     interceptorsToken: AMQP_SERV_INTERCEPTORS,
     filtersToken: AMQP_SERV_FILTERS,
+    guardsToken: AMQP_SERV_GUARDS,
     backend: HybridRouter,
     filters: [
         LogInterceptor,

@@ -1,7 +1,7 @@
 import { Abstract, Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { Server, Outgoing, ListenOpts, InternalServerExecption, Incoming, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService, MESSAGE, GET } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -40,7 +40,10 @@ export class TcpServer extends Server<TcpContext, Outgoing> implements MicroServ
         @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
         super()
         this.options = { ...options };
-        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert
+        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
+        if (this.options.content) {
+            this.endpoint.injector.setValue(ContentOptions, this.options.content);
+        }
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
