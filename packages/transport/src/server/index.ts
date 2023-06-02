@@ -24,3 +24,4 @@ export * from './session';
 export { Session as SessionMiddleware, Session as SessionInterceptor } from './session';
 
 export * from './results';
+export * from './transport';
