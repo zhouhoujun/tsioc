@@ -1,5 +1,5 @@
 import { MESSAGE } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc'
+import { Injectable } from '@tsdi/ioc';
 import { HttpStatusVaildator } from '@tsdi/transport';
 
 

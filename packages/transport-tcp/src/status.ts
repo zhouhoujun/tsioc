@@ -1,5 +1,5 @@
 import { GET, MESSAGE } from '@tsdi/core';
-import { Inject, Injectable, tokenId } from '@tsdi/ioc'
+import { Inject, Injectable, tokenId } from '@tsdi/ioc';
 import { HttpStatusVaildator } from '@tsdi/transport';
 
 
