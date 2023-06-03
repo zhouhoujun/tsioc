@@ -15,7 +15,7 @@ export class TcpTransportSessionFactory implements TransportSessionFactory<tls.T
     }
 
     create(socket: tls.TLSSocket | net.Socket, opts: TransportSessionOpts): TransportSession<tls.TLSSocket | net.Socket> {
-        return new TcpTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.serverSide);
+        return new TcpTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }

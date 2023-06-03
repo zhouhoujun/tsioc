@@ -22,6 +22,10 @@ export interface AmqpClientOpts extends ConfigableHandlerOptions<TransportReques
      * connect options.
      */
     connectOpts?: string | amqp.Options.Connect;
+    /**
+     * request timeout.
+     */
+    timeout?: number;
 }
 
 /**

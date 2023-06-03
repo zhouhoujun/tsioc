@@ -1,4 +1,4 @@
-import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSessionFactory, TransportSession, Packet } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSessionFactory, TransportSession, Packet, UuidGenerator } from '@tsdi/core';
 import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, ev, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
@@ -18,7 +18,8 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
         readonly mimeAdapter: MimeAdapter,
         @Optional() readonly redirector: Redirector<number | string>,
         @Optional() readonly encoder: Encoder,
-        @Optional() readonly decoder: Decoder) {
+        @Optional() readonly decoder: Decoder,
+        private uuidGenner: UuidGenerator) {
         super()
         this.subs = new Set();
     }
@@ -33,7 +34,7 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
         return req.context.get(AMQP_CLIENT_OPTS)
     }
 
-    protected bindMessageEvent(session: TransportSession<Channel>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts?: AmqpClientOpts): [string, (...args: any[]) => void] {
+    protected bindMessageEvent(session: TransportSession<Channel>, id: string, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts?: AmqpClientOpts): [string, (...args: any[]) => void] {
 
         const onMessage = (channel: string, res: Packet) => {
             if (res.id !== id) return;
@@ -43,6 +44,10 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
         session.on(ev.MESSAGE, onMessage);
 
         return [ev.MESSAGE, onMessage];
+    }
+
+    protected override getPacketId(): string {
+        return this.uuidGenner.generate()
     }
 
 }

@@ -11,7 +11,7 @@ import { ctype, ev, hdr } from '../consts';
 @Abstract()
 export abstract class SessionRequestAdapter<T = any, Option = any> extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
 
-    allocator = new NumberAllocator(1, 65536);
+    allocator?: NumberAllocator;
     last?: number;
 
     send(req: TransportRequest): Observable<TransportEvent> {
@@ -106,13 +106,13 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected abstract getClientOpts(req: TransportRequest): Option;
 
-    protected abstract bindMessageEvent(session: TransportSession<T>, id: number, url: string, req: TransportRequest, observer: Observer<TransportEvent>, opts?: Option): [string, (...args: any[]) => void]
+    protected abstract bindMessageEvent(session: TransportSession<T>, id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, opts?: Option): [string, (...args: any[]) => void]
 
     protected getReply(url: string, observe: 'body' | 'events' | 'response'): string {
         return observe === 'events' ? url : url + '/reply';
     }
-    
-    protected async handleMessage(id: number, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
+
+    protected async handleMessage(id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
         res = isString(res) ? JSON.parse(res) : res;
         if (res.id !== id) return;
         const headers = this.parseHeaders(res);
@@ -158,7 +158,10 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         }
     }
 
-    protected getPacketId() {
+    protected getPacketId(): string | number {
+        if (!this.allocator) {
+            this.allocator = new NumberAllocator(1, 65536)
+        }
         const id = this.allocator.alloc();
         if (!id) {
             throw new Execption('alloc stream id failed');

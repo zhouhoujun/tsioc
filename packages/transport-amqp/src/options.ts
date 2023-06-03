@@ -2,7 +2,7 @@ import { TransportSessionOpts } from '@tsdi/core';
 import * as amqp from 'amqplib';
 
 
-export interface AmqpSessionOpts extends  TransportSessionOpts {
+export interface AmqpSessionOpts extends TransportSessionOpts {
     /**
     * queue name
     */
@@ -17,4 +17,5 @@ export interface AmqpSessionOpts extends  TransportSessionOpts {
     prefetchCount?: number;
     prefetchGlobal?: boolean;
     consumeOpts?: amqp.Options.Consume;
+    publishOpts?: amqp.Options.Publish;
 }

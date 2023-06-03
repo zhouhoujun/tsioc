@@ -23,28 +23,27 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
 }
 
 
-export class AmqpTransportSession extends TopicTransportSession<Channel> {
+export class AmqpTransportSession extends TopicTransportSession<Channel, AmqpSessionOpts> {
 
-    constructor(
-        readonly socket: Channel,
-        protected streamAdapter: StreamAdapter,
-        protected encoder: Encoder | undefined,
-        protected decoder: Decoder | undefined,
-        private options: AmqpSessionOpts
-    ) {
-        super(socket, streamAdapter, encoder, decoder, options.delimiter, options.serverSide)
-    }
 
-    protected override bindMessageEvent(): void {
-        const reply = this.options.replyQueue ?? this.options.queue + '.reply';
-        this.socket.consume(reply, msg => {
+    protected override bindMessageEvent(options: AmqpSessionOpts): void {
+        const queue = options.serverSide ? options.queue ?? 'default' : options.replyQueue ?? options.queue + '.reply';
+        this.socket.consume(queue, msg => {
             if (!msg) return;
-            msg.properties.correlationId
+            this.onData(
+                queue,
+                msg.content
+            )
         }, this.options.consumeOpts);
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
-        this.socket.publish(packet.id, packet.url ?? packet.url!, buffer)
+        const queue = this.options.serverSide ? this.options.replyQueue ?? this.options.queue + '.reply' : this.options.queue ?? 'default';
+        this.socket.sendToQueue(
+            queue,
+            buffer,
+            { correlationId: packet.id, ...this.options.publishOpts }
+        )
     }
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message)

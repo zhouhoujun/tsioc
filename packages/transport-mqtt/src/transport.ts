@@ -16,7 +16,7 @@ export class MqttTransportSessionFactory implements TransportSessionFactory<Clie
     }
 
     create(socket: Client, opts: TransportSessionOpts): TransportSession<Client> {
-        return new MqttTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.serverSide);
+        return new MqttTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }

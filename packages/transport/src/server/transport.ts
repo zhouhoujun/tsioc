@@ -1,4 +1,4 @@
-import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession } from '@tsdi/core';
+import { Decoder, Encoder, InvalidJsonException, Packet, TransportSession, TransportSessionOpts } from '@tsdi/core';
 import { isNil, isString } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from '../consts';
@@ -9,7 +9,7 @@ import { PacketLengthException } from '../execptions';
 /**
  * abstract transport session.
  */
-export abstract class AbstractTransportSession<T> extends EventEmitter implements TransportSession<T> {
+export abstract class AbstractTransportSession<T, TOpts extends TransportSessionOpts> extends EventEmitter implements TransportSession<T> {
 
     protected readonly delimiter: Buffer;
 
@@ -23,18 +23,17 @@ export abstract class AbstractTransportSession<T> extends EventEmitter implement
         protected streamAdapter: StreamAdapter,
         protected encoder: Encoder | undefined,
         protected decoder: Decoder | undefined,
-        delimiter = '#',
-        protected serverSide = false
+        protected options: TOpts
     ) {
         super()
         this.setMaxListeners(0);
-        this.delimiter = Buffer.from(delimiter);
+        this.delimiter = Buffer.from(options.delimiter || '#');
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
         this._evs = [];
 
-        this.bindEvent();
-        this.bindMessageEvent();
+        this.bindEvent(options);
+        this.bindMessageEvent(options);
     }
 
     async send(data: Packet): Promise<void> {
@@ -121,7 +120,7 @@ export abstract class AbstractTransportSession<T> extends EventEmitter implement
     protected abstract handleFailed(error: any): void;
 
 
-    protected bindEvent() {
+    protected bindEvent(options: TOpts) {
         [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].forEach(event => {
             const fn = (...args: any[]) => {
                 this.emit(event, ...args);
@@ -132,7 +131,7 @@ export abstract class AbstractTransportSession<T> extends EventEmitter implement
         });
     }
 
-    protected bindMessageEvent() {
+    protected bindMessageEvent(options: TOpts) {
         const fn = this.onData.bind(this);
         this.onSocket(ev.DATA, fn);
         this._evs.push([ev.DATA, fn]);
@@ -150,11 +149,11 @@ export abstract class AbstractTransportSession<T> extends EventEmitter implement
 /**
  * Socket  transport session.
  */
-export abstract class SocketTransportSession<T extends EventEmitter> extends AbstractTransportSession<T> {
+export abstract class SocketTransportSession<T extends EventEmitter,  TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts> {
 
     private buffer: Buffer | null = null;
     private contentLength: number | null = null;
-    private cachePkg: Map<number, Packet> = new Map();
+    private cachePkg: Map<number | string, Packet> = new Map();
 
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.socket.on(name, event);
@@ -265,22 +264,22 @@ export interface TopicBuffer {
 /**
  * topic transport session
  */
-export abstract class TopicTransportSession<T> extends AbstractTransportSession<T>  {
+export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts>  {
 
     protected topics: Map<string, TopicBuffer> = new Map();
 
 
-    protected override bindMessageEvent(): void {
+    protected override bindMessageEvent(options: TOpts): void {
         const pe = ev.MESSAGE;
         const pevent = (topic: string, chunk: Buffer) => {
-            if (this.serverSide && topic.endsWith('/reply')) return;
+            if (this.options.serverSide && topic.endsWith('/reply')) return;
             this.onData(topic, chunk);
         }
         this.onSocket(pe, pevent);
         this._evs.push([pe, pevent]);
     }
 
-    protected onData(topic: string, chunk: string | Buffer) {
+    protected onData(topic: string, chunk: any) {
         try {
             let chl = this.topics.get(topic);
             if (!chl) {

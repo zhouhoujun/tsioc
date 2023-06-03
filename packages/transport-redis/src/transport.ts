@@ -21,7 +21,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
     }
 
     create(socket: ReidsStream, opts: TransportSessionOpts): TransportSession<ReidsStream> {
-        return new RedisTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts.delimiter, opts.serverSide);
+        return new RedisTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
@@ -47,7 +47,7 @@ export class RedisTransportSession extends TopicTransportSession<ReidsStream> {
 
         const pevent = (pattern: string, topic: string | Buffer, chunk: string | Buffer) => {
             const channel = isString(topic) ? topic : topic.toString();
-            if (this.serverSide && channel.endsWith('.reply')) return;
+            if (this.options.serverSide && channel.endsWith('.reply')) return;
             this.onData(channel, chunk);
         }
         this.socket.subscriber.on(PATTERN_MSG_BUFFER, pevent);

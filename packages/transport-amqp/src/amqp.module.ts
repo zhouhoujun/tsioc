@@ -106,27 +106,34 @@ export interface AmqpModuleOptions {
  */
 const defClientOpts = {
     interceptorsToken: AMQP_CLIENT_INTERCEPTORS,
+    connectOpts: 'amqp://localhost',
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
+        queue: 'amqp.queue',
+        persistent: false,
+        noAssert: false,
+        queueOpts: {},
+        prefetchCount: 0
     },
     interceptors: [BodyContentInterceptor],
     filtersToken: AMQP_CLIENT_FILTERS,
     backend: TransportBackend,
-    queue: 'amqp.queue',
-    persistent: false,
-    noAssert: false,
-    queueOpts: {},
-    prefetchCount: 0
 } as AmqpClientOpts;
 
 /**
  * amqp microservice default options.
  */
 const defMicroOpts = {
+    connectOpts: 'amqp://localhost',
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: 10 * 1024 * 1024,
+        queue: 'amqp.queue',
+        persistent: false,
+        noAssert: false,
+        queueOpts: {},
+        prefetchCount: 0
     },
     content: {
         root: 'public',
