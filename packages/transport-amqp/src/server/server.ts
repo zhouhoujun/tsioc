@@ -1,15 +1,27 @@
-import { MicroService } from '@tsdi/core';
-import { Inject, Injectable } from '@tsdi/ioc';
+import { MESSAGE, MicroService, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { EMPTY_OBJ, Execption, Inject, Injectable } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpContext } from './context';
 import { AmqpEndpoint } from './endpoint';
+import { ev } from '@tsdi/transport';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { AmqpIncoming } from './incoming';
+import { AmqpOutgoing } from './outgoing';
+import { Subscription, finalize } from 'rxjs';
 
 
 
 
 @Injectable()
 export class AmqpServer extends MicroService<AmqpContext> {
+
+    @InjectLog()
+    private logger!: Logger;
+
+    private _connected = false;
+    private _conn: amqp.Connection | null = null;
+    private _channel: amqp.Channel | null = null;
 
     constructor(
         readonly endpoint: AmqpEndpoint,
@@ -18,14 +30,85 @@ export class AmqpServer extends MicroService<AmqpContext> {
     }
 
     protected async onStartup(): Promise<any> {
-        const conn = await amqp.connect(this.options.connectOpts!);
+        const conn = this._conn = await amqp.connect(this.options.connectOpts!);
+        this._connected = true;
+        conn.on(ev.CONNECT, () => {
+            this._connected = true;
+        });
+        conn.on(ev.ERROR, (err) => {
+            this.logger.error(err)
+        });
+        conn.on(ev.DISCONNECT, (err) => {
+            this._connected = false;
+            this.logger.error('Disconnected from rmq. Try to reconnect.');
+            this.logger.error(err)
+        });
+        conn.on(ev.CONNECT_FAILED, () => {
 
+        });
     }
     protected async onStart(): Promise<any> {
-        throw new Error('Method not implemented.');
+
+        if (!this._conn) throw new Execption('Amqp Connection has not connected.');
+
+        const channel = this._channel = await this._conn.createChannel();
+
+        const transportOpts = this.options.transportOpts ?? EMPTY_OBJ;
+
+        if (!transportOpts.noAssert) {
+            await channel.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
+        }
+        await channel.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
+
+        const session = this.endpoint.injector.get(TransportSessionFactory).create(channel, transportOpts);
+
+        session.on(ev.MESSAGE, (packet)=> {
+            this.requestHandler(session, packet);
+        })
     }
+
+
+    /**
+     * request handler.
+     * @param observer 
+     * @param req 
+     * @param res 
+     */
+    protected requestHandler(session: TransportSession<amqp.Channel>, packet: Packet): Subscription {
+        if (!packet.method) {
+            packet.method = MESSAGE;
+        }
+        const req = new AmqpIncoming(session, packet);
+        const res = new AmqpOutgoing(session, packet.url!, packet.id);
+
+        const ctx = this.createContext(req, res);
+        const cancel = this.endpoint.handle(ctx)
+            .pipe(finalize(() => {
+                ctx.destroy();
+            }))
+            .subscribe({
+                error: (err) => {
+                    this.logger.error(err)
+                }
+            });
+        // const opts = this.options;
+        // opts.timeout && req.socket.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
+        //     req.emit?.(ev.TIMEOUT);
+        //     cancel?.unsubscribe()
+        // });
+        req.once(ev.ABOUT, () => cancel?.unsubscribe())
+        return cancel;
+    }
+
+    protected createContext(req: AmqpIncoming, res: AmqpOutgoing): AmqpContext {
+        const injector = this.endpoint.injector;
+        return new AmqpContext(injector, req, res);
+    }
+
     protected async onShutdown(): Promise<any> {
-        throw new Error('Method not implemented.');
+        await this._channel?.close();
+        await this._conn?.close();
+        this._channel = this._conn = null;
     }
 
 }

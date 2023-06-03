@@ -1,8 +1,9 @@
-import { Interceptor, TransportRequest, TransportEndpointOptions, Filter, CanActivate, TransportSessionOpts } from '@tsdi/core';
+import { Interceptor, TransportRequest, TransportEndpointOptions, Filter, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ContentOptions } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 import { AmqpContext } from './context';
+import { AmqpSessionOpts } from '../options';
 
 export type amqpURL = string | amqp.Options.Connect;
 
@@ -15,9 +16,7 @@ export interface AmqpMicroServiceOpts extends TransportEndpointOptions<AmqpConte
     detailError?: boolean;
     timeout?: number;
     content?: ContentOptions;
-    transportOpts?: TransportSessionOpts;
-    queue?: string;
-    queueOptions?: amqp.Options.AssertQueue;
+    transportOpts?: AmqpSessionOpts;
 }
 
 

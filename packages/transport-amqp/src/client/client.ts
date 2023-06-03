@@ -33,16 +33,14 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                 this.logger.error(err);
                 observer.error(err);
             };
+
             const onConnect = () => {
                 this._connected = true;
-                observer.next(this._channel!);
-                observer.complete();
             };
 
             const onConnectFailed = () => {
                 this._connected = false;
             };
-
 
             (async () => {
                 try {
@@ -62,7 +60,9 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     }
                     await chl.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
 
-                    onConnect();
+                    this._connected = true;
+                    observer.next(this._channel!);
+                    observer.complete();
 
                 } catch (err) {
                     onError(err)
@@ -72,6 +72,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
 
             return () => {
                 if (!this._conn) return;
+                this._conn.off(ev.CONNECT, onConnect);
                 this._conn.off(ev.ERROR, onError);
                 this._conn.off(ev.DISCONNECT, onError);
                 this._conn.off(ev.CONNECT_FAILED, onConnectFailed);
@@ -82,8 +83,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
     protected async onShutdown(): Promise<void> {
         await this._channel?.close();
         await this._conn?.close();
-        this._channel = null;
-        this._conn = null;
+        this._channel = this._conn = null;
     }
 
     protected createConnection(opts: AmqpClientOpts): Observable<amqp.Connection> {

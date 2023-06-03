@@ -7,7 +7,6 @@ import { AmqpTransportSessionFactory } from './transport';
 import { AmqpStatusVaildator } from './status';
 import { AmqpClient } from './client/client';
 import { AmqpHandler } from './client/handler';
-import { AmqpPathInterceptor } from './client/path';
 import { AmqpRequestAdapter } from './client/request';
 import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS, AmqpClientOpts, AmqpClientsOpts } from './client/options';
 import { AmqpServer } from './server/server';
@@ -111,7 +110,7 @@ const defClientOpts = {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },
-    interceptors: [AmqpPathInterceptor, BodyContentInterceptor],
+    interceptors: [BodyContentInterceptor],
     filtersToken: AMQP_CLIENT_FILTERS,
     backend: TransportBackend,
     queue: 'amqp.queue',

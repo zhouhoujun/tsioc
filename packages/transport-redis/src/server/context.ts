@@ -1,8 +1,6 @@
-import { ListenOpts } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
 import { RedisIncoming } from './incoming';
 import { RedisOutgoing } from './outgoing';
-import * as tls from 'tls';
 
 export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgoing, number> {
     isAbsoluteUrl(url: string): boolean {

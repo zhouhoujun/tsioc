@@ -1,9 +1,9 @@
-import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, TopicTransportSession, ev } from '@tsdi/transport';
 import { Channel } from 'amqplib';
 import { Buffer } from 'buffer';
-import { AmqpSeesionOpts } from './options';
+import { AmqpSessionOpts } from './options';
 
 
 @Injectable()
@@ -16,7 +16,7 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
 
     }
 
-    create(socket: Channel, opts: AmqpSeesionOpts): TransportSession<Channel> {
+    create(socket: Channel, opts: AmqpSessionOpts): TransportSession<Channel> {
         return new AmqpTransportSession(socket, this.adapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
@@ -30,7 +30,7 @@ export class AmqpTransportSession extends TopicTransportSession<Channel> {
         protected streamAdapter: StreamAdapter,
         protected encoder: Encoder | undefined,
         protected decoder: Decoder | undefined,
-        private options: AmqpSeesionOpts
+        private options: AmqpSessionOpts
     ) {
         super(socket, streamAdapter, encoder, decoder, options.delimiter, options.serverSide)
     }
@@ -53,6 +53,7 @@ export class AmqpTransportSession extends TopicTransportSession<Channel> {
         this.socket.on(name, event)
     }
     protected offSocket(name: string, event: (...args: any[]) => void): void {
+        this.socket.off(name, event)
     }
 
 }

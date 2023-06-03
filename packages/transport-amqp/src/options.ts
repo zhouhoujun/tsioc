@@ -2,7 +2,7 @@ import { TransportSessionOpts } from '@tsdi/core';
 import * as amqp from 'amqplib';
 
 
-export interface AmqpSeesionOpts extends  TransportSessionOpts {
+export interface AmqpSessionOpts extends  TransportSessionOpts {
     /**
     * queue name
     */

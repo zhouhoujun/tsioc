@@ -3,32 +3,52 @@ import { AbstractAssetContext } from '@tsdi/transport';
 
 
 export class AmqpContext extends AbstractAssetContext<Incoming, Outgoing, number> {
+    
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return abstl.test(url)
     }
+
     protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+        const url = req.url ?? '';
+        if (this.isAbsoluteUrl(url)) {
+            return new URL(url);
+        } else {
+            const { host, port } = this.getListenOpts();
+            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`);
+            const uri = new URL(url, baseUrl);
+            return uri;
+        }
     }
+
     get writable(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.writable
     }
+
+    get secure(): boolean {
+        return this.getListenOpts()?.withCredentials === true;
+    }
+
     get protocol(): string {
-        throw new Error('Method not implemented.');
+        return 'amqp';
     }
+
     get status(): number {
-        throw new Error('Method not implemented.');
+        return this.response.statusCode
     }
     set status(status: number) {
-        throw new Error('Method not implemented.');
+        this._explicitStatus = true;
+        this.response.statusCode = status;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
+    
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage
     }
     set statusMessage(message: string) {
-        throw new Error('Method not implemented.');
-    }
-    get secure(): boolean {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = message
     }
 
 }
+
+
+const abstl = /^amqp:\/\//i;

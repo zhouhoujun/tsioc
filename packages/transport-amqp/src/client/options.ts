@@ -1,7 +1,7 @@
 import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client, TransportSessionOpts } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
-import { AmqpSeesionOpts } from '../options';
+import { AmqpSessionOpts } from '../options';
 
 
 
@@ -17,7 +17,7 @@ export interface AmqpClientOpts extends ConfigableHandlerOptions<TransportReques
     /**
      * transport session options.
      */
-    transportOpts?: AmqpSeesionOpts;
+    transportOpts?: AmqpSessionOpts;
     /**
      * connect options.
      */
