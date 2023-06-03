@@ -33,7 +33,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
             const id = this.getPacketId();
 
-            const [message, onMessage] = this.bindMessageEvent(request, id, url, req, observer);
+            const [message, onMessage] = this.bindMessageEvent(request, id, url, req, observer, opts);
 
             request.on(ev.ERROR, onError);
             request.on(ev.CLOSE, onError);
@@ -106,7 +106,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected abstract getClientOpts(req: TransportRequest): Option;
 
-    protected abstract bindMessageEvent(session: TransportSession<T>, id: number, url: string, req: TransportRequest, observer: Observer<TransportEvent>): [string, (...args: any[]) => void]
+    protected abstract bindMessageEvent(session: TransportSession<T>, id: number, url: string, req: TransportRequest, observer: Observer<TransportEvent>, opts?: Option): [string, (...args: any[]) => void]
 
     protected getReply(url: string, observe: 'body' | 'events' | 'response'): string {
         return observe === 'events' ? url : url + '/reply';

@@ -1,4 +1,4 @@
-
+export * from './options';
 export * from './server/server';
 export * from './client/client';
 export * from './amqp.module';

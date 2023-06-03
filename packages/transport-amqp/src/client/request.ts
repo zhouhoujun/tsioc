@@ -1,9 +1,10 @@
-import {  TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSessionFactory, TransportSession} from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSessionFactory, TransportSession, Packet } from '@tsdi/core';
 import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, ev, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { Channel } from 'amqplib';
 import { AMQP_CHANNEL, AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+
 
 @Injectable()
 export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
@@ -28,24 +29,15 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
         return context.get(TransportSessionFactory).create(channel, opts.transportOpts);
     }
 
-    protected override getReply(url: string, observe: 'body' | 'events' | 'response'): string {
-        return observe === 'events' ? url : url + '.reply';
-    }
-
     protected getClientOpts(req: TransportRequest<any>) {
         return req.context.get(AMQP_CLIENT_OPTS)
     }
 
-    protected bindMessageEvent(session: TransportSession<Channel>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
-        const reply = this.getReply(url, req.observe);
-        if (!this.subs.has(reply)) {
-            this.subs.add(reply);
-            session.socket.assertQueue(reply);
-        }
+    protected bindMessageEvent(session: TransportSession<Channel>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts?: AmqpClientOpts): [string, (...args: any[]) => void] {
 
-        const onMessage = (channel: string, res: any) => {
-            if (channel !== reply) return;
-            this.handleMessage(id, url, req, observer, res)
+        const onMessage = (channel: string, res: Packet) => {
+            if (res.id !== id) return;
+            this.handleMessage(id, url, req, observer, res);
         };
 
         session.on(ev.MESSAGE, onMessage);

@@ -1,5 +1,5 @@
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Inject, Injectable } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { from, map, Observable } from 'rxjs';
@@ -44,26 +44,31 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
             };
 
 
-            Promise.resolve(
-                this._conn && this._connected ? this._conn : amqp.connect(this.options.connectOpts!)
-            ).then(conn => {
-                if (this._conn !== conn) {
-                    if(this._conn) this._conn.removeAllListeners();
-                    this._connected = true;
-                    this._conn = conn;
+            (async () => {
+                try {
+                    if (!this._conn) {
+                        this._conn = await amqp.connect(this.options.connectOpts!);
+                    }
+                    this._conn.on(ev.CONNECT, onConnect);
+                    this._conn.on(ev.ERROR, onError);
+                    this._conn.on(ev.DISCONNECT, onError);
+                    this._conn.on(ev.CONNECT_FAILED, onConnectFailed);
+
+                    const chl = this._channel = await this._conn.createChannel();
+                    const transportOpts = this.options.transportOpts ?? EMPTY_OBJ;
+
+                    if (!transportOpts.noAssert) {
+                        await chl.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
+                    }
+                    await chl.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
+
+                    onConnect();
+
+                } catch (err) {
+                    onError(err)
                 }
-                this._conn.on(ev.CONNECT, onConnect);
-                this._conn.on(ev.ERROR, onError);
-                this._conn.on(ev.DISCONNECT, onError);
-                this._conn.on(ev.CONNECT_FAILED, onConnectFailed);
-                return this._conn.createChannel();
-            }).then(chl => {
-                this._channel = chl;
-                onConnect();
-            })
-                .catch(onError)
 
-
+            })()
 
             return () => {
                 if (!this._conn) return;

@@ -56,7 +56,7 @@ export class TcpService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 1000
+                timeout: 200
             },
             serverOpts: {
                 // timeout: 1000,

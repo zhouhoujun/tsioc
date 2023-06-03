@@ -76,9 +76,10 @@ export class AmqpModule {
     }
 }
 
-
+/**
+ * Amqp Module Options.
+ */
 export interface AmqpModuleOptions {
-
     /**
      * client options.
      */
@@ -91,7 +92,9 @@ export interface AmqpModuleOptions {
      * service endpoint provider
      */
     endpoint?: ProvdierOf<AmqpEndpoint>;
-
+    /**
+     * transport factory.
+     */
     transportFactory?: ProvdierOf<TransportSessionFactory>;
     /**
      * server options
@@ -110,8 +113,12 @@ const defClientOpts = {
     },
     interceptors: [AmqpPathInterceptor, BodyContentInterceptor],
     filtersToken: AMQP_CLIENT_FILTERS,
-    backend: TransportBackend
-
+    backend: TransportBackend,
+    queue: 'amqp.queue',
+    persistent: false,
+    noAssert: false,
+    queueOpts: {},
+    prefetchCount: 0
 } as AmqpClientOpts;
 
 /**
