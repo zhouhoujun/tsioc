@@ -13,7 +13,7 @@ export class AmqpContext extends AbstractAssetContext<Incoming, Outgoing, number
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = this.getListenOpts() ?? {};
+            const { host, port } = this.getListenOpts();
             const baseUrl = new URL(`${this.protocol}://${host ?? 'localhost'}:${port ?? 5672}`);
             const uri = new URL(url, baseUrl);
             return uri;

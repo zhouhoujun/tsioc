@@ -58,7 +58,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     getListenOpts() {
-        return this.injector.get(ListenOpts, null);
+        return this.injector.get(ListenOpts, {});
     }
 
 

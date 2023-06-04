@@ -74,6 +74,17 @@ export class AmqpServer extends MicroService<AmqpContext> {
         }
         await channel.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
 
+        await channel.consume(transportOpts.queue!, msg => {
+            if (!msg) return;
+            channel.emit(ev.RESPONSE, transportOpts.queue, msg)
+            // this.onData(
+            //     transportOpts.replyQueue ,
+            //     msg
+            // )
+        }, {
+            noAck: true,
+            ...transportOpts.consumeOpts
+        });
         const session = this.endpoint.injector.get(TransportSessionFactory).create(channel, transportOpts);
 
         session.on(ev.MESSAGE, (queue: string, packet: Packet) => {

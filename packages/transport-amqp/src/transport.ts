@@ -34,17 +34,21 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
     protected queues: Map<string, QueueBuffer> = new Map();
 
     protected override bindMessageEvent(options: AmqpSessionOpts): void {
-        const queue = options.serverSide ? options.queue! : options.replyQueue!;
-        this.socket.consume(queue, msg => {
-            if (!msg) return;
-            this.onData(
-                queue,
-                msg
-            )
-        }, {
-            noAck: true,
-            ...this.options.consumeOpts
-        });
+        // const queue = options.serverSide ? options.queue! : options.replyQueue!;
+        // this.socket.consume(queue, msg => {
+        //     if (!msg) return;
+        //     this.onData(
+        //         queue,
+        //         msg
+        //     )
+        // }, {
+        //     noAck: true,
+        //     ...this.options.consumeOpts
+        // });
+
+        const onRespond = this.onData.bind(this);
+        this.onSocket(ev.RESPONSE, onRespond);
+        this._evs.push([ev.RESPONSE, onRespond]);
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
@@ -110,6 +114,11 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
     }
 
     protected override async generateNoPayload(data: Packet<any>): Promise<Buffer> {
+        if (!data.headers) {
+            data.headers = {};
+        }
+        data.headers[hdr.CONTENT_LENGTH] = 0;
+
         return Buffer.alloc(0);
     }
 
@@ -125,6 +134,9 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
                     cachePkg: new Map()
                 }
                 this.queues.set(queue, chl)
+            } else if (chl.contentLength === null) {
+                chl.buffer = null;
+                chl.contentLength = ~~msg.properties.headers[hdr.CONTENT_LENGTH];
             }
             if (!chl.cachePkg.has(msg.properties.correlationId)) {
                 const headers = { ...msg.properties.headers };
@@ -146,7 +158,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
             const e = ev as any;
             this.emit(e.ERROR, e.message);
         }
-        msg.properties.headers
     }
 
     protected handleData(chl: QueueBuffer, id: string, dataRaw: string | Buffer) {

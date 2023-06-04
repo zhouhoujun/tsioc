@@ -72,6 +72,17 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     }
                     await chl.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
 
+                    await chl.consume(transportOpts.replyQueue , msg => {
+                        if (!msg) return;
+                        chl.emit(ev.RESPONSE, transportOpts.replyQueue, msg)
+                        // this.onData(
+                        //     transportOpts.replyQueue ,
+                        //     msg
+                        // )
+                    }, {
+                        noAck: true,
+                        ...transportOpts.consumeOpts
+                    });
                     this._connected = true;
                     observer.next(this._channel!);
                     observer.complete();
