@@ -41,6 +41,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
 
             const onConnect = () => {
                 this._connected = true;
+                observer.complete();
             };
 
             const onConnectFailed = () => {

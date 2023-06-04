@@ -17,11 +17,12 @@ export class AmqpOutgoing extends PassThrough implements Outgoing<amqp.Channel, 
     destroyed = false;
     sendDate = true;
     private _headersSent = false;
-    private _sentHeaders?: OutgoingHeaders;
+    // private _sentHeaders?: OutgoingHeaders;
 
     writable = true;
     constructor(
         readonly session: TransportSession<amqp.Channel>,
+        readonly replyTo: string,
         readonly url: string,
         readonly id: number) {
         super({ objectMode: true });
@@ -114,6 +115,7 @@ export class AmqpOutgoing extends PassThrough implements Outgoing<amqp.Channel, 
         this.session.send({
             id: this.id,
             url,
+            replyTo: this.replyTo,
             headers: this.getHeaders(),
             payload: this,
         });

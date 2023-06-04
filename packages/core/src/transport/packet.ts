@@ -12,4 +12,5 @@ export interface Packet<T = any> {
     headers?: IncomingHeaders | OutgoingHeaders;
     payload?: T;
     error?: any;
+    replyTo?: string;
 }

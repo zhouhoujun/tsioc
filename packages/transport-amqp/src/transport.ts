@@ -1,5 +1,5 @@
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Injectable, Optional, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, StreamAdapter, ev, hdr, toBuffer } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
@@ -48,15 +48,18 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
-        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
+        const queue = this.options.serverSide ? packet.replyTo ?? this.options.replyQueue! : this.options.queue!;
         const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
         headers[hdr.PATH] = packet.url ?? packet.topic;
+        const replys = this.options.serverSide ? undefined : {
+            replyTo: packet.replyTo ?? this.options.replyQueue,
+            persistent: this.options.persistent,
+        };
         this.socket.sendToQueue(
             queue,
             buffer,
             {
-                replyTo: this.options.replyQueue,
-                persistent: this.options.persistent,
+                ...replys,
                 ...this.options.publishOpts,
                 headers,
                 contentType: headers[hdr.CONTENT_TYPE],
@@ -80,7 +83,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         if (!headers.headers) {
             headers.headers = {};
         }
-        let len = isString(headers.headers[hdr.CONTENT_LENGTH]) ? ~~headers.headers[hdr.CONTENT_LENGTH] : headers.headers[hdr.CONTENT_LENGTH]!;
 
         let body: Buffer;
         if (isString(payload)) {
@@ -100,7 +102,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         if (this.encoder) {
             body = this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
-            len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
         return body;
@@ -119,7 +121,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
                 chl = {
                     queue,
                     buffer: null,
-                    contentLength: ~msg.properties.headers[hdr.CONTENT_LENGTH],
+                    contentLength: ~~msg.properties.headers[hdr.CONTENT_LENGTH],
                     cachePkg: new Map()
                 }
                 this.queues.set(queue, chl)
@@ -135,6 +137,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
                 chl.cachePkg.set(msg.properties.correlationId, {
                     id: msg.properties.correlationId,
                     url: headers[hdr.PATH],
+                    replyTo: msg.properties.replyTo,
                     headers
                 })
             }
@@ -177,6 +180,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         const pkg = chl.cachePkg.get(id);
         if (pkg) {
             pkg.payload = data.length ? data : null;
+            chl.cachePkg.delete(id);
             this.emit(ev.MESSAGE, chl.queue, pkg);
         }
     }

@@ -89,7 +89,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         return req.url;
     }
 
-    protected toPacket(url: string, id: number, req: TransportRequest) {
+    protected toPacket(url: string, id: number | string, req: TransportRequest) {
         return {
             id,
             method: req.method,

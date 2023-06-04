@@ -93,7 +93,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
             packet.method = MESSAGE;
         }
         const req = new AmqpIncoming(session, packet);
-        const res = new AmqpOutgoing(session, packet.url!, packet.id);
+        const res = new AmqpOutgoing(session, packet.replyTo!, packet.url!, packet.id);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

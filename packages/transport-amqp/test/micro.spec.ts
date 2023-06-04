@@ -56,7 +56,7 @@ export class AmqpService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 1000
+                // timeout: 1000
             },
             serverOpts: {
                 // timeout: 1000,
