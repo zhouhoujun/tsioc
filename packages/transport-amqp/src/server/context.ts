@@ -3,7 +3,7 @@ import { AbstractAssetContext } from '@tsdi/transport';
 
 
 export class AmqpContext extends AbstractAssetContext<Incoming, Outgoing, number> {
-    
+
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)
     }
@@ -13,8 +13,8 @@ export class AmqpContext extends AbstractAssetContext<Incoming, Outgoing, number
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = this.getListenOpts();
-            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`);
+            const { host, port } = this.getListenOpts() ?? {};
+            const baseUrl = new URL(`${this.protocol}://${host ?? 'localhost'}:${port ?? 5672}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -40,7 +40,7 @@ export class AmqpContext extends AbstractAssetContext<Incoming, Outgoing, number
         this.response.statusCode = status;
         if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
-    
+
     get statusMessage(): string {
         return this.response.statusMessage
     }

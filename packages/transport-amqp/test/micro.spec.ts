@@ -11,7 +11,7 @@ const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class TcpService {
+export class AmqpService {
 
     constructor(private client: AmqpClient) {
 
@@ -56,7 +56,7 @@ export class TcpService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 200
+                timeout: 1000
             },
             serverOpts: {
                 // timeout: 1000,
@@ -67,7 +67,7 @@ export class TcpService {
         })
     ],
     declarations: [
-        TcpService
+        AmqpService
     ],
     bootstrap: AmqpServer
 })

@@ -9,14 +9,9 @@ import { PacketLengthException } from '../execptions';
 /**
  * abstract transport session.
  */
-export abstract class AbstractTransportSession<T, TOpts extends TransportSessionOpts> extends EventEmitter implements TransportSession<T> {
+export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter implements TransportSession<T> {
 
-    protected readonly delimiter: Buffer;
-
-    protected _header: Buffer;
-    protected _body: Buffer;
     protected _evs: Array<[string, (...args: any[]) => void]>;
-
 
     constructor(
         readonly socket: T,
@@ -27,19 +22,76 @@ export abstract class AbstractTransportSession<T, TOpts extends TransportSession
     ) {
         super()
         this.setMaxListeners(0);
-        this.delimiter = Buffer.from(options.delimiter || '#');
-        this._header = Buffer.alloc(1, '0');
-        this._body = Buffer.alloc(1, '1');
         this._evs = [];
-
+        this.init(options);
         this.bindEvent(options);
         this.bindMessageEvent(options);
+    }
+
+    protected init(options: TOpts) {
+
     }
 
     async send(data: Packet): Promise<void> {
         const buffers = await (isNil(data.payload) ? this.generateNoPayload(data) : this.generate(data));
         this.writeBuffer(buffers, data);
     }
+
+    protected abstract generate(data: Packet): Promise<Buffer>;
+    protected abstract generateNoPayload(data: Packet): Promise<Buffer>;
+
+
+    destroy(error?: any): void {
+        this._evs.forEach(it => {
+            const [e, event] = it;
+            this.offSocket(e, event);
+        });
+        this.removeAllListeners();
+    }
+
+    protected abstract writeBuffer(buffer: Buffer, packet?: Packet): any;
+
+    protected abstract handleFailed(error: any): void;
+
+
+    protected bindEvent(options: TOpts) {
+        [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].forEach(event => {
+            const fn = (...args: any[]) => {
+                this.emit(event, ...args);
+                this.destroy();
+            };
+            this.onSocket(event, fn);
+            this._evs.push([event, fn]);
+        });
+    }
+
+    protected bindMessageEvent(options: TOpts) {
+        const fn = this.onData.bind(this);
+        this.onSocket(ev.DATA, fn);
+        this._evs.push([ev.DATA, fn]);
+    }
+
+    protected abstract onSocket(name: string, event: (...args: any[]) => void): void;
+    protected abstract offSocket(name: string, event: (...args: any[]) => void): void;
+
+    protected abstract onData(...args: any[]): void;
+
+
+}
+
+export abstract class BufferTransportSession<T, TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts> {
+
+    protected delimiter!: Buffer;
+    protected _header!: Buffer;
+    protected _body!: Buffer;
+
+    protected init(options: TOpts): void {
+
+        this.delimiter = Buffer.from(options.delimiter || '#');
+        this._header = Buffer.alloc(1, '0');
+        this._body = Buffer.alloc(1, '1');
+    }
+
 
     protected async generate(data: Packet): Promise<Buffer> {
         const { payload, ...headers } = data;
@@ -104,52 +156,12 @@ export abstract class AbstractTransportSession<T, TOpts extends TransportSession
             buffers
         ]);
     }
-
-
-
-    destroy(error?: any): void {
-        this._evs.forEach(it => {
-            const [e, event] = it;
-            this.offSocket(e, event);
-        });
-        this.removeAllListeners();
-    }
-
-    protected abstract writeBuffer(buffer: Buffer, packet?: Packet): any;
-
-    protected abstract handleFailed(error: any): void;
-
-
-    protected bindEvent(options: TOpts) {
-        [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].forEach(event => {
-            const fn = (...args: any[]) => {
-                this.emit(event, ...args);
-                this.destroy();
-            };
-            this.onSocket(event, fn);
-            this._evs.push([event, fn]);
-        });
-    }
-
-    protected bindMessageEvent(options: TOpts) {
-        const fn = this.onData.bind(this);
-        this.onSocket(ev.DATA, fn);
-        this._evs.push([ev.DATA, fn]);
-    }
-
-    protected abstract onSocket(name: string, event: (...args: any[]) => void): void;
-    protected abstract offSocket(name: string, event: (...args: any[]) => void): void;
-
-    protected abstract onData(...args: any[]): void;
-
-
 }
-
 
 /**
  * Socket  transport session.
  */
-export abstract class SocketTransportSession<T extends EventEmitter,  TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts> {
+export abstract class SocketTransportSession<T extends EventEmitter, TOpts extends TransportSessionOpts = TransportSessionOpts> extends BufferTransportSession<T, TOpts> {
 
     private buffer: Buffer | null = null;
     private contentLength: number | null = null;
@@ -264,7 +276,7 @@ export interface TopicBuffer {
 /**
  * topic transport session
  */
-export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts>  {
+export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpts = TransportSessionOpts> extends BufferTransportSession<T, TOpts>  {
 
     protected topics: Map<string, TopicBuffer> = new Map();
 

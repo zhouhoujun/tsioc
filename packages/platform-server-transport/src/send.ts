@@ -12,8 +12,11 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
     async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;
         if (!isString(path)) return '';
-        if(opts.prefix){
-            if(!path.startsWith(opts.prefix)) return '';
+        if (!path.startsWith('/')) {
+            path = '/' + path;
+        }
+        if (opts.prefix) {
+            if (!path.startsWith(opts.prefix)) return '';
             path = path.slice(opts.prefix.length);
         }
         const endSlash = path[path.length - 1] === '/';

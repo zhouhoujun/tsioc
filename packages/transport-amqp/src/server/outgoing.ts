@@ -22,7 +22,7 @@ export class AmqpOutgoing extends PassThrough implements Outgoing<amqp.Channel, 
     writable = true;
     constructor(
         readonly session: TransportSession<amqp.Channel>,
-        readonly topic: string,
+        readonly url: string,
         readonly id: number) {
         super({ objectMode: true });
         this.setMaxListeners(0);
@@ -110,7 +110,7 @@ export class AmqpOutgoing extends PassThrough implements Outgoing<amqp.Channel, 
         }
         super.end(chunk, encoding, cb);
 
-        const url = this.getReply(this.topic);
+        const url = this.getReply(this.url);
         this.session.send({
             id: this.id,
             url,
@@ -125,7 +125,7 @@ export class AmqpOutgoing extends PassThrough implements Outgoing<amqp.Channel, 
     }
 
     getReply(topic: string) {
-        return topic + '.reply';
+        return topic;
     }
 
     writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;

@@ -1,10 +1,10 @@
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Injectable } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { from, map, Observable } from 'rxjs';
 import * as amqp from 'amqplib';
-import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+import { AMQP_CHANNEL, AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
 
 
@@ -22,6 +22,11 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
         readonly handler: AmqpHandler,
         @Inject(AMQP_CLIENT_OPTS) private options: AmqpClientOpts) {
         super()
+
+        const transportOpts = this.options.transportOpts ?? {};
+        if (!transportOpts.replyQueue) {
+            transportOpts.replyQueue = transportOpts.queue + '.reply'
+        }
     }
 
     protected connect(): Observable<amqp.Channel> {
@@ -41,6 +46,10 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
             const onConnectFailed = () => {
                 this._connected = false;
             };
+            const onClose = (err?: any) => {
+                err && this.logger.error(err);
+                this.onShutdown()
+            }
 
             (async () => {
                 try {
@@ -48,6 +57,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                         this._conn = await amqp.connect(this.options.connectOpts!);
                     }
                     this._conn.on(ev.CONNECT, onConnect);
+                    this._conn.on(ev.CLOSE, onClose);
                     this._conn.on(ev.ERROR, onError);
                     this._conn.on(ev.DISCONNECT, onError);
                     this._conn.on(ev.CONNECT_FAILED, onConnectFailed);
@@ -56,7 +66,8 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     const transportOpts = this.options.transportOpts ?? EMPTY_OBJ;
 
                     if (!transportOpts.noAssert) {
-                        await chl.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
+                        // await chl.assertQueue(transportOpts.queue!, transportOpts.queueOpts);
+                        await chl.assertQueue(transportOpts.replyQueue ?? transportOpts.queue + '.reply', transportOpts.queueOpts)
                     }
                     await chl.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
 
@@ -74,12 +85,19 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                 if (!this._conn) return;
                 this._conn.off(ev.CONNECT, onConnect);
                 this._conn.off(ev.ERROR, onError);
+                this._conn.off(ev.CLOSE, onClose);
                 this._conn.off(ev.DISCONNECT, onError);
                 this._conn.off(ev.CONNECT_FAILED, onConnectFailed);
             };
         });
 
     }
+
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        context.setValue(AMQP_CHANNEL, this._channel);
+    }
+
     protected async onShutdown(): Promise<void> {
         await this._channel?.close();
         await this._conn?.close();

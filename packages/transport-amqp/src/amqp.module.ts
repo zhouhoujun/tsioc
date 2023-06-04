@@ -106,6 +106,7 @@ export interface AmqpModuleOptions {
  */
 const defClientOpts = {
     interceptorsToken: AMQP_CLIENT_INTERCEPTORS,
+    filtersToken: AMQP_CLIENT_FILTERS,
     connectOpts: 'amqp://localhost',
     transportOpts: {
         delimiter: '#',
@@ -117,7 +118,6 @@ const defClientOpts = {
         prefetchCount: 0
     },
     interceptors: [BodyContentInterceptor],
-    filtersToken: AMQP_CLIENT_FILTERS,
     backend: TransportBackend,
 } as AmqpClientOpts;
 

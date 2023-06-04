@@ -11,7 +11,7 @@ const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class TcpService {
+export class MqttService {
 
     constructor(private client: MqttClient) {
 
@@ -67,7 +67,7 @@ export class TcpService {
         })
     ],
     declarations: [
-        TcpService
+        MqttService
     ],
     bootstrap: MqttServer
 })

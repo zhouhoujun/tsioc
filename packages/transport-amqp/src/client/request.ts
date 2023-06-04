@@ -34,10 +34,10 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
         return req.context.get(AMQP_CLIENT_OPTS)
     }
 
-    protected bindMessageEvent(session: TransportSession<Channel>, id: string, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts?: AmqpClientOpts): [string, (...args: any[]) => void] {
-
-        const onMessage = (channel: string, res: Packet) => {
-            if (res.id !== id) return;
+    protected bindMessageEvent(session: TransportSession<Channel>, id: string, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts: AmqpClientOpts): [string, (...args: any[]) => void] {
+        const replyQueue = opts.transportOpts!.replyQueue!;
+        const onMessage = (queue: string, res: Packet) => {
+            if (queue !== replyQueue && res.id !== id) return;
             this.handleMessage(id, url, req, observer, res);
         };
 

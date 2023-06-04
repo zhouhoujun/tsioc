@@ -1,7 +1,7 @@
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Injectable, Optional } from '@tsdi/ioc';
-import { StreamAdapter, TopicTransportSession, ev } from '@tsdi/transport';
-import { Channel } from 'amqplib';
+import { Injectable, Optional, isString } from '@tsdi/ioc';
+import { AbstractTransportSession, StreamAdapter, ev, hdr, toBuffer } from '@tsdi/transport';
+import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';
 
@@ -22,27 +22,47 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
 
 }
 
+export interface QueueBuffer {
+    queue: string;
+    buffer: Buffer | null;
+    contentLength: number | null;
+    cachePkg: Map<number | string, Packet>;
 
-export class AmqpTransportSession extends TopicTransportSession<Channel, AmqpSessionOpts> {
+}
 
+export class AmqpTransportSession extends AbstractTransportSession<Channel, AmqpSessionOpts> {
+    protected queues: Map<string, QueueBuffer> = new Map();
 
     protected override bindMessageEvent(options: AmqpSessionOpts): void {
-        const queue = options.serverSide ? options.queue ?? 'default' : options.replyQueue ?? options.queue + '.reply';
+        const queue = options.serverSide ? options.queue! : options.replyQueue!;
         this.socket.consume(queue, msg => {
             if (!msg) return;
             this.onData(
                 queue,
-                msg.content
+                msg
             )
-        }, this.options.consumeOpts);
+        }, {
+            noAck: true,
+            ...this.options.consumeOpts
+        });
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
-        const queue = this.options.serverSide ? this.options.replyQueue ?? this.options.queue + '.reply' : this.options.queue ?? 'default';
+        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
+        const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
+        headers[hdr.PATH] = packet.url ?? packet.topic;
         this.socket.sendToQueue(
             queue,
             buffer,
-            { correlationId: packet.id, ...this.options.publishOpts }
+            {
+                replyTo: this.options.replyQueue,
+                persistent: this.options.persistent,
+                ...this.options.publishOpts,
+                headers,
+                contentType: headers[hdr.CONTENT_TYPE],
+                contentEncoding: headers[hdr.CONTENT_ENCODING],
+                correlationId: packet.id,
+            }
         )
     }
     protected handleFailed(error: any): void {
@@ -55,4 +75,109 @@ export class AmqpTransportSession extends TopicTransportSession<Channel, AmqpSes
         this.socket.off(name, event)
     }
 
+    protected override async generate(data: Packet): Promise<Buffer> {
+        const { payload, ...headers } = data;
+        if (!headers.headers) {
+            headers.headers = {};
+        }
+        let len = isString(headers.headers[hdr.CONTENT_LENGTH]) ? ~~headers.headers[hdr.CONTENT_LENGTH] : headers.headers[hdr.CONTENT_LENGTH]!;
+
+        let body: Buffer;
+        if (isString(payload)) {
+            body = Buffer.from(payload);
+        } else if (Buffer.isBuffer(payload)) {
+            body = payload;
+        } else if (this.streamAdapter.isReadable(payload)) {
+            body = await toBuffer(payload);
+        } else {
+            body = Buffer.from(JSON.stringify(payload));
+        }
+
+        if (!headers.headers[hdr.CONTENT_LENGTH]) {
+            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        }
+
+        if (this.encoder) {
+            body = this.encoder.encode(body);
+            if (isString(body)) body = Buffer.from(body);
+            len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        }
+
+        return body;
+
+    }
+
+    protected override async generateNoPayload(data: Packet<any>): Promise<Buffer> {
+        return Buffer.alloc(0);
+    }
+
+
+    protected onData(queue: string, msg: ConsumeMessage): void {
+        try {
+            let chl = this.queues.get(queue);
+            if (!chl) {
+                chl = {
+                    queue,
+                    buffer: null,
+                    contentLength: ~msg.properties.headers[hdr.CONTENT_LENGTH],
+                    cachePkg: new Map()
+                }
+                this.queues.set(queue, chl)
+            }
+            if (!chl.cachePkg.has(msg.properties.correlationId)) {
+                const headers = { ...msg.properties.headers };
+                if (!headers[hdr.CONTENT_TYPE]) {
+                    headers[hdr.CONTENT_TYPE] = msg.properties.contentType;
+                }
+                if (!headers[hdr.CONTENT_ENCODING]) {
+                    headers[hdr.CONTENT_ENCODING] = msg.properties.contentEncoding;
+                }
+                chl.cachePkg.set(msg.properties.correlationId, {
+                    id: msg.properties.correlationId,
+                    url: headers[hdr.PATH],
+                    headers
+                })
+            }
+            this.handleData(chl, msg.properties.correlationId, msg.content);
+        } catch (ev) {
+            const e = ev as any;
+            this.emit(e.ERROR, e.message);
+        }
+        msg.properties.headers
+    }
+
+    protected handleData(chl: QueueBuffer, id: string, dataRaw: string | Buffer) {
+
+        const data = Buffer.isBuffer(dataRaw)
+            ? dataRaw
+            : Buffer.from(dataRaw);
+        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
+
+        if (chl.contentLength !== null) {
+            const length = buffer.length;
+            if (length === chl.contentLength) {
+                this.handleMessage(chl, id, chl.buffer);
+            } else if (length > chl.contentLength) {
+                const message = chl.buffer.slice(0, chl.contentLength);
+                const rest = chl.buffer.slice(chl.contentLength);
+                this.handleMessage(chl, id, message);
+                this.handleData(chl, id, rest);
+            }
+        }
+    }
+
+    protected handleMessage(chl: QueueBuffer, id: string, message: any) {
+        chl.contentLength = null;
+        chl.buffer = null;
+        this.emitMessage(chl, id, message);
+    }
+
+    protected emitMessage(chl: QueueBuffer, id: string, chunk: Buffer) {
+        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
+        const pkg = chl.cachePkg.get(id);
+        if (pkg) {
+            pkg.payload = data.length ? data : null;
+            this.emit(ev.MESSAGE, chl.queue, pkg);
+        }
+    }
 }

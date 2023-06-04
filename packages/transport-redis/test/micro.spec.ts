@@ -11,7 +11,7 @@ const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class TcpService {
+export class RedisService {
 
     constructor(private client: RedisClient) {
 
@@ -67,7 +67,7 @@ export class TcpService {
         })
     ],
     declarations: [
-        TcpService
+        RedisService
     ],
     bootstrap: RedisServer
 })

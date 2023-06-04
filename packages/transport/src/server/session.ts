@@ -97,7 +97,7 @@ const defOpts = {
 } as SessionOptions;
 
 /**
- * session middleware.
+ * session.
  */
 @Injectable()
 export class Session implements Middleware<AssetContext>, Interceptor<AssetContext> {

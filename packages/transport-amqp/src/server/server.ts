@@ -4,7 +4,7 @@ import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpContext } from './context';
 import { AmqpEndpoint } from './endpoint';
-import { ev } from '@tsdi/transport';
+import { ContentOptions, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
@@ -27,13 +27,26 @@ export class AmqpServer extends MicroService<AmqpContext> {
         readonly endpoint: AmqpEndpoint,
         @Inject(AMQP_SERV_OPTS) private options: AmqpMicroServiceOpts) {
         super();
+
+        const transportOpts = this.options.transportOpts ?? {};
+        if (!transportOpts.replyQueue) {
+            transportOpts.replyQueue = transportOpts.queue + '.reply'
+        }
+        if (this.options.content) {
+            this.endpoint.injector.setValue(ContentOptions, this.options.content);
+        }
     }
 
     protected async onStartup(): Promise<any> {
+
         const conn = this._conn = await amqp.connect(this.options.connectOpts!);
         this._connected = true;
         conn.on(ev.CONNECT, () => {
             this._connected = true;
+        });
+        conn.on(ev.CLOSE, (err) => {
+            err && this.logger.error(err);
+            this.onShutdown()
         });
         conn.on(ev.ERROR, (err) => {
             this.logger.error(err)
@@ -53,7 +66,8 @@ export class AmqpServer extends MicroService<AmqpContext> {
 
         const channel = this._channel = await this._conn.createChannel();
 
-        const transportOpts = this.options.transportOpts ?? EMPTY_OBJ;
+        const transportOpts = this.options.transportOpts ?? {};
+        transportOpts.serverSide = true;
 
         if (!transportOpts.noAssert) {
             await channel.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
@@ -62,8 +76,8 @@ export class AmqpServer extends MicroService<AmqpContext> {
 
         const session = this.endpoint.injector.get(TransportSessionFactory).create(channel, transportOpts);
 
-        session.on(ev.MESSAGE, (packet)=> {
-            this.requestHandler(session, packet);
+        session.on(ev.MESSAGE, (queue: string, packet: Packet) => {
+            this.requestHandler(session, queue, packet);
         })
     }
 
@@ -74,7 +88,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: TransportSession<amqp.Channel>, packet: Packet): Subscription {
+    protected requestHandler(session: TransportSession<amqp.Channel>, queue: string, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = MESSAGE;
         }
