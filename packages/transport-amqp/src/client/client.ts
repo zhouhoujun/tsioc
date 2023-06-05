@@ -1,8 +1,8 @@
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
-import { from, map, Observable } from 'rxjs';
+import { from, map, Observable, Observer } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AMQP_CHANNEL, AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
@@ -55,7 +55,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
             (async () => {
                 try {
                     if (!this._conn) {
-                        this._conn = await amqp.connect(this.options.connectOpts!);
+                        this._conn = await this.createConnection(observer, this.options.retryAttempts || 1, this.options.retryDelay ?? 0);
                     }
                     this._conn.on(ev.CONNECT, onConnect);
                     this._conn.on(ev.CLOSE, onClose);
@@ -102,6 +102,20 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
 
     }
 
+    protected async createConnection(observer: Observer<any>, retrys: number, retryDelay: number): Promise<amqp.Connection> {
+        try {
+            if (retrys) {
+                const conn = await amqp.connect(this.options.connectOpts!);
+                this._connected = true;
+                return conn;
+            }
+        } catch (err) {
+            if (retrys) return await lang.delay(retryDelay).then(() => this.createConnection(observer, retrys - 1, retryDelay));
+            observer.error(err);
+        }
+        return null!
+    }
+
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
         context.setValue(AMQP_CHANNEL, this._channel);
@@ -111,15 +125,6 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
         await this._channel?.close();
         await this._conn?.close();
         this._channel = this._conn = null;
-    }
-
-    protected createConnection(opts: AmqpClientOpts): Observable<amqp.Connection> {
-        return from(amqp.connect(opts.connectOpts!))
-            .pipe(
-                map(conn => {
-                    return conn;
-                })
-            );
     }
 
 }

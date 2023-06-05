@@ -1,5 +1,5 @@
 import { MESSAGE, MicroService, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { EMPTY_OBJ, Execption, Inject, Injectable } from '@tsdi/ioc';
+import { EMPTY_OBJ, Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpContext } from './context';
@@ -8,7 +8,7 @@ import { ContentOptions, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
-import { Subscription, finalize } from 'rxjs';
+import { Observer, Subscription, finalize } from 'rxjs';
 
 
 
@@ -39,7 +39,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
 
     protected async onStartup(): Promise<any> {
 
-        const conn = this._conn = await amqp.connect(this.options.connectOpts!);
+        const conn = this._conn = await this.createConnection(this.options.retryAttempts || 1, this.options.retryDelay ?? 0);
         this._connected = true;
         conn.on(ev.CONNECT, () => {
             this._connected = true;
@@ -56,7 +56,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
             this.logger.error(err)
         });
         conn.on(ev.CONNECT_FAILED, () => {
-
+            
         });
     }
     protected async onStart(): Promise<any> {
@@ -85,6 +85,20 @@ export class AmqpServer extends MicroService<AmqpContext> {
         session.on(ev.MESSAGE, (queue: string, packet: Packet) => {
             this.requestHandler(session, queue, packet);
         })
+    }
+
+    protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
+        try {
+            if (retrys) {
+                const conn = await amqp.connect(this.options.connectOpts!);
+                this._connected = true;
+                return conn;
+            }
+        } catch (err) {
+            if (retrys) return await lang.delay(retryDelay).then(() => this.createConnection(retrys - 1, retryDelay));
+            throw err;
+        }
+        return null!
     }
 
 

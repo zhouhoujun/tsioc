@@ -26,6 +26,8 @@ export interface AmqpClientOpts extends ConfigableHandlerOptions<TransportReques
      * request timeout.
      */
     timeout?: number;
+    retryAttempts?: number;
+    retryDelay?: number;
 }
 
 /**

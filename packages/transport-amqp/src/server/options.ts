@@ -15,6 +15,8 @@ export interface AmqpMicroServiceOpts extends TransportEndpointOptions<AmqpConte
     connectOpts?: string | amqp.Options.Connect;
     detailError?: boolean;
     timeout?: number;
+    retryAttempts?: number;
+    retryDelay?: number;
     content?: ContentOptions;
     transportOpts?: AmqpSessionOpts;
 }
