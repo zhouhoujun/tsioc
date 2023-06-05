@@ -3,7 +3,7 @@ import { Client } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { BrokersFunction, Cluster, Consumer, ConsumerGroupJoinEvent, EachMessagePayload, Kafka, KafkaMessage, PartitionAssigner, Producer } from 'kafkajs';
 import { KafkaHandler } from './handler';
-import { KAFKA_CLIENT_OPTS, KafkaClientOption } from './options';
+import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaReplyPartitionAssigner } from '../transport';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 
@@ -23,11 +23,11 @@ export class KafkaClient extends Client {
 
     constructor(
         readonly handler: KafkaHandler,
-        @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOption) {
+        @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOpts) {
         super()
-        this.brokers = options.client?.brokers ?? DEFAULT_BROKERS;
+        this.brokers = options.connectOpts?.brokers ?? DEFAULT_BROKERS;
         const postfixId = options.postfixId = options.postfixId ?? '-client';
-        this.clientId = (options.client?.clientId ?? 'boot-consumer') + postfixId;
+        this.clientId = (options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 

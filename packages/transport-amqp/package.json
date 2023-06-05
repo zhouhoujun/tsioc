@@ -32,9 +32,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@types/amqp-connection-manager": "^2.0.12",
     "@types/amqplib": "^0.8.2",
-    "amqp-connection-manager": "^4.1.2",
     "amqplib": "^0.8.0"
   },
   "directories": {

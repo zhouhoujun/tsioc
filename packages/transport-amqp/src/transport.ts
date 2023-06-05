@@ -1,5 +1,5 @@
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, Optional, isString } from '@tsdi/ioc';
+import { Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, StreamAdapter, ev, hdr, toBuffer } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
@@ -34,18 +34,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
     protected queues: Map<string, QueueBuffer> = new Map();
 
     protected override bindMessageEvent(options: AmqpSessionOpts): void {
-        // const queue = options.serverSide ? options.queue! : options.replyQueue!;
-        // this.socket.consume(queue, msg => {
-        //     if (!msg) return;
-        //     this.onData(
-        //         queue,
-        //         msg
-        //     )
-        // }, {
-        //     noAck: true,
-        //     ...this.options.consumeOpts
-        // });
-
         const onRespond = this.onData.bind(this);
         this.onSocket(ev.CUSTOM_MESSAGE, onRespond);
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);

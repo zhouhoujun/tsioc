@@ -1,7 +1,6 @@
 import { AssignerProtocol, Cluster, Consumer, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata } from 'kafkajs';
 import { Injectable, Optional, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { EventEmitter } from 'events';
 import { AbstractTransportSession, StreamAdapter } from '@tsdi/transport';
 
 
