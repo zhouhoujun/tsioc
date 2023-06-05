@@ -2,44 +2,66 @@ import { AssignerProtocol, Cluster, Consumer, ConsumerRunConfig, EachMessagePayl
 import { Injectable, Optional, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { EventEmitter } from 'events';
+import { AbstractTransportSession, StreamAdapter } from '@tsdi/transport';
+
+
+export interface KafkaSessionOpts extends TransportSessionOpts, ConsumerRunConfig {
+
+}
 
 
 @Injectable()
 export class KafkaTransportSessionFactory implements TransportSessionFactory<Consumer> {
 
     constructor(
+        private streamAdapter: StreamAdapter,
         @Optional() private encoder: Encoder,
         @Optional() private decoder: Decoder) {
 
     }
 
-    create(socket: Consumer, opts: TransportSessionOpts & ConsumerRunConfig): TransportSession<Consumer> {
-        return new KafkaTransportSession(socket, opts);
+    create(socket: Consumer, opts: KafkaSessionOpts): TransportSession<Consumer> {
+        return new KafkaTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
 
-export class KafkaTransportSession extends EventEmitter implements TransportSession<Consumer> {
+export class KafkaTransportSession extends AbstractTransportSession<Consumer, KafkaSessionOpts> {
 
-    constructor(readonly socket: Consumer, private runConfig: ConsumerRunConfig) {
-        super();
-
-       
+    protected generate(data: Packet<any>): Promise<Buffer> {
+        throw new Error('Method not implemented.');
     }
+    protected generateNoPayload(data: Packet<any>): Promise<Buffer> {
+        throw new Error('Method not implemented.');
+    }
+    protected writeBuffer(buffer: Buffer, packet?: Packet<any> | undefined) {
+        throw new Error('Method not implemented.');
+    }
+    protected handleFailed(error: any): void {
+        throw new Error('Method not implemented.');
+    }
+    protected onSocket(name: string, event: (...args: any[]) => void): void {
+        throw new Error('Method not implemented.');
+    }
+    protected offSocket(name: string, event: (...args: any[]) => void): void {
+        throw new Error('Method not implemented.');
+    }
+    protected onData(...args: any[]): void {
+        throw new Error('Method not implemented.');
+    }
+
 
     async send(data: Packet<any>): Promise<void> {
         const consumer = this.socket;
         consumer.subscribe({ topic: 'ccc' });
         consumer.run({
-            ...this.runConfig,
+            ...this.options,
             // eachMessage: (p) => p
         });
         consumer.run()
     }
 
-    destroy?(error?: any): void {
-        throw new Error('Method not implemented.');
-    }
+
 
 
 }

@@ -10,10 +10,10 @@ import { KAFKA_CLIENT_OPTS } from './options';
 import { CONSUMER } from '../const';
 
 /**
- * tcp request adapter.
+ * kafka request adapter.
  */
 @Injectable()
-export class AmqpRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
+export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
 
     allocator = new NumberAllocator(1, 65536);
     last?: number;
