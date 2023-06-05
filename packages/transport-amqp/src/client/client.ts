@@ -6,6 +6,7 @@ import { from, map, Observable } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AMQP_CHANNEL, AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
+import { AmqpSessionOpts } from '../options';
 
 
 
@@ -49,7 +50,6 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
             };
             const onClose = (err?: any) => {
                 err && this.logger.error(err);
-                this.onShutdown()
             }
 
             (async () => {
@@ -63,28 +63,25 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     this._conn.on(ev.DISCONNECT, onError);
                     this._conn.on(ev.CONNECT_FAILED, onConnectFailed);
 
-                    const chl = this._channel = await this._conn.createChannel();
-                    const transportOpts = this.options.transportOpts ?? EMPTY_OBJ;
+                    this._channel = await this._conn.createChannel();
+                    const transportOpts = this.options.transportOpts!;
 
                     if (!transportOpts.noAssert) {
-                        // await chl.assertQueue(transportOpts.queue!, transportOpts.queueOpts);
-                        await chl.assertQueue(transportOpts.replyQueue ?? transportOpts.queue + '.reply', transportOpts.queueOpts)
+                        // await chl.assertQueue(transportOpts.queue, transportOpts.queueOpts);
+                        await this._channel.assertQueue(transportOpts.replyQueue!, transportOpts.queueOpts)
                     }
-                    await chl.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
+                    await this._channel.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
 
-                    await chl.consume(transportOpts.replyQueue , msg => {
-                        if (!msg) return;
-                        chl.emit(ev.RESPONSE, transportOpts.replyQueue, msg)
-                        // this.onData(
-                        //     transportOpts.replyQueue ,
-                        //     msg
-                        // )
+                    await this._channel.consume(transportOpts.replyQueue!, msg => {
+                        if (!msg || !this._channel) return;
+                        this._channel.emit(ev.CUSTOM_MESSAGE, transportOpts.replyQueue, msg)
                     }, {
                         noAck: true,
                         ...transportOpts.consumeOpts
                     });
                     this._connected = true;
-                    observer.next(this._channel!);
+
+                    observer.next();
                     observer.complete();
 
                 } catch (err) {

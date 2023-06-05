@@ -65,23 +65,14 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 }, opts.timeout)
             }
 
-
-            const unsub = () => {
+            return () => {
                 request.off(message, onMessage);
                 request.off(ev.ERROR, onError);
                 request.off(ev.CLOSE, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
-                if (!req.context.destroyed) {
-                    observer.error(this.createErrorResponse({
-                        status: this.vaildator.none,
-                        statusText: 'The operation was aborted.'
-                    }));
-                }
                 request.destroy?.();
             }
-            req.context?.onDestroy(unsub);
-            return unsub;
         });
     }
 

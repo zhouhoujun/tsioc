@@ -34,6 +34,7 @@ export namespace ev {
 
     export const MESSAGE = 'message';
     export const MESSAGE_BUFFER = 'messageBuffer';
+    export const CUSTOM_MESSAGE = 'custom_message';
     export const PAUSE = 'pause';
     export const RESUME = 'resume';
     export const RESPONSE = 'response';

@@ -177,21 +177,13 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
             this.write(request, req, onError);
 
-            const unsub = () => {
+            return () => {
                 request.off(respEventName, onResponse);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
-                if (!req.context.destroyed) {
-                    observer.error(this.createErrorResponse({
-                        status: this.vaildator.none,
-                        statusText: 'The operation was aborted.'
-                    }));
-                }
-            };
-            req.context?.onDestroy(unsub);
-            return unsub;
+            }
         });
     }
 

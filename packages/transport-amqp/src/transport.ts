@@ -26,7 +26,7 @@ export interface QueueBuffer {
     queue: string;
     buffer: Buffer | null;
     contentLength: number | null;
-    cachePkg: Map<number | string, Packet>;
+    pkgs: Map<number | string, Packet>;
 
 }
 
@@ -47,8 +47,8 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         // });
 
         const onRespond = this.onData.bind(this);
-        this.onSocket(ev.RESPONSE, onRespond);
-        this._evs.push([ev.RESPONSE, onRespond]);
+        this.onSocket(ev.CUSTOM_MESSAGE, onRespond);
+        this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
@@ -131,14 +131,14 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
                     queue,
                     buffer: null,
                     contentLength: ~~msg.properties.headers[hdr.CONTENT_LENGTH],
-                    cachePkg: new Map()
+                    pkgs: new Map()
                 }
                 this.queues.set(queue, chl)
             } else if (chl.contentLength === null) {
                 chl.buffer = null;
                 chl.contentLength = ~~msg.properties.headers[hdr.CONTENT_LENGTH];
             }
-            if (!chl.cachePkg.has(msg.properties.correlationId)) {
+            if (!chl.pkgs.has(msg.properties.correlationId)) {
                 const headers = { ...msg.properties.headers };
                 if (!headers[hdr.CONTENT_TYPE]) {
                     headers[hdr.CONTENT_TYPE] = msg.properties.contentType;
@@ -146,7 +146,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
                 if (!headers[hdr.CONTENT_ENCODING]) {
                     headers[hdr.CONTENT_ENCODING] = msg.properties.contentEncoding;
                 }
-                chl.cachePkg.set(msg.properties.correlationId, {
+                chl.pkgs.set(msg.properties.correlationId, {
                     id: msg.properties.correlationId,
                     url: headers[hdr.PATH],
                     replyTo: msg.properties.replyTo,
@@ -188,10 +188,10 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
 
     protected emitMessage(chl: QueueBuffer, id: string, chunk: Buffer) {
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
-        const pkg = chl.cachePkg.get(id);
+        const pkg = chl.pkgs.get(id);
         if (pkg) {
             pkg.payload = data.length ? data : null;
-            chl.cachePkg.delete(id);
+            chl.pkgs.delete(id);
             this.emit(ev.MESSAGE, chl.queue, pkg);
         }
     }

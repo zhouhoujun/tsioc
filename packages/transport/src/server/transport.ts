@@ -12,7 +12,7 @@ import { PacketLengthException } from '../execptions';
 export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter implements TransportSession<T> {
 
     protected _evs: Array<[string, (...args: any[]) => void]>;
-
+    private _destroyed = false;
     constructor(
         readonly socket: T,
         protected streamAdapter: StreamAdapter,
@@ -42,6 +42,8 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
 
     destroy(error?: any): void {
+        if (this._destroyed) return;
+        this._destroyed = true;
         this._evs.forEach(it => {
             const [e, event] = it;
             this.offSocket(e, event);

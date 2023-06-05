@@ -46,7 +46,6 @@ export class AmqpServer extends MicroService<AmqpContext> {
         });
         conn.on(ev.CLOSE, (err) => {
             err && this.logger.error(err);
-            this.onShutdown()
         });
         conn.on(ev.ERROR, (err) => {
             this.logger.error(err)
@@ -66,7 +65,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
 
         const channel = this._channel = await this._conn.createChannel();
 
-        const transportOpts = this.options.transportOpts ?? {};
+        const transportOpts = this.options.transportOpts!;
         transportOpts.serverSide = true;
 
         if (!transportOpts.noAssert) {
@@ -76,11 +75,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
 
         await channel.consume(transportOpts.queue!, msg => {
             if (!msg) return;
-            channel.emit(ev.RESPONSE, transportOpts.queue, msg)
-            // this.onData(
-            //     transportOpts.replyQueue ,
-            //     msg
-            // )
+            channel.emit(ev.CUSTOM_MESSAGE, transportOpts.queue, msg)
         }, {
             noAck: true,
             ...transportOpts.consumeOpts
