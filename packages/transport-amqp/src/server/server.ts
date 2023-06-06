@@ -39,7 +39,7 @@ export class AmqpServer extends MicroService<AmqpContext> {
 
     protected async onStartup(): Promise<any> {
 
-        const conn = this._conn = await this.createConnection(this.options.retryAttempts || 1, this.options.retryDelay ?? 0);
+        const conn = this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
         this._connected = true;
         conn.on(ev.CONNECT, () => {
             this._connected = true;
@@ -50,13 +50,12 @@ export class AmqpServer extends MicroService<AmqpContext> {
         conn.on(ev.ERROR, (err) => {
             this.logger.error(err)
         });
-        conn.on(ev.DISCONNECT, (err) => {
+        conn.on(ev.DISCONNECT, async (err) => {
             this._connected = false;
             this.logger.error('Disconnected from rmq. Try to reconnect.');
-            this.logger.error(err)
-        });
-        conn.on(ev.CONNECT_FAILED, () => {
-            
+            this.logger.error(err);
+            this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
+            this.onStart();
         });
     }
     protected async onStart(): Promise<any> {

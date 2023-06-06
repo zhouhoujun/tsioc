@@ -45,23 +45,24 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                 observer.complete();
             };
 
-            const onConnectFailed = () => {
-                this._connected = false;
+            const onDisConnect = (err: any) => {
+                this.logger.error('Disconnected from rmq. Try to reconnect.');
+                this.logger.error(err)
+                connecting();
             };
             const onClose = (err?: any) => {
                 err && this.logger.error(err);
             }
 
-            (async () => {
+            const connecting = async () => {
                 try {
                     if (!this._conn) {
-                        this._conn = await this.createConnection(observer, this.options.retryAttempts || 1, this.options.retryDelay ?? 0);
+                        this._conn = await this.createConnection(observer, this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
                     }
                     this._conn.on(ev.CONNECT, onConnect);
                     this._conn.on(ev.CLOSE, onClose);
                     this._conn.on(ev.ERROR, onError);
-                    this._conn.on(ev.DISCONNECT, onError);
-                    this._conn.on(ev.CONNECT_FAILED, onConnectFailed);
+                    this._conn.on(ev.DISCONNECT, onDisConnect);
 
                     this._channel = await this._conn.createChannel();
                     const transportOpts = this.options.transportOpts!;
@@ -88,15 +89,16 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent> {
                     onError(err)
                 }
 
-            })()
+            };
+
+            connecting();
 
             return () => {
                 if (!this._conn) return;
                 this._conn.off(ev.CONNECT, onConnect);
                 this._conn.off(ev.ERROR, onError);
                 this._conn.off(ev.CLOSE, onClose);
-                this._conn.off(ev.DISCONNECT, onError);
-                this._conn.off(ev.CONNECT_FAILED, onConnectFailed);
+                this._conn.off(ev.DISCONNECT, onDisConnect);
             };
         });
 
