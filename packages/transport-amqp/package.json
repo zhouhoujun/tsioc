@@ -32,8 +32,8 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@types/amqplib": "^0.8.2",
-    "amqplib": "^0.8.0"
+    "@types/amqplib": "^0.10.1",
+    "amqplib": "^0.10.3"
   },
   "directories": {
     "lib": "lib",

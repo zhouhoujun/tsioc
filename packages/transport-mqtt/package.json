@@ -31,7 +31,9 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "mqtt": "^4.3.7"
+  },
   "directories": {
     "lib": "lib",
     "test": "test"
