@@ -1,7 +1,6 @@
 import { ConfigableHandlerOptions, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import * as dgram from 'dgram';
-import * as net from 'net';
+import { AgentOptions } from 'coap';
 
 
 
@@ -11,8 +10,7 @@ export interface CoapClientOpts extends ConfigableHandlerOptions<TransportReques
      */
     json?: boolean;
     encoding?: BufferEncoding;
-    baseOn?: 'tcp' | 'udp';
-    connectOpts: dgram.SocketOptions | net.TcpNetConnectOpts;
+    connectOpts: AgentOptions;
 }
 
 export const COAP_CLIENT_OPTS = tokenId<CoapClientOpts>('COAP_CLIENT_OPTS');

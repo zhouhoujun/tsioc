@@ -26,11 +26,15 @@ export abstract class ListenOpts {
     withCredentials?: boolean;
 }
 
+export interface BindListenning {
+    listen(listeningListener?: () => void): this;
+    listen(options: number, listeningListener?: () => void): this;
+}
 /**
  * listen service.
  */
 export interface ListenService<LOpt = ListenOpts> {
-    listen(options: LOpt, listeningListener?: () => void): this;
+    listen(options: LOpt | number, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
 }
 

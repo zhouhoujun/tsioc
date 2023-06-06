@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, IWritableStream } from '@tsdi/core';
+import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, IWritableStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { toBuffer } from '../utils';
@@ -186,6 +186,17 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             }
         });
     }
+
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: TStatus; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
+        return new TransportErrorResponse(options) as TResponse;
+    }
+    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: TStatus; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
+        return new TransportHeaderResponse(options) as TResponse;
+    }
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: TStatus; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TResponse {
+        return new TransportResponse(options) as TResponse;
+    }
+
 
     /**
      * response event of request stream.

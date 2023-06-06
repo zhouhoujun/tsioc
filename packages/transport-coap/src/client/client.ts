@@ -1,8 +1,8 @@
-import { Client, Connection, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Inject, Injectable } from '@tsdi/ioc';
-import { ConnectionOpts, DuplexConnection, parseToDuplex } from '@tsdi/platform-server-transport';
-import * as dgram from 'dgram';
-import * as net from 'net';
+import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { ev } from '@tsdi/transport';
+import { Agent } from 'coap';
 import { Observable } from 'rxjs';
 import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';
 import { CoapHandler } from './handler';
@@ -14,60 +14,63 @@ import { CoapHandler } from './handler';
 @Injectable()
 export class CoapClient extends Client<TransportRequest, TransportEvent> {
 
+    @InjectLog()
+    private logger!: Logger;
+
+    private _agent?: Agent;
     constructor(
         readonly handler: CoapHandler,
-        @Inject(COAP_CLIENT_OPTS, { nullable: true }) private option: CoapClientOpts) {
+        @Inject(COAP_CLIENT_OPTS) private option: CoapClientOpts) {
         super();
     }
 
-    protected connect(): Promise<any> | Observable<any> {
-        throw new Error('Method not implemented.');
+    protected connect(): Observable<any> {
+        return new Observable<Agent>(observer => {
+            if (!this._agent) {
+                this._agent = new Agent(this.option.connectOpts);
+            }
+
+            const onError = (err: any) => {
+                this.logger?.error(err);
+                observer.error(err);
+            }
+            const onConnect = () => {
+                observer.next(this._agent);
+                observer.complete();
+            }
+            const onClose = () => {
+                observer.complete();
+            }
+            this._agent.on(ev.CONNECT, onConnect)
+                .on(ev.ERROR, onError)
+                .on(ev.DISCONNECT, onError)
+                .on(ev.END, onClose)
+                .on(ev.CLOSE, onClose);
+
+            onConnect();
+
+            let cleaned = false;
+            return () => {
+                if (cleaned) return;
+                cleaned = true;
+                this._agent?.off(ev.CONNECT, onConnect)
+                    .off(ev.ERROR, onError)
+                    .off(ev.DISCONNECT, onError)
+                    .off(ev.END, onClose)
+                    .off(ev.CLOSE, onClose);
+            }
+
+        })
     }
-    protected onShutdown(): Promise<void> {
-        throw new Error('Method not implemented.');
+
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        context.setValue(Agent, this._agent);
     }
 
-    protected isValid(connection: Connection<dgram.Socket | net.Socket>): boolean {
-        return !connection.destroyed;
+    protected async onShutdown(): Promise<void> {
+        if (this._agent) await promisify(this._agent.close)();
     }
 
-    protected createConnection(opts: ConnectionOpts): Connection<dgram.Socket | net.Socket> {
-        const socket = opts.baseOn === 'tcp' ? net.connect(opts.connectOpts as net.TcpNetConnectOpts) : dgram.createSocket(opts.connectOpts as dgram.SocketOptions);
-        const packet = this.handler.injector.get(CoapPacketFactory);
-        return new DuplexConnection(socket, packet, { parseToDuplex, ...opts });
-    }
-
-    // protected onConnect(duplex: Duplex, opts?: ConnectionOpts): Observable<Connection> {
-    //     const logger = this.logger;
-    //     const packetor = this.context.get(CoapPacketFactory);
-    //     return new Observable((observer: Observer<Connection>) => {
-    //         const client = new Connection(duplex, packetor, opts);
-    //         if (opts?.keepalive) {
-    //             client.setKeepAlive(true, opts.keepalive);
-    //         }
-
-    //         const onError = (err: Error) => {
-    //             logger.error(err);
-    //             observer.error(err);
-    //         }
-    //         const onClose = () => {
-    //             client.end();
-    //         };
-    //         const onConnected = () => {
-    //             observer.next(client);
-    //         }
-    //         client.on(ev.ERROR, onError);
-    //         client.on(ev.CLOSE, onClose);
-    //         client.on(ev.END, onClose);
-    //         client.on(ev.CONNECT, onConnected);
-
-    //         return () => {
-    //             client.off(ev.ERROR, onError);
-    //             client.off(ev.CLOSE, onClose);
-    //             client.off(ev.END, onClose);
-    //             client.off(ev.CONNECT, onConnected);
-    //         }
-    //     });
-    // }
 
 }

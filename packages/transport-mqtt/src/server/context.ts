@@ -1,14 +1,15 @@
-import { Incoming } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import { MqttIncoming } from './incoming';
+import { MqttOutgoing } from './outgoing';
 
 
-export class MqttContext extends AbstractAssetContext {
+export class MqttContext extends AbstractAssetContext<MqttIncoming, MqttOutgoing> {
 
     isAbsoluteUrl(url: string): boolean {
         return mqttabs.test(url)
     }
 
-    protected parseURL(req: Incoming<any, any>, prooxy?: boolean | undefined): URL {
+    protected parseURL(req: MqttIncoming, prooxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);

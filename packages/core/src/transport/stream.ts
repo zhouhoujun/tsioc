@@ -348,7 +348,13 @@ export interface IReadableStream<T = any> extends IStream {
     [Symbol.asyncIterator](): AsyncIterableIterator<T>;
 }
 
-export interface IWritableStream<T = any> extends IStream {
+export interface IEndable<T = any> {
+    end(cb?: () => void): this;
+    end(data: T, cb?: () => void): this;
+    end(str: string, encoding?: BufferEncoding, cb?: () => void): this;
+}
+
+export interface IWritableStream<T = any> extends IStream, IEndable<T> {
     writable: boolean;
     write(buffer: T, cb?: (err?: Error | null) => void): boolean;
     write(str: string | T, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;

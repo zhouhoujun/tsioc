@@ -1,23 +1,20 @@
 
-import { AssetContext, AssetEndpointOptions, ExecptionFilter, Interceptor, MiddlewareLike, Outgoing } from '@tsdi/core';
+import { AssetContext, TransportEndpointOptions, ExecptionFilter, Interceptor, MiddlewareLike, Outgoing } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import * as net from 'net';
-import * as dgram from 'dgram';
-
+import { CoapServerOptions } from 'coap';
 
 
 /**
  * Coap server options.
  */
-export interface CoapServerOpts extends AssetEndpointOptions<AssetContext, Outgoing> {
+export interface CoapServerOpts extends TransportEndpointOptions<AssetContext, Outgoing> {
     /**
      * is json or not.
      */
     json?: boolean;
-    baseOn?: 'tcp' | 'udp';
     encoding?: BufferEncoding;
-    serverOpts: dgram.SocketOptions | net.ServerOpts;
-    listenOpts?: net.ListenOptions;
+    serverOpts?: CoapServerOptions;
+    listenOpts?: number | { port?: number, listener?: () => void };
 }
 
 export const COAP_SERVER_OPTS = tokenId<CoapServerOpts>('COAP_SERVER_OPTS');

@@ -1,8 +1,10 @@
 import { Incoming } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import { IncomingMessage } from 'coap';
+import { CoapOutgoing } from './outgoing';
 
 
-export class CoapContext extends AbstractAssetContext {
+export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgoing> {
     isAbsoluteUrl(url: string): boolean {
         throw new Error('Method not implemented.');
     }

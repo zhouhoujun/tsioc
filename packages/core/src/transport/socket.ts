@@ -1,7 +1,7 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
+import { OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
-import { IReadableStream, IWritableStream, IDuplexStream, IEventEmitter } from './stream';
+import { IReadableStream, IDuplexStream, IEventEmitter, IEndable } from './stream';
 import { Decoder, Encoder } from '../coding';
 
 /**
@@ -142,7 +142,7 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
     /**
      * headers
      */
-    readonly headers: IncomingHeaders;
+    readonly headers: Record<string, any>;
     /**
      * Outgoing URL
      */
@@ -156,7 +156,7 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
      */
     readonly method?: string;
 
-    readonly socket: TSocket;
+    readonly socket?: TSocket;
 
     setTimeout?: (msecs: number, callback: () => void) => void;
 
@@ -168,9 +168,9 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
 /**
  * server outgoing message stream.
  */
-export interface Outgoing<TSocket = any, TStatus = any> extends IWritableStream {
+export interface Outgoing<TSocket = any, TStatus = any> extends IEndable {
 
-    readonly socket: TSocket;
+    readonly socket?: TSocket;
     /**
      * Get response status code.
      */
@@ -179,27 +179,28 @@ export interface Outgoing<TSocket = any, TStatus = any> extends IWritableStream 
      * Set response status code.
      */
     set statusCode(status: TStatus);
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    get statusMessage(): string;
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    set statusMessage(msg: string);
+    // /**
+    //  * Textual description of response status code, defaults to OK.
+    //  *
+    //  * Do not depend on this.
+    //  */
+    // get statusMessage(): string;
+    // /**
+    //  * Textual description of response status code, defaults to OK.
+    //  *
+    //  * Do not depend on this.
+    //  */
+    // set statusMessage(msg: string);
+    statusMessage?: string;
 
     /**
      * headers has sent or not.
      */
-    get headersSent(): boolean;
+    readonly headersSent?: boolean;
     /**
      * Get all headers.
      */
-    getHeaders(): OutgoingHeaders;
+    getHeaders?(): OutgoingHeaders;
 
     /**
      * has header field or not.
@@ -238,7 +239,7 @@ export interface Outgoing<TSocket = any, TStatus = any> extends IWritableStream 
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: OutgoingHeader): void;
+    setHeader(field: string, val: any): void;
     /**
      * append header `field` to `val` or pass
      * an object of header fields.
@@ -266,19 +267,19 @@ export interface Outgoing<TSocket = any, TStatus = any> extends IWritableStream 
      */
     getHeaderNames?(): string[];
 
-    /**
-     * write head
-     * @param statusCode 
-     * @param headers 
-     */
-    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    /**
-     * write head
-     * @param statusCode 
-     * @param statusMessage 
-     * @param headers 
-     */
-    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    // /**
+    //  * write head
+    //  * @param statusCode 
+    //  * @param headers 
+    //  */
+    // writeHead?(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    // /**
+    //  * write head
+    //  * @param statusCode 
+    //  * @param statusMessage 
+    //  * @param headers 
+    //  */
+    // writeHead?(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
 
 }
 

@@ -1,7 +1,7 @@
 import {
     OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, ListenOpts, EndpointInvokeOpts, normalize
 } from '@tsdi/core';
-import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
@@ -744,7 +744,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     get sent() {
-        return this.response.headersSent
+        return this.response.headersSent!
     }
 
     /**

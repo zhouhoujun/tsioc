@@ -1,7 +1,7 @@
 import { IWritableStream, IDuplexStream, IReadableStream, ITransformStream, isFormData } from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { BrotliOptions, PipeSource, StreamAdapter, ZipOptions, ev, isBuffer } from '@tsdi/transport';
-import { Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback, PipelineSource } from 'stream';
+import { isReadable, Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
 import { promisify } from 'util';
 import * as zlib from 'zlib';
 import * as FormData from 'form-data';
@@ -47,10 +47,10 @@ export class NodeStreamAdapter extends StreamAdapter {
     }
 
     isReadable(stream: any): stream is IReadableStream<any> {
-        return stream instanceof Readable;
+        return isReadable(stream);
     }
     isWritable(stream: any): stream is IWritableStream<any> {
-        return stream instanceof Writable;
+        return stream instanceof Writable || (this.isStream(stream) && (stream as Writable).writable);
     }
     passThrough(options?: {
         allowHalfOpen?: boolean | undefined;

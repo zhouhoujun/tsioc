@@ -1,14 +1,15 @@
-import { Incoming, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import { AmqpIncoming } from './incoming';
+import { AmqpOutgoing } from './outgoing';
 
 
-export class AmqpContext extends AbstractAssetContext<Incoming, Outgoing, number> {
+export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing, number> {
 
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)
     }
 
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
+    protected parseURL(req: AmqpIncoming, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
