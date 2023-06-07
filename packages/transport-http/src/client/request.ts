@@ -36,8 +36,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         }
     }
 
-    createRequest(req: HttpRequest<any>): IWritableStream {
-        const url = req.urlWithParams.trim();
+    createRequest(url: string, req: HttpRequest<any>): IWritableStream {
         const ac = this.getAbortSignal(req.context);
         const option = req.context.get(HTTP_CLIENT_OPTS);
         if (option.authority) {

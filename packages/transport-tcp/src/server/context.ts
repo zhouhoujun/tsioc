@@ -1,4 +1,3 @@
-import { Incoming, ListenOpts, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
 import * as tls from 'tls';
 import { TcpIncoming } from './incoming';
@@ -11,7 +10,7 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
         return tcptl.test(url.trim())
     }
 
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
+    protected parseURL(req: TcpIncoming, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);

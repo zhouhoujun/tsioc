@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, IWritableStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse } from '@tsdi/core';
+import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, Outgoing, IEndable } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { toBuffer } from '../utils';
@@ -13,9 +13,10 @@ import { RequestAdapter } from './request';
 export abstract class StreamRequestAdapter<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> extends RequestAdapter<TRequest, TResponse, TStatus> {
     /**
      * create request stream by req.
+     * @param url request url with params.
      * @param req 
      */
-    protected abstract createRequest(req: TRequest): IWritableStream;
+    protected abstract createRequest(url: string, req: TRequest): IEndable;
 
     /**
      * send request.
@@ -32,7 +33,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             let error: any;
             let ok = false;
 
-            const request = this.createRequest(req);
+            const request = this.createRequest(url, req);
 
             const onError = (error?: Error | null) => {
                 const res = this.createErrorResponse({
@@ -209,7 +210,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
      * @param req 
      * @param callback 
      */
-    protected abstract write(request: IWritableStream, req: TRequest, callback: (error?: Error | null) => void): void;
+    protected abstract write(request: IEndable, req: TRequest, callback: (error?: Error | null) => void): void;
 
 }
 

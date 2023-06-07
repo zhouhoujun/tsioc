@@ -47,8 +47,9 @@ export class NodeStreamAdapter extends StreamAdapter {
     }
 
     isReadable(stream: any): stream is IReadableStream<any> {
-        return isReadable(stream);
+        return isReadable? isReadable(stream): stream instanceof Readable;
     }
+
     isWritable(stream: any): stream is IWritableStream<any> {
         return stream instanceof Writable || (this.isStream(stream) && (stream as Writable).writable);
     }

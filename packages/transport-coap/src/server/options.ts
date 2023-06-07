@@ -17,7 +17,7 @@ export interface CoapServerOpts extends TransportEndpointOptions<AssetContext, O
     listenOpts?: number | { port?: number, listener?: () => void };
 }
 
-export const COAP_SERVER_OPTS = tokenId<CoapServerOpts>('COAP_SERVER_OPTS');
+export const COAP_SERV_OPTS = tokenId<CoapServerOpts>('COAP_SERV_OPTS');
 
 /**
  * CoAP server interceptors.

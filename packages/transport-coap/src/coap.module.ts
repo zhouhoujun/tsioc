@@ -1,14 +1,14 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule } from '@tsdi/core';
-import { Module, ModuleWithProviders, ProviderType } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createHandler, createTransportEndpoint } from '@tsdi/core';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import {
-    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware,
-    ExecptionFinalizeFilter, HelmetMiddleware, LogInterceptor, ServerFinalizeFilter, SessionMiddleware, TransportModule
+    Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule
 } from '@tsdi/transport';
 import { CoapClient } from './client/client';
-import { CoapVaildator } from './transport';
 import { CoapServer } from './server/server';
-import { COAP_SERV_FILTERS, COAP_MIDDLEWARES, COAP_SERVER_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts } from './server/options';
-import { COAP_FILTERS, COAP_INTERCEPTORS, CoapClientOpts } from './client/options';
+import { COAP_SERV_FILTERS, COAP_MIDDLEWARES, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts } from './server/options';
+import { COAP_CLIENT_OPTS, COAP_FILTERS, COAP_INTERCEPTORS, CoapClientOpts, CoapClientsOpts } from './client/options';
+import { CoapHandler } from './client/handler';
+import { CoapEndpoint } from './server/endpoint';
 
 @Module({
     imports: [
@@ -17,7 +17,6 @@ import { COAP_FILTERS, COAP_INTERCEPTORS, CoapClientOpts } from './client/option
         TransportModule
     ],
     providers: [
-        CoapVaildator,
         CoapClient,
         CoapServer
     ]
@@ -25,12 +24,39 @@ import { COAP_FILTERS, COAP_INTERCEPTORS, CoapClientOpts } from './client/option
 export class CoapModule {
 
     /**
-     * CoAP Server options.
-     * @param options 
+     * import CoAP mirco service module with options.
+     * @param options mirco service module options.
      * @returns 
      */
-    static withOptions(options: CoapServerOpts): ModuleWithProviders<CoapModule> {
-        const providers: ProviderType[] = [{ provide: COAP_SERVER_OPTS, useValue: options }];
+    static forMicroService(options: CoapModuleOptions): ModuleWithProviders<CoapModule> {
+        const providers: ProviderType[] = [
+            ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
+                provide: opts.client,
+                useFactory: (injector: Injector) => {
+                    return injector.resolve(CoapClient, [{ provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                },
+                deps: [Injector]
+            }))
+                : [{ provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
+            { provide: COAP_SERV_OPTS, useValue: { ...defServOpts, ...options.serverOpts } },
+            toProvider(CoapHandler, options.handler ?? {
+                useFactory: (injector: Injector, opts: CoapClientOpts) => {
+                    if (!opts.interceptors) {
+                        Object.assign(opts, defClientOpts);
+                        injector.setValue(COAP_CLIENT_OPTS, opts);
+                    }
+                    return createHandler(injector, opts);
+                },
+                deps: [Injector, COAP_CLIENT_OPTS]
+            }),
+            toProvider(CoapEndpoint, options.endpoint ?? {
+                useFactory: (injector: Injector, opts: CoapServerOpts) => {
+                    return createTransportEndpoint(injector, opts)
+                },
+                deps: [Injector, COAP_SERV_OPTS]
+            })
+        ];
+
         return {
             module: CoapModule,
             providers
@@ -39,10 +65,31 @@ export class CoapModule {
 }
 
 
-const defaults = {
-    transport: {
-        strategy: CoapVaildator
-    },
+
+/**
+ * tcp mirco service module options.
+ */
+export interface CoapModuleOptions {
+    /**
+     * client options.
+     */
+    clientOpts?: CoapClientOpts | CoapClientsOpts[];
+    /**
+     * client handler provider
+     */
+    handler?: ProvdierOf<CoapHandler>;
+    /**
+     * service endpoint provider
+     */
+    endpoint?: ProvdierOf<CoapEndpoint>;
+
+    /**
+     * server options
+     */
+    serverOpts?: CoapServerOpts;
+}
+
+const defClientOpts = {
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_FILTERS,
     address: {
@@ -55,38 +102,22 @@ const defaults = {
 } as CoapClientOpts;
 
 
-const defOpts = {
-    json: true,
-    encoding: 'utf8',
-    transport: {
-        strategy: CoapVaildator
-    },
+const defServOpts = {
     interceptorsToken: COAP_SERV_INTERCEPTORS,
     execptionsToken: COAP_SERV_FILTERS,
     middlewaresToken: COAP_MIDDLEWARES,
-    interceptors: [],
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
-    middlewares: [
-        HelmetMiddleware,
-        CorsMiddleware,
-        ContentMiddleware,
-        SessionMiddleware,
-        CsrfMiddleware,
-        JsonMiddleware,
-        BodyparserMiddleware,
-        HybridRouter
-    ],
-    serverOpts: {
-        type: 'udp4'
-    },
-    listenOpts: {
-        port: 4000,
-        host: 'localhost'
-    }
+    backend: HybridRouter,
+    interceptors: [
+        Content,
+        Session,
+        Json,
+        Bodyparser
+    ]
 } as CoapServerOpts;
 

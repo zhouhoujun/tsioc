@@ -1,7 +1,7 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { OutgoingHeader, OutgoingHeaders } from './headers';
 import { Packet } from './packet';
-import { IReadableStream, IDuplexStream, IEventEmitter, IEndable } from './stream';
+import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
 import { Decoder, Encoder } from '../coding';
 
 /**
@@ -168,7 +168,7 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
 /**
  * server outgoing message stream.
  */
-export interface Outgoing<TSocket = any, TStatus = any> extends IEndable {
+export interface Outgoing<TSocket = any, TStatus = any> extends IEnd {
 
     readonly socket?: TSocket;
     /**

@@ -1,9 +1,9 @@
 
-import { AssetContext, InternalServerExecption, BindListenning, MicroService, Outgoing, TransportSessionFactory, TransportSession, Packet, GET } from '@tsdi/core';
+import { AssetContext, InternalServerExecption, BindListenning, MicroService, Outgoing } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Server, IncomingMessage, OutgoingMessage } from 'coap';
-import { COAP_SERVER_OPTS, CoapServerOpts } from './options';
+import { COAP_SERV_OPTS, CoapServerOpts } from './options';
 
 import { CoapEndpoint } from './endpoint';
 import { ev } from '@tsdi/transport';
@@ -21,7 +21,7 @@ export class CoapServer extends MicroService<AssetContext, Outgoing> implements 
 
     constructor(
         readonly endpoint: CoapEndpoint,
-        @Inject(COAP_SERVER_OPTS) private options: CoapServerOpts) {
+        @Inject(COAP_SERV_OPTS) private options: CoapServerOpts) {
         super()
     }
 

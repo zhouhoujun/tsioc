@@ -6,31 +6,45 @@ import { CoapOutgoing } from './outgoing';
 
 export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgoing> {
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return coaptl.test(url.trim())
     }
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+    protected parseURL(req: Incoming<any, any>, proxy?: boolean): URL {
+        const url = req.url ?? '';
+        if (this.isAbsoluteUrl(url)) {
+            return new URL(url);
+        } else {
+            const { host, port, path } = this.getListenOpts();
+            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`);
+            const uri = new URL(url, baseUrl);
+            return uri;
+        }
     }
     get writable(): boolean {
-        throw new Error('Method not implemented.');
+        return !this.response.response.closed && !this.response.response.destroyed
     }
     get protocol(): string {
-        throw new Error('Method not implemented.');
+        return 'coap';
     }
-    get status(): string | number {
-        throw new Error('Method not implemented.');
+
+    get status(): string {
+        return this.response.statusCode;
     }
-    set status(status: string | number) {
-        throw new Error('Method not implemented.');
+    set status(status: string) {
+        this._explicitStatus = true;
+        this.response.statusCode = status;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
+
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage ?? '';
     }
     set statusMessage(message: string) {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = message;
     }
     get secure(): boolean {
-        throw new Error('Method not implemented.');
+        return false
     }
 
 }
+
+const coaptl = /^coap:\/\//i;

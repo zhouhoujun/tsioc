@@ -1,6 +1,7 @@
-import { IDuplexStream, IReadableStream, IStream, UnsupportedMediaTypeExecption, IWritableStream, ITransformStream, isArrayBuffer, isBlob, isFormData } from '@tsdi/core';
+import { IDuplexStream, IReadableStream, IStream, UnsupportedMediaTypeExecption, IWritableStream, ITransformStream, isArrayBuffer, isBlob, isFormData, IEndable } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
+import { toBuffer } from './utils';
 
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
 
@@ -29,7 +30,7 @@ export abstract class StreamAdapter {
      * @param error 
      * @param encoding 
      */
-    async sendbody(data: any, request: IWritableStream, error: (err: any) => void, encoding?: string): Promise<void> {
+    async sendbody(data: any, request: IWritableStream | IEndable, error: (err: any) => void, encoding?: string): Promise<void> {
         let source: PipeSource;
         try {
             if (isArrayBuffer(data)) {
@@ -63,7 +64,16 @@ export abstract class StreamAdapter {
                         throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
                 }
             }
-            await this.pipeTo(source, request)
+            if (this.isStream(request)) {
+                await this.pipeTo(source, request)
+            } else {
+                if (this.isStream(source)) {
+                    const buffers = await toBuffer(source);
+                    request.end(buffers);
+                } else {
+                    request.end(source);
+                }
+            }
         } catch (err) {
             error(err);
         }

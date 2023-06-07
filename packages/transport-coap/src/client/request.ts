@@ -1,13 +1,12 @@
-import { Decoder, Encoder, IWritableStream, Incoming, Redirector, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportRequest, TransportResponse } from '@tsdi/core';
-import { Injectable, Optional } from '@tsdi/ioc';
-import { MimeAdapter, MimeTypes, StatusPacket, StatusVaildator, StreamAdapter, RequestAdapter, hdr } from '@tsdi/transport';
-import { Agent } from 'coap';
-import { Observable } from 'rxjs';
+import { Decoder, Encoder, IEndable, Incoming, IncomingHeader, Redirector, ResHeaders, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Injectable, Optional, isArray } from '@tsdi/ioc';
+import { MimeAdapter, MimeTypes, StatusPacket, StatusVaildator, StreamAdapter, hdr, StreamRequestAdapter, ev, isBuffer } from '@tsdi/transport';
+import { request, AgentOptions, OptionValue, IncomingMessage } from 'coap';
+import { CoapMethod, OptionName } from 'coap-packet';
+import { COAP_CLIENT_OPTS } from './options';
 
 @Injectable()
-export class CoapRequestAdapter extends RequestAdapter<TransportRequest, TransportResponse, string> {
-
-  
+export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, string> {
 
     constructor(
         readonly mimeTypes: MimeTypes,
@@ -18,25 +17,83 @@ export class CoapRequestAdapter extends RequestAdapter<TransportRequest, Transpo
         @Optional() readonly encoder: Encoder,
         @Optional() readonly decoder: Decoder) {
         super()
-    }    
-    
-    
-    send(req: TransportRequest<any>): Observable<TransportResponse<any, any>> {
-        throw new Error('Method not implemented.');
     }
 
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportErrorResponse(options);
-    }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportHeaderResponse(options);
-    }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TransportEvent {
-        return new TransportResponse(options);
+
+    protected createRequest(url: string, req: TransportRequest<any>): IEndable {
+
+        const opts = req.context.get(COAP_CLIENT_OPTS);
+        const uri = new URL(url);
+        const options = req.headers.headers as Partial<Record<OptionName, OptionValue>>;
+
+        const requestStream = request({
+            ...opts.transportOpts,
+            hostname: uri.hostname,
+            port: parseInt(uri.port),
+            pathname: uri.pathname,
+            query: uri.search,
+            method: this.tpCoapMethod(req.method),
+            options,
+            headers: options,
+            // host?: string;
+            // hostname?: string;
+            // port?: number;
+            // method?: CoapMethod;
+            // confirmable?: boolean;
+            // observe?: 0 | 1 | boolean | string;
+            // pathname?: string;
+            // query?: string;
+            // options?: Partial<Record<OptionName, OptionValue>>;
+            // headers?: Partial<Record<OptionName, OptionValue>>;
+            // agent?: Agent | false;
+            // proxyUri?: string;
+            // multicast?: boolean;
+            // multicastTimeout?: number;
+            // retrySend?: number;
+            // token?: Buffer;
+            // contentFormat?: string | number;
+            // accept?: string | number;
+        });
+        return requestStream as any;
+
     }
 
-    parseHeaders(incoming: Incoming): ResHeaders {
-        return new ResHeaders(incoming.headers);
+    protected getResponseEvenName(): string {
+        return ev.RESPONSE;
+    }
+    protected write(request: IEndable<any>, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
+        const data = req.body;
+        if (data === null) {
+            request.end();
+        } else {
+            this.streamAdapter.sendbody(
+                this.encoder ? this.encoder.encode(data) : data,
+                request,
+                err => callback(err),
+                req.headers.get(hdr.CONTENT_ENCODING) as string);
+        }
+    }
+
+
+    protected tpCoapMethod(method?: string): CoapMethod {
+        if (!method) return 'GET';
+        const meth = method.toUpperCase();
+        switch (meth) {
+            case 'IPATCH':
+                return 'iPATCH';
+            default:
+                return meth as CoapMethod;
+        }
+    }
+
+
+    parseHeaders(incoming: IncomingMessage): ResHeaders {
+        const headers: Record<string, IncomingHeader> = {};
+        Object.keys(incoming.headers).forEach(n => {
+            const value = incoming.headers[n as OptionName];
+            headers[n] = isArray(value) ? value.map(v => v.toString()) : (isBuffer(value) ? value.toString() : value ?? undefined);
+        });
+        return new ResHeaders(headers);
     }
 
     parsePacket(incoming: any, headers: ResHeaders): StatusPacket<string> {
