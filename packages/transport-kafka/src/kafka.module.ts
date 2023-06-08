@@ -33,8 +33,8 @@ import { KafkaEndpoint } from './server/endpoint';
 })
 export class KafkaModule {
     /**
-     * import Kafka mirco service module with options.
-     * @param options mirco service module options.
+     * import Kafka micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static forMicroService(options: KafkaModuleOptions): ModuleWithProviders<KafkaModule> {

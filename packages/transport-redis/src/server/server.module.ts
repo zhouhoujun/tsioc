@@ -70,8 +70,8 @@ const defMicroOpts = {
 export class RedisMicroServiceModule {
 
     /**
-     * import Redis mirco service module with options.
-     * @param options mirco service module options.
+     * import Redis micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static withOption(options: {

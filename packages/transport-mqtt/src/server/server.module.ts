@@ -70,8 +70,8 @@ const defaultServOpts = {
 export class MqttMicroServiceModule {
 
     /**
-     * import mqtt mirco service module with options.
-     * @param options mirco service module options.
+     * import mqtt micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static withOption(options: {

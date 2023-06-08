@@ -47,6 +47,7 @@ const defClientOpts = {
                 }
                 return createHandler(injector, opts);
             },
+            asDefault: true,
             deps: [Injector, REDIS_CLIENT_OPTS]
         },
         RedisClient
@@ -56,8 +57,8 @@ const defClientOpts = {
 export class RedisClientModule {
 
     /**
-     * import Redis mirco service module with options.
-     * @param options mirco service module options.
+     * import Redis micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static withOption(options: {

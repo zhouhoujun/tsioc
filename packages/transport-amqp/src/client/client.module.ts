@@ -62,8 +62,8 @@ const defClientOpts = {
 })
 export class AmqpClientModule {
     /**
-     * import Amqp mirco service module with options.
-     * @param options mirco service module options.
+     * import Amqp micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static withOption(options: {

@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { CoapClient, CoapModule, CoapServer, CoapClientOpts, COAP_CLIENT_OPTS } from '../src';
+import { CoapClient, CoapMicroServiceModule, CoapServer, CoapClientOpts, COAP_CLIENT_OPTS, CoapClientModule } from '../src';
 import { DeviceController } from './controller';
 
 
@@ -14,14 +14,25 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        CoapModule.withOptions({
+        CoapClientModule.withOption({
+            clientOpts: {
+                connectOpts: {
+                    type: 'udp4',
+                    port: 2000
+                },
+            }
+
+        }),
+        CoapMicroServiceModule.withOption({
             // timeout: 1000,
             serverOpts: {
-                type: 'udp4'
+                connectOpts: {
+                    type: 'udp4'
+                },
+                listenOpts: {
+                    port: 2000
+                }
             },
-            listenOpts: {
-                port: 2000
-            }
         })
     ],
     declarations: [

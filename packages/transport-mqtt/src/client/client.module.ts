@@ -46,6 +46,7 @@ const defClientOpts = {
                 }
                 return createHandler(injector, opts);
             },
+            asDefault: true,
             deps: [Injector, MQTT_CLIENT_OPTS]
         },
         MqttClient
@@ -54,8 +55,8 @@ const defClientOpts = {
 export class MqttClientModule {
 
     /**
-     * import mqtt mirco service module with options.
-     * @param options mirco service module options.
+     * import mqtt micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static withOption(options: {

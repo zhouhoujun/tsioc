@@ -39,8 +39,8 @@ import { TcpTransportSessionFactory } from '../transport';
 })
 export class TcpMicroServiceModule {
     /**
-     * import tcp mirco service module with options.
-     * @param options mirco service module options.
+     * import tcp micro service module with options.
+     * @param options micro service module options.
      * @returns 
      */
     static withOptions(options: {
