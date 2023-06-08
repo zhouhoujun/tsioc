@@ -7,7 +7,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
 
 
 @RouteMapping('/device')
@@ -97,12 +97,13 @@ const ipcpath = path.join(__dirname, 'myipctmp')
     imports: [
         ServerModule,
         LoggerModule,
-        TcpModule.withOptions({
+        TcpClientModule,
             // clientOpts:{
             //     connectOpts: {
             //         path: ipcpath
             //     }
             // },
+        TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {

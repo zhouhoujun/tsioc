@@ -6,7 +6,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpServerModule, HttpServer, HttpModule } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
 
@@ -17,8 +17,8 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
-            clientOpts: {},
+        HttpModule,
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1,
                 listenOpts: {

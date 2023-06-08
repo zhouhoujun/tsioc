@@ -7,8 +7,9 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServerModule, HttpServer } from '../src';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
+
 
 @Module({
     imports: [
@@ -38,7 +39,9 @@ describe('middleware', () => {
                         options: {
                             ca: cert
                         }
-                    },
+                    }
+                }),
+                HttpServerModule.withOption({
                     serverOpts: {
                         majorVersion: 2,
                         serverOpts: {

@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpMicroService, TcpModule, TcpServer } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpMicroService, TcpMicroServiceModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -48,12 +48,14 @@ export class TcpService {
     imports: [
         ServerModule,
         LoggerModule,
-        TcpModule.forMicroService({
+        TcpClientModule.withOptions({
             clientOpts: {
                 connectOpts: {
                     port: 2000
                 }
-            },
+            }
+        }),
+        TcpMicroServiceModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {

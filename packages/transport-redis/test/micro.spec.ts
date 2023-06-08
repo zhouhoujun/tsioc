@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { REDIS_CLIENT_OPTS, RedisClient, RedisClientOpts, RedisModule, RedisServer } from '../src';
+import { REDIS_CLIENT_OPTS, RedisClient, RedisClientModule, RedisClientOpts, RedisMicroServiceModule, RedisServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -51,20 +51,23 @@ export class RedisService {
     imports: [
         ServerModule,
         LoggerModule,
-        RedisModule.forMicroService({
+        RedisClientModule.withOption({
             clientOpts: {
                 // connectOpts: {
                 //     port: 6379
                 // },
                 timeout: 200
-            },
-            serverOpts: {
-                // timeout: 1000,
-                // connectOpts: {
-                //     port: 2000
-                // }
             }
-        })
+        }),
+        RedisMicroServiceModule
+        // RedisMicroServiceModule.withOption({
+        //     serverOpts: {
+        //         // timeout: 1000,
+        //         // connectOpts: {
+        //         //     port: 2000
+        //         // }
+        //     }
+        // })
     ],
     declarations: [
         RedisService

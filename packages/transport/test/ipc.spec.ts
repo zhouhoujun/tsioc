@@ -5,7 +5,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpServerModule, TcpClientModule, TcpServer } from '@tsdi/transport-tcp';
 import { RedirectResult } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
@@ -97,7 +97,8 @@ const ipcpath = path.join(__dirname, 'myipctmp')
     imports: [
         ServerModule,
         LoggerModule,
-        TcpModule.withOptions({
+        TcpClientModule,
+        TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {

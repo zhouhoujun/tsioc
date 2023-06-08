@@ -9,8 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
-
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpServerModule, HttpServer, HttpModule } from '../src';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -29,6 +28,8 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                     ca: cert
                 }
             },
+        }),
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 2,
                 serverOpts: {

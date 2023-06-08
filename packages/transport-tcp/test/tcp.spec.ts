@@ -4,7 +4,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpModule, TcpServer } from '../src';
+import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
 
@@ -90,12 +90,14 @@ export class DeviceController {
     imports: [
         ServerModule,
         LoggerModule,
-        TcpModule.withOptions({
+        TcpClientModule.withOptions({
             clientOpts: {
                 connectOpts: {
                     port: 2000
                 }
-            },
+            }
+        }),
+        TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {

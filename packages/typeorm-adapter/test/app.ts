@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { HttpClientModule } from '@tsdi/common';
 import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 import { TransactionModule } from '@tsdi/repository';
@@ -51,7 +51,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1
             }
@@ -85,7 +85,7 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1
             }
@@ -116,7 +116,7 @@ export class MockBootLoadTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1
             }
@@ -151,7 +151,9 @@ export class MockTransBootTest {
                 options: {
                     ca: cert
                 }
-            },
+            }
+        }),
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 2,
                 serverOpts: {

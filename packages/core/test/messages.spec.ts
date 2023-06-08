@@ -14,7 +14,7 @@ import {
     NEXT
 } from '../src';
 import { LoggerModule } from '@tsdi/logs';
-import { Http, HttpContext, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { Http, HttpContext, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
 
 
 @RouteMapping('/device')
@@ -199,7 +199,8 @@ const cert = fs.readFileSync(path.join(__dirname, './localhost-cert.pem'));
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpModule,
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1,
                 // allowHTTP1: true,

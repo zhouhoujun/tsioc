@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { AMQP_CLIENT_OPTS, AmqpClient, AmqpClientOpts, AmqpModule, AmqpServer } from '../src';
+import { AMQP_CLIENT_OPTS, AmqpClient, AmqpClientModule, AmqpClientOpts, AmqpMicroServiceModule, AmqpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -51,20 +51,24 @@ export class AmqpService {
     imports: [
         ServerModule,
         LoggerModule,
-        AmqpModule.forMicroService({
-            clientOpts: {
-                // connectOpts: {
-                //     port: 6379
-                // },
-                // timeout: 1000
-            },
-            serverOpts: {
-                // timeout: 1000,
-                // connectOpts: {
-                //     port: 2000
-                // }
-            }
-        })
+        AmqpClientModule,
+        AmqpMicroServiceModule
+        // AmqpClientModule.withOption({
+        //     clientOpts: {
+        //         // connectOpts: {
+        //         //     port: 6379
+        //         // },
+        //         // timeout: 1000
+        //     }
+        // }),
+        // AmqpMicroServiceModule.withOption({
+        //     serverOpts: {
+        //         // timeout: 1000,
+        //         // connectOpts: {
+        //         //     port: 2000
+        //         // }
+        //     }
+        // })
     ],
     declarations: [
         AmqpService
