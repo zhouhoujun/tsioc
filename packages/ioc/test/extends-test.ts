@@ -25,3 +25,24 @@ export abstract class Animal {
 export class Person extends Animal {
 
 }
+
+
+@Injectable()
+export class Student extends Person {
+    type = 3
+}
+
+
+@Injectable()
+export class PersonService {
+    constructor(readonly person: Person) {
+
+    }
+}
+
+@Injectable()
+export class StudentService extends PersonService {
+    constructor(person: Student) {
+        super(person)
+    }
+}

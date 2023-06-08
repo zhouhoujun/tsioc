@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY, getClassName, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, getClassName, Injector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TokenOf } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -123,7 +123,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> {
     constructor(
         injector: Injector,
-        protected backend: TypeOf<Backend<TInput, TOutput>>,
+        protected backend: TokenOf<Backend<TInput, TOutput>>,
         interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
         guardsToken?: Token<CanActivate[]>,
         filtersToken?: Token<Filter<TInput, TOutput>[]>) {
@@ -136,6 +136,6 @@ export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHand
      *  get backend endpoint. 
      */
     protected getBackend(): Backend<TInput, TOutput> {
-        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
+        return isToken(this.backend) ? this.injector.get(this.backend) : this.backend;
     }
 }

@@ -1,4 +1,4 @@
-import { Interceptor, Filter, MiddlewareLike, AssetContext, MiddlewareEndpointOptions, Incoming, Outgoing, TransportSessionOpts, ConfigableEndpointOptions, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, MiddlewareLike, AssetContext, MiddlewareEndpointOptions, Incoming, Outgoing, TransportSessionOpts, CanActivate, Router, TransportEndpointOptions } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { SessionOptions, ContentOptions, MimeSource, ProxyOpts } from '@tsdi/transport';
 import * as net from 'net';
@@ -27,15 +27,15 @@ export interface TcpServerOpts extends MiddlewareEndpointOptions<TcpContext, Out
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     serverOpts?: net.ServerOpts | tls.TlsOptions;
-    listenOpts: net.ListenOptions;
+    listenOpts?: net.ListenOptions;
     detailError?: boolean;
 }
 
 /**
  * TCP Microservice options.
  */
-export interface TcpMicroServiceOpts extends ConfigableEndpointOptions<TcpContext, Outgoing> {
-
+export interface TcpMicroServiceOpts extends TransportEndpointOptions<TcpContext, Outgoing> {
+    // backend?: ProvdierOf<Router>;
     autoListen?: boolean;
     maxConnections?: number;
     proxy?: ProxyOpts;
@@ -51,7 +51,7 @@ export interface TcpMicroServiceOpts extends ConfigableEndpointOptions<TcpContex
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
     serverOpts?: net.ServerOpts | tls.TlsOptions;
-    listenOpts: net.ListenOptions;
+    listenOpts?: net.ListenOptions;
 
     detailError?: boolean;
 }
@@ -60,6 +60,11 @@ export interface TcpMicroServiceOpts extends ConfigableEndpointOptions<TcpContex
  * TCP server opptions.
  */
 export const TCP_SERV_OPTS = tokenId<TcpServerOpts>('TCP_SERV_OPTS');
+
+/**
+ * TCP micro server opptions.
+ */
+export const TCP_MICRO_SERV_OPTS = tokenId<TcpMicroServiceOpts>('TCP_MICRO_SERV_OPTS');
 
 /**
  * Tcp server interceptors.

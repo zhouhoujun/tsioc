@@ -1,4 +1,4 @@
-import { Abstract, Type, EMPTY, Execption, Injector, InvokerOptions, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
+import { Abstract, EMPTY, Execption, Injector, InvokerOptions, ProvdierOf, StaticProvider, Token, TokenOf } from '@tsdi/ioc';
 import { CanActivate, GuardsService } from '../guard';
 import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -35,8 +35,8 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
  * Configable handler options.
  */
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
-    backend?: Type<Backend>;
-    
+    backend?: TokenOf<Backend>;
+
     encoder?: ProvdierOf<Encoder>;
     decoder?: ProvdierOf<Decoder>;
 

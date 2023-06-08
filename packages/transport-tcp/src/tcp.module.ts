@@ -8,17 +8,17 @@ import {
     ServerFinalizeFilter, Session, TransportModule, TransportBackend, RequestAdapter, StatusVaildator, RespondAdapter
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { TcpClient } from './client/clinet';
-import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts, TCP_SERV_GUARDS } from './server/options';
+import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts, TCP_SERV_GUARDS, TCP_MICRO_SERV_OPTS } from './server/options';
 import { TcpMicroService, TcpServer } from './server/server';
-import { TcpEndpoint } from './server/endpoint';
-import { TcpRequestAdapter } from './client/request';
-import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
-import { TcpHandler } from './client/handler';
-import { TCP_MICRO_SERV, TcpStatusVaildator } from './status';
-import { TcpTransportSessionFactory } from './transport';
+import { TcpEndpoint, TcpMicroEndpoint } from './server/endpoint';
 import { TcpExecptionHandlers } from './server/execption.handles';
 import { TcpRespondAdapter } from './server/respond';
+import { TcpClient } from './client/clinet';
+import { TcpHandler } from './client/handler';
+import { TcpRequestAdapter } from './client/request';
+import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './client/options';
+import { TCP_MICRO_SERV, TcpStatusVaildator } from './status';
+import { TcpTransportSessionFactory } from './transport';
 
 
 @Module({
@@ -37,8 +37,8 @@ import { TcpRespondAdapter } from './server/respond';
         TcpRespondAdapter,
         TcpExecptionHandlers,
         { provide: RespondAdapter, useExisting: TcpRespondAdapter },
-        TcpServer,
-        { provide: TcpMicroService, useClass: TcpServer }
+        // TcpMicroService,
+        // TcpServer
     ]
 })
 export class TcpModule {
@@ -51,6 +51,7 @@ export class TcpModule {
     static withOptions(options: TcpModuleOptions): ModuleWithProviders<TcpModule> {
         const providers: ProviderType[] = [
             { provide: TCP_MICRO_SERV, useValue: false },
+            TcpServer,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
@@ -93,6 +94,7 @@ export class TcpModule {
      */
     static forMicroService(options: TcpMircoModuleOptions): ModuleWithProviders<TcpModule> {
         const providers: ProviderType[] = [
+            TcpMicroService,
             { provide: TCP_MICRO_SERV, useValue: true },
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
@@ -102,7 +104,7 @@ export class TcpModule {
                 deps: [Injector]
             }))
                 : [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
-            { provide: TCP_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } },
+            { provide: TCP_MICRO_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } },
             toProvider(TcpHandler, options.handler ?? {
                 useFactory: (injector: Injector, opts: TcpClientOpts) => {
                     if (!opts.interceptors) {
@@ -113,11 +115,11 @@ export class TcpModule {
                 },
                 deps: [Injector, TCP_CLIENT_OPTS]
             }),
-            toProvider(TcpEndpoint, options.endpoint ?? {
+            toProvider(TcpMicroEndpoint, options.endpoint ?? {
                 useFactory: (injector: Injector, opts: TcpMicroServiceOpts) => {
                     return createTransportEndpoint(injector, opts)
                 },
-                deps: [Injector, TCP_SERV_OPTS]
+                deps: [Injector, TCP_MICRO_SERV_OPTS]
             }),
             toProvider(TransportSessionFactory, options.transportFactory ?? TcpTransportSessionFactory)
         ];

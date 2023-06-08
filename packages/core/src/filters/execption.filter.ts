@@ -109,6 +109,11 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
         const context = new ExecptionContext(err, input, injector);
         return runHandlers(handlers, context)
             .pipe(
+                catchError((err1, caugh) => {
+                    err1.originExecption = err;
+                    err1.message = `${err1.message}\r\n${err.toString()}`;
+                    return throwError(() => err1)
+                }),
                 finalize(() => {
                     context.destroy();
                 })
