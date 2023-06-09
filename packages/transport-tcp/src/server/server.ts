@@ -10,7 +10,6 @@ import { TcpContext } from './context';
 import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
-import { TCP_MICRO_SERV } from '../status';
 
 
 
@@ -25,11 +24,12 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
     @InjectLog() logger!: Logger;
     private isSecure: boolean;
     private options: TcpMicroServiceOpts;
+    protected micro = true;
 
     constructor(
         readonly endpoint: TcpMicroEndpoint,
         @Inject(TCP_MICRO_SERV_OPTS) options: TcpMicroServiceOpts,
-        @Inject(TCP_MICRO_SERV) readonly micro: boolean = true) {
+    ) {
         super()
         this.options = { ...options };
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
@@ -161,7 +161,8 @@ export class TcpServer extends TcpMicroService implements Server<TcpContext, Out
     constructor(
         readonly endpoint: TcpEndpoint,
         @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
-        super(endpoint, options, false);
+        super(endpoint, options);
+        this.micro = false;
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike<TcpContext>> | ProvdierOf<MiddlewareLike<TcpContext>>[], order?: number | undefined): this {

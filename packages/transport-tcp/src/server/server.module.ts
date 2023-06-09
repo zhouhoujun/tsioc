@@ -7,7 +7,7 @@ import { TcpMicroService, TcpServer } from './server';
 import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
 import { TcpRespondAdapter } from './respond';
-import { TCP_MICRO_SERV, TcpStatusVaildator } from '../status';
+import { TcpMicroStatusVaildator, TcpStatusVaildator } from '../status';
 import { TcpTransportSessionFactory } from '../transport';
 
 
@@ -57,9 +57,8 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
-        { provide: TCP_MICRO_SERV, useValue: true },
         { provide: TCP_MICRO_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
-        { provide: StatusVaildator, useClass: TcpStatusVaildator },
+        { provide: StatusVaildator, useClass: TcpMicroStatusVaildator },
         TcpTransportSessionFactory,
         { provide: TransportSessionFactory, useExisting: TcpTransportSessionFactory, asDefault: true },
         TcpRespondAdapter,
@@ -159,7 +158,6 @@ const defServerOpts = {
         ServerTransportModule
     ],
     providers: [
-        { provide: TCP_MICRO_SERV, useValue: false },
         { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts }, asDefault: true },
         { provide: StatusVaildator, useClass: TcpStatusVaildator },
         TcpTransportSessionFactory,

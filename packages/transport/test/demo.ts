@@ -1,7 +1,7 @@
 import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, BadRequestExecption, AssetContext, compose, NEXT, Get
+    Middleware, BadRequestExecption, AssetContext, compose, NEXT, Get, Payload
 } from '@tsdi/core';
 import { of } from 'rxjs'; 
 import { RedirectResult } from '../src';
@@ -71,15 +71,16 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'tcp')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle('dd*')
-    async subMessage1() {
-
+    @Handle('dd/*')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
+
 
 
 
