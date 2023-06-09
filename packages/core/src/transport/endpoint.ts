@@ -1,4 +1,4 @@
-import { Abstract, Execption, Injector, ProvdierOf, Token, TokenOf } from '@tsdi/ioc';
+import { Abstract, Execption, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { EndpointOptions, EndpointService } from '../endpoints/endpoint.service';
 import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
 import { MiddlewareLike } from './middleware';
@@ -28,7 +28,7 @@ export interface TransportEndpointOptions<T extends TransportContext = any, TArg
     /**
      * backend of endpoint. defaut `Router`
      */
-    backend?: TokenOf<Router>;
+    backend?: Token<Router> | Router;
 }
 
 /**

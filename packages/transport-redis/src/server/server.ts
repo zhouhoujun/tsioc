@@ -1,4 +1,4 @@
-import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { ListenOpts, MESSAGE, MicroService, MircoServiceRouter, Outgoing, Packet, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
@@ -69,7 +69,7 @@ export class RedisServer extends MicroService<TransportContext, Outgoing> {
             this.publisher.connect()
         ]);
 
-        const router = this.endpoint.injector.get(Router);
+        const router = this.endpoint.injector.get(MircoServiceRouter).get('redis');
         const routes = Array.from(router.subscribes.values());
         const subscribes: string[] = [];
         const psubscribes: string[] = [];

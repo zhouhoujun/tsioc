@@ -34,11 +34,6 @@ export class InjectToken<T = any> {
 export type Token<T = any> = string | symbol | InjectToken<T> | Type<T>;
 
 /**
- * token of type or instance of type .
- */
-export type TokenOf<T> = Token<T> | T;
-
-/**
  * provide token
  */
 export type ProvideToken<T> = string | symbol | InjectToken<T> | Type<T>;

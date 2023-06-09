@@ -1,4 +1,4 @@
-import { InjectFlags, Injector, Module, ModuleWithProviders, isString, tokenId } from '@tsdi/ioc';
+import { InjectFlags, Injector, Module, ModuleWithProviders, getToken, isString, tokenId } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
 import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
@@ -11,7 +11,7 @@ import { TransportContextIml } from '../impl/transport.context';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
-import { MESSAGE_ROUTERS, MircoRouterOption, MircoServiceRouter } from './router.micro';
+import { MESSAGE_ROUTERS, MessageRouter, MircoServiceRouter, TransportProtocol } from './router.micro';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
 
 
@@ -122,13 +122,13 @@ export class MicroServiceRouterModule {
      * @return The new Module.
      *
      */
-    static forRoot(protocol: 'tcp' | 'redis' | 'mqtt' | 'kafka' | 'amqp' | 'coap' | 'modbus', options?: {
+    static forRoot(protocol: TransportProtocol, options?: {
         matcher?: RouteMatcher;
         prefix?: string;
         routes?: Routes;
     }): ModuleWithProviders<MicroServiceRouterModule>
     static forRoot(options: {
-        protocol: 'tcp' | 'redis' | 'mqtt' | 'kafka' | 'amqp' | 'coap' | 'modbus';
+        protocol: TransportProtocol;
         matcher?: RouteMatcher;
         prefix?: string;
         routes?: Routes;
@@ -140,18 +140,23 @@ export class MicroServiceRouterModule {
     }): ModuleWithProviders<MicroServiceRouterModule> {
         const protocol = isString(arg1) ? arg1 : arg1.protocol;
         const opts = { ...isString(arg1) ? options : arg1 };
+        const token = getToken(MessageRouter, protocol);
         return {
             module: MicroServiceRouterModule,
             providers: [
                 {
-                    provide: MESSAGE_ROUTERS,
+                    provide: token,
                     useFactory: (injector: Injector, matcher: RouteMatcher) => {
                         return new MessageRouterImpl(protocol, injector, opts.matcher ?? matcher, opts.prefix, opts.routes)
                     },
                     deps: [
                         Injector,
                         RouteMatcher
-                    ],
+                    ]
+                },
+                {
+                    provide: MESSAGE_ROUTERS,
+                    useExisting: token,
                     multi: true
                 }
             ]

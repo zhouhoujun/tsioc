@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY, getClassName, Injector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TokenOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, getClassName, Injector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -123,7 +123,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> {
     constructor(
         injector: Injector,
-        protected backend: TokenOf<Backend<TInput, TOutput>>,
+        protected backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
         interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
         guardsToken?: Token<CanActivate[]>,
         filtersToken?: Token<Filter<TInput, TOutput>[]>) {

@@ -13,7 +13,7 @@ import { Middleware, MiddlewareFn } from './middleware';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { Pattern, patternToPath } from './pattern';
 import { ControllerRouteReolver } from './controller';
-import { MircoServiceRouter } from './router.micro';
+import { MircoServiceRouter, TransportProtocol } from './router.micro';
 
 
 
@@ -59,7 +59,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscr
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const router = injector.get(MircoServiceRouter).get(mapping.protocol);
+            const router = injector.get(MircoServiceRouter).get(mapping.protocol as TransportProtocol);
             if (!router) throw new Execption('has no router!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
@@ -138,7 +138,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const router = injector.get(MircoServiceRouter).get(mapping.protocol);
+            const router = injector.get(MircoServiceRouter).get(mapping.protocol as TransportProtocol);
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 

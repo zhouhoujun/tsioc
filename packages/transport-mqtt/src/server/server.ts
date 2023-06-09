@@ -1,4 +1,4 @@
-import { ListenOpts, MESSAGE, MicroService, Outgoing, Packet, Router, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { ListenOpts, MESSAGE, MicroService, MircoServiceRouter, Outgoing, Packet, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Client, connect } from 'mqtt';
@@ -52,7 +52,7 @@ export class MqttServer extends MicroService<TransportContext, Outgoing> {
     protected override async onStart(): Promise<any> {
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
-        const router = this.endpoint.injector.get(Router);
+        const router = this.endpoint.injector.get(MircoServiceRouter).get('mqtt');
         const subscribes = this.subscribes = Array.from(router.subscribes.values());
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
             subscribes.push(`${this.options.content.prefix}/#`);
