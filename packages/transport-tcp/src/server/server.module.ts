@@ -2,7 +2,7 @@ import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getTok
 import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createMiddlewareEndpoint, TransportSessionFactory, createTransportEndpoint, MicroServiceRouterModule, MessageRouter } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts, TCP_SERV_GUARDS, TCP_MICRO_SERV_OPTS } from './options';
+import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts, TCP_SERV_GUARDS, TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_GUARDS, TCP_MICRO_SERV_FILTERS } from './options';
 import { TcpMicroService, TcpServer } from './server';
 import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
@@ -28,10 +28,9 @@ const defMicroOpts = {
         prefix: '/content'
     },
     detailError: true,
-    interceptorsToken: TCP_SERV_INTERCEPTORS,
-    middlewaresToken: TCP_SERV_MIDDLEWARES,
-    filtersToken: TCP_SERV_FILTERS,
-    guardsToken: TCP_SERV_GUARDS,
+    interceptorsToken: TCP_MICRO_SERV_INTERCEPTORS,
+    filtersToken: TCP_MICRO_SERV_FILTERS,
+    guardsToken: TCP_MICRO_SERV_GUARDS,
     backend: getToken(MessageRouter, 'tcp'),
     filters: [
         LogInterceptor,

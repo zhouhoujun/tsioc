@@ -62,11 +62,6 @@ export interface TcpMicroServiceOpts extends TransportEndpointOptions<TcpContext
 export const TCP_SERV_OPTS = tokenId<TcpServerOpts>('TCP_SERV_OPTS');
 
 /**
- * TCP micro server opptions.
- */
-export const TCP_MICRO_SERV_OPTS = tokenId<TcpMicroServiceOpts>('TCP_MICRO_SERV_OPTS');
-
-/**
  * Tcp server interceptors.
  */
 export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<Incoming, Outgoing>[]>('TCP_SERV_INTERCEPTORS');
@@ -85,3 +80,24 @@ export const TCP_SERV_FILTERS = tokenId<Filter<Incoming, Outgoing>[]>('TCP_SERV_
  */
 export const TCP_SERV_GUARDS = tokenId<CanActivate[]>('TCP_SERV_GUARDS');
 
+
+
+/**
+ * TCP micro server opptions.
+ */
+export const TCP_MICRO_SERV_OPTS = tokenId<TcpMicroServiceOpts>('TCP_MICRO_MICRO_SERV_OPTS');
+
+/**
+ * Tcp micro server interceptors.
+ */
+export const TCP_MICRO_SERV_INTERCEPTORS = tokenId<Interceptor<Incoming, Outgoing>[]>('TCP_MICRO_SERV_INTERCEPTORS');
+
+/**
+ * TCP micro execption filters.
+ */
+export const TCP_MICRO_SERV_FILTERS = tokenId<Filter<Incoming, Outgoing>[]>('TCP_MICRO_SERV_FILTERS');
+
+/**
+ * TCP micro Guards.
+ */
+export const TCP_MICRO_SERV_GUARDS = tokenId<CanActivate[]>('TCP_MICRO_SERV_GUARDS');
