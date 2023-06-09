@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { InjectFlags, Injector, Module, ModuleWithProviders, isString, tokenId } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
 import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
@@ -11,6 +11,8 @@ import { TransportContextIml } from '../impl/transport.context';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
+import { MESSAGE_ROUTERS, MircoRouterOption, MircoServiceRouter } from './router.micro';
+import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
 
 
 TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
@@ -19,16 +21,32 @@ TRANSPORT_CONTEXT_IMPL.create = (injector, options) => new TransportContextIml(i
 
 MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointImpl(injector, options);
 
+
+/**
+ * global router prefix.
+ */
+export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
+
 /*
- * Middleware module.
+ * Router module.
  */
 @Module({
     providers: [
-        MappingRouter,
-        { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
-        { provide: Router, useExisting: MappingRouter },
-        { provide: HybridRouter, useExisting: MappingRouter },
         { provide: RouteMatcher, useClass: DefaultRouteMatcher, asDefault: true },
+        { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
+        {
+            provide: HybridRouter,
+            useFactory: (injector: Injector, matcher: RouteMatcher, prefix?: string, routes?: Routes) => {
+                return new MappingRouter(injector, matcher, prefix, routes)
+            },
+            deps: [
+                Injector,
+                RouteMatcher,
+                [ROUTER_PREFIX, InjectFlags.Optional],
+                [ROUTES, InjectFlags.Optional, InjectFlags.Self]
+            ]
+        },
+        { provide: Router, useExisting: HybridRouter },
         ControllerRouteReolver
     ]
 })
@@ -67,3 +85,79 @@ export class RouterModule {
         }
     }
 }
+
+
+/*
+ * microservice router module.
+ */
+@Module({
+    providers: [
+        { provide: RouteMatcher, useClass: DefaultRouteMatcher, asDefault: true },
+        { provide: MircoServiceRouter, useClass: MircoServiceRouterImpl },
+    ]
+})
+export class MicroServiceRouterModule {
+
+    /**
+     * Creates a module with all the router directives and a provider registering routes,
+     * without creating a new Router service.
+     * When registering for submodules and lazy-loaded submodules, create the Module as follows:
+     *
+     * @usageNotes
+     * 
+     * #### Examples:
+     * 
+     * module examples.
+     * 
+     * ```ts
+     * 
+     * @Module({
+     *   imports: [RouterModule.forChild(ROUTES)]
+     * })
+     * class MyNgModule {}
+     * 
+     * ```
+     *
+     * @param options An array of `Route` objects that define the navigation paths for the submodule.
+     * @return The new Module.
+     *
+     */
+    static forRoot(protocol: 'tcp' | 'redis' | 'mqtt' | 'kafka' | 'amqp' | 'coap' | 'modbus', options?: {
+        matcher?: RouteMatcher;
+        prefix?: string;
+        routes?: Routes;
+    }): ModuleWithProviders<MicroServiceRouterModule>
+    static forRoot(options: {
+        protocol: 'tcp' | 'redis' | 'mqtt' | 'kafka' | 'amqp' | 'coap' | 'modbus';
+        matcher?: RouteMatcher;
+        prefix?: string;
+        routes?: Routes;
+    }): ModuleWithProviders<MicroServiceRouterModule>
+    static forRoot(arg1?: any, options?: {
+        matcher?: RouteMatcher;
+        prefix?: string;
+        routes?: Routes;
+    }): ModuleWithProviders<MicroServiceRouterModule> {
+        const protocol = isString(arg1) ? arg1 : arg1.protocol;
+        const opts = { ...isString(arg1) ? options : arg1 };
+        return {
+            module: MicroServiceRouterModule,
+            providers: [
+                {
+                    provide: MESSAGE_ROUTERS,
+                    useFactory: (injector: Injector, matcher: RouteMatcher) => {
+                        return new MessageRouterImpl(protocol, injector, opts.matcher ?? matcher, opts.prefix, opts.routes)
+                    },
+                    deps: [
+                        Injector,
+                        RouteMatcher
+                    ],
+                    multi: true
+                }
+            ]
+        }
+    }
+}
+
+
+

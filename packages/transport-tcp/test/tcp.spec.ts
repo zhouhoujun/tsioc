@@ -1,10 +1,10 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Application, ApplicationContext, BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
-import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '../src';
+import { TcpClient, TcpClientModule, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
 
@@ -71,16 +71,14 @@ export class DeviceController {
         return 'reload';
     }
 
-
-
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'tcp')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle('dd*', 'tcp')
-    async subMessage1() {
-
+    @Handle('dd/*')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
 
 }
@@ -97,6 +95,7 @@ export class DeviceController {
                 }
             }
         }),
+        TcpMicroServiceModule,
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
@@ -308,6 +307,28 @@ describe('TCP Server & TCP Client', () => {
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })

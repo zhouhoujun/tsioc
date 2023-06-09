@@ -1,4 +1,4 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Application, ApplicationContext, BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
@@ -7,7 +7,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
 
 
 @RouteMapping('/device')
@@ -74,14 +74,14 @@ export class DeviceController {
 
 
 
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'tcp')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle('dd*', 'tcp')
-    async subMessage1() {
-
+    @Handle('dd/*')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
 
 
@@ -98,11 +98,12 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         ServerModule,
         LoggerModule,
         TcpClientModule,
-            // clientOpts:{
-            //     connectOpts: {
-            //         path: ipcpath
-            //     }
-            // },
+        // clientOpts:{
+        //     connectOpts: {
+        //         path: ipcpath
+        //     }
+        // },
+        TcpMicroServiceModule,
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
@@ -337,6 +338,42 @@ describe('IPC Server & IPC Client', () => {
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })
+
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: 'reload' }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
 
 
 

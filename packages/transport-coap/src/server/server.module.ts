@@ -1,12 +1,12 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { CoapServer } from './server/server';
-import { COAP_SERV_FILTERS, COAP_MIDDLEWARES, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS } from './server/options';
-import { CoapEndpoint } from './server/endpoint';
-import { CoapStatusVaildator } from './status';
-import { CoapExecptionHandlers } from './server/execption.handles';
+import { CoapServer } from './server';
+import { COAP_SERV_FILTERS, COAP_MIDDLEWARES, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS } from './options';
+import { CoapEndpoint } from './endpoint';
+import { CoapStatusVaildator } from '../status';
+import { CoapExecptionHandlers } from './execption.handles';
 
 
 
@@ -41,7 +41,7 @@ const defServOpts = {
 @Module({
     imports: [
         TransformModule,
-        RouterModule,
+        MicroServiceRouterModule.forRoot('coap'),
         TransportModule,
         ServerTransportModule
     ],

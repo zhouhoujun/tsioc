@@ -13,12 +13,9 @@ import { CoapStatusVaildator } from '../status';
 const defClientOpts = {
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_FILTERS,
-    address: {
-        port: 3000,
-        hostname: 'localhost'
-    },
     connectOpts: {
-        type: 'udp4'
+        type: 'udp4',
+        port: 5683
     }
 } as CoapClientOpts;
 

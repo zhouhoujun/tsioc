@@ -1,14 +1,10 @@
 
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createHandler, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, RequestAdapter, ServerFinalizeFilter, Session, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
+import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { AmqpTransportSessionFactory } from '../transport';
 import { AmqpStatusVaildator } from '../status';
-import { AmqpClient } from '../client/client';
-import { AmqpHandler } from '../client/handler';
-import { AmqpRequestAdapter } from '../client/request';
-import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS, AmqpClientOpts, AmqpClientsOpts } from '../client/options';
 import { AmqpServer } from './server';
 import { AmqpEndpoint } from './endpoint';
 import { AmqpExecptionHandlers } from './execption.handles';
@@ -57,7 +53,7 @@ const defMicroOpts = {
 @Module({
     imports: [
         TransformModule,
-        RouterModule,
+        MicroServiceRouterModule.forRoot('amqp'),
         TransportModule,
         ServerTransportModule
     ],

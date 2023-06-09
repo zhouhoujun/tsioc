@@ -14,26 +14,27 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        CoapClientModule.withOption({
-            clientOpts: {
-                connectOpts: {
-                    type: 'udp4',
-                    port: 2000
-                },
-            }
-
-        }),
-        CoapMicroServiceModule.withOption({
-            // timeout: 1000,
-            serverOpts: {
-                connectOpts: {
-                    type: 'udp4'
-                },
-                listenOpts: {
-                    port: 2000
-                }
-            },
-        })
+        CoapClientModule,
+        // CoapClientModule.withOption({
+        //     clientOpts: {
+        //         connectOpts: {
+        //             type: 'udp4',
+        //             port: 2000
+        //         },
+        //     }
+        // }),
+        CoapMicroServiceModule,
+        // CoapMicroServiceModule.withOption({
+        //     // timeout: 1000,
+        //     serverOpts: {
+        //         connectOpts: {
+        //             type: 'udp4'
+        //         },
+        //         listenOpts: {
+        //             port: 2000
+        //         }
+        //     },
+        // })
     ],
     declarations: [
         DeviceController

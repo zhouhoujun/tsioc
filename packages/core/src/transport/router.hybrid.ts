@@ -11,6 +11,8 @@ export type HybridRoute = Endpoint | MiddlewareLike | Array<Endpoint | Middlewar
 
 /**
  * Hybrid router.
+ * 
+ * public api for global router
  */
 @Abstract()
 export abstract class HybridRouter extends Router<HybridRoute> implements Middleware {

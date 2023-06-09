@@ -4,4 +4,4 @@ export * from './client/client.module';
 
 export * from './server/server';
 export * from './server/options';
-export * from './coap.module';
+export * from './server/server.module';

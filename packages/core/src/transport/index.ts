@@ -7,6 +7,7 @@ export * from './middleware.compose';
 export * from './middleware.service';
 export * from './route';
 export * from './router';
+export * from './router.micro';
 export * from './router.hybrid';
 export * from './router.mapping';
 export * from './metadata';

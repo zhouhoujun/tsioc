@@ -1,6 +1,6 @@
 import { Type, CtorType, Modules, TypeOf } from './types';
-import { Token } from './tokens';
-import { Injector } from './injector';
+import { InjectFlags, Token } from './tokens';
+import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isDefined, isType } from './utils/chk';
 
@@ -58,7 +58,7 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
      * 
      * [[token1, InjectFlags.SkipSelf], token2]
      */
-    deps?: any[];
+    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
     /**
      * singleton or not.
      */
@@ -125,7 +125,7 @@ export interface UseFactory<T> extends ProviderExts, UseAsStatic {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: any[];
+    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
 }
 
 /**

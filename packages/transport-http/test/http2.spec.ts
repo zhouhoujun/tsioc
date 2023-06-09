@@ -1,5 +1,5 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -43,6 +43,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 }
             }
         }),
+        MicroServiceRouterModule.forRoot({ protocol: 'mqtt' }),
         DeviceManageModule,
         DeviceAModule
     ],

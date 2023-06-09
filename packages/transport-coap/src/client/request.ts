@@ -1,7 +1,7 @@
-import { Decoder, Encoder, IEndable, Incoming, IncomingHeader, Redirector, ResHeaders, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, ResHeaders, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Injectable, Optional, isArray } from '@tsdi/ioc';
 import { MimeAdapter, MimeTypes, StatusPacket, StatusVaildator, StreamAdapter, hdr, StreamRequestAdapter, ev, isBuffer } from '@tsdi/transport';
-import { request, AgentOptions, OptionValue, IncomingMessage } from 'coap';
+import { request, OptionValue, IncomingMessage, Agent } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';
 
@@ -23,10 +23,12 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     protected createRequest(url: string, req: TransportRequest<any>): IEndable {
 
         const opts = req.context.get(COAP_CLIENT_OPTS);
+        const agent = req.context.get(Agent);
         const uri = new URL(url);
         const options = req.headers.headers as Partial<Record<OptionName, OptionValue>>;
 
         const requestStream = request({
+            agent,
             ...opts.transportOpts,
             hostname: uri.hostname,
             port: parseInt(uri.port),

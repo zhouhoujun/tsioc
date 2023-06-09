@@ -1,5 +1,5 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { RedisTransportSessionFactory } from '../transport';
@@ -46,7 +46,7 @@ const defMicroOpts = {
 @Module({
     imports: [
         TransformModule,
-        RouterModule,
+        MicroServiceRouterModule.forRoot('redis'),
         TransportModule,
         ServerTransportModule
     ],
@@ -79,7 +79,7 @@ export class RedisMicroServiceModule {
          * service endpoint provider
          */
         endpoint?: ProvdierOf<RedisEndpoint>;
-    
+
         transportFactory?: ProvdierOf<TransportSessionFactory>;
         /**
          * server options

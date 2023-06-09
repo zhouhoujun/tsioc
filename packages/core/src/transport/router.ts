@@ -7,8 +7,10 @@ import { Backend } from '../Handler';
 import { Pattern } from './pattern';
 import { Route } from './route';
 
-/***
+/**
  * router
+ * 
+ * public api for global router
  */
 @Abstract()
 export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {

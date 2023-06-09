@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -46,7 +46,7 @@ const defaultServOpts = {
 @Module({
     imports: [
         TransformModule,
-        RouterModule,
+        MicroServiceRouterModule.forRoot('mqtt'),
         TransportModule,
         ServerTransportModule
     ],

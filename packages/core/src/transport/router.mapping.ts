@@ -1,5 +1,5 @@
 import {
-    EMPTY, Inject, Injectable, InjectFlags, Optional, ModuleRef, isFunction, isString,
+    EMPTY, Injectable,  ModuleRef, isFunction, isString,
     lang, OnDestroy, pomiseOf, Injector, Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -10,7 +10,7 @@ import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { GuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinprefix, normalize, Route, ROUTES, Routes } from './route';
+import { joinprefix, normalize, Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { RouteMatcher, Router } from './router';
@@ -24,7 +24,6 @@ import { RouteEndpoint } from './route.endpoint';
 /**
  * Mapping router.
  */
-@Injectable()
 export class MappingRouter extends HybridRouter implements Middleware, OnDestroy {
 
     readonly routes: Map<string, HybridRoute>;
@@ -33,9 +32,9 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 
     constructor(
         private injector: Injector,
-        @Inject() readonly matcher: RouteMatcher,
-        @Optional() public prefix: string = '',
-        @Inject(ROUTES, { nullable: true, flags: InjectFlags.Self }) routes?: Routes) {
+        readonly matcher: RouteMatcher,
+        public prefix: string = '',
+        routes?: Routes) {
         super()
         this.subscribes = new Set();
         this.routes = new Map<string, MiddlewareFn>();

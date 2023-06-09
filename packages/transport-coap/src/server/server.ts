@@ -68,7 +68,7 @@ export class CoapServer extends MicroService<AssetContext, Outgoing> implements 
     }
 
     protected createServer(opts: CoapServerOpts): Server {
-        return new Server(this.options.serverOpts)
+        return new Server(opts.connectOpts)
     }
 
     /**
