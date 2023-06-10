@@ -1,5 +1,5 @@
-import { Inject, Injectable, ProvdierOf, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService, MESSAGE, GET, MiddlewareLike } from '@tsdi/core';
+import { Inject, Injectable, ModuleRef, ProvdierOf, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Server, Outgoing, ListenOpts, InternalServerExecption, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService, MESSAGE, GET, MiddlewareLike, HYBRID_HOST } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -19,12 +19,13 @@ import { TcpOutgoing } from './outgoing';
 @Injectable()
 export class TcpMicroService extends MicroService<TcpContext, Outgoing> implements ListenService {
 
-    private serv!: net.Server | tls.Server;
+    protected serv!: net.Server | tls.Server;
 
     @InjectLog() logger!: Logger;
-    private isSecure: boolean;
-    private options: TcpMicroServiceOpts;
+    protected isSecure: boolean;
+    protected options: TcpMicroServiceOpts;
     protected micro = true;
+    private hybrid = false;
 
     constructor(
         readonly endpoint: TcpMicroEndpoint,
@@ -76,9 +77,17 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
 
     protected async onStartup(): Promise<any> {
         const opts = this.options;
-        const serv = this.serv = this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
-        this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
-        return serv;
+        const injector = this.endpoint.injector;
+        const host = injector.get(HYBRID_HOST, null);
+        if (host && (host instanceof tls.Server || host instanceof net.Server)) {
+            this.serv = host;
+            this.hybrid = true;
+        } else {
+            this.serv = this.createServer(opts);
+            if (!this.micro) injector.get(ModuleRef).setValue(HYBRID_HOST, this.serv);
+            injector.setValue(ListenOpts, opts.listenOpts);
+        }
+
     }
 
     protected async onStart(): Promise<any> {
@@ -99,18 +108,20 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
             })
         }
 
-        if (this.options.listenOpts && this.options.autoListen) {
+        if (!this.hybrid && this.options.listenOpts && this.options.autoListen) {
             this.listen(this.options.listenOpts)
         }
     }
 
     protected onShutdown(): Promise<any> {
-        return promisify(this.serv.close, this.serv)();
+        if (!this.hybrid) {
+            return promisify(this.serv.close, this.serv)();
+        }
+        return Promise.resolve();
     }
 
     protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
-        const serv = this.serv = (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
-        return serv;
+        return this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
     }
 
     /**
@@ -152,6 +163,7 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
 
 }
 
+
 /**
  * tcp server of `tcp` or `ipc`. 
  */
@@ -169,4 +181,5 @@ export class TcpServer extends TcpMicroService implements Server<TcpContext, Out
         this.endpoint.use(middlewares, order);
         return this;
     }
+
 }

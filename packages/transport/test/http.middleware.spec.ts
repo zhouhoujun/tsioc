@@ -5,7 +5,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
 
 import expect = require('expect');
-import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import * as fs from 'fs';
 import * as path from 'path';
 

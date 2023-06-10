@@ -15,7 +15,7 @@ import { TransportContext } from './context';
  * 微服务
  */
 @Abstract()
-export abstract class MicroService<TInput extends TransportContext, TOutput = any> implements EndpointService {
+export abstract class MicroService<TInput extends TransportContext = TransportContext, TOutput = any> implements EndpointService {
 
     /**
      * micro service endpoint.

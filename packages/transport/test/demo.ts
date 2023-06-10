@@ -70,7 +70,6 @@ export class DeviceController {
         return 'reload';
     }
 
-
     @Handle({ cmd: 'xxx' }, 'tcp')
     async subMessage(@Payload() message: string) {
         return message;
@@ -80,10 +79,6 @@ export class DeviceController {
     async subMessage1(@Payload() message: string) {
         return message;
     }
-
-
-
-
 
 }
 

@@ -2,7 +2,10 @@ import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getTok
 import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createMiddlewareEndpoint, TransportSessionFactory, createTransportEndpoint, MicroServiceRouterModule, MessageRouter } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts, TCP_SERV_GUARDS, TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_GUARDS, TCP_MICRO_SERV_FILTERS } from './options';
+import {
+    TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts,
+    TCP_SERV_GUARDS, TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_GUARDS, TCP_MICRO_SERV_FILTERS
+} from './options';
 import { TcpMicroService, TcpServer } from './server';
 import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
@@ -18,7 +21,7 @@ import { TcpTransportSessionFactory } from '../transport';
  */
 const defMicroOpts = {
     autoListen: true,
-    listenOpts: { port: 3200, host: LOCALHOST },
+    listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024
@@ -85,7 +88,9 @@ export class TcpMicroServiceModule {
          * service endpoint provider
          */
         endpoint?: ProvdierOf<TcpEndpoint>;
-
+        /**
+         * transport session factory.
+         */
         transportFactory?: ProvdierOf<TransportSessionFactory>;
         /**
          * server options
@@ -118,7 +123,7 @@ export class TcpMicroServiceModule {
  */
 const defServerOpts = {
     autoListen: true,
-    listenOpts: { port: 3200, host: LOCALHOST },
+    listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024
@@ -187,9 +192,10 @@ export class TcpServerModule {
          * server endpoint provider
          */
         endpoint?: ProvdierOf<TcpEndpoint>;
-
+        /**
+         * transport session factory.
+         */
         transportFactory?: ProvdierOf<TransportSessionFactory>;
-
         /**
          * server options
          */

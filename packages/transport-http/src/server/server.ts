@@ -1,5 +1,5 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString } from '@tsdi/ioc';
-import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners, ListenOpts } from '@tsdi/core';
+import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners, ListenOpts, HYBRID_HOST } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { CONTENT_DISPOSITION, ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -105,17 +105,17 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
 
     protected override async onStart(): Promise<any> {
         if (!this._server) throw new InternalServerExecption();
-        // const cleanup = await super.setupServe(server, observer, opts);
         const opts = this.options;
-        const injector = this.endpoint.injector;
-        const sharing = opts.sharing;
-        //sharing servers
-        if (sharing) {
-            const runners = injector.get(ApplicationRunners);
-            await Promise.all(sharing.map(sr => {
-                return runners.run(sr);
-            }))
-        }
+        // const injector = this.endpoint.injector;
+        // const hybrids = opts.hybrids;
+        // //hybrids servers
+        // if (hybrids) {
+        //     injector.setValue(HYBRID_HOST, this._server);
+        //     const runners = injector.get(ApplicationRunners);
+        //     await Promise.all(hybrids.map(sr => {
+        //         return runners.run(sr);
+        //     }))
+        // }
 
         this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
         this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));

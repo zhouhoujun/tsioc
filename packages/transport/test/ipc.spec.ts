@@ -1,11 +1,11 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Application, ApplicationContext, BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpServerModule, TcpClientModule, TcpServer } from '@tsdi/transport-tcp';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientOpts, TcpServerModule, TcpClientModule, TcpServer, TcpMicroServiceModule } from '@tsdi/transport-tcp';
 import { RedirectResult } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
@@ -73,20 +73,15 @@ export class DeviceController {
     }
 
 
-
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'tcp')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle('dd*', 'tcp')
-    async subMessage1() {
-
+    @Handle('dd/*')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
-
-
-
-
 
 }
 
@@ -105,7 +100,8 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     path: ipcpath
                 }
             }
-        })
+        }),
+        TcpMicroServiceModule
     ],
     declarations: [
         DeviceController

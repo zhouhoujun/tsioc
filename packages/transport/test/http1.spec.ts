@@ -7,6 +7,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+import { TcpClientModule, TcpMicroServiceModule } from '@tsdi/transport-tcp';
 
 
 
@@ -25,6 +26,8 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
                 }
             }
         }),
+        TcpClientModule,
+        TcpMicroServiceModule,
         DeviceManageModule,
         DeviceAModule
     ],

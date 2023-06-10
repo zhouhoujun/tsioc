@@ -1,4 +1,4 @@
-import { Interceptor, Server, Filter, MiddlewareEndpointOptions, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, MiddlewareEndpointOptions, CanActivate } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -26,11 +26,6 @@ export interface HttpOpts extends MiddlewareEndpointOptions {
     autoListen?: boolean;
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
-    /**
-     * share with thie http server.
-     * eg. ws, socket.io server.
-     */
-    sharing?: Type<Server<any, any>>[];
 }
 
 export interface Http1ServerOpts extends HttpOpts {

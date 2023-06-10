@@ -4,7 +4,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
-import { TcpClient, TcpClientModule, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
+import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
 
@@ -95,7 +95,6 @@ export class DeviceController {
                 }
             }
         }),
-        TcpMicroServiceModule,
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
@@ -103,12 +102,13 @@ export class DeviceController {
                     port: 2000
                 }
             }
-        })
+        }),
+        TcpMicroServiceModule
     ],
     declarations: [
         DeviceController
     ],
-    bootstrap: TcpServer
+    bootstrap: [TcpServer, TcpMicroService]
 })
 export class TcpTestModule {
 

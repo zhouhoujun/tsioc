@@ -7,7 +7,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpMicroService, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
 
 
 @RouteMapping('/device')
@@ -103,7 +103,6 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         //         path: ipcpath
         //     }
         // },
-        TcpMicroServiceModule,
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
@@ -111,12 +110,13 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     path: ipcpath
                 }
             }
-        })
+        }),
+        TcpMicroServiceModule
     ],
     declarations: [
         DeviceController
     ],
-    bootstrap: TcpServer
+    bootstrap: [TcpServer, TcpMicroService]
 })
 export class IPCTestModule {
 
@@ -338,19 +338,6 @@ describe('IPC Server & IPC Client', () => {
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })
-
-
-    it('dd micro message', async () => {
-        const result = 'reload';
-        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: 'reload' }, responseType: 'text' }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual(result);
-    })
-
 
     it('xxx micro message', async () => {
         const result = 'reload2';
