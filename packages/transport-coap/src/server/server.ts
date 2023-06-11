@@ -1,11 +1,11 @@
 
 import { AssetContext, InternalServerExecption, BindListenning, Server as MircoServer, Outgoing } from '@tsdi/core';
-import { Inject, Injectable, isFunction, isNumber, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Server, IncomingMessage, OutgoingMessage } from 'coap';
 import { COAP_MICRO_SERV_OPTS, COAP_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
-import { ev } from '@tsdi/transport';
+import { LOCALHOST, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { CoapOutgoing } from './outgoing';
 import { CoapContext } from './context';
@@ -17,7 +17,7 @@ import { CoapContext } from './context';
 export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implements BindListenning {
 
     @InjectLog() logger!: Logger;
-
+    protected isSecure = false;
     constructor(
         readonly endpoint: CoapMicroEndpoint,
         @Inject(COAP_MICRO_SERV_OPTS) protected options: CoapServerOpts) {
@@ -33,11 +33,15 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
         if (!this._server) throw new InternalServerExecption();
         if (isNumber(arg1)) {
             this._server.listen(arg1, listeningListener);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
         } else if (isFunction(arg1)) {
-            this._server.listen(listeningListener)
+            this._server.listen(listeningListener);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
         } else if (arg1) {
-            this._server.listen(arg1.prot, arg1.listener);
+            this._server.listen(arg1.port, arg1.listener);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1.port}`, '!')
         } else {
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
             this._server.listen();
         }
         return this;
@@ -57,9 +61,8 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
 
         this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res))
 
-        if (this.options.listenOpts) {
-            this.listen(this.options.listenOpts as any);
-        }
+        this.listen(this.options.listenOpts as any);
+
     }
     protected async onShutdown(): Promise<any> {
         if (!this._server) return;
