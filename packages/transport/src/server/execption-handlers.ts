@@ -1,5 +1,7 @@
 import {
-    BadRequestExecption, ExecptionHandler, ForbiddenExecption, InternalServerExecption, MessageExecption,
+    BadRequestExecption, ExecptionHandler, ForbiddenExecption, InternalServerExecption,
+    MethodNotAllowedExecption, NotAcceptableExecption, NotImplementedExecption, BadGatewayExecption,
+    ServiceUnavailableExecption, GatewayTimeoutExecption, NotSupportedExecption,
     NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, HttpStatusCode, AssetContext
 } from '@tsdi/core';
 import { Abstract, ArgumentExecption, MissingParameterExecption } from '@tsdi/ioc';
@@ -16,18 +18,6 @@ export abstract class TransportExecptionHandlers {
 
     }
 
-    @ExecptionHandler(NotFoundExecption)
-    notFoundExecption(ctx: AssetContext, execption: NotFoundExecption) {
-        execption.status = HttpStatusCode.NotFound;
-        this.adpater.respond(ctx, execption)
-    }
-
-    @ExecptionHandler(ForbiddenExecption)
-    forbiddenExecption(ctx: AssetContext, execption: ForbiddenExecption) {
-        execption.status = HttpStatusCode.Forbidden;
-        this.adpater.respond(ctx, execption)
-    }
-
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: AssetContext, execption: BadRequestExecption) {
         execption.status = HttpStatusCode.BadRequest;
@@ -40,19 +30,75 @@ export abstract class TransportExecptionHandlers {
         this.adpater.respond(ctx, execption)
     }
 
+    @ExecptionHandler(ForbiddenExecption)
+    forbiddenExecption(ctx: AssetContext, execption: ForbiddenExecption) {
+        execption.status = HttpStatusCode.Forbidden;
+        this.adpater.respond(ctx, execption)
+    }
+
+    @ExecptionHandler(NotFoundExecption)
+    notFoundExecption(ctx: AssetContext, execption: NotFoundExecption) {
+        execption.status = HttpStatusCode.NotFound;
+        this.adpater.respond(ctx, execption)
+    }
+
+    @ExecptionHandler(MethodNotAllowedExecption)
+    notAllowedExecption(ctx: AssetContext, execption: MethodNotAllowedExecption) {
+        execption.status = HttpStatusCode.MethodNotAllowed;
+        this.adpater.respond(ctx, execption)
+    }
+
+
+    @ExecptionHandler(NotAcceptableExecption)
+    notAcceptableExecption(ctx: AssetContext, execption: NotAcceptableExecption) {
+        execption.status = HttpStatusCode.NotAcceptable;
+        this.adpater.respond(ctx, execption)
+    }
+
+    @ExecptionHandler(UnsupportedMediaTypeExecption)
+    unsupported(ctx: AssetContext, execption: UnsupportedMediaTypeExecption) {
+        execption.status = HttpStatusCode.UnsupportedMediaType;
+        this.adpater.respond(ctx, execption)
+    }
+
+
     @ExecptionHandler(InternalServerExecption)
     internalServerError(ctx: AssetContext, execption: InternalServerExecption) {
         execption.status = HttpStatusCode.InternalServerError;
         this.adpater.respond(ctx, execption)
     }
 
-    @ExecptionHandler(UnsupportedMediaTypeExecption)
-    unsupported(ctx: AssetContext, execption: UnsupportedMediaTypeExecption) {
-        execption = new MessageExecption(execption.message, HttpStatusCode.UnsupportedMediaType);
+    @ExecptionHandler(NotImplementedExecption)
+    notImplementedError(ctx: AssetContext, execption: NotImplementedExecption) {
+        execption.status = HttpStatusCode.NotImplemented;
         this.adpater.respond(ctx, execption)
     }
 
-    protected abstract detailError(ctx: AssetContext): boolean;
+
+    @ExecptionHandler(BadGatewayExecption)
+    badGatewayError(ctx: AssetContext, execption: BadGatewayExecption) {
+        execption.status = HttpStatusCode.BadGateway;
+        this.adpater.respond(ctx, execption)
+    }
+
+    @ExecptionHandler(ServiceUnavailableExecption)
+    ServiceUnavailableError(ctx: AssetContext, execption: ServiceUnavailableExecption) {
+        execption.status = HttpStatusCode.ServiceUnavailable;
+        this.adpater.respond(ctx, execption)
+    }
+
+    @ExecptionHandler(GatewayTimeoutExecption)
+    gatewayTimeoutError(ctx: AssetContext, execption: GatewayTimeoutExecption) {
+        execption.status = HttpStatusCode.GatewayTimeout;
+        this.adpater.respond(ctx, execption)
+    }
+
+    @ExecptionHandler(NotSupportedExecption)
+    notSupportedError(ctx: AssetContext, execption: NotSupportedExecption) {
+        execption.status = HttpStatusCode.BadGateway;
+        this.adpater.respond(ctx, execption)
+    }
+
 
     @ExecptionHandler(ArgumentExecption)
     anguExecption(ctx: AssetContext, err: ArgumentExecption) {
@@ -72,4 +118,6 @@ export abstract class TransportExecptionHandlers {
         this.adpater.respond(ctx, execption)
     }
 
+
+    protected abstract detailError(ctx: AssetContext): boolean;
 }

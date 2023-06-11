@@ -1,4 +1,3 @@
-export * from './errors';
 
 export * from './client/handler';
 export * from './client/option';

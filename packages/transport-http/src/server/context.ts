@@ -1,11 +1,10 @@
-import { MiddlewareLike, Throwable, HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/core';
+import { MiddlewareLike, Throwable, HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption } from '@tsdi/core';
 import { isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { HttpError, HttpInternalServerError } from './../errors';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -277,14 +276,14 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
     throwError(error: Error): Error;
     throwError(status: string | number | Error, message?: string): Error {
         if (isString(status)) {
-            return new HttpInternalServerError(status)
+            return new InternalServerExecption(status, HttpStatusCode.InternalServerError)
         } else if (isNumber(status)) {
             if (!statusMessage[status as HttpStatusCode]) {
-                status = 500
+                status = HttpStatusCode.InternalServerError
             }
-            return new HttpError(status, message ?? statusMessage[status as HttpStatusCode])
+            return new MessageExecption(message ?? statusMessage[status as HttpStatusCode], status)
         }
-        return new HttpError((status as HttpError).statusCode ?? 500, status.message ?? statusMessage[(status as HttpError).statusCode ?? 500]);
+        return new MessageExecption(status.message ?? statusMessage[(status as MessageExecption).statusCode as HttpStatusCode ?? 500], (status as MessageExecption).statusCode ?? HttpStatusCode.InternalServerError);
     }
 
 

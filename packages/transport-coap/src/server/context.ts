@@ -47,4 +47,4 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
 
 }
 
-const coaptl = /^coap:\/\//i;
+const coaptl = /^coap(s)?:\/\//i;

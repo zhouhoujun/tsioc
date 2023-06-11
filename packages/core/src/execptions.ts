@@ -72,16 +72,28 @@ export class InvalidJsonException extends Execption {
 
 
 
-
 /**
- * not found execption.
+ * Bad request execption.
  *
  * @export
- * @class NotFoundExecption
+ * @class BadRequestExecption
  * @extends {MessageExecption}
  */
-export class NotFoundExecption extends MessageExecption {
-    constructor(message = 'Not Found', status?: number) {
+export class BadRequestExecption extends MessageExecption {
+    constructor(message = 'Bad Request', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
+ * Unauthorized execption.
+ *
+ * @export
+ * @class UnauthorizedExecption
+ * @extends {MessageExecption}
+ */
+export class UnauthorizedExecption extends MessageExecption {
+    constructor(message = 'Unauthorized', status?: number | string) {
         super(message, status)
     }
 }
@@ -100,14 +112,50 @@ export class ForbiddenExecption extends MessageExecption {
 }
 
 /**
- * bad request execption.
+ * Not found execption.
  *
  * @export
- * @class BadRequestExecption
+ * @class NotFoundExecption
  * @extends {MessageExecption}
  */
-export class BadRequestExecption extends MessageExecption {
-    constructor(message = 'Bad Request', status?: number | string) {
+export class NotFoundExecption extends MessageExecption {
+    constructor(message = 'Not Found', status?: number) {
+        super(message, status)
+    }
+}
+
+
+/**
+ * Method Not Allowed execption.
+ *
+ * @export
+ * @class MethodNotAllowedExecption
+ * @extends {MessageExecption}
+ */
+export class MethodNotAllowedExecption extends MessageExecption {
+    constructor(message = 'Method Not Allowed', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
+ * Not Acceptable execption.
+ *
+ * @export
+ * @class NotAcceptableExecption
+ * @extends {MessageExecption}
+ */
+export class NotAcceptableExecption extends MessageExecption {
+    constructor(message = 'Not Acceptable', status?: number) {
+        super(message, status)
+    }
+}
+
+/**
+ * unsupported media type execption.
+ */
+export class UnsupportedMediaTypeExecption extends MessageExecption {
+    constructor(message = 'Unsupported Media Type', status?: number) {
         super(message, status)
     }
 }
@@ -125,25 +173,11 @@ export class TimeoutExecption extends MessageExecption {
     }
 }
 
-/**
- * unauthorized execption.
- *
- * @export
- * @class UnauthorizedExecption
- * @extends {MessageExecption}
- */
-export class UnauthorizedExecption extends MessageExecption {
-    constructor(message = 'Unauthorized', status?: number | string) {
-        super(message, status)
-    }
-}
 
 /**
  * internal server execption.
  *
- * @export
- * @class InternalServerExecption
- * @extends {MessageExecption}
+ * server side exception.
  */
 export class InternalServerExecption extends MessageExecption {
     constructor(message = 'Internal Server Error', status?: number | string) {
@@ -152,10 +186,56 @@ export class InternalServerExecption extends MessageExecption {
 }
 
 /**
- * unsupported media type execption.
+ * Not implemented execption.
+ * 
+ * server side exception.
  */
-export class UnsupportedMediaTypeExecption extends MessageExecption {
-    constructor(message = 'Unsupported Media Type', status?: number) {
+export class NotImplementedExecption extends MessageExecption {
+    constructor(message = 'Not Implemented', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
+ * Bad Gateway execption.
+ * 
+ * server side exception.
+ */
+export class BadGatewayExecption extends MessageExecption {
+    constructor(message = 'Bad Gateway', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
+ * Service Unavailable execption.
+ * 
+ * server side exception.
+ */
+export class ServiceUnavailableExecption extends MessageExecption {
+    constructor(message = 'Service Unavailable', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
+ * Gateway Timeout execption.
+ * 
+ * server side exception.
+ */
+export class GatewayTimeoutExecption extends MessageExecption {
+    constructor(message = 'Gateway Timeout', status?: number | string) {
+        super(message, status)
+    }
+}
+
+/**
+ * Not Supported execption.
+ * 
+ * server side exception.
+ */
+export class NotSupportedExecption extends MessageExecption {
+    constructor(message = 'Not Supported', status?: number | string) {
         super(message, status)
     }
 }

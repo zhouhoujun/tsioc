@@ -24,7 +24,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
 
         const opts = req.context.get(COAP_CLIENT_OPTS);
         const agent = req.context.get(Agent);
-        const uri = new URL(url);
+        const uri = new URL(coaptl.test(url) ? url : `coap://${opts.connectOpts.socket?.remoteAddress()?.address ?? 'localhost'}:${opts.connectOpts.port}/${url}`);
         const options = req.headers.headers as Partial<Record<OptionName, OptionValue>>;
 
         const requestStream = request({
@@ -106,3 +106,5 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     }
 
 }
+
+const coaptl = /^coap(s)?:\/\//i;
