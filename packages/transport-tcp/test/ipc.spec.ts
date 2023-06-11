@@ -114,7 +114,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     Content,
                     Json,
                     Bodyparser,
-                    { useExisting: getToken(MessageRouter, 'tcp') }
+                    { useExisting: MicroServiceRouterModule.getToken('tcp') }
                 ]
             }
         })

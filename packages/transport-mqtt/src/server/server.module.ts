@@ -1,5 +1,5 @@
-import { ExecptionHandlerFilter, HybridRouter, MessageRouter, MicroServiceRouterModule, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getToken, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { MqttServer } from './server';
@@ -27,7 +27,7 @@ const defaultServOpts = {
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     filtersToken: MQTT_SERV_FILTERS,
     guardsToken: MQTT_SERV_GUARDS,
-    backend: getToken(MessageRouter, 'mqtt'),
+    backend: MicroServiceRouterModule.getToken('mqtt'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,

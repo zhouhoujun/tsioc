@@ -1,4 +1,4 @@
-import { ListenOpts, MESSAGE, MicroService, MircoServiceRouter, Outgoing, Packet, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { ListenOpts, MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Client, connect } from 'mqtt';
@@ -13,7 +13,7 @@ import { MqttContext } from './context';
 
 
 @Injectable()
-export class MqttServer extends MicroService<TransportContext, Outgoing> {
+export class MqttServer extends Server<TransportContext, Outgoing> {
 
     @InjectLog()
     private logger!: Logger;

@@ -107,7 +107,7 @@ export class DeviceController {
                     Content,
                     Json,
                     Bodyparser,
-                    { useExisting: getToken(MessageRouter, 'tcp') }
+                    { useExisting: MicroServiceRouterModule.getToken('tcp') }
                 ]
             }
         })

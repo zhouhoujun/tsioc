@@ -35,7 +35,7 @@ const defMicroOpts = {
     interceptorsToken: TCP_MICRO_SERV_INTERCEPTORS,
     filtersToken: TCP_MICRO_SERV_FILTERS,
     guardsToken: TCP_MICRO_SERV_GUARDS,
-    backend: getToken(MessageRouter, 'tcp'),
+    backend: MicroServiceRouterModule.getToken('tcp'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,

@@ -1,4 +1,4 @@
-import { ListenOpts, MicroService, TransportEndpoint } from '@tsdi/core';
+import { ListenOpts, Server, TransportEndpoint } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
 import * as modbus from 'modbus-serial';
 import { Observable, Subscription } from 'rxjs';
@@ -6,7 +6,7 @@ import { ModbusContext } from './context';
 
 
 @Injectable()
-export class ModbusServer extends MicroService<ModbusContext> {
+export class ModbusServer extends Server<ModbusContext> {
     private server?: modbus.ServerTCP;
     get endpoint(): TransportEndpoint<ModbusContext, any> {
         throw new Error('Method not implemented.');

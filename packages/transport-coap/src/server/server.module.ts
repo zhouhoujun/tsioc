@@ -1,5 +1,5 @@
-import { ExecptionHandlerFilter, HybridRouter, MessageRouter, MicroServiceRouterModule, RouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getToken, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { CoapServer } from './server';
@@ -28,7 +28,7 @@ const defMicroServOpts = {
         ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
-    backend: getToken(MessageRouter, 'coap'),
+    backend: MicroServiceRouterModule.getToken('coap'),
     interceptors: [
         Content,
         Session,

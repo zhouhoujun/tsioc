@@ -1,4 +1,4 @@
-import { InjectFlags, Injector, Module, ModuleWithProviders, getToken, isString, tokenId } from '@tsdi/ioc';
+import { InjectFlags, Injector, Module, ModuleWithProviders, Token, getToken, isString, tokenId } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
 import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
@@ -13,6 +13,7 @@ import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
 import { MESSAGE_ROUTERS, MessageRouter, MircoServiceRouter, TransportProtocol } from './router.micro';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
+
 
 
 TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
@@ -140,7 +141,7 @@ export class MicroServiceRouterModule {
     }): ModuleWithProviders<MicroServiceRouterModule> {
         const protocol = isString(arg1) ? arg1 : arg1.protocol;
         const opts = { ...isString(arg1) ? options : arg1 };
-        const token = getToken(MessageRouter, protocol);
+        const token = getMessageRouter(protocol);
         return {
             module: MicroServiceRouterModule,
             providers: [
@@ -162,7 +163,14 @@ export class MicroServiceRouterModule {
             ]
         }
     }
+
+    static getToken(protocol: string): Token<MessageRouter> {
+        return getMessageRouter(protocol)
+    }
 }
 
+export function getMessageRouter(protocol: string): Token<MessageRouter> {
+    return getToken(MessageRouter, protocol)
+}
 
 

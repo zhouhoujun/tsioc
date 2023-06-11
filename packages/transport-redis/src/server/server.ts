@@ -1,4 +1,4 @@
-import { ListenOpts, MESSAGE, MicroService, MircoServiceRouter, Outgoing, Packet, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { ListenOpts, MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
@@ -13,7 +13,7 @@ import { RedisContext } from './context';
 
 
 @Injectable()
-export class RedisServer extends MicroService<TransportContext, Outgoing> {
+export class RedisServer extends Server<TransportContext, Outgoing> {
 
     @InjectLog() logger!: Logger;
 

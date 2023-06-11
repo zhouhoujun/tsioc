@@ -1,6 +1,6 @@
 
-import { ExecptionHandlerFilter, HybridRouter, MessageRouter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getToken, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { AmqpTransportSessionFactory } from '../transport';
@@ -34,7 +34,7 @@ const defMicroOpts = {
     interceptorsToken: AMQP_SERV_INTERCEPTORS,
     filtersToken: AMQP_SERV_FILTERS,
     guardsToken: AMQP_SERV_GUARDS,
-    backend: getToken(MessageRouter, 'amqp'),
+    backend: MicroServiceRouterModule.getToken('amqp'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,

@@ -1,11 +1,11 @@
-import { MicroService } from '@tsdi/core';
+import { Server } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
 import { NatsContext } from './context';
 import { NatsEndpoint } from './endpoint';
 
 
 @Injectable()
-export class NatsServer extends MicroService<NatsContext> {
+export class NatsServer extends Server<NatsContext> {
     
     constructor(
         readonly endpoint: NatsEndpoint

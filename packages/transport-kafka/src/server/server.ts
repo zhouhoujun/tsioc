@@ -1,5 +1,5 @@
 import { Injectable, isNil, getClass, Inject } from '@tsdi/ioc';
-import { MicroService, Packet, TransportContext, TransportEndpointOptions } from '@tsdi/core';
+import { Server, Packet, TransportContext, TransportEndpointOptions } from '@tsdi/core';
 import { InjectLog, Level } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, Logger, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
@@ -13,7 +13,7 @@ import { KafkaContext } from './context';
 
 
 @Injectable()
-export class KafkaServer extends MicroService<KafkaContext> {
+export class KafkaServer extends Server<KafkaContext> {
 
     @InjectLog()
     private logger!: Logger;

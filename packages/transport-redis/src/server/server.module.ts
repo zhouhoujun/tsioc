@@ -1,5 +1,5 @@
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getToken, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, MessageRouter, MicroServiceRouterModule, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
+import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { RedisTransportSessionFactory } from '../transport';
@@ -27,7 +27,7 @@ const defMicroOpts = {
     interceptorsToken: REDIS_SERV_INTERCEPTORS,
     filtersToken: REDIS_SERV_FILTERS,
     guardsToken: REDIS_SERV_GUARDS,
-    backend: getToken(MessageRouter, 'redis'),
+    backend: MicroServiceRouterModule.getToken('redis'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
