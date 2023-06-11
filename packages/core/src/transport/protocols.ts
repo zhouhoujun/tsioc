@@ -25,7 +25,7 @@ export type RequestMethod = HttpRequestMethod | GrpcRequestMethod | 'EVENT' | 'M
 /**
  * transport protocol types.
  */
-export type Protocol ='tcp' | 'grpc' | 'rmq' | 'modbus' | 'mqtt' |  'kafka' | 'redis';
+export type Protocol = 'tcp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 'redis' | 'grpc' | 'modbus';
 
 //http
 /**

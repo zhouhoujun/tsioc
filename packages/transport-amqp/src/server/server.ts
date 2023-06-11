@@ -1,4 +1,4 @@
-import { MESSAGE, MicroService, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { MESSAGE, Server, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
@@ -14,7 +14,7 @@ import { Observer, Subscription, finalize } from 'rxjs';
 
 
 @Injectable()
-export class AmqpServer extends MicroService<AmqpContext> {
+export class AmqpServer extends Server<AmqpContext> {
 
     @InjectLog()
     private logger!: Logger;

@@ -11,8 +11,9 @@ import { TransportContextIml } from '../impl/transport.context';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
-import { MESSAGE_ROUTERS, MessageRouter, MircoServiceRouter, TransportProtocol } from './router.micro';
+import { MESSAGE_ROUTERS, MessageRouter, MircoServiceRouter } from './router.micro';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
+import { Protocol } from './protocols';
 
 
 
@@ -123,13 +124,13 @@ export class MicroServiceRouterModule {
      * @return The new Module.
      *
      */
-    static forRoot(protocol: TransportProtocol, options?: {
+    static forRoot(protocol: Protocol, options?: {
         matcher?: RouteMatcher;
         prefix?: string;
         routes?: Routes;
     }): ModuleWithProviders<MicroServiceRouterModule>
     static forRoot(options: {
-        protocol: TransportProtocol;
+        protocol: Protocol;
         matcher?: RouteMatcher;
         prefix?: string;
         routes?: Routes;
@@ -164,12 +165,12 @@ export class MicroServiceRouterModule {
         }
     }
 
-    static getToken(protocol: string): Token<MessageRouter> {
+    static getToken(protocol: Protocol): Token<MessageRouter> {
         return getMessageRouter(protocol)
     }
 }
 
-export function getMessageRouter(protocol: string): Token<MessageRouter> {
+export function getMessageRouter(protocol: Protocol): Token<MessageRouter> {
     return getToken(MessageRouter, protocol)
 }
 

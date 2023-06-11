@@ -1,6 +1,6 @@
 import { createHandler } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { TransportModule, StatusVaildator, RequestAdapter } from '@tsdi/transport';
+import { TransportModule, StatusVaildator, RequestAdapter, TransportBackend, BodyContentInterceptor } from '@tsdi/transport';
 import { CoapHandler } from './handler';
 import { CoapClient } from './client';
 import { CoapRequestAdapter } from './request';
@@ -13,6 +13,8 @@ import { CoapStatusVaildator } from '../status';
 const defClientOpts = {
     interceptorsToken: COAP_INTERCEPTORS,
     execptionsToken: COAP_FILTERS,
+    interceptors: [BodyContentInterceptor],
+    backend: TransportBackend,
     connectOpts: {
         type: 'udp4',
         port: 5683

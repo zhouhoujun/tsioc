@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { AmqpClient, AmqpClientModule, AmqpMicroServiceModule, AmqpServer } from '../src';
+import { CoapClient, CoapClientModule, CoapMicroService, CoapMicroServiceModule } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -11,9 +11,9 @@ const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class AmqpService {
+export class CoapService {
 
-    constructor(private client: AmqpClient) {
+    constructor(private client: CoapClient) {
 
     }
 
@@ -51,9 +51,8 @@ export class AmqpService {
     imports: [
         ServerModule,
         LoggerModule,
-        AmqpClientModule,
-        AmqpMicroServiceModule
-        // AmqpClientModule.withOption({
+        CoapClientModule,
+        // CoapClientModule.withOption({
         //     clientOpts: {
         //         // connectOpts: {
         //         //     port: 6379
@@ -61,7 +60,9 @@ export class AmqpService {
         //         // timeout: 1000
         //     }
         // }),
-        // AmqpMicroServiceModule.withOption({
+        
+        CoapMicroServiceModule
+        // CoapMicroServiceModule.withOption({
         //     serverOpts: {
         //         // timeout: 1000,
         //         // connectOpts: {
@@ -71,9 +72,9 @@ export class AmqpService {
         // })
     ],
     declarations: [
-        AmqpService
+        CoapService
     ],
-    bootstrap: AmqpServer
+    bootstrap: CoapMicroService
 })
 export class MicroTestModule {
 
@@ -81,11 +82,11 @@ export class MicroTestModule {
 
 
 
-describe('Amqp Micro Service', () => {
+describe('Coap Micro Service', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: AmqpClient;
+    let client: CoapClient;
 
     before(async () => {
         ctx = await Application.run(MicroTestModule, {
@@ -95,7 +96,7 @@ describe('Amqp Micro Service', () => {
             ]
         });
         injector = ctx.injector;
-        client = injector.get(AmqpClient);
+        client = injector.get(CoapClient);
     });
 
 

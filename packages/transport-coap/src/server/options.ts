@@ -1,5 +1,5 @@
 
-import { AssetContext, TransportEndpointOptions, ExecptionFilter, Interceptor, MiddlewareLike, Outgoing, CanActivate } from '@tsdi/core';
+import { AssetContext, TransportEndpointOptions, ExecptionFilter, Interceptor, Outgoing, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { CoapServerOptions } from 'coap';
 
@@ -26,11 +26,26 @@ export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor<AssetContext, Outgoing
  */
 export const COAP_SERV_FILTERS = tokenId<ExecptionFilter[]>('COAP_SERV_FILTERS');
 /**
- * CoAP middlewares.
- */
-export const COAP_MIDDLEWARES = tokenId<MiddlewareLike[]>('COAP_MIDDLEWARES');
-/**
  * CoAP Guards.
  */
 export const COAP_SERV_GUARDS = tokenId<CanActivate[]>('COAP_SERV_GUARDS');
 
+
+/**
+ * coap micro server options
+ */
+export const COAP_MICRO_SERV_OPTS = tokenId<CoapServerOpts>('COAP_MICRO_SERV_OPTS');
+
+/**
+ * CoAP micro server interceptors.
+ */
+export const COAP_MICRO_SERV_INTERCEPTORS = tokenId<Interceptor<AssetContext, Outgoing>[]>('COAP_MICRO_SERV_INTERCEPTORS');
+
+/**
+ * CoAP micro server filters.
+ */
+export const COAP_MICRO_SERV_FILTERS = tokenId<ExecptionFilter[]>('COAP_MICRO_SERV_FILTERS');
+/**
+ * CoAP micro Guards.
+ */
+export const COAP_MICRO_SERV_GUARDS = tokenId<CanActivate[]>('COAP_MICRO_SERV_GUARDS');

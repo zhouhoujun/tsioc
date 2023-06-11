@@ -3,9 +3,8 @@ import { AssetContext, InternalServerExecption, BindListenning, Server as MircoS
 import { Inject, Injectable, isFunction, isNumber, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Server, IncomingMessage, OutgoingMessage } from 'coap';
-import { COAP_SERV_OPTS, CoapServerOpts } from './options';
-
-import { CoapEndpoint } from './endpoint';
+import { COAP_MICRO_SERV_OPTS, COAP_SERV_OPTS, CoapServerOpts } from './options';
+import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { CoapOutgoing } from './outgoing';
@@ -15,13 +14,13 @@ import { CoapContext } from './context';
  * Coap server.
  */
 @Injectable()
-export class CoapServer extends MircoServer<AssetContext, Outgoing> implements BindListenning {
+export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implements BindListenning {
 
     @InjectLog() logger!: Logger;
 
     constructor(
-        readonly endpoint: CoapEndpoint,
-        @Inject(COAP_SERV_OPTS) private options: CoapServerOpts) {
+        readonly endpoint: CoapMicroEndpoint,
+        @Inject(COAP_MICRO_SERV_OPTS) protected options: CoapServerOpts) {
         super()
     }
 
@@ -104,4 +103,13 @@ export class CoapServer extends MircoServer<AssetContext, Outgoing> implements B
     }
 
 
+}
+
+@Injectable()
+export class CoapServer extends CoapMicroService {
+    constructor(
+        endpoint: CoapEndpoint,
+        @Inject(COAP_SERV_OPTS) options: CoapServerOpts) {
+        super(endpoint, options)
+    }
 }

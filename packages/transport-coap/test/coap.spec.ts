@@ -1,11 +1,12 @@
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { CoapClient, CoapMicroServiceModule, CoapServer, CoapClientOpts, COAP_CLIENT_OPTS, CoapClientModule } from '../src';
+import { CoapClient, CoapServer, CoapClientOpts, COAP_CLIENT_OPTS, CoapClientModule, CoapServerModule } from '../src';
 import { DeviceController } from './controller';
+import { Bodyparser, Content, Json } from '@tsdi/transport';
 
 
 
@@ -23,7 +24,17 @@ import { DeviceController } from './controller';
         //         },
         //     }
         // }),
-        CoapMicroServiceModule,
+        MicroServiceRouterModule.forRoot('coap'),
+        CoapServerModule.withOption({
+            serverOpts: {
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                    { useExisting: MicroServiceRouterModule.getToken('coap') }
+                ]
+            }
+        }),
         // CoapMicroServiceModule.withOption({
         //     // timeout: 1000,
         //     serverOpts: {
@@ -227,6 +238,28 @@ describe('CoAP Server & CoAP Client', () => {
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })

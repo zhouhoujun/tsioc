@@ -2,9 +2,7 @@ import { Abstract, Injector, tokenId } from '@tsdi/ioc';
 import { Endpoint } from '../endpoints/endpoint';
 import { RouteMatcher, Router } from './router';
 import { Routes } from './route';
-
-
-export type TransportProtocol = 'tcp' | 'redis' | 'mqtt' | 'kafka' | 'amqp' | 'coap' | 'modbus';
+import { Protocol } from './protocols';
 
 /**
  * message router
@@ -14,7 +12,7 @@ export type TransportProtocol = 'tcp' | 'redis' | 'mqtt' | 'kafka' | 'amqp' | 'c
 @Abstract()
 export abstract class MessageRouter<T = Endpoint> extends Router<T> {
 
-    abstract get protocol(): TransportProtocol;
+    abstract get protocol(): Protocol;
 }
 
 
@@ -34,7 +32,7 @@ export abstract class MircoServiceRouter {
     /**
      * get microserivce router
      */
-    abstract get<T = Endpoint>(protocol?: TransportProtocol): Router<T>;
+    abstract get<T = Endpoint>(protocol?: Protocol): Router<T>;
     /**
      * register microserivce router
      * @param options 
@@ -43,7 +41,7 @@ export abstract class MircoServiceRouter {
 }
 
 export interface MircoRouterOption {
-    protocol: string;
+    protocol: Protocol;
     injector?: Injector;
     matcher?: RouteMatcher;
     prefix?: string;

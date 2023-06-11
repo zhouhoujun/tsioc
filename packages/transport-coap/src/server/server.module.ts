@@ -2,9 +2,9 @@ import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterM
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { CoapServer } from './server';
-import { COAP_SERV_FILTERS, COAP_MIDDLEWARES, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS } from './options';
-import { CoapEndpoint } from './endpoint';
+import { CoapMicroService, CoapServer } from './server';
+import { COAP_SERV_FILTERS, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS, COAP_MICRO_SERV_OPTS, COAP_MICRO_SERV_INTERCEPTORS, COAP_MICRO_SERV_FILTERS, COAP_MICRO_SERV_GUARDS } from './options';
+import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
 import { CoapStatusVaildator } from '../status';
 import { CoapExecptionHandlers } from './execption.handles';
 
@@ -18,10 +18,9 @@ const defMicroServOpts = {
         prefix: '/content'
     },
     detailError: true,
-    interceptorsToken: COAP_SERV_INTERCEPTORS,
-    execptionsToken: COAP_SERV_FILTERS,
-    middlewaresToken: COAP_MIDDLEWARES,
-    guardsToken: COAP_SERV_GUARDS,
+    interceptorsToken: COAP_MICRO_SERV_INTERCEPTORS,
+    filtersToken: COAP_MICRO_SERV_FILTERS,
+    guardsToken: COAP_MICRO_SERV_GUARDS,
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -47,18 +46,18 @@ const defMicroServOpts = {
     ],
     providers: [
         { provide: StatusVaildator, useClass: CoapStatusVaildator },
-        { provide: COAP_SERV_OPTS, useValue: { ...defMicroServOpts }, asDefault: true },
+        { provide: COAP_MICRO_SERV_OPTS, useValue: { ...defMicroServOpts }, asDefault: true },
         {
-            provide: CoapEndpoint,
+            provide: CoapMicroEndpoint,
             useFactory: (injector: Injector, opts: CoapServerOpts) => {
                 return createTransportEndpoint(injector, opts)
             },
             asDefault: true,
-            deps: [Injector, COAP_SERV_OPTS]
+            deps: [Injector, COAP_MICRO_SERV_OPTS]
         },
 
         CoapExecptionHandlers,
-        CoapServer
+        CoapMicroService
     ]
 })
 export class CoapMicroServiceModule {
@@ -72,7 +71,7 @@ export class CoapMicroServiceModule {
         /**
          * service endpoint provider
          */
-        endpoint?: ProvdierOf<CoapEndpoint>;
+        endpoint?: ProvdierOf<CoapMicroEndpoint>;
 
         /**
          * server options
@@ -84,7 +83,7 @@ export class CoapMicroServiceModule {
         ];
 
         if (options.endpoint) {
-            providers.push(toProvider(CoapEndpoint, options.endpoint))
+            providers.push(toProvider(CoapMicroEndpoint, options.endpoint))
         }
 
         return {
@@ -97,13 +96,11 @@ export class CoapMicroServiceModule {
 
 const defServOpts = {
     content: {
-        root: 'public',
-        prefix: '/content'
+        root: 'public'
     },
     detailError: true,
     interceptorsToken: COAP_SERV_INTERCEPTORS,
-    execptionsToken: COAP_SERV_FILTERS,
-    middlewaresToken: COAP_MIDDLEWARES,
+    filtersToken: COAP_SERV_FILTERS,
     guardsToken: COAP_SERV_GUARDS,
     filters: [
         LogInterceptor,

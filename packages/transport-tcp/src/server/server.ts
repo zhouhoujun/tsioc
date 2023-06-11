@@ -7,7 +7,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_MICRO_SERV_OPTS, TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpContext } from './context';
-import { TcpEndpoint } from './endpoint';
+import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
 
@@ -26,7 +26,7 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
     protected options: TcpServerOpts;
     protected micro;
     constructor(
-        readonly endpoint: TcpEndpoint,
+        readonly endpoint: TcpMicroEndpoint,
         @Inject(TCP_MICRO_SERV_OPTS) options: TcpServerOpts,
     ) {
         super()

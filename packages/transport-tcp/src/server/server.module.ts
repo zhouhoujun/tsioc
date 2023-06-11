@@ -7,7 +7,7 @@ import {
     TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_FILTERS, TCP_MICRO_SERV_GUARDS
 } from './options';
 import { TcpMicroService, TcpServer } from './server';
-import { TcpEndpoint } from './endpoint';
+import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
 import { TcpRespondAdapter } from './respond';
 import { TcpMicroStatusVaildator, TcpStatusVaildator } from '../status';
@@ -68,7 +68,7 @@ const defMicroOpts = {
         TcpExecptionHandlers,
         { provide: RespondAdapter, useExisting: TcpRespondAdapter },
         {
-            provide: TcpEndpoint,
+            provide: TcpMicroEndpoint,
             useFactory: (injector: Injector, opts: TcpServerOpts) => {
                 return createTransportEndpoint(injector, opts)
             },
@@ -103,7 +103,7 @@ export class TcpMicroServiceModule {
         ];
 
         if (options.endpoint) {
-            providers.push(toProvider(TcpEndpoint, options.endpoint))
+            providers.push(toProvider(TcpMicroEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
             providers.push(toProvider(TransportSessionFactory, options.transportFactory))
