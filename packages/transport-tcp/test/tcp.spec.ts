@@ -1,10 +1,10 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, Module, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MessageRouter, MicroServiceRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, getToken, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { RedirectResult } from '@tsdi/transport';
-import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
+import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
+import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '../src';
 import { LoggerModule } from '@tsdi/logs';
 
 
@@ -95,20 +95,27 @@ export class DeviceController {
                 }
             }
         }),
+
+        MicroServiceRouterModule.forRoot('tcp'),
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000
-                }
+                },
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                    { useExisting: getToken(MessageRouter, 'tcp') }
+                ]
             }
-        }),
-        TcpMicroServiceModule
+        })
     ],
     declarations: [
         DeviceController
     ],
-    bootstrap: [TcpServer, TcpMicroService]
+    bootstrap: TcpServer
 })
 export class TcpTestModule {
 

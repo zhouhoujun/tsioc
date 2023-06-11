@@ -26,9 +26,9 @@ export * from './listen';
 export * from './publisher';
 export * from './subcriber';
 
-export * from './microservice';
 export * from './endpoint';
-export * from './server';
+export * from './microservice';
+export * from './middleware.server';
 
 export * from './router.module';
 export * from './packet';

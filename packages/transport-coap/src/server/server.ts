@@ -1,5 +1,5 @@
 
-import { AssetContext, InternalServerExecption, BindListenning, MicroService, Outgoing } from '@tsdi/core';
+import { AssetContext, InternalServerExecption, BindListenning, Server as MircoServer, Outgoing } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Server, IncomingMessage, OutgoingMessage } from 'coap';
@@ -15,7 +15,7 @@ import { CoapContext } from './context';
  * Coap server.
  */
 @Injectable()
-export class CoapServer extends MicroService<AssetContext, Outgoing> implements BindListenning {
+export class CoapServer extends MircoServer<AssetContext, Outgoing> implements BindListenning {
 
     @InjectLog() logger!: Logger;
 

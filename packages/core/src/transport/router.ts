@@ -1,9 +1,11 @@
 import { Abstract, Token, Type, TypeDef } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import { Protocol, RequestMethod } from './protocols';
-import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 import { Endpoint } from '../endpoints/endpoint';
-import { Backend } from '../Handler';
+import { Interceptor } from '../Interceptor';
+import { Backend, Handler } from '../Handler';
+import { TransportContext } from './context';
 import { Pattern } from './pattern';
 import { Route } from './route';
 
@@ -13,7 +15,7 @@ import { Route } from './route';
  * public api for global router
  */
 @Abstract()
-export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
+export abstract class Router<T = Endpoint> extends Backend<TransportContext> implements Interceptor<TransportContext> {
     /**
      * route prefix.
      */
@@ -48,6 +50,13 @@ export abstract class Router<T = Endpoint> extends Backend<EndpointContext> {
      * @param endpoint endpoint.
      */
     abstract unuse(route: string, endpoint?: T): this;
+
+    /**
+     * intercept
+     * @param input 
+     * @param next 
+     */
+    abstract intercept(input: TransportContext, next: Handler): Observable<any>;
 
 }
 

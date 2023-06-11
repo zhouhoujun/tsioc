@@ -1,13 +1,13 @@
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getToken, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createMiddlewareEndpoint, TransportSessionFactory, createTransportEndpoint, MicroServiceRouterModule, MessageRouter } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint, MicroServiceRouterModule, MessageRouter } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import {
-    TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_MIDDLEWARES, TCP_SERV_OPTS, TcpMicroServiceOpts,
-    TCP_SERV_GUARDS, TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_GUARDS, TCP_MICRO_SERV_FILTERS
+    TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_OPTS, TCP_SERV_GUARDS,
+    TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_FILTERS, TCP_MICRO_SERV_GUARDS
 } from './options';
 import { TcpMicroService, TcpServer } from './server';
-import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
+import { TcpEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
 import { TcpRespondAdapter } from './respond';
 import { TcpMicroStatusVaildator, TcpStatusVaildator } from '../status';
@@ -21,6 +21,7 @@ import { TcpTransportSessionFactory } from '../transport';
  */
 const defMicroOpts = {
     autoListen: true,
+    micro: true,
     listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
@@ -47,8 +48,8 @@ const defMicroOpts = {
         Json,
         Bodyparser
     ]
-} as TcpMicroServiceOpts
 
+} as TcpServerOpts;
 
 
 @Module({
@@ -67,8 +68,8 @@ const defMicroOpts = {
         TcpExecptionHandlers,
         { provide: RespondAdapter, useExisting: TcpRespondAdapter },
         {
-            provide: TcpMicroEndpoint,
-            useFactory: (injector: Injector, opts: TcpMicroServiceOpts) => {
+            provide: TcpEndpoint,
+            useFactory: (injector: Injector, opts: TcpServerOpts) => {
                 return createTransportEndpoint(injector, opts)
             },
             asDefault: true,
@@ -95,15 +96,14 @@ export class TcpMicroServiceModule {
         /**
          * server options
          */
-        serverOpts?: TcpMicroServiceOpts;
+        serverOpts?: TcpServerOpts;
     }): ModuleWithProviders<TcpMicroServiceModule> {
         const providers: ProviderType[] = [
-            TcpMicroService,
             { provide: TCP_MICRO_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } }
         ];
 
         if (options.endpoint) {
-            providers.push(toProvider(TcpMicroEndpoint, options.endpoint))
+            providers.push(toProvider(TcpEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
             providers.push(toProvider(TransportSessionFactory, options.transportFactory))
@@ -133,22 +133,20 @@ const defServerOpts = {
     },
     detailError: true,
     interceptorsToken: TCP_SERV_INTERCEPTORS,
-    middlewaresToken: TCP_SERV_MIDDLEWARES,
     filtersToken: TCP_SERV_FILTERS,
     guardsToken: TCP_SERV_GUARDS,
-    interceptors: [],
+    backend: HybridRouter,
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
-    middlewares: [
+    interceptors: [
         Session,
         Content,
         Json,
-        Bodyparser,
-        HybridRouter
+        Bodyparser
     ]
 
 } as TcpServerOpts;
@@ -172,7 +170,7 @@ const defServerOpts = {
         {
             provide: TcpEndpoint,
             useFactory: (injector: Injector, opts: TcpServerOpts) => {
-                return createMiddlewareEndpoint(injector, opts)
+                return createTransportEndpoint(injector, opts)
             },
             asDefault: true,
             deps: [Injector, TCP_SERV_OPTS]

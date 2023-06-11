@@ -1,13 +1,13 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, Module, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MessageRouter, MicroServiceRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, Token, getToken, isArray, lang } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
-import { RedirectResult } from '@tsdi/transport';
+import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpMicroService, TcpMicroServiceModule, TcpServer, TcpServerModule } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
 
 
 @RouteMapping('/device')
@@ -103,20 +103,26 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         //         path: ipcpath
         //     }
         // },
+        MicroServiceRouterModule.forRoot('tcp'),
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
                     path: ipcpath
-                }
+                },
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                    { useExisting: getToken(MessageRouter, 'tcp') }
+                ]
             }
-        }),
-        TcpMicroServiceModule
+        })
     ],
     declarations: [
         DeviceController
     ],
-    bootstrap: [TcpServer, TcpMicroService]
+    bootstrap: TcpServer
 })
 export class IPCTestModule {
 

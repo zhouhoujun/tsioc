@@ -1,5 +1,5 @@
 import {
-    EMPTY, Injectable,  ModuleRef, isFunction, isString,
+    EMPTY, Injectable, ModuleRef, isFunction, isString,
     lang, OnDestroy, pomiseOf, Injector, Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -18,6 +18,7 @@ import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
 import { RouteEndpoint } from './route.endpoint';
+import { Handler } from '../Handler';
 
 
 
@@ -73,7 +74,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         return this
     }
 
-    handle(ctx: TransportContext): Observable<any> {
+    handle(ctx: TransportContext, noFound?: () => Observable<any>): Observable<any> {
         if (ctx.isDone()) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
@@ -88,8 +89,13 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
                 });
             }
         } else {
+            if (noFound) return noFound();
             return throwError(() => new NotFoundExecption())
         }
+    }
+
+    intercept(ctx: TransportContext, next: Handler<any, any>): Observable<any> {
+        return this.handle(ctx, () => next.handle(ctx))
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {

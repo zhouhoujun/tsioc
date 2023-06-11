@@ -1,13 +1,13 @@
-import { Inject, Injectable, ModuleRef, ProvdierOf, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Server, Outgoing, ListenOpts, InternalServerExecption, ListenService, TransportSessionFactory, Packet, TransportSession, MicroService, MESSAGE, GET, MiddlewareLike, HYBRID_HOST } from '@tsdi/core';
+import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Outgoing, ListenOpts, InternalServerExecption, ListenService, TransportSessionFactory, Packet, TransportSession, Server, MESSAGE, GET } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_MICRO_SERV_OPTS, TCP_SERV_OPTS, TcpMicroServiceOpts, TcpServerOpts } from './options';
+import { TCP_MICRO_SERV_OPTS, TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpContext } from './context';
-import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
+import { TcpEndpoint } from './endpoint';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
 
@@ -17,22 +17,21 @@ import { TcpOutgoing } from './outgoing';
  * tcp micro server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpMicroService extends MicroService<TcpContext, Outgoing> implements ListenService {
+export class TcpMicroService extends Server<TcpContext, Outgoing> implements ListenService {
 
     protected serv!: net.Server | tls.Server;
 
     @InjectLog() logger!: Logger;
     protected isSecure: boolean;
-    protected options: TcpMicroServiceOpts;
-    protected micro = true;
-    private hybrid = false;
-
+    protected options: TcpServerOpts;
+    protected micro;
     constructor(
-        readonly endpoint: TcpMicroEndpoint,
-        @Inject(TCP_MICRO_SERV_OPTS) options: TcpMicroServiceOpts,
+        readonly endpoint: TcpEndpoint,
+        @Inject(TCP_MICRO_SERV_OPTS) options: TcpServerOpts,
     ) {
         super()
         this.options = { ...options };
+        this.micro = (options as any).micro
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
         if (this.options.content) {
             this.endpoint.injector.setValue(ContentOptions, this.options.content);
@@ -78,15 +77,10 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
     protected async onStartup(): Promise<any> {
         const opts = this.options;
         const injector = this.endpoint.injector;
-        const host = injector.get(HYBRID_HOST, null);
-        if (host && (host instanceof tls.Server || host instanceof net.Server)) {
-            this.serv = host;
-            this.hybrid = true;
-        } else {
-            this.serv = this.createServer(opts);
-            if (!this.micro) injector.get(ModuleRef).setValue(HYBRID_HOST, this.serv);
-            injector.setValue(ListenOpts, opts.listenOpts);
-        }
+
+        this.serv = this.createServer(opts);
+        injector.setValue(ListenOpts, opts.listenOpts);
+
 
     }
 
@@ -108,16 +102,13 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
             })
         }
 
-        if (!this.hybrid && this.options.listenOpts && this.options.autoListen) {
+        if (this.options.listenOpts && this.options.autoListen) {
             this.listen(this.options.listenOpts)
         }
     }
 
     protected onShutdown(): Promise<any> {
-        if (!this.hybrid) {
-            return promisify(this.serv.close, this.serv)();
-        }
-        return Promise.resolve();
+        return promisify(this.serv.close, this.serv)();
     }
 
     protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
@@ -168,18 +159,12 @@ export class TcpMicroService extends MicroService<TcpContext, Outgoing> implemen
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TcpMicroService implements Server<TcpContext, Outgoing> {
+export class TcpServer extends TcpMicroService {
 
     constructor(
-        readonly endpoint: TcpEndpoint,
+        endpoint: TcpEndpoint,
         @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
         super(endpoint, options);
-        this.micro = false;
-    }
-
-    use(middlewares: ProvdierOf<MiddlewareLike<TcpContext>> | ProvdierOf<MiddlewareLike<TcpContext>>[], order?: number | undefined): this {
-        this.endpoint.use(middlewares, order);
-        return this;
     }
 
 }

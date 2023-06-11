@@ -4,15 +4,15 @@ import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { MiddlewareEndpoint } from './endpoint';
 import { AssetContext } from './context';
-import { MicroService } from './microservice';
+import { Server } from './microservice';
 
 
 
 /**
- * Server
+ * Server with middleware
  */
 @Abstract()
-export abstract class Server<TInput extends AssetContext, TOutput = any> extends MicroService<TInput, TOutput> implements EndpointService, MiddlewareService {
+export abstract class MiddlewareServer<TInput extends AssetContext, TOutput = any> extends Server<TInput, TOutput> implements EndpointService, MiddlewareService {
 
     abstract get endpoint(): MiddlewareEndpoint<TInput, TOutput>;
 
