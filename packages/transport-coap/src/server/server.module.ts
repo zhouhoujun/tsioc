@@ -29,8 +29,8 @@ const defMicroServOpts = {
     ],
     backend: MicroServiceRouterModule.getToken('coap'),
     interceptors: [
-        Content,
         Session,
+        Content,
         Json,
         Bodyparser
     ]
@@ -110,8 +110,8 @@ const defServOpts = {
     ],
     backend: HybridRouter,
     interceptors: [
-        Content,
         Session,
+        Content,
         Json,
         Bodyparser
     ]

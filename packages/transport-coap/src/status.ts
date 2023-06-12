@@ -1,11 +1,10 @@
-import { GET, MESSAGE } from '@tsdi/core';
+import { GET, MESSAGE, POST } from '@tsdi/core';
 import { Inject, Injectable, tokenId } from '@tsdi/ioc';
 import { StatusVaildator } from '@tsdi/transport';
 
 
 @Injectable({ static: true })
 export class CoapStatusVaildator implements StatusVaildator<string>{
-
 
     get ok(): string {
         return '2.00'
@@ -22,11 +21,11 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
         return '0.00';
     }
     get noContent(): string {
-        return '0.00'
+        return '2.04'
     }
 
     get serverError(): string {
-        throw new Error('Method not implemented.');
+        return CoapStatuCode.InternalServerError
     }
 
     isStatus(status: string): boolean {
@@ -34,28 +33,28 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
     }
 
     isOk(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return isStausOk.test(status);
     }
     isNotFound(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return status === CoapStatuCode.NotFound
     }
     isEmpty(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return emptyStatus[status]
     }
     isRedirect(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return redirectStatus[status]
     }
     isRequestFailed(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return /^4\./.test(status);
     }
     isServerError(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return /^5\./.test(status);
     }
     isRetry(status: string): boolean {
-        throw new Error('Method not implemented.');
+        return retryStatus[status];
     }
-    redirectBodify(status: string, method?: string | undefined): boolean {
-        throw new Error('Method not implemented.');
+    redirectBodify(status: string, method?: string | undefined): boolean { if (!method) return status === '3.03';
+        return status === '3.03' || ((status === '3.01' || status === '3.02') && method === POST)
     }
 
     redirectDefaultMethod(): string {
@@ -63,6 +62,40 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
     }
 
 }
+
+const isStausOk = /^2\.0[0-5]$/;
+
+/**
+ * status codes for empty bodies
+ */
+const emptyStatus: Record<number | string, boolean> = {
+    '2.04': true,
+    '2.05': true,
+    '3.04': true
+}
+
+/**
+ * status codes for redirects
+ */
+const redirectStatus: Record<number | string, boolean> = {
+    '3.00': true,
+    '3.01': true,
+    '3.02': true,
+    '3.03': true,
+    '3.05': true,
+    '3.07': true,
+    '3.08': true
+}
+
+/**
+ * status codes for when you should retry the request
+ */
+const retryStatus: Record<number | string, boolean> = {
+    '5.02': true,
+    '5.03': true,
+    '5.04': true
+}
+
 
 //    The name of the sub-registry is "CoAP Response Codes".
 
@@ -99,10 +132,11 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
 //             +------+------------------------------+-----------+
 
 export enum CoapStatuCode {
+    Ok = '2.00',
     Created = '2.01',
     Deleted = '2.02',
     Valid = '2.03',
-    Changed ='2.04',
+    Changed = '2.04',
     Content = '2.05',
     BadRequest = '4.00',
     Unauthorized = '4.01',
@@ -124,6 +158,7 @@ export enum CoapStatuCode {
 }
 
 export const CoapMessages = {
+    '2.00': 'Ok',
     '2.01': 'Created',
     '2.02': 'Deleted',
     '2.03': 'Valid',
