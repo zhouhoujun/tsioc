@@ -1,5 +1,5 @@
 import { Injectable, isNil, getClass, Inject } from '@tsdi/ioc';
-import { Server, Packet, TransportContext, TransportEndpointOptions, MircoServiceRouter, ServiceUnavailableExecption } from '@tsdi/core';
+import { Server, Packet, TransportContext, TransportEndpointOptions, MircoServiceRouter, ServiceUnavailableExecption, TransportSessionFactory, TransportSession, MESSAGE } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, KafkaMessage, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
@@ -7,6 +7,11 @@ import { KafkaParser } from '../parser';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaContext } from './context';
+import { KafkaTransportOpts, KafkaTransport, KafkaTransportSession } from '../transport';
+import { ev } from '@tsdi/transport';
+import { Subscription, finalize } from 'rxjs';
+import { KafkaOutgoing } from './outgoing';
+import { KafkaIncoming } from './incoming';
 
 
 
@@ -95,154 +100,69 @@ export class KafkaServer extends Server<KafkaContext> {
 
 
     protected async onStart(): Promise<any> {
-        if(!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
+        if (!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
         const consumer = this.consumer;
+        const producer = this.producer;
         const router = this.endpoint.injector.get(MircoServiceRouter).get('kafka');
-        const registeredPatterns = [...router.patterns.values()];
-        const consumerSubscribeOptions = this.options.subscribe || {};
-        const subscribeToPattern = async (pattern: string) =>
-            consumer.subscribe({
-                topic: pattern,
-                ...consumerSubscribeOptions,
-            });
-        await Promise.all(registeredPatterns.map(subscribeToPattern));
+        const topics = [...router.patterns.values()];
 
-        await consumer.run({
-            ...this.options.run,
-            eachMessage: (payload: EachMessagePayload) => this.handleMessage(payload)
-        });
+        const session = this.endpoint.injector.get(TransportSessionFactory).create({ consumer, producer }, { 
+            ...this.options.transportOpts
+         } as KafkaTransportOpts) as KafkaTransportSession;
+
+        await session.regTopics(topics);
+
+        session.on(ev.MESSAGE, (topic: string, packet: Packet) => {
+            this.requestHandler(session, packet)
+        })
+
     }
-
 
     protected async onShutdown(): Promise<any> {
-        await this.consumer?.disconnect();
-        await this.producer?.disconnect();
-        this.consumer = null;
-        this.producer = null;
-        this.client = null;
-    }
-
-
-
-    public async handleMessage(payload: EachMessagePayload) {
-        const { topic, partition } = payload;
-        const rawMessage = this.parser.parse<KafkaMessage>({
-            ...payload.message,
-            topic,
-            partition,
-        });
-        const headers = rawMessage.headers as unknown as Record<string, any>;
-        const correlationId = headers[KafkaHeaders.CORRELATION_ID];
-        const replyTopic = headers[KafkaHeaders.REPLY_TOPIC];
-        const replyPartition = headers[KafkaHeaders.REPLY_PARTITION];
-
-        const packet = await this.deserializer.deserialize(rawMessage);
-        const kafkaContext = this.injector.get(OperationFactoryResolver)
-            .resolve(getClass(this), this.injector)
-            .createContext({
-                arguments: packet
-            });
-        // if the correlation id or reply topic is not set
-        // then this is an event (events could still have correlation id)
-        if (!correlationId || !replyTopic) {
-            return this.handleEvent(kafkaContext);
-        }
-
-        const publish = this.getPublisher(
-            replyTopic,
-            replyPartition,
-            correlationId,
-        );
-
-        // const handler = this.handlers.getHandlerByPattern(packet.pattern);
-        // if (!handler) {
-        //     return publish({
-        //         id: correlationId,
-        //         err: `There is no matching message handler defined in the remote service.`,
-        //     });
-        // }
-
-        const response = this.router.handle(kafkaContext);
-        response && this.send(response, publish);
-    }
-
-    public sendMessage(
-        message: Packet,
-        topic: string,
-        replyPartition: string,
-        correlationId: string,
-    ): Promise<RecordMetadata[]> {
-        const response = this.serializer.serialize(message.payload);
-        this.assignReplyPartition(replyPartition, response);
-        this.assignCorrelationIdHeader(correlationId, response);
-        this.assignErrorHeader(message, response);
-        this.assigndisposedHeader(message, response);
-        const messages = [response];
-
-        return this.producer.send({
-            topic,
-            messages,
-            ...this.options.send
-        });
-    }
-
-
-    public assigndisposedHeader(
-        outgoingResponse: Packet,
-        outgoingMessage: Message,
-    ) {
-        if (!outgoingResponse.disposed || !outgoingMessage.headers) {
-            return;
-        }
-        outgoingMessage.headers[KafkaHeaders.NEST_IS_DISPOSED] = Buffer.alloc(1);
-    }
-
-    public assignErrorHeader(
-        outgoingResponse: Packet,
-        outgoingMessage: Message,
-    ) {
-        if (!outgoingResponse.err || !outgoingMessage.headers) {
-            return;
-        }
-        outgoingMessage.headers[KafkaHeaders.NEST_ERR] = Buffer.from(
-            outgoingResponse.err,
-        );
-    }
-
-    public assignCorrelationIdHeader(
-        correlationId: string,
-        outgoingMessage: Message,
-    ) {
-        if (!outgoingMessage.headers) return;
-        outgoingMessage.headers[KafkaHeaders.CORRELATION_ID] =
-            Buffer.from(correlationId);
-    }
-
-    public assignReplyPartition(
-        replyPartition: string,
-        outgoingMessage: Message,
-    ) {
-        if (isNil(replyPartition)) {
-            return;
-        }
-        outgoingMessage.partition = parseFloat(replyPartition);
-    }
-
-    public getPublisher(
-        replyTopic: string,
-        replyPartition: string,
-        correlationId: string,
-    ): (data: any) => Promise<RecordMetadata[]> {
-        return (data: any) =>
-            this.sendMessage(data, replyTopic, replyPartition, correlationId);
-    }
-
-    async onDispose(): Promise<void> {
         this.consumer && (await this.consumer.disconnect());
         this.producer && (await this.producer.disconnect());
         this.consumer = null!;
         this.producer = null!;
         this.client = null!;
     }
+
+    /**
+    * request handler.
+    * @param observer 
+    * @param req 
+    * @param res 
+    */
+    protected requestHandler(session: TransportSession<KafkaTransport>, packet: Packet): Subscription {
+        if (!packet.method) {
+            packet.method = MESSAGE;
+        }
+        const req = new KafkaIncoming(session, packet);
+        const res = new KafkaOutgoing(session, packet.url!, packet.id);
+
+        const ctx = this.createContext(req, res);
+        const cancel = this.endpoint.handle(ctx)
+            .pipe(finalize(() => {
+                ctx.destroy();
+            }))
+            .subscribe({
+                error: (err) => {
+                    this.logger.error(err)
+                }
+            });
+        // const opts = this.options;
+        // opts.timeout && req.socket.consumer.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
+        //     req.emit?.(ev.TIMEOUT);
+        //     cancel?.unsubscribe()
+        // });
+        req.once(ev.ABOUT, () => cancel?.unsubscribe())
+        return cancel;
+    }
+
+    protected createContext(req: KafkaIncoming, res: KafkaOutgoing): KafkaContext {
+        const injector = this.endpoint.injector;
+        return new KafkaContext(injector, req, res);
+    }
+
+
 
 }

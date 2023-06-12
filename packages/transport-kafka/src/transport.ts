@@ -1,16 +1,24 @@
-import { AssignerProtocol, Cluster, Consumer, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata } from 'kafkajs';
+import { AssignerProtocol, Cluster, Consumer, Producer, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord } from 'kafkajs';
 import { Injectable, Optional, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, StreamAdapter } from '@tsdi/transport';
 
 
-export interface KafkaSessionOpts extends TransportSessionOpts, ConsumerRunConfig {
+export interface KafkaTransportOpts extends TransportSessionOpts, ConsumerRunConfig {
+    subscribe?: Omit<ConsumerSubscribeTopics, 'topic'>;
+    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
+    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
+}
 
+
+export interface KafkaTransport {
+    consumer:Consumer;
+    producer: Producer;
 }
 
 
 @Injectable()
-export class KafkaTransportSessionFactory implements TransportSessionFactory<Consumer> {
+export class KafkaTransportSessionFactory implements TransportSessionFactory<KafkaTransport> {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -19,13 +27,13 @@ export class KafkaTransportSessionFactory implements TransportSessionFactory<Con
 
     }
 
-    create(socket: Consumer, opts: KafkaSessionOpts): TransportSession<Consumer> {
+    create(socket: KafkaTransport, opts: KafkaTransportOpts): TransportSession<KafkaTransport> {
         return new KafkaTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
 
-export class KafkaTransportSession extends AbstractTransportSession<Consumer, KafkaSessionOpts> {
+export class KafkaTransportSession extends AbstractTransportSession<KafkaTransport, KafkaTransportOpts> {
 
     protected generate(data: Packet<any>): Promise<Buffer> {
         throw new Error('Method not implemented.');
@@ -45,17 +53,33 @@ export class KafkaTransportSession extends AbstractTransportSession<Consumer, Ka
     protected offSocket(name: string, event: (...args: any[]) => void): void {
         throw new Error('Method not implemented.');
     }
-    protected onData(...args: any[]): void {
+
+    async regTopics(topics: string[]) {
+        const consumerSubscribeOptions = this.options.subscribe || {};
+        const consumer = this.socket.consumer
+        const subscribeToPattern = async (pattern: string) =>
+            this.socket.consumer.subscribe({
+                topic: pattern,
+                ...consumerSubscribeOptions,
+            });
+        await Promise.all(topics.map(subscribeToPattern));
+
+        await consumer.run({
+            ...this.options.run,
+            eachMessage: (payload: EachMessagePayload) => this.onData(payload)
+        })
+    }
+    
+    protected onData(msg: EachMessagePayload): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
 
     async send(data: Packet<any>): Promise<void> {
-        const consumer = this.socket;
-        consumer.subscribe({ topic: 'ccc' });
-        consumer.run({
+        const consumer = this.socket.consumer;
+        await consumer.run({
             ...this.options,
-            // eachMessage: (p) => p
+            eachMessage: (p) => this.onData(p)
         });
         consumer.run()
     }

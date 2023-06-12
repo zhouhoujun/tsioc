@@ -1,20 +1,15 @@
 import { Token, tokenId } from '@tsdi/ioc';
 import { Client, ConfigableHandlerOptions, Filter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
-import {
-    ConsumerConfig, ConsumerSubscribeTopic, KafkaConfig,
-    ProducerConfig, ProducerRecord
-} from 'kafkajs';
+import {  ConsumerConfig, KafkaConfig, ProducerConfig, ProducerRecord } from 'kafkajs';
 import { ContentOptions } from '@tsdi/transport';
-import { KafkaSessionOpts } from '../transport';
+import { KafkaTransportOpts } from '../transport';
 
 
 export interface KafkaClientOpts extends KafkaConfig, ConfigableHandlerOptions<TransportRequest> {
     postfixId?: string;
     connectOpts?: KafkaConfig;
     consumer?: ConsumerConfig;
-    subscribe?: Omit<ConsumerSubscribeTopic, 'topic'>;
     producer?: ProducerConfig;
-    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
     keepBinary?: boolean;
 
     detailError?: boolean;
@@ -22,7 +17,7 @@ export interface KafkaClientOpts extends KafkaConfig, ConfigableHandlerOptions<T
     retryAttempts?: number;
     retryDelay?: number;
     content?: ContentOptions;
-    transportOpts?: KafkaSessionOpts;
+    transportOpts?: KafkaTransportOpts;
 }
 
 export interface KafkaClientsOpts extends KafkaClientOpts {

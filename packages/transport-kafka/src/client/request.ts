@@ -51,7 +51,7 @@ export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, Transp
             };
 
             const id = this.getPacketId();
-            const onResponse = async (res: any) => {
+            const onResponse = async (topic: string, res: any) => {
                 res = isString(res) ? JSON.parse(res) : res;
                 if (res.id !== id) return;
                 const headers = this.parseHeaders(res);

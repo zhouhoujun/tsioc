@@ -49,28 +49,31 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         const publisher = this.publisher = new Redis(options);
         this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
 
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
-        const session = factory.create({
-            subscriber,
-            publisher
-        }, { ...opts.transportOpts, serverSide: true });
-
-        session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
-            this.requestHandler(session, packet)
-        });
+        await Promise.all([
+            subscriber.connect(),
+            publisher.connect()
+        ]);
 
     }
 
     protected async onStart(): Promise<any> {
         if (!this.subscriber || !this.publisher) throw new Execption('Subscriber and Publisher cannot be null');
 
-        await Promise.all([
-            this.subscriber.connect(),
-            this.publisher.connect()
-        ]);
+        const subscriber = this.subscriber;
+        const publisher = this.publisher;
+
+        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const session = factory.create({
+            subscriber,
+            publisher
+        }, { ...this.options.transportOpts, serverSide: true });
+
+        session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
+            this.requestHandler(session, packet)
+        });
 
         const router = this.endpoint.injector.get(MircoServiceRouter).get('redis');
-        const routes = Array.from(router.subscribes.values());
+        const routes = Array.from(router.patterns.values());
         const subscribes: string[] = [];
         const psubscribes: string[] = [];
         routes.forEach(r => router.matcher.isPattern(r) ? psubscribes.push(r) : subscribes.push(r));
