@@ -1,5 +1,5 @@
 
 export * from './client/client';
 export * from './server/server';
-export * from './kafka.module';
+export * from './server/server.module';
 

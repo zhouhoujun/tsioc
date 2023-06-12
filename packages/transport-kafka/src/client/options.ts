@@ -5,7 +5,7 @@ import { ContentOptions } from '@tsdi/transport';
 import { KafkaTransportOpts } from '../transport';
 
 
-export interface KafkaClientOpts extends KafkaConfig, ConfigableHandlerOptions<TransportRequest> {
+export interface KafkaClientOpts extends ConfigableHandlerOptions<TransportRequest> {
     postfixId?: string;
     connectOpts?: KafkaConfig;
     consumer?: ConsumerConfig;

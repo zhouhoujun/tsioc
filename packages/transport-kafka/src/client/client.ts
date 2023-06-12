@@ -5,7 +5,7 @@ import { BrokersFunction, Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, Part
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaReplyPartitionAssigner } from '../transport';
-import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
+import { DEFAULT_BROKERS } from '../const';
 
 
 
@@ -34,7 +34,7 @@ export class KafkaClient extends Client {
     protected connect(): Observable<any> {
         return new Observable((observer) => {
             if (!this.client) {
-                this.client = new Kafka(this.options);
+                this.client = new Kafka(this.options.connectOpts!);
             }
 
             this.client.producer(this.options.producer);
