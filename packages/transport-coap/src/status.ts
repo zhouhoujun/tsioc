@@ -1,5 +1,5 @@
 import { GET, MESSAGE, POST } from '@tsdi/core';
-import { Inject, Injectable, tokenId } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { StatusVaildator } from '@tsdi/transport';
 
 
@@ -7,21 +7,21 @@ import { StatusVaildator } from '@tsdi/transport';
 export class CoapStatusVaildator implements StatusVaildator<string>{
 
     get ok(): string {
-        return '2.00'
+        return CoapStatuCode.Content
     }
     get found(): string {
         return '3.02'
     }
 
     get notFound(): string {
-        return '4.04'
+        return CoapStatuCode.NotFound
     }
 
     get none(): string {
         return '0.00';
     }
     get noContent(): string {
-        return '2.04'
+        return CoapStatuCode.Changed
     }
 
     get serverError(): string {
@@ -53,7 +53,8 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
     isRetry(status: string): boolean {
         return retryStatus[status];
     }
-    redirectBodify(status: string, method?: string | undefined): boolean { if (!method) return status === '3.03';
+    redirectBodify(status: string, method?: string | undefined): boolean {
+        if (!method) return status === '3.03';
         return status === '3.03' || ((status === '3.01' || status === '3.02') && method === POST)
     }
 
@@ -63,14 +64,23 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
 
 }
 
-const isStausOk = /^2\.0[0-5]$/;
+@Injectable({ static: true })
+export class CoapMicroStatusVaildator extends CoapStatusVaildator {
+
+    override redirectDefaultMethod(): string {
+        return MESSAGE;
+    }
+}
+
+const isStausOk = /^2\.0(1|2|3|5)$/;
 
 /**
  * status codes for empty bodies
  */
 const emptyStatus: Record<number | string, boolean> = {
+    '2.02': true,
+    '2.03': true,
     '2.04': true,
-    '2.05': true,
     '3.04': true
 }
 
@@ -96,43 +106,42 @@ const retryStatus: Record<number | string, boolean> = {
     '5.04': true
 }
 
+/**
+ *    The name of the sub-registry is "CoAP Response Codes".
 
-//    The name of the sub-registry is "CoAP Response Codes".
+ *    Each entry in the sub-registry must include the Response Code in the
+ *    range 2.00-5.31, a description of the Response Code, and a reference
+ *    to the Response Code's documentation.
 
-//    Each entry in the sub-registry must include the Response Code in the
-//    range 2.00-5.31, a description of the Response Code, and a reference
-//    to the Response Code's documentation.
+ *    Initial entries in this sub-registry are as follows:
 
-//    Initial entries in this sub-registry are as follows:
-
-//             +------+------------------------------+-----------+
-//             | Code | Description                  | Reference |
-//             +------+------------------------------+-----------+
-//             | 2.01 | Created                      | [RFC7252] |
-//             | 2.02 | Deleted                      | [RFC7252] |
-//             | 2.03 | Valid                        | [RFC7252] |
-//             | 2.04 | Changed                      | [RFC7252] |
-//             | 2.05 | Content                      | [RFC7252] |
-//             | 4.00 | Bad Request                  | [RFC7252] |
-//             | 4.01 | Unauthorized                 | [RFC7252] |
-//             | 4.02 | Bad Option                   | [RFC7252] |
-//             | 4.03 | Forbidden                    | [RFC7252] |
-//             | 4.04 | Not Found                    | [RFC7252] |
-//             | 4.05 | Method Not Allowed           | [RFC7252] |
-//             | 4.06 | Not Acceptable               | [RFC7252] |
-//             | 4.12 | Precondition Failed          | [RFC7252] |
-//             | 4.13 | Request Entity Too Large     | [RFC7252] |
-//             | 4.15 | Unsupported Content-Format   | [RFC7252] |
-//             | 5.00 | Internal Server Error        | [RFC7252] |
-//             | 5.01 | Not Implemented              | [RFC7252] |
-//             | 5.02 | Bad Gateway                  | [RFC7252] |
-//             | 5.03 | Service Unavailable          | [RFC7252] |
-//             | 5.04 | Gateway Timeout              | [RFC7252] |
-//             | 5.05 | Proxying Not Supported       | [RFC7252] |
-//             +------+------------------------------+-----------+
-
+ *             +------+------------------------------+-----------+
+ *             | Code | Description                  | Reference |
+ *             +------+------------------------------+-----------+
+ *             | 2.01 | Created                      | [RFC7252] |
+ *             | 2.02 | Deleted                      | [RFC7252] |
+ *             | 2.03 | Valid                        | [RFC7252] |
+ *             | 2.04 | Changed                      | [RFC7252] |
+ *             | 2.05 | Content                      | [RFC7252] |
+ *             | 4.00 | Bad Request                  | [RFC7252] |
+ *             | 4.01 | Unauthorized                 | [RFC7252] |
+ *             | 4.02 | Bad Option                   | [RFC7252] |
+ *             | 4.03 | Forbidden                    | [RFC7252] |
+ *             | 4.04 | Not Found                    | [RFC7252] |
+ *             | 4.05 | Method Not Allowed           | [RFC7252] |
+ *             | 4.06 | Not Acceptable               | [RFC7252] |
+ *             | 4.12 | Precondition Failed          | [RFC7252] |
+ *             | 4.13 | Request Entity Too Large     | [RFC7252] |
+ *             | 4.15 | Unsupported Content-Format   | [RFC7252] |
+ *             | 5.00 | Internal Server Error        | [RFC7252] |
+ *             | 5.01 | Not Implemented              | [RFC7252] |
+ *             | 5.02 | Bad Gateway                  | [RFC7252] |
+ *             | 5.03 | Service Unavailable          | [RFC7252] |
+ *             | 5.04 | Gateway Timeout              | [RFC7252] |
+ *             | 5.05 | Proxying Not Supported       | [RFC7252] |
+ *             +------+------------------------------+-----------+
+ */
 export enum CoapStatuCode {
-    Ok = '2.00',
     Created = '2.01',
     Deleted = '2.02',
     Valid = '2.03',
@@ -158,7 +167,6 @@ export enum CoapStatuCode {
 }
 
 export const CoapMessages = {
-    '2.00': 'Ok',
     '2.01': 'Created',
     '2.02': 'Deleted',
     '2.03': 'Valid',

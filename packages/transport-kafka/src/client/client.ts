@@ -1,7 +1,7 @@
-import { Inject, Injectable, isUndefined } from '@tsdi/ioc';
+import { Inject, Injectable } from '@tsdi/ioc';
 import { Client } from '@tsdi/core';
 import { Observable } from 'rxjs';
-import { BrokersFunction, Cluster, Consumer, ConsumerGroupJoinEvent, EachMessagePayload, Kafka, KafkaMessage, PartitionAssigner, Producer } from 'kafkajs';
+import { BrokersFunction, Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, PartitionAssigner, Producer } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaReplyPartitionAssigner } from '../transport';
@@ -12,10 +12,10 @@ import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 @Injectable({ static: false })
 export class KafkaClient extends Client {
 
-    private client: Kafka | undefined;
-    private consumer!: Consumer;
-    private producer!: Producer;
-    private brokers!: string[] | BrokersFunction;
+    private client?: Kafka | null;
+    private consumer?: Consumer|null;
+    private producer?: Producer|null;
+    private brokers?: string[] | BrokersFunction;
     private responsePatterns: string[] = [];
     private consumerAssignments: { [key: string]: number } = {};
     private clientId!: string;
@@ -64,16 +64,20 @@ export class KafkaClient extends Client {
                 });
 
             (async () => {
-                await this.producer.connect();
-                await this.consumer.connect();
+                await this.producer?.connect();
+                await this.consumer?.connect();
                 observer.next(this.consumer);
             })();
         });
 
     }
 
-    protected onShutdown(): Promise<void> {
-        throw new Error('Method not implemented.');
+    protected async onShutdown(): Promise<void> {
+        await this.producer?.disconnect();
+        await this.consumer?.disconnect();
+        this.producer = null;
+        this.consumer = null;
+        this.client = null;
     }
 
     public getConsumerAssignments() {

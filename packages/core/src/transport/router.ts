@@ -21,9 +21,9 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      */
     abstract get prefix(): string;
     /**
-     * subscribe topics
+     * topics patterns
      */
-    abstract get subscribes(): Set<string>;
+    abstract get patterns(): Set<string>;
     /**
      * route matcher.
      */

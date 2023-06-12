@@ -5,7 +5,7 @@ import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { CoapMicroService, CoapServer } from './server';
 import { COAP_SERV_FILTERS, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS, COAP_MICRO_SERV_OPTS, COAP_MICRO_SERV_INTERCEPTORS, COAP_MICRO_SERV_FILTERS, COAP_MICRO_SERV_GUARDS } from './options';
 import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
-import { CoapStatusVaildator } from '../status';
+import { CoapMicroStatusVaildator, CoapStatusVaildator } from '../status';
 import { CoapExecptionHandlers } from './execption.handles';
 
 
@@ -45,7 +45,7 @@ const defMicroServOpts = {
         ServerTransportModule
     ],
     providers: [
-        { provide: StatusVaildator, useClass: CoapStatusVaildator },
+        { provide: StatusVaildator, useClass: CoapMicroStatusVaildator },
         { provide: COAP_MICRO_SERV_OPTS, useValue: { ...defMicroServOpts }, asDefault: true },
         {
             provide: CoapMicroEndpoint,
@@ -94,6 +94,8 @@ export class CoapMicroServiceModule {
 }
 
 
+
+
 const defServOpts = {
     content: {
         root: 'public'
@@ -116,6 +118,8 @@ const defServOpts = {
         Bodyparser
     ]
 } as CoapServerOpts;
+
+
 @Module({
     imports: [
         TransformModule,
@@ -151,7 +155,6 @@ export class CoapServerModule {
          * service endpoint provider
          */
         endpoint?: ProvdierOf<CoapEndpoint>;
-
         /**
          * server options
          */

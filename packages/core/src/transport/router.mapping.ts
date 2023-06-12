@@ -29,7 +29,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 
     readonly routes: Map<string, HybridRoute>;
 
-    readonly subscribes: Set<string>;
+    readonly patterns: Set<string>;
 
     constructor(
         private injector: Injector,
@@ -37,7 +37,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         public prefix: string = '',
         routes?: Routes) {
         super()
-        this.subscribes = new Set();
+        this.patterns = new Set();
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
             routes.forEach(r => this.use(r));
@@ -65,11 +65,11 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
                 if (idx >= 0) handles.splice(idx, 1);
             } else {
                 this.routes.delete(route);
-                this.subscribes.delete(route)
+                this.patterns.delete(route)
             }
         } else {
             this.routes.delete(route);
-            this.subscribes.delete(route)
+            this.patterns.delete(route)
         }
         return this
     }
@@ -158,7 +158,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         }
 
         if (subscribe && subs?.length) {
-            subs.forEach(s => this.subscribes.add(s));
+            subs.forEach(s => this.patterns.add(s));
         }
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;

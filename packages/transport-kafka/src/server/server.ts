@@ -1,7 +1,7 @@
 import { Injectable, isNil, getClass, Inject } from '@tsdi/ioc';
-import { Server, Packet, TransportContext, TransportEndpointOptions } from '@tsdi/core';
-import { InjectLog, Level } from '@tsdi/logs';
-import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, LogEntry, Logger, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
+import { Server, Packet, TransportContext, TransportEndpointOptions, MircoServiceRouter, ServiceUnavailableExecption } from '@tsdi/core';
+import { InjectLog, Level, Logger } from '@tsdi/logs';
+import { BrokersFunction, Cluster, Consumer, ConsumerConfig, ConsumerRunConfig, ConsumerSubscribeTopic, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, Kafka, KafkaConfig, KafkaMessage, LogEntry, logLevel, MemberMetadata, PartitionAssigner, Producer, ProducerConfig, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaHeaders } from '../const';
 import { KafkaParser } from '../parser';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
@@ -17,10 +17,10 @@ export class KafkaServer extends Server<KafkaContext> {
 
     @InjectLog()
     private logger!: Logger;
-    
-    protected client: Kafka | undefined;
-    protected consumer!: Consumer;
-    protected producer!: Producer;
+
+    protected client?: Kafka | null;
+    protected consumer?: Consumer | null;
+    protected producer?: Producer | null;
 
     protected brokers: string[] | BrokersFunction;
     protected clientId: string;
@@ -43,18 +43,7 @@ export class KafkaServer extends Server<KafkaContext> {
         return this.options;
     }
 
-    protected onStartup(): Promise<any> {
-        throw new Error('Method not implemented.');
-    }
-    protected onStart(): Promise<any> {
-        throw new Error('Method not implemented.');
-    }
-    protected onShutdown(): Promise<any> {
-        throw new Error('Method not implemented.');
-    }
-
-    async start(): Promise<void> {
-
+    protected async onStartup(): Promise<any> {
         const brokers = this.brokers;
         const clientId = this.clientId;
         const logCreator = (level: any) =>
@@ -87,7 +76,7 @@ export class KafkaServer extends Server<KafkaContext> {
             };
 
         const client: Kafka = this.client = new Kafka({
-            ...this.options.client,
+            ...this.options.connectOpts,
             brokers,
             clientId,
             logCreator
@@ -102,11 +91,14 @@ export class KafkaServer extends Server<KafkaContext> {
 
         await this.consumer.connect();
         await this.producer.connect();
-        await this.bindEvents(this.consumer);
     }
 
-    public async bindEvents(consumer: Consumer) {
-        const registeredPatterns = [...this.router.keys()];
+
+    protected async onStart(): Promise<any> {
+        if(!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
+        const consumer = this.consumer;
+        const router = this.endpoint.injector.get(MircoServiceRouter).get('kafka');
+        const registeredPatterns = [...router.patterns.values()];
         const consumerSubscribeOptions = this.options.subscribe || {};
         const subscribeToPattern = async (pattern: string) =>
             consumer.subscribe({
@@ -120,6 +112,16 @@ export class KafkaServer extends Server<KafkaContext> {
             eachMessage: (payload: EachMessagePayload) => this.handleMessage(payload)
         });
     }
+
+
+    protected async onShutdown(): Promise<any> {
+        await this.consumer?.disconnect();
+        await this.producer?.disconnect();
+        this.consumer = null;
+        this.producer = null;
+        this.client = null;
+    }
+
 
 
     public async handleMessage(payload: EachMessagePayload) {
