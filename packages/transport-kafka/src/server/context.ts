@@ -1,34 +1,49 @@
-import { Incoming, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import { KafkaIncoming } from './incoming';
+import { KafkaOutgoing } from './outgoing';
 
 
-export class KafkaContext extends AbstractAssetContext<Incoming, Outgoing, number> {
+export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgoing, number> {
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return kafkaAbl.test(url);
     }
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+    protected parseURL(req: KafkaIncoming, proxy?: boolean | undefined): URL {
+        const url = req.url ?? '';
+        if (this.isAbsoluteUrl(url)) {
+            return new URL(url);
+        } else {
+            const { host, port } = this.getListenOpts();
+            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 9092}`);
+            const uri = new URL(url, baseUrl);
+            return uri;
+        }
     }
     get writable(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.writable
     }
+
     get protocol(): string {
-        throw new Error('Method not implemented.');
+        return 'kafka'
     }
+
     get status(): number {
-        throw new Error('Method not implemented.');
+        return this.response.statusCode
     }
     set status(status: number) {
-        throw new Error('Method not implemented.');
+        this._explicitStatus = true;
+        this.response.statusCode = status;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage
     }
     set statusMessage(message: string) {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = message
     }
     get secure(): boolean {
-        throw new Error('Method not implemented.');
+        return false
     }
 
 }
+
+const kafkaAbl = /^kafka:\/\//;

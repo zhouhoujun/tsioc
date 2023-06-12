@@ -1,6 +1,6 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createHandler, createTransportEndpoint } from '@tsdi/core';
+import { RouterModule, TransformModule, TransportSessionFactory, createHandler } from '@tsdi/core';
 import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, RequestAdapter, ServerFinalizeFilter, Session, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
+import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { KafkaHandler } from './handler';
 import { KafkaClient } from './client';
@@ -81,10 +81,15 @@ export class KafkaClientModule {
                 },
                 deps: [Injector]
             }))
-                : [{ provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
-            toProvider(TransportSessionFactory, options.transportFactory ?? KafkaTransportSessionFactory)
+                : [{ provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }]
         ];
 
+        if (options.handler) {
+            providers.push(toProvider(KafkaHandler, options.handler))
+        }
+        if (options.transportFactory) {
+            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+        }
         return {
             module: KafkaClientModule,
             providers
