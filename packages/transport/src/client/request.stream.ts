@@ -45,8 +45,8 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 observer.error(res)
             };
 
-            const observe = req.observe;
-            const onResponse = observe === 'emit' ? null : async (incoming: Incoming) => {
+
+            const onResponse = this.hasResponse(req) ? async (incoming: Incoming) => {
                 let body: any;
                 const headers = this.parseHeaders(incoming);
                 const packet = this.parsePacket(incoming, headers);
@@ -167,7 +167,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 } else {
                     observer.error(res);
                 }
-            };
+            } : null;
 
 
             const respEventName = this.getResponseEvenName();
@@ -193,7 +193,6 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             });
 
 
-
             return () => {
                 onResponse && request.off(respEventName, onResponse);
                 request.off(ev.ERROR, onError);
@@ -202,6 +201,10 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 request.off(ev.TIMEOUT, onError);
             }
         });
+    }
+
+    hasResponse(req: TRequest) {
+        return req.observe !== 'emit'
     }
 
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: TStatus; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {

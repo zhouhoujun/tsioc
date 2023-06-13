@@ -32,9 +32,8 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             };
 
             const id = this.getPacketId();
-            const observe = req.observe;
 
-            const [message, onMessage] = observe === 'emit' ? [] : this.bindMessageEvent(request, id, url, req, observer, opts);
+            const [message, onMessage] = this.bindMessageEvent(request, id, url, req, observer, opts);
 
             request.on(ev.ERROR, onError);
             request.on(ev.CLOSE, onError);
@@ -53,9 +52,10 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             } as Packet;
 
             let timeout: any;
+            const observe = req.observe;
             request.send(packet, { observe })
                 .then(() => {
-                    if (observe === 'emit') {
+                    if (!message) {
                         observer.next(this.createResponse({
                             url,
                             status: this.vaildator.ok,
@@ -119,10 +119,17 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected abstract getClientOpts(req: TransportRequest): Option;
 
-    protected abstract bindMessageEvent(session: TransportSession<T>, id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, opts?: Option): [string, (...args: any[]) => void]
+    protected abstract bindMessageEvent(session: TransportSession<T>, id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, opts: Option): [string, (...args: any[]) => void]
 
-    protected getReply(url: string, observe: 'body' | 'events' | 'response'): string {
-        return observe === 'events' ? url : url + '/reply';
+    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+        switch (observe) {
+            case 'emit':
+                return '';
+            case 'events':
+                return url;
+            default:
+                return url + '/reply'
+        }
     }
 
     protected async handleMessage(id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {

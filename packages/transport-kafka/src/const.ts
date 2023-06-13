@@ -3,8 +3,13 @@ import { Consumer, Producer } from 'kafkajs';
 
 
 
-export const CONSUMER = tokenId<Consumer>('CONSUMER');
-export const PRODUCER = tokenId<Producer>('PRODUCER');
+
+export interface KafkaTransport {
+    consumer: Consumer;
+    producer: Producer;
+}
+
+export const KAFKA_TRANSPORT = tokenId<KafkaTransport>('KAFKA_TRANSPORT');
 
 
 export const DEFAULT_BROKERS = ['localhost:9092'];

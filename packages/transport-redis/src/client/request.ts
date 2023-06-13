@@ -32,8 +32,15 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, Redi
         }, opts.transportOpts);
     }
 
-    protected override getReply(url: string, observe: 'body' | 'events' | 'response'): string {
-        return observe === 'events' ? url : url + '.reply';
+    protected override getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+        switch (observe) {
+            case 'emit':
+                return '';
+            case 'events':
+                return url;
+            default:
+                return url + '.reply'
+        }
     }
 
     protected getClientOpts(req: TransportRequest<any>) {
@@ -42,6 +49,7 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, Redi
 
     protected bindMessageEvent(session: TransportSession<ReidsStream>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
         const reply = this.getReply(url, req.observe);
+        if (!reply) return [] as any;
         if (!this.subs.has(reply)) {
             this.subs.add(reply);
             session.socket.subscriber.subscribe(reply);

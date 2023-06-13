@@ -1,22 +1,18 @@
 import {
-    TransportEvent, ResHeaders, SOCKET, TransportErrorResponse, Packet, Incoming, Encoder, Decoder,
-    TransportHeaderResponse, TransportRequest, TransportResponse, Redirector, TransportSessionFactory
+    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, TransportSessionFactory, Packet
 } from '@tsdi/core';
-import { Execption, InjectFlags, Injectable, Optional, isString } from '@tsdi/ioc';
-import { StreamAdapter, ev, hdr, MimeTypes, StatusVaildator, MimeAdapter, RequestAdapter, StatusPacket, ctype } from '@tsdi/transport';
-import { Observable, Observer } from 'rxjs';
-import { NumberAllocator } from 'number-allocator';
-import { KAFKA_CLIENT_OPTS } from './options';
-import { CONSUMER } from '../const';
+import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
+import { StreamAdapter, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter, ev } from '@tsdi/transport';
+import { Observer } from 'rxjs';
+import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
+import { KafkaTransport, KAFKA_TRANSPORT } from '../const';
+
 
 /**
  * kafka request adapter.
  */
 @Injectable()
-export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
-
-    allocator = new NumberAllocator(1, 65536);
-    last?: number;
+export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, KafkaClientOpts> {
 
     constructor(
         readonly mimeTypes: MimeTypes,
@@ -29,149 +25,39 @@ export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, Transp
         super()
     }
 
-    send(req: TransportRequest<any>): Observable<TransportEvent> {
-        return new Observable((observer: Observer<TransportEvent>) => {
-            const url = req.url.trim();
-            let status: number | string;
-            let statusText: string | undefined;
 
-            const context = req.context;
-            const consumer = context.get(CONSUMER, InjectFlags.Self);
-            const opts = context.get(KAFKA_CLIENT_OPTS);
-
-            const request = context.get(TransportSessionFactory).create(consumer, opts.transportOpts);
-            const onError = (error?: Error | null) => {
-                const res = this.createErrorResponse({
-                    url,
-                    error,
-                    statusText: 'Unknown Error',
-                    status
-                });
-                observer.error(res)
-            };
-
-            const id = this.getPacketId();
-            const onResponse = async (topic: string, res: any) => {
-                res = isString(res) ? JSON.parse(res) : res;
-                if (res.id !== id) return;
-                const headers = this.parseHeaders(res);
-                const pkg = this.parsePacket(res, headers);
-                status = pkg.status ?? this.vaildator.ok;
-                statusText = pkg.statusText ?? 'OK';
-                let body = res.body ?? res.payload;
-
-                if (this.vaildator.isEmpty(status)) {
-                    body = null;
-                    observer.next(this.createResponse({
-                        url,
-                        headers,
-                        status,
-                        body
-                    }));
-                    observer.complete();
-                    return;
-                }
-
-                if (this.vaildator.isRedirect(status)) {
-                    // fetch step 5.2
-                    this.redirector?.redirect<TransportEvent>(req, status, headers).subscribe(observer);
-                    return;
-                }
-                const [ok, result] = await this.parseResponse(url, body, headers, status, statusText, req.responseType);
-
-                if (ok) {
-                    observer.next(result);
-                    observer.complete();
-                } else {
-                    observer.error(result);
-                }
-            };
-
-            request.on(ev.MESSAGE, onResponse);
-            request.on(ev.ERROR, onError);
-            request.on(ev.CLOSE, onError);
-            request.on(ev.ABOUT, onError);
-            request.on(ev.ABORTED, onError);
-
-            const packet = {
-                id,
-                method: req.method,
-                headers: {
-                    'accept': ctype.REQUEST_ACCEPT,
-                    ...req.headers.getHeaders()
-                },
-                url,
-                payload: req.body,
-            } as Packet;
-
-            request.send(packet)
-                .then(() => {
-                    if (req.observe === 'emit') {
-                        request.emit(ev.MESSAGE, url, {
-                            id, headers: {
-                                status: this.vaildator.noContent
-                            }
-                        })
-                    }
-                })
-                .catch(err => {
-                    observer.error(this.createErrorResponse({
-                        url,
-                        status: this.vaildator.none,
-                        error: err,
-                        statusText: err.message
-                    }));
-                });
-
-            const unsub = () => {
-                request.off(ev.MESSAGE, onResponse);
-                request.off(ev.ERROR, onError);
-                request.off(ev.CLOSE, onError);
-                request.off(ev.ABOUT, onError);
-                request.off(ev.ABORTED, onError);
-                if (!req.context.destroyed) {
-                    observer.error(this.createErrorResponse({
-                        status: this.vaildator.none,
-                        statusText: 'The operation was aborted.'
-                    }));
-                }
-                request.destroy?.();
-            }
-            req.context?.onDestroy(unsub);
-            return unsub;
-        });
+    protected createSession(req: TransportRequest<any>, opts: KafkaClientOpts): TransportSession<KafkaTransport> {
+        const context = req.context;
+        const client = context.get(KAFKA_TRANSPORT, InjectFlags.Self);
+        return context.get(TransportSessionFactory).create(client, opts.transportOpts);
     }
 
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportErrorResponse(options);
-    }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportHeaderResponse(options);
-    }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TransportEvent {
-        return new TransportResponse(options);
-    }
-    getResponseEvenName(): string {
-        return ev.RESPONSE
-    }
-    parseHeaders(incoming: Incoming): ResHeaders {
-        return new ResHeaders(incoming.headers);
+    protected getClientOpts(req: TransportRequest<any>): KafkaClientOpts {
+        return req.context.get(KAFKA_CLIENT_OPTS)
     }
 
-    parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
-        return {
-            status: headers.get(hdr.STATUS) ?? this.vaildator.none,
-            statusText: String(headers.get(hdr.STATUS_MESSAGE))
+    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+        switch (observe) {
+            case 'emit':
+                return '';
+            case 'events':
+                return url;
+            default:
+                return url + '.reply'
         }
     }
 
-    protected getPacketId() {
-        const id = this.allocator.alloc();
-        if (!id) {
-            throw new Execption('alloc stream id failed');
-        }
-        this.last = id;
-        return id;
+    protected bindMessageEvent(session: TransportSession<KafkaTransport>, id: string | number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts: KafkaClientOpts): [string, (...args: any[]) => void] {
+        const replyTopic = this.getReply(url, req.observe);
+        const onMessage = (topic: string, res: Packet) => {
+            if (topic !== replyTopic && res.id !== id) return;
+            this.handleMessage(id, url, req, observer, res);
+        };
+
+        session.on(ev.MESSAGE, onMessage);
+
+        return [ev.MESSAGE, onMessage];
     }
+
 }
 

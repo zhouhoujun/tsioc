@@ -34,6 +34,8 @@ export class MqttRequestAdapter extends SessionRequestAdapter<Client, MqttClient
 
     protected bindMessageEvent(session: TransportSession<Client>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
         const reply = this.getReply(url, req.observe);
+        if (!reply) return [] as any;
+
         if (!this.subs.has(reply)) {
             this.subs.add(reply);
             session.socket.subscribe(reply);

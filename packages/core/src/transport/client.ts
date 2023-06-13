@@ -296,7 +296,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
         // that is what was requested.
-        if (req.observe === 'events' || req.observe === 'emit') {
+        if (req.observe === 'events') {
             return events$
         }
 
