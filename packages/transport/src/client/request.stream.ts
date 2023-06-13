@@ -44,7 +44,9 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 });
                 observer.error(res)
             };
-            const onResponse = async (incoming: Incoming) => {
+
+            const observe = req.observe;
+            const onResponse = observe === 'emit' ? null : async (incoming: Incoming) => {
                 let body: any;
                 const headers = this.parseHeaders(incoming);
                 const packet = this.parsePacket(incoming, headers);
@@ -167,19 +169,33 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 }
             };
 
-            const respEventName = this.getResponseEvenName();
 
-            request.on(respEventName, onResponse);
+            const respEventName = this.getResponseEvenName();
+            onResponse && request.on(respEventName, onResponse);
+
             request.on(ev.ERROR, onError);
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
+            this.write(request, req, (err) => {
+                if (err) {
+                    onError(err);
+                } else if (req.observe === 'emit') {
+                    observer.next(this.createResponse({
+                        url,
+                        status: this.vaildator.ok,
+                        statusText: 'OK',
+                        body: true
+                    }))
+                    observer.complete();
+                }
+            });
 
-            this.write(request, req, onError);
+
 
             return () => {
-                request.off(respEventName, onResponse);
+                onResponse && request.off(respEventName, onResponse);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
@@ -204,13 +220,28 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
      */
     protected abstract getResponseEvenName(): string;
 
+
+    protected getPayload(req: TRequest) {
+        return req.body;
+    }
     /**
      * write request stream.
      * @param request 
      * @param req 
      * @param callback 
      */
-    protected abstract write(request: IEndable, req: TRequest, callback: (error?: Error | null) => void): void;
+    protected write(request: IEndable, req: TRequest, callback: (error?: Error | null) => void): void {
+        const data = this.getPayload(req);
+        if (data === null) {
+            request.end(callback);
+        } else {
+            this.streamAdapter.sendbody(
+                this.encoder ? this.encoder.encode(data) : data,
+                request,
+                (err?) => callback(err),
+                req.headers.get(hdr.CONTENT_ENCODING) as string);
+        }
+    }
 
 }
 

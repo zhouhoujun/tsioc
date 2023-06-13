@@ -31,7 +31,7 @@ export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, Transp
 
     send(req: TransportRequest<any>): Observable<TransportEvent> {
         return new Observable((observer: Observer<TransportEvent>) => {
-            const url = req.urlWithParams.trim();
+            const url = req.url.trim();
             let status: number | string;
             let statusText: string | undefined;
 
@@ -56,9 +56,21 @@ export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, Transp
                 if (res.id !== id) return;
                 const headers = this.parseHeaders(res);
                 const pkg = this.parsePacket(res, headers);
-                status = pkg.status ?? 200;
+                status = pkg.status ?? this.vaildator.ok;
                 statusText = pkg.statusText ?? 'OK';
-                const body = res.body ?? res.payload;
+                let body = res.body ?? res.payload;
+
+                if (this.vaildator.isEmpty(status)) {
+                    body = null;
+                    observer.next(this.createResponse({
+                        url,
+                        headers,
+                        status,
+                        body
+                    }));
+                    observer.complete();
+                    return;
+                }
 
                 if (this.vaildator.isRedirect(status)) {
                     // fetch step 5.2
@@ -92,7 +104,24 @@ export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, Transp
                 payload: req.body,
             } as Packet;
 
-            request.send(packet);
+            request.send(packet)
+                .then(() => {
+                    if (req.observe === 'emit') {
+                        request.emit(ev.MESSAGE, url, {
+                            id, headers: {
+                                status: this.vaildator.noContent
+                            }
+                        })
+                    }
+                })
+                .catch(err => {
+                    observer.error(this.createErrorResponse({
+                        url,
+                        status: this.vaildator.none,
+                        error: err,
+                        statusText: err.message
+                    }));
+                });
 
             const unsub = () => {
                 request.off(ev.MESSAGE, onResponse);
@@ -131,7 +160,7 @@ export class KafkaRequestAdapter extends RequestAdapter<TransportRequest, Transp
 
     parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
         return {
-            status: headers.get(hdr.STATUS) ?? 0,
+            status: headers.get(hdr.STATUS) ?? this.vaildator.none,
             statusText: String(headers.get(hdr.STATUS_MESSAGE))
         }
     }

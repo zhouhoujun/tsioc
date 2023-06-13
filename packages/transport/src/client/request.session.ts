@@ -32,8 +32,9 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             };
 
             const id = this.getPacketId();
+            const observe = req.observe;
 
-            const [message, onMessage] = this.bindMessageEvent(request, id, url, req, observer, opts);
+            const [message, onMessage] = observe === 'emit' ? [] : this.bindMessageEvent(request, id, url, req, observer, opts);
 
             request.on(ev.ERROR, onError);
             request.on(ev.CLOSE, onError);
@@ -51,22 +52,43 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 payload: req.body,
             } as Packet;
 
-            request.send(packet);
-
-            if (opts.timeout) {
-                setTimeout(() => {
-                    const res = this.createErrorResponse({
+            let timeout: any;
+            request.send(packet, { observe })
+                .then(() => {
+                    if (observe === 'emit') {
+                        observer.next(this.createResponse({
+                            url,
+                            status: this.vaildator.ok,
+                            statusText: 'OK',
+                            body: true
+                        }));
+                        observer.complete();
+                    } else if (opts.timeout) {
+                        timeout = setTimeout(() => {
+                            const error = new TimeoutExecption();
+                            const res = this.createErrorResponse({
+                                url,
+                                error,
+                                statusText: error.message,
+                                status: this.vaildator.none
+                            });
+                            observer.error(res);
+                        }, opts.timeout)
+                    }
+                })
+                .catch(err => {
+                    observer.error(this.createErrorResponse({
                         url,
-                        error: new TimeoutExecption(),
-                        statusText: 'Not Found',
-                        status: 404
-                    });
-                    observer.error(res);
-                }, opts.timeout)
-            }
+                        status: this.vaildator.none,
+                        error: err,
+                        statusText: err.message
+                    }));
+                });
+
 
             return () => {
-                request.off(message, onMessage);
+                timeout && clearTimeout(timeout);
+                message && onMessage && request.off(message, onMessage);
                 request.off(ev.ERROR, onError);
                 request.off(ev.CLOSE, onError);
                 request.off(ev.ABOUT, onError);
@@ -108,9 +130,21 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         if (res.id !== id) return;
         const headers = this.parseHeaders(res);
         const pkg = this.parsePacket(res, headers);
-        const status = pkg.status ?? 200;
+        const status = pkg.status ?? this.vaildator.ok;
         const statusText = pkg.statusText ?? 'OK';
-        const body = res.body ?? res.payload;
+        let body = res.body ?? res.payload;
+
+        if (this.vaildator.isEmpty(status)) {
+            body = null;
+            observer.next(this.createResponse({
+                url,
+                headers,
+                status,
+                body
+            }));
+            observer.complete();
+            return;
+        }
 
         if (this.vaildator.isRedirect(status)) {
             // fetch step 5.2
@@ -144,7 +178,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
         return {
-            status: headers.get(hdr.STATUS) ?? 0,
+            status: headers.get(hdr.STATUS) ?? this.vaildator.none,
             statusText: String(headers.get(hdr.STATUS_MESSAGE))
         }
     }

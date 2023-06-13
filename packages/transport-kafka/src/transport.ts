@@ -1,5 +1,5 @@
 import { AssignerProtocol, Cluster, Consumer, Producer, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord } from 'kafkajs';
-import { Injectable, Optional, isUndefined } from '@tsdi/ioc';
+import { Execption, Injectable, Optional, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, StreamAdapter } from '@tsdi/transport';
 
@@ -12,7 +12,7 @@ export interface KafkaTransportOpts extends TransportSessionOpts, ConsumerRunCon
 
 
 export interface KafkaTransport {
-    consumer:Consumer;
+    consumer: Consumer;
     producer: Producer;
 }
 
@@ -54,9 +54,10 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         throw new Error('Method not implemented.');
     }
 
-    async regTopics(topics: string[]) {
+    async bindTopics(topics: string[]) {
         const consumerSubscribeOptions = this.options.subscribe || {};
-        const consumer = this.socket.consumer
+        const consumer = this.socket.consumer;
+        if (!consumer) throw new Execption('No consumer');
         const subscribeToPattern = async (pattern: string) =>
             this.socket.consumer.subscribe({
                 topic: pattern,
@@ -69,7 +70,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             eachMessage: (payload: EachMessagePayload) => this.onData(payload)
         })
     }
-    
+
     protected onData(msg: EachMessagePayload): Promise<void> {
         throw new Error('Method not implemented.');
     }

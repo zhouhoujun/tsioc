@@ -11,6 +11,7 @@ export interface KafkaClientOpts extends ConfigableHandlerOptions<TransportReque
     consumer?: ConsumerConfig;
     producer?: ProducerConfig;
     keepBinary?: boolean;
+    producerOnlyMode?: boolean;
 
     detailError?: boolean;
     timeout?: number;

@@ -290,6 +290,10 @@ export interface Outgoing<TSocket = any, TStatus = any> extends IEnd {
 
 export interface SendOpts extends Record<string, any> {
     /**
+     * request observe type.
+     */
+    observe?: 'body' | 'events' | 'response' | 'emit';
+    /**
      * send from server side or not.
      */
     server?: boolean;

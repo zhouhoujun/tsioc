@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { Client } from '@tsdi/core';
-import { Observable } from 'rxjs';
-import { BrokersFunction, Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, PartitionAssigner, Producer } from 'kafkajs';
+import { InjectLog, Level, Logger } from '@tsdi/logs';
+import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaReplyPartitionAssigner } from '../transport';
@@ -12,11 +12,13 @@ import { DEFAULT_BROKERS } from '../const';
 @Injectable({ static: false })
 export class KafkaClient extends Client {
 
+
+    @InjectLog()
+    private logger!: Logger;
+
     private client?: Kafka | null;
-    private consumer?: Consumer|null;
-    private producer?: Producer|null;
-    private brokers?: string[] | BrokersFunction;
-    private responsePatterns: string[] = [];
+    private consumer?: Consumer | null;
+    private producer?: Producer | null;
     private consumerAssignments: { [key: string]: number } = {};
     private clientId!: string;
     private groupId!: string;
@@ -25,19 +27,55 @@ export class KafkaClient extends Client {
         readonly handler: KafkaHandler,
         @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOpts) {
         super()
-        this.brokers = options.connectOpts?.brokers ?? DEFAULT_BROKERS;
         const postfixId = options.postfixId = options.postfixId ?? '-client';
         this.clientId = (options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 
-    protected connect(): Observable<any> {
-        return new Observable((observer) => {
-            if (!this.client) {
-                this.client = new Kafka(this.options.connectOpts!);
+    private connected?: Promise<void>;
+    protected connect(): Promise<void> {
+        if (this.connected) return this.connected;
+        return this.connected = this.connecting();
+    }
+
+    protected async connecting(): Promise<void> {
+        const logCreator = (level: any) => ({ namespace, level, label, log }: LogEntry) => {
+            let loggerMethod: Level;
+
+            switch (level) {
+                case logLevel.ERROR:
+                case logLevel.NOTHING:
+                    loggerMethod = 'error';
+                    break;
+                case logLevel.WARN:
+                    loggerMethod = 'warn';
+                    break;
+                case logLevel.INFO:
+                    loggerMethod = 'log';
+                    break;
+                case logLevel.DEBUG:
+                default:
+                    loggerMethod = 'debug';
+                    break;
             }
 
-            this.client.producer(this.options.producer);
+            const { message, ...others } = log;
+            if (this.logger[loggerMethod]) {
+                this.logger[loggerMethod](
+                    `${label} [${namespace}] ${message} ${JSON.stringify(others)}`,
+                );
+            }
+        };
+
+        this.client = new Kafka({
+            brokers: DEFAULT_BROKERS,
+            logCreator,
+            ...this.options.connectOpts,
+            clientId: this.clientId
+        });
+
+
+        if (!this.options.producerOnlyMode) {
             const partitionAssigners = [
                 (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(this.getConsumerAssignments.bind(this), config),
             ] as PartitionAssigner[];
@@ -47,7 +85,6 @@ export class KafkaClient extends Client {
                 ...this.options.consumer,
                 groupId
             });
-
 
             this.consumer.on(
                 this.consumer.events.GROUP_JOIN,
@@ -63,12 +100,11 @@ export class KafkaClient extends Client {
                     this.consumerAssignments = consumerAssignments;
                 });
 
-            (async () => {
-                await this.producer?.connect();
-                await this.consumer?.connect();
-                observer.next(this.consumer);
-            })();
-        });
+            await this.consumer.connect();
+        }
+
+        this.producer = this.client.producer(this.options.producer);
+        await this.producer.connect();
 
     }
 

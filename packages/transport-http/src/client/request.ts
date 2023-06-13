@@ -23,17 +23,8 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         super()
     }
 
-    protected write(request: IWritableStream<any>, req: HttpRequest<any>, callback: (error?: Error | null | undefined) => void): void {
-        const data = req.serializeBody();
-        if (data === null) {
-            request.end();
-        } else {
-            this.streamAdapter.sendbody(
-                this.encoder ? this.encoder.encode(data) : data,
-                request,
-                err => callback(err),
-                req.headers.get(hdr.CONTENT_ENCODING) as string);
-        }
+    protected override getPayload(req: HttpRequest<any>) {
+        return req.serializeBody()
     }
 
     createRequest(url: string, req: HttpRequest<any>): IWritableStream {

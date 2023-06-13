@@ -26,29 +26,17 @@ export class KafkaServer extends Server<KafkaContext> {
     protected consumer?: Consumer | null;
     protected producer?: Producer | null;
 
-    protected brokers: string[] | BrokersFunction;
     protected clientId: string;
     protected groupId: string;
 
     constructor(readonly endpoint: KafkaEndpoint, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
-        this.brokers = options.connectOpts?.brokers ?? DEFAULT_BROKERS;
         const postfixId = this.options.postfixId ?? '-server';
         this.clientId = (options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
         this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
-    }
-
-    protected initOption(options: KafkaServerOptions): KafkaServerOptions {
-        this.options = options;
-        this.brokers = options.connectOpts?.brokers ?? DEFAULT_BROKERS;
-        const postfixId = this.options.postfixId ?? '-server';
-        this.clientId = (options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
-        this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
-        return this.options;
     }
 
     protected async onStartup(): Promise<any> {
-        const brokers = this.brokers;
         const clientId = this.clientId;
         const logCreator = (level: any) =>
             ({ namespace, level, label, log }: LogEntry) => {
@@ -79,11 +67,12 @@ export class KafkaServer extends Server<KafkaContext> {
                 }
             };
 
+
         const client: Kafka = this.client = new Kafka({
+            brokers: DEFAULT_BROKERS,
+            logCreator,
             ...this.options.connectOpts,
-            brokers,
-            clientId,
-            logCreator
+            clientId
         });
 
         const groupId = this.groupId;
@@ -105,11 +94,11 @@ export class KafkaServer extends Server<KafkaContext> {
         const router = this.endpoint.injector.get(MircoServiceRouter).get('kafka');
         const topics = [...router.patterns.values()];
 
-        const session = this.endpoint.injector.get(TransportSessionFactory).create({ consumer, producer }, { 
+        const session = this.endpoint.injector.get(TransportSessionFactory).create({ consumer, producer }, {
             ...this.options.transportOpts
-         } as KafkaTransportOpts) as KafkaTransportSession;
+        } as KafkaTransportOpts) as KafkaTransportSession;
 
-        await session.regTopics(topics);
+        await session.bindTopics(topics);
 
         session.on(ev.MESSAGE, (topic: string, packet: Packet) => {
             this.requestHandler(session, packet)

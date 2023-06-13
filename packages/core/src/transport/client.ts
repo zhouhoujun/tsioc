@@ -164,6 +164,21 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         responseType?: 'json',
     }): Observable<TransportEvent<R>>;
 
+
+    /**
+     * Constructs a request which interprets the body as a JSON object and returns the full event
+     * stream.
+     *
+     * @param url     The endpoint URL.
+     * @param options The HTTP options to send with the  request.
+     *
+     * @return An `Observable` of all `HttpEvent`s for the request,
+     * with the response body of type `Object`.
+     */
+    send(url: Pattern, options: RequestOptions & {
+        observe: 'emit',
+    }): Observable<TransportEvent<any>>;
+
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
      * and returns the full `HttpResponse`.
@@ -281,7 +296,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
         // that is what was requested.
-        if (req.observe === 'events') {
+        if (req.observe === 'events' || req.observe === 'emit') {
             return events$
         }
 

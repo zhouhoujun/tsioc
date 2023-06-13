@@ -63,18 +63,6 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     protected getResponseEvenName(): string {
         return ev.RESPONSE;
     }
-    protected write(request: IEndable<any>, req: TransportRequest<any>, callback: (error?: Error | null | undefined) => void): void {
-        const data = req.body;
-        if (data === null) {
-            request.end();
-        } else {
-            this.streamAdapter.sendbody(
-                this.encoder ? this.encoder.encode(data) : data,
-                request,
-                err => callback(err),
-                req.headers.get(hdr.CONTENT_ENCODING) as string);
-        }
-    }
 
 
     protected tpCoapMethod(method?: string): CoapMethod {

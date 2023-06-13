@@ -27,10 +27,10 @@ export abstract class StreamAdapter {
      * send body
      * @param data 
      * @param request 
-     * @param error 
+     * @param callback 
      * @param encoding 
      */
-    async sendbody(data: any, request: IWritableStream | IEndable, error: (err: any) => void, encoding?: string): Promise<void> {
+    async sendbody(data: any, request: IWritableStream | IEndable, callback: (err?: any) => void, encoding?: string): Promise<void> {
         let source: PipeSource;
         try {
             if (isArrayBuffer(data)) {
@@ -65,17 +65,18 @@ export abstract class StreamAdapter {
                 }
             }
             if (this.isStream(request)) {
-                await this.pipeTo(source, request)
+                await this.pipeTo(source, request);
+                callback();
             } else {
                 if (this.isStream(source)) {
                     const buffers = await toBuffer(source);
-                    request.end(buffers);
+                    request.end(buffers, callback);
                 } else {
-                    request.end(source);
+                    request.end(source, callback);
                 }
             }
         } catch (err) {
-            error(err);
+            callback(err);
         }
     }
 
