@@ -2,7 +2,7 @@ import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, TransportSession
 import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
 import { ev, hdr } from '@tsdi/transport';
 import { PassThrough } from 'stream';
-import { KafkaTransport } from '../transport';
+import { KafkaTransport } from '../const';
 
 
 

@@ -40,8 +40,6 @@ export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, K
         switch (observe) {
             case 'emit':
                 return '';
-            case 'events':
-                return url;
             default:
                 return url + '.reply'
         }

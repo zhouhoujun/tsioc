@@ -36,8 +36,6 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, Redi
         switch (observe) {
             case 'emit':
                 return '';
-            case 'events':
-                return url;
             default:
                 return url + '.reply'
         }

@@ -1,11 +1,11 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { Client } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaReplyPartitionAssigner } from '../transport';
-import { DEFAULT_BROKERS } from '../const';
+import { DEFAULT_BROKERS, KAFKA_TRANSPORT } from '../const';
 
 
 
@@ -106,6 +106,14 @@ export class KafkaClient extends Client {
         this.producer = this.client.producer(this.options.producer);
         await this.producer.connect();
 
+    }
+
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        context.setValue(KAFKA_TRANSPORT, {
+            producer: this.producer,
+            consumer: this.consumer
+        })
     }
 
     protected async onShutdown(): Promise<void> {

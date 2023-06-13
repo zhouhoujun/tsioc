@@ -125,8 +125,6 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         switch (observe) {
             case 'emit':
                 return '';
-            case 'events':
-                return url;
             default:
                 return url + '/reply'
         }
