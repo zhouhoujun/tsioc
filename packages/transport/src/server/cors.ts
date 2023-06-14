@@ -2,7 +2,6 @@ import { AssetContext, Middleware, RequestMethod, InternalServerExecption } from
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
-import { StatusVaildator } from '../status';
 
 
 /**
@@ -66,7 +65,7 @@ export class CorsMiddleware implements Middleware<AssetContext> {
 
     private options: Options;
 
-    constructor(private vaildator: StatusVaildator, @Nullable() options: CorsOptions) {
+    constructor(@Nullable() options: CorsOptions) {
 
         this.options = this.parseOption({
             allowMethods,
@@ -187,7 +186,7 @@ export class CorsMiddleware implements Middleware<AssetContext> {
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = this.vaildator.noContent;
+            ctx.status = ctx.vaildator.noContent;
         }
     }
 }

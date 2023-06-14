@@ -2,7 +2,6 @@ import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler, MESSAGE } fr
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Observable, from, mergeMap, of } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
-import { StatusVaildator } from '../status';
 
 /**
  * Static Content options.
@@ -29,7 +28,7 @@ export abstract class ContentOptions implements SendOptions {
 export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
     protected readonly options: ContentOptions
-    constructor(protected readonly vaildator: StatusVaildator, @Nullable() options: ContentOptions) {
+    constructor(@Nullable() options: ContentOptions) {
         this.options = { ...defOpts, ...options };
     }
 
@@ -70,7 +69,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
                 const sender = ctx.injector.get(ContentSendAdapter);
                 file = await sender.send(ctx, this.options)
             } catch (err) {
-                if (!this.vaildator.isNotFound((err as any).status)) {
+                if (!ctx.vaildator.isNotFound((err as any).status)) {
                     throw err
                 }
             }

@@ -1,4 +1,4 @@
-import { MESSAGE, Server, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { MESSAGE, Server, Packet, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';

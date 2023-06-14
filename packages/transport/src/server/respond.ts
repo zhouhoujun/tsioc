@@ -1,7 +1,5 @@
 import { AssetContext, HEAD, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { StatusVaildator } from '../status';
-import { StreamAdapter } from '../stream';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
 
@@ -15,7 +13,7 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
     async respond(ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<any> {
 
 
-        const vaildator = ctx.get(StatusVaildator);
+        const vaildator = ctx.vaildator;
         if (ctx.destroyed || !ctx.writable) return;
 
         const { body, status, response } = ctx;
@@ -73,7 +71,7 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
 
-        const streamAdapter = ctx.get(StreamAdapter);
+        const streamAdapter = ctx.streamAdapter;
         if (streamAdapter.isStream(body)) {
             if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
             return await streamAdapter.pipeTo(body, res);

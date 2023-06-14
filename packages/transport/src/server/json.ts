@@ -1,7 +1,6 @@
 import { AssetContext, Handler, Interceptor, Middleware } from '@tsdi/core';
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Observable, map } from 'rxjs';
-import { StreamAdapter } from '../stream';
 import { ctype, hdr } from '../consts';
 
 
@@ -19,9 +18,7 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
-    constructor(
-        private adapter: StreamAdapter,
-        @Nullable() option: JsonMiddlewareOption) {
+    constructor(@Nullable() option: JsonMiddlewareOption) {
 
         this.pretty = option?.pretty ?? true;
         this.spaces = option?.spaces ?? 2;
@@ -45,8 +42,8 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
 
     protected streamify(ctx: AssetContext) {
         const body = ctx.body;
-        const strm = this.adapter.isStream(body);
-        const json = this.adapter.isJson(body);
+        const strm = ctx.streamAdapter.isStream(body);
+        const json = ctx.streamAdapter.isJson(body);
 
         if (!json && !strm) {
             return;
@@ -57,7 +54,7 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
         if (strm) {
             // resp.contentType = 'application/json';
             ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON);
-            ctx.body = this.adapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
+            ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
             // resp.contentType = 'application/json; charset=utf-8';
             ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON_UTF8);

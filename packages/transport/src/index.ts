@@ -3,10 +3,8 @@ export * from './content';
 export * from './execptions';
 export * from './mime';
 export * from './negotiator';
-export * from './status';
 
 export * from './stream';
-export * from './file';
 
 export * from './utils';
 

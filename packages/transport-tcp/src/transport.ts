@@ -1,6 +1,6 @@
-import { Decoder, Encoder, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, Injectable, Optional, tokenId, } from '@tsdi/ioc';
-import { StreamAdapter, SocketTransportSession, ev } from '@tsdi/transport';
+import { SocketTransportSession, ev } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 

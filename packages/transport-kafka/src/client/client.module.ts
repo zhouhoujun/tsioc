@@ -1,6 +1,6 @@
-import { RouterModule, TransformModule, TransportSessionFactory, createHandler } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
+import { RouterModule, TransformModule, StatusVaildator, createHandler } from '@tsdi/core';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { KafkaHandler } from './handler';
 import { KafkaClient } from './client';
@@ -22,6 +22,10 @@ const defClientOpts = {
     },
     interceptors: [BodyContentInterceptor],
     backend: TransportBackend,
+    providers: [
+        { provide: StatusVaildator, useExisting: KafkaStatusVaildator },
+        { provide: RequestAdapter, useExisting: KafkaRequestAdapter }
+    ]
 } as KafkaClientOpts;
 
 
@@ -33,14 +37,14 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
+        KafkaStatusVaildator,
+        KafkaRequestAdapter,
         { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
-        { provide: StatusVaildator, useClass: KafkaStatusVaildator },
-        { provide: RequestAdapter, useClass: KafkaRequestAdapter },
         { provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {
             provide: KafkaHandler,
             useFactory: (injector: Injector, opts: KafkaClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(KAFKA_CLIENT_OPTS, opts);
                 }
@@ -76,11 +80,11 @@ export class KafkaClientModule {
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(KafkaClient, [{ provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(KafkaClient, [{ provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }]
+                : [{ provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
         ];
 
         if (options.handler) {

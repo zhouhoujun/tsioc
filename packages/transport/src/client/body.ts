@@ -1,5 +1,5 @@
 import {
-    Handler, Interceptor, isArrayBuffer, isBlob, isFormData,
+    Handler, Interceptor, isArrayBuffer, isBlob, isFormData, StreamAdapter, FormData,
     isUrlSearchParams, IStream, TransportEvent, TransportRequest
 } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
@@ -7,7 +7,6 @@ import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
-import { StreamAdapter, FormData } from '../stream';
 
 
 /**
@@ -16,7 +15,7 @@ import { StreamAdapter, FormData } from '../stream';
 @Injectable({ static: true })
 export class BodyContentInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Interceptor<TRequest, TResponse> {
 
-    constructor( private adapter: StreamAdapter) { }
+    constructor(private adapter: StreamAdapter) { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);

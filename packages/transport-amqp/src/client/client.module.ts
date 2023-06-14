@@ -1,7 +1,7 @@
 
-import { TransportSessionFactory, createHandler } from '@tsdi/core';
+import { StatusVaildator, createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
+import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { AmqpTransportSessionFactory, AmqpTransportSessionFactoryImpl } from '../transport';
 import { AmqpStatusVaildator } from '../status';

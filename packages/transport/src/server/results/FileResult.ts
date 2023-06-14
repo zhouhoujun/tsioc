@@ -1,8 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, AssetContext, ResultValue, IStream } from '@tsdi/core';
 import { Buffer } from 'buffer';
-import { StreamAdapter } from '../../stream';
-import { FileAdapter } from '../../file';
 
 /**
  * controller method return result type of file.
@@ -60,8 +58,8 @@ export class FileResult extends ResultValue {
         } else {
             ctx.contentType = contentType
         }
-        const adapter = ctx.get(StreamAdapter);
-        const fileAdapter = ctx.get(FileAdapter);
+        const adapter = ctx.streamAdapter
+        const fileAdapter = ctx.fileAdapter;
         const baseURL = ctx.get(ApplicationContext).baseURL;
         if (isString(file)) {
             const filepath = (fileAdapter.isAbsolute(file) || !baseURL) ? file : fileAdapter.resolve(baseURL, file);

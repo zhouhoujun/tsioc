@@ -1,6 +1,6 @@
-import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, StreamAdapter, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
-import { StreamAdapter, TopicTransportSession, ev } from '@tsdi/transport';
+import { TopicTransportSession, ev } from '@tsdi/transport';
 import { Client } from 'mqtt';
 import { Buffer } from 'buffer';
 

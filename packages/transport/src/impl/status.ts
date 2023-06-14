@@ -1,6 +1,5 @@
-import { GET, POST, HttpStatusCode, statusMessage } from '@tsdi/core';
+import { GET, POST, HttpStatusCode, statusMessage, StatusVaildator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc'
-import { StatusVaildator } from '@tsdi/transport';
 
 @Injectable({ static: true })
 export class HttpStatusVaildator implements StatusVaildator<number> {

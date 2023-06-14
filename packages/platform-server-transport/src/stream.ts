@@ -1,6 +1,9 @@
-import { IWritableStream, IDuplexStream, IReadableStream, ITransformStream, isFormData } from '@tsdi/core';
+import {
+    IWritableStream, IDuplexStream, IReadableStream, ITransformStream, isFormData,
+    BrotliOptions, PipeSource, ZipOptions
+} from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
-import { BrotliOptions, PipeSource, StreamAdapter, ZipOptions, ev, isBuffer } from '@tsdi/transport';
+import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
 import { isReadable, Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
 import { promisify } from 'util';
 import * as zlib from 'zlib';
@@ -12,7 +15,7 @@ const pmPipeline = promisify(pipeline);
 
 
 @Injectable({ static: true })
-export class NodeStreamAdapter extends StreamAdapter {
+export class NodeStreamAdapter extends AbstractStreamAdapter {
 
     async pipeTo(source: PipeSource | Stream, destination: IWritableStream<any>): Promise<void> {
         if (this.isStream(source) && !this.isReadable(source)) {
@@ -47,7 +50,7 @@ export class NodeStreamAdapter extends StreamAdapter {
     }
 
     isReadable(stream: any): stream is IReadableStream<any> {
-        return isReadable? isReadable(stream): stream instanceof Readable;
+        return isReadable ? isReadable(stream) : stream instanceof Readable;
     }
 
     isWritable(stream: any): stream is IWritableStream<any> {

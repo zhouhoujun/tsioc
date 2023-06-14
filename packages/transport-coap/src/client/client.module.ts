@@ -1,6 +1,6 @@
-import { createHandler } from '@tsdi/core';
+import { StatusVaildator, createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { TransportModule, StatusVaildator, RequestAdapter, TransportBackend, BodyContentInterceptor } from '@tsdi/transport';
+import { TransportModule, RequestAdapter, TransportBackend, BodyContentInterceptor } from '@tsdi/transport';
 import { CoapHandler } from './handler';
 import { CoapClient } from './client';
 import { CoapRequestAdapter } from './request';

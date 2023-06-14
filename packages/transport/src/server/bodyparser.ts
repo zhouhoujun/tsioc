@@ -5,7 +5,6 @@ import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
 import { MimeTypes } from '../mime';
-import { StreamAdapter } from '../stream';
 
 @Abstract()
 export class PayloadOptions {
@@ -56,7 +55,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(private streamAdapter: StreamAdapter, @Nullable() options: PayloadOptions) {
+    constructor(@Nullable() options: PayloadOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };
@@ -116,7 +115,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         }
         const { limit, strict, encoding } = this.options.json;
 
-        const str = await this.streamAdapter.rawbody(this.getStream(context, hdrcode), {
+        const str = await context.streamAdapter.rawbody(this.getStream(context, hdrcode), {
             encoding,
             limit,
             length
@@ -144,17 +143,17 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
             case 'deflate':
                 break
             case 'identity':
-                if (this.streamAdapter.isReadable(ctx.request)) {
+                if (ctx.streamAdapter.isReadable(ctx.request)) {
                     return ctx.request
-                } else if (this.streamAdapter.isStream(ctx.request)) {
-                    return ctx.request.pipe(this.streamAdapter.passThrough());
+                } else if (ctx.streamAdapter.isStream(ctx.request)) {
+                    return ctx.request.pipe(ctx.streamAdapter.passThrough());
                 }
                 throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
-        if (this.streamAdapter.isStream(ctx.request)) {
-            return ctx.request.pipe(this.streamAdapter.gunzip());
+        if (ctx.streamAdapter.isStream(ctx.request)) {
+            return ctx.request.pipe(ctx.streamAdapter.gunzip());
         }
         throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
     }
@@ -184,7 +183,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
             qs = qslib
         }
 
-        const str = await this.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
+        const str = await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
             encoding,
             limit,
             length
@@ -209,7 +208,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
             length = ~~len
         }
         const { limit, encoding } = this.options.text;
-        const str = await this.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
+        const str = await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
             encoding,
             limit,
             length

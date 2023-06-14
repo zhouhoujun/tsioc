@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { AssetContext } from '@tsdi/core';
-import { StatusVaildator, ResponseStatusFormater } from '@tsdi/transport';
+import { ResponseStatusFormater } from '@tsdi/transport';
 import * as chalk from 'chalk';
 import { hrtime } from 'process';
 
@@ -30,7 +30,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
 
     private formatStatus(ctx: AssetContext): [string, string] {
         const { status, statusMessage } = ctx;
-        const vaildator= ctx.get(StatusVaildator);
+        const vaildator= ctx.vaildator;
 
         if (vaildator.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];

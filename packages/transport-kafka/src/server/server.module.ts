@@ -1,6 +1,6 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaServer } from './server';
@@ -43,6 +43,9 @@ const defMicroOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: KafkaStatusVaildator }
     ]
 } as KafkaServerOptions
 
@@ -55,8 +58,8 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
+        KafkaStatusVaildator,
         { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
-        { provide: StatusVaildator, useClass: KafkaStatusVaildator },
         { provide: KAFKA_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {
             provide: KafkaEndpoint,
@@ -93,8 +96,15 @@ export class KafkaModule {
         serverOpts?: KafkaServerOptions;
     }): ModuleWithProviders<KafkaModule> {
         const providers: ProviderType[] = [
-            { provide: KAFKA_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } }
-        ];        
+            {
+                provide: KAFKA_SERV_OPTS,
+                useValue: {
+                    ...defMicroOpts,
+                    ...options.serverOpts,
+                    providers: [...defMicroOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
+        ];
 
         if (options.endpoint) {
             providers.push(toProvider(KafkaEndpoint, options.endpoint))

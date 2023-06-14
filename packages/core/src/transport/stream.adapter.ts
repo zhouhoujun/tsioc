@@ -1,6 +1,5 @@
-import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from '@tsdi/core';
+import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from './stream';
 import { Abstract } from '@tsdi/ioc';
-import { Buffer } from 'buffer';
 
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
 

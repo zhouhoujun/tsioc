@@ -1,6 +1,6 @@
-import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
-import { AbstractTransportSession, StreamAdapter, ev, hdr, toBuffer } from '@tsdi/transport';
+import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';

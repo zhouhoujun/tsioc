@@ -1,7 +1,7 @@
-import { ExecptionHandlerFilter, RouterModule, TransformModule, createMiddlewareEndpoint, HybridRouter } from '@tsdi/core';
+import { ExecptionHandlerFilter, RouterModule, TransformModule, createMiddlewareEndpoint, StatusVaildator, HybridRouter } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import {
-    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter, StatusVaildator, HttpStatusVaildator,
+    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter, HttpStatusVaildator,
     HelmetMiddleware, LOCALHOST, LogInterceptor, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, TransportModule
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';

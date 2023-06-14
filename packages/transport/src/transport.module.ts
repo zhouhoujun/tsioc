@@ -19,20 +19,20 @@ import { StreamTransportBackend, TransportBackend } from './client/backend';
     ],
     providers: [
         ...ASSET_SERVR_PROVIDERS,
-        // TransportBackend,
-        // StreamTransportBackend,
-        // BodyContentInterceptor,
+        TransportBackend,
+        StreamTransportBackend,
+        BodyContentInterceptor,
 
-        // LogInterceptor,
+        LogInterceptor,
 
-        // Bodyparser,
-        // Content,
-        // Json,
-        // Session,
+        Bodyparser,
+        Content,
+        Json,
+        Session,
 
-        // CorsMiddleware,
-        // CsrfMiddleware,
-        // HelmetMiddleware,
+        CorsMiddleware,
+        CsrfMiddleware,
+        HelmetMiddleware,
 
         RespondAdapter,
         ErrorRespondAdapter,

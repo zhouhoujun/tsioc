@@ -1,6 +1,6 @@
-import { createHandler } from '@tsdi/core';
+import { StatusVaildator, createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, StatusVaildator, HttpStatusVaildator, StreamRequestAdapter, TransportModule, StreamTransportBackend } from '@tsdi/transport';
+import { BodyContentInterceptor, HttpStatusVaildator, StreamRequestAdapter, TransportModule, StreamTransportBackend } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './option';
 import { Http } from './clinet';
