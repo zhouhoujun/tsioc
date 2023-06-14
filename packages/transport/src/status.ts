@@ -31,6 +31,10 @@ export abstract class StatusVaildator<T = number> {
      * server responsed.
      */
     abstract get serverError(): T;
+    /**
+     * gateway timeout status.
+     */
+    abstract get gatewayTimeout(): T;
 
     abstract isStatus(status: T): boolean;
 

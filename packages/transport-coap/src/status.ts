@@ -5,7 +5,6 @@ import { StatusVaildator } from '@tsdi/transport';
 
 @Injectable({ static: true })
 export class CoapStatusVaildator implements StatusVaildator<string>{
-
     get ok(): string {
         return CoapStatuCode.Content
     }
@@ -27,6 +26,10 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
     get serverError(): string {
         return CoapStatuCode.InternalServerError
     }
+    get gatewayTimeout(): string {
+        return CoapStatuCode.GatewayTimeout
+    }
+
 
     isStatus(status: string): boolean {
         return !!(CoapMessages as Record<string, string | undefined>)[status]

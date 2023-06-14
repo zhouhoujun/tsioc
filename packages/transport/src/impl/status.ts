@@ -21,7 +21,11 @@ export class HttpStatusVaildator implements StatusVaildator<number> {
         return 0;
     }
     get noContent(): number {
-        return HttpStatusCode.NoContent;
+        return HttpStatusCode.NoContent
+    }
+
+    get gatewayTimeout(): number {
+        return HttpStatusCode.GatewayTimeout
     }
 
     isStatus(status: number): boolean {

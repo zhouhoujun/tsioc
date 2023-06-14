@@ -70,7 +70,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                                 url,
                                 error,
                                 statusText: error.message,
-                                status: this.vaildator.none
+                                status: this.vaildator.gatewayTimeout
                             });
                             observer.error(res);
                         }, opts.timeout)

@@ -152,7 +152,7 @@ describe('Mqtt Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual(504);
     });
 
     it('sensor.message/+ message', async () => {
@@ -184,7 +184,7 @@ describe('Mqtt Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual(504);
     });
 
     it('sensor/message/+ message', async () => {
@@ -232,7 +232,7 @@ describe('Mqtt Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual(504);
     });
 
 
