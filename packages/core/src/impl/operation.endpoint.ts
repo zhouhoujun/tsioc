@@ -1,4 +1,4 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString, tokenId } from '@tsdi/ioc';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
 import { isObservable, lastValueFrom } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
@@ -17,7 +17,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
 
     constructor(
         public readonly invoker: OperationInvoker, readonly options: EndpointOptions = {}) {
-        super(invoker.context.injector,
+        super(invoker.context,
             options.interceptorsToken ?? OPERA_INTERCEPTORS,
             options.guardsToken ?? OPERA_GUARDS,
             options.filtersToken ?? OPERA_FILTERS)

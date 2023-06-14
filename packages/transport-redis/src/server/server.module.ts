@@ -1,8 +1,8 @@
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { RedisTransportSessionFactory } from '../transport';
+import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
 import { RedisServer } from './server';
 import { RedisStatusVaildator } from '../status';
 import { RedisExecptionHandlers } from './execption.handles';
@@ -39,6 +39,9 @@ const defMicroOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: RedisStatusVaildator }
     ]
 } as RedisServerOpts;
 
@@ -51,9 +54,8 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
-        RedisTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: RedisTransportSessionFactory, asDefault: true },
-        { provide: StatusVaildator, useClass: RedisStatusVaildator },
+        RedisStatusVaildator,
+        { provide: RedisTransportSessionFactory, useClass: RedisTransportSessionFactoryImpl, asDefault: true },
         { provide: REDIS_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {
             provide: RedisEndpoint,
@@ -80,21 +82,28 @@ export class RedisMicroServiceModule {
          */
         endpoint?: ProvdierOf<RedisEndpoint>;
 
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<RedisTransportSessionFactory>;
         /**
          * server options
          */
         serverOpts?: RedisServerOpts;
     }): ModuleWithProviders<RedisMicroServiceModule> {
         const providers: ProviderType[] = [
-            { provide: REDIS_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } }
+            {
+                provide: REDIS_SERV_OPTS,
+                useValue: {
+                    ...defMicroOpts,
+                    ...options.serverOpts,
+                    providers: [...defMicroOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {
             providers.push(toProvider(RedisEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(RedisTransportSessionFactory, options.transportFactory))
         }
 
         return {

@@ -4,7 +4,7 @@ import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, Ser
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaServer } from './server';
-import { KafkaTransportSessionFactory } from '../transport';
+import { KafkaTransportSessionFactory, KafkaTransportSessionFactoryImpl } from '../transport';
 import { KafkaStatusVaildator } from '../status';
 import { KafkaExecptionHandlers } from './execption.handles';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
@@ -55,10 +55,9 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
-        KafkaTransportSessionFactory,
+        { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
         { provide: StatusVaildator, useClass: KafkaStatusVaildator },
         { provide: KAFKA_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
-        { provide: TransportSessionFactory, useExisting: KafkaTransportSessionFactory, asDefault: true },
         {
             provide: KafkaEndpoint,
             useFactory: (injector: Injector, opts: KafkaServerOptions) => {
@@ -87,7 +86,7 @@ export class KafkaModule {
         /**
          * transport factory.
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<KafkaTransportSessionFactory>;
         /**
          * server options
          */
@@ -101,7 +100,7 @@ export class KafkaModule {
             providers.push(toProvider(KafkaEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(KafkaTransportSessionFactory, options.transportFactory))
         }
 
         return {

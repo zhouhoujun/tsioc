@@ -1,11 +1,12 @@
 import {
-    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, TransportSessionFactory, Packet
+    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, Packet
 } from '@tsdi/core';
 import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter, ev } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaTransport, KAFKA_TRANSPORT } from '../const';
+import { KafkaTransportSessionFactory } from '../transport';
 
 
 /**
@@ -29,7 +30,7 @@ export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, K
     protected createSession(req: TransportRequest<any>, opts: KafkaClientOpts): TransportSession<KafkaTransport> {
         const context = req.context;
         const client = context.get(KAFKA_TRANSPORT, InjectFlags.Self);
-        return context.get(TransportSessionFactory).create(client, opts.transportOpts);
+        return context.get(KafkaTransportSessionFactory).create(client, opts.transportOpts);
     }
 
     protected getClientOpts(req: TransportRequest<any>): KafkaClientOpts {

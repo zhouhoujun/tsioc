@@ -1,5 +1,5 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord } from 'kafkajs';
-import { Execption, Injectable, Optional, isUndefined } from '@tsdi/ioc';
+import { Abstract, Execption, Injectable, Optional, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, StreamAdapter } from '@tsdi/transport';
 import { KafkaTransport } from './const';
@@ -11,10 +11,13 @@ export interface KafkaTransportOpts extends TransportSessionOpts, ConsumerRunCon
     send?: Omit<ProducerRecord, 'topic' | 'messages'>;
 }
 
+@Abstract()
+export abstract class KafkaTransportSessionFactory extends TransportSessionFactory<KafkaTransport> {
+}
 
 
 @Injectable()
-export class KafkaTransportSessionFactory implements TransportSessionFactory<KafkaTransport> {
+export class KafkaTransportSessionFactoryImpl implements KafkaTransportSessionFactory {
 
     constructor(
         private streamAdapter: StreamAdapter,

@@ -1,4 +1,4 @@
-import { Injector, toProvider } from '@tsdi/ioc';
+import { Injector, createContext, toProvider } from '@tsdi/ioc';
 import { GuardHandler } from '../handlers/guards';
 import { TransportContext } from '../transport/context';
 import { TransportEndpoint, TransportEndpointOptions } from '../transport/endpoint';
@@ -12,7 +12,7 @@ export class TransportEndpointImpl<TInput extends TransportContext = TransportCo
     constructor(
         injector: Injector,
         options: TransportEndpointOptions<TInput>) {
-        super(injector,
+        super(createContext(injector, options),
             options.backend!,
             options.interceptorsToken!,
             options.guardsToken,

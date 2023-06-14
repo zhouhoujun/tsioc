@@ -76,10 +76,6 @@ export interface Socket extends IDuplexStream {
 
 export const HYBRID_HOST = tokenId<IEventEmitter>('HYBRID_HOST');
 
-/**
- * Socket token.
- */
-export const SOCKET = tokenId<Socket>('SOCKET');
 
 /**
  * Connection interface.

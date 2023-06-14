@@ -16,6 +16,8 @@ export * from  './context';
 
 export * from './stream';
 export * from './socket';
+export * from './stream.adapter';
+export * from './file.adapter';
 
 export * from './request';
 export * from './response';

@@ -9,6 +9,7 @@ import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
 import { MqttContext } from './context';
+import { MqttTransportSessionFactory } from '../transport';
 
 
 
@@ -66,7 +67,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
                 throw err;
             });
 
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const factory = this.endpoint.injector.get(MqttTransportSessionFactory);
         const session = factory.create(this.mqtt, { ...this.options.transportOpts, serverSide: true });
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {

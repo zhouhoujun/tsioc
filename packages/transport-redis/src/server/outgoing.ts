@@ -2,14 +2,14 @@ import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, TransportSession
 import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
 import { ev, hdr } from '@tsdi/transport';
 import { PassThrough } from 'stream';
-import { Redis } from 'ioredis';
+import { ReidsTransport } from '../transport';
 
 
 
 /**
  * outgoing message.
  */
-export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number> {
+export class RedisOutgoing extends PassThrough implements Outgoing<ReidsTransport, number> {
 
     _closed = false;
     ending = false;
@@ -21,7 +21,7 @@ export class RedisOutgoing extends PassThrough implements Outgoing<Redis, number
 
     writable = true;
     constructor(
-        readonly session: TransportSession<Redis>,
+        readonly session: TransportSession<ReidsTransport>,
         readonly topic: string,
         readonly id: number) {
         super({ objectMode: true });

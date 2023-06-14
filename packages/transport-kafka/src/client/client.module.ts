@@ -4,7 +4,7 @@ import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBacke
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { KafkaHandler } from './handler';
 import { KafkaClient } from './client';
-import { KafkaTransportSessionFactory } from '../transport';
+import { KafkaTransportSessionFactory, KafkaTransportSessionFactoryImpl } from '../transport';
 import { KafkaRequestAdapter } from './request';
 import { KafkaStatusVaildator } from '../status';
 import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KAFKA_CLIENT_OPTS, KafkaClientOpts, KafkaClientsOpts } from './options';
@@ -33,11 +33,10 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
-        KafkaTransportSessionFactory,
+        { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
         { provide: StatusVaildator, useClass: KafkaStatusVaildator },
         { provide: RequestAdapter, useClass: KafkaRequestAdapter },
         { provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
-        { provide: TransportSessionFactory, useExisting: KafkaTransportSessionFactory, asDefault: true },
         {
             provide: KafkaHandler,
             useFactory: (injector: Injector, opts: KafkaClientOpts) => {
@@ -71,7 +70,7 @@ export class KafkaClientModule {
         /**
          * transport factory.
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<KafkaTransportSessionFactory>;
     }): ModuleWithProviders<KafkaClientModule> {
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
@@ -88,7 +87,7 @@ export class KafkaClientModule {
             providers.push(toProvider(KafkaHandler, options.handler))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(KafkaTransportSessionFactory, options.transportFactory))
         }
         return {
             module: KafkaClientModule,

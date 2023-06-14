@@ -1,10 +1,10 @@
 import { Incoming, IncomingHeaders, Packet, TransportSession } from '@tsdi/core';
 import { ev, hdr } from '@tsdi/transport';
 import { Readable } from 'stream';
-import { Redis } from 'ioredis';
+import { ReidsTransport } from '../transport';
 
 
-export class RedisIncoming extends Readable implements Incoming<Redis> {
+export class RedisIncoming extends Readable implements Incoming<ReidsTransport> {
 
     readonly headers: IncomingHeaders;
     body?: any;
@@ -16,7 +16,7 @@ export class RedisIncoming extends Readable implements Incoming<Redis> {
     readonly url: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<Redis>, private packet: Packet) {
+    constructor(readonly session: TransportSession<ReidsTransport>, private packet: Packet) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);

@@ -1,5 +1,5 @@
-import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Outgoing, ListenOpts, InternalServerExecption, ListenService, TransportSessionFactory, Packet, TransportSession, Server, MESSAGE, GET } from '@tsdi/core';
+import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, TransportSession, Server, MESSAGE, GET } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -10,6 +10,7 @@ import { TcpContext } from './context';
 import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
+import { TcpTransportSessionFactory } from '../transport';
 
 
 
@@ -89,7 +90,7 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
 
         this.serv.on(ev.CLOSE, () => this.logger.info('Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const factory = this.endpoint.injector.get(TcpTransportSessionFactory);
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
                 const session = factory.create(socket, this.options.transportOpts);

@@ -1,9 +1,9 @@
 
 import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, StatusVaildator, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { AmqpTransportSessionFactory } from '../transport';
+import { AmqpTransportSessionFactory, AmqpTransportSessionFactoryImpl } from '../transport';
 import { AmqpStatusVaildator } from '../status';
 import { AmqpServer } from './server';
 import { AmqpEndpoint } from './endpoint';
@@ -46,6 +46,9 @@ const defMicroOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useClass: AmqpStatusVaildator }
     ]
 } as AmqpMicroServiceOpts
 
@@ -58,9 +61,7 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
-        AmqpTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: AmqpTransportSessionFactory, asDefault: true },
-        { provide: StatusVaildator, useClass: AmqpStatusVaildator },
+        { provide: AmqpTransportSessionFactory, useClass: AmqpTransportSessionFactoryImpl, asDefault: true },
         { provide: AMQP_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {
             provide: AmqpEndpoint,
@@ -88,21 +89,28 @@ export class AmqpMicroServiceModule {
         /**
          * transport factory.
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<AmqpTransportSessionFactory>;
         /**
          * server options
          */
         serverOpts?: AmqpMicroServiceOpts;
     }): ModuleWithProviders<AmqpMicroServiceModule> {
         const providers: ProviderType[] = [
-            { provide: AMQP_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } }
+            {
+                provide: AMQP_SERV_OPTS,
+                useValue: {
+                    ...defMicroOpts,
+                    ...options.serverOpts,
+                    providers: [...defMicroOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {
             providers.push(toProvider(AmqpEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(AmqpTransportSessionFactory, options.transportFactory))
         }
 
         return {

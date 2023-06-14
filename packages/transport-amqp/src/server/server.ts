@@ -9,6 +9,7 @@ import { InjectLog, Logger } from '@tsdi/logs';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
+import { AmqpTransportSessionFactory } from '../transport';
 
 
 
@@ -79,7 +80,7 @@ export class AmqpServer extends Server<AmqpContext> {
             noAck: true,
             ...transportOpts.consumeOpts
         });
-        const session = this.endpoint.injector.get(TransportSessionFactory).create(channel, transportOpts);
+        const session = this.endpoint.injector.get(AmqpTransportSessionFactory).create(channel, transportOpts);
 
         session.on(ev.MESSAGE, (queue: string, packet: Packet) => {
             this.requestHandler(session, queue, packet);

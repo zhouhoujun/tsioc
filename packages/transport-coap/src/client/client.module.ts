@@ -1,5 +1,5 @@
 import { createHandler } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { TransportModule, StatusVaildator, RequestAdapter, TransportBackend, BodyContentInterceptor } from '@tsdi/transport';
 import { CoapHandler } from './handler';
 import { CoapClient } from './client';
@@ -18,7 +18,11 @@ const defClientOpts = {
     connectOpts: {
         type: 'udp4',
         port: 5683
-    }
+    },
+    providers: [
+        { provide: StatusVaildator, useExisting: CoapStatusVaildator },
+        { provide: RequestAdapter, useExisting: CoapRequestAdapter },
+    ]
 } as CoapClientOpts;
 
 
@@ -27,13 +31,13 @@ const defClientOpts = {
         TransportModule
     ],
     providers: [
-        { provide: StatusVaildator, useClass: CoapStatusVaildator },
-        { provide: RequestAdapter, useClass: CoapRequestAdapter },
+        CoapStatusVaildator,
+        CoapRequestAdapter,
         { provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {
             provide: CoapHandler,
             useFactory: (injector: Injector, opts: CoapClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken|| !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(COAP_CLIENT_OPTS, opts);
                 }
@@ -66,11 +70,11 @@ export class CoapClientModule {
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(CoapClient, [{ provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(CoapClient, [{ provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }]
+                : [{ provide: COAP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
         ];
 
         if (options.handler) {

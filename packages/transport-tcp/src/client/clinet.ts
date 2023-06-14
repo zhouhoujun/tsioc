@@ -1,12 +1,13 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, Pattern, SOCKET, TransportEvent, TransportRequest, RequestInitOpts } from '@tsdi/core';
+import { Client, Pattern, TransportEvent, TransportRequest, RequestInitOpts } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { LOCALHOST, ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
+import { TCP_SOCKET } from '../transport';
 
 
 /**
@@ -22,6 +23,12 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
         readonly handler: TcpHandler,
         @Inject(TCP_CLIENT_OPTS) private options: TcpClientOpts) {
         super();
+        if(!options.connectOpts) {
+            options.connectOpts = {
+                port: 3000,
+                host: LOCALHOST
+            }
+        }
     }
 
     private connection!: tls.TLSSocket | net.Socket;
@@ -71,7 +78,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
 
     protected override initContext(context: InvocationContext): void {
         context.setValue(Client, this);
-        context.setValue(SOCKET, this.connection);
+        context.setValue(TCP_SOCKET, this.connection);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {

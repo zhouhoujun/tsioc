@@ -1,4 +1,4 @@
-import { ListenOpts, MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { ListenOpts, MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
@@ -9,6 +9,7 @@ import { REDIS_SERV_OPTS, RedisServerOpts } from './options';
 import { RedisIncoming } from './incoming';
 import { RedisOutgoing } from './outgoing';
 import { RedisContext } from './context';
+import { RedisTransportSessionFactory, ReidsTransport } from '../transport';
 
 
 
@@ -62,7 +63,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         const subscriber = this.subscriber;
         const publisher = this.publisher;
 
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const factory = this.endpoint.injector.get(RedisTransportSessionFactory);
         const session = factory.create({
             subscriber,
             publisher
@@ -134,7 +135,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: TransportSession<Redis>, packet: Packet): Subscription {
+    protected requestHandler(session: TransportSession<ReidsTransport>, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = MESSAGE;
         }
@@ -152,7 +153,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
                 }
             });
         const opts = this.options;
-        opts.timeout && req.socket.stream.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
+        opts.timeout && req.socket.subscriber.stream.setTimeout && req.socket.subscriber.stream.setTimeout(opts.timeout, () => {
             req.emit?.(ev.TIMEOUT);
             cancel?.unsubscribe()
         });

@@ -1,13 +1,18 @@
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Injectable, Optional, isString } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, StreamAdapter, ev, hdr, toBuffer } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';
 
 
+@Abstract()
+export abstract class AmqpTransportSessionFactory extends TransportSessionFactory<Channel> {
+
+}
+
 @Injectable()
-export class AmqpTransportSessionFactory implements TransportSessionFactory<Channel> {
+export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<Channel> {
 
     constructor(
         private adapter: StreamAdapter,

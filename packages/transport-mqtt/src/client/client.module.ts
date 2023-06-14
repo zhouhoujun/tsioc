@@ -1,12 +1,12 @@
 import { TransportSessionFactory, createHandler } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, TransportBackend, TransportModule, StatusVaildator, RequestAdapter } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { MqttClient } from './client';
 import { MqttHandler } from './handler';
 import { MqttRequestAdapter } from './request';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts, MqttClientsOpts } from './options';
-import { MqttTransportSessionFactory } from '../transport';
+import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl } from '../transport';
 import { MqttStatusVaildator } from '../status';
 
 
@@ -22,6 +22,10 @@ const defClientOpts = {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },
+    providers: [
+        { provide: StatusVaildator, useExisting: MqttStatusVaildator },
+        { provide: RequestAdapter, useExisting: MqttRequestAdapter }
+    ]
 } as MqttClientOpts;
 
 
@@ -32,15 +36,14 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
-        MqttTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: MqttTransportSessionFactory, asDefault: true },
-        { provide: StatusVaildator, useClass: MqttStatusVaildator },
-        { provide: RequestAdapter, useClass: MqttRequestAdapter },
+        { provide: MqttTransportSessionFactory, useClass: MqttTransportSessionFactoryImpl, asDefault: true },
         { provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
+        MqttStatusVaildator,
+        MqttRequestAdapter,
         {
             provide: MqttHandler,
             useFactory: (injector: Injector, opts: MqttClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(MQTT_CLIENT_OPTS, opts);
                 }
@@ -69,24 +72,24 @@ export class MqttClientModule {
          */
         handler?: ProvdierOf<MqttHandler>;
 
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<MqttTransportSessionFactory>;
     }): ModuleWithProviders<MqttClientModule> {
 
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(MqttClient, [{ provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(MqttClient, [{ provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }]
+                : [{ provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
         ];
         if (options.handler) {
             providers.push(toProvider(MqttHandler, options.handler))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(MqttTransportSessionFactory, options.transportFactory))
         }
 
         return {

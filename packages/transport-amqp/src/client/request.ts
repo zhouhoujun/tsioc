@@ -1,9 +1,10 @@
-import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSessionFactory, TransportSession, Packet, UuidGenerator } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, Packet, UuidGenerator } from '@tsdi/core';
 import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, ev, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { Channel } from 'amqplib';
 import { AMQP_CHANNEL, AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+import { AmqpTransportSessionFactory } from '../transport';
 
 
 @Injectable()
@@ -27,7 +28,7 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
     protected createSession(req: TransportRequest<any>, opts: AmqpClientOpts): TransportSession<Channel> {
         const context = req.context;
         const channel = context.get(AMQP_CHANNEL, InjectFlags.Self);
-        return context.get(TransportSessionFactory).create(channel, opts.transportOpts);
+        return context.get(AmqpTransportSessionFactory).create(channel, opts.transportOpts!);
     }
 
     protected getClientOpts(req: TransportRequest<any>) {

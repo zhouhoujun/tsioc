@@ -12,9 +12,6 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = chalk.gray('--->');
     readonly outgoing = chalk.gray('<---');
 
-    constructor(private vaildator: StatusVaildator) {
-        super()
-    }
 
     hrtime(time?: [number, number] | undefined): [number, number] {
         return hrtime(time);
@@ -33,24 +30,25 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
 
     private formatStatus(ctx: AssetContext): [string, string] {
         const { status, statusMessage } = ctx;
+        const vaildator= ctx.get(StatusVaildator);
 
-        if (this.vaildator.isOk(status)) {
+        if (vaildator.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
         }
 
-        if (this.vaildator.isRedirect(status)) {
+        if (vaildator.isRedirect(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        if (this.vaildator.isRequestFailed(status)) {
+        if (vaildator.isRequestFailed(status)) {
             return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (this.vaildator.isServerError(status)) {
+        if (vaildator.isServerError(status)) {
             return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
 
-        if (this.vaildator.isRetry(status)) {
+        if (vaildator.isRetry(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 

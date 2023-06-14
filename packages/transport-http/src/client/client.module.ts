@@ -1,5 +1,5 @@
 import { createHandler } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, StatusVaildator, HttpStatusVaildator, StreamRequestAdapter, TransportModule, StreamTransportBackend } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS, HttpClientOpts, HttpClientsOpts } from './option';
@@ -13,7 +13,11 @@ const defClientOpts = {
     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
     interceptors: [HttpPathInterceptor, BodyContentInterceptor],
     filtersToken: HTTP_CLIENT_FILTERS,
-    backend: StreamTransportBackend
+    backend: StreamTransportBackend,
+    providers: [
+        { provide: StreamRequestAdapter, useExisting: HttpRequestAdapter },
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator }
+    ]
 
 } as HttpClientOpts;
 
@@ -29,13 +33,11 @@ const defClientOpts = {
         HttpStatusVaildator,
         HttpRequestAdapter,
         HttpPathInterceptor,
-        { provide: StreamRequestAdapter, useExisting: HttpRequestAdapter },
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
         { provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {
             provide: HttpHandler,
             useFactory: (injector: Injector, opts: HttpClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(HTTP_CLIENT_OPTS, opts);
                 }
@@ -64,11 +66,11 @@ export class HttpModule {
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(Http, [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(Http, [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
+                : [{ provide: HTTP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }],
         ];
 
         if (options.handler) {

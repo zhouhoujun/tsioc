@@ -36,7 +36,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         interceptorsToken: Token<Interceptor[]> = CTRL_INTERCEPTORS,
         guardsToken: Token<CanActivate[]> = CTRL_GUARDS,
         filtersToken: Token<Filter[]> = CTRL_FILTERS) {
-        super(factory.typeRef.injector, interceptorsToken, guardsToken, filtersToken);
+        super(factory.typeRef.getContext(), interceptorsToken, guardsToken, filtersToken);
         this.routes = new Map();
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();

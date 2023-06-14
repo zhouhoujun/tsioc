@@ -1,4 +1,4 @@
-import { ArgumentExecption, Injector, ProvdierOf, Token, getClassName, refl } from '@tsdi/ioc';
+import { ArgumentExecption, Injector, ProvdierOf, Token, createContext, getClassName, refl } from '@tsdi/ioc';
 import { Backend } from '../Handler';
 import { AbstractGuardHandler } from '../handlers/guards';
 import { AssetContext } from '../transport/context';
@@ -16,13 +16,14 @@ export class MiddlewareEndpointImpl<TInput extends AssetContext = AssetContext, 
     constructor(
         injector: Injector,
         options: MiddlewareEndpointOptions<TInput>) {
-        super(injector,
+        super(createContext(injector, options),
             options.interceptorsToken!,
             options.guardsToken,
             options.filtersToken);
 
         if (!options.middlewaresToken) throw new ArgumentExecption(`Middleware token missing of ${getClassName(this)}.`)
         this.midddlesToken = options.middlewaresToken;
+
         setHandlerOptions(this, options);
         options.middlewares && this.use(options.middlewares)
 

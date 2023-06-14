@@ -1,5 +1,5 @@
 import { ExecptionHandlerFilter, RouterModule, TransformModule, createMiddlewareEndpoint, HybridRouter } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import {
     BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter, StatusVaildator, HttpStatusVaildator,
     HelmetMiddleware, LOCALHOST, LogInterceptor, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, TransportModule
@@ -48,6 +48,10 @@ const defServerOpts = {
         JsonMiddleware,
         BodyparserMiddleware,
         HybridRouter
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
+        { provide: RespondAdapter, useExisting: HttpRespondAdapter },
     ]
 
 } as Http2ServerOpts;
@@ -65,12 +69,10 @@ const defServerOpts = {
         ServerTransportModule
     ],
     providers: [
-        HttpStatusVaildator,
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
         { provide: HTTP_SERV_OPTS, useValue: { ...defServerOpts }, asDefault: true },
+        HttpStatusVaildator,
         HttpRespondAdapter,
         HttpExecptionHandlers,
-        { provide: RespondAdapter, useExisting: HttpRespondAdapter },
         {
             provide: HttpEndpoint,
             useFactory: (injector: Injector, opts: HttpServerOpts) => {
@@ -95,7 +97,14 @@ export class HttpServerModule {
         serverOpts?: HttpServerOpts;
     }): ModuleWithProviders<HttpServerModule> {
         const providers: ProviderType[] = [
-            { provide: HTTP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } }
+            {
+                provide: HTTP_SERV_OPTS,
+                useValue: {
+                    ...defServerOpts,
+                    ...options.serverOpts,
+                    providers: [...defServerOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {

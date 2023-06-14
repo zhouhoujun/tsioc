@@ -1,5 +1,5 @@
 import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { CoapMicroService, CoapServer } from './server';
@@ -33,6 +33,9 @@ const defMicroServOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: CoapMicroStatusVaildator }
     ]
 } as CoapServerOpts;
 
@@ -45,7 +48,7 @@ const defMicroServOpts = {
         ServerTransportModule
     ],
     providers: [
-        { provide: StatusVaildator, useClass: CoapMicroStatusVaildator },
+        CoapMicroStatusVaildator,
         { provide: COAP_MICRO_SERV_OPTS, useValue: { ...defMicroServOpts }, asDefault: true },
         {
             provide: CoapMicroEndpoint,
@@ -79,7 +82,14 @@ export class CoapMicroServiceModule {
         serverOpts?: CoapServerOpts;
     }): ModuleWithProviders<CoapMicroServiceModule> {
         const providers: ProviderType[] = [
-            { provide: COAP_SERV_OPTS, useValue: { ...defMicroServOpts, ...options.serverOpts } }
+            {
+                provide: COAP_SERV_OPTS,
+                useValue: {
+                    ...defMicroServOpts,
+                    ...options.serverOpts,
+                    providers: [...defMicroServOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {

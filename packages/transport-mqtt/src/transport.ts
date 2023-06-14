@@ -1,12 +1,16 @@
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, TopicTransportSession, ev } from '@tsdi/transport';
 import { Client } from 'mqtt';
 import { Buffer } from 'buffer';
 
+@Abstract()
+export abstract class MqttTransportSessionFactory extends TransportSessionFactory<Client> {
+
+}
 
 @Injectable()
-export class MqttTransportSessionFactory implements TransportSessionFactory<Client> {
+export class MqttTransportSessionFactoryImpl implements MqttTransportSessionFactory {
 
     constructor(
         private streamAdapter: StreamAdapter,

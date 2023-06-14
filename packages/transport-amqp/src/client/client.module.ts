@@ -1,9 +1,9 @@
 
 import { TransportSessionFactory, createHandler } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { AmqpTransportSessionFactory } from '../transport';
+import { AmqpTransportSessionFactory, AmqpTransportSessionFactoryImpl } from '../transport';
 import { AmqpStatusVaildator } from '../status';
 import { AmqpClient } from './client';
 import { AmqpHandler } from './handler';
@@ -32,6 +32,10 @@ const defClientOpts = {
     },
     interceptors: [BodyContentInterceptor],
     backend: TransportBackend,
+    providers: [
+        { provide: StatusVaildator, useClass: AmqpStatusVaildator },
+        { provide: RequestAdapter, useClass: AmqpRequestAdapter }
+    ]
 } as AmqpClientOpts;
 
 
@@ -41,15 +45,12 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
-        AmqpTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: AmqpTransportSessionFactory, asDefault: true },
-        { provide: StatusVaildator, useClass: AmqpStatusVaildator },
-        { provide: RequestAdapter, useClass: AmqpRequestAdapter },
+        { provide: AmqpTransportSessionFactory, useClass: AmqpTransportSessionFactoryImpl, asDefault: true },
         { provide: AMQP_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {
             provide: AmqpHandler,
             useFactory: (injector: Injector, opts: AmqpClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(AMQP_CLIENT_OPTS, opts);
                 }
@@ -78,24 +79,24 @@ export class AmqpClientModule {
         /**
          * transport factory.
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<AmqpTransportSessionFactory>;
     }): ModuleWithProviders<AmqpClientModule> {
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(AmqpClient, [{ provide: AMQP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(AmqpClient, [{ provide: AMQP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: AMQP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }]
+                : [{ provide: AMQP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
         ];
 
         if (options.handler) {
             providers.push(toProvider(AmqpHandler, options.handler))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(AmqpTransportSessionFactory, options.transportFactory))
         }
         return {
             module: AmqpClientModule,

@@ -1,12 +1,12 @@
-import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSessionFactory, Subscriber, Publisher, TransportSession } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, Subscriber, Publisher, TransportSession } from '@tsdi/core';
 import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, ev, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
-import { ReidsStream } from '../transport';
+import { REIDS_TRANSPORT, RedisTransportSessionFactory, ReidsTransport } from '../transport';
 
 @Injectable()
-export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, RedisClientOpts> {
+export class RedisRequestAdapter extends SessionRequestAdapter<ReidsTransport, RedisClientOpts> {
 
     subs: Set<string>;
 
@@ -22,14 +22,10 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, Redi
         this.subs = new Set();
     }
 
-    protected createSession(req: TransportRequest<any>, opts: RedisClientOpts): TransportSession<ReidsStream> {
+    protected createSession(req: TransportRequest<any>, opts: RedisClientOpts): TransportSession<ReidsTransport> {
         const context = req.context;
-        const subscriber = context.get(Subscriber, InjectFlags.Self);
-        const publisher = context.get(Publisher, InjectFlags.Self);
-        return context.get(TransportSessionFactory).create({
-            subscriber,
-            publisher
-        }, opts.transportOpts);
+        const transport = context.get(REIDS_TRANSPORT, InjectFlags.Self);
+        return context.get(RedisTransportSessionFactory).create(transport, opts.transportOpts);
     }
 
     protected override getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
@@ -45,7 +41,7 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsStream, Redi
         return req.context.get(REDIS_CLIENT_OPTS)
     }
 
-    protected bindMessageEvent(session: TransportSession<ReidsStream>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
+    protected bindMessageEvent(session: TransportSession<ReidsTransport>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
         const reply = this.getReply(url, req.observe);
         if (!reply) return [] as any;
         if (!this.subs.has(reply)) {

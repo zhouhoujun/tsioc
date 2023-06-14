@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY, getClassName, Injector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, createContext, EMPTY, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, isType, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -23,11 +23,11 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     private guards: CanActivate[] | null | undefined;
 
     constructor(
-        injector: Injector,
+        readonly context: InvocationContext,
         interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
         protected guardsToken?: Token<CanActivate[]>,
         protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
-        super(injector, interceptorsToken);
+        super(context.injector, interceptorsToken);
         if (!guardsToken) {
             this.guards = null;
         }
@@ -122,20 +122,23 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
  */
 export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> {
     constructor(
-        injector: Injector,
+        context: Injector | InvocationContext,
         protected backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
         interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
         guardsToken?: Token<CanActivate[]>,
         filtersToken?: Token<Filter<TInput, TOutput>[]>) {
-        super(injector, interceptorsToken, guardsToken, filtersToken);
-        if (!backend) throw new ArgumentExecption(`Backend token missing of ${getClassName(this)}.`)
-
+        super(isInjector(context) ? createContext(context) : context, interceptorsToken, guardsToken, filtersToken);
+        if (!backend) throw new ArgumentExecption(`Backend token missing of ${getClassName(this)}.`);
+        if (isType(backend) && !this.injector.has(backend, InjectFlags.Self)) {
+            this.injector.inject(backend);
+        }
     }
 
     /**
      *  get backend endpoint. 
      */
     protected getBackend(): Backend<TInput, TOutput> {
-        return isToken(this.backend) ? this.injector.get(this.backend) : this.backend;
+        return isToken(this.backend) ? this.injector.get(this.backend, this.context) : this.backend;
     }
 }
+

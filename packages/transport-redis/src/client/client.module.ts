@@ -1,8 +1,8 @@
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createHandler, createTransportEndpoint } from '@tsdi/core';
-import { BodyContentInterceptor, Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, RequestAdapter, ServerFinalizeFilter, Session, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { createHandler } from '@tsdi/core';
+import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { RedisTransportSessionFactory } from '../transport';
+import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
 import { RedisStatusVaildator } from '../status';
 import { RedisRequestAdapter } from './request';
 import { RedisHandler } from './handler';
@@ -22,7 +22,11 @@ const defClientOpts = {
     retryAttempts: 3,
     interceptors: [BodyContentInterceptor],
     filtersToken: REDIS_CLIENT_FILTERS,
-    backend: TransportBackend
+    backend: TransportBackend,
+    providers: [
+        { provide: StatusVaildator, useExisting: RedisStatusVaildator },
+        { provide: RequestAdapter, useExisting: RedisRequestAdapter }
+    ]
 
 } as RedisClientOpts;
 
@@ -33,15 +37,14 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
-        RedisTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: RedisTransportSessionFactory, asDefault: true },
-        { provide: StatusVaildator, useClass: RedisStatusVaildator },
-        { provide: RequestAdapter, useClass: RedisRequestAdapter },
+        RedisStatusVaildator,
+        RedisRequestAdapter,
+        { provide: RedisTransportSessionFactory, useClass: RedisTransportSessionFactoryImpl, asDefault: true },
         { provide: REDIS_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {
             provide: RedisHandler,
             useFactory: (injector: Injector, opts: RedisClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(REDIS_CLIENT_OPTS, opts);
                 }
@@ -71,25 +74,25 @@ export class RedisClientModule {
          * client handler provider
          */
         handler?: ProvdierOf<RedisHandler>;
-    
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+
+        transportFactory?: ProvdierOf<RedisTransportSessionFactory>;
     }
     ): ModuleWithProviders<RedisClientModule> {
         const providers: ProviderType[] = [
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(RedisClient, [{ provide: REDIS_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(RedisClient, [{ provide: REDIS_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: REDIS_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }]
+                : [{ provide: REDIS_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
         ];
         if (options.handler) {
             providers.push(toProvider(RedisHandler, options.handler))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(RedisTransportSessionFactory, options.transportFactory))
         }
 
         return {

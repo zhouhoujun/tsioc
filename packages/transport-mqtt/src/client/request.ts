@@ -1,9 +1,10 @@
-import { TransportEvent, Encoder, Decoder, Redirector, TransportRequest, TransportSessionFactory, TransportSession } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, Redirector, TransportRequest, TransportSession } from '@tsdi/core';
 import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
 import { StreamAdapter, ev, MimeTypes, StatusVaildator, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { Client } from 'mqtt';
 import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
+import { MqttTransportSessionFactory } from '../transport';
 
 @Injectable()
 export class MqttRequestAdapter extends SessionRequestAdapter<Client, MqttClientOpts> {
@@ -25,7 +26,7 @@ export class MqttRequestAdapter extends SessionRequestAdapter<Client, MqttClient
     protected createSession(req: TransportRequest<any>, opts: MqttClientOpts): TransportSession<Client> {
         const context = req.context;
         const client = context.get(Client, InjectFlags.Self);
-        return context.get(TransportSessionFactory).create(client, opts.transportOpts);
+        return context.get(MqttTransportSessionFactory).create(client, opts.transportOpts!);
 
     }
     protected getClientOpts(req: TransportRequest<any>) {

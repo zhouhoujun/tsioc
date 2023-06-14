@@ -1,8 +1,8 @@
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { TransportSessionFactory, createHandler } from '@tsdi/core';
 import { BodyContentInterceptor, RequestAdapter, StatusVaildator, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { TcpTransportSessionFactory } from '../transport';
+import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
 import { TcpStatusVaildator } from '../status';
 import { TcpRequestAdapter } from './request';
 import { TcpClient } from './clinet';
@@ -22,9 +22,13 @@ const defClientOpts = {
     },
     interceptors: [BodyContentInterceptor],
     filtersToken: TCP_CLIENT_FILTERS,
-    backend: TransportBackend
-
+    backend: TransportBackend,
+    providers: [
+        { provide: StatusVaildator, useExisting: TcpStatusVaildator },
+        { provide: RequestAdapter, useExisting: TcpRequestAdapter }
+    ]
 } as TcpClientOpts;
+
 
 
 @Module({
@@ -33,14 +37,14 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
-        TcpTransportSessionFactory,
-        { provide: StatusVaildator, useClass: TcpStatusVaildator },
-        { provide: RequestAdapter, useClass: TcpRequestAdapter },
-        { provide: TCP_CLIENT_OPTS, useValue: {}, asDefault: true },
+        { provide: TcpTransportSessionFactory, useClass: TcpTransportSessionFactoryImpl, asDefault: true },
+        { provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
+        TcpStatusVaildator,
+        TcpRequestAdapter,
         {
             provide: TcpHandler,
             useFactory: (injector: Injector, opts: TcpClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(TCP_CLIENT_OPTS, opts);
                 }
@@ -75,19 +79,19 @@ export class TcpClientModule {
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
-                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts } }]);
+                    return injector.resolve(TcpClient, [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...opts, providers: [...defClientOpts.providers || EMPTY, ...opts.providers || EMPTY] } }]);
                 },
                 deps: [Injector]
             }))
-                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts } }],
-
-            toProvider(TransportSessionFactory, options.transportFactory ?? TcpTransportSessionFactory)
+                : [{ provide: TCP_CLIENT_OPTS, useValue: { ...defClientOpts, ...options.clientOpts, providers: [...defClientOpts.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
         ];
 
         if (options.handler) {
             providers.push(toProvider(TcpHandler, options.handler))
         }
-
+        if (options.transportFactory) {
+            providers.push(toProvider(TcpTransportSessionFactory, options.transportFactory))
+        }
         return {
             module: TcpClientModule,
             providers

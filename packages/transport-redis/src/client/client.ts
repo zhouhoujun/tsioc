@@ -5,6 +5,7 @@ import { LOCALHOST, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
+import { REIDS_TRANSPORT } from '../transport';
 
 
 
@@ -44,7 +45,7 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
             lazyConnect: true
         });
         this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
-        
+
         await Promise.all([
             this.subscriber.connect(),
             this.publisher.connect()
@@ -52,9 +53,11 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        super.initContext(context);
-        this.subscriber && context.setValue(Subscriber, this.subscriber);
-        this.publisher && context.setValue(Publisher, this.publisher);
+        context.setValue(Client, this);
+        context.setValue(REIDS_TRANSPORT, {
+            subscriber: this.subscriber,
+            publisher: this.publisher
+        });
     }
 
     protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {

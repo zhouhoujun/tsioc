@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@tsdi/ioc';
-import { Server, Packet, MircoServiceRouter, ServiceUnavailableExecption, TransportSessionFactory, TransportSession, MESSAGE } from '@tsdi/core';
+import { Server, Packet, MircoServiceRouter, ServiceUnavailableExecption, TransportSession, MESSAGE } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -8,7 +8,7 @@ import { DEFAULT_BROKERS, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaContext } from './context';
-import { KafkaTransportOpts, KafkaTransportSession } from '../transport';
+import { KafkaTransportOpts, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaIncoming } from './incoming';
 
@@ -94,7 +94,7 @@ export class KafkaServer extends Server<KafkaContext> {
         const router = this.endpoint.injector.get(MircoServiceRouter).get('kafka');
         const topics = [...router.patterns.values()];
 
-        const session = this.endpoint.injector.get(TransportSessionFactory).create({ consumer, producer }, {
+        const session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, {
             ...this.options.transportOpts
         } as KafkaTransportOpts) as KafkaTransportSession;
 

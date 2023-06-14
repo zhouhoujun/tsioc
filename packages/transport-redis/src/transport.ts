@@ -1,17 +1,24 @@
 import { Decoder, Encoder, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Injectable, Optional, isString } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional, isString, tokenId } from '@tsdi/ioc';
 import { StreamAdapter, TopicTransportSession, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { Buffer } from 'buffer';
 
 
-export interface ReidsStream {
+export interface ReidsTransport {
     publisher: Redis;
     subscriber: Redis;
 }
 
+export const REIDS_TRANSPORT = tokenId<ReidsTransport>('REIDS_TRANSPORT');
+
+@Abstract()
+export abstract class RedisTransportSessionFactory extends TransportSessionFactory<ReidsTransport> {
+
+}
+
 @Injectable()
-export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsStream> {
+export class RedisTransportSessionFactoryImpl implements RedisTransportSessionFactory {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -20,7 +27,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
 
     }
 
-    create(socket: ReidsStream, opts: TransportSessionOpts): TransportSession<ReidsStream> {
+    create(socket: ReidsTransport, opts: TransportSessionOpts): TransportSession<ReidsTransport> {
         return new RedisTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
@@ -29,7 +36,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
 
 const PATTERN_MSG_BUFFER = 'pmessageBuffer'
 
-export class RedisTransportSession extends TopicTransportSession<ReidsStream> {
+export class RedisTransportSession extends TopicTransportSession<ReidsTransport> {
 
     protected override writeBuffer(buffer: Buffer, packet: Packet) {
         this.socket.publisher.publish(packet.url!, buffer);

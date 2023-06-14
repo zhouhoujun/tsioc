@@ -1,12 +1,12 @@
-import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint } from '@tsdi/core';
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { MqttServer } from './server';
 import { MqttEndpoint } from './endpoint';
 import { MqttExecptionHandlers } from './execption.handles';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './options';
-import { MqttTransportSessionFactory } from '../transport';
+import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl } from '../transport';
 import { MqttStatusVaildator } from '../status';
 
 
@@ -39,6 +39,9 @@ const defaultServOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: MqttStatusVaildator }
     ]
 } as MqttServiceOpts;
 
@@ -51,10 +54,9 @@ const defaultServOpts = {
         ServerTransportModule
     ],
     providers: [
-        MqttTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: MqttTransportSessionFactory, asDefault: true },
-        { provide: StatusVaildator, useClass: MqttStatusVaildator },
+        { provide: MqttTransportSessionFactory, useClass: MqttTransportSessionFactoryImpl, asDefault: true },
         { provide: MQTT_SERV_OPTS, useValue: { ...defaultServOpts }, asDefault: true },
+        MqttStatusVaildator,
         {
             provide: MqttEndpoint,
             useFactory: (injector: Injector, opts: MqttServiceOpts) => {
@@ -80,7 +82,7 @@ export class MqttMicroServiceModule {
          */
         endpoint?: ProvdierOf<MqttEndpoint>;
 
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<MqttTransportSessionFactory>;
         /**
          * service options
          */
@@ -89,14 +91,21 @@ export class MqttMicroServiceModule {
     ): ModuleWithProviders<MqttMicroServiceModule> {
 
         const providers: ProviderType[] = [
-            { provide: MQTT_SERV_OPTS, useValue: { ...defaultServOpts, ...options.serverOpts } }
+            {
+                provide: MQTT_SERV_OPTS,
+                useValue: {
+                    ...defaultServOpts,
+                    ...options.serverOpts,
+                    providers: [...defaultServOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {
             providers.push(toProvider(MqttEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(MqttTransportSessionFactory, options.transportFactory))
         }
 
 

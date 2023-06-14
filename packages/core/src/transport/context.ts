@@ -1,6 +1,9 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS } from '../endpoints';
 import { createPayloadResolver } from '../endpoints/resolvers';
+import { StatusVaildator } from './status';
+import { FileAdapter } from './file.adapter';
+import { StreamAdapter } from './stream.adapter';
 
 
 /**
@@ -85,6 +88,20 @@ const primitiveResolvers = createPayloadResolver(
  */
 @Abstract()
 export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any> extends TransportContext<TRequest> {
+
+    /**
+     * status vaildator
+     */
+    abstract get vaildator(): StatusVaildator<TStatus>;
+    /**
+     * file adapter
+     */
+    abstract get fileAdapter(): FileAdapter;
+
+    /**
+     * stream adapter
+     */
+    abstract get streamAdapter(): StreamAdapter;
 
     /**
      * Get request rul

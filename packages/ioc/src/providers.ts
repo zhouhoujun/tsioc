@@ -49,10 +49,10 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
     /**
      * use class for provide.
      *
-     * @type {Type}
+     * @type {CtorType}
      * @memberof ClassProvider
      */
-    useClass: Type<T>;
+    useClass: CtorType<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      * 
@@ -244,7 +244,7 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
  */
 export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): StaticProvider<T> {
     if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
-        return { provide, useClass: useOf, multi, multiOrder };
+        return { provide, useClass: useOf as CtorType, multi, multiOrder };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)

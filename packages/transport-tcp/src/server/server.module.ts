@@ -1,5 +1,5 @@
-import { Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, getToken, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, TransportSessionFactory, createTransportEndpoint, MicroServiceRouterModule, MessageRouter } from '@tsdi/core';
+import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, createTransportEndpoint, MicroServiceRouterModule } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import {
@@ -11,7 +11,7 @@ import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
 import { TcpRespondAdapter } from './respond';
 import { TcpMicroStatusVaildator, TcpStatusVaildator } from '../status';
-import { TcpTransportSessionFactory } from '../transport';
+import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
 
 
 
@@ -47,6 +47,10 @@ const defMicroOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: TcpMicroStatusVaildator },
+        { provide: RespondAdapter, useExisting: TcpRespondAdapter }
     ]
 
 } as TcpServerOpts;
@@ -60,13 +64,11 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
+        { provide: TcpTransportSessionFactory, useClass: TcpTransportSessionFactoryImpl, asDefault: true },
         { provide: TCP_MICRO_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
-        { provide: StatusVaildator, useClass: TcpMicroStatusVaildator },
-        TcpTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: TcpTransportSessionFactory, asDefault: true },
+        TcpMicroStatusVaildator,
         TcpRespondAdapter,
         TcpExecptionHandlers,
-        { provide: RespondAdapter, useExisting: TcpRespondAdapter },
         {
             provide: TcpMicroEndpoint,
             useFactory: (injector: Injector, opts: TcpServerOpts) => {
@@ -92,21 +94,28 @@ export class TcpMicroServiceModule {
         /**
          * transport session factory.
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<TcpTransportSessionFactory>;
         /**
          * server options
          */
         serverOpts?: TcpServerOpts;
     }): ModuleWithProviders<TcpMicroServiceModule> {
         const providers: ProviderType[] = [
-            { provide: TCP_MICRO_SERV_OPTS, useValue: { ...defMicroOpts, ...options.serverOpts } }
+            {
+                provide: TCP_MICRO_SERV_OPTS,
+                useValue: {
+                    ...defMicroOpts,
+                    ...options.serverOpts,
+                    providers: [...defMicroOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {
             providers.push(toProvider(TcpMicroEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(TcpTransportSessionFactory, options.transportFactory))
         }
         return {
             module: TcpMicroServiceModule,
@@ -147,6 +156,10 @@ const defServerOpts = {
         Content,
         Json,
         Bodyparser
+    ],
+    providers: [
+        { provide: StatusVaildator, useExisting: TcpStatusVaildator },
+        { provide: RespondAdapter, useExisting: TcpRespondAdapter },
     ]
 
 } as TcpServerOpts;
@@ -160,13 +173,11 @@ const defServerOpts = {
         ServerTransportModule
     ],
     providers: [
+        { provide: TcpTransportSessionFactory, useClass: TcpTransportSessionFactoryImpl, asDefault: true },
         { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts }, asDefault: true },
-        { provide: StatusVaildator, useClass: TcpStatusVaildator },
-        TcpTransportSessionFactory,
-        { provide: TransportSessionFactory, useExisting: TcpTransportSessionFactory, asDefault: true },
+        TcpStatusVaildator,
         TcpRespondAdapter,
         TcpExecptionHandlers,
-        { provide: RespondAdapter, useExisting: TcpRespondAdapter },
         {
             provide: TcpEndpoint,
             useFactory: (injector: Injector, opts: TcpServerOpts) => {
@@ -193,20 +204,27 @@ export class TcpServerModule {
         /**
          * transport session factory.
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        transportFactory?: ProvdierOf<TcpTransportSessionFactory>;
         /**
          * server options
          */
         serverOpts?: TcpServerOpts;
     }): ModuleWithProviders<TcpServerModule> {
         const providers: ProviderType[] = [
-            { provide: TCP_SERV_OPTS, useValue: { ...defServerOpts, ...options.serverOpts } }
+            {
+                provide: TCP_SERV_OPTS,
+                useValue: {
+                    ...defServerOpts,
+                    ...options.serverOpts,
+                    providers: [...defServerOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
         if (options.endpoint) {
             providers.push(toProvider(TcpEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(TcpTransportSessionFactory, options.transportFactory))
         }
 
         return {

@@ -28,9 +28,9 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly originalUrl: string;
     private _url?: string;
 
-    protected vaildator: StatusVaildator<TStatus>;
-    protected streamAdapter: StreamAdapter;
-    protected fileAdapter: FileAdapter;
+    readonly vaildator: StatusVaildator<TStatus>;
+    readonly streamAdapter: StreamAdapter;
+    readonly fileAdapter: FileAdapter;
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
