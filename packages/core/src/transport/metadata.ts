@@ -1,6 +1,6 @@
 import {
     isArray, isString, lang, Type, createDecorator, ActionTypes, PatternMetadata,
-    ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf, Execption, isMetadataObject
+    ClassMethodDecorator, createParamDecorator, TypeMetadata, TypeOf, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -46,28 +46,29 @@ export interface Subscribe {
  * 
  * @exports {@link Handle}
  */
-export const Subscribe: Subscribe = createDecorator<HandleMetadata<any>>('Subscribe', {
+export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (route: string, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
-        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
+        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
+            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<HandleMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const router = injector.get(MircoServiceRouter).get(mapping.protocol);
-            if (!router) throw new Execption('has no router!');
-            if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+            const routers = injector.get(MircoServiceRouter); // .get(mapping.protocol);
+            if (!routers) throw new Execption('has no router!');
 
             const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
 
             defines.forEach(def => {
-                const metadata = def.metadata as RouteMappingMetadata;
+                const metadata = def.metadata;
+                const router = routers.get(metadata.protocol);
+                if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
                 const route = normalize(patternToPath(metadata.route!));
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
                 router.use(route, endpoint, true);
@@ -132,21 +133,22 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString());
+            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<HandleMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const router = injector.get(MircoServiceRouter).get(mapping.protocol);
-            if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
-            if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
+            const routers = injector.get(MircoServiceRouter);
+            if (!routers) throw new Execption(lang.getClassName(parent) + 'has not registered!');
 
             const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
 
             defines.forEach(def => {
-                const metadata = def.metadata as RouteMappingMetadata;
+                const metadata = def.metadata;
+                const router = routers.get(metadata.protocol);
+                if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
                 const route = normalize(patternToPath(metadata.route!));
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
                 router.use(route, endpoint, true);
@@ -669,7 +671,7 @@ export const Put: PutDecorator = createRouteDecorator(PUT);
  * @interface RegisterForMetadata
  * @extends {TypeMetadata}
  */
-export interface HandleMetadata<TArg> extends TypeMetadata, PatternMetadata, RouteOptions<TArg> {
+export interface HandleMetadata<TArg = any> extends TypeMetadata, PatternMetadata, RouteOptions<TArg> {
     /**
      * handle route
      */
@@ -689,6 +691,6 @@ export interface HandleMetadata<TArg> extends TypeMetadata, PatternMetadata, Rou
     /**
      * protocol
      */
-    protocol?: string;
+    protocol?: Protocol;
 }
 

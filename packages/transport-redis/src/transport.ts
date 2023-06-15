@@ -1,7 +1,7 @@
 import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString, tokenId } from '@tsdi/ioc';
 import { TopicTransportSession, ev } from '@tsdi/transport';
-import Redis from 'ioredis';
+import Redis, { RedisOptions } from 'ioredis';
 import { Buffer } from 'buffer';
 
 

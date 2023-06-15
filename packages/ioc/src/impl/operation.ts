@@ -25,7 +25,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>,
     order?: number | undefined;
 
     equals(target: OperationInvoker): boolean {
-        if (!target) return false;
+        if (!target || !this.typeRef) return false;
         if (target === this) return true;
         if (target.typeRef?.class !== this.typeRef?.class) return false;
         if (target.method !== this.method) return false;

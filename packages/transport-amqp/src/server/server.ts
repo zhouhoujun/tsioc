@@ -4,7 +4,7 @@ import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpContext } from './context';
 import { AmqpEndpoint } from './endpoint';
-import { ContentOptions, ev } from '@tsdi/transport';
+import { ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
@@ -32,9 +32,6 @@ export class AmqpServer extends Server<AmqpContext> {
         const transportOpts = this.options.transportOpts ?? {};
         if (!transportOpts.replyQueue) {
             transportOpts.replyQueue = transportOpts.queue + '.reply'
-        }
-        if (this.options.content) {
-            this.endpoint.injector.setValue(ContentOptions, this.options.content);
         }
     }
 
@@ -136,7 +133,7 @@ export class AmqpServer extends Server<AmqpContext> {
 
     protected createContext(req: AmqpIncoming, res: AmqpOutgoing): AmqpContext {
         const injector = this.endpoint.injector;
-        return new AmqpContext(injector, req, res);
+        return new AmqpContext(injector, req, res, this.options);
     }
 
     protected async onShutdown(): Promise<any> {

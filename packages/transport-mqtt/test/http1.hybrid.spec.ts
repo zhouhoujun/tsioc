@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
+import { Http, HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { MqttClientModule, MqttClient, MqttMicroServiceModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
 
@@ -15,8 +15,8 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule,
-        TcpServerModule,
+        HttpModule,
+        HttpServerModule,
         MqttClientModule.withOption({
             clientOpts: {
                 connectOpts: {
@@ -35,28 +35,29 @@ import { DeviceController } from './controller';
     declarations: [
         DeviceController
     ],
-    bootstrap: [TcpServer, MqttServer]
+    bootstrap: [HttpServer, MqttServer]
 })
 export class MqttTestModule {
 
 }
 
 
-describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
+describe('Mqtt hybrid Http Server & Mqtt Client & Http', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: TcpClient;
+    let client: Http;
     let mqttClient: MqttClient
 
     before(async () => {
         ctx = await Application.run(MqttTestModule);
         injector = ctx.injector;
         mqttClient = injector.get(MqttClient);
-        client = injector.get(TcpClient);
+        client = injector.get(Http);
     });
 
 
+    
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(
@@ -69,9 +70,34 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
+    it('query all', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
+
+    it('query with params ', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
 
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
+        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -130,7 +156,6 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -140,8 +165,7 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -159,7 +183,6 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -169,8 +192,7 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -188,7 +210,6 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -198,8 +219,7 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
-        // expect(r.error).toBeInstanceOf(ArgumentError);
+        expect(r.status).toEqual(400);
     })
 
 

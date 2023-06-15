@@ -7,7 +7,7 @@ import {
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { ListenOptions } from 'net';
 import { HttpServer } from './server';
-import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, Http2ServerOpts, HTTP_SERV_GUARDS } from './options';
+import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS } from './options';
 import { HttpExecptionHandlers } from './exception.handles';
 import { HttpRespondAdapter } from './respond';
 import { HttpEndpoint } from './endpoint';
@@ -19,7 +19,7 @@ import { HTTP_MIDDLEWARES } from './context';
  * default options.
  */
 const defServerOpts = {
-    majorVersion: 2,
+    majorVersion: 1,
     serverOpts: { allowHTTP1: true },
     autoListen: true,
     listenOpts: { port: 3000, host: LOCALHOST } as ListenOptions,
@@ -54,7 +54,7 @@ const defServerOpts = {
         { provide: RespondAdapter, useExisting: HttpRespondAdapter },
     ]
 
-} as Http2ServerOpts;
+} as HttpServerOpts;
 
 
 

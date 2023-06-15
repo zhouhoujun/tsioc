@@ -1,10 +1,10 @@
-import { ListenOpts, MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
+import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession } from '@tsdi/core';
+import { Execption, Inject, Injectable, ModuleRef, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Client, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
-import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
+import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
@@ -27,19 +27,14 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
     ) {
         super();
-        if (this.options.content) {
-            this.endpoint.injector.setValue(ContentOptions, this.options.content);
-        }
     }
 
     protected override async onStartup(): Promise<any> {
-        const opts = {
+        const opts = this.options.connectOpts = {
             host: LOCALHOST,
             port: 1883,
-            withCredentials: !!this.options.connectOpts?.cert,
             ...this.options.connectOpts
         };
-        this.endpoint.injector.setValue(ListenOpts, opts);
         this.mqtt = opts.url ? connect(opts.url, opts) : connect(opts);
 
         this.mqtt.on(ev.ERROR, (err) => this.logger.error(err));
@@ -118,7 +113,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
                     this.logger.error(err)
                 }
             });
-        const opts = this.options;
+        // const opts = this.options;
         // opts.timeout && req.socket.stream.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
         //     req.emit?.(ev.TIMEOUT);
         //     cancel?.unsubscribe()
@@ -129,7 +124,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
 
     protected createContext(req: MqttIncoming, res: MqttOutgoing): MqttContext {
         const injector = this.endpoint.injector;
-        return new MqttContext(injector, req, res);
+        return new MqttContext(injector, req, res, this.options);
     }
 
 }

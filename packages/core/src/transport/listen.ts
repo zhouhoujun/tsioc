@@ -1,10 +1,11 @@
-import { Abstract } from '@tsdi/ioc';
 
 /**
  * Listen options.
  */
-@Abstract()
-export abstract class ListenOpts {
+
+import { tokenId } from "@tsdi/ioc";
+
+export interface ListenOpts {
 
     [x: string]: any;
 
@@ -25,6 +26,8 @@ export abstract class ListenOpts {
     ipv6Only?: boolean | undefined;
     withCredentials?: boolean;
 }
+
+export const HTTP_LISTEN_OPTS = tokenId<ListenOpts>('HTTP_LISTEN_OPTS');
 
 export interface BindListenning {
     listen(listeningListener?: () => void): this;

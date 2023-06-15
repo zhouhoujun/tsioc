@@ -34,9 +34,6 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
         this.options = { ...options };
         this.micro = (options as any).micro
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
-        if (this.options.content) {
-            this.endpoint.injector.setValue(ContentOptions, this.options.content);
-        }
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -51,7 +48,6 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!')
                 this.serv.listen(port, host, listeningListener);
             } else {
@@ -59,7 +55,6 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
                 this.serv.listen(port, listeningListener);
             }
@@ -68,7 +63,6 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
             this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             this.serv.listen(opts, listeningListener);
         }
@@ -77,12 +71,7 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
 
     protected async onStartup(): Promise<any> {
         const opts = this.options;
-        const injector = this.endpoint.injector;
-
         this.serv = this.createServer(opts);
-        injector.setValue(ListenOpts, opts.listenOpts);
-
-
     }
 
     protected async onStart(): Promise<any> {
@@ -150,7 +139,7 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
 
     protected createContext(req: TcpIncoming, res: TcpOutgoing): TcpContext {
         const injector = this.endpoint.injector;
-        return new TcpContext(injector, req, res, this.options.proxy);
+        return new TcpContext(injector, req, res, this.options);
     }
 
 }

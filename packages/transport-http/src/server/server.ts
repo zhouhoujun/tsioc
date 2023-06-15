@@ -1,7 +1,7 @@
-import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString } from '@tsdi/ioc';
-import { MiddlewareServer, ModuleLoader, ListenService, InternalServerExecption, ListenOpts } from '@tsdi/core';
+import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
+import { MiddlewareServer, ModuleLoader, ListenService, InternalServerExecption, HTTP_LISTEN_OPTS } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { CONTENT_DISPOSITION, ContentOptions, ev } from '@tsdi/transport';
+import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -24,9 +24,6 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
     constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
-        if (this.options.content) {
-            this.endpoint.injector.setValue(ContentOptions, this.options.content);
-        }
     }
 
     private _secure?: boolean;
@@ -42,6 +39,8 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
     listen(arg1: ListenOptions | number, arg2?: any, listeningListener?: () => void): this {
         if (!this._server) throw new InternalServerExecption();
         const isSecure = this.isSecure;
+
+        const moduleRef = this.endpoint.injector.get(ModuleRef);
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -49,7 +48,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+                moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!')
                 this._server.listen(port, host, listeningListener);
             } else {
@@ -57,7 +56,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+                moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
                 this._server.listen(port, listeningListener);
             }
@@ -66,7 +65,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+            moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
             this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             this._server.listen(opts, listeningListener);
         }
@@ -169,7 +168,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
     }
 
     protected createContext(req: HttpServRequest, res: HttpServResponse): HttpContext {
-        return new HttpContext(this.endpoint.injector, req, res, this.options.proxy);
+        return new HttpContext(this.endpoint.injector, req, res, this.options);
     }
 
 

@@ -1,24 +1,14 @@
 import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler, MESSAGE } from '@tsdi/core';
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Observable, from, mergeMap, of } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
 
 /**
  * Static Content options.
  */
-@Abstract()
-export abstract class ContentOptions implements SendOptions {
-    abstract root: string | string[];
-    abstract prefix?: string;
-    abstract defer?: boolean;
-    abstract index?: string;
-    abstract maxAge?: number;
-    abstract immutable?: boolean;
-    abstract hidden?: boolean;
-    abstract format?: boolean;
-    abstract extensions?: string[] | false;
-    abstract brotli?: boolean;
-    abstract gzip?: boolean;
+
+export interface ContentOptions extends SendOptions {
+    defer?: boolean;
 }
 
 /**
@@ -27,32 +17,32 @@ export abstract class ContentOptions implements SendOptions {
 @Injectable()
 export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
-    protected readonly options: ContentOptions
-    constructor(@Nullable() options: ContentOptions) {
-        this.options = { ...defOpts, ...options };
+    constructor() {
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        if (this.options.defer) {
+        const options = { ...defOpts, ...ctx.serverOptions.content };
+        if (options.defer) {
             await next()
         }
-        const file = await this.send(ctx);
-        if (!this.options.defer && !file) {
+        const file = await this.send(ctx, options);
+        if (!options.defer && !file) {
             await next()
         }
     }
 
     intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
-        if (this.options.defer) {
+        const options = { ...defOpts, ...input.serverOptions.content };
+        if (options.defer) {
             return next.handle(input)
                 .pipe(
                     mergeMap(async res => {
-                        await this.send(input)
+                        await this.send(input, options)
                         return res;
                     })
                 )
         } else {
-            return from(this.send(input))
+            return from(this.send(input, options))
                 .pipe(
                     mergeMap(file => {
                         if (!file) return next.handle(input)
@@ -62,12 +52,12 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         }
     }
 
-    protected async send(ctx: AssetContext) {
+    protected async send(ctx: AssetContext, options: ContentOptions) {
         let file = '';
         if (ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE) {
             try {
                 const sender = ctx.injector.get(ContentSendAdapter);
-                file = await sender.send(ctx, this.options)
+                file = await sender.send(ctx, options)
             } catch (err) {
                 if (!ctx.vaildator.isNotFound((err as any).status)) {
                     throw err

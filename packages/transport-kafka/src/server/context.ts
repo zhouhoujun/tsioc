@@ -1,9 +1,10 @@
 import { AbstractAssetContext } from '@tsdi/transport';
 import { KafkaIncoming } from './incoming';
 import { KafkaOutgoing } from './outgoing';
+import { KafkaServerOptions } from './options';
 
 
-export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgoing, number> {
+export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgoing, number, KafkaServerOptions> {
     isAbsoluteUrl(url: string): boolean {
         return kafkaAbl.test(url);
     }
@@ -12,7 +13,7 @@ export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgo
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = this.getListenOpts();
+            const { host, port } = this.serverOptions.connectOpts;
             const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 9092}`);
             const uri = new URL(url, baseUrl);
             return uri;

@@ -1,9 +1,11 @@
 import { AbstractAssetContext } from '@tsdi/transport';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
+import { AmqpMicroServiceOpts } from './options';
+import { isString } from '@tsdi/ioc';
 
 
-export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing, number> {
+export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing, number, AmqpMicroServiceOpts> {
 
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)
@@ -14,8 +16,8 @@ export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = this.getListenOpts();
-            const baseUrl = new URL(`${this.protocol}://${host ?? 'localhost'}:${port ?? 5672}`);
+            const baseUrl = isString(this.serverOptions.connectOpts) ? new URL(this.serverOptions.connectOpts)
+                : new URL(`${this.serverOptions.connectOpts?.protocol ?? 'amqp'}://${this.serverOptions.connectOpts?.hostname ?? 'localhost'}:${this.serverOptions.connectOpts?.port ?? 5672}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -26,11 +28,7 @@ export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing
     }
 
     get secure(): boolean {
-        return this.getListenOpts()?.withCredentials === true;
-    }
-
-    get protocol(): string {
-        return 'amqp';
+        return false;
     }
 
     get status(): number {

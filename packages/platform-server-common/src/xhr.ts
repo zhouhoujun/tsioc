@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Module, EMPTY_OBJ, Injectable, Injector, ProviderType } from '@tsdi/ioc';
-import { ListenOpts } from '@tsdi/core';
+import { HTTP_LISTEN_OPTS } from '@tsdi/core';
 import { DOCUMENT, HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, PLATFORM_ID, PLATFORM_SERVER_ID, XhrFactory } from '@tsdi/common';
 import { XMLHttpRequest2 } from './xhr.request';
 import { Observable } from 'rxjs';
@@ -28,7 +28,7 @@ export class HttpClientBackend implements HttpBackend {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest;
       if (!isAbsoluteUrl.test(req.url)) {
-        const { host, port, path, withCredentials } = req.context?.get(ListenOpts) ?? this.injector.get(ListenOpts, EMPTY_OBJ);
+        const { host, port, path, withCredentials } = req.context?.get(HTTP_LISTEN_OPTS) ?? this.injector.get(HTTP_LISTEN_OPTS, EMPTY_OBJ);
         const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
         const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
         const baseUrl = new URL(urlPrefix);

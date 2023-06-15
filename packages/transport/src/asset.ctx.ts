@@ -1,5 +1,5 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, ListenOpts, EndpointInvokeOpts,
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, EndpointInvokeOpts,
     normalize, StatusVaildator, StreamAdapter, FileAdapter
 } from '@tsdi/core';
 import { Abstract, Injector, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
@@ -9,6 +9,7 @@ import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from './utils';
+import { ContentOptions } from './server/content';
 
 
 export interface ProxyOpts {
@@ -16,11 +17,16 @@ export interface ProxyOpts {
     maxIpsCount?: number;
 }
 
+export interface ServerOptions extends Record<string, any> {
+    proxy?: ProxyOpts;
+    content?: ContentOptions | boolean
+}
+
 /**
  * asset server context.
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string> extends AssetContext<TRequest, TResponse, TStatus> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TStatus, TServOpts> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
@@ -30,7 +36,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly streamAdapter: StreamAdapter;
     readonly fileAdapter: FileAdapter;
 
-    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: EndpointInvokeOpts<TRequest>) {
+    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
         this.streamAdapter = injector.get(StreamAdapter);
@@ -54,11 +60,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
         (this.request as any)['query'] = this.query;
     }
-
-    getListenOpts() {
-        return this.injector.get(ListenOpts, {});
-    }
-
 
     /**
      * Get url path.
@@ -115,7 +116,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     protected createURL() {
         try {
-            return this.parseURL(this.request, !!this.proxy);
+            return this.parseURL(this.request, !!this.serverOptions.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -149,6 +150,11 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     get href() {
         return this.URL.href;
+    }
+
+    get protocol(): string {
+        const protocol = this.URL.protocol;
+        return protocol.substring(0, protocol.length - 1)
     }
 
     private _query?: Record<string, any>;

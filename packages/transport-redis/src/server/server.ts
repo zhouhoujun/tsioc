@@ -1,6 +1,6 @@
-import { ListenOpts, MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession } from '@tsdi/core';
+import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
-import { Content, ContentOptions, LOCALHOST, ev } from '@tsdi/transport';
+import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import Redis from 'ioredis';
 import { Subscription, finalize } from 'rxjs';
@@ -26,23 +26,18 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         @Inject(REDIS_SERV_OPTS) private options: RedisServerOpts
     ) {
         super();
-        if (this.options.content) {
-            this.endpoint.injector.setValue(ContentOptions, this.options.content);
-        }
     }
 
     protected async onStartup(): Promise<any> {
         const opts = this.options;
         const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
-        const options = {
+        const options = this.options.connectOpts = {
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
-            withCredentials: !!opts.connectOpts?.tls,
             ...opts.connectOpts,
             lazyConnect: true
         };
-        this.endpoint.injector.setValue(ListenOpts, options);
 
         const subscriber = this.subscriber = new Redis(options);
         this.subscriber.on(ev.ERROR, (err) => this.logger.error(err));
@@ -163,7 +158,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
 
     protected createContext(req: RedisIncoming, res: RedisOutgoing): RedisContext {
         const injector = this.endpoint.injector;
-        return new RedisContext(injector, req, res);
+        return new RedisContext(injector, req, res, this.options);
     }
 
 }

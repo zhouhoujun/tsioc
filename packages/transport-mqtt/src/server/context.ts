@@ -1,31 +1,30 @@
 import { AbstractAssetContext } from '@tsdi/transport';
 import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
+import { MqttServiceOpts } from './options';
 
 
-export class MqttContext extends AbstractAssetContext<MqttIncoming, MqttOutgoing> {
+export class MqttContext extends AbstractAssetContext<MqttIncoming, MqttOutgoing, number, MqttServiceOpts> {
 
     isAbsoluteUrl(url: string): boolean {
         return mqttabs.test(url)
     }
 
     protected parseURL(req: MqttIncoming, prooxy?: boolean | undefined): URL {
-        const url = req.url ?? '';
-        if (this.isAbsoluteUrl(url)) {
-            return new URL(url);
+        const requrl = req.url ?? '';
+        if (this.isAbsoluteUrl(requrl)) {
+            return new URL(requrl);
         } else {
-            const { host, port, withCredentials } = this.getListenOpts();
-            const baseUrl = new URL(`${withCredentials ? 'mqtts' : 'mqtt'}://${host}:${port ?? 3000}`);
-            const uri = new URL(url, baseUrl);
+            const { url, host, port } = this.serverOptions.connectOpts!;
+            const baseUrl = url ? new URL(url) : new URL(`${this.secure ? 'mqtts' : 'mqtt'}://${host}:${port ?? 3000}`);
+            const uri = new URL(requrl, baseUrl);
             return uri;
         }
     }
     get writable(): boolean {
         return this.response.writable
     }
-    get protocol(): string {
-        return this.secure ? 'mqtts' : 'mqtt'
-    }
+   
     get status(): number {
         return this.response.statusCode
     }
@@ -42,7 +41,7 @@ export class MqttContext extends AbstractAssetContext<MqttIncoming, MqttOutgoing
         this.response.statusMessage = message
     }
     get secure(): boolean {
-        return this.getListenOpts()?.withCredentials === true;
+        return !!this.serverOptions.connectOpts?.cert;
     }
 }
 

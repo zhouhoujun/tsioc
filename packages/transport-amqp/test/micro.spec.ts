@@ -23,17 +23,22 @@ export class AmqpService {
         return message;
     }
 
-    @Handle('sensor.message.*', 'tcp')
+    @Handle('sensor.message.*')
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Handle('sensor/message/*', 'tcp')
+    @Handle('sensor/message/*', 'amqp')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/:id/start', 'tcp', {
+    @Subscribe('sensor/submessage/*', 'amqp')
+    async subMessage2(@Payload() message: string) {
+        return message;
+    }
+
+    @Subscribe('sensor/:id/start', 'amqp', {
         paths: {
             id: SENSORS
         }
@@ -202,6 +207,23 @@ describe('Amqp Micro Service', () => {
         expect(isString(a)).toBeTruthy();
         expect(a).toEqual('ble');
     });
+
+    it('sensor/submessage/* message', async () => {
+        const a = await lastValueFrom(client.send('sensor/submessage/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
 
     it('Subscribe sensor message', async () => {
         const a = await lastValueFrom(client.send('sensor/sensor01/start', {

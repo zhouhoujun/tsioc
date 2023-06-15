@@ -1,4 +1,4 @@
-import { ListenOpts, MicroService, TransportContext, InternalServerExecption } from '@tsdi/core';
+import { TransportContext, InternalServerExecption, Server, ListenOpts } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import *  as ws from 'ws';
@@ -8,7 +8,7 @@ import { WsEndpoint } from './endpoint';
 
 
 @Injectable()
-export class WsServer extends MicroService<TransportContext> {
+export class WsServer extends Server<TransportContext> {
 
     private _server?: ws.Server;
 
@@ -60,7 +60,6 @@ export class WsServer extends MicroService<TransportContext> {
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host}:${port}`, '!')
                 server.listen(port, host, listeningListener);
             } else {
@@ -68,7 +67,6 @@ export class WsServer extends MicroService<TransportContext> {
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://localhost:${port}`, '!')
                 server.listen(port, listeningListener);
             }
@@ -77,7 +75,6 @@ export class WsServer extends MicroService<TransportContext> {
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
             this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `ws${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             server.listen(opts, listeningListener);
         }

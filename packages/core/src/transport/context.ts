@@ -81,13 +81,16 @@ const primitiveResolvers = createPayloadResolver(
     },
     (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
 
+
 /**
  * abstract mime asset transport context.
  * 
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any> extends TransportContext<TRequest> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any, TServOpts = any> extends TransportContext<TRequest> {
+
+    abstract get serverOptions(): TServOpts;
 
     /**
      * status vaildator

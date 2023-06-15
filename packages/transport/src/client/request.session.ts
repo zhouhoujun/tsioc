@@ -1,5 +1,5 @@
 import {
-    TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming,
+    TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming, normalize,
     TransportHeaderResponse, TransportRequest, TransportResponse, TimeoutExecption, TransportSession
 } from '@tsdi/core';
 import { Execption, Abstract, isString } from '@tsdi/ioc';
@@ -99,7 +99,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     protected getReqUrl(req: TransportRequest) {
-        return req.url;
+        return normalize(req.url);
     }
 
     protected toPacket(url: string, id: number | string, req: TransportRequest) {

@@ -1,10 +1,12 @@
 import { AbstractAssetContext } from '@tsdi/transport';
+import { EMPTY_OBJ } from '@tsdi/ioc';
 import * as tls from 'tls';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
+import { TcpServerOpts } from './options';
 
 
-export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, number> {
+export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, number, TcpServerOpts> {
 
     isAbsoluteUrl(url: string): boolean {
         return tcptl.test(url.trim())
@@ -15,9 +17,10 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.getListenOpts();
+            const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
+            const protocol = !host && !port ? 'tcp' : this.secure ? 'ssl' : 'tcp';
             const isIPC = !host && !port;
-            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${this.protocol}://${host}:${port ?? 3000}`, path);
+            const baseUrl = isIPC ? new URL(`tcp://${host ?? 'localhost'}`) : new URL(`${protocol}://${host}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -29,11 +32,6 @@ export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, n
 
     get secure(): boolean {
         return this.request.socket instanceof tls.TLSSocket;
-    }
-
-    get protocol(): string {
-        const opts = this.getListenOpts();
-        return !opts.host && !opts.port ? 'tcp' : this.secure ? 'ssl' : 'tcp';
     }
 
     get status(): number {

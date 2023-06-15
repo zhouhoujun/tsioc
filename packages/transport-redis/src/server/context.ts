@@ -1,8 +1,9 @@
 import { AbstractAssetContext } from '@tsdi/transport';
 import { RedisIncoming } from './incoming';
 import { RedisOutgoing } from './outgoing';
+import { RedisServerOpts } from './options';
 
-export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgoing, number> {
+export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgoing, number, RedisServerOpts> {
     isAbsoluteUrl(url: string): boolean {
         return redistl.test(url.trim())
     }
@@ -12,8 +13,8 @@ export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgo
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = this.getListenOpts();
-            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`);
+            const { host, port } = this.serverOptions.connectOpts!;
+            const baseUrl = new URL(`redis://${host}:${port ?? 6379}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -24,11 +25,7 @@ export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgo
     }
 
     get secure(): boolean {
-        return this.getListenOpts()?.withCredentials === true;
-    }
-
-    get protocol(): string {
-        return 'redis';
+        return !!this.serverOptions.connectOpts?.tls;
     }
 
     get status(): number {

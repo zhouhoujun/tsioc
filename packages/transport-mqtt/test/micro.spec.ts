@@ -23,17 +23,22 @@ export class MqttService {
         return message;
     }
 
-    @Handle('sensor.message/+', 'tcp')
+    @Handle('sensor.message/+')
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Handle('sensor/message/+', 'tcp')
+    @Handle('sensor/message/+', 'mqtt')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/:id/start', 'tcp', {
+    @Subscribe('sensor/submessage/+')
+    async subMessage2(@Payload() message: string) {
+        return message;
+    }
+
+    @Subscribe('sensor/:id/start', 'mqtt', {
         paths: {
             id: SENSORS
         }
@@ -189,6 +194,22 @@ describe('Mqtt Micro Service', () => {
 
     it('sensor/message/+ message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor/submessage/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor/submessage/update', {
             payload: {
                 message: 'ble'
             }

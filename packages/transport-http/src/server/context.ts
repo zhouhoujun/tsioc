@@ -5,6 +5,7 @@ import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
+import { HttpServerOpts } from './options';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -14,11 +15,11 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number> implements Throwable {
+export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number, HttpServerOpts> implements Throwable {
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
-        if (!this.proxy) return httpPtl;
+        if (!this.serverOptions.proxy) return httpPtl;
         const proto = this.getHeader(hdr.X_FORWARDED_PROTO);
         return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
     }
@@ -104,13 +105,13 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
      */
 
     get ips() {
-        const proxy = !!this.proxy;
-        const val = this.getHeader(this.proxy?.proxyIpHeader ?? '') as string;
+        const proxy = !!this.serverOptions.proxy;
+        const val = this.getHeader(this.serverOptions.proxy?.proxyIpHeader ?? '') as string;
         let ips = (proxy && val)
             ? val.split(/\s*,\s*/)
             : [];
-        if ((this.proxy?.maxIpsCount ?? 0) > 0) {
-            ips = ips.slice(-(this.proxy?.maxIpsCount ?? 0))
+        if ((this.serverOptions.proxy?.maxIpsCount ?? 0) > 0) {
+            ips = ips.slice(-(this.serverOptions.proxy?.maxIpsCount ?? 0))
         }
         return ips
     }
