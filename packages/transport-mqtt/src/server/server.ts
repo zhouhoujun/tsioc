@@ -1,4 +1,4 @@
-import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession } from '@tsdi/core';
+import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, normalize } from '@tsdi/core';
 import { Execption, Inject, Injectable, ModuleRef, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Client, connect } from 'mqtt';
@@ -51,7 +51,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         const router = this.endpoint.injector.get(MircoServiceRouter).get('mqtt');
         const subscribes = this.subscribes = Array.from(router.patterns.values());
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            subscribes.push(`${this.options.content.prefix}/#`);
+            subscribes.push(normalize(`${this.options.content.prefix}/#`));
         }
 
         await promisify(this.mqtt.subscribe, this.mqtt)(subscribes)

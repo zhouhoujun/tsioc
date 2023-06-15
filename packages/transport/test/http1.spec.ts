@@ -7,7 +7,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
-import { TcpClientModule, TcpMicroServiceModule } from '@tsdi/transport-tcp';
+import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServiceModule } from '@tsdi/transport-tcp';
 
 
 
@@ -38,7 +38,7 @@ import { TcpClientModule, TcpMicroServiceModule } from '@tsdi/transport-tcp';
     declarations: [
         DeviceController
     ],
-    bootstrap: HttpServer
+    bootstrap: [HttpServer, TcpMicroService]
 })
 class MainApp {
 
@@ -282,6 +282,28 @@ describe('http1.1 server, Http', () => {
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(ctx.get(TcpClient).send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(ctx.get(TcpClient).send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);

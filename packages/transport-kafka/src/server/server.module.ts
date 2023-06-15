@@ -25,7 +25,7 @@ const defMicroOpts = {
     },
     content: {
         root: 'public',
-        prefix: '/content'
+        prefix: 'content'
     },
     detailError: true,
     interceptorsToken: KAFKA_SERV_INTERCEPTORS,

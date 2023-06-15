@@ -28,7 +28,7 @@ const defMicroOpts = {
     },
     content: {
         root: 'public',
-        prefix: '/content'
+        prefix: 'content'
     },
     detailError: true,
     interceptorsToken: AMQP_SERV_INTERCEPTORS,

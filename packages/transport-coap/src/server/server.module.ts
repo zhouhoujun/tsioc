@@ -15,7 +15,7 @@ import { CoapExecptionHandlers } from './execption.handles';
 const defMicroServOpts = {
     content: {
         root: 'public',
-        prefix: '/content'
+        prefix: 'content'
     },
     detailError: true,
     interceptorsToken: COAP_MICRO_SERV_INTERCEPTORS,

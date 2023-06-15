@@ -21,7 +21,7 @@ const defaultServOpts = {
     },
     content: {
         root: 'public',
-        prefix: '/content'
+        prefix: 'content'
     },
     detailError: true,
     interceptorsToken: MQTT_SERV_INTERCEPTORS,

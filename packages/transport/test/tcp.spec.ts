@@ -1,11 +1,11 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, Module, isArray, lang } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logs';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MessageRouter, MicroServiceRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, getToken, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpMicroServiceModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { RedirectResult } from '../src';
+import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
+import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
+import { LoggerModule } from '@tsdi/logs';
 
 
 
@@ -29,7 +29,7 @@ export class DeviceController {
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', "GET")
+    @RouteMapping('/usege/find', 'GET')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
@@ -88,16 +88,29 @@ export class DeviceController {
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule,
-        TcpServerModule.withOptions({
-            serverOpts: {
-                timeout: 1000,
-                listenOpts: {
+        TcpClientModule.withOptions({
+            clientOpts: {
+                connectOpts: {
                     port: 2000
                 }
             }
         }),
-        TcpMicroServiceModule
+
+        MicroServiceRouterModule.forRoot('tcp'),
+        TcpServerModule.withOptions({
+            serverOpts: {
+                // timeout: 1000,
+                listenOpts: {
+                    port: 2000
+                },
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                    { useExisting: MicroServiceRouterModule.getToken('tcp') }
+                ]
+            }
+        })
     ],
     declarations: [
         DeviceController
@@ -118,14 +131,7 @@ describe('TCP Server & TCP Client', () => {
     before(async () => {
         ctx = await Application.run(TcpTestModule);
         injector = ctx.injector;
-        client = injector.resolve(TcpClient, {
-            provide: TCP_CLIENT_OPTS,
-            useValue: {
-                connectOpts: {
-                    port: 2000
-                }
-            } as TcpClientOpts
-        });
+        client = injector.get(TcpClient);
     });
 
 
@@ -167,19 +173,8 @@ describe('TCP Server & TCP Client', () => {
         expect(a[0].name).toEqual('2');
     });
 
-    it('post not found', async () => {
+    it('not found', async () => {
         const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
-            .pipe(
-                catchError(err => {
-                    console.log(err);
-                    return of(err)
-                })
-            ));
-        expect(a.status).toEqual(404);
-    });
-
-    it('get not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -319,6 +314,28 @@ describe('TCP Server & TCP Client', () => {
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })

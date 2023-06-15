@@ -21,7 +21,7 @@ const defMicroOpts = {
     },
     content: {
         root: 'public',
-        prefix: '/content'
+        prefix: 'content'
     },
     detailError: true,
     interceptorsToken: REDIS_SERV_INTERCEPTORS,

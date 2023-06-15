@@ -1,4 +1,4 @@
-import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession } from '@tsdi/core';
+import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, normalize } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
@@ -88,7 +88,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         });
 
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            psubscribes.push(`${this.options.content.prefix}/**`);
+            psubscribes.push(normalize(`${this.options.content.prefix}/**`));
         }
 
         await this.subscriber.psubscribe(...psubscribes, (err, count) => {

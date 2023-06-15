@@ -29,7 +29,7 @@ const defMicroOpts = {
     },
     content: {
         root: 'public',
-        prefix: '/content'
+        prefix: 'content'
     },
     detailError: true,
     interceptorsToken: TCP_MICRO_SERV_INTERCEPTORS,
