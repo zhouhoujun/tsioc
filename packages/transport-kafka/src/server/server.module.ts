@@ -75,13 +75,13 @@ const defMicroOpts = {
         KafkaServer
     ]
 })
-export class KafkaModule {
+export class KafkaMicroServiceModule {
     /**
      * import Kafka micro service module with options.
      * @param options micro service module options.
      * @returns 
      */
-    static forMicroService(options: {
+    static withOption(options: {
         /**
          * service endpoint provider
          */
@@ -94,7 +94,7 @@ export class KafkaModule {
          * server options
          */
         serverOpts?: KafkaServerOptions;
-    }): ModuleWithProviders<KafkaModule> {
+    }): ModuleWithProviders<KafkaMicroServiceModule> {
         const providers: ProviderType[] = [
             {
                 provide: KAFKA_SERV_OPTS,
@@ -114,7 +114,7 @@ export class KafkaModule {
         }
 
         return {
-            module: KafkaModule,
+            module: KafkaMicroServiceModule,
             providers
         }
     }
