@@ -10,10 +10,10 @@ import { StreamRequestAdapter } from './request.stream';
 @Injectable()
 export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Backend<TRequest, TResponse>  {
 
-    constructor(private reqAdapter: RequestAdapter<TRequest, TResponse, TStatus>) { }
+    constructor() { }
 
     handle(req: TRequest): Observable<TResponse> {
-        return this.reqAdapter.send(req)
+        return req.context.get(RequestAdapter).send(req)
     }
 
 }
@@ -25,10 +25,10 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
 @Injectable()
 export class StreamTransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Backend<TRequest, TResponse>  {
 
-    constructor(private reqAdapter: StreamRequestAdapter<TRequest, TResponse, TStatus>) { }
+    constructor() { }
 
     handle(req: TRequest): Observable<TResponse> {
-        return this.reqAdapter.send(req)
+        return req.context.get(StreamRequestAdapter).send(req)
     }
 
 }
