@@ -295,6 +295,8 @@ export interface SendOpts extends Record<string, any> {
     server?: boolean;
 }
 
+export const TRANSPORT_SESSION = tokenId<TransportSession>('TRANSPORT_SESSION');
+
 /**
  * transport session.
  */
@@ -378,7 +380,7 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
     once(eventName: string | symbol, listener: (...args: any[]) => void): this;
     once(eventName: 'message', listener: (packet: Packet) => void): this;
 
-    destroy?(error?: any): void;
+    destroy(error?: any): void;
 }
 
 /**

@@ -1,9 +1,9 @@
 import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StreamAdapter, StatusVaildator, TransportSession } from '@tsdi/core';
-import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
+import { Injectable, Optional } from '@tsdi/ioc';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
-import { REIDS_TRANSPORT, RedisTransportSessionFactory, ReidsTransport } from '../transport';
+import { ReidsTransport } from '../transport';
 
 @Injectable()
 export class RedisRequestAdapter extends SessionRequestAdapter<ReidsTransport, RedisClientOpts> {
@@ -20,12 +20,6 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsTransport, R
         @Optional() readonly decoder: Decoder) {
         super()
         this.subs = new Set();
-    }
-
-    protected createSession(req: TransportRequest<any>, opts: RedisClientOpts): TransportSession<ReidsTransport> {
-        const context = req.context;
-        const transport = context.get(REIDS_TRANSPORT, InjectFlags.Self);
-        return context.get(RedisTransportSessionFactory).create(transport, opts.transportOpts);
     }
 
     protected override getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {

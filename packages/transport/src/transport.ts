@@ -1,9 +1,9 @@
 import { Decoder, Encoder, InvalidJsonException, Packet, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
 import { isNil, isString } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { ev, hdr } from '../consts';
-import { toBuffer } from '../utils';
-import { PacketLengthException } from '../execptions';
+import { ev, hdr } from './consts';
+import { toBuffer } from './utils';
+import { PacketLengthException } from './execptions';
 
 /**
  * abstract transport session.

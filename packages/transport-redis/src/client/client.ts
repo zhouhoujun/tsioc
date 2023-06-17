@@ -1,11 +1,11 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
-import { REIDS_TRANSPORT } from '../transport';
+import { RedisTransportSessionFactory, ReidsTransport } from '../transport';
 
 
 
@@ -17,6 +17,8 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
+    private _session?: TransportSession<ReidsTransport>;
+
     constructor(
         readonly handler: RedisHandler,
         @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
@@ -50,14 +52,17 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
             this.subscriber.connect(),
             this.publisher.connect()
         ]);
+
+        this._session = this.handler.injector.get(RedisTransportSessionFactory).create({
+            subscriber: this.subscriber,
+            publisher: this.publisher
+        }, opts.transportOpts)
+
     }
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(REIDS_TRANSPORT, {
-            subscriber: this.subscriber,
-            publisher: this.publisher
-        });
+        context.setValue(TRANSPORT_SESSION, this._session);
     }
 
     protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
@@ -73,6 +78,7 @@ export class RedisClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected async onShutdown(): Promise<void> {
+        this._session?.destroy();
         await this.publisher?.quit();
         await this.subscriber?.quit();
         this.publisher = this.subscriber = null;

@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, Pattern, TransportEvent, TransportRequest, RequestInitOpts } from '@tsdi/core';
+import { Client, Pattern, TransportEvent, TransportRequest, RequestInitOpts, TransportSession, TRANSPORT_SESSION } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
@@ -7,7 +7,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
-import { TCP_SOCKET } from '../transport';
+import { TCP_SOCKET, TcpTransportSessionFactory } from '../transport';
 
 
 /**
@@ -18,6 +18,9 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
 
     @InjectLog()
     private logger!: Logger;
+
+    private connection!: tls.TLSSocket | net.Socket;
+    private _session?: TransportSession<tls.TLSSocket | net.Socket>;
 
     constructor(
         readonly handler: TcpHandler,
@@ -31,7 +34,6 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
         }
     }
 
-    private connection!: tls.TLSSocket | net.Socket;
     protected connect(): Observable<tls.TLSSocket | net.Socket> {
         return new Observable<tls.TLSSocket | net.Socket>((observer) => {
             const valid = this.connection && this.isValid(this.connection);
@@ -78,7 +80,8 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
 
     protected override initContext(context: InvocationContext): void {
         context.setValue(Client, this);
-        context.setValue(TCP_SOCKET, this.connection);
+        context.setValue(TRANSPORT_SESSION, this._session);
+        // context.setValue(TCP_SOCKET, this.connection);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {
@@ -88,6 +91,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
 
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
+        this._session?.destroy();
         await promisify<void, Error>(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);
@@ -104,6 +108,7 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
+        this._session = this.handler.injector.get(TcpTransportSessionFactory).create(socket, opts.transportOpts);
         return socket
     }
 

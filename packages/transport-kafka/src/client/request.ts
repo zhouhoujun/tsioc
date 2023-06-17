@@ -27,7 +27,7 @@ export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, K
     }
 
 
-    protected createSession(req: TransportRequest<any>, opts: KafkaClientOpts): TransportSession<KafkaTransport> {
+    protected getSession(req: TransportRequest<any>, opts: KafkaClientOpts): TransportSession<KafkaTransport> {
         const context = req.context;
         const client = context.get(KAFKA_TRANSPORT, InjectFlags.Self);
         return context.get(KafkaTransportSessionFactory).create(client, opts.transportOpts);

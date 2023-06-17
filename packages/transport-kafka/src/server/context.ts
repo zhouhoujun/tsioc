@@ -1,4 +1,5 @@
 import { AbstractAssetContext } from '@tsdi/transport';
+import { isString } from '@tsdi/ioc';
 import { KafkaIncoming } from './incoming';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaServerOptions } from './options';
@@ -13,8 +14,8 @@ export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgo
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = this.serverOptions.connectOpts;
-            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 9092}`);
+            const hostname = (this.serverOptions.connectOpts?.brokers as String[])?.find(b => b && isString(b)) ?? 'localhost:9092';
+            const baseUrl = new URL(`kafka://${hostname}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }

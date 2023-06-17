@@ -17,7 +17,6 @@ export class KafkaOutgoing extends PassThrough implements Outgoing<KafkaTranspor
     destroyed = false;
     sendDate = true;
     private _headersSent = false;
-    private _sentHeaders?: OutgoingHeaders;
 
     writable = true;
     constructor(

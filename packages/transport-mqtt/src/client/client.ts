@@ -1,11 +1,12 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
 import { LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import * as mqtt from 'mqtt';
 import { Observable, of } from 'rxjs';
 import { MqttHandler } from './handler';
 import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
+import { MqttTransportSessionFactory } from '../transport';
 
 
 /**
@@ -20,6 +21,8 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     private mqtt?: mqtt.Client | null;
 
     private clientId?: string;
+    private _session?: TransportSession<mqtt.Client>;
+
     constructor(
         readonly handler: MqttHandler,
         @Inject(MQTT_CLIENT_OPTS) private options: MqttClientOpts) {
@@ -50,6 +53,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
             const onConnect = (packet: mqtt.IConnectPacket) => {
                 this.mqtt = client;
                 this.clientId = packet.clientId;
+                this._session = this.handler.injector.get(MqttTransportSessionFactory).create(client, this.options.transportOpts!);
                 sbscriber.next(client);
                 sbscriber.complete();
             }
@@ -78,12 +82,13 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        super.initContext(context);
-        this.mqtt && context.setValue(mqtt.Client, this.mqtt);
+        context.setValue(Client, this);
+        context.setValue(TRANSPORT_SESSION, this._session);
     }
 
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;
+        this._session?.destroy();
         await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);

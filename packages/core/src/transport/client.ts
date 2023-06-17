@@ -408,13 +408,6 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         return this.onShutdown();
     }
 
-    /**
-     * init request context.
-     * @param context 
-     */
-    protected initContext(context: InvocationContext) {
-        context.setValue(Client, this);
-    }
 
     protected isRequest(target: any): target is TRequest {
         return target instanceof TransportRequest
@@ -433,6 +426,11 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * connect service.
      */
     protected abstract connect(): Promise<any> | Observable<any>;
+    /**
+     * init request context.
+     * @param context 
+     */
+    protected abstract initContext(context: InvocationContext): void;
 
     protected abstract onShutdown(): Promise<void>;
 

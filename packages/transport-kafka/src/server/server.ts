@@ -1,9 +1,9 @@
-import { Injectable, Inject } from '@tsdi/ioc';
+import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { Server, Packet, MircoServiceRouter, ServiceUnavailableExecption, TransportSession, MESSAGE } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
-import { BrokersFunction, Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
+import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { DEFAULT_BROKERS, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
@@ -26,18 +26,11 @@ export class KafkaServer extends Server<KafkaContext> {
     protected consumer?: Consumer | null;
     protected producer?: Producer | null;
 
-    protected clientId: string;
-    protected groupId: string;
-
     constructor(readonly endpoint: KafkaEndpoint, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
-        const postfixId = this.options.postfixId ?? '-server';
-        this.clientId = (options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
-        this.groupId = (options.consumer?.groupId ?? 'boot-group') + postfixId;
     }
 
     protected async onStartup(): Promise<any> {
-        const clientId = this.clientId;
         const logCreator = (level: any) =>
             ({ namespace, level, label, log }: LogEntry) => {
                 let loggerMethod: Level;
@@ -68,18 +61,28 @@ export class KafkaServer extends Server<KafkaContext> {
             };
 
 
-        const client: Kafka = this.client = new Kafka({
+        const postfixId = this.options.postfixId ?? '-server';
+        const clientId = (this.options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
+        const groupId = (this.options.consumer?.groupId ?? 'boot-group') + postfixId;
+        const connectOpts = this.options.connectOpts = {
             brokers: DEFAULT_BROKERS,
             logCreator,
             ...this.options.connectOpts,
             clientId
-        });
+        }
 
-        const groupId = this.groupId;
-        this.consumer = client.consumer({
+        if (isFunction(connectOpts.brokers)) {
+            connectOpts.brokers = await connectOpts.brokers();
+        }
+
+        const client: Kafka = this.client = new Kafka(connectOpts);
+
+
+        const consumeOpts = this.options.consumer = {
             ...this.options.consumer,
             groupId
-        });
+        };
+        this.consumer = client.consumer(consumeOpts);
         this.producer = client.producer(this.options.producer);
 
         await this.consumer.connect();
@@ -148,7 +151,7 @@ export class KafkaServer extends Server<KafkaContext> {
 
     protected createContext(req: KafkaIncoming, res: KafkaOutgoing): KafkaContext {
         const injector = this.endpoint.injector;
-        return new KafkaContext(injector, req, res);
+        return new KafkaContext(injector, req, res, this.options);
     }
 
 

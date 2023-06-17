@@ -1,11 +1,10 @@
 import { TransportEvent, Encoder, Decoder, StreamAdapter, StatusVaildator, TransportRequest, Redirector, TransportSession } from '@tsdi/core';
-import { InjectFlags, Injectable, Optional } from '@tsdi/ioc';
+import { Injectable, Optional } from '@tsdi/ioc';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
-import { TCP_SOCKET, TcpTransportSessionFactory } from '../transport';
 
 /**
  * tcp request adapter.
@@ -28,11 +27,6 @@ export class TcpRequestAdapter extends SessionRequestAdapter<net.Socket | tls.TL
         return req.urlWithParams;
     }
 
-    protected createSession(req: TransportRequest<any>, opts: TcpClientOpts): TransportSession<net.Socket | tls.TLSSocket> {
-        const context = req.context;
-        const socket = context.get(TCP_SOCKET, InjectFlags.Self);
-        return context.get(TcpTransportSessionFactory).create(socket, opts.transportOpts);
-    }
     protected getClientOpts(req: TransportRequest<any>): TcpClientOpts {
         return req.context.get(TCP_CLIENT_OPTS);
     }

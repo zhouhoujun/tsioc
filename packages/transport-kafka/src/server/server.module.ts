@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, HybridRouter, RouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, TransformModule, StatusVaildator, createTransportEndpoint, MicroServiceRouterModule } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -31,7 +31,7 @@ const defMicroOpts = {
     interceptorsToken: KAFKA_SERV_INTERCEPTORS,
     filtersToken: KAFKA_SERV_FILTERS,
     guardsToken: KAFKA_SERV_GUARDS,
-    backend: HybridRouter,
+    backend: MicroServiceRouterModule.getToken('kafka'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -53,7 +53,7 @@ const defMicroOpts = {
 @Module({
     imports: [
         TransformModule,
-        RouterModule,
+        MicroServiceRouterModule.forRoot('kafka'),
         TransportModule,
         ServerTransportModule
     ],

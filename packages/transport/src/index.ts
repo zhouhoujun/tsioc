@@ -15,5 +15,7 @@ export * from './logger';
 export * from './impl';
 export * from './server';
 export * from './client';
+
+export * from './transport';
 export * from './transport.module';
 

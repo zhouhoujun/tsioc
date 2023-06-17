@@ -1,11 +1,11 @@
 import { MESSAGE, Server, Packet, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { ev } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpContext } from './context';
 import { AmqpEndpoint } from './endpoint';
-import { ev } from '@tsdi/transport';
-import { InjectLog, Logger } from '@tsdi/logs';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
@@ -23,6 +23,7 @@ export class AmqpServer extends Server<AmqpContext> {
     private _connected = false;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
+    private _session?:TransportSession<amqp.Channel>;
 
     constructor(
         readonly endpoint: AmqpEndpoint,
@@ -77,11 +78,11 @@ export class AmqpServer extends Server<AmqpContext> {
             noAck: true,
             ...transportOpts.consumeOpts
         });
-        const session = this.endpoint.injector.get(AmqpTransportSessionFactory).create(channel, transportOpts);
+        const session = this._session = this.endpoint.injector.get(AmqpTransportSessionFactory).create(channel, transportOpts);
 
         session.on(ev.MESSAGE, (queue: string, packet: Packet) => {
             this.requestHandler(session, queue, packet);
-        })
+        });
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
@@ -137,6 +138,7 @@ export class AmqpServer extends Server<AmqpContext> {
     }
 
     protected async onShutdown(): Promise<any> {
+        this._session?.destroy();
         await this._channel?.close();
         await this._conn?.close();
         this._channel = this._conn = null;

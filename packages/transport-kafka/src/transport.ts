@@ -76,12 +76,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
 
     async send(data: Packet<any>): Promise<void> {
-        const consumer = this.socket.consumer;
-        await consumer.run({
-            ...this.options,
-            eachMessage: (p) => this.onData(p)
-        });
-        consumer.run()
+        
     }
 
 

@@ -1,8 +1,8 @@
 import {
     TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming, normalize,
-    TransportHeaderResponse, TransportRequest, TransportResponse, TimeoutExecption, TransportSession
+    TransportHeaderResponse, TransportRequest, TransportResponse, TimeoutExecption, TransportSession, TRANSPORT_SESSION
 } from '@tsdi/core';
-import { Execption, Abstract, isString } from '@tsdi/ioc';
+import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { RequestAdapter, StatusPacket } from './request';
@@ -19,7 +19,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             const url = this.getReqUrl(req);
 
             const opts = this.getClientOpts(req) as Option & Record<string, any>;
-            const request = this.createSession(req, opts);
+            const request = this.getSession(req.context);
 
             const onError = (error?: any) => {
                 const res = this.createErrorResponse({
@@ -93,7 +93,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 request.off(ev.CLOSE, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
-                request.destroy?.();
+                // request.destroy?.();
             }
         });
     }
@@ -115,7 +115,9 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         } as Packet;
     }
 
-    protected abstract createSession(req: TransportRequest, opts: Option): TransportSession<T>;
+    protected getSession(context: InvocationContext): TransportSession<T> {
+        return context.get(TRANSPORT_SESSION, InjectFlags.Self)
+    }
 
     protected abstract getClientOpts(req: TransportRequest): Option;
 

@@ -1,7 +1,7 @@
 import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, Injectable, Optional, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { TopicTransportSession, ev } from '@tsdi/transport';
-import Redis, { RedisOptions } from 'ioredis';
+import Redis from 'ioredis';
 import { Buffer } from 'buffer';
 
 
@@ -10,7 +10,6 @@ export interface ReidsTransport {
     subscriber: Redis;
 }
 
-export const REIDS_TRANSPORT = tokenId<ReidsTransport>('REIDS_TRANSPORT');
 
 @Abstract()
 export abstract class RedisTransportSessionFactory extends TransportSessionFactory<ReidsTransport> {

@@ -1,8 +1,9 @@
+import { isString } from '@tsdi/ioc';
 import { AbstractAssetContext } from '@tsdi/transport';
 import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
 import { AmqpMicroServiceOpts } from './options';
-import { isString } from '@tsdi/ioc';
+
 
 
 export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing, number, AmqpMicroServiceOpts> {

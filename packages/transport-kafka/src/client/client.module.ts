@@ -10,6 +10,7 @@ import { KafkaStatusVaildator } from '../status';
 import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KAFKA_CLIENT_OPTS, KafkaClientOpts, KafkaClientsOpts } from './options';
 
 
+
 /**
  * kafka client default options.
  */
