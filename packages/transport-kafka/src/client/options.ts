@@ -1,12 +1,13 @@
 import { Token, tokenId } from '@tsdi/ioc';
-import { Client, ConfigableHandlerOptions, Filter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
-import {  ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
+import { Client, ConfigableHandlerOptions, Filter, Interceptor, Pattern, TransportEvent, TransportRequest } from '@tsdi/core';
+import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
 import { ContentOptions } from '@tsdi/transport';
 import { KafkaTransportOpts } from '../transport';
 
 
 export interface KafkaClientOpts extends ConfigableHandlerOptions<TransportRequest> {
     postfixId?: string;
+    topics?: (Pattern | RegExp)[]
     connectOpts?: KafkaConfig;
     consumer?: ConsumerConfig;
     producer?: ProducerConfig;

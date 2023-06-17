@@ -25,6 +25,7 @@ export class KafkaServer extends Server<KafkaContext> {
     protected client?: Kafka | null;
     protected consumer?: Consumer | null;
     protected producer?: Producer | null;
+    private _session?: KafkaTransportSession;
 
     constructor(readonly endpoint: KafkaEndpoint, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
@@ -95,11 +96,11 @@ export class KafkaServer extends Server<KafkaContext> {
         const consumer = this.consumer;
         const producer = this.producer;
         const router = this.endpoint.injector.get(MircoServiceRouter).get('kafka');
-        const topics = [...router.patterns.values()];
+        const topics = Array.from(router.patterns);
 
-        const session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, {
+        const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, {
             ...this.options.transportOpts
-        } as KafkaTransportOpts) as KafkaTransportSession;
+        } as KafkaTransportOpts);
 
         await session.bindTopics(topics);
 
@@ -110,6 +111,7 @@ export class KafkaServer extends Server<KafkaContext> {
     }
 
     protected async onShutdown(): Promise<any> {
+        this._session?.destroy();
         this.consumer && (await this.consumer.disconnect());
         this.producer && (await this.producer.disconnect());
         this.consumer = null!;

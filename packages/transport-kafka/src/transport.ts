@@ -1,6 +1,6 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord } from 'kafkajs';
 import { Abstract, Execption, Injectable, Optional, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession } from '@tsdi/transport';
 import { KafkaTransport } from './const';
 
@@ -13,6 +13,7 @@ export interface KafkaTransportOpts extends TransportSessionOpts, ConsumerRunCon
 
 @Abstract()
 export abstract class KafkaTransportSessionFactory extends TransportSessionFactory<KafkaTransport> {
+    abstract create(socket: KafkaTransport, opts: KafkaTransportOpts): KafkaTransportSession;
 }
 
 
@@ -26,7 +27,7 @@ export class KafkaTransportSessionFactoryImpl implements KafkaTransportSessionFa
 
     }
 
-    create(socket: KafkaTransport, opts: KafkaTransportOpts): TransportSession<KafkaTransport> {
+    create(socket: KafkaTransport, opts: KafkaTransportOpts): KafkaTransportSession {
         return new KafkaTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
@@ -53,11 +54,11 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         throw new Error('Method not implemented.');
     }
 
-    async bindTopics(topics: string[]) {
+    async bindTopics(topics: (string | RegExp)[]) {
         const consumerSubscribeOptions = this.options.subscribe || {};
         const consumer = this.socket.consumer;
         if (!consumer) throw new Execption('No consumer');
-        const subscribeToPattern = async (pattern: string) =>
+        const subscribeToPattern = async (pattern: string | RegExp) =>
             this.socket.consumer.subscribe({
                 topic: pattern,
                 ...consumerSubscribeOptions,
@@ -76,7 +77,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
 
     async send(data: Packet<any>): Promise<void> {
-        
+
     }
 
 

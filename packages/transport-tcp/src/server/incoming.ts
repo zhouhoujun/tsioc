@@ -59,5 +59,3 @@ export class TcpIncoming extends Readable implements Incoming<tls.TLSSocket | ne
     type?: number | undefined;
     error?: Error | undefined;
 }
-
-const tcptl = /^(tcp|ssl|ipc):\/\//i;

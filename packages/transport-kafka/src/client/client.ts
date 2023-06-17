@@ -1,11 +1,11 @@
-import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { Client, TRANSPORT_SESSION, TransportSession } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
+import { Client, MircoServiceRouter, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
-import { KafkaReplyPartitionAssigner, KafkaTransportSessionFactory } from '../transport';
-import { DEFAULT_BROKERS, KafkaTransport } from '../const';
+import { KafkaReplyPartitionAssigner, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
+import { DEFAULT_BROKERS } from '../const';
 
 
 
@@ -20,7 +20,7 @@ export class KafkaClient extends Client {
     private consumer?: Consumer | null;
     private producer?: Producer | null;
     private consumerAssignments: { [key: string]: number } = {};
-    private _session?: TransportSession<KafkaTransport>;
+    private _session?: KafkaTransportSession;
 
     constructor(
         readonly handler: KafkaHandler,
@@ -116,7 +116,15 @@ export class KafkaClient extends Client {
         this._session = this.handler.injector.get(KafkaTransportSessionFactory).create({
             producer: this.producer,
             consumer: this.consumer!
-        }, this.options.transportOpts)
+        }, this.options.transportOpts!);
+
+        if (!this.options.producerOnlyMode) {
+            const topics = this.options.topics? this.options.topics.map(t => {
+                if (t instanceof RegExp) return t;
+                return patternToPath(t);
+            }) : Array.from(this.handler.injector.get(MircoServiceRouter).get('kafka').patterns);
+            this._session.bindTopics(topics)
+        }
 
     }
 
@@ -126,6 +134,7 @@ export class KafkaClient extends Client {
     }
 
     protected async onShutdown(): Promise<void> {
+        this._session?.destroy();
         await this.producer?.disconnect();
         await this.consumer?.disconnect();
         this.producer = null;
