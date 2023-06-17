@@ -1,11 +1,11 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { Client } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportSession } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
-import { KafkaReplyPartitionAssigner } from '../transport';
-import { DEFAULT_BROKERS, KAFKA_TRANSPORT } from '../const';
+import { KafkaReplyPartitionAssigner, KafkaTransportSessionFactory } from '../transport';
+import { DEFAULT_BROKERS, KafkaTransport } from '../const';
 
 
 
@@ -20,6 +20,7 @@ export class KafkaClient extends Client {
     private consumer?: Consumer | null;
     private producer?: Producer | null;
     private consumerAssignments: { [key: string]: number } = {};
+    private _session?: TransportSession<KafkaTransport>;
 
     constructor(
         readonly handler: KafkaHandler,
@@ -112,14 +113,16 @@ export class KafkaClient extends Client {
         this.producer = this.client.producer(this.options.producer);
         await this.producer.connect();
 
+        this._session = this.handler.injector.get(KafkaTransportSessionFactory).create({
+            producer: this.producer,
+            consumer: this.consumer!
+        }, this.options.transportOpts)
+
     }
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(KAFKA_TRANSPORT, {
-            producer: this.producer,
-            consumer: this.consumer
-        })
+        context.setValue(TRANSPORT_SESSION, this._session)
     }
 
     protected async onShutdown(): Promise<void> {

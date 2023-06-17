@@ -10,10 +10,6 @@ export abstract class TcpTransportSessionFactory extends TransportSessionFactory
 
 }
 
-/**
- * Socket token.
- */
-export const TCP_SOCKET = tokenId<tls.TLSSocket | net.Socket>('TCP_SOCKET');
 
 @Injectable()
 export class TcpTransportSessionFactoryImpl implements TcpTransportSessionFactory {

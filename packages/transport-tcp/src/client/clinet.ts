@@ -7,7 +7,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
-import { TCP_SOCKET, TcpTransportSessionFactory } from '../transport';
+import { TcpTransportSessionFactory } from '../transport';
 
 
 /**
@@ -81,7 +81,6 @@ export class TcpClient extends Client<TransportRequest, TransportEvent> {
     protected override initContext(context: InvocationContext): void {
         context.setValue(Client, this);
         context.setValue(TRANSPORT_SESSION, this._session);
-        // context.setValue(TCP_SOCKET, this.connection);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {

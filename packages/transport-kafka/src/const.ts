@@ -1,4 +1,3 @@
-import { tokenId } from '@tsdi/ioc';
 import { Consumer, Producer } from 'kafkajs';
 
 
@@ -8,8 +7,6 @@ export interface KafkaTransport {
     consumer: Consumer;
     producer: Producer;
 }
-
-export const KAFKA_TRANSPORT = tokenId<KafkaTransport>('KAFKA_TRANSPORT');
 
 
 export const DEFAULT_BROKERS = ['localhost:9092'];
