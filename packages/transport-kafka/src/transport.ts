@@ -1,7 +1,7 @@
-import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord } from 'kafkajs';
-import { Abstract, Execption, Injectable, Optional, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { AbstractTransportSession } from '@tsdi/transport';
+import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
+import { Abstract, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
+import { Decoder, Encoder, IncomingHeaders, InvalidJsonException, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { AbstractTransportSession, BufferTransportSession, PacketLengthException, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaTransport } from './const';
 
 
@@ -35,23 +35,11 @@ export class KafkaTransportSessionFactoryImpl implements KafkaTransportSessionFa
 
 export class KafkaTransportSession extends AbstractTransportSession<KafkaTransport, KafkaTransportOpts> {
 
-    protected generate(data: Packet<any>): Promise<Buffer> {
-        throw new Error('Method not implemented.');
-    }
-    protected generateNoPayload(data: Packet<any>): Promise<Buffer> {
-        throw new Error('Method not implemented.');
-    }
-    protected writeBuffer(buffer: Buffer, packet?: Packet<any> | undefined) {
-        throw new Error('Method not implemented.');
-    }
-    protected handleFailed(error: any): void {
-        throw new Error('Method not implemented.');
-    }
-    protected onSocket(name: string, event: (...args: any[]) => void): void {
-        throw new Error('Method not implemented.');
-    }
-    protected offSocket(name: string, event: (...args: any[]) => void): void {
-        throw new Error('Method not implemented.');
+    protected topics: Map<string, TopicBuffer> = new Map();
+
+
+    protected override getBindEvents(): string[] {
+        return []
     }
 
     async bindTopics(topics: (string | RegExp)[]) {
@@ -67,17 +55,156 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
         await consumer.run({
             ...this.options.run,
-            eachMessage: (payload: EachMessagePayload) => this.onData(payload)
+            eachMessage: (payload) => this.onData(payload)
         })
     }
 
-    protected onData(msg: EachMessagePayload): Promise<void> {
+    protected async onData(msg: EachMessagePayload): Promise<void> {
+        try {
+            const topic = msg.topic;
+            let chl = this.topics.get(topic);
+            const headers: IncomingHeaders = {};
+            if (msg.message.headers) {
+                Object.keys(msg.message.headers).forEach(k => {
+                    headers[k] = this.parseHead(msg.message.headers![k])
+                })
+            }
+
+            if (!chl) {
+                chl = {
+                    topic,
+                    buffer: null,
+                    contentLength: ~~(headers[hdr.CONTENT_LENGTH] ?? '0'),
+                    pkgs: new Map()
+                }
+                this.topics.set(topic, chl)
+            }
+            const id = ~~(headers[hdr.IDENTITY] as string);
+            if (!chl.pkgs.has(id)) {
+                chl.pkgs.set(id, {
+                    id,
+                    headers,
+                    url: topic,
+                })
+            }
+            this.handleData(chl, id, msg.message.value!);
+        } catch (ev) {
+            const e = ev as any;
+            this.emit(e.ERROR, e.message);
+        }
+    }
+
+
+    protected async generate(data: Packet<any>): Promise<Buffer> {
+        const { payload, ...headers } = data;
+        if (!headers.headers) {
+            headers.headers = {};
+        }
+
+        let body: Buffer;
+        if (isString(payload)) {
+            body = Buffer.from(payload);
+        } else if (Buffer.isBuffer(payload)) {
+            body = payload;
+        } else if (this.streamAdapter.isReadable(payload)) {
+            body = await toBuffer(payload);
+        } else {
+            body = Buffer.from(JSON.stringify(payload));
+        }
+
+        if (!headers.headers[hdr.CONTENT_LENGTH]) {
+            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        }
+
+        if (this.encoder) {
+            body = this.encoder.encode(body);
+            if (isString(body)) body = Buffer.from(body);
+            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        }
+
+        return body;
+    }
+
+    protected async generateNoPayload(data: Packet<any>): Promise<Buffer> {
+        return null!;
+    }
+
+    protected writeBuffer(buffer: Buffer, packet: Packet<any>) {
+
+        const headers: IHeaders = {};
+        Object.keys(packet.headers!).forEach(k => {
+            headers[k] = this.generHead(packet.headers![k]);
+        })
+        this.socket.producer.send({
+            ...this.options.send,
+            topic: packet.topic ?? packet.url!,
+            messages: [{
+                headers,
+                value: buffer
+            }]
+        })
+    }
+
+
+    parseHead(val: Buffer | string | (Buffer | string)[] | undefined): string | string[] | undefined {
+        if (isString(val)) return val;
+        if (isBuffer(val)) return val.toString();
+        if (isArray(val)) return val.map(v => isString(v) ? v : v.toString());
+        return val;
+    }
+
+    generHead(head: string | number | readonly string[] | undefined): Buffer | string | (Buffer | string)[] | undefined {
+        if (isNumber(head)) return head.toString();
+        if (isArray(head)) return head.map(v => v.toString())
+        return head as string;
+    }
+
+    protected handleFailed(error: any): void {
+        this.emit(ev.ERROR, error.message)
+    }
+    protected onSocket(name: string, event: (...args: any[]) => void): void {
+        throw new Error('Method not implemented.');
+    }
+    protected offSocket(name: string, event: (...args: any[]) => void): void {
         throw new Error('Method not implemented.');
     }
 
 
-    async send(data: Packet<any>): Promise<void> {
 
+    protected handleData(chl: TopicBuffer, id: number, dataRaw: string | Buffer) {
+
+        const data = Buffer.isBuffer(dataRaw)
+            ? dataRaw
+            : Buffer.from(dataRaw);
+        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
+
+        if (chl.contentLength !== null) {
+            const length = buffer.length;
+            if (length === chl.contentLength) {
+                this.handleMessage(chl, id, chl.buffer);
+            } else if (length > chl.contentLength) {
+                const message = chl.buffer.slice(0, chl.contentLength);
+                const rest = chl.buffer.slice(chl.contentLength);
+                this.handleMessage(chl, id, message);
+                this.handleData(chl, id, rest);
+            }
+        }
+    }
+
+    protected handleMessage(chl: TopicBuffer, id: number, message: any) {
+        chl.contentLength = null;
+        chl.buffer = null;
+        this.emitMessage(chl, id, message);
+    }
+
+    protected emitMessage(chl: TopicBuffer, id: number, chunk: Buffer) {
+        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
+        const pkg = chl.pkgs.get(id);
+        if (pkg) {
+            pkg.payload = data.length ? data : null;
+            chl.pkgs.delete(id);
+            this.emit(ev.MESSAGE, chl.topic, pkg);
+        }
     }
 
 

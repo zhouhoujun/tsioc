@@ -80,7 +80,6 @@ export class KafkaClient extends Client {
         }
         this.client = new Kafka(connectOpts);
 
-
         if (!this.options.producerOnlyMode) {
             const partitionAssigners = [
                 (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(this.getConsumerAssignments.bind(this), config),
@@ -119,13 +118,18 @@ export class KafkaClient extends Client {
         }, this.options.transportOpts!);
 
         if (!this.options.producerOnlyMode) {
-            const topics = this.options.topics? this.options.topics.map(t => {
+            const topics = this.options.topics ? this.options.topics.map(t => {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
             }) : Array.from(this.handler.injector.get(MircoServiceRouter).get('kafka').patterns);
-            this._session.bindTopics(topics)
+            this._session.bindTopics(topics.map(t => this.getReplyTopic(t)))
         }
 
+    }
+
+    protected getReplyTopic(topic: string | RegExp): string | RegExp {
+        if (topic instanceof RegExp) return new RegExp(topic.source + '.reply');
+        return topic + '.reply'
     }
 
     protected override initContext(context: InvocationContext<any>): void {

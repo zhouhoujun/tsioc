@@ -56,7 +56,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
 
     protected bindEvent(options: TOpts) {
-        [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT].forEach(event => {
+        this.getBindEvents().forEach(event => {
             const fn = (...args: any[]) => {
                 this.emit(event, ...args);
                 this.destroy();
@@ -64,6 +64,10 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
             this.onSocket(event, fn);
             this._evs.push([event, fn]);
         });
+    }
+
+    protected getBindEvents() {
+        return [ev.END, ev.ERROR, ev.CLOSE, ev.ABOUT, ev.TIMEOUT]
     }
 
     protected bindMessageEvent(options: TOpts) {
@@ -271,7 +275,7 @@ export interface TopicBuffer {
     topic: string;
     buffer: Buffer | null;
     contentLength: number | null;
-    cachePkg: Map<number, Packet>;
+    pkgs: Map<number, Packet>;
 }
 
 /**
@@ -300,7 +304,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                     topic,
                     buffer: null,
                     contentLength: null,
-                    cachePkg: new Map()
+                    pkgs: new Map()
                 }
                 this.topics.set(topic, chl)
             }
@@ -366,7 +370,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             if (message.headers?.[hdr.CONTENT_LENGTH]) {
                 if (isNil(message.payload)) {
                     this.emit(ev.HEADERS, message);
-                    chl.cachePkg.set(message.id, message);
+                    chl.pkgs.set(message.id, message);
                 } else {
                     this.emit(ev.MESSAGE, chl.topic, message);
                 }
@@ -377,10 +381,10 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             const id = data.readUInt16BE(1);
             if (id) {
                 const payload = data.slice(3);
-                let pkg = chl.cachePkg.get(id);
+                let pkg = chl.pkgs.get(id);
                 if (pkg) {
                     pkg.payload = payload;
-                    chl.cachePkg.delete(id);
+                    chl.pkgs.delete(id);
                 } else {
                     pkg = {
                         id,
