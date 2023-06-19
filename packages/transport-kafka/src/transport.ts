@@ -2,13 +2,14 @@ import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, Group
 import { Abstract, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, IncomingHeaders, InvalidJsonException, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, BufferTransportSession, PacketLengthException, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
-import { KafkaTransport } from './const';
+import { KafkaHeaders, KafkaTransport } from './const';
 
 
 export interface KafkaTransportOpts extends TransportSessionOpts, ConsumerRunConfig {
     subscribe?: Omit<ConsumerSubscribeTopics, 'topic'>;
     run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
     send?: Omit<ProducerRecord, 'topic' | 'messages'>;
+    consumerAssignments?: { [key: string]: number };
 }
 
 @Abstract()
@@ -63,24 +64,24 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         try {
             const topic = msg.topic;
             let chl = this.topics.get(topic);
-            const headers: IncomingHeaders = {};
-            if (msg.message.headers) {
-                Object.keys(msg.message.headers).forEach(k => {
-                    headers[k] = this.parseHead(msg.message.headers![k])
-                })
-            }
 
             if (!chl) {
                 chl = {
                     topic,
                     buffer: null,
-                    contentLength: ~~(headers[hdr.CONTENT_LENGTH] ?? '0'),
+                    contentLength: ~~(msg.message.headers?.[hdr.CONTENT_LENGTH]?.toString() ?? '0'),
                     pkgs: new Map()
                 }
                 this.topics.set(topic, chl)
             }
-            const id = ~~(headers[hdr.IDENTITY] as string);
+            const id = msg.message.headers?.[KafkaHeaders.CORRELATION_ID]?.toString() as string;
             if (!chl.pkgs.has(id)) {
+                const headers: IncomingHeaders = {};
+                if (msg.message.headers) {
+                    Object.keys(msg.message.headers).forEach(k => {
+                        headers[k] = this.parseHead(msg.message.headers![k])
+                    })
+                }
                 chl.pkgs.set(id, {
                     id,
                     headers,
@@ -135,6 +136,9 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         Object.keys(packet.headers!).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
         })
+        headers[KafkaHeaders.CORRELATION_ID] = packet.id;
+        headers[KafkaHeaders.REPLY_TOPIC] = packet.replyTo;
+        headers[KafkaHeaders.REPLY_PARTITION] = String(packet.replyPartition);
         this.socket.producer.send({
             ...this.options.send,
             topic: packet.topic ?? packet.url!,
@@ -162,6 +166,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message)
     }
+
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         throw new Error('Method not implemented.');
     }
@@ -169,9 +174,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         throw new Error('Method not implemented.');
     }
 
-
-
-    protected handleData(chl: TopicBuffer, id: number, dataRaw: string | Buffer) {
+    protected handleData(chl: TopicBuffer, id: string, dataRaw: string | Buffer) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -191,13 +194,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         }
     }
 
-    protected handleMessage(chl: TopicBuffer, id: number, message: any) {
+    protected handleMessage(chl: TopicBuffer, id: string, message: any) {
         chl.contentLength = null;
         chl.buffer = null;
         this.emitMessage(chl, id, message);
     }
 
-    protected emitMessage(chl: TopicBuffer, id: number, chunk: Buffer) {
+    protected emitMessage(chl: TopicBuffer, id: string, chunk: Buffer) {
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         const pkg = chl.pkgs.get(id);
         if (pkg) {
@@ -207,9 +210,6 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         }
     }
 
-
-
-
 }
 
 
@@ -218,7 +218,7 @@ export class KafkaReplyPartitionAssigner {
     readonly version = 1;
 
     constructor(
-        readonly getPreviousAssignment: () => any,
+        readonly transportOpts: KafkaTransportOpts,
         private readonly config: {
             cluster: Cluster;
         }
@@ -365,7 +365,7 @@ export class KafkaReplyPartitionAssigner {
         userData: Buffer;
     }): GroupState {
         const stringifiedUserData = JSON.stringify({
-            previousAssignment: this.getPreviousAssignment(),
+            previousAssignment: this.transportOpts.consumerAssignments,
         });
         subscription.userData = Buffer.from(stringifiedUserData);
 

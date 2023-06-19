@@ -13,4 +13,5 @@ export interface Packet<T = any> {
     payload?: T;
     error?: any;
     replyTo?: string;
+    replyPartition?: number;
 }

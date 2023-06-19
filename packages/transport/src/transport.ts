@@ -275,7 +275,7 @@ export interface TopicBuffer {
     topic: string;
     buffer: Buffer | null;
     contentLength: number | null;
-    pkgs: Map<number, Packet>;
+    pkgs: Map<number | string, Packet>;
 }
 
 /**

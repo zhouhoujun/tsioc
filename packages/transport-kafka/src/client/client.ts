@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
 import { Client, MircoServiceRouter, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
@@ -19,7 +19,6 @@ export class KafkaClient extends Client {
     private client?: Kafka | null;
     private consumer?: Consumer | null;
     private producer?: Producer | null;
-    private consumerAssignments: { [key: string]: number } = {};
     private _session?: KafkaTransportSession;
 
     constructor(
@@ -80,9 +79,14 @@ export class KafkaClient extends Client {
         }
         this.client = new Kafka(connectOpts);
 
+        if (!this.options.transportOpts) {
+            this.options.transportOpts = {};
+        }
+        const transportOpts = this.options.transportOpts;
+
         if (!this.options.producerOnlyMode) {
             const partitionAssigners = [
-                (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(this.getConsumerAssignments.bind(this), config),
+                (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(transportOpts, config),
             ] as PartitionAssigner[];
 
             this.options.consumer = {
@@ -103,7 +107,7 @@ export class KafkaClient extends Client {
                         );
                         consumerAssignments[memberId] = minimumPartition;
                     });
-                    this.consumerAssignments = consumerAssignments;
+                    transportOpts.consumerAssignments = consumerAssignments;
                 });
 
             await this.consumer.connect();
@@ -115,7 +119,7 @@ export class KafkaClient extends Client {
         this._session = this.handler.injector.get(KafkaTransportSessionFactory).create({
             producer: this.producer,
             consumer: this.consumer!
-        }, this.options.transportOpts!);
+        }, transportOpts);
 
         if (!this.options.producerOnlyMode) {
             const topics = this.options.topics ? this.options.topics.map(t => {
@@ -128,7 +132,15 @@ export class KafkaClient extends Client {
     }
 
     protected getReplyTopic(topic: string | RegExp): string | RegExp {
-        if (topic instanceof RegExp) return new RegExp(topic.source + '.reply');
+        if (topic instanceof RegExp) {
+            let source = topic.source;
+            if (topic.source.endsWith('$')) {
+                source = source.slice(0, source.length - 1) + '.reply' + '$'
+            } else {
+                source = source + '.reply'
+            }
+            return new RegExp(source);
+        }
         return topic + '.reply'
     }
 
@@ -145,11 +157,6 @@ export class KafkaClient extends Client {
         this.consumer = null;
         this.client = null;
     }
-
-    public getConsumerAssignments() {
-        return this.consumerAssignments;
-    }
-
 
 }
 
