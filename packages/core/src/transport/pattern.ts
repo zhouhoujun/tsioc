@@ -52,13 +52,13 @@ export function patternToPath(pattern: Pattern): string {
 
     // Creates the array of Pattern params from sorted keys and their corresponding values
     const sortedPatternParams = sortedKeys.map(key => {
-        let partialRoute = `"${key}":`;
-        partialRoute += isString(pattern[key])
-            ? `"${patternToPath(pattern[key])}"`
+        const value = isString(pattern[key])
+            ? `${patternToPath(pattern[key])}`
             : patternToPath(pattern[key]);
-        return partialRoute;
+
+        return `${key}:${value}`;
     });
 
     const route = sortedPatternParams.join(',');
-    return encodeURIComponent(route);
+    return route//encodeURIComponent(route);
 }

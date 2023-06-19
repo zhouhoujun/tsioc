@@ -4,11 +4,11 @@ import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
+import { KafkaTransportOpts, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
 import { DEFAULT_BROKERS, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaContext } from './context';
-import { KafkaTransportOpts, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaIncoming } from './incoming';
 

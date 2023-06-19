@@ -1,10 +1,10 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { KAFKA_CLIENT_OPTS, KafkaClient, KafkaClientModule, KafkaClientOpts, KafkaMicroServiceModule, KafkaServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import { KafkaClient, KafkaClientModule, KafkaMicroServiceModule, KafkaServer } from '../src';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');

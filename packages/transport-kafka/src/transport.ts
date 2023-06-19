@@ -1,5 +1,5 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
-import { Abstract, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
+import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, IncomingHeaders, InvalidJsonException, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, BufferTransportSession, PacketLengthException, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
@@ -40,7 +40,11 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
 
     protected override getBindEvents(): string[] {
-        return []
+        return EMPTY
+    }
+
+    protected override bindMessageEvent() {
+
     }
 
     async bindTopics(topics: (string | RegExp)[]) {
@@ -85,6 +89,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                 chl.pkgs.set(id, {
                     id,
                     headers,
+                    topic,
                     url: topic,
                 })
             }
@@ -135,10 +140,12 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const headers: IHeaders = {};
         Object.keys(packet.headers!).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
-        })
+        });
         headers[KafkaHeaders.CORRELATION_ID] = packet.id;
-        headers[KafkaHeaders.REPLY_TOPIC] = packet.replyTo;
-        headers[KafkaHeaders.REPLY_PARTITION] = String(packet.replyPartition);
+        if (this.options.consumerAssignments) {
+            headers[KafkaHeaders.REPLY_TOPIC] = packet.replyTo;
+            headers[KafkaHeaders.REPLY_PARTITION] = this.options.consumerAssignments[packet.replyTo!]?.toString();
+        }
         this.socket.producer.send({
             ...this.options.send,
             topic: packet.topic ?? packet.url!,
