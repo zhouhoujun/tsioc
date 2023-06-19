@@ -19,6 +19,7 @@ import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
 import { RouteEndpoint } from './route.endpoint';
 import { Handler } from '../Handler';
+import { PatternFormatter } from './pattern';
 
 
 
@@ -34,6 +35,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     constructor(
         private injector: Injector,
         readonly matcher: RouteMatcher,
+        readonly patternFormatter: PatternFormatter,
         public prefix: string = '',
         routes?: Routes) {
         super()
@@ -378,7 +380,7 @@ export class MappingRoute implements Middleware, Endpoint {
         } else if (route.controller) {
             return this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
         } else if (route.children) {
-            const router = new MappingRouter(this.injector, this.injector.get(RouteMatcher), route.path);
+            const router = new MappingRouter(this.injector, this.injector.get(RouteMatcher), this.injector.get(PatternFormatter), route.path);
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {

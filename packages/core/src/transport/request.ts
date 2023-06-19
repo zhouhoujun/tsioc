@@ -1,8 +1,8 @@
-import { Abstract, EMPTY_OBJ, InvocationContext } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, InvocationContext, isString } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { IncomingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
-import { Pattern, patternToPath } from './pattern';
+import { Pattern, PatternFormatter, patternToPath } from './pattern';
 
 
 /**
@@ -26,11 +26,11 @@ export class TransportRequest<T = any> {
     readonly urlWithParams: string;
 
     constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
-        const url = this.url = patternToPath(pattern);
+        this.context = options.context!;
+        const url = this.url = isString(pattern)? pattern : this.context.get(PatternFormatter).format(pattern); //patternToPath(pattern, options.pattern_join_key);
         this.pattern = pattern;
         this.method = options.method;
         this.params = new TransportParams(options);
-        this.context = options.context!;
         this.responseType = options.responseType ?? 'json';
         this.reportProgress = !!options.reportProgress;
         this.withCredentials = !!options.withCredentials;
@@ -193,6 +193,8 @@ export interface ResponseAs {
 }
 
 export interface RequestInitOpts extends RequestOptions, ResponseAs {
+    pattern_attr_key?: string;
+    pattern_join_key?: string;
     reportProgress?: boolean;
     withCredentials?: boolean;
 }

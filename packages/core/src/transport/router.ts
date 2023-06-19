@@ -6,7 +6,7 @@ import { Endpoint } from '../endpoints/endpoint';
 import { Interceptor } from '../Interceptor';
 import { Backend, Handler } from '../Handler';
 import { TransportContext } from './context';
-import { Pattern } from './pattern';
+import { Pattern, PatternFormatter } from './pattern';
 import { Route } from './route';
 
 /**
@@ -24,6 +24,10 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      * topics patterns
      */
     abstract get patterns(): Set<string>;
+    /**
+     * pattern formatter.
+     */
+    abstract get patternFormatter(): PatternFormatter;
     /**
      * route matcher.
      */
