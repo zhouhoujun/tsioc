@@ -1,6 +1,8 @@
 
 /**
  * destroy hooks.
+ * 
+ * 销毁钩子
  */
 export interface OnDestroy {
     /**
@@ -16,7 +18,8 @@ export type DestroyCallback = OnDestroy | (() => void);
 
 /**
  * destroyable interface.
- * extends {@link OnDestroy}
+ * 
+ * 可销毁对象接口
  */
 export interface Destroyable {
     /**

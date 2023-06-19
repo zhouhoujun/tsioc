@@ -1,21 +1,22 @@
-import { Abstract, EMPTY, Execption, Injector, InvokeArguments, ProvdierOf, StaticProvider, Token, Type } from '@tsdi/ioc';
+import { Abstract, EMPTY, Execption, Injector, InvokerOptions, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
 import { CanActivate, GuardsService } from '../guard';
 import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { Filter, FilterService } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
+import { Decoder, Encoder } from '../coding';
 
 
 /**
  * handler service options.
  */
-export interface HandlerOptions<TInput = any, TArg = any> extends InvokeArguments<TArg> {
+export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions<any, TArg> {
     /**
      * An array of dependency-injection tokens used to look up `CanActivate()`
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */
-    guards?: ProvdierOf<CanActivate>[];
+    guards?: ProvdierOf<CanActivate<TInput>>[];
     /**
      * interceptors of bootstrap.
      */
@@ -30,15 +31,24 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokeArgument
     filters?: ProvdierOf<Filter<TInput>>[];
 }
 
+/**
+ * Configable handler options.
+ */
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
-    backend?: Type<Backend>;
-    interceptorsToken?: Token<Interceptor[]>;
-    guardsToken?: Token<CanActivate[]>;
-    filtersToken?: Token<Filter[]>;
+    backend?: Token<Backend> | Backend;
+
+    encoder?: ProvdierOf<Encoder>;
+    decoder?: ProvdierOf<Decoder>;
+
+    interceptorsToken?: Token<Interceptor<TInput>[]>;
+    guardsToken?: Token<CanActivate<TInput>[]>;
+    filtersToken?: Token<Filter<TInput>[]>;
 }
 
 /**
  * handler service.
+ * 
+ * 处理器服务
  */
 export interface HandlerService extends FilterService, PipeService, InterceptorService, GuardsService {
 

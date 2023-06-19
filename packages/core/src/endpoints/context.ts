@@ -1,6 +1,9 @@
-import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, Token, getClass } from '@tsdi/ioc';
+import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, getClass } from '@tsdi/ioc';
 import { getResolversToken } from './resolver';
 
+/**
+ * endpoint invoke options.
+ */
 export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
     isDone?(ctx: EndpointContext<T>): boolean;
 }
@@ -38,19 +41,9 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         return EMPTY
     }
 
-    // protected override getDefaultResolvers(): OperationArgumentResolver<any>[] {
-    //     const revls = this.injector.get(MODEL_RESOLVERS, EMPTY);
-    //     return revls.length ? [...revls, BASE_RESOLVERS] : BASE_RESOLVERS;
-    // }
-
     protected override clear(): void {
         super.clear();
         this.execption = null;
     }
-
-    protected override isSelf(token: Token) {
-        return token === EndpointContext;
-    }
-
 
 }

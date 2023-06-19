@@ -1,22 +1,21 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, GET, POST } from '@tsdi/core';
+import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, StatusVaildator, StreamAdapter } from '@tsdi/core';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { hdr } from '../consts';
-import { StreamAdapter } from '../stream';
-import { StatusVaildator } from '../status';
 
 @Injectable()
 export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
 
     constructor(
-        private validator: StatusVaildator<TStatus>,
-        private adapter: StreamAdapter) {
+        ) {
         super();
     }
 
     redirect<T>(req: TransportRequest, status: TStatus, headers: ResHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
+            const validator =  req.context.get(StatusVaildator<TStatus>);
+            const adapter = req.context.get(StreamAdapter);
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
             const location = headers.get(hdr.LOCATION) as string;
@@ -25,7 +24,7 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
             // HTTP fetch step 5.3
             let locationURL = null;
             try {
-                locationURL = location === null ? null : new URL(location, req.url).toString();
+                locationURL = location === null ? null : (absUrl.test(req.url) ? new URL(location, req.url).toString() : location);
             } catch {
                 // error here can only be invalid URL in Location: header
                 // do not throw when options.redirect == manual
@@ -71,7 +70,7 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
                     // that is not a subdomain match or exact match of the initial domain.
                     // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
                     // will forward the sensitive headers, but a redirect to "bar.com" will not.
-                    if (!isDomainOrSubdomain(req.url, locationURL)) {
+                    if (absUrl.test(req.url) && !isDomainOrSubdomain(req.url, locationURL)) {
                         reqhdrs.delete(hdr.AUTHORIZATION)
                             .delete(hdr.WWW_AUTHENTICATE)
                             .delete(hdr.COOKIE)
@@ -79,14 +78,14 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (this.validator.redirectBodify(status) && req.body && this.adapter.isReadable(req.body)) {
+                    if (validator.redirectBodify(status) && req.body && adapter.isReadable(req.body)) {
                         observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
                         break;
                     }
 
                     // HTTP-redirect fetch step 11
-                    if (!this.validator.redirectBodify(status, req.method)) {
-                        method = this.validator.redirectDefaultMethod() as RequestMethod;
+                    if (!validator.redirectBodify(status, req.method)) {
+                        method = validator.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
                         reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
                     }
@@ -117,10 +116,9 @@ export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
             }
         });
     }
-
-
-
 }
+
+const absUrl = /\w+\/\/:/;
 
 const isDomainOrSubdomain = (destination: string | URL, original: string | URL) => {
     const orig = new URL(original).hostname;

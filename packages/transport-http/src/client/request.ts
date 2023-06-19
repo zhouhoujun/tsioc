@@ -1,7 +1,7 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { ReqHeaders, TransportParams, WritableStream, ResHeaders, ResponsePacket } from '@tsdi/core';
-import { RequestAdapter, StreamAdapter, ctype, ev, hdr } from '@tsdi/transport';
-import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse, HttpStatusCode } from '@tsdi/common';
+import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
+import { Decoder, Encoder, IWritableStream, Redirector, StatusVaildator, StreamAdapter, ResHeaders, HttpStatusCode } from '@tsdi/core';
+import { MimeAdapter, MimeTypes, StatusPacket, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
+import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common';
 
 import * as http from 'http';
 import * as https from 'https';
@@ -10,49 +10,30 @@ import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './option'
 
 
 @Injectable()
-export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, number> {
+export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEvent, number> {
 
-    constructor(private streamAdapter: StreamAdapter) {
+    constructor(
+        readonly mimeTypes: MimeTypes,
+        readonly vaildator: StatusVaildator<number>,
+        readonly streamAdapter: StreamAdapter,
+        readonly mimeAdapter: MimeAdapter,
+        @Optional() readonly redirector: Redirector<number>,
+        @Optional() readonly encoder: Encoder,
+        @Optional() readonly decoder: Decoder) {
         super()
     }
 
-    update(req: HttpRequest<any>, update: {
-        headers?: ReqHeaders | undefined;
-        context?: InvocationContext<any> | undefined;
-        reportProgress?: boolean | undefined;
-        params?: TransportParams | undefined;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | undefined;
-        withCredentials?: boolean | undefined;
-        body?: any;
-        method?: string | undefined;
-        url?: string | undefined;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        setParams?: { [param: string]: string; } | undefined;
-    }): HttpRequest<any> {
-        return req.clone(update);
+    protected override getPayload(req: HttpRequest<any>) {
+        return req.serializeBody()
     }
 
-    createRequest(req: HttpRequest<any>): WritableStream {
-        const url = req.urlWithParams.trim();
+    createRequest(url: string, req: HttpRequest<any>): IWritableStream {
         const ac = this.getAbortSignal(req.context);
         const option = req.context.get(HTTP_CLIENT_OPTS);
         if (option.authority) {
-            return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION), option, ac);
+            return this.request2(url, req, req.context.get(CLIENT_HTTP2SESSION, InjectFlags.Self), option, ac);
         } else {
             return this.request1(url, req, ac);
-        }
-    }
-
-    send(request: WritableStream, req: HttpRequest<any>, callback: (error?: Error | null | undefined) => void): void {
-        const data = req.serializeBody();
-        if (data === null) {
-            request.end();
-        } else {
-            this.streamAdapter.sendbody(
-                data,
-                request,
-                err => callback(err),
-                req.headers.get(hdr.CONTENT_ENCODING) as string);
         }
     }
 
@@ -102,7 +83,7 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
         }
     }
 
-    parseStatus(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): ResponsePacket<number> {
+    parsePacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): StatusPacket<number> {
         let body: any, status: number, statusText: string;
         if (incoming instanceof http.IncomingMessage) {
             status = incoming.statusCode ?? 0;
@@ -115,7 +96,7 @@ export class HttpRequestAdapter extends RequestAdapter<HttpRequest, HttpEvent, n
             }
         } else {
             status = incoming[hdr.STATUS2];
-            statusText = ''
+            statusText = incoming[hdr.STATUS_MESSAGE];
         }
         return {
             body,

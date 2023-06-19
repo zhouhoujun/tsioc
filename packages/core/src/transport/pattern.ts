@@ -22,7 +22,7 @@ export type Pattern = string | number | CommandPattern | ObjectPattern;
 
 @Abstract()
 export abstract class PatternFormatter {
-    abstract format(route: Pattern, method?: string, prefix?: string, version?: string): string;
+    abstract format(route: Pattern): string;
 }
 
 /**
@@ -37,8 +37,11 @@ export abstract class PatternFormatter {
  * @param  {Pattern} pattern - client pattern
  * @returns string
  */
-export function patternToPath(pattern: Pattern): string {
-    if (isString(pattern) || isNumber(pattern)) {
+export function patternToPath(pattern: Pattern, joinby = '/'): string {
+    if (isString(pattern)) {
+        return pattern;
+    }
+    if (isNumber(pattern)) {
         return `${pattern}`;
     }
     if (!isPlainObject(pattern)) {
@@ -48,14 +51,13 @@ export function patternToPath(pattern: Pattern): string {
     const sortedKeys = Object.keys(pattern).sort((a, b) => a.localeCompare(b));
 
     // Creates the array of Pattern params from sorted keys and their corresponding values
-    const sortedPatternParams = sortedKeys.map(key => {
-        let partialRoute = `"${key}":`;
-        partialRoute += isString(pattern[key])
-            ? `"${patternToPath(pattern[key])}"`
-            : patternToPath(pattern[key]);
-        return partialRoute;
-    });
+    return sortedKeys.map(key => {
+        let value = pattern[key];
+        value = isString(value)
+            ? `${patternToPath(value)}`
+            : patternToPath(value);
 
-    const route = sortedPatternParams.join(',');
-    return `{${route}}`;
+        return `${key}:${value}`;
+    }).join(joinby);
+
 }

@@ -1,7 +1,7 @@
 /**
  * EventEmitter.
  */
-export interface EventEmitter {
+export interface IEventEmitter {
     /**
      * Alias for `emitter.on(eventName, listener)`.
      * @since v0.1.26
@@ -324,8 +324,8 @@ export interface EventEmitter {
     eventNames(): Array<string | symbol>;
 }
 
-export interface Stream extends EventEmitter {
-    pipe<T extends WritableStream>(
+export interface IStream extends IEventEmitter {
+    pipe<T extends IWritableStream>(
         destination: T,
         options?: {
             end?: boolean | undefined;
@@ -333,35 +333,45 @@ export interface Stream extends EventEmitter {
     ): T;
 }
 
-export interface ReadableStream<T= any> extends Stream {
+export interface IReadableStream<T = any> extends IStream {
     readable: boolean;
     read(size?: number): T;
     setEncoding(encoding: BufferEncoding): this;
     pause(): this;
     resume(): this;
     isPaused(): boolean;
-    pipe<T extends WritableStream>(destination: T, options?: { end?: boolean | undefined; }): T;
-    unpipe(destination?: WritableStream): this;
+    pipe<T extends IWritableStream>(destination: T, options?: { end?: boolean | undefined; }): T;
+    unpipe(destination?: IWritableStream): this;
     unshift(chunk: T, encoding?: BufferEncoding): void;
-    wrap(oldStream: ReadableStream): this;
+    wrap(oldStream: IReadableStream): this;
     destroy?(error?: any): void;
     [Symbol.asyncIterator](): AsyncIterableIterator<T>;
 }
 
-export interface WritableStream<T = any> extends Stream {
-    writable: boolean;
-    write(buffer: T, cb?: (err?: Error | null) => void): boolean;
-    write(str: string, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+export interface IEnd<T = any>  {
     end(cb?: () => void): this;
     end(data: T, cb?: () => void): this;
     end(str: string, encoding?: BufferEncoding, cb?: () => void): this;
 }
 
-export interface DuplexStream extends ReadableStream, WritableStream {
+export interface IEndable<T = any> extends IEventEmitter, IEnd<T> {
 
 }
 
-export interface TransformStream extends DuplexStream {
+export interface IWritableStream<T = any> extends IStream, IEndable<T> {
+    writable: boolean;
+    write(buffer: T, cb?: (err?: Error | null) => void): boolean;
+    write(str: string | T, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    end(cb?: () => void): this;
+    end(data: T, cb?: () => void): this;
+    end(str: string, encoding?: BufferEncoding, cb?: () => void): this;
+}
+
+export interface IDuplexStream<T = any> extends IReadableStream<T>, IWritableStream<T> {
+
+}
+
+export interface ITransformStream<T = any> extends IDuplexStream<T> {
     _transform(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
     _flush(callback: (error?: Error | null, data?: any) => void): void;
 }

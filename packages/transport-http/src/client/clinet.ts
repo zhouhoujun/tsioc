@@ -1,14 +1,15 @@
-import { createContext, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
 import {
-    RequestMethod, RequestOptions, ResponseAs, ReqHeaders, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST, Shutdown
+    RequestOptions, ReqHeadersLike, PUT, Client, GET, DELETE, HEAD, JSONP, PATCH, POST,
+    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/core';
 import { ev } from '@tsdi/transport';
-import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common';
-import { mergeMap, Observable, of } from 'rxjs';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common';
+import { Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { HttpGuardsHandler } from './handler';
+import { HttpHandler } from './handler';
 import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option';
 
 
@@ -16,7 +17,7 @@ import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option'
 
 export interface HttpRequestOpts extends RequestOptions {
     body?: any;
-    method?: RequestMethod | undefined;
+    method?: HttpRequestMethod | undefined;
     headers?: ReqHeadersLike;
     params?: HttpParams | string
     | ReadonlyArray<[string, string | number | boolean]>
@@ -34,12 +35,12 @@ const NONE = {} as http2.ClientHttp2Session;
 /**
  * http client for nodejs
  */
-@Injectable()
+@Injectable({ static: false })
 export class Http extends Client<HttpRequest, HttpEvent> {
 
     constructor(
-        readonly handler: HttpGuardsHandler,
-        @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
+        readonly handler: HttpHandler,
+        @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
         super()
         if (!option?.authority) {
             this.connection = NONE;
@@ -47,29 +48,51 @@ export class Http extends Client<HttpRequest, HttpEvent> {
     }
 
     private connection?: http2.ClientHttp2Session | null;
-    private $conn?: Observable<http2.ClientHttp2Session> | null;
-    protected connect(): Observable<any> | Promise<any> {
-        if (this.connection && this.isValid(this.connection)) {
-            return of(this.$conn);
-        }
+    protected connect(): Observable<any> {
+        if (this.connection === NONE) return of(this.connection);
 
-        if (this.$conn) return this.$conn;
+        return new Observable((observer) => {
+            const valid = this.connection && this.isValid(this.connection);
+            if (!valid) {
+                this.connection = this.createConnection(this.option);
+            }
+            const conn = this.connection!;
+            let cleaned = false;
+            const onError = (err: Error) => {
+                conn.close();
+                observer.error(err);
+            }
+            const onConnect = () => {
+                observer.next(conn);
+                observer.complete();
+            };
+            const onClose = () => {
+                conn.close();
+                observer.complete();
+            }
 
-        const opts = this.option;
-        this.$conn = of(this.createConnection(opts))
-            .pipe(
-                mergeMap(connection => this.onConnect(connection, opts)),
-                mergeMap(async connection => {
-                    this.connection = connection;
-                    this.$conn = null;
-                    return connection;
-                })
-            );
-        return this.$conn;
+            conn.on(ev.ERROR, onError)
+                .on(ev.END, onClose)
+                .on(ev.CLOSE, onClose);
+
+            if (valid) {
+                onConnect()
+            } else {
+                conn.on(ev.CONNECT, onConnect)
+            }
+
+            return () => {
+                if (cleaned) return;
+                cleaned = true;
+                conn.off(ev.CONNECT, onConnect)
+                    .off(ev.ERROR, onError)
+                    .off(ev.END, onClose)
+                    .off(ev.CLOSE, onClose)
+            };
+        })
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {
-        if (connection === NONE) return true;
         return !connection.closed && !connection.destroyed;
     }
 
@@ -77,79 +100,23 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         return http2.connect(opts.authority!, opts.options);
     }
 
-    protected onConnect(connection: http2.ClientHttp2Session, opts: HttpClientOpts): Observable<http2.ClientHttp2Session> {
-        return new Observable((observer) => {
-            let cleaned = false;
-            const onError = (err: Error) => observer.error(err);
-            const onConnect = () => {
-                observer.next(connection);
-                observer.complete();
-            };
-            const onClose = () => {
-                observer.complete();
-            }
-            connection.on(ev.CONNECT, onConnect)
-                .on(ev.ERROR, onError)
-                .on(ev.END, onClose)
-                .on(ev.CLOSE, onClose);
-
-            return () => {
-                if (cleaned) return;
-                cleaned = true;
-                connection.off(ev.CONNECT, onConnect)
-                    .off(ev.ERROR, onError)
-                    .off(ev.CLOSE, onClose)
-            };
-        })
+    protected override isRequest(target: any): target is HttpRequest {
+        return target instanceof HttpRequest
     }
 
-    protected override buildRequest(first: string | HttpRequest<any>, options: HttpReqOptions & ResponseAs): HttpRequest<any> {
-        // First, check whether the primary argument is an instance of `HttpRequest`.
-        if (first instanceof HttpRequest) {
-            // It is. The other arguments must be undefined (per the signatures) and can be
-            // ignored.
-            return first;
-        } else {
-            // It's a string, so it represents a URL. Construct a request based on it,
-            // and incorporate the remaining arguments (assuming `GET` unless a method is
-            // provided.
-
-            const url = first as string;
-            // Figure out the headers.
-            let headers: ReqHeaders | undefined = undefined;
-            if (options.headers instanceof ReqHeaders) {
-                headers = options.headers
-            } else {
-                headers = new ReqHeaders(options.headers)
-            }
-
-            // Sort out parameters.
-            let params: HttpParams | undefined = undefined;
-            if (options.params) {
-                if (options.params instanceof HttpParams) {
-                    params = options.params
-                } else {
-                    params = new HttpParams({ params: options.params })
-                }
-            }
-
-            const context = options.context ?? createContext(this.handler.injector, options);
-            context.setValue(Client, this);
-            if (this.connection && this.connection !== NONE) {
-                context.setValue(CLIENT_HTTP2SESSION, this.connection);
-            }
-
-            // Construct the request.
-            return new HttpRequest(options.method ?? GET, url!, options.body ?? options.payload ?? null, {
-                ...options,
-                headers,
-                params,
-                context,
-                reportProgress: options.reportProgress,
-                // By default, JSON is assumed to be returned for all calls.
-                responseType: options.responseType || 'json'
-            })
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        if (this.connection && this.connection !== NONE) {
+            context.setValue(CLIENT_HTTP2SESSION, this.connection);
         }
+    }
+
+    protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): TransportParams {
+        return new HttpParams({ params });
+    }
+
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts): HttpRequest {
+        return new HttpRequest(options.method ?? GET, patternToPath(pattern), options.body ?? options.payload ?? null, options as HttpRequestInit);
     }
 
     /**
@@ -2387,8 +2354,7 @@ export class Http extends Client<HttpRequest, HttpEvent> {
         return this.send<any>(url, merge(options, PUT, body))
     }
 
-    @Shutdown()
-    async close(): Promise<void> {
+    protected override async onShutdown(): Promise<void> {
         if (this.connection) {
             if (this.connection === NONE) return;
             await promisify(this.connection.close, this.connection)();

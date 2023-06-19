@@ -1,7 +1,7 @@
-import { ClassType, ctorName, Injectable, lang, refl, Type } from '@tsdi/ioc';
+import { Type, ctorName, Injectable, lang, refl } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
-import { Log, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { TypeormAdapter } from './TypeormAdapter';
 
@@ -129,7 +129,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
         }
     }
 
-    protected getRepository<T>(model: Type<T> | undefined, rep: ClassType | undefined, entityManager: EntityManager) {
+    protected getRepository<T>(model: Type<T> | undefined, rep: Type | undefined, entityManager: EntityManager) {
         if (!model) {
             return entityManager.getCustomRepository(rep!)
         }
@@ -151,7 +151,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 export class TypeormTransactionManager extends TransactionManager {
 
     constructor(
-        @Log() private logger: Logger) {
+        @InjectLog() private logger: Logger) {
         super()
     }
 
@@ -173,6 +173,6 @@ export class TypeormTransactionManager extends TransactionManager {
 
 }
 
-function isRepository(type?: ClassType) {
+function isRepository(type?: Type) {
     return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository))
 }

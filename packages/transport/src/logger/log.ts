@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Interceptor, Handler, TransportContext, Filter } from '@tsdi/core';
-import { Level, Log, Logger, matchLevel } from '@tsdi/logs';
+import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logs';
 import * as chalk from 'chalk';
 import { Observable, catchError, map, throwError } from 'rxjs';
 import { ResponseStatusFormater } from './status.formater';
@@ -24,7 +24,7 @@ const defopts = {
 export class LogInterceptor implements Interceptor, Filter {
 
     private options: LogInterceptorOptions;
-    @Log()
+    @InjectLog()
     private logger!: Logger;
     constructor(private formatter: ResponseStatusFormater, @Nullable() options: LogInterceptorOptions) {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;

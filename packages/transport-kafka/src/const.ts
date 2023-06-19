@@ -1,4 +1,12 @@
+import { Consumer, Producer } from 'kafkajs';
 
+
+
+
+export interface KafkaTransport {
+    consumer: Consumer;
+    producer: Producer;
+}
 
 
 export const DEFAULT_BROKERS = ['localhost:9092'];

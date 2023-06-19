@@ -2,13 +2,14 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
-import { Http, HttpClientOpts, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServiceModule } from '@tsdi/transport-tcp';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -25,7 +26,9 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 options: {
                     ca: cert
                 }
-            },
+            }
+        }),
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 2,
                 serverOpts: {
@@ -38,6 +41,8 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 }
             }
         }),
+        TcpClientModule,
+        TcpMicroServiceModule,
         DeviceManageModule,
         DeviceAModule
     ],
@@ -48,7 +53,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
     declarations: [
         DeviceController
     ],
-    bootstrap: HttpServer
+    bootstrap: [HttpServer, TcpMicroService]
 })
 class MainApp {
 
@@ -108,7 +113,33 @@ describe('http2 server, Http', () => {
         expect(bState).toBe('startuped');
     });
 
-    it('not found', async () => {
+    it('query all', async () => {
+        const a = await lastValueFrom(client.get<any[]>('/device')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
+
+    it('query with params ', async () => {
+        const a = await lastValueFrom(client.get<any[]>('/device', { params: { name: '2' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
+
+    it('post not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
@@ -119,6 +150,16 @@ describe('http2 server, Http', () => {
         expect(a.status).toEqual(404);
     });
 
+    it('get not found', async () => {
+        const a = await lastValueFrom(client.get<any>('/device/init5', { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
     it('bad request', async () => {
         const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
@@ -178,7 +219,7 @@ describe('http2 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -207,7 +248,7 @@ describe('http2 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
@@ -236,7 +277,7 @@ describe('http2 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
         // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
@@ -255,6 +296,28 @@ describe('http2 server, Http', () => {
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(ctx.get(TcpClient).send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(ctx.get(TcpClient).send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);

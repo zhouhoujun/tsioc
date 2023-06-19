@@ -1,7 +1,8 @@
 import { Module } from '@tsdi/ioc';
-import { ContentSendAdapter, CsrfTokensFactory, FileAdapter, ResponseStatusFormater, StreamAdapter } from '@tsdi/transport';
+import { StreamAdapter, FileAdapter } from '@tsdi/core';
+import { ContentSendAdapter, CsrfTokensFactory, ResponseStatusFormater } from '@tsdi/transport';
 import { NodeStreamAdapter } from './stream';
-import { TransportSendAdapter } from './send';
+import { ContentSendAdapterImpl } from './send';
 import { NodeResponseStatusFormater } from './formater';
 import { NodeFileAdapter } from './file';
 import { NodeCsrfTokensFactory } from './csrf';
@@ -9,7 +10,7 @@ import { NodeCsrfTokensFactory } from './csrf';
 @Module({
     providers: [
         { provide: StreamAdapter, useClass: NodeStreamAdapter },
-        { provide: ContentSendAdapter, useClass: TransportSendAdapter },
+        { provide: ContentSendAdapter, useClass: ContentSendAdapterImpl },
         { provide: FileAdapter, useClass: NodeFileAdapter },
         { provide: CsrfTokensFactory, useClass: NodeCsrfTokensFactory },
         { provide: ResponseStatusFormater, useClass: NodeResponseStatusFormater }

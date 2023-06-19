@@ -1,17 +1,15 @@
 import { RouterModule, TransformModule } from '@tsdi/core';
-import { Module } from '@tsdi/ioc';
+import { Module, ProviderType, ModuleWithProviders } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
-import { TransportBackend } from './client/backend';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import { LogInterceptor } from './logger';
 import {
-    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware,
-    EncodeJsonMiddleware, HelmetMiddleware, SessionMiddleware
-} from './middlewares';
-import { ExecptionFinalizeFilter } from './server/execption-filter';
-import { ServerFinalizeFilter } from './server/filter';
-import { RespondAdapter } from './server/respond';
-import { ErrorRespondAdapter } from './server/error.respond';
+    Bodyparser, Content, Json, Session, 
+    CorsMiddleware, CsrfMiddleware, HelmetMiddleware,
+    ExecptionFinalizeFilter, ServerFinalizeFilter, RespondAdapter, ErrorRespondAdapter
+} from './server';
+import { StreamTransportBackend, TransportBackend } from './client/backend';
+
 
 
 @Module({
@@ -22,16 +20,19 @@ import { ErrorRespondAdapter } from './server/error.respond';
     providers: [
         ...ASSET_SERVR_PROVIDERS,
         TransportBackend,
+        StreamTransportBackend,
         BodyContentInterceptor,
 
         LogInterceptor,
-        BodyparserMiddleware,
-        ContentMiddleware,
+
+        Bodyparser,
+        Content,
+        Json,
+        Session,
+
         CorsMiddleware,
         CsrfMiddleware,
         HelmetMiddleware,
-        EncodeJsonMiddleware,
-        SessionMiddleware,
 
         RespondAdapter,
         ErrorRespondAdapter,
@@ -40,5 +41,23 @@ import { ErrorRespondAdapter } from './server/error.respond';
     ]
 })
 export class TransportModule {
+    
+    /**
+     * import tcp micro service module with options.
+     * @param options micro service module options.
+     * @returns 
+     */
+    static withOptions(options: {
+        providers: ProviderType[]
+    }): ModuleWithProviders<TransportModule> {
+
+        const providers: ProviderType[] = options.providers ?? [];
+
+        return  {
+            module: TransportModule,
+            providers
+        }
+    }
 
 }
+

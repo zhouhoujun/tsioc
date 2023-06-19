@@ -1,4 +1,4 @@
-import { ClassType, TypeOf } from './types';
+import { Type, TypeOf } from './types';
 import { Token, tokenId } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
@@ -14,7 +14,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
     /**
      * type.
      */
-    type?: ClassType<T>;
+    type?: Type<T>;
     /**
      * provider type
      */
@@ -22,7 +22,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
 }
 
 /**
- * Resolver for an argument of an `{@link OperationInvoker}`.
+ * Resolver for an argument of an {@link OperationInvoker}.
  * 
  * 调用参数解析器。
  */
@@ -38,7 +38,7 @@ export interface OperationArgumentResolver<C = any> {
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>, target?: ClassType): T;
+    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>, target?: Type): T;
 }
 
 /**

@@ -1,5 +1,5 @@
-import { Abstract, DefaultInvocationContext, getClass, Injectable, Injector, InvokeArguments, isPromise, Token } from '@tsdi/ioc';
-import { catchError, finalize, isObservable, Observable, of, throwError } from 'rxjs';
+import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise } from '@tsdi/ioc';
+import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
 import { runHandlers } from '../handlers/runs';
@@ -8,18 +8,17 @@ import { EndpointContext } from '../endpoints/context';
 
 /**
  * execption context
+ * 
+ * 异常处理上下文
  */
 export class ExecptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
 
     constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
         super(injector, { ...options, payload: execption })
-        const token = getClass(execption);
-        this.setValue(token, execption);
-        this.setValue(getClass(host), host);
-    }
 
-    override isSelf(token: Token) {
-        return token === ExecptionContext;
+        this.setValue(getClass(execption), execption);
+        const tokens = lang.getClassChain(getClass(host));
+        tokens.forEach(token => this.setValue(token, host));
     }
 
     protected override clear(): void {
@@ -31,6 +30,8 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
 
 /**
  * execption filter
+ * 
+ * 异常处理过滤器
  */
 @Abstract()
 export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filter<TInput, TOutput> {
@@ -44,9 +45,33 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filte
         return next.handle(input)
             .pipe(
                 catchError((err, caught) => {
-                    const res = this.catchError(input, err, caught);
-                    if (isObservable(res) || isPromise(res)) return res;
-                    return of(res);
+                    let res: any;
+                    try {
+                        res = this.catchError(input, err, caught);
+                    } catch (err) {
+                        return throwError(() => res);
+                    }
+                    if (isObservable(res)) {
+                        return res.pipe(
+                            mergeMap(r => {
+                                if (r instanceof Error || r instanceof Execption) {
+                                    return throwError(() => r);
+                                }
+                                return of(r);
+                            })
+                        )
+                    } else if (isPromise(res)) {
+                        return res.then(r => {
+                            if (r instanceof Error || r instanceof Execption) {
+                                throw r;
+                            }
+                            return r;
+                        });
+                    } else if (res instanceof Error || res instanceof Execption) {
+                        return throwError(() => res);
+                    } else {
+                        return of(res);
+                    }
                 })
             )
     }
@@ -84,6 +109,11 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
         const context = new ExecptionContext(err, input, injector);
         return runHandlers(handlers, context)
             .pipe(
+                catchError((err1, caugh) => {
+                    err1.originExecption = err;
+                    err1.message = `${err1.message}\r\n${err.toString()}`;
+                    return throwError(() => err1)
+                }),
                 finalize(() => {
                     context.destroy();
                 })

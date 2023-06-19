@@ -1,184 +1,160 @@
-import { Router, MiddlewareLike, ListenOpts, ExecptionFilter } from '@tsdi/core';
-import { Injectable, lang, Nullable, tokenId } from '@tsdi/ioc';
-import {
-    TransportExecptionHandlers, LogInterceptor, BodyparserMiddleware, ContentMiddleware,
-    EncodeJsonMiddleware, SessionMiddleware, TransportServer, TransportContext, ExecptionFinalizeFilter,
-    IncomingMessage, OutgoingMessage, ev, Cleanup, DuplexConnection
-} from '@tsdi/transport';
+import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, TransportSession, Server, MESSAGE, GET } from '@tsdi/core';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { ContentOptions, ev } from '@tsdi/transport';
+import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TcpServerOpts, TCP_SERV_INTERCEPTORS } from './options';
-import { TcpVaildator, TcpPackFactory } from '../transport';
-import { Subscriber } from 'rxjs';
+import { TCP_MICRO_SERV_OPTS, TCP_SERV_OPTS, TcpServerOpts } from './options';
+import { TcpContext } from './context';
+import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
+import { TcpIncoming } from './incoming';
+import { TcpOutgoing } from './outgoing';
+import { TcpTransportSessionFactory } from '../transport';
 
-
-/**
- * TCP Middlewares.
- */
-export const TCP_MIDDLEWARES = tokenId<MiddlewareLike<TransportContext>[]>('TCP_MIDDLEWARES');
-/**
- * TCP execption filters.
- */
-export const TCP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('HTTP_EXECPTION_FILTERS');
-
-/**
- * tcp server default options.
- */
-export const TCP_SERVER_OPTS = {
-    interceptorsToken: TCP_SERV_INTERCEPTORS,
-    filtersToken: TCP_EXECPTION_FILTERS,
-    middlewaresToken: TCP_MIDDLEWARES,
-    content: {
-        root: 'public'
-    },
-    connectionOpts: {
-        events: [ev.CONNECTION],
-        delimiter: '\r\n',
-        maxSize: 10 * 1024 * 1024
-    },
-    interceptors: [
-        LogInterceptor
-    ],
-    serverOpts: {
-    },
-    execptions: [
-        ExecptionFinalizeFilter,
-        TransportExecptionHandlers
-    ],
-    middlewares: [
-        ContentMiddleware,
-        SessionMiddleware,
-        EncodeJsonMiddleware,
-        BodyparserMiddleware,
-        Router
-    ],
-    listenOpts: {
-    }
-} as TcpServerOpts;
 
 
 /**
- * TCP server. server of `tcp` or `ipc`. 
+ * tcp micro server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends TransportServer<net.Server | tls.Server, IncomingMessage, OutgoingMessage, TcpServerOpts> {
+export class TcpMicroService extends Server<TcpContext, Outgoing> implements ListenService {
 
-    private serv!: net.Server | tls.Server;
+    protected serv!: net.Server | tls.Server;
 
-    constructor(@Nullable() options: TcpServerOpts) {
-        super(options)
+    @InjectLog() logger!: Logger;
+    protected isSecure: boolean;
+    protected options: TcpServerOpts;
+    protected micro;
+    constructor(
+        readonly endpoint: TcpMicroEndpoint,
+        @Inject(TCP_MICRO_SERV_OPTS) options: TcpServerOpts,
+    ) {
+        super()
+        this.options = { ...options };
+        this.micro = (options as any).micro
+        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
     }
 
-    close(): Promise<void> {
-        const defer = lang.defer();
-        this.serv.close(err => err ? defer.reject(err) : defer.resolve())
-        return defer.promise;
+    listen(options: ListenOpts, listeningListener?: () => void): this;
+    listen(port: number, host?: string, listeningListener?: () => void): this;
+    listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
+        if (!this.serv) throw new InternalServerExecption();
+        const isSecure = this.isSecure;
+        if (isNumber(arg1)) {
+            const port = arg1;
+            if (isString(arg2)) {
+                const host = arg2;
+                if (!this.options.listenOpts) {
+                    this.options.listenOpts = { host, port };
+                }
+                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!')
+                this.serv.listen(port, host, listeningListener);
+            } else {
+                listeningListener = arg2;
+                if (!this.options.listenOpts) {
+                    this.options.listenOpts = { port };
+                }
+                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
+                this.serv.listen(port, listeningListener);
+            }
+        } else {
+            const opts = arg1;
+            if (!this.options.listenOpts) {
+                this.options.listenOpts = opts;
+            }
+            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+            this.serv.listen(opts, listeningListener);
+        }
+        return this;
     }
 
-    protected override getDefaultOptions() {
-        return TCP_SERVER_OPTS;
+    protected async onStartup(): Promise<any> {
+        const opts = this.options;
+        this.serv = this.createServer(opts);
+    }
+
+    protected async onStart(): Promise<any> {
+        if (!this.serv) throw new InternalServerExecption();
+
+        this.serv.on(ev.CLOSE, () => this.logger.info('Tcp server closed!'));
+        this.serv.on(ev.ERROR, (err) => this.logger.error(err));
+        const factory = this.endpoint.injector.get(TcpTransportSessionFactory);
+        if (this.serv instanceof tls.Server) {
+            this.serv.on(ev.SECURE_CONNECTION, (socket) => {
+                const session = factory.create(socket, this.options.transportOpts);
+                session.on(ev.MESSAGE, (packet) => this.requestHandler(session, packet));
+            })
+        } else {
+            this.serv.on(ev.CONNECTION, (socket) => {
+                const session = factory.create(socket, this.options.transportOpts);
+                session.on(ev.MESSAGE, (packet) => this.requestHandler(session, packet));
+            })
+        }
+
+        if (this.options.listenOpts && this.options.autoListen) {
+            this.listen(this.options.listenOpts)
+        }
+    }
+
+    protected onShutdown(): Promise<any> {
+        return promisify(this.serv.close, this.serv)();
     }
 
     protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
-        const serv = this.serv = (opts.serverOpts as tls.TlsOptions).cert ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
-        return serv;
+        return this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
     }
 
-    protected override async setupServe(server: net.Server | tls.Server, observer: Subscriber<net.Server | tls.Server>, opts: TcpServerOpts): Promise<Cleanup> {
-        const clean = await super.setupServe(server, observer, opts);
-        const onRequest = this.onRequest.bind(this);
-        const onConnection = (socket: net.Socket | tls.TLSSocket) => {
-            const packet = this.context.get(TcpPackFactory);
-            const conn = new DuplexConnection(socket, packet, opts.connectionOpts);
-            conn.on(ev.REQUEST, onRequest);
+    /**
+     * request handler.
+     * @param observer 
+     * @param req 
+     * @param res 
+     */
+    protected requestHandler(session: TransportSession<tls.TLSSocket | net.Socket>, packet: Packet): Subscription {
+        if (!packet.method) {
+            packet.method = this.micro ? MESSAGE : GET;
         }
-        server.on(ev.CONNECTION, onConnection);
-        return ()=> {
-            server.off(ev.CONNECTION, onConnection);
-            clean();
-        };
+        const req = new TcpIncoming(session, packet);
+        const res = new TcpOutgoing(session, packet.id);
+
+        const ctx = this.createContext(req, res);
+        const cancel = this.endpoint.handle(ctx)
+            .pipe(finalize(() => {
+                ctx.destroy();
+            }))
+            .subscribe({
+                error: (err) => {
+                    this.logger.error(err)
+                }
+            });
+        const opts = this.options;
+        opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
+            req.emit?.(ev.TIMEOUT);
+            cancel?.unsubscribe()
+        });
+        req.once(ev.ABOUT, () => cancel?.unsubscribe())
+        return cancel;
     }
 
-    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
-        const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(TcpVaildator))
+    protected createContext(req: TcpIncoming, res: TcpOutgoing): TcpContext {
+        const injector = this.endpoint.injector;
+        return new TcpContext(injector, req, res, this.options);
     }
 
-    protected listen(opts: ListenOpts): Promise<void> {
-        const defer = lang.defer<void>();
-        this.serv.listen(opts, defer.resolve);
-        return defer.promise;
+}
+
+
+/**
+ * tcp server of `tcp` or `ipc`. 
+ */
+@Injectable()
+export class TcpServer extends TcpMicroService {
+
+    constructor(
+        endpoint: TcpEndpoint,
+        @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
+        super(endpoint, options);
     }
-
-
-    // protected override onConnection(server: net.Server | tls.Server, opts?: ConnectionOpts): Observable<Connection> {
-    //     const packetor = this.context.get(Packetor);
-    //     return new Observable((observer) => {
-    //         const onError = (err: Error) => {
-    //             observer.error(err);
-    //         };
-    //         const onConnection = (socket: net.Socket) => {
-    //             observer.next(new Connection(socket, packetor, opts));
-    //         }
-    //         const onClose = () => {
-    //             observer.complete();
-    //         }
-    //         server.on(ev.ERROR, onError);
-    //         server.on(ev.CONNECTION, onConnection);
-    //         server.on(ev.CLOSE, onClose)
-
-    //         return () => {
-    //             server.off(ev.ERROR, onError);
-    //             server.off(ev.CLOSE, onClose);
-    //             server.off(ev.CONNECTION, onConnection);
-    //         }
-    //     })
-    // }
-
-
-
-    // protected onRequest(conn: Connection, endpoint: Endpoint): Observable<any> {
-    //     return new Observable((observer) => {
-    //         const subs: Set<Subscription> = new Set();
-    //         const injector = this.context.injector;
-    //         const onRequest = (req: ServerRequest, res: ServerResponse) => {
-    //             const ctx = new TransportContext(injector, req, res, this, injector.get(IncomingUtil));
-    //             const sub = endpoint.handle(req, ctx)
-    //                 .pipe(finalize(() => ctx.destroy()))
-    //                 .subscribe({
-    //                     next: (val) => observer.next(val),
-    //                     // error: (err)=> observer.error(err),
-    //                     complete: () => {
-    //                         subs.delete(sub);
-    //                         if (!subs.size) {
-    //                             observer.complete();
-    //                         }
-    //                     }
-    //                 });
-    //             const opts = ctx.target.getOptions();
-    //             opts.timeout && req.setTimeout(opts.timeout, () => {
-    //                 req.emit(ev.TIMEOUT);
-    //                 sub?.unsubscribe()
-    //             });
-    //             req.once(ev.CLOSE, async () => {
-    //                 await lang.delay(500);
-    //                 sub?.unsubscribe();
-    //                 if (!ctx.sent) {
-    //                     ctx.response.end()
-    //                 }
-    //             });
-    //             subs.add(sub);
-    //         };
-
-    //         conn.on(ev.REQUEST, onRequest);
-    //         return () => {
-    //             subs.forEach(s => {
-    //                 s && s.unsubscribe();
-    //             });
-    //             subs.clear();
-    //             conn.off(ev.REQUEST, onRequest);
-    //         }
-    //     });
-    // }
 
 }

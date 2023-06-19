@@ -1,14 +1,12 @@
 import {
-    Handler, Interceptor, isArrayBuffer, isBlob, isFormData,
-    isUrlSearchParams, Stream, TransportEvent, TransportRequest
+    Handler, Interceptor, isArrayBuffer, isBlob, isFormData, StreamAdapter, FormData,
+    isUrlSearchParams, IStream, TransportEvent, TransportRequest
 } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
-import { StreamAdapter, FormData } from '../stream';
-import { RequestAdapter } from './request';
 
 
 /**
@@ -17,9 +15,7 @@ import { RequestAdapter } from './request';
 @Injectable({ static: true })
 export class BodyContentInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Interceptor<TRequest, TResponse> {
 
-    constructor(
-        private requestAdpr: RequestAdapter<TRequest, TResponse, TStatus>,
-        private adapter: StreamAdapter) { }
+    constructor(private adapter: StreamAdapter) { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
@@ -28,7 +24,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         }
         return defer(async () => {
             let headers = req.headers;
-            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(body) : this.detectContentTypeHeader(body);
+            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(req.body);
             if (!headers.get(hdr.CONTENT_TYPE) && contentType) {
                 headers = headers.set(hdr.CONTENT_TYPE, contentType);
             }
@@ -46,10 +42,10 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
                     }
                     body = (body as any).getBuffer();
                 }
-                headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer).toString());
+                headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer));
             }
 
-            return this.requestAdpr.update(req, { body, headers });
+            return req.clone({ body, headers }) as TRequest;
 
         }).pipe(
             mergeMap(req => next.handle(req))
@@ -60,7 +56,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
      * Transform the free-form body into a serialized format suitable for
      * transmission to the server.
      */
-    serializeBody(body: any): ArrayBuffer | Stream | Buffer | Blob | FormData | string | null {
+    serializeBody(body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null {
         // If no body is present, no need to serialize it.
         if (body === null) {
             return null
@@ -132,7 +128,7 @@ export interface RequestSerialize {
      * Transform the free-form body into a serialized format suitable for
      * transmission to the server.
      */
-    serializeBody(body: any): ArrayBuffer | Stream | Buffer | Blob | FormData | string | null;
+    serializeBody(body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null;
     /**
      * Examine the body and attempt to infer an appropriate MIME type
      * for it.

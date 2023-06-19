@@ -3,19 +3,24 @@ import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
-import { EndpointContext } from '../endpoints/context';
 import { EndpointService } from '../endpoints/endpoint.service';
-import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
+import { Runner, Shutdown, Startup } from '../metadata';
+import { TransportEndpoint } from './endpoint';
+import { TransportContext } from './context';
 
 
-
+/**
+ * Micro Service
+ * 
+ * 微服务
+ */
 @Abstract()
-export abstract class MicroService<TInput extends EndpointContext, TOutput = any> implements EndpointService {
-    
+export abstract class Server<TInput extends TransportContext = TransportContext, TOutput = any> implements EndpointService {
+
     /**
      * micro service endpoint.
      */
-    abstract get endpoint(): ConfigableEndpoint<TInput, TOutput>;
+    abstract get endpoint(): TransportEndpoint<TInput, TOutput>;
 
     useGuards(guards: ProvdierOf<CanActivate<TInput>> | ProvdierOf<CanActivate<TInput>>[], order?: number | undefined): this {
         this.endpoint.useGuards(guards, order);
@@ -36,4 +41,26 @@ export abstract class MicroService<TInput extends EndpointContext, TOutput = any
         this.endpoint.useInterceptors(interceptor, order);
         return this;
     }
+
+    @Startup()
+    startup() {
+        return this.onStartup()
+    }
+
+    @Runner()
+    start() {
+        return this.onStart()
+    }
+
+    @Shutdown()
+    close() {
+        return this.onShutdown()
+    }
+
+    protected abstract onStartup(): Promise<any>;
+
+    protected abstract onStart(): Promise<any>;
+
+    protected abstract onShutdown(): Promise<any>;
+
 }

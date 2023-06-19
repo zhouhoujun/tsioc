@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, Type, ProvdierOf, Token } from '@tsdi/ioc';
+import { Abstract, StaticProvider, Type, ProvdierOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -16,13 +16,12 @@ import { EndpointService } from './endpoints/endpoint.service';
  */
 export class ApplicationEventContext extends EndpointContext<ApplicationEvent> {
 
-    override isSelf(token: Token) {
-        return token === ApplicationEventContext;
-    }
 }
 
 /**
  * providing the basic listener registration facility.
+ * 
+ * 提供基本的事件侦听器注册工具。
  */
 @Abstract()
 export abstract class ApplicationEventMulticaster implements EndpointService, ApplicationEventPublisher {

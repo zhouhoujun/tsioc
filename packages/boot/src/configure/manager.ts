@@ -1,5 +1,5 @@
 import { ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
-import { isUndefined, isString, isPlainObject, lang, isMetadataObject, Injector, Static } from '@tsdi/ioc';
+import { isUndefined, isString, isPlainObject, lang, isMetadataObject, Injector, Injectable } from '@tsdi/ioc';
 import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger, DEFAULT_CONFIG } from './config';
 
 
@@ -10,7 +10,7 @@ import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureM
  * @export
  * @class ConfigureManager
  */
-@Static(ConfigureManager)
+@Injectable(ConfigureManager)
 export class DefaultConfigureManager extends ConfigureManager {
 
     protected configs: (string | ApplicationConfiguration)[];
@@ -103,7 +103,7 @@ export class DefaultConfigureManager extends ConfigureManager {
 }
 
 
-@Static(ConfigureMerger)
+@Injectable(ConfigureMerger)
 export class ConfigureMergerImpl extends ConfigureMerger {
 
     merge(target: ApplicationConfiguration, source: ApplicationConfiguration): ApplicationConfiguration {

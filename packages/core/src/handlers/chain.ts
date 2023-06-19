@@ -1,12 +1,14 @@
-import { Abstract, EMPTY, Injector, isArray, isFunction, isNumber, ProvdierOf, Token, toProvider, TypeOf } from '@tsdi/ioc';
-import { Interceptor, INTERCEPTORS_TOKEN, InterceptorService } from '../Interceptor';
-import { Backend, Handler } from '../Handler';
+import { Abstract, ArgumentExecption, EMPTY, Injector, isArray, isNumber, ProvdierOf, Token, toProvider, getClassName } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { Interceptor, InterceptorService } from '../Interceptor';
+import { Backend, Handler } from '../Handler';
 import { InterceptorHandler } from './handler';
 
 
 /**
  * abstract handler.
+ * 
+ * 抽象处理器。
  */
 @Abstract()
 export abstract class AbstractHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
@@ -78,8 +80,9 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
 
     constructor(
         readonly injector: Injector,
-        protected token: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN) {
+        protected token: Token<Interceptor<TInput, TOutput>[]>) {
         super();
+        if (!token) throw new ArgumentExecption(`Interceptor token missing of ${getClassName(this)}.`)
     }
 
     useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
@@ -93,7 +96,7 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
     }
 
 
-    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], order?: number, isClass?: (type: Function)=> boolean) {
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], order?: number, isClass?: (type: Function) => boolean) {
         if (isArray(providers)) {
             const hasOrder = isNumber(order);
             this.injector.inject(providers.map((r, i) => toProvider(token, r, true, hasOrder ? order + i : undefined, isClass)))

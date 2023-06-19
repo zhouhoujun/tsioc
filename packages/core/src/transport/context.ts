@@ -1,17 +1,21 @@
-import { Abstract, EMPTY, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
-import { EndpointContext, MODEL_RESOLVERS } from '../endpoints';
+import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
+import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS } from '../endpoints';
 import { createPayloadResolver } from '../endpoints/resolvers';
-
+import { StatusVaildator } from './status';
+import { FileAdapter } from './file.adapter';
+import { StreamAdapter } from './stream.adapter';
 
 
 /**
  * abstract transport context.
+ * 
+ * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any, TStatus = any> extends EndpointContext<TRequest> {
+export abstract class TransportContext<TInput = any, TSocket = any> extends EndpointContext<TInput> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        return [ ... primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
+        return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
     /**
      * Get request rul
@@ -23,6 +27,105 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
     abstract set url(value: string);
 
     /**
+     * The request method.
+     */
+    abstract get method(): string;
+
+    /**
+     * socket.
+     */
+    abstract get socket(): TSocket;
+
+}
+
+/**
+ * Transport context options.
+ */
+export interface TransportContextOpts<T = any, TSocket = any> extends EndpointInvokeOpts<T> {
+    url?: string;
+    method?: string;
+    socket?: TSocket;
+}
+
+export const TRANSPORT_CONTEXT_IMPL = {
+    create<T>(injector: Injector, options?: TransportContextOpts<T>): TransportContext<T> {
+        throw new Execption('not implemented.')
+    }
+}
+
+/**
+ * create transport context
+ * @param injector 
+ * @param options 
+ * @returns 
+ */
+export function createTransportContext<TInput, TSocket>(injector: Injector, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TSocket> {
+    return TRANSPORT_CONTEXT_IMPL.create(injector, options)
+}
+
+
+const primitiveResolvers = createPayloadResolver(
+    (ctx, scope, field) => {
+        let payload = ctx.payload;
+
+        if (field && !scope) {
+            scope = 'query'
+        }
+        if (scope) {
+            payload = payload[scope];
+            if (field) {
+                payload = isDefined(payload) ? payload[field] : null;
+            }
+        }
+        return payload;
+    },
+    (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
+
+
+/**
+ * abstract mime asset transport context.
+ * 
+ * 类型资源传输节点上下文
+ */
+@Abstract()
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any, TServOpts = any> extends TransportContext<TRequest> {
+
+    abstract get serverOptions(): TServOpts;
+
+    /**
+     * status vaildator
+     */
+    abstract get vaildator(): StatusVaildator<TStatus>;
+    /**
+     * file adapter
+     */
+    abstract get fileAdapter(): FileAdapter;
+
+    /**
+     * stream adapter
+     */
+    abstract get streamAdapter(): StreamAdapter;
+
+    /**
+     * Get request rul
+     */
+    abstract get url(): string;
+    /**
+     * Set request url
+     */
+    abstract set url(value: string);
+
+    /**
+     * The request method.
+     */
+    abstract get method(): string;
+
+    /**
+     * protocol name
+     */
+    abstract get protocol(): string;
+
+    /**
      * transport request.
      */
     abstract get request(): TRequest;
@@ -32,14 +135,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
     abstract get response(): TResponse;
 
     /**
-     * protocol name
+     * has sent or not.
      */
-    abstract get protocol(): string;
-    /**
-     * The request method.
-     */
-    abstract get method(): string;
-
+    abstract readonly sent: boolean;
     /**
      * Get response status.
      */
@@ -72,36 +170,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TStatus 
      * @api public
      */
     abstract get length(): number | undefined;
-
-    /**
-     * has sent or not.
-     */
-    abstract readonly sent: boolean;
-
-}
-
-const primitiveResolvers = createPayloadResolver(
-    (ctx, scope, field) => {
-        let payload = ctx.payload;
-
-        if (field && !scope) {
-            scope = 'query'
-        }
-        if (scope) {
-            payload = payload[scope];
-            if (field) {
-                payload = isDefined(payload) ? payload[field] : null;
-            }
-        }
-        return payload;
-    },
-    (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
-
-/**
- * abstract asset context.
- */
-@Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any> extends TransportContext<TRequest, TResponse, TStatus> {
 
     /**
      * is secure protocol or not.

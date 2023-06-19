@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { TransportContext } from '@tsdi/core';
+import { AssetContext } from '@tsdi/core';
 import { ResponseStatusFormater } from '@tsdi/transport';
 import hrtime = require('browser-process-hrtime');
 
@@ -13,7 +13,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         return hrtime(time);
     }
 
-    format(ctx: TransportContext, hrtime: [number, number]): string[] {
+    format(ctx: AssetContext, hrtime: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
         return [
             status,
@@ -23,10 +23,9 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         ]
     }
 
-
-    private formatStatus(ctx: TransportContext): [string, string] {
+    private formatStatus(ctx: AssetContext): [string, string] {
         const { status, statusMessage } = ctx;
-        return [status, statusMessage];
+        return [String(status), statusMessage];
 
         // if (this.vaildator.isOk(status)) {
         //     return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];

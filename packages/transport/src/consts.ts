@@ -21,6 +21,7 @@ export namespace ev {
     export const CONNECT_FAILED = 'connectFailed';
     export const DISCONNECT = 'disconnect';
     export const CONNECTION = 'connection';
+    export const SECURE_CONNECTION = 'secureConnection';
 
     export const PACKET = 'packet';
 
@@ -32,6 +33,8 @@ export namespace ev {
     export const CONTINUE = 'continue';
 
     export const MESSAGE = 'message';
+    export const MESSAGE_BUFFER = 'messageBuffer';
+    export const CUSTOM_MESSAGE = 'custom_message';
     export const PAUSE = 'pause';
     export const RESUME = 'resume';
     export const RESPONSE = 'response';
@@ -60,6 +63,8 @@ export namespace ev {
     export const READABLE = 'readable';
     export const PREFINISH = 'prefinish';
     export const PREEND = 'preend';
+
+    export const OFFLINE = 'offline';
 }
 
 /**
@@ -79,6 +84,7 @@ export namespace hdr {
     export const PATH = ':path';
     export const AUTHORITY = ':authority';
     export const SCHEME = ':scheme';
+    export const TOPIC = ':topic';
 
     /**
      * header Accept

@@ -1,4 +1,7 @@
-import { Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback, InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption } from '@tsdi/ioc';
+import {
+    Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback,
+    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption, tokenId
+} from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
@@ -52,6 +55,10 @@ export function createEndpoint<TInput extends InvocationContext = InvocationCont
 
 
 
+export const OPERA_INTERCEPTORS = tokenId<Interceptor[]>('OPERA_INTERCEPTORS');
+export const OPERA_GUARDS = tokenId<CanActivate[]>('OPERA_GUARDS');
+export const OPERA_FILTERS = tokenId<Filter[]>('OPERA_FILTERS');
+
 /**
  * Opteration Endpoint
  */
@@ -61,6 +68,14 @@ export abstract class OperationEndpoint<TInput extends InvocationContext = Invoc
      * opteration invoker.
      */
     abstract get invoker(): OperationInvoker;
+
+    abstract get options(): EndpointOptions;
+
+    /**
+     * is this equals to target or not
+     * @param target 
+     */
+    abstract equals(target: any): boolean;
 }
 
 

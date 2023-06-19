@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    ClassType, StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
+    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
@@ -14,9 +14,9 @@ import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { GuardHandler } from '../handlers/guards';
 import { FnHandler } from '../handlers/handler';
+import { runHandlers } from '../handlers/runs';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
-import { runHandlers } from '../handlers/runs';
 import { EndpointContext } from '../endpoints/context';
 
 
@@ -38,9 +38,9 @@ export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 
 @Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
-    private _types: ClassType[];
-    private _maps: Map<ClassType, Handler[]>;
-    private _refs: Map<ClassType, ReflectiveRef>;
+    private _types: Type[];
+    private _maps: Map<Type, Handler[]>;
+    private _refs: Map<Type, ReflectiveRef>;
     private _handler: GuardHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
@@ -49,6 +49,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._refs = new Map();
         this._handler = new GuardHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
         this._handler.useFilters(ExecptionHandlerFilter);
+    }
+
+    get size(): number {
+        return this._refs.size;
     }
 
     get handler(): Handler {
@@ -88,7 +92,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(() => this.detach(target.type as Type));
+            targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
         }
 
@@ -102,7 +106,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             });
             this._maps.set(target.type, endpoints);
             this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(() => this.detach(target.type as Type));
+            targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
         }
 

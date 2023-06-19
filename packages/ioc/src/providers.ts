@@ -1,6 +1,6 @@
-import { Modules, Type, TypeOf } from './types';
-import { Token } from './tokens';
-import { Injector } from './injector';
+import { Type, CtorType, Modules, TypeOf } from './types';
+import { InjectFlags, Token } from './tokens';
+import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isDefined, isType } from './utils/chk';
 
@@ -49,16 +49,16 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
     /**
      * use class for provide.
      *
-     * @type {Type}
+     * @type {CtorType}
      * @memberof ClassProvider
      */
-    useClass: Type<T>;
+    useClass: CtorType<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      * 
      * [[token1, InjectFlags.SkipSelf], token2]
      */
-    deps?: any[];
+    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
     /**
      * singleton or not.
      */
@@ -125,7 +125,7 @@ export interface UseFactory<T> extends ProviderExts, UseAsStatic {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: any[];
+    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
 }
 
 /**
@@ -147,9 +147,9 @@ export interface FactoryProvider<T = any> extends Provide<T>, UseFactory<T> { }
  */
 export interface ConstructorProvider<T = any> {
     /**
-     * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
+     * An injection token. Typically an instance of `CtorType` or `InjectionToken`, but can be `any`.
      */
-    provide: Type<T>;
+    provide: CtorType<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      */
@@ -218,7 +218,7 @@ export interface ModuleWithProviders<T = any> {
     /**
      * module type
      */
-    module: Type<T>;
+    module: CtorType<T>;
     /**
      * providers for the module
      */
@@ -244,7 +244,7 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
  */
 export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): StaticProvider<T> {
     if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
-        return { provide, useClass: useOf, multi, multiOrder };
+        return { provide, useClass: useOf as CtorType, multi, multiOrder };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)

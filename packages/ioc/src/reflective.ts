@@ -1,4 +1,4 @@
-import { ClassType, Type } from './types';
+import { Type } from './types';
 import { Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
@@ -135,7 +135,7 @@ export abstract class ReflectiveFactory {
      * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link ReflectiveRef}
      */
-    abstract create<T>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
+    abstract create<T>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
 
 }
 

@@ -1,5 +1,5 @@
 import { AssetContext, BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption, PROCESS_ROOT } from '@tsdi/core';
-import { Injectable, isArray, TypeExecption } from '@tsdi/ioc';
+import { Injectable, isArray, isString, TypeExecption } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions, hdr } from '@tsdi/transport';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
@@ -8,9 +8,18 @@ import { promisify } from 'util';
 const statify = promisify(stat);
 
 @Injectable({ static: true })
-export class TransportSendAdapter extends ContentSendAdapter {
+export class ContentSendAdapterImpl extends ContentSendAdapter {
     async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
         let path = ctx.pathname;
+        if (!isString(path)) return '';
+        if (path.startsWith('/')) {
+            path = path.substring(1);
+        }
+        if (opts.prefix) {
+            const prefix = path.startsWith('/') ? opts.prefix.substring(1) : opts.prefix;
+            if (!path.startsWith(prefix)) return '';
+            path = path.slice(prefix.length);
+        }
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
         const roots = isArray(opts.root) ? opts.root : [opts.root];

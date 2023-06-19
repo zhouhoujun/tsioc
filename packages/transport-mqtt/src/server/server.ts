@@ -1,180 +1,130 @@
-import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareLike, TransportEvent, TransportRequest, CatchInterceptor } from '@tsdi/core';
-import { Abstract, ArgumentExecption, Execption, Injectable, lang, promisify, tokenId } from '@tsdi/ioc';
-import { LogInterceptor, TransportServer, TransportServerOpts, Connection, ConnectionOpts, ev, IncomingMessage, OutgoingMessage, TransportContext } from '@tsdi/transport';
-import * as net from 'net';
-import * as tls from 'tls';
-import * as ws from 'ws';
-import { MqttConnection } from '../connection';
-import { MqttPacketFactory, MqttVaildator } from '../transport';
+import { MESSAGE, MircoServiceRouter, Outgoing, Packet, Server, TransportContext, TransportSession, normalize } from '@tsdi/core';
+import { Execption, Inject, Injectable, ModuleRef, lang, promisify } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { Client, connect } from 'mqtt';
+import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
+import { MqttEndpoint } from './endpoint';
+import { Content, LOCALHOST, ev } from '@tsdi/transport';
+import { MqttIncoming } from './incoming';
+import { MqttOutgoing } from './outgoing';
+import { Subscription, finalize } from 'rxjs';
+import { MqttContext } from './context';
+import { MqttTransportSessionFactory } from '../transport';
 
-
-
-export interface MqttTcpServerOpts {
-    protocol: 'tcp' | 'mqtt';
-    options: net.ServerOpts;
-}
-
-export interface MqttTlsServerOpts {
-    protocol: 'mqtts' | 'ssl' | 'tls';
-    options: tls.TlsOptions;
-}
-
-
-export interface MqttWsServerOpts {
-    protocol: 'ws' | 'wss';
-    options: ws.ServerOptions;
-}
-
-@Abstract()
-export abstract class MqttServerOpts<TRequest extends IncomingMessage = IncomingMessage, TResponse extends OutgoingMessage = OutgoingMessage> extends TransportServerOpts<TRequest, TResponse> {
-    abstract serverOpts: MqttTcpServerOpts | MqttTlsServerOpts | MqttWsServerOpts;
-}
-
-/**
- * Mqtt server interceptors.
- */
-export const MQTT_SERV_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('MQTT_SERV_INTERCEPTORS');
-
-/**
- * Mqtt server interceptors.
- */
-export const MQTT_SERV_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('MQTT_SERV_EXECPTIONFILTERS');
-
-
-/**
- * Mqtt server middlewares.
- */
-export const MQTT_MIDDLEWARES = tokenId<MiddlewareLike[]>('MQTT_MIDDLEWARES');
-
-
-const defaults = {
-    json: true,
-    encoding: 'utf8',
-    serverOpts: {
-        protocol: 'mqtt',
-        options: {}
-    },
-    interceptorsToken: MQTT_SERV_INTERCEPTORS,
-    execptionsToken: MQTT_SERV_EXECPTIONFILTERS,
-    middlewaresToken: MQTT_MIDDLEWARES,
-    interceptors: [
-        LogInterceptor,
-        CatchInterceptor,
-    ],
-    listenOpts: {
-        host: 'localhost'
-    }
-} as MqttServerOpts;
 
 
 @Injectable()
-export class MqttServer extends TransportServer<net.Server | tls.Server | ws.Server, IncomingMessage, OutgoingMessage, MqttServerOpts> {
+export class MqttServer extends Server<TransportContext, Outgoing> {
 
-    constructor(options: MqttServerOpts) {
-        super(options);
+    @InjectLog()
+    private logger!: Logger;
+
+    private subscribes?: string[];
+    private mqtt?: Client | null;
+
+    constructor(
+        readonly endpoint: MqttEndpoint,
+        @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
+    ) {
+        super();
     }
 
-    close(): Promise<void> {
-        return promisify(this.server.close, this.server)()
+    protected override async onStartup(): Promise<any> {
+        const opts = this.options.connectOpts = {
+            host: LOCALHOST,
+            port: 1883,
+            ...this.options.connectOpts
+        };
+        this.mqtt = opts.url ? connect(opts.url, opts) : connect(opts);
+
+        this.mqtt.on(ev.ERROR, (err) => this.logger.error(err));
+
+        const defer = lang.defer();
+        this.mqtt.on(ev.CONNECT, defer.resolve);
+        await defer.promise;
+
     }
 
-    protected override getDefaultOptions() {
-        return defaults
-    }
+    protected override async onStart(): Promise<any> {
+        if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
-    protected createServer(opts: MqttServerOpts): net.Server | tls.Server | ws.Server<ws.WebSocket> {
-        const servOpts = opts.serverOpts;
-        if(!opts.listenOpts) throw new ArgumentExecption('not config listenOpts');
-        switch (servOpts.protocol) {
-            case 'mqtt':
-            case 'tcp':
-                if (!opts.listenOpts.port) {
-                    opts.listenOpts.port = 1883;
-                }
-                return new net.Server(servOpts.options);
-            case 'mqtts':
-            case 'tls':
-                if (!servOpts.options.key || !servOpts.options.cert) {
-                    throw new Execption('Missing secure protocol key')
-                }
-                if (!opts.listenOpts.port) {
-                    opts.listenOpts.port = 8883;
-                }
-                return new tls.Server(servOpts.options);
-            case 'ws':
-            case 'wss':
-                if (!opts.listenOpts.port) {
-                    opts.listenOpts.port = servOpts.protocol == 'ws' ? 80 : 443;
-                }
-                return new ws.Server(servOpts.options);
-            default:
-                throw new Execption('Unknown protocol for secure connection: "' + (servOpts as any).protocol + '"!')
+        const router = this.endpoint.injector.get(MircoServiceRouter).get('mqtt');
+        const subscribes = this.subscribes = Array.from(router.patterns);
+        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
+            subscribes.push(normalize(`${this.options.content.prefix}/#`));
         }
+
+        await promisify(this.mqtt.subscribe, this.mqtt)(subscribes)
+            .catch(err => {
+                // Just like other commands, subscribe() can fail for some reasons,
+                // ex network issues.
+                this.logger.error("Failed to subscribe: %s", err.message);
+                throw err;
+            });
+
+        const factory = this.endpoint.injector.get(MqttTransportSessionFactory);
+        const session = factory.create(this.mqtt, { ...this.options.transportOpts, serverSide: true });
+
+        session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
+            this.requestHandler(session, packet)
+        });
+
+        this.logger.info(
+            `Subscribed successfully! This server is currently subscribed topics.`,
+            subscribes
+        );
+
     }
 
-    // protected override parseToDuplex(conn: ws.WebSocket, ...args: any[]): Duplex {
-    //     return ws.createWebSocketStream(conn, { objectMode: true });
-    // }
+    protected override async onShutdown(): Promise<any> {
+        if (!this.mqtt) return;
+        if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
+        // this.mqtt.end();
+        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
+            .catch(err => {
+                this.logger?.error(err);
+                return err;
+            });
 
-    // protected override createConnection(duplex: Duplex, transport: StreamTransportStrategy, opts?: ConnectionOpts | undefined): ServerConnection {
-    //     return new MqttConnection(duplex, transport, opts);
-    // }
-
-    // protected onConnection(server: net.Server | tls.Server | ws.Server<ws.WebSocket> | Duplex, opts?: ConnectionOpts | undefined): Observable<Connection> {
-    //     const packetor = this.context.get(MqttPacketFactory);
-    //     return new Observable((observer) => {
-    //         const onError = (err: Error) => {
-    //             observer.error(err);
-    //         };
-    //         const onConnection = (socket: Duplex | ws.WebSocket) => {
-    //             if (socket instanceof ws.WebSocket) {
-    //                 socket = ws.createWebSocketStream(socket, { objectMode: true });
-    //             }
-    //             observer.next(new MqttConnection(socket, packetor, opts));
-    //         }
-    //         const onClose = () => {
-    //             observer.complete();
-    //         }
-    //         server.on(ev.ERROR, onError);
-    //         server.on(ev.CONNECTION, onConnection);
-    //         server.on(ev.CLOSE, onClose)
-
-    //         return () => {
-    //             server.off(ev.ERROR, onError);
-    //             server.off(ev.CLOSE, onClose);
-    //             server.off(ev.CONNECTION, onConnection);
-    //         }
-    //     })
-    // }
-
-    protected createConnection(socket: net.Socket | tls.TLSSocket | ws.WebSocket, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(MqttPacketFactory);
-        return new MqttConnection(socket, packet, opts);
-    }
-    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
-        const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(MqttVaildator))
+        this.mqtt = null;
     }
 
 
-    protected listen(opts: ListenOpts): Promise<void> {
-        const defer = lang.defer<void>();
-        if (this.server instanceof ws.Server) {
-            const sropts = this.getOptions().serverOpts as ws.ServerOptions;
-            if (sropts.server) {
-                if (!sropts.server.listening) {
-                    // sropts.server.once(ev.LISTENING, defer.resolve);
-                    sropts.server.listen(opts, defer.resolve);
-                } else {
-                    defer.resolve();
-                }
-            } else {
-                // server
-                defer.resolve();
-            }
-        } else {
-            this.server.listen(opts, defer.resolve);
+    /**
+     * request handler.
+     * @param observer 
+     * @param req 
+     * @param res 
+     */
+    protected requestHandler(session: TransportSession<Client>, packet: Packet): Subscription {
+        if (!packet.method) {
+            packet.method = MESSAGE;
         }
-        return defer.promise;
+        const req = new MqttIncoming(session, packet);
+        const res = new MqttOutgoing(session, packet.url!, packet.id);
+
+        const ctx = this.createContext(req, res);
+        const cancel = this.endpoint.handle(ctx)
+            .pipe(finalize(() => {
+                ctx.destroy();
+            }))
+            .subscribe({
+                error: (err) => {
+                    this.logger.error(err)
+                }
+            });
+        // const opts = this.options;
+        // opts.timeout && req.socket.stream.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
+        //     req.emit?.(ev.TIMEOUT);
+        //     cancel?.unsubscribe()
+        // });
+        req.once(ev.ABOUT, () => cancel?.unsubscribe())
+        return cancel;
     }
+
+    protected createContext(req: MqttIncoming, res: MqttOutgoing): MqttContext {
+        const injector = this.endpoint.injector;
+        return new MqttContext(injector, req, res, this.options);
+    }
+
 }

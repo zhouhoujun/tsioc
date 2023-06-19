@@ -1,5 +1,5 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -10,7 +10,7 @@ import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpServerModule, HttpServer, HttpModule } from '../src';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -28,6 +28,8 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                     ca: cert
                 }
             },
+        }),
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 2,
                 protocol: 'http',
@@ -41,6 +43,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 }
             }
         }),
+        MicroServiceRouterModule.forRoot({ protocol: 'mqtt' }),
         DeviceManageModule,
         DeviceAModule
     ],
@@ -113,8 +116,45 @@ describe('http2 server, Http', () => {
         expect(bState).toBe('startuped');
     });
 
-    it('not found', async () => {
+    it('query all', async () => {
+        const a = await lastValueFrom(client.get<any[]>('/device')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
+
+    it('query with params ', async () => {
+        const a = await lastValueFrom(client.get<any[]>('/device', { params: { name: '2' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
+
+    it('post not found', async () => {
         const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('get not found', async () => {
+        const a = await lastValueFrom(client.get<any>('/device/init5', { observe: 'response', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);

@@ -1,6 +1,4 @@
-
-
-import { Injector, InvocationContext } from '@tsdi/ioc';
+import { Injector, InvocationContext, createContext } from '@tsdi/ioc';
 import { ConfigableHandlerImpl } from './handler';
 import { ConfigableEndpointOptions } from '../endpoints/endpoint.service';
 import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
@@ -11,7 +9,7 @@ export class ConfigableEndpointImpl<TInput extends InvocationContext, TOutput = 
     constructor(
         injector: Injector,
         options: ConfigableEndpointOptions<TInput>) {
-        super(injector, options);
+        super(createContext(injector, options), options);
     }
 }
 

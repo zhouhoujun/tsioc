@@ -1,4 +1,4 @@
-import { Abstract, Token, Type } from '@tsdi/ioc';
+import { Abstract, Type, Token } from '@tsdi/ioc';
 import { HandlerOptions, HandlerService } from '../handlers/handler.service';
 import { Interceptor } from '../Interceptor';
 import { CanActivate } from '../guard';
@@ -12,9 +12,18 @@ import { Backend } from '../Handler';
  * 终结点配置
  */
 export interface EndpointOptions<T = any, TArg = any> extends HandlerOptions<T, TArg> {
-    interceptorsToken?: Token<Interceptor[]>;
-    guardsToken?: Token<CanActivate[]>;
-    filtersToken?: Token<Filter[]>;
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<Interceptor<T>[]>;
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<CanActivate<T>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<Filter<T>[]>;
     /**
      * endpoint order
      */
@@ -31,12 +40,14 @@ export interface EndpointOptions<T = any, TArg = any> extends HandlerOptions<T, 
  * 可配置结点配置
  */
 export interface ConfigableEndpointOptions<T = any, TArg = any> extends EndpointOptions<T, TArg> {
-    backend: Type<Backend>;
+    backend?: Token<Backend> | Backend;
 }
 
 
 /**
  * endpoint service.
+ * 
+ * 终端传输节点服务
  */
 export interface EndpointService extends HandlerService {
 

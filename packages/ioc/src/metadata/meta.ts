@@ -1,4 +1,4 @@
-import { ClassType, DesignParam, Modules, Type } from '../types';
+import { Type, CtorType, DesignParam, Modules } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import { ArgumentResolver } from '../resolver';
@@ -89,7 +89,7 @@ export interface RefProvider {
      *
      * @type {Token}
      */
-    target: ClassType;
+    target: Type;
 
     /**
      * ref provide
@@ -111,7 +111,7 @@ export interface ProviderInMetadata {
      *
      * @type {Token}
      */
-    target: ClassType;
+    target: Type;
 
     /**
      * ref provide
@@ -150,7 +150,7 @@ export interface PropertyMetadata extends ProvideMetadata {
      *
      * @type {SymbolType}
      */
-    type?: ClassType;
+    type?: Type;
     /**
      * property name
      *
@@ -170,7 +170,7 @@ export interface MethodMetadata extends Record<string, any> {
     /**
      * method returnning type.
      */
-    type?: ClassType;
+    type?: Type;
     /**
      * param providers
      *
@@ -272,7 +272,7 @@ export interface AbstractMetadata {
     /**
      * class type.
      */
-    type?: ClassType;
+    type?: Type;
     /**
      * is abstract or not.
      */
@@ -310,7 +310,7 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
     /**
      * bootstrap.
      *
-     * @type {Type<T>}
+     * @type {Modules}
      */
     bootstrap?: Modules;
     /**
@@ -318,17 +318,17 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Modules[]}
      */
-    imports?: (Modules | ModuleWithProviders)[];
+    imports?: (Modules<CtorType> | ModuleWithProviders)[];
     /**
      * exports modules
      *
      * @type {Modules[]}
      */
-    exports?: Modules[];
+    exports?: Modules<CtorType>[];
     /**
      * declaration the set of components, directives, pipes ... of this module.
      */
-    declarations?: Modules[];
+    declarations?: Modules<CtorType>[];
 }
 
 /**

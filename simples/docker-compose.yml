@@ -1,6 +1,7 @@
 version: "3"
 services:
   postgres:
+    container_name: test-postgres
     image: postgres:14
     restart: always
     environment:
@@ -12,7 +13,6 @@ services:
       - "5432:5432"
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
-
 
   # flow:
   #   image: nodered/node-red:2.2.3
@@ -27,7 +27,7 @@ services:
   #   restart: always
 
   redis:
-    container_name: remoting_redis
+    container_name: test_redis
     image: redis:6.2.5
     ports:
       - "6379:6379"
@@ -36,36 +36,86 @@ services:
       - ./data/redis/data:/data
     restart: always
 
-  # mqtt:
-  #   container_name: remoting_mqtt
-  #   image: eclipse-mosquitto
-  #   volumes:
-  #     - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-  #   ports:
-  #     - "1883:1883"
-  #     - "9001:9001"
-  #   restart: always
-
-
-  emqx:
-    image: emqx/emqx:5.0.4
-    container_name: emqx
-    environment:
-      - EMQX_LOADED_PLUGINS="emqx_management,emqx_auth_http,emqx_dashboard"
-      - EMQX_DASHBOARD__DEFAULT_USER__LOGIN=zyhh
-      - EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=zyhh.com
-      - EMQX_NODE__MAX_PORTS=65535
-      - EMQX_MQTT__MAX_PACKET_SIZE=16MB
+  nats:
+    container_name: test-nats
+    image: nats
     ports:
-      - "18083:18083"
-      - "1883:1883"
-      - "8083:8083"
-      - "8883:8883"
-    volumes:
-      - ./logs:/opt/emqx/log
+      - "8222:8222"
+      - "4222:4222"
+      - "6222:6222"
     restart: always
 
+  mqtt:
+    container_name: test_mqtt
+    image: eclipse-mosquitto
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    restart: always
 
+  # emqx:
+  #   container_name: test-emqx
+  #   image: emqx/emqx:5.0.4
+  #   environment:
+  #     - EMQX_LOADED_PLUGINS="emqx_management,emqx_auth_http,emqx_dashboard"
+  #     - EMQX_DASHBOARD__DEFAULT_USER__LOGIN=zyhh
+  #     - EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=zyhh.com
+  #     - EMQX_NODE__MAX_PORTS=65535
+  #     - EMQX_MQTT__MAX_PACKET_SIZE=16MB
+  #   ports:
+  #     - "18083:18083"
+  #     - "1883:1883"
+  #     - "8083:8083"
+  #     - "8883:8883"
+  #   volumes:
+  #     - ./logs:/opt/emqx/log
+  #   restart: always
+
+  rabbit:
+    container_name: test-rabbit
+    hostname: rabbit
+    image: "rabbitmq:management"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    tty: true
+    restart: always
+
+  zookeeper:
+    container_name: test-zookeeper
+    hostname: zookeeper
+    image: confluentinc/cp-zookeeper:7.3.2
+    ports:
+      - "2181:2181"
+    
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    container_name: test-kafka
+    hostname: kafka
+    image: confluentinc/cp-kafka:7.3.2
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+    
+    restart: always
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+
+      
   # networks:
   #   emqx-bridge:
   #     driver: bridge

@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, lang, isArray, ClassType, ctorName, Decors, Platform, Class } from '@tsdi/ioc';
+import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class } from '@tsdi/ioc';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';
@@ -9,7 +9,7 @@ import { AopDef } from './metadata/ref';
 /**
  * match express.
  */
-export type MatchExpress = (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => boolean;
+export type MatchExpress = (method?: string, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
 
 
 /**
@@ -120,7 +120,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     protected matchTypeFactory(relfect: Class, metadata: AdviceMetadata): MatchExpress {
         const checks = this.genChecks(relfect, metadata);
-        return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
+        return (method?: string, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
     }
 
     protected genChecks(relfect: Class, metadata: AdviceMetadata): MatchExpress[] {
@@ -185,13 +185,13 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
         if (withInChkExp.test(strExp)) {
             const classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false
+            return (name?: string, fullName?: string, targetType?: Type) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false
         }
 
         if (targetChkExp.test(strExp)) {
             const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const platform = this.platform;
-            return (name?: string, fullName?: string, targetType?: ClassType) => targetType ? platform.getInjector(def.type).getTokenProvider(torken) === targetType : false
+            return (name?: string, fullName?: string, targetType?: Type) => targetType ? platform.getInjector(def.type).getTokenProvider(torken) === targetType : false
         }
 
         return fasleFn
@@ -230,7 +230,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         const fns = exp.tokens.map(t => this.expressToFunc(def, t));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method?: string, fullName?: string, targetType?: ClassType, target?: any, pointcut?: IPointcut) => {
+        return (method?: string, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => {
             const args = fns.map(fn => () => fn(method, fullName, targetType, target, pointcut));
             return boolexp(...args)
         }

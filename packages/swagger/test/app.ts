@@ -1,10 +1,10 @@
-import { DIModule } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { HttpModule, HttpServer } from '@tsdi/transport-http';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
-import { SwaggerModuel } from '../src/swagger.module';
+import { SwaggerModule } from '../src/swagger.module';
 import { ServerModule } from '@tsdi/platform-server';
 import { ConnectionOptions } from '@tsdi/repository';
 import { HttpClientModule } from '@tsdi/common';
@@ -37,12 +37,14 @@ export const option = <ConnectionOptions>{
 
 
 
-@DIModule({
+@Module({
     baseURL: __dirname,
     imports: [
         ServerModule,
         HttpModule.withOption({
-            majorVersion: 2
+            serverOpts: {
+                majorVersion: 2
+            }
         }),
         HttpClientModule,
         TypeOrmModule.withConnection({
@@ -50,7 +52,11 @@ export const option = <ConnectionOptions>{
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts'],
         }),
-        SwaggerModuel,
+        SwaggerModule.withOptions({
+            title: 'api document',
+            version: 'v1',
+            prefix: 'api-docs'
+        }),
     ],
     declarations: [
         // RouteStartup,

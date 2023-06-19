@@ -1,60 +1,86 @@
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
-import { Client, ClientEndpointContext, OnDispose, Pattern, RequestOptions, TransportRequest } from '@tsdi/core';
-import Redis, { RedisOptions } from 'ioredis';
-import { TransportClientOpts } from '@tsdi/transport';
-
-
-@Abstract()
-export abstract class RedisClientOpts extends TransportClientOpts {
-    /**
-     * connect options.
-     */
-    abstract connectOpts: RedisOptions;
-}
+import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
+import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { LOCALHOST, ev } from '@tsdi/transport';
+import Redis from 'ioredis';
+import { RedisHandler } from './handler';
+import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
+import { RedisTransportSessionFactory, ReidsTransport } from '../transport';
 
 
 
-@Injectable()
-export class RedisClient extends Client<Pattern, RequestOptions, RedisClientOpts> implements OnDispose {
+@Injectable({ static: false })
+export class RedisClient extends Client<TransportRequest, TransportEvent> {
 
-    private pubClient: Redis | null = null;
-    private subClient: Redis | null = null;
-    constructor(@Nullable() options: RedisClientOpts) {
-        super(options);
-    }
+    @InjectLog()
+    private logger!: Logger;
 
-    protected buildRequest(context: ClientEndpointContext, url: Pattern | TransportRequest, options?: RequestOptions): TransportRequest {
-        return url instanceof TransportRequest ? url : new TransportRequest(url, { context, ...options });
+    private subscriber: Redis | null = null;
+    private publisher: Redis | null = null;
+    private _session?: TransportSession<ReidsTransport>;
+
+    constructor(
+        readonly handler: RedisHandler,
+        @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
+        super();
     }
 
     protected async connect(): Promise<void> {
-        if (this.pubClient && this.subClient) return;
+        if (this.subscriber) return;
 
-        const opts = this.getOptions();
-        this.subClient = new Redis(opts.connectOpts);
-        this.pubClient = new Redis(opts.connectOpts);
+        const opts = this.options;
+        const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
+        this.subscriber = new Redis({
+            host: LOCALHOST,
+            port: 6379,
+            retryStrategy,
+            ...opts.connectOpts,
+            lazyConnect: true
+        });
+        this.subscriber.on(ev.ERROR, (err) => this.logger.error(err));
+
+        this.publisher = new Redis({
+            host: LOCALHOST,
+            port: 6379,
+            retryStrategy,
+            ...opts.connectOpts,
+            lazyConnect: true
+        });
+        this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
+
+        await Promise.all([
+            this.subscriber.connect(),
+            this.publisher.connect()
+        ]);
+
+        this._session = this.handler.injector.get(RedisTransportSessionFactory).create({
+            subscriber: this.subscriber,
+            publisher: this.publisher
+        }, opts.transportOpts)
 
     }
 
-    async close(): Promise<void> {
-        this.subClient?.quit();
-        this.pubClient?.quit();
-        this.subClient = this.pubClient = null;
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        context.setValue(TRANSPORT_SESSION, this._session);
     }
 
-    async onDispose(): Promise<void> {
-        await this.close();
-        await this.context.destroy();
+    protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
+        return (times: number) => {
+            const retryAttempts = options.retryAttempts;
+            if (!retryAttempts || times > retryAttempts) {
+                this.logger.error('Retry time exhausted');
+                return;
+            }
+
+            return options.retryDelay ?? 0;
+        }
     }
 
-
-    // protected createDuplex(opts: RedisClientOpts): Duplex {
-    //     return createClient(opts.connectOpts!);
-    // }
-
-    // protected createConnection(duplex: Duplex, opts?: ConnectionOpts | undefined): Connection {
-    //     const packet = this.context.get(PacketFactory);
-    //     return new Connection(duplex, packet, opts);
-    // }
-
+    protected async onShutdown(): Promise<void> {
+        this._session?.destroy();
+        await this.publisher?.quit();
+        await this.subscriber?.quit();
+        this.publisher = this.subscriber = null;
+    }
 }

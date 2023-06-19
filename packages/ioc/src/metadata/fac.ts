@@ -27,7 +27,7 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
     const factory = (...args: any[]) => {
         let metadata: T;
         if (args.length) {
-            if (args.length === 1 && isMetadataObject(args[0])) {
+            if (args.length === 1 && (option.isMatadata ? option.isMatadata(args[0]) : isMetadataObject(args[0]))) {
                 metadata = args[0]
             } else if (option.props) {
                 metadata = option.props(...args)

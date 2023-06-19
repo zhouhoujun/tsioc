@@ -1,4 +1,4 @@
-import { ClassType, Type } from '../types';
+import { Type, CtorType } from '../types';
 import { Class } from '../metadata/type';
 import { isFunction, isPromise } from '../utils/chk';
 import { Token } from '../tokens';
@@ -27,8 +27,9 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _mthCtx: Map<string, InvocationContext | null>;
     constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments<any>) {
         super()
-        this._type = _class.type as Type<T>;
+        this._type = _class.type;
         this._typeName = getClassName(this._type);
+        injector.register(this.type as CtorType);
         this._ctx = this.createContext(injector, options);
         this._mthCtx = new Map();
         this._ctx.setValue(ReflectiveRef, this);
@@ -99,7 +100,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             const ext = ctx !== context;
             ext && context.addRef(ctx);
             destroy = () => {
-                if (context.used) return;
+                if (context.used || context.destroyed) return;
                 ext && context.removeRef(ctx);
             }
         } else if (option) {
@@ -237,55 +238,9 @@ export function hasContext<TArg>(option: InvokeArguments<TArg>) {
 
 export class ReflectiveResolverImpl extends ReflectiveFactory {
 
-    create<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+    create<T, TArg>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
         return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
     }
-
-    // protected maps: Map<ClassType, ReflectiveRef>;
-    // constructor() {
-    //     super()
-    //     this.maps = new Map();
-    // }
-    
-    // resolve<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
-    //     const cltype = isFunction(type) ? type : type.type;
-    //     let refle = this.maps.get(cltype);
-    //     if (!refle) {
-    //         refle = new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
-    //         injector.onDestroy(() => this.maps.delete(cltype));
-    //         this.maps.set(cltype, refle);
-    //     }
-    //     return refle
-    // }
-
-    // onDestroy(): void {
-    //     this.maps.forEach(ref => {
-    //         ref.destroy?.();
-    //     });
-    //     this.maps.clear();
-    // }
-
-    // resolve<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
-    //     const clst = isFunction(type) ? get(type) : type;
-    //     let refle: ReflectiveRef | null;
-    //     if (option) {
-    //         refle = this.create(clst, injector, option)
-    //     } else {
-    //         refle = injector.get(clst.refToken, null);
-    //         if (!refle) {
-    //             refle = this.create(clst, injector, option)
-    //         }
-    //     }
-    //     return refle
-    // }
-
-    // create<T, TArg>(type: ClassType<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
-    //     const clst = isFunction(type) ? get(type) : type;
-    //     const refle = new DefaultReflectiveRef<T>(clst, injector, option);
-    //     injector.onDestroy(refle);
-    //     injector.setValue(clst.refToken, refle);
-    //     return refle;
-    // }
 
 }
 

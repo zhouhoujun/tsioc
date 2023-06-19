@@ -1,4 +1,4 @@
-import { Interceptor, Server, Filter, TransportEndpointOptions } from '@tsdi/core';
+import { Interceptor, Filter, MiddlewareEndpointOptions, CanActivate } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
@@ -10,7 +10,7 @@ import { HttpServRequest, HttpServResponse } from './context';
 /**
  * http options.
  */
-export interface HttpOpts extends TransportEndpointOptions {
+export interface HttpOpts extends MiddlewareEndpointOptions {
     majorVersion?: number;
     proxy?: ProxyOpts;
     /**
@@ -26,11 +26,6 @@ export interface HttpOpts extends TransportEndpointOptions {
     autoListen?: boolean;
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
-    /**
-     * share with thie http server.
-     * eg. ws, socket.io server.
-     */
-    sharing?: Type<Server<any, any>>[];
 }
 
 export interface Http1ServerOpts extends HttpOpts {
@@ -53,11 +48,16 @@ export type HttpServerOpts = Http1ServerOpts | Http2ServerOpts;
 /**
  * http server opptions.
  */
-export const HTTP_SERVER_OPTS = tokenId<HttpServerOpts>('HTTP_SERVER_OPTS');
+export const HTTP_SERV_OPTS = tokenId<HttpServerOpts>('HTTP_SERVER_OPTS');
 
-export const HTTP_EXECPTION_FILTERS = tokenId<Filter[]>('HTTP_EXECPTION_FILTERS');
+export const HTTP_SERV_FILTERS = tokenId<Filter[]>('HTTP_SERV_FILTERS');
 
 /**
  * http server Interceptor tokens for {@link HttpServer}.
  */
 export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+
+/**
+ * HTTP Guards.
+ */
+export const HTTP_SERV_GUARDS = tokenId<CanActivate[]>('HTTP_SERV_GUARDS');

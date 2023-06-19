@@ -1,32 +1,31 @@
 import { Binding, CompilerFacade, Component, Directive, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, ViewChildren, ViewRef } from '@tsdi/components';
-import { Module } from '@tsdi/core';
-import { Inject, Injectable, Injector } from '@tsdi/ioc';
+import { Module, Inject, Injectable, Injector } from '@tsdi/ioc';
 
 
 @Directive('Text, [Text]')
 export class TextDirective {
-    @Input() name: string;
+    @Input() name!: string;
 
     // @Input() text: string;
     // @Output() textChange: EventEmitter<string> = new EventEmitter();
 
-    @Binding() text: string;
+    @Binding() text!: string;
 }
 
 
 @Directive('Input, [Input]')
 export class InputDirective {
-    @Input() name: string;
-    @Input() value: string;
+    @Input() name!: string;
+    @Input() value!: string;
     @Output() valueChange: EventEmitter<string> = new EventEmitter();
 }
 
 @Directive('Container')
 export class ContainerDirective {
 
-    @Binding() name: string;
+    @Binding() name!: string;
 
-    @ViewChildren() contents: ViewRef[];
+    @ViewChildren() contents!: ViewRef[];
 }
 
 @Component({
@@ -37,7 +36,7 @@ export class ContainerDirective {
     </Container>`
 })
 export class FieldComponent {
-    @Input() label: string;
+    @Input() label!: string;
     @Input() value: any;
 }
 
@@ -53,10 +52,10 @@ export class FieldComponent {
 })
 export class AppComponent implements OnInit {
 
-    label: string;
-    value: string;
+    label?: string;
+    value?: string;
 
-    @ViewChild('fie') cmp1: FieldComponent;
+    @ViewChild('fie') cmp1!: FieldComponent;
 
     onInit(): void {
         this.label = 'name';

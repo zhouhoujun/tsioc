@@ -1,12 +1,12 @@
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-control-regex */
 import { Injectable, isString, Static, TypeExecption } from '@tsdi/ioc';
-import { extname } from 'path';
+import { FileAdapter } from '@tsdi/core';
 import { MimeAdapter, MimeDb, MimeTypes, SplitType } from '../mime';
 
 @Injectable({ static: true })
 export class TrasportMimeAdapter extends MimeAdapter {
-    constructor(private db: MimeDb) {
+    constructor(private db: MimeDb, private adapter: FileAdapter) {
         super();
     }
 
@@ -72,7 +72,7 @@ export class TrasportMimeAdapter extends MimeAdapter {
         }
 
         // get the extension ("ext" or ".ext" or full path)
-        const extension = extname('x.' + path)
+        const extension = this.adapter.extname('x.' + path)
             .toLowerCase()
             .substring(1);
 

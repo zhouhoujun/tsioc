@@ -1,5 +1,5 @@
 import { Token } from '../tokens';
-import { Type } from '../types';
+import { Type, CtorType } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { Class, DecoratorFn } from '../metadata/type';
 import { FactoryRecord, Injector } from '../injector';
@@ -37,7 +37,7 @@ export interface RegContext extends IocContext {
     /**
      * target type.
      */
-    type: Type;
+    type: CtorType;
     /**
      * type Class reflective.
      */

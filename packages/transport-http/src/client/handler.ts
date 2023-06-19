@@ -4,6 +4,6 @@ import { HttpEvent, HttpRequest } from '@tsdi/common';
 
 
 @Abstract()
-export abstract class HttpGuardsHandler extends ConfigableHandler<HttpRequest, HttpEvent> {
+export abstract class HttpHandler extends ConfigableHandler<HttpRequest, HttpEvent> {
 
 }

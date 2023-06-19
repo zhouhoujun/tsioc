@@ -1,12 +1,21 @@
-import { BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { RedirectResult } from '@tsdi/transport';
 import {  of } from 'rxjs';
-
+import { MqttClient } from '../src';
 
 
 @RouteMapping('/device')
 export class DeviceController {
+
+    constructor(private client: MqttClient){
+
+    }
+
+    @RouteMapping('/', 'GET')
+    list(@RequestParam({ nullable: true }) name: string) {
+        return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
+    }
 
     @RouteMapping('/init', 'POST')
     req(name: string) {
@@ -15,18 +24,18 @@ export class DeviceController {
     }
 
     @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'MESSAGE')
+    @RouteMapping('/usege/find', 'GET')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'MESSAGE')
+    @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
@@ -49,7 +58,7 @@ export class DeviceController {
         return await defer.promise;
     }
 
-    @RouteMapping('/status', 'MESSAGE')
+    @RouteMapping('/status', 'GET')
     getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
         if (redirect === 'reload') {
             return new RedirectResult('/device/reload');
@@ -57,21 +66,20 @@ export class DeviceController {
         return of('working');
     }
 
-    @RouteMapping('/reload', 'MESSAGE')
+    @RouteMapping('/reload', 'GET')
     redirect() {
         return 'reload';
     }
 
 
-
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'mqtt')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle(/dd./, 'tcp')
-    async subMessage1() {
-
+    @Handle('dd/+')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
 
 }

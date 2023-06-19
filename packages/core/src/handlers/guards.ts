@@ -1,11 +1,11 @@
-import { Abstract, ArgumentExecption, EMPTY, Injector, isFunction, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, TypeOf } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, createContext, EMPTY, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, isType, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
-import { CanActivate, GUARDS_TOKEN } from '../guard';
-import { Interceptor, INTERCEPTORS_TOKEN } from '../Interceptor';
+import { CanActivate } from '../guard';
+import { Interceptor } from '../Interceptor';
 import { ForbiddenExecption } from '../execptions';
 import { PipeTransform } from '../pipes/pipe';
-import { Filter, FILTERS_TOKEN } from '../filters/filter';
+import { Filter } from '../filters/filter';
 import { DynamicHandler } from './chain';
 import { InterceptorHandler } from './handler';
 import { HandlerService } from './handler.service';
@@ -23,11 +23,11 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     private guards: CanActivate[] | null | undefined;
 
     constructor(
-        injector: Injector,
-        interceptorsToken: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN,
-        protected guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
-        protected filtersToken: Token<Filter<TInput, TOutput>[]> = FILTERS_TOKEN) {
-        super(injector, interceptorsToken);
+        readonly context: InvocationContext,
+        interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
+        protected guardsToken?: Token<CanActivate[]>,
+        protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
+        super(context.injector, interceptorsToken);
         if (!guardsToken) {
             this.guards = null;
         }
@@ -122,19 +122,23 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
  */
 export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> {
     constructor(
-        injector: Injector,
-        protected backend: TypeOf<Backend<TInput, TOutput>>,
-        interceptorsToken: Token<Interceptor<TInput, TOutput>[]> = INTERCEPTORS_TOKEN,
-        guardsToken: Token<CanActivate[]> = GUARDS_TOKEN,
-        filtersToken: Token<Filter<TInput, TOutput>[]> = FILTERS_TOKEN) {
-        super(injector, interceptorsToken, guardsToken, filtersToken);
-
+        context: Injector | InvocationContext,
+        protected backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
+        interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
+        guardsToken?: Token<CanActivate[]>,
+        filtersToken?: Token<Filter<TInput, TOutput>[]>) {
+        super(isInjector(context) ? createContext(context) : context, interceptorsToken, guardsToken, filtersToken);
+        if (!backend) throw new ArgumentExecption(`Backend token missing of ${getClassName(this)}.`);
+        if (isType(backend) && !this.injector.has(backend, InjectFlags.Self)) {
+            this.injector.inject(backend);
+        }
     }
 
     /**
      *  get backend endpoint. 
      */
     protected getBackend(): Backend<TInput, TOutput> {
-        return isFunction(this.backend) ? this.injector.get(this.backend) : this.backend;
+        return isToken(this.backend) ? this.injector.get(this.backend, this.context) : this.backend;
     }
 }
+

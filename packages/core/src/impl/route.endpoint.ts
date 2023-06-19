@@ -1,17 +1,16 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
-import { EndpointContext } from '../endpoints/context';
 import { patternToPath } from '../transport/pattern';
+import { AssetContext, TransportContext } from '../transport/context';
+import { normalize } from '../transport/route';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
-import { AssetContext } from '../transport';
 
 
-
-export class RouteEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
+export class RouteEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
 
     private _prefix: string;
     readonly route: string;
-    constructor(invoker: OperationInvoker, options: RouteEndpointOptions = {}) {
+    constructor(invoker: OperationInvoker, readonly options: RouteEndpointOptions = {}) {
         super(invoker, options);
         this._prefix = options.prefix || '';
         this.route = patternToPath(options.route || '');
@@ -26,7 +25,7 @@ export class RouteEndpointImpl<TInput extends EndpointContext = EndpointContext,
             const restParams: any = {};
             const routes = this.route.split('/').map(r => r.trim());
             const restParamNames = routes.filter(d => restParms.test(d));
-            const routeUrls = ctx.payload.url.replace(this.prefix, '').split('/');
+            const routeUrls = normalize(ctx.url, this.prefix).split('/');
             let has = false;
             restParamNames.forEach(pname => {
                 const val = routeUrls[routes.indexOf(pname)];
@@ -48,8 +47,8 @@ export class RouteEndpointImpl<TInput extends EndpointContext = EndpointContext,
     }
 }
 
-const isRest = /\/:/;
-const restParms = /^\S*:/;
+const isRest = /(^:\w+)|(\/:\w+)/;
+const restParms = /^:\w+/;
 
 
 @Injectable()

@@ -1,172 +1,43 @@
-import { Injectable } from '@tsdi/ioc';
-import { Incoming, ListenOpts } from '@tsdi/core';
-import { ConnectionOpts, ev, PacketGenerator, PacketParser, PacketFactory, MessageVaildator } from '@tsdi/transport';
-import { TransformCallback, Writable } from 'stream';
-import {
-    Parser, parser, writeToStream,
-    IConnectPacket, IConnackPacket, IPublishPacket, IPubackPacket, IPubrecPacket,
-    IPubrelPacket, IPubcompPacket, ISubscribePacket, ISubackPacket, IUnsubscribePacket,
-    IUnsubackPacket, IPingreqPacket, IPingrespPacket, IDisconnectPacket, IAuthPacket
-} from 'mqtt-packet';
-
-export interface AuthOptions extends Omit<IAuthPacket, 'cmd'> {
-    cmd?: 'connect'
-}
-
-export interface ConnectOptions extends Omit<IConnectPacket, 'cmd'> {
-    cmd?: 'connect'
-}
-export interface ConnackOptions extends Omit<IConnackPacket, 'cmd'> {
-    cmd?: 'connack'
-}
-export interface PublishOptions extends Omit<IPublishPacket, 'cmd'> {
-    cmd?: 'publish'
-}
-export interface PubackOptions extends Omit<IPubackPacket, 'cmd'> {
-    cmd?: 'puback'
-}
-
-export interface PubrecOptions extends Omit<IPubrecPacket, 'cmd'> {
-    cmd?: 'pubrec'
-}
-export interface PubrelOptions extends Omit<IPubrelPacket, 'cmd'> {
-    cmd?: 'pubrel'
-}
-
-export interface PubcompOptions extends Omit<IPubcompPacket, 'cmd'> {
-    cmd?: 'pubcomp'
-}
-export interface SubscribeOptions extends Omit<ISubscribePacket, 'cmd'> {
-    cmd?: 'subscribe'
-}
-export interface SubackOptions extends Omit<ISubackPacket, 'cmd'> {
-    cmd?: 'suback'
-}
-
-export interface UnsubscribeOptions extends Omit<IUnsubscribePacket, 'cmd'> {
-    cmd?: 'unsubscribe'
-}
-export interface UnsubackOptions extends Omit<IUnsubackPacket, 'cmd'> {
-    cmd?: 'unsuback'
-}
-export interface PubackOptions extends Omit<IPubackPacket, 'cmd'> {
-    cmd?: 'puback'
-}
-
-export interface PubcompOptions extends Omit<IPubcompPacket, 'cmd'> {
-    cmd?: 'pubcomp'
-}
-export interface PubrelOptions extends Omit<IPubrelPacket, 'cmd'> {
-    cmd?: 'pubrel'
-}
-export interface PubrecOptions extends Omit<IPubrecPacket, 'cmd'> {
-    cmd?: 'pubrec'
-}
-
-export interface PingreqOptions extends Omit<IPingreqPacket, 'cmd'> {
-    cmd?: 'pingreq'
-}
-
-export interface PingrespOptions extends Omit<IPingrespPacket, 'cmd'> {
-    cmd?: 'pingresp'
-}
-
-export interface DisconnectOptions extends Omit<IDisconnectPacket, 'cmd'> {
-    cmd?: 'disconnect'
-}
-
-export declare type PacketOptions = ConnectOptions |
-    PublishOptions |
-    ConnackOptions |
-    SubscribeOptions |
-    SubackOptions |
-    UnsubscribeOptions |
-    UnsubackOptions |
-    PubackOptions |
-    PubcompOptions |
-    PubrelOptions |
-    PingreqOptions |
-    PingrespOptions |
-    DisconnectOptions |
-    PubrecOptions |
-    AuthOptions;
+import { Decoder, Encoder, StreamAdapter, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Abstract, Injectable, Optional } from '@tsdi/ioc';
+import { TopicTransportSession, ev } from '@tsdi/transport';
+import { Client } from 'mqtt';
+import { Buffer } from 'buffer';
 
 
-@Injectable()
-export class MqttVaildator extends MessageVaildator {
-    protocol(incoming: Incoming<any>): string {
-        throw new Error('Method not implemented.');
-    }
 
-    isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isUpdate(incoming: Incoming): boolean {
-        throw new Error('Method not implemented.');
-    }
-    isSecure(incoming: Incoming): boolean {
-        throw new Error('Method not implemented.');
-    }
-    parseURL(incoming: Incoming, opts: ListenOpts, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
-    }
-    match(protocol: string): boolean {
-        throw new Error('Method not implemented.');
-    }
+@Abstract()
+export abstract class MqttTransportSessionFactory extends TransportSessionFactory<Client> {
+
 }
 
 @Injectable()
-export class MqttPacketFactory implements PacketFactory {
-    createGenerator(output: Writable, opts: ConnectionOpts): PacketGenerator {
-        return new MqttPacketGenerator(output, opts);
+export class MqttTransportSessionFactoryImpl implements MqttTransportSessionFactory {
+
+    constructor(
+        private streamAdapter: StreamAdapter,
+        @Optional() private encoder: Encoder,
+        @Optional() private decoder: Decoder) {
+
     }
 
-    createParser(opts: ConnectionOpts): PacketParser {
-        return new MqttPacketParser(opts);
-    }
-
-}
-
-export class MqttPacketParser extends PacketParser {
-
-    private parser!: Parser;
-    constructor(opts: ConnectionOpts) {
-        super(opts);
-        this.setOptions(opts);
-    }
-
-    override _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
-        this.parser.parse(chunk);
-        callback();
-    }
-
-    setOptions(opts: ConnectionOpts): void {
-        this.parser = parser(opts);
-        this.parser.on(ev.PACKET, (packet) => {
-            this.push(packet)
-        });
-        this.parser.on(ev.ERROR, (...args: any[]) => this.emit(ev.ERROR, ...args));
+    create(socket: Client, opts: TransportSessionOpts): TransportSession<Client> {
+        return new MqttTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
-
-export class MqttPacketGenerator extends PacketGenerator {
-    constructor(private output: Writable, private opts: ConnectionOpts) {
-        super(opts);
-        this.setOptions(opts);
+export class MqttTransportSession extends TopicTransportSession<Client> {
+    protected writeBuffer(buffer: Buffer, packet: Packet<any>) {
+        this.socket.publish(packet.url!, buffer);
     }
-
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        try {
-            writeToStream(chunk, this.output, this.opts)
-            callback();
-        } catch (err) {
-            callback(err as Error);
-        }
+    protected handleFailed(error: any): void {
+        this.emit(ev.ERROR, error.message);
     }
-
-    setOptions(opts: ConnectionOpts): void {
-        this.opts = opts;
+    protected onSocket(name: string, event: (...args: any[]) => void): void {
+        this.socket.on(name, event);
+    }
+    protected offSocket(name: string, event: (...args: any[]) => void): void {
+        this.socket.off(name, event);
     }
 
 }

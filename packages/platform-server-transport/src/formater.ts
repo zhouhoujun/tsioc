@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { TransportContext } from '@tsdi/core';
-import { StatusVaildator, ResponseStatusFormater } from '@tsdi/transport';
+import { AssetContext } from '@tsdi/core';
+import { ResponseStatusFormater } from '@tsdi/transport';
 import * as chalk from 'chalk';
 import { hrtime } from 'process';
 
@@ -12,15 +12,12 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = chalk.gray('--->');
     readonly outgoing = chalk.gray('<---');
 
-    constructor(private vaildator: StatusVaildator) {
-        super()
-    }
 
     hrtime(time?: [number, number] | undefined): [number, number] {
         return hrtime(time);
     }
 
-    format(ctx: TransportContext, hrtime: [number, number]): string[] {
+    format(ctx: AssetContext, hrtime: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
         return [
             status,
@@ -31,26 +28,27 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     }
 
 
-    private formatStatus(ctx: TransportContext): [string, string] {
+    private formatStatus(ctx: AssetContext): [string, string] {
         const { status, statusMessage } = ctx;
+        const vaildator= ctx.vaildator;
 
-        if (this.vaildator.isOk(status)) {
+        if (vaildator.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
         }
 
-        if (this.vaildator.isRedirect(status)) {
+        if (vaildator.isRedirect(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        if (this.vaildator.isRequestFailed(status)) {
+        if (vaildator.isRequestFailed(status)) {
             return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (this.vaildator.isServerError(status)) {
+        if (vaildator.isServerError(status)) {
             return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
 
-        if (this.vaildator.isRetry(status)) {
+        if (vaildator.isRetry(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 

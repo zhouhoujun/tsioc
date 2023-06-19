@@ -1,43 +1,53 @@
-import { ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, tokenId } from '@tsdi/ioc';
-import { TransportClientOpts } from '@tsdi/transport';
-import { SocketConstructorOpts, NetConnectOpts } from 'net';
+import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client, TransportSessionOpts } from '@tsdi/core';
+import { Token, tokenId } from '@tsdi/ioc';
 import { ConnectionOptions } from 'tls';
+import { SocketConstructorOpts, NetConnectOpts } from 'net';
 
 
 
 /**
  * tcp client options.
  */
-@Abstract()
-export abstract class TcpClientOpts extends TransportClientOpts<TransportRequest, TransportEvent> {
+export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest> {
+
     /**
-     * packet size limit.
+     * keep alive
      */
-    abstract sizeLimit?: number;
+    keepalive?: number;
     /**
-     * packet buffer encoding.
+     * transport session options.
      */
-    abstract encoding?: BufferEncoding;
-    /**
-     * packet delimiter code.
-     */
-    abstract delimiter?: string;
+    transportOpts?: TransportSessionOpts;
     /**
      * socket options.
      */
-    abstract socketOpts?: SocketConstructorOpts;
+    socketOpts?: SocketConstructorOpts;
     /**
      * connect options.
      */
-    abstract connectOpts?: NetConnectOpts | ConnectionOptions;
+    connectOpts?: NetConnectOpts | ConnectionOptions;
 }
 
+/**
+ * multi tcp client options.
+ */
+export interface TcpClientsOpts extends TcpClientOpts {
+    /**
+     * client token.
+     */
+    client: Token<Client>;
+}
+
+
+/**
+ * TCP client opptions.
+ */
+export const TCP_CLIENT_OPTS = tokenId<TcpClientOpts>('TCP_CLIENT_OPTS');
 /**
  * tcp client interceptors.
  */
 export const TCP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('TCP_CLIENT_INTERCEPTORS');
 /**
- * tcp client execption filters.
+ * tcp client filters.
  */
-export const TCP_CLIENT_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('TCP_CLIENT_EXECPTION_FILTERS');
+export const TCP_CLIENT_FILTERS = tokenId<Filter[]>('TCP_CLIENT_FILTERS');

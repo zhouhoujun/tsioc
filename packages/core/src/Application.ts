@@ -1,4 +1,4 @@
-import { isFunction, Type, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
+import { isFunction, Type, CtorType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -32,7 +32,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     protected context!: ApplicationContext<T, TArg>;
 
 
-    constructor(protected target: Type<T> | ApplicationOption<T, TArg>, protected loader?: ModuleLoader) {
+    constructor(protected target: CtorType<T> | ApplicationOption<T, TArg>, protected loader?: ModuleLoader) {
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
@@ -154,16 +154,17 @@ export class Application<T = any, TArg = ApplicationArguments> {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
-    protected moduleify(module: Type | Class | ModuleMetadata): Type | Class {
+    protected moduleify(module: Type | Class | ModuleMetadata | ModuleDef): Type | Class {
         if (isFunction(module)) return module;
         if (module instanceof Class) return module;
 
         return new Class(DynamicModule, {
+            name: 'DynamicModule',
             type: DynamicModule,
             ...module,
             module: true,
             imports: module.imports ? getModuleType(module.imports) : [],
-            exports: module.exports ? lang.getTypes(module.exports) : [],
+            exports: module.exports ? lang.getTypes<CtorType>(module.exports) : [],
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
         } as ModuleDef);
     }

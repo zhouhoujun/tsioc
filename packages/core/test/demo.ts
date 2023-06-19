@@ -1,10 +1,9 @@
 import {
-    ApplicationContext, Configuration, OnDispose,
-    RunnableRef, Bean, Runner, OnApplicationStart, Start, Dispose
+    Configuration, Bean, Runner, Start, Dispose
 } from '../src';
-import { Injectable, Inject, lang, Abstract, Module, Singleton, Static } from '@tsdi/ioc';
+import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
-import { Logger, LogConfigure, Log, LoggerModule } from '@tsdi/logs';
+import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logs';
 import * as net from 'net';
 import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
 
@@ -45,7 +44,7 @@ export class ModuleA {
 @Injectable()
 export class ClassSevice {
 
-    @Log() logger!: Logger;
+    @InjectLog() logger!: Logger;
 
     @Inject('mark', { defaultValue: '' })
     mark!: string;
@@ -110,7 +109,7 @@ export class ModuleB { }
 export class SocketService {
 
 
-    @Log() logger!: Logger;
+    @InjectLog() logger!: Logger;
 
     public tcpServer!: net.Server;
     private init_times = 0;

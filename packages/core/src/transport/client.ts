@@ -3,12 +3,13 @@ import { defer, Observable, throwError, catchError, finalize, mergeMap, of, conc
 import { Filter } from '../filters/filter';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
+import { ConfigableHandler } from '../handlers';
+import { Shutdown } from '../metadata';
 import { Pattern } from './pattern';
-import { RequestOptions, ResponseAs, TransportRequest } from './request';
+import { RequestOptions, ResponseAs, RequestInitOpts, TransportRequest } from './request';
 import { TransportEvent, TransportResponse } from './response';
 import { ReqHeaders } from './headers';
 import { TransportParams } from './params';
-import { ConfigableHandler } from '../handlers';
 
 
 /**
@@ -44,6 +45,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
     send(req: TRequest): Observable<TRespone>;
+
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in
      * an `ArrayBuffer`.
@@ -86,7 +88,6 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
-
 
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the
@@ -162,6 +163,21 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         observe: 'events',
         responseType?: 'json',
     }): Observable<TransportEvent<R>>;
+
+
+    /**
+     * Constructs a request which interprets the body as a JSON object and returns the full event
+     * stream.
+     *
+     * @param url     The endpoint URL.
+     * @param options The HTTP options to send with the  request.
+     *
+     * @return An `Observable` of all `HttpEvent`s for the request,
+     * with the response body of type `Object`.
+     */
+    send(url: Pattern, options: RequestOptions & {
+        observe: 'emit',
+    }): Observable<TransportEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
@@ -345,9 +361,9 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @param options 
      */
     protected buildRequest(first: TRequest | Pattern, options: RequestOptions & ResponseAs = {}): TRequest {
-        let req: TransportRequest<any>;
-        // First, check whether the primary argument is an instance of `TransportRequest`.
-        if (first instanceof TransportRequest) {
+        let req: TRequest;
+        // First, check whether the primary argument is an instance of `TRequest`.
+        if (this.isRequest(first)) {
             // It is. The other arguments must be undefined (per the signatures) and can be
             // ignored.
             req = first
@@ -367,14 +383,14 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 if (options.params instanceof TransportParams) {
                     params = options.params
                 } else {
-                    params = new TransportParams({ params: options.params })
+                    params = this.createParams(options.params)
                 }
             }
 
             const context = options.context || createContext(this.handler.injector, options);
-            context.setValue(Client, this);
+            this.initContext(context);
             // Construct the request.
-            req = new TransportRequest(first, {
+            req = this.createRequest(first, {
                 ...options,
                 headers,
                 params,
@@ -384,13 +400,39 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 responseType: options.responseType || 'json'
             })
         }
-        return req as TRequest;
+        return req;
+    }
+
+    @Shutdown()
+    close(): Promise<void> {
+        return this.onShutdown();
+    }
+
+
+    protected isRequest(target: any): target is TRequest {
+        return target instanceof TransportRequest
+    }
+
+    protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
+        return new TransportRequest(pattern, options) as TRequest;
+    }
+
+    protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
+        | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {
+        return new TransportParams({ params })
     }
 
     /**
      * connect service.
      */
     protected abstract connect(): Promise<any> | Observable<any>;
+    /**
+     * init request context.
+     * @param context 
+     */
+    protected abstract initContext(context: InvocationContext): void;
+
+    protected abstract onShutdown(): Promise<void>;
 
 }
 

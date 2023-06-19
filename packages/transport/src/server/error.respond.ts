@@ -1,14 +1,12 @@
 import { MessageExecption, ENOENT, AssetContext } from '@tsdi/core';
 import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
-import { StatusVaildator } from '../status';
 
 
 @Injectable({ static: true })
 export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
 
     respond(context: TCtx, err: MessageExecption): any {
-
 
         //finllay defalt send error.
         let headerSent = false;
@@ -35,19 +33,13 @@ export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
         // then set those specified
         if (err.headers) context.setHeader(err.headers);
 
-        const vaildator = context.get(StatusVaildator);
+        const vaildator = context.vaildator;
         // force text/plain
         context.type = 'text';
         let status = err.status || err.statusCode;
         let msg;
-        // if (err instanceof MessageExecption) {
-        //     msg = err.message
-        //     if (isNil(status)) {
-        //         status = vaildator.serverError;
-        //     }
-        // } else {
         // ENOENT support
-        if (ENOENT === err.code) status = vaildator.notFound; //factory.create('NotFound');
+        if (ENOENT === err.code) status = vaildator.notFound;
 
         // default to 500
         if (!isNumber(status) || !vaildator.isStatus(status)) status = vaildator.serverError;

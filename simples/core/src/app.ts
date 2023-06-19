@@ -1,17 +1,17 @@
 import { Module } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logs';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { LoggerModule, LogConfigure } from '@tsdi/logs';
+import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
+import { SwaggerModule } from '@tsdi/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { User } from './models/User';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
-import { LogConfigure } from '@tsdi/logs';
 import { Role } from './models/Role';
 
 
@@ -97,7 +97,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         ServerLogsModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections),
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 2,
                 cors: true,
@@ -106,6 +106,9 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                     key
                 }
             }
+        }),
+        SwaggerModule.withOptions({
+            title: ''
         })
     ],
     declarations: [

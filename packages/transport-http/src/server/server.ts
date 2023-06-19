@@ -1,6 +1,6 @@
-import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString } from '@tsdi/ioc';
-import { Server, ModuleLoader, ListenService, InternalServerExecption, ApplicationRunners, ListenOpts } from '@tsdi/core';
-import { Log, Logger } from '@tsdi/logs';
+import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
+import { MiddlewareServer, ModuleLoader, ListenService, InternalServerExecption, HTTP_LISTEN_OPTS } from '@tsdi/core';
+import { InjectLog, Logger } from '@tsdi/logs';
 import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -9,7 +9,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
-import { HttpServerOpts, HTTP_SERVER_OPTS } from './options';
+import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
 import { HttpEndpoint } from './endpoint';
 
 
@@ -17,11 +17,11 @@ import { HttpEndpoint } from './endpoint';
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpContext, HttpServResponse> implements ListenService<ListenOptions>  {
+export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> implements ListenService<ListenOptions>  {
 
-    @Log() logger!: Logger;
+    @InjectLog() logger!: Logger;
 
-    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERVER_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
+    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
     }
@@ -39,6 +39,8 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
     listen(arg1: ListenOptions | number, arg2?: any, listeningListener?: () => void): this {
         if (!this._server) throw new InternalServerExecption();
         const isSecure = this.isSecure;
+
+        const moduleRef = this.endpoint.injector.get(ModuleRef);
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -46,7 +48,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+                moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!')
                 this._server.listen(port, host, listeningListener);
             } else {
@@ -54,7 +56,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { port };
                 }
-                this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+                moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
                 this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
                 this._server.listen(port, listeningListener);
             }
@@ -63,7 +65,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.endpoint.injector.setValue(ListenOpts, this.options.listenOpts);
+            moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
             this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             this._server.listen(opts, listeningListener);
         }
@@ -102,17 +104,17 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
 
     protected override async onStart(): Promise<any> {
         if (!this._server) throw new InternalServerExecption();
-        // const cleanup = await super.setupServe(server, observer, opts);
         const opts = this.options;
-        const injector = this.endpoint.injector;
-        const sharing = opts.sharing;
-        //sharing servers
-        if (sharing) {
-            const runners = injector.get(ApplicationRunners);
-            await Promise.all(sharing.map(sr => {
-                return runners.run(sr);
-            }))
-        }
+        // const injector = this.endpoint.injector;
+        // const hybrids = opts.hybrids;
+        // //hybrids servers
+        // if (hybrids) {
+        //     injector.setValue(HYBRID_HOST, this._server);
+        //     const runners = injector.get(ApplicationRunners);
+        //     await Promise.all(hybrids.map(sr => {
+        //         return runners.run(sr);
+        //     }))
+        // }
 
         this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
         this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
@@ -159,25 +161,6 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
         return cancel;
     }
 
-    // protected async setupServe(server: http2.Http2Server | http.Server | https.Server, observer: Subscriber<http2.Http2Server | http.Server | https.Server>, opts: HttpServerOpts): Promise<Cleanup> {
-    //     // const cleanup = await super.setupServe(server, observer, opts);
-    //     const injector = this.endpoint.injector;
-    //     const sharing = opts.sharing;
-    //     //sharing servers
-    //     if (sharing) {
-    //         const factory = injector.get(RunnableFactory);
-    //         const providers = [
-    //             { provide: HttpServer, useValue: this },
-    //             { provide: HTTP_SERVEROPTIONS, useValue: opts }
-    //         ];
-    //         await Promise.all(sharing.map(sr => {
-    //             const runnable = factory.create(sr, injector, { providers });
-    //             return runnable.run()
-    //         }))
-    //     }
-    //     return cleanup;
-    // }
-
 
     protected validOptions(opts: HttpServerOpts) {
         const withCredentials = this._secure = opts.protocol !== 'http' && !!(opts.serverOpts as any).cert;
@@ -185,7 +168,7 @@ export class HttpServer extends Server<HttpContext, HttpServResponse> implements
     }
 
     protected createContext(req: HttpServRequest, res: HttpServResponse): HttpContext {
-        return new HttpContext(this.endpoint.injector, req, res, this.options.proxy);
+        return new HttpContext(this.endpoint.injector, req, res, this.options);
     }
 
 

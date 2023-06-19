@@ -1,14 +1,15 @@
 import { ServerModule } from '@tsdi/platform-server';
 import { Module } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServerModule, HttpServer } from '../src';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
+
 
 @Module({
     imports: [
@@ -32,13 +33,17 @@ describe('middleware', () => {
             uses: [
                 ServerModule,
                 ServerTransportModule,
+                
+                MicroServiceRouterModule.forRoot({ protocol: 'mqtt' }),
                 HttpModule.withOption({
                     clientOpts: {
                         authority: 'https://localhost:3200',
                         options: {
                             ca: cert
                         }
-                    },
+                    }
+                }),
+                HttpServerModule.withOption({
                     serverOpts: {
                         majorVersion: 2,
                         serverOpts: {

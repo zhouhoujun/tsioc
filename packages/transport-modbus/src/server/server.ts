@@ -1,22 +1,24 @@
-import { ListenOpts } from '@tsdi/core';
+import { Server, TransportEndpoint } from '@tsdi/core';
 import { Injectable, Token } from '@tsdi/ioc';
-import { Connection, ConnectionOpts, TransportServer, TransportServerOpts } from '@tsdi/transport';
 import * as modbus from 'modbus-serial';
 import { Observable, Subscription } from 'rxjs';
+import { ModbusContext } from './context';
 
 
 @Injectable()
-export class ModbusServer extends TransportServer {
-    
-    protected createServer(opts: TransportServerOpts) {
-        const server = new modbus.ServerTCP()
-    
-    }
-    protected listen(server: any, opts: ListenOpts): Promise<void> {
+export class ModbusServer extends Server<ModbusContext> {
+    private server?: modbus.ServerTCP;
+    get endpoint(): TransportEndpoint<ModbusContext, any> {
         throw new Error('Method not implemented.');
     }
-    protected onConnection(server: any, opts?: ConnectionOpts | undefined): Observable<Connection> {
+    protected async onStartup(): Promise<any> {
+        const server = this.server = new modbus.ServerTCP()
+    }
+    protected onStart(): Promise<any> {
         throw new Error('Method not implemented.');
     }
-    
+    protected onShutdown(): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
 }

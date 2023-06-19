@@ -1,4 +1,4 @@
-import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, ReflectiveFactory } from '@tsdi/ioc';
+import { isString, Type, ClassMetadata, DecoratorOption, createDecorator, EMPTY_OBJ, ActionTypes, lang, ReflectiveFactory } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { Advisor } from '../Advisor';
 import { AopDef } from './ref';
@@ -17,10 +17,10 @@ export interface Aspect {
      * @Aspect()
      *
      * @param {string} annotation set pointcut in the class with the annotation decorator only.
-     * @param {(ClassType | ClassType[])>} [within]  set pointcut in the class with the annotation decorator only.
+     * @param {(Type | Type[])>} [within]  set pointcut in the class with the annotation decorator only.
      * @param {ClassMetadata} [append] append class metadata.
      */
-    (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata): ClassDecorator;
+    (annotation: string, within?: Type | Type[], append?: ClassMetadata): ClassDecorator;
 
     /**
      * Aspect decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
@@ -65,7 +65,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
             next()
         }
     },
-    props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) =>
+    props: (annotation: string, within?: Type | Type[], append?: ClassMetadata) =>
         ({ annotation, within, ...append })
 });
 

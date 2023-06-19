@@ -1,4 +1,4 @@
-import { BadRequestExecption, Get, Handle, Post, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { BadRequestExecption, Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { RedirectResult } from '@tsdi/transport';
 import {  of } from 'rxjs';
@@ -64,14 +64,14 @@ export class DeviceController {
 
 
 
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'coap')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle(/dd./, 'tcp')
-    async subMessage1() {
-
+    @Handle('dd/*')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
 
 

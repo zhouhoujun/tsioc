@@ -6,6 +6,8 @@ import { TypeOrmHelper } from '@tsdi/typeorm-adapter';
 import * as expect from 'expect';
 import { UserRepository } from './repositories/UserRepository';
 import { option, MockBootTest } from './app';
+import { HttpClient } from '@tsdi/common';
+import { lastValueFrom } from 'rxjs';
 
 
 @Suite('load Repository test')
@@ -48,44 +50,41 @@ export class LoadReposTest {
     async getUser0() {
         const usrRep = this.ctx.injector.get(UserRepository);
         expect(usrRep).toBeInstanceOf(UserRepository);
-        const rep = await this.ctx.send('/users/admin----test', { method: 'get' });
+        const rep = await lastValueFrom(this.ctx.get(HttpClient).get<User>('/users/admin----test', { observe: 'response' }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.account).toEqual('admin----test');
+        expect(rep.body?.account).toEqual('admin----test');
     }
 
     @Test()
     async deleteUser() {
         const rep = this.ctx.injector.get(UserRepository);
-        let svu = await rep.findByAccount('admin----test');
+        const svu = await rep.findByAccount('admin----test');
         await rep.remove(svu!);
     }
 
     @Test()
     async postUser() {
-        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'post_test', account: 'post_test', password: '111111' } });
+        const rep = await lastValueFrom(this.ctx.get(HttpClient).post<User>('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.name).toEqual('post_test');
+        expect(rep.body?.name).toEqual('post_test');
     }
 
     @Test()
     async getUser() {
-        const rep = await this.ctx.send('/users/post_test', { method: 'get' });
-        expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.account).toEqual('post_test');
+        const rep = await lastValueFrom(this.ctx.get(HttpClient).get<User>('/users/post_test'));
+        expect(rep).toBeInstanceOf(User);
+        expect(rep.account).toEqual('post_test');
     }
 
     @Test()
     async detUser() {
-        const rep1 = await this.ctx.send('/users/post_test', { method: 'get' });
-        expect(rep1.status).toEqual(200);
-        expect(rep1.body).toBeInstanceOf(User);
-        const rep = await this.ctx.send('/users/' + rep1.body.id, { method: 'delete' });
-        expect(rep.status).toEqual(200);
-        expect(rep.body).toBeTruthy();
+        const rep1 = await lastValueFrom(this.ctx.get(HttpClient).get<User>('/users/post_test'));
+        expect(rep1).toBeInstanceOf(User);
+        const rep = await lastValueFrom(this.ctx.get(HttpClient).delete('/users/' + rep1.id));
+        expect(rep).toBeTruthy();
     }
 
     @After()

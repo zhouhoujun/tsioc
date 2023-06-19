@@ -47,7 +47,9 @@ export const option = {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
@@ -79,7 +81,9 @@ export class MockBootTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,
@@ -108,7 +112,9 @@ export class MockBootLoadTest {
         ServerModule,
         LoggerModule,
         HttpModule.withOption({
-            majorVersion: 1
+            serverOpts: {
+                majorVersion: 1
+            }
         }),
         HttpClientModule,
         ServerHttpClientModule,

@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isFunction, isNil, isPrimitive, isPromise, isType } from './chk';
+import { Type, Modules } from '../types';
+import { getClass, isArray, isFunction, isNil, isObject, isPrimitive, isPromise, isType } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -105,6 +105,23 @@ export function deepForEach<T>(
     })
 }
 
+/**
+ * deep in object.
+ * @param input 
+ * @param fn 
+ * @param path 
+ * @returns 
+ */
+export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
+    if (isObject(input) == false) return;
+    Object.keys(input).forEach(name => {
+        const chpth = path ? name : `${path}.${name}`;
+        const val = input[name];
+        if (isNil(val) || fn(chpth, val) === false) return;
+        deepIn(val, fn, chpth);
+    })
+}
+
 
 /**
  * first.
@@ -156,7 +173,7 @@ export function last<T>(list: T[]): T {
  * get class name.
  *
  * @export
- * @param {AbstractType} target
+ * @param {} target
  * @returns {string}
  */
 export function getClassName(target: any): string {
@@ -171,10 +188,10 @@ export function getClassName(target: any): string {
  * get target type parent class.
  *
  * @export
- * @param {ClassType} target
- * @returns {ClassType}
+ * @param {Type} target
+ * @returns {Type}
  */
-export function getParentClass(target: ClassType): ClassType {
+export function getParentClass(target: Type): Type {
     const ty = Object.getPrototypeOf(target.prototype)?.constructor ?? Object.getPrototypeOf(target);
     return ty === Object ? null : ty
 }
@@ -183,11 +200,11 @@ export function getParentClass(target: ClassType): ClassType {
  * get all parent class in chain.
  *
  * @export
- * @param {ClassType} target
- * @returns {ClassType[]}
+ * @param {Type} target
+ * @returns {Type[]}
  */
-export function getClassChain(target: ClassType): ClassType[] {
-    const types: ClassType[] = [];
+export function getClassChain(target: Type): Type[] {
+    const types: Type[] = [];
     forInClassChain(target, type => {
         types.push(type)
     });
@@ -201,7 +218,7 @@ export function getClassChain(target: ClassType): ClassType[] {
  * @param {Type} target
  * @param {(token: Type) => any} express
  */
-export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
+export function forInClassChain(target: Type, express: (token: Type) => any): void {
     while (target) {
         if (express(target) === false) {
             break
@@ -223,7 +240,7 @@ export function hasItem(arr: any): boolean {
  * @param target target type
  * @param baseType base class type.
  */
-export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is Type<T> {
+export function isBaseOf<T>(target: any, baseType: Type<T>): target is Type<T> {
     return isFunction(target) && (Object.getPrototypeOf(target.prototype) instanceof baseType || Object.getPrototypeOf(target) === baseType)
 }
 
@@ -232,10 +249,10 @@ export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is Type
  *
  * @export
  * @param {Token} target
- * @param {(ClassType | ((type: ClassType) => boolean))} baseClass
+ * @param {(Type | ((type: Type) => boolean))} baseClass
  * @returns {boolean}
  */
-export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass: T | ((type: T) => boolean)): target is T {
+export function isExtendsClass<T extends Type>(target: Type, baseClass: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
     if (isType(target) && baseClass) {
         const isCls = isType(baseClass) && !isPrimitive(baseClass);
@@ -258,10 +275,10 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
  * @param {...Express<Type, boolean>[]} filters
  * @returns {Type[]}
  */
-export function getTypes(mds: Modules | Modules[]): Type[] {
-    const types: Type[] = [];
+export function getTypes<T extends Type>(mds: Modules<T> | Modules<T>[]): T[] {
+    const types: T[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
-        isType(ty) && types.push(ty)
+        isType(ty) && types.push(ty as T)
     }, v => isPlainObject(v));
     return types
 }
@@ -409,12 +426,12 @@ export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> 
 }
 
 export function promisify(func: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
-export function promisify<T = void>(func: (callback: (err: any, result?: void | T) => void) => void, owner?: any): () => Promise<T>;
-export function promisify<T = void, A1 = any>(func: (arg1: A1, callback: (err: any, result?: void | T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any, A3 = any>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any, A3 = any, A4 = any>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
-export function promisify<T = void, A1 = any, A2 = any, A3 = any, A4 = any, A5 = any>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Promise<T>;
+export function promisify<T>(func: (callback: (err: any, result?: T) => void) => void, owner?: any): () => Promise<T>;
+export function promisify<T, A1>(func: (arg1: A1, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
+export function promisify<T, A1, A2>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
+export function promisify<T, A1, A2, A3>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
+export function promisify<T, A1, A2, A3, A4>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
+export function promisify<T, A1, A2, A3, A4, A5>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Promise<T>;
 export function promisify(nodeFunction: (...args: any[]) => void, owner?: any): (...args: any[]) => Promise<any> {
     if (owner) {
         nodeFunction = nodeFunction.bind(owner);

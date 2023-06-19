@@ -35,7 +35,7 @@ export abstract class Student {
     @Inject(CONTAINER)
     container!: Container;
 
-    @Inject({provider: Date, defaultValue: new Date()})
+    @Inject({ provider: Date, defaultValue: new Date() })
     join: any;
     constructor() {
     }
@@ -144,7 +144,7 @@ export class InjCollegeAliasClassRoom {
         // @Inject({ provider: CollegeStudent })
         // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
         // @Inject({ type: CollegeStudent })
-        @Autowired(Student, { alias: 'college'})
+        @Autowired(Student, { alias: 'college' })
         public leader: Student
     ) {
 

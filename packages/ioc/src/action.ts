@@ -172,7 +172,7 @@ export abstract class Actions<T> extends Action<T> {
      * @param provider action provider
      * @param ac action.
      */
-    protected parseHandle(provider: Platform, ac: any): Handle {
+    protected parseHandle(provider: Platform, ac: ActionType): Handle {
         if (isBaseOf(ac, Action)) {
             if (!provider.hasAction(ac)) {
                 provider.registerAction(ac)

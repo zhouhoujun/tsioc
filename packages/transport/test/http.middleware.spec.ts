@@ -2,10 +2,10 @@ import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { Application } from '@tsdi/core';
 import { ServerModule } from '@tsdi/platform-server';
-import { Http, HttpModule, HttpServer } from '@tsdi/transport-http';
+import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
 
 import expect = require('expect');
-import { catchError, lastValueFrom, Observable, of, throwError } from 'rxjs';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -36,7 +36,9 @@ describe('middleware', () => {
                         options: {
                             ca: cert
                         }
-                    },
+                    }
+                }),
+                HttpServerModule.withOption({
                     serverOpts: {
                         majorVersion: 2,
                         serverOpts: {

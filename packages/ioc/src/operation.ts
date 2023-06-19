@@ -1,6 +1,6 @@
-import { ClassType } from './types';
-import { InvocationContext } from './context';
 import { Observable } from 'rxjs';
+import { Type } from './types';
+import { InvocationContext } from './context';
 import { ReflectiveRef } from './reflective';
 
 
@@ -40,7 +40,7 @@ export interface OperationInvoker<T = any> {
     /**
      * method return type.
      */
-    get returnType(): ClassType;
+    get returnType(): Type;
     /**
      * invoke method name
      * 
@@ -79,6 +79,11 @@ export interface OperationInvoker<T = any> {
      * @param context 
      */
     resolveArguments(context: InvocationContext): any[];
+    /**
+     * is equals to target or not.
+     * @param target 
+     */
+    equals(target: OperationInvoker): boolean;
 }
 
 /**

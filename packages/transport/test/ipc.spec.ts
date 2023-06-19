@@ -1,17 +1,22 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, Module, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MessageRouter, MicroServiceRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, Token, getToken, isArray, lang } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
+import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TcpClient, TcpClientOpts, TcpModule, TcpServer } from '@tsdi/transport-tcp';
-import { RedirectResult } from '../src';
-import { LoggerModule } from '@tsdi/logs';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
 
 
 @RouteMapping('/device')
 export class DeviceController {
+
+    @RouteMapping('/', 'GET')
+    list(@RequestParam({ nullable: true }) name: string) {
+        return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
+    }
 
     @RouteMapping('/init', 'POST')
     req(name: string) {
@@ -20,18 +25,18 @@ export class DeviceController {
     }
 
     @RouteMapping('/usage', 'POST')
-    age(id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
         console.log('usage:', id, year, createAt);
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'MESSAGE')
+    @RouteMapping('/usege/find', 'GET')
     agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
         console.log('limit:', limit);
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'MESSAGE')
+    @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
@@ -54,7 +59,7 @@ export class DeviceController {
         return await defer.promise;
     }
 
-    @RouteMapping('/status', 'MESSAGE')
+    @RouteMapping('/status', 'GET')
     getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
         if (redirect === 'reload') {
             return new RedirectResult('/device/reload');
@@ -62,21 +67,21 @@ export class DeviceController {
         return of('working');
     }
 
-    @RouteMapping('/reload', 'MESSAGE')
+    @RouteMapping('/reload', 'GET')
     redirect() {
         return 'reload';
     }
 
 
 
-    @Handle({ cmd: 'xxx', protocol: 'tcp' })
-    async subMessage() {
-
+    @Handle({ cmd: 'xxx' }, 'tcp')
+    async subMessage(@Payload() message: string) {
+        return message;
     }
 
-    @Handle('dd*', 'tcp')
-    async subMessage1() {
-
+    @Handle('dd/*')
+    async subMessage1(@Payload() message: string) {
+        return message;
     }
 
 
@@ -92,10 +97,25 @@ const ipcpath = path.join(__dirname, 'myipctmp')
     imports: [
         ServerModule,
         LoggerModule,
-        TcpModule.withOptions({
-            timeout: 1000,
-            listenOpts: {
-                path: ipcpath
+        TcpClientModule,
+        // clientOpts:{
+        //     connectOpts: {
+        //         path: ipcpath
+        //     }
+        // },
+        MicroServiceRouterModule.forRoot('tcp'),
+        TcpServerModule.withOptions({
+            serverOpts: {
+                // timeout: 1000,
+                listenOpts: {
+                    path: ipcpath
+                },
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                    { useExisting: MicroServiceRouterModule.getToken('tcp') }
+                ]
             }
         })
     ],
@@ -120,13 +140,15 @@ describe('IPC Server & IPC Client', () => {
         ctx = await Application.run(IPCTestModule);
         injector = ctx.injector;
         client = injector.resolve(TcpClient, {
-            provide: TcpClientOpts,
+            provide: TCP_CLIENT_OPTS,
             useValue: {
                 connectOpts: {
                     path: ipcpath
                 }
             } as TcpClientOpts
         });
+        // //or 
+        // client = injector.get(TcpClient);
     });
 
 
@@ -142,9 +164,34 @@ describe('IPC Server & IPC Client', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
+    it('query all', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
+
+    it('query with params ', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
 
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
+        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -218,7 +265,7 @@ describe('IPC Server & IPC Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -245,7 +292,7 @@ describe('IPC Server & IPC Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
@@ -272,7 +319,7 @@ describe('IPC Server & IPC Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual(400);
     })
 
 
@@ -297,6 +344,29 @@ describe('IPC Server & IPC Client', () => {
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })
+
+    it('xxx micro message', async () => {
+        const result = 'reload2';
+        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('dd micro message', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
 
 
 

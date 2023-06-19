@@ -1,189 +1,118 @@
 
-import { ExecptionFilter, Interceptor, ListenOpts, MiddlewareType, Router } from '@tsdi/core';
-import { Abstract, Injectable, lang, Nullable, promisify, tokenId } from '@tsdi/ioc';
-import {
-    LogInterceptor, TransportServer, TransportServerOpts,
-    ConnectionOpts, Connection, IncomingMessage, OutgoingMessage, TransportContext,
-    ExecptionFinalizeFilter, TransportExecptionHandlers, ContentMiddleware, SessionMiddleware,
-    EncodeJsonMiddleware, BodyparserMiddleware, DuplexConnection
-} from '@tsdi/transport';
-import * as net from 'net';
-import * as dgram from 'dgram';
-import { CoapPacketFactory, CoapVaildator } from '../transport';
-import { Duplex } from 'form-data';
-
-
-/**
- * Coap server options.
- */
-@Abstract()
-export abstract class CoapServerOpts extends TransportServerOpts<IncomingMessage, OutgoingMessage> {
-    /**
-     * is json or not.
-     */
-    abstract json?: boolean;
-    abstract baseOn?: 'tcp' | 'udp';
-    abstract encoding?: BufferEncoding;
-    abstract serverOpts: dgram.SocketOptions | net.ServerOpts;
-}
-
-/**
- * CoAP server interceptors.
- */
-export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor<IncomingMessage, OutgoingMessage>[]>('COAP_SERV_INTERCEPTORS');
-
-/**
- * CoAP server execption filters.
- */
-export const COAP_EXECPTION_FILTERS = tokenId<ExecptionFilter[]>('COAP_EXECPTION_FILTERS');
-/**
- * CoAP middlewares.
- */
-export const COAP_MIDDLEWARES = tokenId<MiddlewareType[]>('COAP_MIDDLEWARES');
-
-const defOpts = {
-    json: true,
-    encoding: 'utf8',
-    transport: {
-        strategy: CoapVaildator
-    },
-    interceptorsToken: COAP_SERV_INTERCEPTORS,
-    execptionsToken: COAP_EXECPTION_FILTERS,
-    middlewaresToken: COAP_MIDDLEWARES,
-    interceptors: [
-        LogInterceptor
-    ],
-    execptions: [
-        ExecptionFinalizeFilter,
-        TransportExecptionHandlers
-    ],
-    middlewares: [
-        ContentMiddleware,
-        SessionMiddleware,
-        EncodeJsonMiddleware,
-        BodyparserMiddleware,
-        Router
-    ],
-    serverOpts: {
-        type: 'udp4'
-    },
-    listenOpts: {
-        port: 4000,
-        host: 'localhost'
-    }
-} as CoapServerOpts;
-
+import { AssetContext, InternalServerExecption, BindListenning, Server as MircoServer, Outgoing } from '@tsdi/core';
+import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { Server, IncomingMessage, OutgoingMessage } from 'coap';
+import { COAP_MICRO_SERV_OPTS, COAP_SERV_OPTS, CoapServerOpts } from './options';
+import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
+import { LOCALHOST, ev } from '@tsdi/transport';
+import { Subscription, finalize } from 'rxjs';
+import { CoapOutgoing } from './outgoing';
+import { CoapContext } from './context';
 
 /**
  * Coap server.
  */
 @Injectable()
-export class CoapServer extends TransportServer<net.Server | dgram.Socket, IncomingMessage, OutgoingMessage, CoapServerOpts> {
+export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implements BindListenning {
 
-
-    constructor(@Nullable() options: CoapServerOpts) {
-        super(options)
+    @InjectLog() logger!: Logger;
+    protected isSecure = false;
+    constructor(
+        readonly endpoint: CoapMicroEndpoint,
+        @Inject(COAP_MICRO_SERV_OPTS) protected options: CoapServerOpts) {
+        super()
     }
 
-    async close(): Promise<void> {
-        await promisify(this.server.close, this.server)();
-    }
+    private _server?: Server;
 
-    protected override getDefaultOptions() {
-        return defOpts;
-    }
-
-    protected override createServer(opts: CoapServerOpts): dgram.Socket | net.Server {
-        return opts.baseOn == 'tcp' ? net.createServer(opts.serverOpts as net.ServerOpts) : dgram.createSocket(opts.serverOpts as dgram.SocketOptions)
-    }
-
-    protected createConnection(socket: Duplex, opts?: ConnectionOpts | undefined): Connection {
-        const packet = this.context.get(CoapPacketFactory);
-        return new DuplexConnection(socket, packet, opts)
-    }
-
-    protected createContext(req: IncomingMessage, res: OutgoingMessage): TransportContext<IncomingMessage, OutgoingMessage> {
-        const injector = this.context.injector;
-        return new TransportContext(injector, req, res, this, injector.get(CoapVaildator))
-    }
-
-    // protected override onConnection(server: net.Server | dgram.Socket, opts?: ConnectionOpts): Observable<Connection> {
-    //     const packetor = this.context.get(Packetor);
-    //     if (server instanceof net.Server) {
-    //         return this.tcpConnect(server, packetor, opts);
-    //     } else {
-    //         return this.udpConnect(server, packetor, opts);
-    //     }
-
-    // }
-
-    // protected tcpConnect(server: net.Server, packetor: Packetor, opts?: any): Observable<Connection> {
-    //     return new Observable((observer) => {
-    //         const onError = (err: Error) => {
-    //             observer.error(err);
-    //         };
-    //         const onConnection = (socket: net.Socket) => {
-    //             observer.next(new Connection(socket, packetor, opts));
-    //         }
-    //         const onClose = () => {
-    //             observer.complete();
-    //         }
-    //         server.on(ev.ERROR, onError);
-    //         server.on(ev.CONNECTION, onConnection);
-    //         server.on(ev.CLOSE, onClose)
-
-    //         return () => {
-    //             server.off(ev.ERROR, onError);
-    //             server.off(ev.CLOSE, onClose);
-    //             server.off(ev.CONNECTION, onConnection);
-    //         }
-    //     })
-    // }
-
-    // protected udpConnect(server: dgram.Socket, packetor: Packetor, opts?: any): Observable<Connection> {
-    //     return new Observable((observer) => {
-    //         const connections = new Map<string, Connection>()
-    //         const onError = (err: Error) => {
-    //             observer.error(err);
-    //         };
-    //         const onListening = (msg: Buffer, rinfo: dgram.RemoteInfo) => {
-    //             const addr = `${rinfo.family}_${rinfo.address}:${rinfo.port}`;
-    //             let conn = connections.get(addr);
-    //             if (!conn) {
-    //                 conn = new Connection(parseToDuplex(server, rinfo), packetor, opts);
-    //                 conn.once(ev.DISCONNECT, () => connections.delete(addr));
-    //                 conn.once(ev.END, () => connections.delete(addr));
-    //                 connections.set(addr, conn);
-    //             }
-    //             observer.next(conn);
-    //         }
-    //         const onClose = () => {
-    //             observer.complete();
-    //         }
-    //         server.on(ev.ERROR, onError);
-    //         server.on(ev.MESSAGE, onListening);
-    //         server.on(ev.CLOSE, onClose)
-
-    //         return () => {
-    //             connections.forEach(c => {
-    //                 c.destroy();
-    //             })
-    //             connections.clear();
-    //             server.off(ev.ERROR, onError);
-    //             server.off(ev.CLOSE, onClose);
-    //             server.off(ev.MESSAGE, onListening);
-    //         }
-    //     })
-    // }
-
-    protected listen(opts: ListenOpts): Promise<void> {
-        const defer = lang.defer<void>();
-        if (this.server instanceof net.Server) {
-            this.server.listen(opts, defer.resolve);
+    listen(listenOpts?: { port?: number, listener?: () => void }): this;
+    listen(listeningListener?: () => void): this;
+    listen(port: number, listeningListener?: () => void): this;
+    listen(arg1: any, listeningListener?: () => void): this {
+        if (!this._server) throw new InternalServerExecption();
+        if (isNumber(arg1)) {
+            this._server.listen(arg1, listeningListener);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
+        } else if (isFunction(arg1)) {
+            this._server.listen(listeningListener);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
+        } else if (arg1) {
+            this._server.listen(arg1.port, arg1.listener);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1.port}`, '!')
         } else {
-            this.server.bind(opts, defer.resolve);
+            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
+            this._server.listen();
         }
-        return defer.promise;
+        return this;
     }
 
+    protected async onStartup(): Promise<any> {
+        this._server = this.createServer(this.options);
+    }
+    protected async onStart(): Promise<any> {
+        if (!this._server) throw new InternalServerExecption();
+
+        this._server.on(ev.CLOSE, (err) => {
+            this.logger.info('Coap Server closed!');
+            if (err) this.logger.error(err);
+        });
+        this._server.on(ev.ERROR, (err) => this.logger.error(err));
+
+        this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res))
+
+        this.listen(this.options.listenOpts as any);
+
+    }
+    protected async onShutdown(): Promise<any> {
+        if (!this._server) return;
+        await promisify(this._server.close, this._server)();
+    }
+
+    protected createServer(opts: CoapServerOpts): Server {
+        return new Server(opts.connectOpts)
+    }
+
+    /**
+     * request handler.
+     * @param observer 
+     * @param req 
+     * @param res 
+     */
+    protected requestHandler(req: IncomingMessage, res: OutgoingMessage): Subscription {
+
+        const ctx = this.createContext(req, CoapOutgoing.parse(res));
+        const cancel = this.endpoint.handle(ctx)
+            .pipe(finalize(() => {
+                ctx.destroy();
+            }))
+            .subscribe({
+                error: (err) => {
+                    this.logger.error(err)
+                }
+            });
+        // const opts = this.options;
+        // opts.timeout && req..setTimeout && req.setTimeout(opts.timeout, () => {
+        //     req.emit?.(ev.TIMEOUT);
+        //     cancel?.unsubscribe()
+        // });
+        req.once(ev.ABOUT, () => cancel?.unsubscribe())
+        return cancel;
+    }
+
+    protected createContext(req: IncomingMessage, res: CoapOutgoing): CoapContext {
+        const injector = this.endpoint.injector;
+        return new CoapContext(injector, req, res);
+    }
+
+
+}
+
+@Injectable()
+export class CoapServer extends CoapMicroService {
+    constructor(
+        endpoint: CoapEndpoint,
+        @Inject(COAP_SERV_OPTS) options: CoapServerOpts) {
+        super(endpoint, options)
+    }
 }

@@ -1,4 +1,4 @@
-import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
 import { Pattern } from './pattern';
 import { OperationEndpoint } from '../endpoints/endpoint.factory';
 import { EndpointOptions } from '../endpoints/endpoint.service';
@@ -8,6 +8,8 @@ import { EndpointOptions } from '../endpoints/endpoint.service';
  * Opteration Endpoint
  */
 export abstract class RouteEndpoint extends OperationEndpoint {
+
+    abstract get options(): RouteEndpointOptions;
     /**
      * invoker.
      */
@@ -26,6 +28,10 @@ export interface RouteEndpointOptions<T = any> extends EndpointOptions<T> {
      * route prefix
      */
     prefix?: string;
+    /**
+     * dynamic tokens for path of topic.  
+     */
+    paths?: Record<string, Token>;
 }
 
 /**

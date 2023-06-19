@@ -1,5 +1,5 @@
 import { tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { GuardHandler } from '../handlers/guards';
+import { Handler } from '../Handler';
 import { Middleware, MiddlewareFn } from './middleware';
 import { EndpointOptions } from '../endpoints/endpoint.service';
 
@@ -24,10 +24,6 @@ export interface Route<TArg = any> extends EndpointOptions<TArg> {
      * When not present, router does not redirect.
      */
     redirectTo?: string;
-    /**
-     * transport protocol
-     */
-    protocol?: string;
 
     /**
      * An array of child `Route` objects that specifies a nested route
@@ -47,7 +43,7 @@ export interface Route<TArg = any> extends EndpointOptions<TArg> {
     /**
      * ednpoint.
      */
-    endpoint?: TypeOf<GuardHandler>;
+    endpoint?: TypeOf<Handler>;
     /**
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.
@@ -75,22 +71,19 @@ export type Routes<T = any> = Route<T>[];
 export const ROUTES = tokenId<Routes>('ROUTES');
 
 
-const staExp = /^\//;
-const endExp = /\/$/;
+const sta$ = /^\s*\//;
+const trim$ = /(?:^\s*\/)|(?:\/\s+$)/;
 
 export function joinprefix(...paths: (string | undefined)[]) {
     const joined = paths
         .map(p => {
-            if (!p) return '';
-            p = p.trim();
-            const start = staExp.test(p) ? 1 : 0;
-            const end = endExp.test(p) ? p.length - 1 : p.length;
-            return p.slice(start, end)
+            if (!p) return undefined;
+            return p.replace(trim$, '')
         })
         .filter(p => p)
         .join('/');
 
-    return '/' + joined
+    return joined
 }
 
 /**
@@ -98,13 +91,17 @@ export function joinprefix(...paths: (string | undefined)[]) {
  * @param route 
  * @returns 
  */
-export function normalize(route: string): string {
-    if (!route) return '/';
-    if (route === '/') return route;
+export function normalize(route: string, prefix?: string): string {
+    if (!route) return '';
 
-    let path = route.trim();
-    if (endExp.test(route)) {
-        path = path.substring(0, path.length - 1)
+    let path = route.replace(trim$, '');
+
+    if (prefix) {
+        prefix = prefix.replace(sta$, '');
+        if(path.startsWith(prefix)){
+            path = path.substring(prefix.length).replace(sta$, '')
+        }
+
     }
-    return staExp.test(path) ? path : `/${path}`
+    return path;
 }

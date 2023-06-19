@@ -1,16 +1,15 @@
 import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, TransportContext, ListenOpts, EndpointInvokeOpts
+    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, EndpointInvokeOpts,
+    normalize, StatusVaildator, StreamAdapter, FileAdapter
 } from '@tsdi/core';
-import { Abstract, Injector, isArray, isNil, isNumber, isString, lang, Token } from '@tsdi/ioc';
-import { extname } from 'path';
+import { Abstract, Injector, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
 import { MimeAdapter } from './mime';
 import { Negotiator } from './negotiator';
 import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from './utils';
-import { StatusVaildator } from './status';
-import { StreamAdapter } from './stream';
+import { ContentOptions } from './server/content';
 
 
 export interface ProxyOpts {
@@ -18,25 +17,30 @@ export interface ProxyOpts {
     maxIpsCount?: number;
 }
 
+export interface ServerOptions extends Record<string, any> {
+    proxy?: ProxyOpts;
+    content?: ContentOptions | boolean
+}
+
 /**
  * asset server context.
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string> extends AssetContext<TRequest, TResponse, TStatus> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TStatus, TServOpts> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
 
-    protected vaildator: StatusVaildator<TStatus>;
-    protected streamAdapter: StreamAdapter;
-    protected listenOpts: ListenOpts;
+    readonly vaildator: StatusVaildator<TStatus>;
+    readonly streamAdapter: StreamAdapter;
+    readonly fileAdapter: FileAdapter;
 
-    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly proxy?: ProxyOpts, options?: EndpointInvokeOpts<TRequest>) {
+    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
-        this.listenOpts = injector.get(ListenOpts);
         this.streamAdapter = injector.get(StreamAdapter);
+        this.fileAdapter = injector.get(FileAdapter);
         this.originalUrl = request.url?.toString() ?? '';
         this.init(request);
     }
@@ -46,16 +50,16 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this._url = request.url ?? '';
 
         if (this.isAbsoluteUrl(this._url)) {
-            this._url = this.URL.pathname;
+            this._url = normalize(this.URL.pathname);
         } else {
             const sidx = this._url.indexOf('?');
             if (sidx > 0) {
                 this._url = this._url.slice(0, sidx);
             }
+            this.url = normalize(this._url);
         }
-        (this.request as any) ['query'] = this.query;
+        (this.request as any)['query'] = this.query;
     }
-
 
     /**
      * Get url path.
@@ -91,6 +95,9 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this.status = ok ? this.vaildator.ok : this.vaildator.notFound
     }
 
+    get socket() {
+        return this.request.socket;
+    }
 
     /**
      * Get WHATWG parsed URL.
@@ -109,7 +116,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     protected createURL() {
         try {
-            return this.parseURL(this.request, this.listenOpts, !!this.proxy);
+            return this.parseURL(this.request, !!this.serverOptions.proxy);
         } catch (err) {
             return Object.create(null);
         }
@@ -124,7 +131,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     /**
      * parse URL.
      */
-    protected abstract parseURL(req: TRequest, listenOpts: ListenOpts, proxy?: boolean): URL;
+    protected abstract parseURL(req: TRequest, proxy?: boolean): URL;
 
     get pathname(): string {
         return this.URL.pathname
@@ -143,6 +150,11 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     get href() {
         return this.URL.href;
+    }
+
+    get protocol(): string {
+        const protocol = this.URL.protocol;
+        return protocol.substring(0, protocol.length - 1)
     }
 
     private _query?: Record<string, any>;
@@ -632,7 +644,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if (options?.contentType) {
             this.contentType = options.contentType;
         } else if (filename) {
-            this.type = extname(filename);
+            this.type = this.fileAdapter.extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION);
         this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
@@ -736,7 +748,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     get sent() {
-        return this.response.headersSent
+        return this.response.headersSent!
     }
 
     /**
@@ -835,10 +847,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         return this.setHeader(field, val)
-    }
-
-    protected override isSelf(token: Token<any>): boolean {
-        return token === AssetContext || token === AssetContext || token === TransportContext;
     }
 
 }

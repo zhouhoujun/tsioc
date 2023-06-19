@@ -1,83 +1,111 @@
-import { ExecptionFilter, Interceptor, RequestOptions, TransportEvent, TransportRequest } from '@tsdi/core';
-import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { ev, Events, TransportClient, TransportClientOpts } from '@tsdi/transport';
-import { from, map, Observable, Subscriber } from 'rxjs';
+import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
+import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logs';
+import { ev } from '@tsdi/transport';
 import * as amqp from 'amqplib';
+import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+import { AmqpHandler } from './handler';
+import { AmqpTransportSessionFactory } from '../transport';
 
 
-@Abstract()
-export abstract class AmqpClientOpts extends TransportClientOpts {
-    connectOpts?: amqp.Options.Connect;
-}
 
-/**
- * Amqp client interceptors.
- */
-export const AMQP_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('AMQP_INTERCEPTORS');
+@Injectable({ static: false })
+export class AmqpClient extends Client<TransportRequest, TransportEvent> {
 
-/**
- * Amqp client interceptors.
- */
-export const AMQP_EXECPTIONFILTERS = tokenId<ExecptionFilter[]>('AMQP_EXECPTIONFILTERS');
+    @InjectLog()
+    private logger!: Logger;
+    private _conn: amqp.Connection | null = null;
+    private _channel: amqp.Channel | null = null;
+    private _session?: TransportSession<amqp.Channel>;
 
+    constructor(
+        readonly handler: AmqpHandler,
+        @Inject(AMQP_CLIENT_OPTS) private options: AmqpClientOpts) {
+        super()
 
-const defaults = {
-    encoding: 'utf8',
-    interceptorsToken: AMQP_INTERCEPTORS,
-    execptionsToken: AMQP_EXECPTIONFILTERS,
-} as AmqpClientOpts
-
-
-@Injectable()
-export class AmqpClient extends TransportClient<amqp.Connection, RequestOptions, AmqpClientOpts> {
-
-    private _connected = false;
-    constructor(@Nullable() options: any) {
-        super(options)
+        const transportOpts = this.options.transportOpts ?? {};
+        if (!transportOpts.replyQueue) {
+            transportOpts.replyQueue = transportOpts.queue + '.reply'
+        }
     }
 
-    close(): Promise<void> {
-        return this.connection.close()
+    private _connected?: Promise<void>;
+    protected connect(): Promise<void> {
+        if (this._connected) return this._connected;
+        return this._connected = this.connecting();
     }
 
-    protected isValid(connection: amqp.Connection): boolean {
-        return this._connected
-    }
+    protected async connecting(): Promise<void> {
 
-    protected override getDefaultOptions(): AmqpClientOpts {
-        return defaults;
-    }
-
-    protected createConnection(opts: AmqpClientOpts): Observable<amqp.Connection> {
-        return from(amqp.connect(opts.connectOpts!))
-            .pipe(
-                map(conn => {
-                    return conn;
-                })
-            );
-    }
-
-    protected async createChannel(conn: amqp.Connection) {
-        const channel = await conn.createChannel();
-
-    }
-
-    protected override createConnectionEvents(connection: amqp.Connection, observer: Subscriber<amqp.Connection>): Events {
-        const events = super.createConnectionEvents(connection, observer);
-        events[ev.DISCONNECT] = (err?: Error) => {
-            err && observer.error(err);
-            this.onDisconnected();
+        if (!this._conn) {
+            this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
         }
 
-        return events;
+        const onError = (err: any) => {
+            this.logger.error(err);
+        };
+
+        const onDisConnect = (err: any) => {
+            this.logger.error('Disconnected from rmq. Try to reconnect.');
+            this.logger.error(err)
+            this.connecting();
+        };
+        const onClose = (err?: any) => {
+            err && this.logger.error(err);
+        }
+
+        this._conn.on(ev.CLOSE, onClose);
+        this._conn.on(ev.ERROR, onError);
+        this._conn.on(ev.DISCONNECT, onDisConnect);
+
+        await this.setupChancel(this._conn);
+
     }
 
-    protected onDisconnected(): void {
-        this._connected = false;
+    protected async setupChancel(conn: amqp.Connection) {
+        this._channel = await conn.createChannel();
+        const transportOpts = this.options.transportOpts!;
+
+        if (!transportOpts.noAssert) {
+            // await chl.assertQueue(transportOpts.queue, transportOpts.queueOpts);
+            await this._channel.assertQueue(transportOpts.replyQueue!, transportOpts.queueOpts)
+        }
+        await this._channel.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
+
+        await this._channel.consume(transportOpts.replyQueue!, msg => {
+            if (!msg || !this._channel) return;
+            this._channel.emit(ev.CUSTOM_MESSAGE, transportOpts.replyQueue, msg)
+        }, {
+            noAck: true,
+            ...transportOpts.consumeOpts
+        });
+
+        this._session = this.handler.injector.get(AmqpTransportSessionFactory).create(this._channel, this.options.transportOpts!);
     }
 
-    protected onConnected(): void {
-        this._connected = true;
+    protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
+        try {
+            if (retrys) {
+                const conn = await amqp.connect(this.options.connectOpts!);
+                return conn;
+            }
+        } catch (err) {
+            if (retrys) return await lang.delay(retryDelay).then(() => this.createConnection(retrys - 1, retryDelay));
+            throw err
+        }
+        return null!
+    }
+
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        context.setValue(TRANSPORT_SESSION, this._session);
+    }
+
+    protected async onShutdown(): Promise<void> {
+        this._session?.destroy();
+        await this._channel?.close();
+        await this._conn?.close();
+        this._channel = this._conn = null;
     }
 
 }

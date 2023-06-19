@@ -1,4 +1,4 @@
-import { Modules, Type, EMPTY } from '../types';
+import { Type, CtorType, Modules, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -159,7 +159,7 @@ export class DefaultInjector extends Injector {
 
     protected processRegister(platform: Platform, def: Class, option?: RegOption) {
         // make sure class register once.
-        const type = def.type as Type;
+        const type = def.type;
         if (this.has(def.type, InjectFlags.Default)) {
             return false
         }
@@ -343,10 +343,12 @@ export class DefaultInjector extends Injector {
             return this.get(token);
         }
         let context: InvocationContext | undefined;
+        let isCtx = false;
         if (args.length === 1) {
-            const arg1 = args[0]
+            const arg1 = args[0];
             if (arg1 instanceof InvocationContext) {
                 context = arg1;
+                isCtx = true;
             } else if (isArray(arg1)) {
                 context = arg1.length ? createContext(this, { providers: arg1 }) : undefined;
             } else if (arg1.provide) {
@@ -358,9 +360,9 @@ export class DefaultInjector extends Injector {
             context = createContext(this, { providers: args });
         }
 
-        const result = this.get(token, context);
+        const result = (context && !isCtx) ? context.resolve(token) : this.get(token, context);
 
-        if (context && context !== args[0] && !context.used) {
+        if (context && !isCtx && !context.used) {
             immediate(() => context!.destroy());
         }
         return result;
@@ -428,7 +430,7 @@ export class DefaultInjector extends Injector {
         } else {
             if (target instanceof Class) {
                 tgRefl = target;
-                targetClass = target.type as Type
+                targetClass = target.type
             } else {
                 instance = this.get(target as Token, context);
                 targetClass = getClass(instance);
@@ -439,7 +441,10 @@ export class DefaultInjector extends Injector {
         }
         tgRefl = tgRefl ?? get(targetClass);
         const refti = this.get(ReflectiveFactory).create(tgRefl, this);
-        return refti.invoke(propertyKey, context, instance)
+        const val = refti.invoke(propertyKey, context, instance);
+        immediate(() => refti.destroy());
+        
+        return val;
     }
 
     protected assertNotDestroyed(): void {
@@ -777,7 +782,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         }
         switch (rd.fy) {
             case FnType.Cotr:
-                return new (rd.fn as Type)(...deps)
+                return new (rd.fn as CtorType)(...deps)
             case FnType.Fac:
                 if (value === EMPTY) {
                     return rd.value = value = rd.fn?.(...deps)

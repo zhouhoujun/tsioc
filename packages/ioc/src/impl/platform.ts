@@ -1,5 +1,5 @@
 import { Token } from '../tokens';
-import { ClassType, Type } from '../types';
+import { Type, CtorType } from '../types';
 import { Handle } from '../handle';
 import { isFunction } from '../utils/chk';
 import { Action, ActionSetup } from '../action';
@@ -19,8 +19,8 @@ export class DefaultPlatform implements Platform {
 
     private _actions: Map<Token, any>;
     private _singls: Map<Token, any>;
-    private _pdrs: Map<ClassType, ProviderType[]>;
-    private _scopes: Map<string | ClassType, Injector>;
+    private _pdrs: Map<Type, ProviderType[]>;
+    private _scopes: Map<string | Type, Injector>;
 
     readonly modules = new Map<Type, ModuleRef>();
 
@@ -61,7 +61,7 @@ export class DefaultPlatform implements Platform {
         return this._singls.has(token)
     }
 
-    setInjector(scope: ClassType | string, injector: Injector) {
+    setInjector(scope: Type | string, injector: Injector) {
         this._scopes.set(scope, injector)
     }
 
@@ -125,7 +125,7 @@ export class DefaultPlatform implements Platform {
 
     protected processAction(type: Type<Action>) {
         if (this._actions.has(type)) return true;
-        const instance = new type(this) as Action & ActionSetup;
+        const instance = new (type as CtorType)(this) as Action & ActionSetup;
 
         this._actions.set(type, instance);
         if (isFunction(instance.setup)) instance.setup()
@@ -135,7 +135,7 @@ export class DefaultPlatform implements Platform {
      * get type provider.
      * @param type
      */
-    getTypeProvider(type: ClassType | Class) {
+    getTypeProvider(type: Type | Class) {
         const tyRef = isFunction(type) ? get(type) : type;
         const pdrs = tyRef.providers.slice(0);
         tyRef.extendTypes.forEach(t => {
@@ -152,7 +152,7 @@ export class DefaultPlatform implements Platform {
      * @param type 
      * @param providers 
      */
-    setTypeProvider(type: ClassType | Class, providers: StaticProvider[]) {
+    setTypeProvider(type: Type | Class, providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
         const prds = this._pdrs.get(ty);
         if (prds) {
@@ -162,7 +162,7 @@ export class DefaultPlatform implements Platform {
         }
     }
 
-    clearTypeProvider(type: ClassType) {
+    clearTypeProvider(type: Type) {
         this._pdrs.delete(type)
     }
 

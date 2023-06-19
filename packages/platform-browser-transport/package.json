@@ -35,8 +35,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "readable-stream":"^4.3.0",
-    "browserify-zlib":"^0.2.0"
+    "readable-stream":"^4.3.0"
   },
   "directories": {
     "lib": "lib"

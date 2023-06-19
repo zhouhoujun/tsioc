@@ -1,7 +1,7 @@
-import { ClassType, EMPTY, EMPTY_OBJ, Type } from '../types';
+import { Type, CtorType, EMPTY, EMPTY_OBJ } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { remove, getClassName } from '../utils/lang';
-import { isNumber, isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
+import { remove, getClassName, getClassChain } from '../utils/lang';
+import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
 import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -20,7 +20,7 @@ import { OperationInvoker } from '../operation';
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
 
-    protected _refs: InvocationContext[];
+    protected _refs: InvocationContext[] | null;
     protected _methodName?: string;
     private _injected = false;
 
@@ -35,7 +35,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     /**
      * invocation target type.
      */
-    readonly targetType: ClassType | undefined;
+    readonly targetType: Type | undefined;
 
     /**
      * named of invocation method.
@@ -72,6 +72,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             }
         }
 
+        getClassChain(getClass(this)).forEach(c => {
+            this.setValue(c, this);
+        });
+
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
@@ -85,7 +89,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return EMPTY;
     }
 
-    private _resolvers?: OperationArgumentResolver[];
+    private _resolvers?: OperationArgumentResolver[] | null;
     /**
      * the invocation arguments resolver.
      */
@@ -120,7 +124,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.assertNotDestroyed();
         contexts.forEach(j => {
             if (!this.hasRef(j)) {
-                this._refs.unshift(j)
+                this._refs!.unshift(j)
             }
         })
     }
@@ -136,7 +140,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     hasRef(ctx: InvocationContext): boolean {
         this.assertNotDestroyed();
-        return ctx === this && this._refs.indexOf(ctx) >= 0;
+        return ctx === this && this._refs!.indexOf(ctx) >= 0;
     }
 
 
@@ -163,10 +167,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     get used(): boolean {
         return this._injected
-    }
-
-    protected isSelf(token: Token) {
-        return token === InvocationContext
     }
 
     /**
@@ -197,9 +197,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     has(token: Token, flags?: InjectFlags): boolean {
         this.assertNotDestroyed();
-        if (this.isSelf(token)) return true;
         return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
-            || this._refs.some(i => i.has(token, flags))
+            || this._refs!.some(i => i.has(token, flags))
     }
 
     /**
@@ -210,38 +209,16 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns the instance of token.
      */
-    get<T>(token: Token<T>, flags?: InjectFlags): T;
-    /**
-     * get token value.
-     * 
-     * 获取上下文中标记指令的实例值
-     * @param token the token to get value.
-     * @param context invcation context, type of {@link InvocationContext}.
-     * @param flags inject flags, type of {@link InjectFlags}.
-     * @returns the instance of token.
-     */
-    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T;
-    get<T>(token: Token<T>, contextOrFlag?: InvocationContext | InjectFlags, flags?: InjectFlags): T {
+    get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
-        if (this.isSelf(token)) {
-            this._injected = true;
-            return this as any
-        }
-        let context: InvocationContext;
-        if (isNumber(contextOrFlag)) {
-            flags = contextOrFlag;
-            context = this as InvocationContext;
-        } else {
-            context = contextOrFlag ?? this
-        }
-        return (flags != InjectFlags.HostOnly ? this.injector.get(token, context, flags, null) : null)
-            ?? this.getFormRef(token, context, flags) ?? null as T;
+        return (flags != InjectFlags.HostOnly ? this.injector.get(token, this, flags, null) : null)
+            ?? this.getFormRef(token, flags) ?? null as T;
     }
 
-    protected getFormRef<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags): T | undefined {
+    protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
         let val: T | undefined;
-        this._refs.some(r => {
-            val = r.get(token, context, flags);
+        this._refs!.some(r => {
+            val = r.get(token, flags);
             return isDefined(val)
         });
 
@@ -291,7 +268,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>, target?: ClassType, failed?: (target: ClassType, propertyKey: string) => void): T | null {
+    resolveArgument<T>(meta: Parameter<T>, target?: Type, failed?: (target: Type, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         let result: T | null | undefined;
         const metaRvr = this.getMetaReolver(meta);
@@ -302,7 +279,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             }
         }
 
-        let canResolved = meta.nullable;
+        let canResolved = meta.nullable || (meta.flags && (meta.flags & InjectFlags.Optional));
         if (this.getResolvers().some(r => {
             if (r.canResolve(meta, this)) {
                 result = r.resolve(meta, this, target);
@@ -327,7 +304,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return null;
     }
 
-    protected missingExecption(missings: Parameter<any>[], type: ClassType<any>, method: string): Execption {
+    protected missingExecption(missings: Parameter<any>[], type: Type<any>, method: string): Execption {
         throw new MissingParameterExecption(missings, type, method)
     }
 
@@ -368,8 +345,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected clear() {
-        this._resolvers = null!;
-        this._refs = null!;
+        this._resolvers = null;
+        this._refs = null;
     }
 
 }
@@ -383,7 +360,7 @@ export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
  * Missing argument execption.
  */
 export class MissingParameterExecption extends Execption {
-    constructor(parameters: Parameter[], type: ClassType, method: string) {
+    constructor(parameters: Parameter[], type: Type, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }
 }
@@ -444,20 +421,22 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 return ctx.has(parameter.provider as Token, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.provider as Token, ctx, parameter.flags)
+                return ctx.get(parameter.provider as Token, parameter.flags)
             }
         },
         {
             canResolve(parameter, ctx) {
                 if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
                     || getDef(parameter.provider).abstract) return false;
-                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, InjectFlags.Default) : true
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, parameter.flags) : true
             },
             resolve(parameter, ctx) {
                 const pdr = parameter.provider!;
-                const injector = ctx.injector?.parent ?? ctx.injector;
-                injector.register(pdr as Type);
-                return injector.get(pdr, ctx, parameter.flags)
+                if (parameter.name || parameter.propertyKey) {
+                    const injector = ctx.injector.parent ?? ctx.injector;
+                    injector.register(pdr as CtorType);
+                }
+                return ctx.get(pdr, parameter.flags)
             }
         }
     ),
@@ -468,7 +447,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 return ctx.has(parameter.name!, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.name!, ctx, parameter.flags) as any
+                return ctx.get(parameter.name!, parameter.flags) as any
             }
         }
     ),
@@ -479,37 +458,31 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 return ctx.has(parameter.type!, parameter.flags)
             },
             resolve(parameter, ctx) {
-                return ctx.get(parameter.type!, ctx, parameter.flags)
+                return ctx.get(parameter.type!, parameter.flags)
             }
         },
         {
             canResolve(parameter, ctx) {
                 if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || getDef(parameter.type!).abstract) return false;
-                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, InjectFlags.Default) : true
+                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, parameter.flags) : true
             },
             resolve(parameter, ctx) {
                 const ty = parameter.type!;
-                const injector = ctx.injector?.parent ?? ctx.injector;
-                injector.register(ty as Type);
-                return injector.get(ty, ctx, parameter.flags)
+                if (parameter.name || parameter.propertyKey) {
+                    const injector = ctx.injector.parent ?? ctx.injector;
+                    injector.register(ty as CtorType);
+                }
+                return ctx.get(ty, parameter.flags)
             }
         }
     ),
     // default value
     {
         canResolve(parameter) {
-            return isDefined(parameter.defaultValue)
+            return isDefined(parameter.defaultValue) || parameter.nullable === true || (parameter.flags && !!(parameter.flags & InjectFlags.Optional)) as boolean
         },
         resolve(parameter) {
-            return parameter.defaultValue as any
-        }
-    },
-    {
-        canResolve(parameter) {
-            return parameter.nullable === true
-        },
-        resolve(parameter) {
-            return null!
+            return parameter.defaultValue ?? null
         }
     }
 ];

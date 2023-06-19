@@ -6,7 +6,7 @@ import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { ReflectiveFactory } from '../reflective';
-import { EMPTY, EMPTY_OBJ, Type } from '../types';
+import { Type, EMPTY, EMPTY_OBJ } from '../types';
 import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { isPlainObject } from '../utils/obj';
@@ -25,11 +25,11 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     reflectiveFactory = new ReflectiveResolverImpl();
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
-        super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type as Type);
+        super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
         const dedupStack: Type[] = [];
         this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
-        this._type = moduleType.type as Type;
+        this._type = moduleType.type;
 
         this.inject(
             { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
@@ -59,10 +59,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     get instance(): T {
         return this._instance
-    }
-
-    protected override isself(token: Token): boolean {
-        return token === ModuleRef || super.isself(token)
     }
 
     import(typeOrDef: Type | ModuleWithProviders, children?: boolean) {

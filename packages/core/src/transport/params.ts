@@ -66,6 +66,10 @@ export class TransportParams {
         }
     }
 
+    get size() {
+        return this.map.size;
+    }
+
     /**
      * Reports whether the body includes one or more values for a given parameter.
      * @param param The parameter name.

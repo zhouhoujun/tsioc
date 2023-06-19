@@ -1,8 +1,8 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { AnnotationType, ClassType, EMPTY_OBJ, Type } from '../types';
+import { AnnotationType, Type, EMPTY_OBJ } from '../types';
 import { assign, cleanObj, getParentClass } from '../utils/lang';
-import { isFunction } from '../utils/chk';
+import { isBoolean, isFunction } from '../utils/chk';
 import { runChain, Handle } from '../handle';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
@@ -154,6 +154,10 @@ export interface DecorRegisterOption<T = any> {
  * metadata factory. parse args to metadata.
  */
 export interface MetadataFactory<T = any> extends ProvidersMetadata {
+    /**
+     * is metadata or not.
+     */
+    isMatadata?(arg: any): boolean;
     /**
      * parse args as metadata props.
      * @param args
@@ -307,15 +311,15 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
         const meta = ctx.define.metadata as ClassMetadata & InjectableMetadata;
-        if (meta.abstract) {
-            def.getAnnotation().abstract = true
+        if (isBoolean(meta.abstract)) {
+            def.getAnnotation().abstract = meta.abstract
         }
 
-        if (meta.singleton) {
-            def.getAnnotation().singleton = true
+        if (isBoolean(meta.singleton)) {
+            def.getAnnotation().singleton = meta.singleton
         }
-        if (meta.static) {
-            def.getAnnotation().static = true
+        if (isBoolean(meta.static)) {
+            def.getAnnotation().static = meta.static
         }
         if (meta.provide && def.provides.indexOf(meta.provide) < 0) {
             def.provides.push(meta.provide)
@@ -439,7 +443,7 @@ paramDecorActions.use(
     ExecuteDecorHandle
 );
 
-function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
+function dispatch(actions: Actions<DecorContext>, target: any, type: Type, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
         define,
         target,
@@ -453,7 +457,7 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
     cleanObj(ctx)
 }
 
-export function dispatchTypeDecor(type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
+export function dispatchTypeDecor(type: Type, define: DecorDefine, options: DecoratorOption<any>) {
     dispatch(typeDecorActions, type, type, define, options)
 }
 
@@ -482,7 +486,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
  * get type def.
  * @param type class type.
  */
-export function getDef<T extends TypeDef>(type: ClassType): T {
+export function getDef<T extends TypeDef>(type: Type): T {
     let tagAnn = (type as AnnotationType).ƿAnn?.() as TypeDef;
     if (tagAnn?.type !== type) {
         tagAnn = {
@@ -500,7 +504,7 @@ export function getDef<T extends TypeDef>(type: ClassType): T {
  * get type Reflective.
  * @param type class type.
  */
-export function get<T = any>(type: ClassType<T>): Class<T> {
+export function get<T = any>(type: Type): Class<T> {
     let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T>;
     if (tagRefl?.type !== type) {
         let prRef: Class = tagRefl;

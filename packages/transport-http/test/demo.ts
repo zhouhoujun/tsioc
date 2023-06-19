@@ -1,7 +1,7 @@
 import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, 
-    Middleware, BadRequestExecption,  EndpointHanlder, EndpointContext, TransportContext, compose, NEXT
+    Middleware, BadRequestExecption, TransportContext, compose, NEXT, Get
 } from '@tsdi/core';
 import { RedirectResult } from '@tsdi/transport';
 import { HttpContext } from '../src/server/context';
@@ -9,6 +9,11 @@ import { HttpContext } from '../src/server/context';
 
 @RouteMapping('/device')
 export class DeviceController {
+    
+    @Get('/')
+    list(@RequestParam({ nullable: true }) name: string) {
+        return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
+    }
 
     @RouteMapping('/init', 'POST')
     req(name: string) {

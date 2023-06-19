@@ -1,6 +1,6 @@
 import {
     TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
-    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, ClassType, isDefined
+    lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, isDefined
 } from '@tsdi/ioc';
 import { Level } from './Level';
 import { LoggerManagers } from './manager';
@@ -27,7 +27,7 @@ export interface LogMetadata extends TypeMetadata {
     /**
      * log for target type.
      */
-    target?: ClassType;
+    target?: Type;
     /**
      * param name.
      */
@@ -166,7 +166,7 @@ const loggerResolver = {
 
         return isDefined(pr.logname || pr.target)
     },
-    resolve: (pr: LogMetadata, ctx, target?: ClassType) => {
+    resolve: (pr: LogMetadata, ctx, target?: Type) => {
         const managers = ctx.get(LoggerManagers);
         const level = pr.level;
         const logger = managers.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target), pr.adapter);
@@ -177,11 +177,13 @@ const loggerResolver = {
 
 
 /**
- * Logger decorator, for method or class.
+ * InjectLog decorator, for method or class.
+ * 
+ * 日志注入修饰器
  *
- * @Log
+ * @InjectLog
  */
-export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
+export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectLog', {
     actionType: [ActionTypes.paramInject, ActionTypes.propInject],
     init: (ctx) => {
         if (ctx.define.decorType === Decors.parameter || ctx.define.decorType === Decors.property) {
@@ -211,3 +213,5 @@ export const Log: Log<LogMetadata> = createDecorator<LogMetadata>('Log', {
         return EMPTY_OBJ
     }
 });
+
+export const Log = InjectLog;

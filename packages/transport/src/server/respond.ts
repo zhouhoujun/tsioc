@@ -1,7 +1,5 @@
-import { AssetContext, HEAD, Incoming, Outgoing } from '@tsdi/core';
+import { AssetContext, HEAD, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { StatusVaildator } from '../status';
-import { StreamAdapter } from '../stream';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
 
@@ -9,19 +7,19 @@ import { isBuffer } from '../utils';
 @Injectable()
 export class RespondAdapter<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> {
 
-    constructor(
-        private vaildator: StatusVaildator<TStatus>,
-        private streamAdapter: StreamAdapter) {
+    constructor() {
     }
 
     async respond(ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<any> {
 
+
+        const vaildator = ctx.vaildator;
         if (ctx.destroyed || !ctx.writable) return;
 
         const { body, status, response } = ctx;
 
         // ignore body
-        if (this.vaildator.isEmpty(status)) {
+        if (vaildator.isEmpty(status)) {
             // strip headers
             ctx.body = null;
             return response.end()
@@ -72,9 +70,11 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         // responses
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
-        if (this.streamAdapter.isStream(body)) {
-            // if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
-            return await this.streamAdapter.pipeTo(body, res);
+
+        const streamAdapter = ctx.streamAdapter;
+        if (streamAdapter.isStream(body)) {
+            if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+            return await streamAdapter.pipeTo(body, res);
         }
 
         // body: json

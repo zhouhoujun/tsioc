@@ -6,9 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import { Inject, Injectable } from '@tsdi/ioc';
-import { JSONP } from '@tsdi/core';
+import { JSONP, HttpStatusCode } from '@tsdi/core';
 import { Observable, Observer } from 'rxjs';
-import { HttpStatusCode } from './status';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpErrorResponse, HttpEvent, HttpEventType, HttpResponse } from './response';

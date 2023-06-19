@@ -1,12 +1,11 @@
-import { MiddlewareLike, Throwable, ListenOpts, TransportContext, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/core';
-import { isArray, isNumber, isString, lang, Token, tokenId } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { MiddlewareLike, Throwable, HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption } from '@tsdi/core';
+import { isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { hdr, append, parseTokenList, AbstractAssetContext } from '@tsdi/transport';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
-import { HttpError, HttpInternalServerError } from './../errors';
+import { HttpServerOpts } from './options';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -16,11 +15,11 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number> implements Throwable {
+export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number, HttpServerOpts> implements Throwable {
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
-        if (!this.proxy) return httpPtl;
+        if (!this.serverOptions.proxy) return httpPtl;
         const proto = this.getHeader(hdr.X_FORWARDED_PROTO);
         return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
     }
@@ -49,7 +48,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         return httptl.test(url.trim())
     }
 
-    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, opts: ListenOpts, proxy?: boolean): URL {
+    parseURL(req: http.IncomingMessage | http2.Http2ServerRequest, proxy?: boolean): URL {
         const url = req.url?.trim() ?? '';
         if (httptl.test(url)) {
             return new URL(url);
@@ -106,13 +105,13 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
      */
 
     get ips() {
-        const proxy = !!this.proxy;
-        const val = this.getHeader(this.proxy?.proxyIpHeader ?? '') as string;
+        const proxy = !!this.serverOptions.proxy;
+        const val = this.getHeader(this.serverOptions.proxy?.proxyIpHeader ?? '') as string;
         let ips = (proxy && val)
             ? val.split(/\s*,\s*/)
             : [];
-        if ((this.proxy?.maxIpsCount ?? 0) > 0) {
-            ips = ips.slice(-(this.proxy?.maxIpsCount ?? 0))
+        if ((this.serverOptions.proxy?.maxIpsCount ?? 0) > 0) {
+            ips = ips.slice(-(this.serverOptions.proxy?.maxIpsCount ?? 0))
         }
         return ips
     }
@@ -278,18 +277,14 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
     throwError(error: Error): Error;
     throwError(status: string | number | Error, message?: string): Error {
         if (isString(status)) {
-            return new HttpInternalServerError(status)
+            return new InternalServerExecption(status, HttpStatusCode.InternalServerError)
         } else if (isNumber(status)) {
             if (!statusMessage[status as HttpStatusCode]) {
-                status = 500
+                status = HttpStatusCode.InternalServerError
             }
-            return new HttpError(status, message ?? statusMessage[status as HttpStatusCode])
+            return new MessageExecption(message ?? statusMessage[status as HttpStatusCode], status)
         }
-        return new HttpError((status as HttpError).statusCode ?? 500, status.message ?? statusMessage[(status as HttpError).statusCode ?? 500]);
-    }
-
-    protected isSelf(token: Token) {
-        return token === HttpContext || token === AbstractAssetContext || token == TransportContext;
+        return new MessageExecption(status.message ?? statusMessage[(status as MessageExecption).statusCode as HttpStatusCode ?? 500], (status as MessageExecption).statusCode ?? HttpStatusCode.InternalServerError);
     }
 
 

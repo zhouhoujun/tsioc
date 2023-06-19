@@ -7,9 +7,17 @@ import { EndpointOptions, EndpointService } from './endpoints/endpoint.service';
 
 /**
  * Application runners.
+ * 
+ * 应用程序运行集合
  */
 @Abstract()
 export abstract class ApplicationRunners implements EndpointService, OnDestroy {
+
+  /**
+   * runner types size.
+   */
+  abstract get size(): number;
+
   /**
    * attach runner
    * @param type 

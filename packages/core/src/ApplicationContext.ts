@@ -1,6 +1,6 @@
 import {
     ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments, CtorType
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logs';
 import { Observable } from 'rxjs';
@@ -154,7 +154,7 @@ export interface ApplicationOption<T = any, TArg = any> extends EnvironmentOptio
      *
      * @type {ClassType}
      */
-    module: Type<T> | ModuleDef<T> | ModuleMetadata;
+    module: CtorType<T> | ModuleDef<T> | ModuleMetadata;
 }
 
 
