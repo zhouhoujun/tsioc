@@ -4,6 +4,6 @@ import { Injectable } from '@tsdi/ioc';
 @Injectable()
 export class KafkaPatternFormatter extends PatternFormatter {
     format(pattern: Pattern): string {
-        return patternToPath(pattern, '/', '-')
+        return patternToPath(pattern, '/', '-').replace(/\//g, '.')
     }
 }

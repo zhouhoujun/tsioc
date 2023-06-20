@@ -27,7 +27,7 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
     /**
      * pattern formatter.
      */
-    abstract get patternFormatter(): PatternFormatter;
+    abstract get formatter(): PatternFormatter;
     /**
      * route matcher.
      */
@@ -45,7 +45,7 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      * @param endpoint endpoint. 
      * @param subscribe as subscribe or not.
      */
-    abstract use(route: string, endpoint: T, subscribe?: boolean): this;
+    abstract use(route: Pattern, endpoint: T, callback?: (route: string, regExp?: RegExp)=> void): this;
     /**
      * unuse route.
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -53,7 +53,7 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param endpoint endpoint.
      */
-    abstract unuse(route: string, endpoint?: T): this;
+    abstract unuse(route: Pattern, endpoint?: T): this;
 
     /**
      * intercept
@@ -62,6 +62,11 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      */
     abstract intercept(input: TransportContext, next: Handler): Observable<any>;
 
+}
+
+export interface RegisterResult {
+    patterns?: string[];
+    regExp?: RegExp;
 }
 
 /**
@@ -95,7 +100,7 @@ export abstract class RouteMatcher {
      *  
      * @returns subscribe topics. 
      */
-    abstract register(route: string, subscribe?: boolean): string[] | null;
+    abstract register(route: string, subscribe?: boolean): RegisterResult | null;
     /**
      * register route matcher. 
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -117,7 +122,7 @@ export abstract class RouteMatcher {
      *  
      * @returns subscribe topics. 
      */
-    abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): string[] | null;
+    abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): RegisterResult | null;
 
     /**
      * get the url path match route
@@ -126,6 +131,7 @@ export abstract class RouteMatcher {
      */
     abstract match(path: string): string | null;
 }
+
 
 /**
  * route options

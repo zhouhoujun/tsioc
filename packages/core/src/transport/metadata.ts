@@ -59,7 +59,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(MircoServRouters); // .get(mapping.protocol);
+            const routers = injector.get(MircoServRouters);
             if (!routers) throw new Execption('has no router!');
 
             const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
@@ -69,10 +69,11 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
                 const metadata = def.metadata;
                 const router = routers.get(metadata.protocol);
                 if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
-                const route = normalize(router.patternFormatter.format(metadata.route!));
+                const route = metadata.route!;
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
-                router.use(route, endpoint, true);
-                factory.onDestroy(() => router.unuse(route));
+                router.use(route, endpoint, (r) => {
+                    factory.onDestroy(() => router.unuse(r, endpoint));
+                });
             });
 
             return next();
@@ -149,10 +150,11 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                 const metadata = def.metadata;
                 const router = routers.get(metadata.protocol);
                 if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
-                const route = normalize(router.patternFormatter.format(metadata.route!));
+                const route = metadata.route!;
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
-                router.use(route, endpoint, true);
-                factory.onDestroy(() => router.unuse(route));
+                router.use(route, endpoint, (r)=> {
+                    factory.onDestroy(() => router.unuse(r, endpoint));
+                });
             });
 
             return next();
@@ -163,7 +165,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
 
             const router = injector.get(mapping.router ?? Router);
-            const route = normalize(router.patternFormatter.format(mapping.route!));
+            const route = mapping.route!;
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');

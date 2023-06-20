@@ -3,6 +3,7 @@ import {
     lang, OnDestroy, pomiseOf, Injector, Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+import { Handler } from '../Handler';
 import { CanActivate, getGuardsToken } from '../guard';
 import { getInterceptorsToken } from '../Interceptor';
 import { getFiltersToken } from '../filters/filter';
@@ -13,13 +14,12 @@ import { Endpoint } from '../endpoints/endpoint';
 import { joinprefix, normalize, Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
-import { RouteMatcher, Router } from './router';
+import { RegisterResult, RouteMatcher, Router } from './router';
 import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
+import { Pattern, PatternFormatter } from './pattern';
 import { RouteEndpoint } from './route.endpoint';
-import { Handler } from '../Handler';
-import { PatternFormatter } from './pattern';
 
 
 
@@ -32,10 +32,12 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 
     readonly patterns: Set<string>;
 
+    protected micro = false;
+
     constructor(
         private injector: Injector,
         readonly matcher: RouteMatcher,
-        readonly patternFormatter: PatternFormatter,
+        readonly formatter: PatternFormatter,
         public prefix: string = '',
         routes?: Routes) {
         super()
@@ -47,19 +49,19 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     use(route: Route): this;
-    use(route: string, middleware: HybridRoute, subscribe?: boolean): this;
-    use(route: Route | string, endpoint?: HybridRoute, subscribe?: boolean): this {
-        if (isString(route)) {
-            if (!endpoint) return this;
-            this.addEndpoint(route, endpoint, subscribe);
+    use(route: Pattern, middleware: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this;
+    use(route: Route | Pattern, endpoint?: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this {
+        if (endpoint) {
+            this.addEndpoint(route as Pattern, endpoint, callback);
             return this;
         } else {
-            this.addEndpoint(route.path, new MappingRoute(this.injector, route), subscribe);
+            this.addEndpoint((route as Route).path, new MappingRoute(this.injector, route as Route));
         }
         return this
     }
 
-    unuse(route: string, endpoint?: Endpoint | MiddlewareLike) {
+    unuse(route: Pattern, endpoint?: Endpoint | MiddlewareLike): this {
+        route = this.formatter.format(route);
         if (endpoint) {
             const handles = this.routes.get(route);
             if (isArray(handles)) {
@@ -144,9 +146,10 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         return route;
     }
 
-    protected addEndpoint(route: string, endpoint: HybridRoute, subscribe?: boolean) {
+    protected addEndpoint(route: Pattern, endpoint: HybridRoute, callback?: (route: string, regExp?: RegExp) => void) {
+        route = normalize(this.formatter.format(route));
         const redpt = endpoint as RouteEndpoint;
-        let subs: string[] | null;
+        let result: RegisterResult | null;
         if (redpt.injector && redpt.options && redpt.options.paths) {
             const params: Record<string, any> = {};
             const paths = redpt.options.paths;
@@ -154,14 +157,15 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
             Object.keys(paths).forEach(n => {
                 params[n] = injector.get(paths[n]);
             })
-            subs = this.matcher.register(route, params, subscribe);
+            result = this.matcher.register(route, params, this.micro);
         } else {
-            subs = this.matcher.register(route, subscribe);
+            result = this.matcher.register(route, this.micro);
         }
 
-        if (subscribe && subs?.length) {
-            subs.forEach(s => this.patterns.add(s));
+        if (this.micro && result?.patterns?.length) {
+            result.patterns.forEach(s => this.patterns.add(s));
         }
+
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
             if (handles instanceof ControllerRoute) throw new Execption(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
@@ -177,6 +181,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         } else {
             this.routes.set(route, endpoint)
         }
+        callback && callback(route, result?.regExp)
     }
 
 }
@@ -194,9 +199,9 @@ export class DefaultRouteMatcher extends RouteMatcher {
         return pattern$.test(route)
     }
 
-    register(route: string, subscribe?: boolean): string[] | null;
-    register(route: string, params?: Record<string, any>, subscribe?: boolean): string[] | null;
-    register(route: string, arg?: Record<string, any> | boolean, subscribe?: boolean): string[] | null {
+    register(route: string, subscribe?: boolean): RegisterResult | null;
+    register(route: string, params?: Record<string, any>, subscribe?: boolean): RegisterResult | null;
+    register(route: string, arg?: Record<string, any> | boolean, subscribe?: boolean): RegisterResult | null {
         let params: Record<string, any> | undefined;
         if (isBoolean(arg)) {
             subscribe = arg;
@@ -205,7 +210,7 @@ export class DefaultRouteMatcher extends RouteMatcher {
             params = arg;
         }
         if (this.isPattern(route)) {
-            let subs: string[] | null = subscribe ? [route.slice(0)] : null;
+            let subs: string[] | undefined = subscribe ? [route.slice(0)] : undefined;
             let $exp = this.replaceTopic(route);
             if (params) {
                 let opts = { match: tval$, start: 2, end: 1, subs };
@@ -218,10 +223,11 @@ export class DefaultRouteMatcher extends RouteMatcher {
                     .replace(rest$, tplPth)
             }
 
-            this.matchers.set(new RegExp('^' + $exp + '$'), route);
-            return subs;
+            const regExp = new RegExp('^' + $exp + '$');
+            this.matchers.set(regExp, route);
+            return { patterns: subs, regExp };
         }
-        return subscribe ? [route] : null;
+        return subscribe ? { patterns: [route] } : null;
     }
 
     match(path: string): string | null {
@@ -239,7 +245,7 @@ export class DefaultRouteMatcher extends RouteMatcher {
             .replace(words$, words)
     }
 
-    protected replaceWithParams(route: string, params: Record<string, any>, opts: { match: RegExp, start: number, end: number, subs: string[] | null }) {
+    protected replaceWithParams(route: string, params: Record<string, any>, opts: { match: RegExp, start: number, end: number, subs?: string[] }) {
         route.match(opts.match)?.forEach(v => {
             const name = v.slice(opts.start, v.length - opts.end);
             if (params[name]) {

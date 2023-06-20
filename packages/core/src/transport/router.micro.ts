@@ -10,7 +10,9 @@ import { Protocol } from './protocols';
  */
 @Abstract()
 export abstract class MircoServRouter<T = Endpoint> extends Router<T> {
-
+    /**
+     * protocol
+     */
     abstract get protocol(): Protocol;
 }
 

@@ -38,6 +38,8 @@ export class MircoServiceRouterImpl implements MircoServRouters {
 
 export class MessageRouterImpl extends MappingRouter {
 
+    protected micro = true;
+
     constructor(
         readonly protocol: string,
         injector: Injector,
