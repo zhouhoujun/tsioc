@@ -5,7 +5,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { Http, HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
-import { AmqpClientModule, AmqpClient, AmqpMicroServiceModule, AmqpServer } from '../src';
+import { AmqpClientModule, AmqpClient, AmqpMicroServModule, AmqpServer } from '../src';
 import { DeviceController } from './controller';
 
 
@@ -18,7 +18,7 @@ import { DeviceController } from './controller';
         HttpModule,
         HttpServerModule,
         AmqpClientModule,
-        AmqpMicroServiceModule
+        AmqpMicroServModule
     ],
     declarations: [
         DeviceController

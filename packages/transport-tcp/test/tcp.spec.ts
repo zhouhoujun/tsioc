@@ -1,5 +1,5 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, MessageRouter, MicroServiceRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
-import { Injector, Module, getToken, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -96,7 +96,7 @@ export class DeviceController {
             }
         }),
 
-        MicroServiceRouterModule.forRoot('tcp'),
+        MicroServRouterModule.forRoot('tcp'),
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
@@ -107,7 +107,7 @@ export class DeviceController {
                     Content,
                     Json,
                     Bodyparser,
-                    { useExisting: MicroServiceRouterModule.getToken('tcp') }
+                    { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
             }
         })

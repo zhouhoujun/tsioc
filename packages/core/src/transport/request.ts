@@ -27,7 +27,7 @@ export class TransportRequest<T = any> {
 
     constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
         this.context = options.context!;
-        const url = this.url = isString(pattern)? pattern : this.context.get(PatternFormatter).format(pattern); //patternToPath(pattern, options.pattern_join_key);
+        const url = this.url = this.context.get(PatternFormatter).format(pattern);
         this.pattern = pattern;
         this.method = options.method;
         this.params = new TransportParams(options);
@@ -193,8 +193,6 @@ export interface ResponseAs {
 }
 
 export interface RequestInitOpts extends RequestOptions, ResponseAs {
-    pattern_attr_key?: string;
-    pattern_join_key?: string;
     reportProgress?: boolean;
     withCredentials?: boolean;
 }

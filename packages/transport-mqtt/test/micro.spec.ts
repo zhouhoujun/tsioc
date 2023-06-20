@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { MqttClient, MqttClientModule, MqttMicroServiceModule, MqttServer } from '../src';
+import { MqttClient, MqttClientModule, MqttMicroServModule, MqttServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -65,7 +65,7 @@ export class MqttService {
                 timeout: 200
             }
         }),
-        MqttMicroServiceModule
+        MqttMicroServModule
         // MqttMicroServiceModule.withOption({
         //     serverOpts: {
         //         // timeout: 1000,

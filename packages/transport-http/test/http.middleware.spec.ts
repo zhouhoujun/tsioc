@@ -1,6 +1,6 @@
 import { ServerModule } from '@tsdi/platform-server';
 import { Module } from '@tsdi/ioc';
-import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -34,7 +34,7 @@ describe('middleware', () => {
                 ServerModule,
                 ServerTransportModule,
                 
-                MicroServiceRouterModule.forRoot({ protocol: 'mqtt' }),
+                MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
                 HttpModule.withOption({
                     clientOpts: {
                         authority: 'https://localhost:3200',

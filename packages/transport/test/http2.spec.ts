@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
-import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServiceModule } from '@tsdi/transport-tcp';
+import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule } from '@tsdi/transport-tcp';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -42,7 +42,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
             }
         }),
         TcpClientModule,
-        TcpMicroServiceModule,
+        TcpMicroServModule,
         DeviceManageModule,
         DeviceAModule
     ],

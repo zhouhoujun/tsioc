@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, TransformModule, StatusVaildator, createTransportEndpoint, MicroServiceRouterModule } from '@tsdi/core';
+import { ExecptionHandlerFilter, TransformModule, StatusVaildator, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -8,6 +8,7 @@ import { KafkaTransportSessionFactory, KafkaTransportSessionFactoryImpl } from '
 import { KafkaStatusVaildator } from '../status';
 import { KafkaExecptionHandlers } from './execption.handles';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
+import { KafkaPatternFormatter } from '../pattern';
 
 
 
@@ -31,7 +32,7 @@ const defMicroOpts = {
     interceptorsToken: KAFKA_SERV_INTERCEPTORS,
     filtersToken: KAFKA_SERV_FILTERS,
     guardsToken: KAFKA_SERV_GUARDS,
-    backend: MicroServiceRouterModule.getToken('kafka'),
+    backend: MicroServRouterModule.getToken('kafka'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -49,16 +50,21 @@ const defMicroOpts = {
     ]
 } as KafkaServerOptions
 
-
+/**
+ * Kafka microservice module
+ */
 @Module({
     imports: [
         TransformModule,
-        MicroServiceRouterModule.forRoot('kafka'),
+        MicroServRouterModule.forRoot('kafka', {
+            formatter: KafkaPatternFormatter
+        }),
         TransportModule,
         ServerTransportModule
     ],
     providers: [
         KafkaStatusVaildator,
+        KafkaPatternFormatter,
         { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
         { provide: KAFKA_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {
@@ -75,10 +81,10 @@ const defMicroOpts = {
         KafkaServer
     ]
 })
-export class KafkaMicroServiceModule {
+export class KafkaMicroServModule {
     /**
-     * import Kafka micro service module with options.
-     * @param options micro service module options.
+     * import Kafka microservice module with options.
+     * @param options microservice module options.
      * @returns 
      */
     static withOption(options: {
@@ -94,7 +100,7 @@ export class KafkaMicroServiceModule {
          * server options
          */
         serverOpts?: KafkaServerOptions;
-    }): ModuleWithProviders<KafkaMicroServiceModule> {
+    }): ModuleWithProviders<KafkaMicroServModule> {
         const providers: ProviderType[] = [
             {
                 provide: KAFKA_SERV_OPTS,
@@ -114,7 +120,7 @@ export class KafkaMicroServiceModule {
         }
 
         return {
-            module: KafkaMicroServiceModule,
+            module: KafkaMicroServModule,
             providers
         }
     }

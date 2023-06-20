@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { Client, MircoServiceRouter, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
+import { Client, MircoServRouters, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
@@ -125,7 +125,7 @@ export class KafkaClient extends Client {
             const topics = this.options.topics ? this.options.topics.map(t => {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
-            }) : Array.from(this.handler.injector.get(MircoServiceRouter).get('kafka').patterns);
+            }) : Array.from(this.handler.injector.get(MircoServRouters).get('kafka').patterns);
             this._session.bindTopics(topics.map(t => this.getReplyTopic(t)))
         }
 

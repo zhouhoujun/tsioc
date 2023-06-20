@@ -1,4 +1,4 @@
-import { InjectFlags, Injector, Module, ModuleWithProviders, Token, getToken, isString, tokenId } from '@tsdi/ioc';
+import { InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
 import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
@@ -11,9 +11,10 @@ import { TransportContextIml } from '../impl/transport.context';
 import { TransportEndpointImpl } from '../impl/transport.endpoint';
 import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
-import { MESSAGE_ROUTERS, MessageRouter, MircoServiceRouter } from './router.micro';
+import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
 import { Protocol } from './protocols';
+import { PatternFormatter, patternToPath } from './pattern';
 
 
 
@@ -29,6 +30,10 @@ MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointI
  */
 export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
 
+const defaultFormatter: PatternFormatter = {
+    format: (pattern) => patternToPath(pattern)
+}
+
 /*
  * Router module.
  */
@@ -38,16 +43,18 @@ export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
         { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
         {
             provide: HybridRouter,
-            useFactory: (injector: Injector, matcher: RouteMatcher, prefix?: string, routes?: Routes) => {
-                return new MappingRouter(injector, matcher, prefix, routes)
+            useFactory: (injector: Injector, matcher: RouteMatcher, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
+                return new MappingRouter(injector, matcher, formatter, prefix, routes)
             },
             deps: [
                 Injector,
                 RouteMatcher,
+                PatternFormatter,
                 [ROUTER_PREFIX, InjectFlags.Optional],
                 [ROUTES, InjectFlags.Optional, InjectFlags.Self]
             ]
         },
+        { provide: PatternFormatter, useValue: defaultFormatter },
         { provide: Router, useExisting: HybridRouter },
         ControllerRouteReolver
     ]
@@ -95,10 +102,11 @@ export class RouterModule {
 @Module({
     providers: [
         { provide: RouteMatcher, useClass: DefaultRouteMatcher, asDefault: true },
-        { provide: MircoServiceRouter, useClass: MircoServiceRouterImpl },
+        { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true },
+        { provide: MircoServRouters, useClass: MircoServiceRouterImpl },
     ]
 })
-export class MicroServiceRouterModule {
+export class MicroServRouterModule {
 
     /**
      * Creates a module with all the router directives and a provider registering routes,
@@ -125,36 +133,52 @@ export class MicroServiceRouterModule {
      *
      */
     static forRoot(protocol: Protocol, options?: {
-        matcher?: RouteMatcher;
+        matcher?: TypeOf<RouteMatcher>;
+        formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
         routes?: Routes;
-    }): ModuleWithProviders<MicroServiceRouterModule>
+    }): ModuleWithProviders<MicroServRouterModule>
     static forRoot(options: {
         protocol: Protocol;
-        matcher?: RouteMatcher;
+        matcher?: TypeOf<RouteMatcher>;
+        formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
         routes?: Routes;
-    }): ModuleWithProviders<MicroServiceRouterModule>
+    }): ModuleWithProviders<MicroServRouterModule>
     static forRoot(arg1?: any, options?: {
-        matcher?: RouteMatcher;
+        matcher?: TypeOf<RouteMatcher>;
+        formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
         routes?: Routes;
-    }): ModuleWithProviders<MicroServiceRouterModule> {
+    }): ModuleWithProviders<MicroServRouterModule> {
         const protocol = isString(arg1) ? arg1 : arg1.protocol;
         const opts = { ...isString(arg1) ? options : arg1 };
-        const token = getMessageRouter(protocol);
+        const token = getMircServRouter(protocol);
+        const deps: any[] = [Injector];
+
+        if (isType(opts.matcher)) {
+            deps.push(opts.matcher);
+            opts.matcher = null;
+        } else if (!opts.matcher) {
+            deps.push(RouteMatcher)
+        }
+
+        if (isType(opts.formatter)) {
+            deps.push(opts.formatter);
+            opts.formatter = null;
+        } else if (!opts.formatter) {
+            deps.push(PatternFormatter)
+        }
+
         return {
-            module: MicroServiceRouterModule,
+            module: MicroServRouterModule,
             providers: [
                 {
                     provide: token,
-                    useFactory: (injector: Injector, matcher: RouteMatcher) => {
-                        return new MessageRouterImpl(protocol, injector, opts.matcher ?? matcher, opts.prefix, opts.routes)
+                    useFactory: (injector: Injector, matcher: RouteMatcher, formatter: PatternFormatter) => {
+                        return new MessageRouterImpl(protocol, injector, opts.matcher ?? matcher, opts.formatter ?? formatter, opts.prefix, opts.routes)
                     },
-                    deps: [
-                        Injector,
-                        RouteMatcher
-                    ]
+                    deps
                 },
                 {
                     provide: MESSAGE_ROUTERS,
@@ -165,13 +189,13 @@ export class MicroServiceRouterModule {
         }
     }
 
-    static getToken(protocol: Protocol): Token<MessageRouter> {
-        return getMessageRouter(protocol)
+    static getToken(protocol: Protocol): Token<MircoServRouter> {
+        return getMircServRouter(protocol)
     }
 }
 
-export function getMessageRouter(protocol: Protocol): Token<MessageRouter> {
-    return getToken(MessageRouter, protocol)
+export function getMircServRouter(protocol: Protocol): Token<MircoServRouter> {
+    return getToken(MircoServRouter, protocol)
 }
 
 

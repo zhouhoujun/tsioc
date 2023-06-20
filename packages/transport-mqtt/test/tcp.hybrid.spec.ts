@@ -5,7 +5,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
-import { MqttClientModule, MqttClient, MqttMicroServiceModule, MqttServer } from '../src';
+import { MqttClientModule, MqttClient, MqttMicroServModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
 
 
@@ -24,7 +24,7 @@ import { DeviceController } from './controller';
                 }
             }
         }),
-        MqttMicroServiceModule.withOption({
+        MqttMicroServModule.withOption({
             serverOpts: {
                 connectOpts: {
                     protocol: 'mqtt'

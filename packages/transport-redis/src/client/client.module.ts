@@ -1,5 +1,5 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { StatusVaildator, createHandler } from '@tsdi/core';
+import { PatternFormatter, StatusVaildator, createHandler } from '@tsdi/core';
 import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
@@ -8,6 +8,7 @@ import { RedisRequestAdapter } from './request';
 import { RedisHandler } from './handler';
 import { RedisClient } from './client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS, RedisClientOpts, RedisClientsOpts } from './options';
+import { RedisPatternFormatter } from '../pattern';
 
 
 /**
@@ -25,7 +26,8 @@ const defClientOpts = {
     backend: TransportBackend,
     providers: [
         { provide: StatusVaildator, useExisting: RedisStatusVaildator },
-        { provide: RequestAdapter, useExisting: RedisRequestAdapter }
+        { provide: RequestAdapter, useExisting: RedisRequestAdapter },
+        { provide: PatternFormatter, useExisting: RedisPatternFormatter }
     ]
 
 } as RedisClientOpts;
@@ -39,6 +41,7 @@ const defClientOpts = {
     providers: [
         RedisStatusVaildator,
         RedisRequestAdapter,
+        RedisPatternFormatter,
         { provide: RedisTransportSessionFactory, useClass: RedisTransportSessionFactoryImpl, asDefault: true },
         { provide: REDIS_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {

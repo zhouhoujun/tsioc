@@ -1,5 +1,5 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, StatusVaildator, RouterModule, TransformModule, createTransportEndpoint, MicroServiceRouterModule } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, StatusVaildator, RouterModule, TransformModule, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import {
@@ -35,7 +35,7 @@ const defMicroOpts = {
     interceptorsToken: TCP_MICRO_SERV_INTERCEPTORS,
     filtersToken: TCP_MICRO_SERV_FILTERS,
     guardsToken: TCP_MICRO_SERV_GUARDS,
-    backend: MicroServiceRouterModule.getToken('tcp'),
+    backend: MicroServRouterModule.getToken('tcp'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -59,7 +59,7 @@ const defMicroOpts = {
 @Module({
     imports: [
         TransformModule,
-        MicroServiceRouterModule.forRoot('tcp'),
+        MicroServRouterModule.forRoot('tcp'),
         TransportModule,
         ServerTransportModule
     ],
@@ -80,7 +80,7 @@ const defMicroOpts = {
         TcpMicroService
     ]
 })
-export class TcpMicroServiceModule {
+export class TcpMicroServModule {
     /**
      * import tcp micro service module with options.
      * @param options micro service module options.
@@ -99,7 +99,7 @@ export class TcpMicroServiceModule {
          * server options
          */
         serverOpts?: TcpServerOpts;
-    }): ModuleWithProviders<TcpMicroServiceModule> {
+    }): ModuleWithProviders<TcpMicroServModule> {
         const providers: ProviderType[] = [
             {
                 provide: TCP_MICRO_SERV_OPTS,
@@ -118,7 +118,7 @@ export class TcpMicroServiceModule {
             providers.push(toProvider(TcpTransportSessionFactory, options.transportFactory))
         }
         return {
-            module: TcpMicroServiceModule,
+            module: TcpMicroServModule,
             providers
         }
     }

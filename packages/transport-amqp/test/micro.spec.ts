@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { AmqpClient, AmqpClientModule, AmqpMicroServiceModule, AmqpServer } from '../src';
+import { AmqpClient, AmqpClientModule, AmqpMicroServModule, AmqpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -57,7 +57,7 @@ export class AmqpService {
         ServerModule,
         LoggerModule,
         AmqpClientModule,
-        AmqpMicroServiceModule
+        AmqpMicroServModule
         // AmqpClientModule.withOption({
         //     clientOpts: {
         //         // connectOpts: {

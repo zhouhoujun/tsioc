@@ -4,7 +4,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { KafkaClient, KafkaClientModule, KafkaMicroServiceModule, KafkaServer } from '../src';
+import { KafkaClient, KafkaClientModule, KafkaMicroServModule, KafkaServer } from '../src';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -64,7 +64,7 @@ export class KafkaService {
                 timeout: 200
             }
         }),
-        KafkaMicroServiceModule
+        KafkaMicroServModule
         // KafkaMicroServiceModule.withOption({
         //     serverOpts: {
         //         // timeout: 1000,

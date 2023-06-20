@@ -1,5 +1,5 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
-import { Server, Packet, MircoServiceRouter, ServiceUnavailableExecption, TransportSession, MESSAGE } from '@tsdi/core';
+import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, TransportSession, MESSAGE } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -95,7 +95,7 @@ export class KafkaServer extends Server<KafkaContext> {
         if (!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
         const consumer = this.consumer;
         const producer = this.producer;
-        const router = this.endpoint.injector.get(MircoServiceRouter).get('kafka');
+        const router = this.endpoint.injector.get(MircoServRouters).get('kafka');
         const topics = Array.from(router.patterns);
 
         const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, {

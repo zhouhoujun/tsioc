@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, StatusVaildator, MicroServiceRouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, StatusVaildator, MicroServRouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -27,7 +27,7 @@ const defaultServOpts = {
     interceptorsToken: MQTT_SERV_INTERCEPTORS,
     filtersToken: MQTT_SERV_FILTERS,
     guardsToken: MQTT_SERV_GUARDS,
-    backend: MicroServiceRouterModule.getToken('mqtt'),
+    backend: MicroServRouterModule.getToken('mqtt'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -49,7 +49,7 @@ const defaultServOpts = {
 @Module({
     imports: [
         TransformModule,
-        MicroServiceRouterModule.forRoot('mqtt'),
+        MicroServRouterModule.forRoot('mqtt'),
         TransportModule,
         ServerTransportModule
     ],
@@ -69,7 +69,7 @@ const defaultServOpts = {
         MqttServer
     ]
 })
-export class MqttMicroServiceModule {
+export class MqttMicroServModule {
 
     /**
      * import mqtt micro service module with options.
@@ -88,7 +88,7 @@ export class MqttMicroServiceModule {
          */
         serverOpts?: MqttServiceOpts;
     }
-    ): ModuleWithProviders<MqttMicroServiceModule> {
+    ): ModuleWithProviders<MqttMicroServModule> {
 
         const providers: ProviderType[] = [
             {
@@ -110,7 +110,7 @@ export class MqttMicroServiceModule {
 
 
         return {
-            module: MqttMicroServiceModule,
+            module: MqttMicroServModule,
             providers
         }
     }

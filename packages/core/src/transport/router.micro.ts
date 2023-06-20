@@ -1,16 +1,15 @@
-import { Abstract, Injector, tokenId } from '@tsdi/ioc';
+import { Abstract, tokenId } from '@tsdi/ioc';
 import { Endpoint } from '../endpoints/endpoint';
-import { RouteMatcher, Router } from './router';
-import { Routes } from './route';
+import { Router } from './router';
 import { Protocol } from './protocols';
 
 /**
- * message router
+ * microserivce router
  * 
  * public api for microserivce router
  */
 @Abstract()
-export abstract class MessageRouter<T = Endpoint> extends Router<T> {
+export abstract class MircoServRouter<T = Endpoint> extends Router<T> {
 
     abstract get protocol(): Protocol;
 }
@@ -19,31 +18,18 @@ export abstract class MessageRouter<T = Endpoint> extends Router<T> {
 /**
  * message routers.
  */
-export const MESSAGE_ROUTERS = tokenId<MessageRouter[]>('MESSAGE_ROUTERS');
+export const MESSAGE_ROUTERS = tokenId<MircoServRouter[]>('MESSAGE_ROUTERS');
 
 
 /**
- * microserivce router.
+ * microserivce routers.
  * 
- * public api for microserivce router
+ * public api for all microserivce routers
  */
 @Abstract()
-export abstract class MircoServiceRouter {
+export abstract class MircoServRouters {
     /**
      * get microserivce router
      */
-    abstract get<T = Endpoint>(protocol?: Protocol): Router<T>;
-    /**
-     * register microserivce router
-     * @param options 
-     */
-    abstract register<T = Endpoint>(options: MircoRouterOption): MessageRouter<T>;
-}
-
-export interface MircoRouterOption {
-    protocol: Protocol;
-    injector?: Injector;
-    matcher?: RouteMatcher;
-    prefix?: string;
-    routes?: Routes;
+    abstract get<T = Endpoint>(protocol?: Protocol): MircoServRouter<T>;
 }

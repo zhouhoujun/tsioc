@@ -1,4 +1,4 @@
-import { RouterModule, TransformModule, StatusVaildator, createHandler } from '@tsdi/core';
+import { RouterModule, TransformModule, StatusVaildator, createHandler, PatternFormatter } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -8,6 +8,7 @@ import { KafkaTransportSessionFactory, KafkaTransportSessionFactoryImpl } from '
 import { KafkaRequestAdapter } from './request';
 import { KafkaStatusVaildator } from '../status';
 import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KAFKA_CLIENT_OPTS, KafkaClientOpts, KafkaClientsOpts } from './options';
+import { KafkaPatternFormatter } from '../pattern';
 
 
 
@@ -25,7 +26,8 @@ const defClientOpts = {
     backend: TransportBackend,
     providers: [
         { provide: StatusVaildator, useExisting: KafkaStatusVaildator },
-        { provide: RequestAdapter, useExisting: KafkaRequestAdapter }
+        { provide: RequestAdapter, useExisting: KafkaRequestAdapter },
+        { provide: PatternFormatter, useExisting: KafkaPatternFormatter }
     ]
 } as KafkaClientOpts;
 
@@ -40,6 +42,7 @@ const defClientOpts = {
     providers: [
         KafkaStatusVaildator,
         KafkaRequestAdapter,
+        KafkaPatternFormatter,
         { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
         { provide: KAFKA_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {

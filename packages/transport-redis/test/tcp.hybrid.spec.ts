@@ -5,7 +5,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
-import { RedisClientModule, RedisClient, RedisMicroServiceModule, RedisServer } from '../src';
+import { RedisClientModule, RedisClient, RedisMicroServModule, RedisServer } from '../src';
 import { DeviceController } from './controller';
 
 
@@ -18,7 +18,7 @@ import { DeviceController } from './controller';
         TcpClientModule,
         TcpServerModule,
         RedisClientModule,
-        RedisMicroServiceModule
+        RedisMicroServModule
     ],
     declarations: [
         DeviceController

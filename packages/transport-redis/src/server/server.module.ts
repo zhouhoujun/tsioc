@@ -1,5 +1,5 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, MicroServRouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
@@ -8,6 +8,7 @@ import { RedisStatusVaildator } from '../status';
 import { RedisExecptionHandlers } from './execption.handles';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS, REDIS_SERV_OPTS, RedisServerOpts } from './options';
 import { RedisEndpoint } from './endpoint';
+import { RedisPatternFormatter } from '../pattern';
 
 
 
@@ -27,7 +28,7 @@ const defMicroOpts = {
     interceptorsToken: REDIS_SERV_INTERCEPTORS,
     filtersToken: REDIS_SERV_FILTERS,
     guardsToken: REDIS_SERV_GUARDS,
-    backend: MicroServiceRouterModule.getToken('redis'),
+    backend: MicroServRouterModule.getToken('redis'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -49,12 +50,15 @@ const defMicroOpts = {
 @Module({
     imports: [
         TransformModule,
-        MicroServiceRouterModule.forRoot('redis'),
+        MicroServRouterModule.forRoot('redis', {
+            formatter: RedisPatternFormatter,
+        }),
         TransportModule,
         ServerTransportModule
     ],
     providers: [
         RedisStatusVaildator,
+        RedisPatternFormatter,
         { provide: RedisTransportSessionFactory, useClass: RedisTransportSessionFactoryImpl, asDefault: true },
         { provide: REDIS_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {
@@ -69,7 +73,7 @@ const defMicroOpts = {
         RedisServer
     ]
 })
-export class RedisMicroServiceModule {
+export class RedisMicroServModule {
 
     /**
      * import Redis micro service module with options.
@@ -87,7 +91,7 @@ export class RedisMicroServiceModule {
          * server options
          */
         serverOpts?: RedisServerOpts;
-    }): ModuleWithProviders<RedisMicroServiceModule> {
+    }): ModuleWithProviders<RedisMicroServModule> {
         const providers: ProviderType[] = [
             {
                 provide: REDIS_SERV_OPTS,
@@ -107,7 +111,7 @@ export class RedisMicroServiceModule {
         }
 
         return {
-            module: RedisMicroServiceModule,
+            module: RedisMicroServModule,
             providers
         }
     }

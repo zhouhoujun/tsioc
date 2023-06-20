@@ -13,7 +13,7 @@ import { Middleware, MiddlewareFn } from './middleware';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { Pattern } from './pattern';
 import { ControllerRouteReolver } from './controller';
-import { MircoServiceRouter } from './router.micro';
+import { MircoServRouters } from './router.micro';
 
 
 
@@ -59,7 +59,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(MircoServiceRouter); // .get(mapping.protocol);
+            const routers = injector.get(MircoServRouters); // .get(mapping.protocol);
             if (!routers) throw new Execption('has no router!');
 
             const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
@@ -139,7 +139,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(MircoServiceRouter);
+            const routers = injector.get(MircoServRouters);
             if (!routers) throw new Execption(lang.getClassName(parent) + 'has not registered!');
 
             const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);

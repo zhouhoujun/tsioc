@@ -1,5 +1,5 @@
 
-import { ExecptionHandlerFilter, MicroServiceRouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, MicroServRouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -34,7 +34,7 @@ const defMicroOpts = {
     interceptorsToken: AMQP_SERV_INTERCEPTORS,
     filtersToken: AMQP_SERV_FILTERS,
     guardsToken: AMQP_SERV_GUARDS,
-    backend: MicroServiceRouterModule.getToken('amqp'),
+    backend: MicroServRouterModule.getToken('amqp'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -56,7 +56,7 @@ const defMicroOpts = {
 @Module({
     imports: [
         TransformModule,
-        MicroServiceRouterModule.forRoot('amqp'),
+        MicroServRouterModule.forRoot('amqp'),
         TransportModule,
         ServerTransportModule
     ],
@@ -75,7 +75,7 @@ const defMicroOpts = {
         AmqpServer
     ]
 })
-export class AmqpMicroServiceModule {
+export class AmqpMicroServModule {
     /**
      * import Amqp micro service module with options.
      * @param options micro service module options.
@@ -94,7 +94,7 @@ export class AmqpMicroServiceModule {
          * server options
          */
         serverOpts?: AmqpMicroServiceOpts;
-    }): ModuleWithProviders<AmqpMicroServiceModule> {
+    }): ModuleWithProviders<AmqpMicroServModule> {
         const providers: ProviderType[] = [
             {
                 provide: AMQP_SERV_OPTS,
@@ -114,7 +114,7 @@ export class AmqpMicroServiceModule {
         }
 
         return {
-            module: AmqpMicroServiceModule,
+            module: AmqpMicroServModule,
             providers
         }
     }

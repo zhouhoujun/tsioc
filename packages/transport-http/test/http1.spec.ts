@@ -1,5 +1,5 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -26,7 +26,7 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
                 }
             }
         }),
-        MicroServiceRouterModule.forRoot({ protocol: 'mqtt' }),
+        MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
         DeviceManageModule,
         DeviceAModule
     ],

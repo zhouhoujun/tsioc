@@ -1,4 +1,4 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, MessageRouter, MicroServiceRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
 import { Injector, Module, Token, getToken, isArray, lang } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
@@ -103,7 +103,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         //         path: ipcpath
         //     }
         // },
-        MicroServiceRouterModule.forRoot('tcp'),
+        MicroServRouterModule.forRoot('tcp'),
         TcpServerModule.withOptions({
             serverOpts: {
                 // timeout: 1000,
@@ -114,7 +114,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     Content,
                     Json,
                     Bodyparser,
-                    { useExisting: MicroServiceRouterModule.getToken('tcp') }
+                    { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
             }
         })
