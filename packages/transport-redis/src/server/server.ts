@@ -69,7 +69,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         });
 
         const router = this.endpoint.injector.get(MircoServRouters).get('redis');
-        const routes = Array.from(router.patterns);
+        const routes = router.matcher.getPatterns();
         const subscribes: string[] = [];
         const psubscribes: string[] = [];
         routes.forEach(r => router.matcher.isPattern(r) ? psubscribes.push(r) : subscribes.push(r));

@@ -39,16 +39,14 @@ const defaultFormatter: PatternFormatter = {
  */
 @Module({
     providers: [
-        { provide: RouteMatcher, useClass: DefaultRouteMatcher, asDefault: true },
         { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
         {
             provide: HybridRouter,
-            useFactory: (injector: Injector, matcher: RouteMatcher, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
-                return new MappingRouter(injector, matcher, formatter, prefix, routes)
+            useFactory: (injector: Injector, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
+                return new MappingRouter(injector, new DefaultRouteMatcher(), formatter, prefix, routes)
             },
             deps: [
                 Injector,
-                RouteMatcher,
                 PatternFormatter,
                 [ROUTER_PREFIX, InjectFlags.Optional],
                 [ROUTES, InjectFlags.Optional, InjectFlags.Self]
@@ -101,7 +99,6 @@ export class RouterModule {
  */
 @Module({
     providers: [
-        { provide: RouteMatcher, useClass: DefaultRouteMatcher, asDefault: true },
         { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true },
         { provide: MircoServRouters, useClass: MircoServiceRouterImpl },
     ]
@@ -154,31 +151,20 @@ export class MicroServRouterModule {
         const protocol = isString(arg1) ? arg1 : arg1.protocol;
         const opts = { ...isString(arg1) ? options : arg1 };
         const token = getMircServRouter(protocol);
-        const deps: any[] = [Injector];
-
-        if (isType(opts.matcher)) {
-            deps.push(opts.matcher);
-            opts.matcher = null;
-        } else if (!opts.matcher) {
-            deps.push(RouteMatcher)
-        }
-
-        if (isType(opts.formatter)) {
-            deps.push(opts.formatter);
-            opts.formatter = null;
-        } else if (!opts.formatter) {
-            deps.push(PatternFormatter)
-        }
 
         return {
             module: MicroServRouterModule,
             providers: [
                 {
                     provide: token,
-                    useFactory: (injector: Injector, matcher: RouteMatcher, formatter: PatternFormatter) => {
-                        return new MessageRouterImpl(protocol, injector, opts.matcher ?? matcher, opts.formatter ?? formatter, opts.prefix, opts.routes)
+                    useFactory: (injector: Injector) => {
+                        return new MessageRouterImpl(protocol, injector,
+                            opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
+                            opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                            opts.prefix,
+                            opts.routes)
                     },
-                    deps
+                    deps: [Injector]
                 },
                 {
                     provide: MESSAGE_ROUTERS,

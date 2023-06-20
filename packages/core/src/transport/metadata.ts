@@ -69,9 +69,8 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
                 const metadata = def.metadata;
                 const router = routers.get(metadata.protocol);
                 if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
-                const route = metadata.route!;
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
-                router.use(route, endpoint, (r) => {
+                router.use(metadata.route!, endpoint, (r) => {
                     factory.onDestroy(() => router.unuse(r, endpoint));
                 });
             });
@@ -150,9 +149,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                 const metadata = def.metadata;
                 const router = routers.get(metadata.protocol);
                 if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
-                const route = metadata.route!;
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
-                router.use(route, endpoint, (r)=> {
+                router.use(metadata.route!, endpoint, (r) => {
                     factory.onDestroy(() => router.unuse(r, endpoint));
                 });
             });

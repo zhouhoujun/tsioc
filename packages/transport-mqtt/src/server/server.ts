@@ -49,7 +49,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
         const router = this.endpoint.injector.get(MircoServRouters).get('mqtt');
-        const subscribes = this.subscribes = Array.from(router.patterns);
+        const subscribes = this.subscribes = router.matcher.getPatterns();
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
             subscribes.push(normalize(`${this.options.content.prefix}/#`));
         }

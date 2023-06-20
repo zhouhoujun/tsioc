@@ -8,9 +8,7 @@ export class MircoServiceRouterImpl implements MircoServRouters {
     private defaultProtocol?: string;
     private _rts?: Map<string, MircoServRouter> | null;
     constructor(
-        private injector: Injector,
-        readonly matcher: RouteMatcher,
-        readonly formatter: PatternFormatter
+        private injector: Injector
     ) {
     }
 

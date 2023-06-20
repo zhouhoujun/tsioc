@@ -125,7 +125,7 @@ export class KafkaClient extends Client {
             const topics = this.options.topics ? this.options.topics.map(t => {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
-            }) : Array.from(this.handler.injector.get(MircoServRouters).get('kafka').patterns);
+            }) : this.handler.injector.get(MircoServRouters).get('kafka').matcher.getPatterns();
             this._session.bindTopics(topics.map(t => this.getReplyTopic(t)))
         }
 

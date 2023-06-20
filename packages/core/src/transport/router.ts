@@ -6,7 +6,7 @@ import { Endpoint } from '../endpoints/endpoint';
 import { Interceptor } from '../Interceptor';
 import { Backend, Handler } from '../Handler';
 import { TransportContext } from './context';
-import { Pattern, PatternFormatter } from './pattern';
+import { Pattern } from './pattern';
 import { Route } from './route';
 
 /**
@@ -21,16 +21,8 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      */
     abstract get prefix(): string;
     /**
-     * topics patterns
-     */
-    abstract get patterns(): Set<string>;
-    /**
-     * pattern formatter.
-     */
-    abstract get formatter(): PatternFormatter;
-    /**
-     * route matcher.
-     */
+    * route matcher.
+    */
     abstract get matcher(): RouteMatcher;
     /**
      * use route.
@@ -45,7 +37,7 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      * @param endpoint endpoint. 
      * @param subscribe as subscribe or not.
      */
-    abstract use(route: Pattern, endpoint: T, callback?: (route: string, regExp?: RegExp)=> void): this;
+    abstract use(route: Pattern, endpoint: T, callback?: (route: string, regExp?: RegExp) => void): this;
     /**
      * unuse route.
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -64,16 +56,16 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
 
 }
 
-export interface RegisterResult {
-    patterns?: string[];
-    regExp?: RegExp;
-}
 
 /**
  * math url path with register route.
  */
 @Abstract()
 export abstract class RouteMatcher {
+    /**
+     * get register topic patterns.
+     */
+    abstract getPatterns<T = string>(): T[]
     /**
      * is pattern route or not.
      * @param route 
@@ -100,7 +92,7 @@ export abstract class RouteMatcher {
      *  
      * @returns subscribe topics. 
      */
-    abstract register(route: string, subscribe?: boolean): RegisterResult | null;
+    abstract register(route: string, subscribe?: boolean): this;
     /**
      * register route matcher. 
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -122,7 +114,7 @@ export abstract class RouteMatcher {
      *  
      * @returns subscribe topics. 
      */
-    abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): RegisterResult | null;
+    abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): this;
 
     /**
      * get the url path match route
@@ -130,6 +122,8 @@ export abstract class RouteMatcher {
      * @returns matched route.
      */
     abstract match(path: string): string | null;
+
+    abstract unregister(route: string): this;
 }
 
 
