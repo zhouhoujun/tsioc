@@ -73,6 +73,11 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
             `Subscribed successfully! This server is currently subscribed topics.`,
             subscribes
         );
+        router.matcher.eachPattern((topic, pattern) => {
+            if (topic !== pattern) {
+                this.logger.info('Transform pattern', pattern, 'to topic', topic)
+            }
+        });
 
     }
 

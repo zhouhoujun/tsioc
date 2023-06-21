@@ -1,7 +1,7 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
-import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, IncomingHeaders, InvalidJsonException, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { AbstractTransportSession, BufferTransportSession, PacketLengthException, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
+import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNumber, isString, isUndefined } from '@tsdi/ioc';
+import { Decoder, Encoder, IncomingHeaders, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { AbstractTransportSession, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 
 
@@ -135,39 +135,46 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         return null!;
     }
 
-    protected writeBuffer(buffer: Buffer, packet: Packet<any>) {
+    protected writeBuffer(buffer: Buffer, packet: Packet<any>& { partition?: number}) {
 
         const headers: IHeaders = {};
         Object.keys(packet.headers!).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
         });
-        headers[KafkaHeaders.CORRELATION_ID] = packet.id;
+        headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
+        const topic = packet.topic ?? packet.url!;
         if (this.options.consumerAssignments) {
-            headers[KafkaHeaders.REPLY_TOPIC] = packet.replyTo;
-            headers[KafkaHeaders.REPLY_PARTITION] = this.options.consumerAssignments[packet.replyTo!]?.toString();
+            const replyTopic = packet.replyTo ?? this.getReplyTopic(topic);
+            headers[KafkaHeaders.REPLY_TOPIC] =  Buffer.from(replyTopic);
+            headers[KafkaHeaders.REPLY_PARTITION] =  Buffer.from(this.options.consumerAssignments[replyTopic]?.toString());
         }
         this.socket.producer.send({
             ...this.options.send,
-            topic: packet.topic ?? packet.url!,
+            topic,
             messages: [{
                 headers,
-                value: buffer
+                value: buffer,
+                partition: packet.partition
             }]
         })
     }
 
+    protected getReplyTopic(topic: string) {
+        return `${topic}.reply`
+    }
 
-    parseHead(val: Buffer | string | (Buffer | string)[] | undefined): string | string[] | undefined {
+
+    protected parseHead(val: Buffer | string | (Buffer | string)[] | undefined): string | string[] | undefined {
         if (isString(val)) return val;
         if (isBuffer(val)) return val.toString();
         if (isArray(val)) return val.map(v => isString(v) ? v : v.toString());
-        return val;
+        return `${val}`;
     }
 
-    generHead(head: string | number | readonly string[] | undefined): Buffer | string | (Buffer | string)[] | undefined {
-        if (isNumber(head)) return head.toString();
+    protected generHead(head: string | number | readonly string[] | undefined): Buffer | string | (Buffer | string)[] | undefined {
+        if (isNumber(head)) return Buffer.from(head.toString());
         if (isArray(head)) return head.map(v => v.toString())
-        return head as string;
+        return Buffer.from(`${head}`);
     }
 
     protected handleFailed(error: any): void {
@@ -258,8 +265,9 @@ export class KafkaReplyPartitionAssigner {
         // build the previous assignment and an inverse map of topic > partition > memberId for lookup
         decodedMembers.forEach(member => {
             if (
-                !previousAssignment[member.memberId] &&
-                Object.keys(member.previousAssignment).length > 0
+                !previousAssignment[member.memberId] 
+                && member.previousAssignment 
+                && Object.keys(member.previousAssignment).length > 0
             ) {
                 previousAssignment[member.memberId] = member.previousAssignment;
             }

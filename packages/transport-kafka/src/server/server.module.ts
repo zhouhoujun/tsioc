@@ -8,7 +8,7 @@ import { KafkaTransportSessionFactory, KafkaTransportSessionFactoryImpl } from '
 import { KafkaStatusVaildator } from '../status';
 import { KafkaExecptionHandlers } from './execption.handles';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
-import { KafkaPatternFormatter } from '../pattern';
+import { KafkaPatternFormatter, KafkaRouteMatcher } from '../pattern';
 
 
 
@@ -57,7 +57,8 @@ const defMicroOpts = {
     imports: [
         TransformModule,
         MicroServRouterModule.forRoot('kafka', {
-            formatter: KafkaPatternFormatter
+            formatter: KafkaPatternFormatter,
+            matcher: KafkaRouteMatcher
         }),
         TransportModule,
         ServerTransportModule
@@ -65,6 +66,7 @@ const defMicroOpts = {
     providers: [
         KafkaStatusVaildator,
         KafkaPatternFormatter,
+        KafkaRouteMatcher,
         { provide: KafkaTransportSessionFactory, useClass: KafkaTransportSessionFactoryImpl, asDefault: true },
         { provide: KAFKA_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {

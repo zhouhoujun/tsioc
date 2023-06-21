@@ -104,6 +104,13 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
                 );
             }
         });
+
+    
+        router.matcher.eachPattern((topic, pattern) => {
+            if (topic !== pattern) {
+                this.logger.info('Transform pattern', pattern, 'to topic', topic)
+            }
+        });
     }
 
     protected async onShutdown(): Promise<any> {

@@ -1,5 +1,5 @@
 import {
-    EMPTY, Injectable, ModuleRef, isFunction, lang, OnDestroy, pomiseOf, Injector,
+    EMPTY, ModuleRef, isFunction, lang, OnDestroy, pomiseOf, Injector,
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -121,7 +121,8 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     onDestroy(): void {
-        this.routes.clear()
+        this.routes.clear();
+        this.matcher.clear()
     }
 
 
@@ -190,10 +191,10 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 export class DefaultRouteMatcher extends RouteMatcher {
 
     private matchers: Map<RegExp, string>;
-    protected patterns: Set<any>;
+    protected patterns: Map<string, any>;
     constructor() {
         super();
-        this.patterns = new Set();
+        this.patterns = new Map();
         this.matchers = new Map();
     }
 
@@ -201,13 +202,17 @@ export class DefaultRouteMatcher extends RouteMatcher {
         return pattern$.test(route)
     }
 
-    getPatterns<T>(): T[] {
-        return Array.from(this.patterns);
+    getPatterns<T = string>(): T[] {
+        return Array.from(this.patterns.values());
     }
 
-    register(route: string, subscribe?: boolean): this;
-    register(route: string, params?: Record<string, any>, subscribe?: boolean): this;
-    register(route: string, arg?: Record<string, any> | boolean, subscribe?: boolean): this {
+    eachPattern<T = string>(callback: (transformed: T, pattern: string) => void): void {
+        this.patterns.forEach(callback);
+    }
+
+    register(route: string, subscribe?: boolean): void;
+    register(route: string, params?: Record<string, any>, subscribe?: boolean): void;
+    register(route: string, arg?: Record<string, any> | boolean, subscribe?: boolean): void {
         let params: Record<string, any> | undefined;
         if (isBoolean(arg)) {
             subscribe = arg;
@@ -230,23 +235,27 @@ export class DefaultRouteMatcher extends RouteMatcher {
             }
 
             const regExp = new RegExp('^' + $exp + '$');
-            subscribe && this.registerPattern(subs, regExp);
+            subscribe && this.registerPattern(route, subs, regExp);
             this.matchers.set(regExp, route);
-            return this;
         } else {
-            subscribe && this.registerPattern([route])
+            subscribe && this.registerPattern(route)
         }
-        return this;
     }
 
 
-    unregister(route: string): this {
+    unregister(route: string): void {
         this.patterns.delete(route);
-        return this;
     }
 
-    protected registerPattern(patterns?: string[], regExp?: RegExp) {
-        patterns?.forEach(p => this.patterns.add(p));
+    clear(): void {
+        this.patterns.clear();
+        this.matchers.clear()
+    }
+
+    protected registerPattern(route: string, patterns?: string[], regExp?: RegExp) {
+        patterns ?
+            patterns.forEach(p => this.patterns.set(p, p))
+            : this.patterns.set(route, route);
     }
 
     match(path: string): string | null {

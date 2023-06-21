@@ -5,7 +5,7 @@ import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportOpts, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
-import { DEFAULT_BROKERS, KafkaTransport } from '../const';
+import { DEFAULT_BROKERS, KafkaHeaders, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaContext } from './context';
@@ -106,7 +106,17 @@ export class KafkaServer extends Server<KafkaContext> {
 
         session.on(ev.MESSAGE, (topic: string, packet: Packet) => {
             this.requestHandler(session, packet)
-        })
+        });
+
+        this.logger.info(
+            `Subscribed successfully! This server is currently subscribed topics.`,
+            topics
+        );
+        router.matcher.eachPattern((topic, pattern) => {
+            if (topic !== pattern) {
+                this.logger.info('Transform pattern', pattern, 'to topic', topic)
+            }
+        });
 
     }
 
@@ -130,7 +140,7 @@ export class KafkaServer extends Server<KafkaContext> {
             packet.method = MESSAGE;
         }
         const req = new KafkaIncoming(session, packet);
-        const res = new KafkaOutgoing(session, packet.url!, packet.id);
+        const res = new KafkaOutgoing(session, packet.url!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string, packet.id);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

@@ -99,8 +99,7 @@ export class KafkaClient extends Client {
             this.consumer.on(
                 this.consumer.events.GROUP_JOIN,
                 (data: ConsumerGroupJoinEvent) => {
-                    const consumerAssignments: { [key: string]: number } = {};
-                    // only need to set the minimum
+                    const consumerAssignments: Record<string, number> = {};
                     Object.keys(data.payload.memberAssignment).forEach(memberId => {
                         const minimumPartition = Math.min(
                             ...data.payload.memberAssignment[memberId],
