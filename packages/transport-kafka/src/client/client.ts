@@ -125,7 +125,7 @@ export class KafkaClient extends Client {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
             }) : this.handler.injector.get(MircoServRouters).get('kafka').matcher.getPatterns();
-            this._session.bindTopics(topics.map(t => this.getReplyTopic(t)))
+            await this._session.bindTopics(topics.map(t => this.getReplyTopic(t)))
         }
 
     }

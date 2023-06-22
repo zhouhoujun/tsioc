@@ -98,6 +98,16 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         });
     }
 
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
+        return new TransportErrorResponse(options);
+    }
+    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
+        return new TransportHeaderResponse(options);
+    }
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TransportEvent {
+        return new TransportResponse(options);
+    }
+
     protected getReqUrl(req: TransportRequest) {
         return normalize(req.url);
     }
@@ -134,7 +144,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected async handleMessage(id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
         res = isString(res) ? JSON.parse(res) : res;
-        if (res.id !== id) return;
+        if (res.id != id) return;
         const headers = this.parseHeaders(res);
         const pkg = this.parsePacket(res, headers);
         const status = pkg.status ?? this.vaildator.ok;
@@ -169,21 +179,11 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     }
 
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportErrorResponse(options);
-    }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportHeaderResponse(options);
-    }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TransportEvent {
-        return new TransportResponse(options);
-    }
-
-    parseHeaders(incoming: Incoming): ResHeaders {
+    protected parseHeaders(incoming: Incoming): ResHeaders {
         return new ResHeaders(incoming.headers);
     }
 
-    parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
+    protected parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
         return {
             status: headers.get(hdr.STATUS) ?? this.vaildator.none,
             statusText: String(headers.get(hdr.STATUS_MESSAGE))

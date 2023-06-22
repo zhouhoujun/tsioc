@@ -1,5 +1,5 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
-import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNumber, isString, isUndefined } from '@tsdi/ioc';
+import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { Decoder, Encoder, IncomingHeaders, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
@@ -51,12 +51,10 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const consumerSubscribeOptions = this.options.subscribe || {};
         const consumer = this.socket.consumer;
         if (!consumer) throw new Execption('No consumer');
-        const subscribeToPattern = async (pattern: string | RegExp) =>
-            this.socket.consumer.subscribe({
-                topic: pattern,
-                ...consumerSubscribeOptions,
-            });
-        await Promise.all(topics.map(subscribeToPattern));
+        await this.socket.consumer.subscribe({
+            topics,
+            ...consumerSubscribeOptions,
+        });
 
         await consumer.run({
             ...this.options.run,
@@ -146,10 +144,8 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         if (!this.options.serverSide) {
             const replyTopic = packet.replyTo ?? this.getReplyTopic(topic);
             headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
-            if (this.options.consumerAssignments && this.options.consumerAssignments[replyTopic]) {
+            if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
                 headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
-            } else {
-                throw new Execption('Has not register the topic ' + replyTopic);
             }
         }
         this.socket.producer.send({

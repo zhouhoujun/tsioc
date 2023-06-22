@@ -79,25 +79,25 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
     }): TResponse;
 
     /**
-     * parse headers of incoming message.
-     * @param incoming 
-     */
-    abstract parseHeaders(incoming: any): ResHeaders;
-
-    /**
-     * parse packet via incoming message.
-     * @param incoming 
-     * @param headers 
-     */
-    abstract parsePacket(incoming: any, headers: ResHeaders): StatusPacket<TStatus>;
-
-    /**
      * send request.
      * @param request 
      * @param req 
      * @param callback 
      */
     abstract send(req: TRequest): Observable<TResponse>;
+
+    /**
+     * parse headers of incoming message.
+     * @param incoming 
+     */
+    protected abstract parseHeaders(incoming: any): ResHeaders;
+
+    /**
+     * parse packet via incoming message.
+     * @param incoming 
+     * @param headers 
+     */
+    protected abstract parsePacket(incoming: any, headers: ResHeaders): StatusPacket<TStatus>;
 
     protected async parseResponse(url: string, body: any, headers: ResHeaders, status: TStatus, statusText: string | undefined, responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'): Promise<[boolean, TResponse]> {
         let originalBody: any;
