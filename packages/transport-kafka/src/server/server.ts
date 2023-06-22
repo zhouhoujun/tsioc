@@ -98,9 +98,11 @@ export class KafkaServer extends Server<KafkaContext> {
         const router = this.endpoint.injector.get(MircoServRouters).get('kafka');
         const topics = router.matcher.getPatterns();
 
-        const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, {
-            ...this.options.transportOpts
-        } as KafkaTransportOpts);
+        const transportOpts = this.options.transportOpts = {
+            ...this.options.transportOpts,
+            serverSide: true
+        };
+        const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, transportOpts);
 
         await session.bindTopics(topics);
 

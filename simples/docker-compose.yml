@@ -89,7 +89,7 @@ services:
     image: confluentinc/cp-zookeeper:7.3.2
     ports:
       - "2181:2181"
-    
+
     restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -104,7 +104,7 @@ services:
     ports:
       - "29092:29092"
       - "9092:9092"
-    
+
     restart: always
     environment:
       KAFKA_BROKER_ID: 1
@@ -114,8 +114,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
-
-      
   # networks:
   #   emqx-bridge:
   #     driver: bridge

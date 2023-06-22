@@ -135,7 +135,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         return null!;
     }
 
-    protected writeBuffer(buffer: Buffer, packet: Packet<any>& { partition?: number}) {
+    protected writeBuffer(buffer: Buffer, packet: Packet<any> & { partition?: number }) {
 
         const headers: IHeaders = {};
         Object.keys(packet.headers!).forEach(k => {
@@ -143,10 +143,14 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         });
         headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
         const topic = packet.topic ?? packet.url!;
-        if (this.options.consumerAssignments) {
+        if (!this.options.serverSide) {
             const replyTopic = packet.replyTo ?? this.getReplyTopic(topic);
-            headers[KafkaHeaders.REPLY_TOPIC] =  Buffer.from(replyTopic);
-            headers[KafkaHeaders.REPLY_PARTITION] =  Buffer.from(this.options.consumerAssignments[replyTopic]?.toString());
+            headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
+            if (this.options.consumerAssignments && this.options.consumerAssignments[replyTopic]) {
+                headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
+            } else {
+                throw new Execption('Has not register the topic ' + replyTopic);
+            }
         }
         this.socket.producer.send({
             ...this.options.send,
@@ -265,8 +269,8 @@ export class KafkaReplyPartitionAssigner {
         // build the previous assignment and an inverse map of topic > partition > memberId for lookup
         decodedMembers.forEach(member => {
             if (
-                !previousAssignment[member.memberId] 
-                && member.previousAssignment 
+                !previousAssignment[member.memberId]
+                && member.previousAssignment
                 && Object.keys(member.previousAssignment).length > 0
             ) {
                 previousAssignment[member.memberId] = member.previousAssignment;
