@@ -1,16 +1,17 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
-import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, TransportSession, MESSAGE } from '@tsdi/core';
+import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, TransportSession, MESSAGE, normalize, PatternFormatter } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { Content, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
-import { KafkaTransportOpts, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
+import { KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
 import { DEFAULT_BROKERS, KafkaHeaders, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaContext } from './context';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaIncoming } from './incoming';
+import { KafkaPatternFormatter } from '../pattern';
 
 
 
@@ -96,7 +97,12 @@ export class KafkaServer extends Server<KafkaContext> {
         const consumer = this.consumer;
         const producer = this.producer;
         const router = this.endpoint.injector.get(MircoServRouters).get('kafka');
-        const topics = router.matcher.getPatterns();
+        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
+            const content = normalize(this.endpoint.injector.get(KafkaPatternFormatter).format(`${this.options.content.prefix}/**`));
+            // topics.push(new RegExp(content + '.\.*'));
+            router.matcher.register(content, true);
+        }
+        const topics = router.matcher.getPatterns<string|RegExp>();
 
         const transportOpts = this.options.transportOpts = {
             ...this.options.transportOpts,
@@ -142,7 +148,7 @@ export class KafkaServer extends Server<KafkaContext> {
             packet.method = MESSAGE;
         }
         const req = new KafkaIncoming(session, packet);
-        const res = new KafkaOutgoing(session, packet.url!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string, packet.id);
+        const res = new KafkaOutgoing(session, packet.url!, packet.topic!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string, packet.id);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

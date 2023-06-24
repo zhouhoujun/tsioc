@@ -35,12 +35,12 @@ describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
     let injector: Injector;
 
     let client: Http;
-    let mqttClient: KafkaClient
+    let kafkaClient: KafkaClient
 
     before(async () => {
         ctx = await Application.run(KafkaTestModule);
         injector = ctx.injector;
-        mqttClient = injector.get(KafkaClient);
+        kafkaClient = injector.get(KafkaClient);
         client = injector.get(Http);
     });
 
@@ -231,7 +231,18 @@ describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(mqttClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(kafkaClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
+
+    it('Subscribe message', async ()=> {
+        const result = 'load';
+        const r = await lastValueFrom(kafkaClient.send('topic-device', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -242,7 +253,7 @@ describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(mqttClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(kafkaClient.send('dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);

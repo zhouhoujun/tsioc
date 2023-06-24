@@ -1,6 +1,6 @@
-import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler, MESSAGE } from '@tsdi/core';
+import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler, MESSAGE, NotFoundExecption } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { Observable, from, mergeMap, of } from 'rxjs';
+import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
 
 /**
@@ -21,9 +21,20 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+        if (!ctx.vaildator.isNotFound(ctx.status) && !(ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE)) {
+            return next();
+        }
         const options = { ...defOpts, ...ctx.serverOptions.content };
         if (options.defer) {
-            await next()
+            try {
+                await next()
+            } catch (err: any) {
+                if (err instanceof NotFoundExecption) {
+                    await this.send(ctx, options);
+                    return;
+                }
+                throw err;
+            }
         }
         const file = await this.send(ctx, options);
         if (!options.defer && !file) {
@@ -32,13 +43,26 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
     }
 
     intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+        if (!input.vaildator.isNotFound(input.status) && !(input.method === HEAD || input.method === GET || input.method === MESSAGE)) {
+            return next.handle(input);
+        }
         const options = { ...defOpts, ...input.serverOptions.content };
         if (options.defer) {
             return next.handle(input)
                 .pipe(
+                    catchError((err, caught) => {
+                        if (err instanceof NotFoundExecption) {
+                            input.status = input.vaildator.notFound;
+                            return of(input)
+                        } else {
+                            return throwError(() => err);
+                        }
+                    }),
                     mergeMap(async res => {
-                        await this.send(input, options)
-                        return res;
+                        const file = await this.send(input, options)
+                        if (!file) {
+                            return throwError(() => new NotFoundExecption())
+                        }
                     })
                 )
         } else {
@@ -54,16 +78,16 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
 
     protected async send(ctx: AssetContext, options: ContentOptions) {
         let file = '';
-        if (ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE) {
-            try {
-                const sender = ctx.injector.get(ContentSendAdapter);
-                file = await sender.send(ctx, options)
-            } catch (err) {
-                if (!ctx.vaildator.isNotFound((err as any).status)) {
-                    throw err
-                }
+        if (!ctx.vaildator.isNotFound(ctx.status)) return file;
+        try {
+            const sender = ctx.injector.get(ContentSendAdapter);
+            file = await sender.send(ctx, options)
+        } catch (err) {
+            if (!ctx.vaildator.isNotFound((err as any).status)) {
+                throw err
             }
         }
+
         return file;
     }
 }
@@ -72,6 +96,7 @@ export const defOpts: ContentOptions = {
     root: 'public',
     index: 'index.html',
     maxAge: 0,
+    defer: false,
     immutable: false,
 
 }

@@ -28,17 +28,17 @@ export class KafkaService {
         return message;
     }
 
-    @Handle('sensor/message/*', 'redis')
+    @Handle('sensor/message/*', 'kafka')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/submessage/*', 'redis')
+    @Subscribe('sensor/submessage/*', 'kafka')
     async subMessage2(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/:id/start', 'redis', {
+    @Subscribe('sensor/:id/start', 'kafka', {
         paths: {
             id: SENSORS
         }

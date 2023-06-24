@@ -1,4 +1,4 @@
-import { BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { BadRequestExecption, Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { RedirectResult } from '@tsdi/transport';
 import {  of } from 'rxjs';
@@ -74,6 +74,11 @@ export class DeviceController {
 
     @Handle({ cmd: 'xxx' }, 'kafka')
     async subMessage(@Payload() message: string) {
+        return message;
+    }
+
+    @Subscribe('topic-device')
+    async subMessage2(@Payload() message: string) {
         return message;
     }
 

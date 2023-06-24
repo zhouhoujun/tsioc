@@ -21,6 +21,7 @@ export class KafkaOutgoing extends PassThrough implements Outgoing<KafkaTranspor
     writable = true;
     constructor(
         readonly session: TransportSession<KafkaTransport>,
+        readonly url: string,
         readonly topic: string,
         readonly replyTopic: string,
         readonly replyPartition: string,

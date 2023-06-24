@@ -57,6 +57,9 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         });
 
         await consumer.run({
+            // autoCommit: true,
+            // autoCommitInterval: 5000,
+            // autoCommitThreshold: 100,
             ...this.options.run,
             eachMessage: (payload) => this.onData(payload)
         })
@@ -88,7 +91,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                     id,
                     headers,
                     topic,
-                    url: topic,
+                    url: headers[hdr.X_REQUEST_URL] as string ?? topic,
                 })
             }
             this.handleData(chl, id, msg.message.value!);

@@ -2,7 +2,8 @@ import { Abstract, EMPTY_OBJ, InvocationContext, isString } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { IncomingHeaders, ReqHeaders, ResHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
-import { Pattern, PatternFormatter, patternToPath } from './pattern';
+import { Pattern, PatternFormatter } from './pattern';
+import { normalize } from './route';
 
 
 /**
@@ -27,7 +28,7 @@ export class TransportRequest<T = any> {
 
     constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
         this.context = options.context!;
-        const url = this.url = this.context.get(PatternFormatter).format(pattern);
+        const url = this.url = normalize(this.context.get(PatternFormatter).format(pattern));
         this.pattern = pattern;
         this.method = options.method;
         this.params = new TransportParams(options);
@@ -38,6 +39,9 @@ export class TransportRequest<T = any> {
         this.body = options.body ?? options.payload ?? null;
         this.headers = new ReqHeaders(options.headers ?? options.options);
 
+        if (isString(pattern) && pattern.indexOf(url) < 0) {
+            this.headers.set('x-request-url', pattern);
+        }
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
         if (!this.params.size) {
             this.urlWithParams = url
