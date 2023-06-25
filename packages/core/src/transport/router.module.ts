@@ -1,5 +1,5 @@
 import { InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
-import { ROUTES, Routes } from './route';
+import { ROUTES, Routes, normalize } from './route';
 import { RouteMatcher, Router } from './router';
 import { Protocol } from './protocols';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
@@ -31,7 +31,7 @@ MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointI
 export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
 
 const defaultFormatter: PatternFormatter = {
-    format: (pattern) => patternToPath(pattern)
+    format: (pattern) => normalize(patternToPath(pattern))
 }
 
 /*

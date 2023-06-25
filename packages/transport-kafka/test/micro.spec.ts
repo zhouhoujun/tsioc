@@ -61,7 +61,7 @@ export class KafkaService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 200
+                timeout: 300
             }
         }),
         KafkaMicroServModule

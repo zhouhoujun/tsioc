@@ -64,14 +64,12 @@ export class KafkaClient extends Client {
 
 
         const postfixId = this.options.postfixId = this.options.postfixId ?? '-client';
-        const clientId = (this.options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
-        const groupId = (this.options.consumer?.groupId ?? 'boot-group') + postfixId;
 
-        const connectOpts = this.options.connectOpts = {
+        const connectOpts = {
             brokers: DEFAULT_BROKERS,
             logCreator,
-            ...this.options.connectOpts,
-            clientId
+            clientId: 'boot-consumer' + postfixId,
+            ...this.options.connectOpts
         };
 
         if (isFunction(connectOpts.brokers)) {
@@ -89,12 +87,14 @@ export class KafkaClient extends Client {
                 (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(transportOpts, config),
             ] as PartitionAssigner[];
 
-            this.options.consumer = {
+            const consumeOpts = {
                 partitionAssigners,
-                ...this.options.consumer,
-                groupId
-            }
-            this.consumer = this.client.consumer(this.options.consumer);
+                groupId: 'boot-group' + postfixId,
+                ...this.options.consumer
+            };
+
+
+            this.consumer = this.client.consumer(consumeOpts);
 
             this.consumer.on(
                 this.consumer.events.GROUP_JOIN,
@@ -150,8 +150,12 @@ export class KafkaClient extends Client {
 
     protected async onShutdown(): Promise<void> {
         this._session?.destroy();
-        await this.producer?.disconnect();
-        await this.consumer?.disconnect();
+        if (this.consumer) {
+            await this.consumer.disconnect()
+        }
+        if (this.producer) {
+            await this.producer.disconnect();
+        }
         this.producer = null;
         this.consumer = null;
         this.client = null;

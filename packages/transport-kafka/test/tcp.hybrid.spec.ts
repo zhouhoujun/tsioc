@@ -25,7 +25,7 @@ import { DeviceController } from './controller';
     ],
     bootstrap: [TcpServer, KafkaServer]
 })
-export class KafkaTestModule {
+export class KafkaTcpTestModule {
 
 }
 
@@ -38,7 +38,7 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
     let kafkaClient: KafkaClient
 
     before(async () => {
-        ctx = await Application.run(KafkaTestModule);
+        ctx = await Application.run(KafkaTcpTestModule);
         injector = ctx.injector;
         kafkaClient = injector.get(KafkaClient);
         client = injector.get(TcpClient);

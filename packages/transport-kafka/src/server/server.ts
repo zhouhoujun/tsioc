@@ -3,7 +3,7 @@ import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, Transpor
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Content, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
-import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
+import { Consumer, ConsumerConfig, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
 import { DEFAULT_BROKERS, KafkaHeaders, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
@@ -66,14 +66,12 @@ export class KafkaServer extends Server<KafkaContext> {
 
 
         const postfixId = this.options.postfixId ?? '-server';
-        const clientId = (this.options.connectOpts?.clientId ?? 'boot-consumer') + postfixId;
-        const groupId = (this.options.consumer?.groupId ?? 'boot-group') + postfixId;
-        const connectOpts = this.options.connectOpts = {
+        const connectOpts = {
             brokers: DEFAULT_BROKERS,
             logCreator,
-            ...this.options.connectOpts,
-            clientId
-        }
+            clientId: 'boot-consumer' + postfixId,
+            ...this.options.connectOpts
+        };
 
         if (isFunction(connectOpts.brokers)) {
             connectOpts.brokers = await connectOpts.brokers();
@@ -82,10 +80,12 @@ export class KafkaServer extends Server<KafkaContext> {
         const client: Kafka = this.client = new Kafka(connectOpts);
 
 
-        const consumeOpts = this.options.consumer = {
+        const consumeOpts = {
+            groupId: 'boot-group' + postfixId,
             ...this.options.consumer,
-            groupId
         };
+
+
         this.consumer = client.consumer(consumeOpts);
         this.producer = client.producer(this.options.producer);
 
@@ -104,7 +104,7 @@ export class KafkaServer extends Server<KafkaContext> {
             // topics.push(new RegExp(content + '.\.*'));
             router.matcher.register(content, true);
         }
-        const topics = router.matcher.getPatterns<string|RegExp>();
+        const topics = router.matcher.getPatterns<string | RegExp>();
 
         const transportOpts = this.options.transportOpts = {
             ...this.options.transportOpts,
@@ -132,8 +132,12 @@ export class KafkaServer extends Server<KafkaContext> {
 
     protected async onShutdown(): Promise<any> {
         this._session?.destroy();
-        this.consumer && (await this.consumer.disconnect());
-        this.producer && (await this.producer.disconnect());
+        if (this.consumer) {
+            await this.consumer.disconnect()
+        }
+        if (this.producer) {
+            await this.producer.disconnect();
+        }
         this.consumer = null!;
         this.producer = null!;
         this.client = null!;

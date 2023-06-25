@@ -171,6 +171,7 @@ export namespace hdr {
     export const LAST_MODIFIED = 'last-modified';
 
     export const ORIGIN = 'origin';
+    export const ORIGIN_PATH = 'origin-path';
     export const pragma = 'pragma';
     export const PROXY_URL = 'proxy-uri';
     export const PROXY_AUTHENTICATE = 'proxy-authenticate';

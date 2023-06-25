@@ -1,10 +1,10 @@
-import { Pattern, PatternFormatter, patternToPath, DefaultRouteMatcher } from '@tsdi/core';
+import { Pattern, PatternFormatter, patternToPath, DefaultRouteMatcher, normalize } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class KafkaPatternFormatter extends PatternFormatter {
     format(pattern: Pattern): string {
-        return patternToPath(pattern, '/', '-').replace(/\//g, '.')
+        return normalize(patternToPath(pattern, '/', '-')).replace(/\//g, '-')
     }
 }
 

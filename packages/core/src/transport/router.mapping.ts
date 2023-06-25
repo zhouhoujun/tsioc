@@ -151,7 +151,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     protected addEndpoint(route: Pattern, endpoint: HybridRoute, callback?: (route: string) => void) {
-        route = normalize(this.formatter.format(route));
+        route = this.formatter.format(route);
         const redpt = endpoint as RouteEndpoint;
         if (redpt.injector && redpt.options && redpt.options.paths) {
             const params: Record<string, any> = {};

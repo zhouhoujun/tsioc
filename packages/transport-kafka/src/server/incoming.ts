@@ -22,7 +22,7 @@ export class KafkaIncoming extends Readable implements Incoming<KafkaTransport> 
         this.id = packet.id;
         this.setMaxListeners(0);
         const headers = this.headers = packet.headers || {};
-        this.url = headers[hdr.PATH] ?? packet.url ?? '';
+        this.url = headers[hdr.ORIGIN_PATH] as string ?? packet.url ?? '';
         this.topic = packet.topic ?? packet.url ?? '';
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';
 
