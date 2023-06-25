@@ -1,7 +1,6 @@
 import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
 import { Agent } from 'coap';
 import { Observable, of } from 'rxjs';
 import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';

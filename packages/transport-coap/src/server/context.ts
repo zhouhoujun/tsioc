@@ -1,9 +1,9 @@
 import { Incoming } from '@tsdi/core';
+import { isNumber } from '@tsdi/ioc';
 import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
 import { CoapOutgoing } from './outgoing';
 import { CoapServerOpts } from './options';
-import { isNumber } from '@tsdi/ioc';
 
 /**
  * CoAP server context

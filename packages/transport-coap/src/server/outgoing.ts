@@ -25,7 +25,6 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
         if (isNumber(idx) && idx >= 0) {
             this._packet.options?.splice(idx, 1);
         }
-
     }
 
     static parse(outgoing: OutgoingMessage): CoapOutgoing {
@@ -36,11 +35,11 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
         Object.defineProperty(outgoing, 'getHeader', {
             value: getHeader
-        })
+        });
 
         Object.defineProperty(outgoing, 'removeHeader', {
             value: removeHeader
-        })
+        });
 
         return outgoing as CoapOutgoing;
     }

@@ -34,6 +34,7 @@ const defMicroServOpts = {
         Json,
         Bodyparser
     ],
+    listenOpts: 5683,
     providers: [
         { provide: StatusVaildator, useExisting: CoapMicroStatusVaildator }
     ]
@@ -122,6 +123,7 @@ const defServOpts = {
         ServerFinalizeFilter
     ],
     backend: HybridRouter,
+    listenOpts: 5683,
     interceptors: [
         Session,
         Content,
