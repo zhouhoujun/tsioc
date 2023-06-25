@@ -59,7 +59,7 @@ const defServerOpts = {
 
 
 /**
- * http module.
+ * http server module.
  */
 @Module({
     imports: [

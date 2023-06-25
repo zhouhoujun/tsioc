@@ -1,10 +1,14 @@
 import { Incoming } from '@tsdi/core';
-import { AbstractAssetContext } from '@tsdi/transport';
+import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
 import { CoapOutgoing } from './outgoing';
+import { CoapServerOpts } from './options';
+import { isNumber } from '@tsdi/ioc';
 
-
-export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgoing> {
+/**
+ * CoAP server context
+ */
+export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgoing, string, CoapServerOpts> {
     isAbsoluteUrl(url: string): boolean {
         return coaptl.test(url.trim())
     }
@@ -13,8 +17,8 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.getListenOpts();
-            const baseUrl = new URL(`${this.protocol}://${host}:${port ?? 3000}`);
+            const { host, port } = isNumber(this.serverOptions.listenOpts) ? { port: this.serverOptions.listenOpts, host: LOCALHOST } : this.serverOptions.listenOpts!;
+            const baseUrl = new URL(`${this.protocol}://${host ?? LOCALHOST}:${port ?? 3000}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }

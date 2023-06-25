@@ -12,7 +12,7 @@ import { TcpHandler } from './handler';
 
 
 /**
- * tcp client default options.
+ * TCP client default options.
  */
 const defClientOpts = {
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
@@ -30,7 +30,9 @@ const defClientOpts = {
 } as TcpClientOpts;
 
 
-
+/**
+ * TCP Client Module.
+ */
 @Module({
     imports: [
         TransportModule,

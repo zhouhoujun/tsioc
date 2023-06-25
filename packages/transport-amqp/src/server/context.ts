@@ -5,7 +5,9 @@ import { AmqpOutgoing } from './outgoing';
 import { AmqpMicroServiceOpts } from './options';
 
 
-
+/**
+ * Amqp server context
+ */
 export class AmqpContext extends AbstractAssetContext<AmqpIncoming, AmqpOutgoing, number, AmqpMicroServiceOpts> {
 
     isAbsoluteUrl(url: string): boolean {

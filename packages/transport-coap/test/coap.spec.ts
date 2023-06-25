@@ -1,4 +1,4 @@
-import { Application, ApplicationContext, MicroServiceRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
@@ -24,14 +24,14 @@ import { Bodyparser, Content, Json } from '@tsdi/transport';
         //         },
         //     }
         // }),
-        MicroServiceRouterModule.forRoot('coap'),
+        MicroServRouterModule.forRoot('coap'),
         CoapServerModule.withOption({
             serverOpts: {
                 interceptors: [
                     Content,
                     Json,
                     Bodyparser,
-                    { useExisting: MicroServiceRouterModule.getToken('coap') }
+                    { useExisting: MicroServRouterModule.getToken('coap') }
                 ]
             }
         }),

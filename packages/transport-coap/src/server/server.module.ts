@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, HybridRouter, MicroServiceRouterModule, RouterModule, StatusVaildator, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, HybridRouter, MicroServRouterModule, RouterModule, StatusVaildator, TransformModule, createTransportEndpoint } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -27,7 +27,7 @@ const defMicroServOpts = {
         ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
-    backend: MicroServiceRouterModule.getToken('coap'),
+    backend: MicroServRouterModule.getToken('coap'),
     interceptors: [
         Session,
         Content,
@@ -39,11 +39,13 @@ const defMicroServOpts = {
     ]
 } as CoapServerOpts;
 
-
+/**
+ * CoAP microservice Module.
+ */
 @Module({
     imports: [
         TransformModule,
-        MicroServiceRouterModule.forRoot('coap'),
+        MicroServRouterModule.forRoot('coap'),
         TransportModule,
         ServerTransportModule
     ],
@@ -58,12 +60,11 @@ const defMicroServOpts = {
             asDefault: true,
             deps: [Injector, COAP_MICRO_SERV_OPTS]
         },
-
         CoapExecptionHandlers,
         CoapMicroService
     ]
 })
-export class CoapMicroServiceModule {
+export class CoapMicroServModule {
 
     /**
      * import CoAP micro service module with options.
@@ -80,7 +81,7 @@ export class CoapMicroServiceModule {
          * server options
          */
         serverOpts?: CoapServerOpts;
-    }): ModuleWithProviders<CoapMicroServiceModule> {
+    }): ModuleWithProviders<CoapMicroServModule> {
         const providers: ProviderType[] = [
             {
                 provide: COAP_SERV_OPTS,
@@ -97,7 +98,7 @@ export class CoapMicroServiceModule {
         }
 
         return {
-            module: CoapMicroServiceModule,
+            module: CoapMicroServModule,
             providers
         }
     }
@@ -129,7 +130,9 @@ const defServOpts = {
     ]
 } as CoapServerOpts;
 
-
+/**
+ * CoAP server Module.
+ */
 @Module({
     imports: [
         TransformModule,

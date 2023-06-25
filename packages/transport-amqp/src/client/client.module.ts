@@ -33,18 +33,22 @@ const defClientOpts = {
     interceptors: [BodyContentInterceptor],
     backend: TransportBackend,
     providers: [
-        { provide: StatusVaildator, useClass: AmqpStatusVaildator },
-        { provide: RequestAdapter, useClass: AmqpRequestAdapter }
+        { provide: StatusVaildator, useExisting: AmqpStatusVaildator },
+        { provide: RequestAdapter, useExisting: AmqpRequestAdapter }
     ]
 } as AmqpClientOpts;
 
-
+/**
+ * Amqp Client Module.
+ */
 @Module({
     imports: [
         TransportModule,
         ServerTransportModule
     ],
     providers: [
+        AmqpStatusVaildator,
+        AmqpRequestAdapter,
         { provide: AmqpTransportSessionFactory, useClass: AmqpTransportSessionFactoryImpl, asDefault: true },
         { provide: AMQP_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {

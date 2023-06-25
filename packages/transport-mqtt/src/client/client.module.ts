@@ -36,10 +36,10 @@ const defClientOpts = {
         ServerTransportModule
     ],
     providers: [
-        { provide: MqttTransportSessionFactory, useClass: MqttTransportSessionFactoryImpl, asDefault: true },
-        { provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         MqttStatusVaildator,
         MqttRequestAdapter,
+        { provide: MqttTransportSessionFactory, useClass: MqttTransportSessionFactoryImpl, asDefault: true },
+        { provide: MQTT_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {
             provide: MqttHandler,
             useFactory: (injector: Injector, opts: MqttClientOpts) => {

@@ -10,7 +10,7 @@ import { CoapServerOptions } from 'coap';
 export interface CoapServerOpts extends TransportEndpointOptions<AssetContext, Outgoing> {
     encoding?: BufferEncoding;
     connectOpts?: CoapServerOptions;
-    listenOpts?: number | { port?: number, listener?: () => void };
+    listenOpts?: number | { host?:string, port?: number, listener?: () => void };
     detailError?: boolean;
 }
 

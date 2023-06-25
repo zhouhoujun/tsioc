@@ -16,7 +16,9 @@ import { KafkaPatternFormatter } from '../pattern';
 
 
 
-
+/**
+ * Kafka server.
+ */
 @Injectable()
 export class KafkaServer extends Server<KafkaContext> {
 

@@ -12,7 +12,7 @@ import { RedisPatternFormatter } from '../pattern';
 
 
 /**
- * amqp client default options.
+ * Redis client default options.
  */
 const defClientOpts = {
     interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
@@ -32,7 +32,9 @@ const defClientOpts = {
 
 } as RedisClientOpts;
 
-
+/**
+ * Redis Client Module
+ */
 @Module({
     imports: [
         TransportModule,

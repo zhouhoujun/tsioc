@@ -32,6 +32,9 @@ const defClientOpts = {
 } as KafkaClientOpts;
 
 
+/**
+ * Kafka client module.
+ */
 @Module({
     imports: [
         TransformModule,

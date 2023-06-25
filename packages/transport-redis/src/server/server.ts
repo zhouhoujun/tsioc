@@ -12,7 +12,9 @@ import { RedisContext } from './context';
 import { RedisTransportSessionFactory, ReidsTransport } from '../transport';
 
 
-
+/**
+ * Redis Server.
+ */
 @Injectable()
 export class RedisServer extends Server<TransportContext, Outgoing> {
 

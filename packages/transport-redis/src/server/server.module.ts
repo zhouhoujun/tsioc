@@ -46,7 +46,9 @@ const defMicroOpts = {
     ]
 } as RedisServerOpts;
 
-
+/**
+ * Redis microservice Module
+ */
 @Module({
     imports: [
         TransformModule,

@@ -1,6 +1,6 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { CoapClient, CoapClientModule, CoapMicroService, CoapMicroServiceModule } from '../src';
+import { CoapClient, CoapClientModule, CoapMicroService, CoapMicroServModule } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -61,7 +61,7 @@ export class CoapService {
         //     }
         // }),
         
-        CoapMicroServiceModule
+        CoapMicroServModule
         // CoapMicroServiceModule.withOption({
         //     serverOpts: {
         //         // timeout: 1000,

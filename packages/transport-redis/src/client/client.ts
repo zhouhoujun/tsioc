@@ -8,7 +8,9 @@ import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 import { RedisTransportSessionFactory, ReidsTransport } from '../transport';
 
 
-
+/**
+ * Redis Client.
+ */
 @Injectable({ static: false })
 export class RedisClient extends Client<TransportRequest, TransportEvent> {
 

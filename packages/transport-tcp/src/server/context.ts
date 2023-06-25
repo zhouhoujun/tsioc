@@ -6,6 +6,9 @@ import { TcpOutgoing } from './outgoing';
 import { TcpServerOpts } from './options';
 
 
+/**
+ * TCP server context.
+ */
 export class TcpContext extends AbstractAssetContext<TcpIncoming, TcpOutgoing, number, TcpServerOpts> {
 
     isAbsoluteUrl(url: string): boolean {

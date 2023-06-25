@@ -3,6 +3,9 @@ import { RedisIncoming } from './incoming';
 import { RedisOutgoing } from './outgoing';
 import { RedisServerOpts } from './options';
 
+/**
+ * Redis Server context.
+ */
 export class RedisContext extends AbstractAssetContext<RedisIncoming, RedisOutgoing, number, RedisServerOpts> {
     isAbsoluteUrl(url: string): boolean {
         return redistl.test(url.trim())

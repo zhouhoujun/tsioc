@@ -48,7 +48,7 @@ const defMicroOpts = {
         Bodyparser
     ],
     providers: [
-        { provide: StatusVaildator, useClass: AmqpStatusVaildator }
+        { provide: StatusVaildator, useExisting: AmqpStatusVaildator }
     ]
 } as AmqpMicroServiceOpts
 
@@ -61,6 +61,7 @@ const defMicroOpts = {
         ServerTransportModule
     ],
     providers: [
+        AmqpStatusVaildator,
         { provide: AmqpTransportSessionFactory, useClass: AmqpTransportSessionFactoryImpl, asDefault: true },
         { provide: AMQP_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         {

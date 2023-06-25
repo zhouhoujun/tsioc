@@ -4,7 +4,9 @@ import { KafkaIncoming } from './incoming';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaServerOptions } from './options';
 
-
+/**
+ * Kafka server context
+ */
 export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgoing, number, KafkaServerOptions> {
     isAbsoluteUrl(url: string): boolean {
         return kafkaAbl.test(url);

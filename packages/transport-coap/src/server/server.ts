@@ -2,16 +2,16 @@
 import { AssetContext, InternalServerExecption, BindListenning, Server as MircoServer, Outgoing } from '@tsdi/core';
 import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
+import { LOCALHOST, ev } from '@tsdi/transport';
+import { Subscription, finalize } from 'rxjs';
 import { Server, IncomingMessage, OutgoingMessage } from 'coap';
 import { COAP_MICRO_SERV_OPTS, COAP_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
-import { LOCALHOST, ev } from '@tsdi/transport';
-import { Subscription, finalize } from 'rxjs';
 import { CoapOutgoing } from './outgoing';
 import { CoapContext } from './context';
 
 /**
- * Coap server.
+ * CoAP microservice.
  */
 @Injectable()
 export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implements BindListenning {
@@ -102,12 +102,15 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
 
     protected createContext(req: IncomingMessage, res: CoapOutgoing): CoapContext {
         const injector = this.endpoint.injector;
-        return new CoapContext(injector, req, res);
+        return new CoapContext(injector, req, res, this.options);
     }
 
 
 }
 
+/**
+ * CoAP Server
+ */
 @Injectable()
 export class CoapServer extends CoapMicroService {
     constructor(

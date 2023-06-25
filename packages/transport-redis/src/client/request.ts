@@ -5,6 +5,9 @@ import { Observer } from 'rxjs';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 import { ReidsTransport } from '../transport';
 
+/**
+ * Redis Request adapter.
+ */
 @Injectable()
 export class RedisRequestAdapter extends SessionRequestAdapter<ReidsTransport, RedisClientOpts> {
 

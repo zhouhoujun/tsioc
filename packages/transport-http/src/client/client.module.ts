@@ -22,7 +22,7 @@ const defClientOpts = {
 } as HttpClientOpts;
 
 /**
- * http module.
+ * http client module for 'nodejs'.
  */
 @Module({
     imports: [

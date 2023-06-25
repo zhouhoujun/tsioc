@@ -12,7 +12,9 @@ import { MqttContext } from './context';
 import { MqttTransportSessionFactory } from '../transport';
 
 
-
+/**
+ * Mqtt Server
+ */
 @Injectable()
 export class MqttServer extends Server<TransportContext, Outgoing> {
 

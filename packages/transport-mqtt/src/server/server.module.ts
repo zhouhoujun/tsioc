@@ -46,6 +46,9 @@ const defaultServOpts = {
 } as MqttServiceOpts;
 
 
+/**
+ * Mqtt microservice module
+ */
 @Module({
     imports: [
         TransformModule,

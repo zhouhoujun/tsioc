@@ -55,7 +55,9 @@ const defMicroOpts = {
 
 } as TcpServerOpts;
 
-
+/**
+ * TCP microservice Module.
+ */
 @Module({
     imports: [
         TransformModule,
@@ -128,7 +130,7 @@ export class TcpMicroServModule {
 
 
 /**
- * tcp server default options.
+ * TCP server default options.
  */
 const defServerOpts = {
     autoListen: true,
@@ -165,6 +167,9 @@ const defServerOpts = {
 } as TcpServerOpts;
 
 
+/**
+ * TCP server Module.
+ */
 @Module({
     imports: [
         TransformModule,
