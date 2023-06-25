@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, Outgoing, IEndable } from '@tsdi/core';
+import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, Outgoing, IEndable, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { toBuffer } from '../utils';
@@ -48,9 +48,8 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
             const onResponse = this.hasResponse(req) ? async (incoming: Incoming) => {
                 let body: any;
-                const headers = this.parseHeaders(incoming);
-                const packet = this.parseStatusPacket(incoming, headers);
-
+                const packet = this.parseStatusPacket(incoming);
+                const headers = this.parseHeaders(packet.headers, incoming);
                 body = packet.body ?? packet.payload;
                 status = packet.status;
                 statusText = packet.statusText;
@@ -223,6 +222,9 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
      */
     protected abstract getResponseEvenName(): string;
 
+    protected parseHeaders(headers: IncomingHeaders | OutgoingHeaders, incoming?: Incoming): ResHeaders {
+        return new ResHeaders(headers ?? incoming?.headers);
+    }
 
     protected getPayload(req: TRequest) {
         return req.body;

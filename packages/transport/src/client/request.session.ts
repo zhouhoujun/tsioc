@@ -139,7 +139,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         res = isString(res) ? JSON.parse(res) : res;
         if (res.id != id) return;
         const { status, headers: inHeaders, statusText, body: resbody, payload } = this.parseStatusPacket(res);
-        const headers = this.parseHeaders(res, inHeaders);
+        const headers = this.parseHeaders(inHeaders, res);
         let body = resbody ?? payload;
 
         if (this.vaildator.isEmpty(status)) {
@@ -170,8 +170,8 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     }
 
-    protected parseHeaders(incoming: Incoming, headers?: IncomingHeaders | OutgoingHeaders): ResHeaders {
-        return new ResHeaders(headers ?? incoming.headers);
+    protected parseHeaders(headers: IncomingHeaders | OutgoingHeaders, incoming?: Incoming): ResHeaders {
+        return new ResHeaders(headers ?? incoming?.headers);
     }
 
     protected parseStatusPacket(incoming: Incoming): StatusPacket<number | string> {

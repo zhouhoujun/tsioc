@@ -1,7 +1,7 @@
-import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, ResHeaders, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, ResHeaders, TransportEvent, TransportRequest, IncomingHeaders, OutgoingHeaders, Incoming } from '@tsdi/core';
 import { Injectable, Optional, isArray } from '@tsdi/ioc';
 import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer } from '@tsdi/transport';
-import { request, OptionValue, IncomingMessage, Agent } from 'coap';
+import { request, OptionValue, Agent } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';
 
@@ -60,7 +60,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
 
     }
 
-    protected getResponseEvenName(): string {
+    protected override getResponseEvenName(): string {
         return ev.RESPONSE;
     }
 
@@ -76,20 +76,18 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         }
     }
 
-
-    parseHeaders(incoming: IncomingMessage): ResHeaders {
+    protected parseStatusPacket(incoming: Incoming): StatusPacket<string> {
         const headers: Record<string, IncomingHeader> = {};
         Object.keys(incoming.headers).forEach(n => {
             const value = incoming.headers[n as OptionName];
             headers[n] = isArray(value) ? value.map(v => v.toString()) : (isBuffer(value) ? value.toString() : value ?? undefined);
         });
-        return new ResHeaders(headers);
-    }
-
-    parsePacket(incoming: any, headers: ResHeaders): StatusPacket<string> {
         return {
-            status: headers.get(hdr.STATUS) as string,
-            statusText: String(headers.get(hdr.STATUS_MESSAGE))
+            status: headers[hdr.STATUS] as string,
+            statusText: String(headers[hdr.STATUS_MESSAGE]),
+            headers,
+            body: incoming.body,
+            payload: incoming.payload
         }
     }
 

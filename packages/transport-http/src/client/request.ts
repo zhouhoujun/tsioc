@@ -1,5 +1,5 @@
 import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
-import { Decoder, Encoder, IWritableStream, Redirector, StatusVaildator, StreamAdapter, ResHeaders, HttpStatusCode } from '@tsdi/core';
+import { Decoder, Encoder, IWritableStream, Redirector, StatusVaildator, StreamAdapter, ResHeaders, HttpStatusCode, IncomingHeaders } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusPacket, StreamRequestAdapter, ctype, ev, hdr } from '@tsdi/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common';
 
@@ -71,20 +71,13 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         return new HttpResponse(options)
     }
 
-    getResponseEvenName(): string {
+    protected override getResponseEvenName(): string {
         return ev.RESPONSE;
     }
 
-    parseHeaders(incoming: any): ResHeaders {
-        if (incoming instanceof http.IncomingMessage) {
-            return new ResHeaders(incoming.headers);
-        } else {
-            return new ResHeaders(incoming);
-        }
-    }
-
-    parseStatusPacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): StatusPacket<number> {
+    protected override parseStatusPacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage): StatusPacket<number> {
         let body: any, status: number, statusText: string;
+        let headers: IncomingHeaders;
         if (incoming instanceof http.IncomingMessage) {
             status = incoming.statusCode ?? 0;
             statusText = incoming.statusMessage ?? 'OK';
@@ -94,11 +87,14 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
             if (status === 0 && body) {
                 status = 200;
             }
+            headers = incoming.headers;
         } else {
+            headers = incoming;
             status = incoming[hdr.STATUS2];
             statusText = incoming[hdr.STATUS_MESSAGE];
         }
         return {
+            headers,
             body,
             status,
             statusText

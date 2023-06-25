@@ -16,7 +16,7 @@ export interface StatusPacket<TStatus> {
     // topic?: string;
     // method?: string;
     type?: number;
-    headers?: IncomingHeaders | OutgoingHeaders;
+    headers: IncomingHeaders | OutgoingHeaders;
     error?: any;
     status: TStatus,
     statusText: string;
@@ -88,16 +88,16 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
 
     /**
      * parse headers of incoming message.
+     * @param headers IncomingHeaders
      * @param incoming 
      */
-    protected abstract parseHeaders(incoming: any): ResHeaders;
+    protected abstract parseHeaders(headers: IncomingHeaders | OutgoingHeaders, incoming?: any): ResHeaders;
 
     /**
      * parse packet via incoming message.
      * @param incoming 
-     * @param headers 
      */
-    protected abstract parseStatusPacket(incoming: any, headers: ResHeaders): StatusPacket<TStatus>;
+    protected abstract parseStatusPacket(incoming: any): StatusPacket<TStatus>;
 
     protected async parseResponse(url: string, body: any, headers: ResHeaders, status: TStatus, statusText: string | undefined, responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'): Promise<[boolean, TResponse]> {
         let originalBody: any;
