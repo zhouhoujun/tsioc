@@ -21,7 +21,6 @@ export class KafkaOutgoing extends PassThrough implements Outgoing<KafkaTranspor
     writable = true;
     constructor(
         readonly session: TransportSession<KafkaTransport>,
-        readonly url: string,
         readonly topic: string,
         readonly replyTopic: string,
         readonly replyPartition: string,
@@ -112,10 +111,10 @@ export class KafkaOutgoing extends PassThrough implements Outgoing<KafkaTranspor
         }
         super.end(chunk, encoding, cb);
 
-        const url = this.replyTopic ?? this.getReply(this.topic);
+        const topic = this.replyTopic ?? this.getReply(this.topic);
         this.session.send({
             id: this.id,
-            url,
+            topic,
             headers: this.getHeaders(),
             payload: this,
             partition: this.replyPartition

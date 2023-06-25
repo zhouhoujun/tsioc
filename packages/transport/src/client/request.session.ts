@@ -1,12 +1,13 @@
 import {
     TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming, normalize,
-    TransportHeaderResponse, TransportRequest, TransportResponse, TimeoutExecption, TransportSession, TRANSPORT_SESSION
+    TransportHeaderResponse, TransportRequest, TransportResponse, TimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
 } from '@tsdi/core';
 import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { RequestAdapter, StatusPacket } from './request';
 import { ctype, ev, hdr } from '../consts';
+import { headers } from 'nats';
 
 @Abstract()
 export abstract class SessionRequestAdapter<T = any, Option = any> extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
@@ -40,16 +41,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
 
-            const packet = {
-                id,
-                method: req.method,
-                headers: {
-                    'accept': ctype.REQUEST_ACCEPT,
-                    ...req.headers.getHeaders()
-                },
-                url,
-                payload: req.body,
-            } as Packet;
+            const packet = this.toPacket(id, url, req);
 
             let timeout: any;
             const observe = req.observe;
@@ -112,7 +104,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         return normalize(req.url);
     }
 
-    protected toPacket(url: string, id: number | string, req: TransportRequest) {
+    protected toPacket(id: number | string, url: string, req: TransportRequest) {
         return {
             id,
             method: req.method,
@@ -121,6 +113,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 ...req.headers.getHeaders()
             },
             url,
+            topic: url,
             payload: req.body,
         } as Packet;
     }
@@ -145,11 +138,9 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     protected async handleMessage(id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
         res = isString(res) ? JSON.parse(res) : res;
         if (res.id != id) return;
-        const headers = this.parseHeaders(res);
-        const pkg = this.parsePacket(res, headers);
-        const status = pkg.status ?? this.vaildator.ok;
-        const statusText = pkg.statusText ?? 'OK';
-        let body = res.body ?? res.payload;
+        const { status, headers: inHeaders, statusText, body: resbody, payload } = this.parseStatusPacket(res);
+        const headers = this.parseHeaders(res, inHeaders);
+        let body = resbody ?? payload;
 
         if (this.vaildator.isEmpty(status)) {
             body = null;
@@ -179,14 +170,17 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     }
 
-    protected parseHeaders(incoming: Incoming): ResHeaders {
-        return new ResHeaders(incoming.headers);
+    protected parseHeaders(incoming: Incoming, headers?: IncomingHeaders | OutgoingHeaders): ResHeaders {
+        return new ResHeaders(headers ?? incoming.headers);
     }
 
-    protected parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number | string> {
+    protected parseStatusPacket(incoming: Incoming): StatusPacket<number | string> {
         return {
-            status: headers.get(hdr.STATUS) ?? this.vaildator.none,
-            statusText: String(headers.get(hdr.STATUS_MESSAGE))
+            headers: incoming.headers,
+            status: incoming.headers[hdr.STATUS] ?? this.vaildator.none,
+            statusText: String(incoming.headers[hdr.STATUS_MESSAGE]) ?? '',
+            body: incoming.body,
+            payload: incoming.payload
         }
     }
 

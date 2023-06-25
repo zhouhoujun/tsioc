@@ -148,7 +148,7 @@ export class KafkaServer extends Server<KafkaContext> {
             packet.method = MESSAGE;
         }
         const req = new KafkaIncoming(session, packet);
-        const res = new KafkaOutgoing(session, packet.url!, packet.topic!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string, packet.id);
+        const res = new KafkaOutgoing(session, packet.topic!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string, packet.id);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

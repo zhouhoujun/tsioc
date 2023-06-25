@@ -49,10 +49,10 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             const onResponse = this.hasResponse(req) ? async (incoming: Incoming) => {
                 let body: any;
                 const headers = this.parseHeaders(incoming);
-                const packet = this.parsePacket(incoming, headers);
+                const packet = this.parseStatusPacket(incoming, headers);
 
-                body = packet.body;
-                status = packet.status!;
+                body = packet.body ?? packet.payload;
+                status = packet.status;
                 statusText = packet.statusText;
 
                 if (this.vaildator.isEmpty(status)) {

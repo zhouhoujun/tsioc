@@ -40,7 +40,7 @@ export class TransportRequest<T = any> {
         this.headers = new ReqHeaders(options.headers ?? options.options);
 
         if (isString(pattern) && pattern.indexOf(url) < 0) {
-            this.headers.set('x-request-url', pattern);
+            this.headers.set(':path', pattern);
         }
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
         if (!this.params.size) {

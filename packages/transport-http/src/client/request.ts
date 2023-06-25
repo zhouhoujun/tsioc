@@ -83,7 +83,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         }
     }
 
-    parsePacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): StatusPacket<number> {
+    parseStatusPacket(incoming: http2.IncomingHttpHeaders & http2.IncomingHttpStatusHeader & http.IncomingMessage, headers: ResHeaders): StatusPacket<number> {
         let body: any, status: number, statusText: string;
         if (incoming instanceof http.IncomingMessage) {
             status = incoming.statusCode ?? 0;

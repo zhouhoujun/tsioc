@@ -11,15 +11,15 @@ import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
  * Packet with status
  */
 export interface StatusPacket<TStatus> {
-    id?: any;
-    url?: string;
-    topic?: string;
-    method?: string;
+    // id?: any;
+    // url?: string;
+    // topic?: string;
+    // method?: string;
     type?: number;
     headers?: IncomingHeaders | OutgoingHeaders;
     error?: any;
-    status?: TStatus,
-    statusText?: string;
+    status: TStatus,
+    statusText: string;
     body?: any;
     payload?: any;
 }
@@ -97,7 +97,7 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
      * @param incoming 
      * @param headers 
      */
-    protected abstract parsePacket(incoming: any, headers: ResHeaders): StatusPacket<TStatus>;
+    protected abstract parseStatusPacket(incoming: any, headers: ResHeaders): StatusPacket<TStatus>;
 
     protected async parseResponse(url: string, body: any, headers: ResHeaders, status: TStatus, statusText: string | undefined, responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'): Promise<[boolean, TResponse]> {
         let originalBody: any;

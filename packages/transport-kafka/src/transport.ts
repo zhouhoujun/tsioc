@@ -91,7 +91,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                     id,
                     headers,
                     topic,
-                    url: headers[hdr.X_REQUEST_URL] as string ?? topic,
+                    url: headers[hdr.PATH] as string ?? topic,
                 })
             }
             this.handleData(chl, id, msg.message.value!);

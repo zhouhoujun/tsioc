@@ -1,5 +1,5 @@
 import {
-    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, Packet, StreamAdapter, StatusVaildator, UuidGenerator, ResHeaders
+    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, Packet, StreamAdapter, StatusVaildator, UuidGenerator, ResHeaders, Incoming
 } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { MimeTypes, MimeAdapter, SessionRequestAdapter, ev, StatusPacket, hdr } from '@tsdi/transport';
@@ -54,10 +54,13 @@ export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, K
         return this.uuidGenner.generate()
     }
 
-    protected override parsePacket(incoming: any, headers: ResHeaders): StatusPacket<number> {
+    protected override parseStatusPacket(incoming: Incoming): StatusPacket<number> {
         return {
-            status: ~~(headers.get(hdr.STATUS) ?? this.vaildator.none.toString()),
-            statusText: String(headers.get(hdr.STATUS_MESSAGE))
+            headers: incoming.headers,
+            status: ~~(incoming.headers[hdr.STATUS] ?? this.vaildator.none.toString()),
+            statusText: String(incoming.headers[hdr.STATUS_MESSAGE]),
+            body: incoming.body,
+            payload: incoming.payload
         }
     }
 

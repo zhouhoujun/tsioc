@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, TransformModule, StatusVaildator, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
+import { ExecptionHandlerFilter, TransformModule, StatusVaildator, createTransportEndpoint, MicroServRouterModule, PatternFormatter } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -46,7 +46,8 @@ const defMicroOpts = {
         Bodyparser
     ],
     providers: [
-        { provide: StatusVaildator, useExisting: KafkaStatusVaildator }
+        { provide: StatusVaildator, useExisting: KafkaStatusVaildator },
+        { provide: PatternFormatter, useExisting: KafkaPatternFormatter }
     ]
 } as KafkaServerOptions
 
