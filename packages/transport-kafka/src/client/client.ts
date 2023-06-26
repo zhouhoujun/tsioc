@@ -149,12 +149,12 @@ export class KafkaClient extends Client {
     }
 
     protected async onShutdown(): Promise<void> {
+        if (this.producer) {
+            await this.producer.disconnect();
+        }
         this._session?.destroy();
         if (this.consumer) {
             await this.consumer.disconnect()
-        }
-        if (this.producer) {
-            await this.producer.disconnect();
         }
         this.producer = null;
         this.consumer = null;

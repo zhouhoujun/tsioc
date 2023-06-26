@@ -267,7 +267,8 @@ export class DefaultRouteMatcher extends RouteMatcher {
     }
 
     protected replaceTopic(route: string) {
-        return route.replace(sg$, sg)
+        return route.replace(doat$, doat)
+            .replace(sg$, sg)
             .replace(mtlPth$, mtlPth)
             .replace(mtlall$, mtlall)
             .replace(words$, words)
@@ -323,6 +324,9 @@ const mtlPth = '(/.{0,})?';
 
 const mtlall$ = /\*\*/g;
 const mtlall = '.{0,}';
+
+const doat$ = /\./g;
+const doat = '\\.';
 
 const words$ = /\*/g;
 const words = '\\w+';
