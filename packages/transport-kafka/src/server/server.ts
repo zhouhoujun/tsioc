@@ -100,7 +100,7 @@ export class KafkaServer extends Server<KafkaContext> {
         const producer = this.producer;
         const router = this.endpoint.injector.get(MircoServRouters).get('kafka');
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            const content = normalize(this.endpoint.injector.get(KafkaPatternFormatter).format(`${this.options.content.prefix}/**`));
+            const content = this.endpoint.injector.get(KafkaPatternFormatter).format(`${this.options.content.prefix}/**`);
             // topics.push(new RegExp(content + '.\.*'));
             router.matcher.register(content, true);
         }

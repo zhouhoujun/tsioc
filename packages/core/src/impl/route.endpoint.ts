@@ -1,12 +1,12 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { patternToPath } from '../transport/pattern';
-import { AssetContext, TransportContext } from '../transport/context';
+import { AssetContext } from '../transport/context';
 import { normalize } from '../transport/route';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../transport/route.endpoint';
 import { OperationEndpointImpl } from './operation.endpoint';
 
 
-export class RouteEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
+export class RouteEndpointImpl<TInput extends AssetContext = AssetContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
 
     private _prefix: string;
     readonly route: string;
@@ -25,7 +25,7 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
             const restParams: any = {};
             const routes = this.route.split('/').map(r => r.trim());
             const restParamNames = routes.filter(d => restParms.test(d));
-            const routeUrls = normalize(ctx.url, this.prefix).split('/');
+            const routeUrls = normalize(ctx.originalUrl ?? ctx.url, this.prefix).split('/');
             let has = false;
             restParamNames.forEach(pname => {
                 const val = routeUrls[routes.indexOf(pname)];

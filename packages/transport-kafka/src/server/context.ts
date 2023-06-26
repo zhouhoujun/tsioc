@@ -3,6 +3,7 @@ import { isString } from '@tsdi/ioc';
 import { KafkaIncoming } from './incoming';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaServerOptions } from './options';
+import { normalize } from '@tsdi/core';
 
 /**
  * Kafka server context
@@ -22,6 +23,17 @@ export class KafkaContext extends AbstractAssetContext<KafkaIncoming, KafkaOutgo
             return uri;
         }
     }
+
+    protected override getOriginalUrl(request: KafkaIncoming): string {
+        return normalize(request.originalUrl);
+    }
+
+    override getRequestFilePath() {
+        const pathname = this.originalUrl;
+        this.mimeAdapter.lookup(pathname);
+        return this.mimeAdapter.lookup(pathname) ? pathname : null;
+    }
+
     get writable(): boolean {
         return this.response.writable
     }

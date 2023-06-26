@@ -116,6 +116,11 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
     abstract set url(value: string);
 
     /**
+     * original url
+     */
+    abstract get originalUrl(): string;
+
+    /**
      * The request method.
      */
     abstract get method(): string;
@@ -438,6 +443,10 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
      */
     abstract acceptsLanguages(...langs: string[]): string | string[];
 
+    /**
+     * get file request pathname.  
+     */
+    abstract getRequestFilePath(): string | null;
 
     /**
     * Set Content-Disposition header to "attachment" with optional `filename`.

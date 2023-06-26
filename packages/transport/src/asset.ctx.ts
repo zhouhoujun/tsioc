@@ -35,14 +35,23 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly vaildator: StatusVaildator<TStatus>;
     readonly streamAdapter: StreamAdapter;
     readonly fileAdapter: FileAdapter;
+    readonly negotiator: Negotiator;
+    readonly mimeAdapter: MimeAdapter;
+
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, payload: request });
         this.vaildator = injector.get(StatusVaildator);
         this.streamAdapter = injector.get(StreamAdapter);
         this.fileAdapter = injector.get(FileAdapter);
-        this.originalUrl = request.url?.toString() ?? '';
+        this.negotiator = injector.get(Negotiator);
+        this.mimeAdapter = injector.get(MimeAdapter);
+        this.originalUrl = this.getOriginalUrl(request);
         this.init(request);
+    }
+
+    protected getOriginalUrl(request: TRequest) {
+        return normalize(request.url?.toString() ?? '');
     }
 
     protected init(request: TRequest) {
@@ -59,6 +68,12 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
             this.url = normalize(this._url);
         }
         (this.request as any)['query'] = this.query;
+    }
+
+    override getRequestFilePath() {
+        const pathname = this.pathname;
+        this.mimeAdapter.lookup(pathname);
+        return this.mimeAdapter.lookup(pathname) ? pathname : null;
     }
 
     /**
@@ -252,7 +267,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
         const ctype = this.getHeader(hdr.CONTENT_TYPE) as string;
         if (!ctype) return false;
-        const adapter = this.injector.get(MimeAdapter)
+        const adapter = this.mimeAdapter;
         const normaled = adapter.normalize(ctype);
         if (!normaled) return false;
 
@@ -348,13 +363,12 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     accepts(...args: string[]): string | string[] | false {
-        const negotiator = this.resolve(Negotiator);
         if (!args.length) {
-            return negotiator.mediaTypes(this)
+            return this.negotiator.mediaTypes(this)
         }
-        const mimeAdapter = this.resolve(MimeAdapter);
-        const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
-        return lang.first(negotiator.mediaTypes(this, ...medias)) ?? false
+
+        const medias = args.map(a => a.indexOf('/') === -1 ? this.mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
+        return lang.first(this.negotiator.mediaTypes(this, ...medias)) ?? false
     }
 
     /**
@@ -370,11 +384,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     acceptsEncodings(...encodings: string[]): string | string[] | false {
-        const negotiator = this.resolve(Negotiator);
         if (!encodings.length) {
-            return negotiator.encodings(this)
+            return this.negotiator.encodings(this)
         }
-        return lang.first(negotiator.encodings(this, ...encodings)) ?? false
+        return lang.first(this.negotiator.encodings(this, ...encodings)) ?? false
     }
 
     /**
@@ -390,11 +403,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     acceptsCharsets(...charsets: string[]): string | string[] | false {
-        const negotiator = this.resolve(Negotiator);
         if (!charsets.length) {
-            return negotiator.charsets(this)
+            return this.negotiator.charsets(this)
         }
-        return lang.first(negotiator.charsets(this, ...charsets)) ?? false
+        return lang.first(this.negotiator.charsets(this, ...charsets)) ?? false
     }
 
     /**
@@ -410,11 +422,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     acceptsLanguages(...langs: string[]): string | string[] {
-        const negotiator = this.resolve(Negotiator);
         if (!langs.length) {
-            return negotiator.languages(this)
+            return this.negotiator.languages(this)
         }
-        return lang.first(negotiator.languages(this, ...langs)) ?? false
+        return lang.first(this.negotiator.languages(this, ...langs)) ?? false
     }
 
     /**
@@ -442,7 +453,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     set type(type: string) {
-        const contentType = this.injector.get(MimeAdapter).contentType(type);
+        const contentType = this.mimeAdapter.contentType(type);
         if (contentType) {
             this.contentType = contentType
         }

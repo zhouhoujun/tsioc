@@ -21,7 +21,9 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        if (!ctx.vaildator.isNotFound(ctx.status) && !(ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE)) {
+        if (!ctx.vaildator.isNotFound(ctx.status)
+            || !(ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE)
+            || !ctx.getRequestFilePath()) {
             return next();
         }
         const options = { ...defOpts, ...ctx.serverOptions.content };
@@ -43,7 +45,9 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
     }
 
     intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
-        if (!input.vaildator.isNotFound(input.status) && !(input.method === HEAD || input.method === GET || input.method === MESSAGE)) {
+        if (!input.vaildator.isNotFound(input.status)
+            || !(input.method === HEAD || input.method === GET || input.method === MESSAGE)
+            || !input.getRequestFilePath()) {
             return next.handle(input);
         }
         const options = { ...defOpts, ...input.serverOptions.content };

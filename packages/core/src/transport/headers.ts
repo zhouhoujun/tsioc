@@ -19,6 +19,7 @@ export interface IncomingHeaders extends Record<string, IncomingHeader> {
     'Content-Encoding'?: string;
     ':method'?: string | undefined;
     ':path'?: string | undefined;
+    'origin-path'?: string;
     ':authority'?: string | undefined;
     ':scheme'?: string | undefined;
     ':topic'?: string | undefined;
@@ -40,6 +41,7 @@ export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
     'Content-Encoding'?: string;
     ':authority'?: string | undefined;
     ':path'?: string | undefined;
+    'origin-path'?: string;
     ':method'?: string | undefined;
     ':type'?: string | number;
     ':topic'?: string | undefined;

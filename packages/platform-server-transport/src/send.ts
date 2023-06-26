@@ -1,5 +1,5 @@
 import { AssetContext, BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption, PROCESS_ROOT } from '@tsdi/core';
-import { Injectable, isArray, isString, TypeExecption } from '@tsdi/ioc';
+import { Injectable, isArray, isNil, isString, TypeExecption } from '@tsdi/ioc';
 import { ContentSendAdapter, SendOptions, hdr } from '@tsdi/transport';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
@@ -10,8 +10,9 @@ const statify = promisify(stat);
 @Injectable({ static: true })
 export class ContentSendAdapterImpl extends ContentSendAdapter {
     async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
-        let path = ctx.pathname;
-        if (!isString(path)) return '';
+        let path = ctx.getRequestFilePath();
+        if (isNil(path) || !isString(path)) return '';
+
         if (path.startsWith('/')) {
             path = path.substring(1);
         }
@@ -39,7 +40,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         }
         let filename = '', encodingExt = '';
         roots.some(root => {
-            const rpath = this.resolvePath(baseUrl, root, path);
+            const rpath = this.resolvePath(baseUrl, root, path!);
             if (!opts.hidden && isHidden(root, rpath)) return false;
             // serve brotli file when possible otherwise gzipped file when possible
             if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
