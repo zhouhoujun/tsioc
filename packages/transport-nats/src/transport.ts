@@ -1,18 +1,18 @@
 import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
-import { Channel, ConsumeMessage } from 'amqplib';
+import { NatsConnection } from 'nats';
 import { Buffer } from 'buffer';
-import { AmqpSessionOpts } from './options';
+import { NatsSessionOpts } from './options';
 
 
 @Abstract()
-export abstract class AmqpTransportSessionFactory extends TransportSessionFactory<Channel> {
+export abstract class NatsTransportSessionFactory extends TransportSessionFactory<NatsConnection> {
 
 }
 
 @Injectable()
-export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<Channel> {
+export class NatsTransportSessionFactoryImpl implements TransportSessionFactory<NatsConnection> {
 
     constructor(
         private adapter: StreamAdapter,
@@ -21,11 +21,14 @@ export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<
 
     }
 
-    create(socket: Channel, opts: AmqpSessionOpts): TransportSession<Channel> {
-        return new AmqpTransportSession(socket, this.adapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
+    create(socket: NatsConnection, opts: NatsSessionOpts): TransportSession<NatsConnection> {
+        return new NatsTransportSession(socket, this.adapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
+
+
+
 
 export interface QueueBuffer {
     queue: string;
@@ -35,44 +38,52 @@ export interface QueueBuffer {
 
 }
 
-export class AmqpTransportSession extends AbstractTransportSession<Channel, AmqpSessionOpts> {
+export class NatsTransportSession extends AbstractTransportSession<NatsConnection, NatsSessionOpts> {
     protected queues: Map<string, QueueBuffer> = new Map();
 
-    protected override bindMessageEvent(options: AmqpSessionOpts): void {
+    protected override bindMessageEvent(options: NatsSessionOpts): void {
         const onRespond = this.onData.bind(this);
         this.onSocket(ev.CUSTOM_MESSAGE, onRespond);
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
-        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
+        const topic = packet.topic ?? packet.url!;
         const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
-        headers[hdr.PATH] = packet.url ?? packet.topic;
         const replys = this.options.serverSide ? undefined : {
-            replyTo: packet.replyTo,
-            persistent: this.options.persistent,
+            reply: packet.replyTo
         };
-        this.socket.sendToQueue(
-            queue,
+        this.socket.publish(
+            topic,
             buffer,
             {
                 ...replys,
                 ...this.options.publishOpts,
                 headers,
-                contentType: headers[hdr.CONTENT_TYPE],
-                contentEncoding: headers[hdr.CONTENT_ENCODING],
-                correlationId: packet.id,
+                // contentType: headers[hdr.CONTENT_TYPE],
+                // contentEncoding: headers[hdr.CONTENT_ENCODING],
+                // correlationId: packet.id,
             }
         )
     }
+
+    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+        switch (observe) {
+            case 'emit':
+                return '';
+            default:
+                return url + '.reply'
+        }
+    }
+
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message)
     }
     protected onSocket(name: string, event: (...args: any[]) => void): void {
-        this.socket.on(name, event)
+        // this.socket.on(name, event)
     }
     protected offSocket(name: string, event: (...args: any[]) => void): void {
-        this.socket.off(name, event)
+        // this.socket.off(name, event)
     }
 
     protected override async generate(data: Packet): Promise<Buffer> {

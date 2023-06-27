@@ -2,12 +2,12 @@ import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StatusV
 import { Injectable, Optional } from '@tsdi/ioc';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
-import { Channel } from 'amqplib';
-import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+import { NatsConnection } from 'nats';
+import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
 
 
 @Injectable()
-export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
+export class NatsRequestAdapter extends SessionRequestAdapter<NatsConnection> {
 
     subs: Set<string>;
 
@@ -24,17 +24,32 @@ export class AmqpRequestAdapter extends SessionRequestAdapter<Channel> {
         this.subs = new Set();
     }
 
-
-    protected getClientOpts(req: TransportRequest<any>) {
-        return req.context.get(AMQP_CLIENT_OPTS)
+    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+        switch (observe) {
+            case 'emit':
+                return '';
+            default:
+                return url + '.reply'
+        }
     }
 
-    protected bindMessageEvent(session: TransportSession<Channel>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts: AmqpClientOpts): [string, (...args: any[]) => void] {
+    protected getClientOpts(req: TransportRequest<any>) {
+        return req.context.get(NATS_CLIENT_OPTS)
+    }
+
+    protected bindMessageEvent(session: TransportSession<NatsConnection>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts: NatsClientOpts): [string, (...args: any[]) => void] {
+        const reply = packet.replyTo;
+        if (!reply) return [] as any;
+
+        if (!this.subs.has(reply)) {
+            this.subs.add(reply);
+           session.socket.subscribe(reply, opts.subscriptionOpts);
+        }
+
         const id = packet.id!;
         const url = packet.topic ?? packet.url!;
-        const replyQueue = opts.transportOpts!.replyQueue!;
-        const onMessage = (queue: string, res: Packet) => {
-            if (queue !== replyQueue && res.id !== id) return;
+        const onMessage = (topic: string, res: Packet) => {
+            if (topic !== reply || res.id !== id) return;
             this.handleMessage(id, url, req, observer, res);
         };
 

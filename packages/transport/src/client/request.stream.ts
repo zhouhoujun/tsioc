@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, Outgoing, IEndable, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { toBuffer } from '../utils';

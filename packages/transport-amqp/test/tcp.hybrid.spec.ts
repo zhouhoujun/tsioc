@@ -35,12 +35,12 @@ describe('Amqp hybrid Tcp Server & Amqp Client & TcpClient', () => {
     let injector: Injector;
 
     let client: TcpClient;
-    let mqttClient: AmqpClient
+    let amqpClient: AmqpClient
 
     before(async () => {
         ctx = await Application.run(AmqpTestModule);
         injector = ctx.injector;
-        mqttClient = injector.get(AmqpClient);
+        amqpClient = injector.get(AmqpClient);
         client = injector.get(TcpClient);
     });
 
@@ -231,7 +231,7 @@ describe('Amqp hybrid Tcp Server & Amqp Client & TcpClient', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(mqttClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(amqpClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -242,7 +242,7 @@ describe('Amqp hybrid Tcp Server & Amqp Client & TcpClient', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(mqttClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(amqpClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);

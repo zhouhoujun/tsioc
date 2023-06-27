@@ -21,8 +21,6 @@ const defMicroOpts = {
         brokers: ['localhost:9092']
     },
     transportOpts: {
-        delimiter: '#',
-        maxSize: 10 * 1024 * 1024
     },
     content: {
         root: 'public',

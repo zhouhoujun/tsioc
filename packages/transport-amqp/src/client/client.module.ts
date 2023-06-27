@@ -22,8 +22,6 @@ const defClientOpts = {
     filtersToken: AMQP_CLIENT_FILTERS,
     connectOpts: 'amqp://localhost',
     transportOpts: {
-        delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
         queue: 'amqp.queue',
         persistent: false,
         noAssert: false,

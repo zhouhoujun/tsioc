@@ -18,8 +18,6 @@ import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_
 const defMicroOpts = {
     connectOpts: 'amqp://localhost',
     transportOpts: {
-        delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
         queue: 'amqp.queue',
         persistent: false,
         noAssert: false,

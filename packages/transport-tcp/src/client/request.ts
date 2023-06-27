@@ -1,4 +1,4 @@
-import { TransportEvent, Encoder, Decoder, StreamAdapter, StatusVaildator, TransportRequest, Redirector, TransportSession } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, StreamAdapter, StatusVaildator, TransportRequest, Redirector, TransportSession, Packet } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
@@ -31,7 +31,13 @@ export class TcpRequestAdapter extends SessionRequestAdapter<net.Socket | tls.TL
         return req.context.get(TCP_CLIENT_OPTS);
     }
 
-    protected bindMessageEvent(session: TransportSession<any>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
+    protected override getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+        return '';
+    }
+
+    protected bindMessageEvent(session: TransportSession<any>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
+        const id = packet.id!;
+        const url = packet.topic ?? packet.url!;
         const onMessage = (res: any) => this.handleMessage(id, url, req, observer, res);
         session.on(ev.MESSAGE, onMessage);
         return [ev.MESSAGE, onMessage];

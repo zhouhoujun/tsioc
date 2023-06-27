@@ -19,8 +19,6 @@ const defClientOpts = {
     interceptorsToken: KAFKA_CLIENT_INTERCEPTORS,
     filtersToken: KAFKA_CLIENT_FILTERS,
     transportOpts: {
-        delimiter: '#',
-        maxSize: 10 * 1024 * 1024
     },
     interceptors: [BodyContentInterceptor],
     backend: TransportBackend,

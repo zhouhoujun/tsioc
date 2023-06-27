@@ -29,7 +29,9 @@ const defClientOpts = {
 } as MqttClientOpts;
 
 
-
+/**
+ * Mqtt Client Module.
+ */
 @Module({
     imports: [
         TransportModule,

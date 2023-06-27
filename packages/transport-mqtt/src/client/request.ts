@@ -1,4 +1,4 @@
-import { TransportEvent, Encoder, Decoder, Redirector, StreamAdapter, StatusVaildator, TransportRequest, TransportSession } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, Redirector, StreamAdapter, StatusVaildator, TransportRequest, TransportSession, Packet } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
@@ -26,14 +26,17 @@ export class MqttRequestAdapter extends SessionRequestAdapter<Client, MqttClient
         return req.context.get(MQTT_CLIENT_OPTS)
     }
 
-    protected bindMessageEvent(session: TransportSession<Client>, id: number, url: string, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
-        const reply = this.getReply(url, req.observe);
+    protected bindMessageEvent(session: TransportSession<Client>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
+        const reply = packet.replyTo;
+
         if (!reply) return [] as any;
 
         if (!this.subs.has(reply)) {
             this.subs.add(reply);
             session.socket.subscribe(reply);
         }
+        const id = packet.id!;
+        const url = packet.topic ?? packet.url!;
         const onMessage = (channel: string, res: any) => {
             if (channel !== reply) return;
             this.handleMessage(id, url, req, observer, res)

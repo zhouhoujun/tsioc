@@ -1,13 +1,12 @@
 import {
-    TransportEvent, ResHeaders, TransportErrorResponse, Packet, Incoming, normalize,
-    TransportHeaderResponse, TransportRequest, TransportResponse, TimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
+    TransportEvent,TransportErrorResponse, Packet, Incoming,  TransportHeaderResponse, TransportRequest, TransportResponse,
+     ResHeaders, TimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
 } from '@tsdi/core';
 import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { RequestAdapter, StatusPacket } from './request';
 import { ctype, ev, hdr } from '../consts';
-import { headers } from 'nats';
 
 @Abstract()
 export abstract class SessionRequestAdapter<T = any, Option = any> extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
@@ -34,14 +33,14 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
             const id = this.getPacketId();
 
-            const [message, onMessage] = this.bindMessageEvent(request, id, url, req, observer, opts);
+            const packet = this.toPacket(id, url, req);
+            const [message, onMessage] = this.bindMessageEvent(request, packet, req, observer, opts);
 
             request.on(ev.ERROR, onError);
             request.on(ev.CLOSE, onError);
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
 
-            const packet = this.toPacket(id, url, req);
 
             let timeout: any;
             const observe = req.observe;
@@ -101,7 +100,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     protected getReqUrl(req: TransportRequest) {
-        return normalize(req.url);
+        return req.url;
     }
 
     protected toPacket(id: number | string, url: string, req: TransportRequest) {
@@ -115,6 +114,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             url,
             topic: url,
             payload: req.body,
+            replyTo: this.getReply(url, req.observe)
         } as Packet;
     }
 
@@ -124,7 +124,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected abstract getClientOpts(req: TransportRequest): Option;
 
-    protected abstract bindMessageEvent(session: TransportSession<T>, id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, opts: Option): [string, (...args: any[]) => void]
+    protected abstract bindMessageEvent(session: TransportSession<T>, packet: Packet, req: TransportRequest, observer: Observer<TransportEvent>, opts: Option): [string, (...args: any[]) => void]
 
     protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
         switch (observe) {
