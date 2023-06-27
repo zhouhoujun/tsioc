@@ -272,6 +272,7 @@ export class DefaultRouteMatcher extends RouteMatcher {
             .replace(mtlPth$, mtlPth)
             .replace(mtlall$, mtlall)
             .replace(words$, words)
+            .replace(anyval$, anyval)
     }
 
     protected replaceWithParams(route: string, params: Record<string, any>, opts: { match: RegExp, start: number, end: number, subs?: string[] }) {
@@ -330,6 +331,9 @@ const doat = '\\.';
 
 const words$ = /\*/g;
 const words = '\\w+';
+
+const anyval$ = /\.\{0,\}/g;
+const anyval = '.*';
 
 /**
  * run hybird routes.

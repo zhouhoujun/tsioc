@@ -1,9 +1,9 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
-import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, TransportSession, MESSAGE, normalize, PatternFormatter } from '@tsdi/core';
+import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, TransportSession, MESSAGE, StatusVaildator, PatternFormatter } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Content, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
-import { Consumer, ConsumerConfig, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
+import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
 import { DEFAULT_BROKERS, KafkaHeaders, KafkaTransport } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
@@ -11,7 +11,6 @@ import { KafkaEndpoint } from './endpoint';
 import { KafkaContext } from './context';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaIncoming } from './incoming';
-import { KafkaPatternFormatter } from '../pattern';
 
 
 
@@ -100,16 +99,18 @@ export class KafkaServer extends Server<KafkaContext> {
         const producer = this.producer;
         const router = this.endpoint.injector.get(MircoServRouters).get('kafka');
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            const content = this.endpoint.injector.get(KafkaPatternFormatter).format(`${this.options.content.prefix}/**`);
+            const content = this.endpoint.injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
 
-        const transportOpts = this.options.transportOpts = {
+        const transportOpts  = {
             ...this.options.transportOpts,
             serverSide: true
         };
-        const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, producer }, transportOpts);
+
+        const vaildator = this.endpoint.injector.get(StatusVaildator);
+        const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts);
 
         await session.bindTopics(topics);
 

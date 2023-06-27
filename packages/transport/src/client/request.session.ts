@@ -71,7 +71,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 .catch(err => {
                     observer.error(this.createErrorResponse({
                         url,
-                        status: this.vaildator.none,
+                        status: err.status ?? err.statusCode ?? this.vaildator.none,
                         error: err,
                         statusText: err.message
                     }));

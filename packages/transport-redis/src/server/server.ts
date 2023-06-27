@@ -1,4 +1,4 @@
-import { MESSAGE, MircoServRouters, Outgoing, Packet, Server, TransportContext, TransportSession, normalize } from '@tsdi/core';
+import { MESSAGE, MircoServRouters, Outgoing, Packet, PatternFormatter, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
@@ -71,7 +71,12 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         });
 
         const router = this.endpoint.injector.get(MircoServRouters).get('redis');
+        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
+            const content = this.endpoint.injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
+            router.matcher.register(content, true);
+        }
         const routes = router.matcher.getPatterns();
+
         const subscribes: string[] = [];
         const psubscribes: string[] = [];
         routes.forEach(r => router.matcher.isPattern(r) ? psubscribes.push(r) : subscribes.push(r));
@@ -88,10 +93,6 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
                 );
             }
         });
-
-        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            psubscribes.push(normalize(`${this.options.content.prefix}/**`));
-        }
 
         await this.subscriber.psubscribe(...psubscribes, (err, count) => {
             if (err) {

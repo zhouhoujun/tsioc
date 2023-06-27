@@ -35,12 +35,12 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
             const request = this.createRequest(url, req);
 
-            const onError = (error?: Error | null) => {
+            const onError = (error?: any) => {
                 const res = this.createErrorResponse({
                     url,
                     error,
                     statusText: 'Unknown Error',
-                    status
+                    status: error?.status ?? error.statusCode ?? status
                 });
                 observer.error(res)
             };

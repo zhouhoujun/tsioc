@@ -104,7 +104,7 @@ describe('Kafka Micro Service', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+        const res: any = await lastValueFrom(client.send('content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -116,7 +116,7 @@ describe('Kafka Micro Service', () => {
     })
 
     it('fetch json 2', async () => {
-        const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
+        const res: any = await lastValueFrom(client.send('content/test1/jsons/data1.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -156,7 +156,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.status).toEqual(404);
     });
 
     it('sensor.message.* message', async () => {
@@ -188,7 +188,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.status).toEqual(404);
     });
 
     it('sensor/message/* message', async () => {
@@ -252,7 +252,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.status).toEqual(404);
     });
 
 

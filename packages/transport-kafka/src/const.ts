@@ -1,3 +1,4 @@
+import { StatusVaildator } from '@tsdi/core';
 import { Consumer, Producer } from 'kafkajs';
 
 
@@ -5,6 +6,7 @@ import { Consumer, Producer } from 'kafkajs';
 
 export interface KafkaTransport {
     consumer: Consumer;
+    vaildator: StatusVaildator;
     producer: Producer;
 }
 

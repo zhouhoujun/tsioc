@@ -1,4 +1,4 @@
-import { MESSAGE, MircoServRouters, Outgoing, Packet, Server, TransportContext, TransportSession, normalize } from '@tsdi/core';
+import { MESSAGE, MircoServRouters, Outgoing, Packet, PatternFormatter, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Client, connect } from 'mqtt';
@@ -51,10 +51,12 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
         const router = this.endpoint.injector.get(MircoServRouters).get('mqtt');
-        const subscribes = this.subscribes = router.matcher.getPatterns();
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            subscribes.push(normalize(`${this.options.content.prefix}/#`));
+            const content = this.endpoint.injector.get(PatternFormatter).format(`${this.options.content.prefix}/#`);
+            router.matcher.register(content, true);
         }
+
+        const subscribes = this.subscribes = router.matcher.getPatterns();
 
         await promisify(this.mqtt.subscribe, this.mqtt)(subscribes)
             .catch(err => {

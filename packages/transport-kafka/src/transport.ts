@@ -1,6 +1,6 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
 import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, IncomingHeaders, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, IncomingHeaders, NotFoundExecption, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 
@@ -38,6 +38,8 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
     protected topics: Map<string, TopicBuffer> = new Map();
 
+    private regTopics?: RegExp[];
+
 
     protected override getBindEvents(): string[] {
         return EMPTY
@@ -48,13 +50,14 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     }
 
     async bindTopics(topics: (string | RegExp)[]) {
-        const consumerSubscribeOptions = this.options.subscribe || {};
         const consumer = this.socket.consumer;
         if (!consumer) throw new Execption('No consumer');
-        await this.socket.consumer.subscribe({
+        await consumer.subscribe({
             topics,
-            ...consumerSubscribeOptions,
+            ... this.options.subscribe,
         });
+
+        this.regTopics = topics.filter(t => t instanceof RegExp) as RegExp[];
 
         await consumer.run({
             // autoCommit: true,
@@ -91,7 +94,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                     id,
                     headers,
                     topic,
-                    url: headers[hdr.PATH] as string ?? topic,
+                    url: topic
                 })
             }
             this.handleData(chl, id, msg.message.value!);
@@ -149,8 +152,38 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
             if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
                 headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
+            } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
+                throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
             }
+            // else {
+            //     if (this.regTopics?.some(i =>  i.test(replyTopic))) {
+            //         (async () => {
+            //             await this.subscribe(replyTopic);
+
+            //             if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
+            //                 headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
+            //             } else {
+            //                 throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
+            //             }
+            //             this.socket.producer.send({
+            //                 ...this.options.send,
+            //                 topic,
+            //                 messages: [{
+            //                     headers,
+            //                     value: buffer,
+            //                     partition: packet.partition
+            //                 }]
+            //             })
+            //         })();
+
+            //         return;
+            //     }
+
+            //     throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
+
+            // }
         }
+
         this.socket.producer.send({
             ...this.options.send,
             topic,
@@ -161,6 +194,21 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             }]
         })
     }
+
+    // protected async subscribe(topic: string) {
+    //     await this.socket.consumer.stop();
+    //     await this.socket.consumer.subscribe({
+    //         topic,
+    //         ...this.options.subscribe,
+    //     });
+    //     await this.socket.consumer.run({
+    //         // autoCommit: true,
+    //         // autoCommitInterval: 5000,
+    //         // autoCommitThreshold: 100,
+    //         ...this.options.run,
+    //         eachMessage: (payload) => this.onData(payload)
+    //     });
+    // }
 
     protected getReplyTopic(topic: string) {
         return `${topic}.reply`

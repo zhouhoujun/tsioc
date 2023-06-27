@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { Client, MircoServRouters, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
+import { Client, MircoServRouters, StatusVaildator, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
@@ -77,10 +77,7 @@ export class KafkaClient extends Client {
         }
         this.client = new Kafka(connectOpts);
 
-        if (!this.options.transportOpts) {
-            this.options.transportOpts = {};
-        }
-        const transportOpts = this.options.transportOpts;
+        const transportOpts = { ...this.options.transportOpts };
 
         if (!this.options.producerOnlyMode) {
             const partitionAssigners = [
@@ -115,8 +112,10 @@ export class KafkaClient extends Client {
         this.producer = this.client.producer(this.options.producer);
         await this.producer.connect();
 
+        const vaildator = this.handler.injector.get(StatusVaildator);
         this._session = this.handler.injector.get(KafkaTransportSessionFactory).create({
             producer: this.producer,
+            vaildator,
             consumer: this.consumer!
         }, transportOpts);
 
@@ -134,9 +133,9 @@ export class KafkaClient extends Client {
         if (topic instanceof RegExp) {
             let source = topic.source;
             if (topic.source.endsWith('$')) {
-                source = source.slice(0, source.length - 1) + '.reply' + '$'
+                source = source.slice(0, source.length - 1) + '\\.reply' + '$'
             } else {
-                source = source + '.reply'
+                source = source + '\\.reply'
             }
             return new RegExp(source);
         }
