@@ -71,6 +71,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     protected async onData(msg: EachMessagePayload): Promise<void> {
         try {
             const topic = msg.topic;
+            if (this.options.serverSide && topic.endsWith('.reply')) return;
             let chl = this.topics.get(topic);
 
             if (!chl) {
@@ -136,7 +137,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     }
 
     protected async generateNoPayload(data: Packet<any>): Promise<Buffer> {
-        return null!;
+        return Buffer.alloc(0);
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet<any> & { partition?: number }) {
@@ -155,33 +156,6 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
                 throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
             }
-            // else {
-            //     if (this.regTopics?.some(i =>  i.test(replyTopic))) {
-            //         (async () => {
-            //             await this.subscribe(replyTopic);
-
-            //             if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
-            //                 headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
-            //             } else {
-            //                 throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
-            //             }
-            //             this.socket.producer.send({
-            //                 ...this.options.send,
-            //                 topic,
-            //                 messages: [{
-            //                     headers,
-            //                     value: buffer,
-            //                     partition: packet.partition
-            //                 }]
-            //             })
-            //         })();
-
-            //         return;
-            //     }
-
-            //     throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
-
-            // }
         }
 
         this.socket.producer.send({
@@ -194,21 +168,6 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             }]
         })
     }
-
-    // protected async subscribe(topic: string) {
-    //     await this.socket.consumer.stop();
-    //     await this.socket.consumer.subscribe({
-    //         topic,
-    //         ...this.options.subscribe,
-    //     });
-    //     await this.socket.consumer.run({
-    //         // autoCommit: true,
-    //         // autoCommitInterval: 5000,
-    //         // autoCommitThreshold: 100,
-    //         ...this.options.run,
-    //         eachMessage: (payload) => this.onData(payload)
-    //     });
-    // }
 
     protected getReplyTopic(topic: string) {
         return `${topic}.reply`

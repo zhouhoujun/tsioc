@@ -61,7 +61,7 @@ export class KafkaService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 300
+                timeout: 1000
             }
         }),
         KafkaMicroServModule
@@ -101,7 +101,6 @@ describe('Kafka Micro Service', () => {
         injector = ctx.injector;
         client = injector.get(KafkaClient);
     });
-
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('content/510100_full.json')
