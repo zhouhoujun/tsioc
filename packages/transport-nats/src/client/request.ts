@@ -2,7 +2,7 @@ import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StatusV
 import { Injectable, Optional } from '@tsdi/ioc';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
-import { NatsConnection } from 'nats';
+import { NatsConnection, Msg } from 'nats';
 import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
 
 
@@ -43,7 +43,12 @@ export class NatsRequestAdapter extends SessionRequestAdapter<NatsConnection> {
 
         if (!this.subs.has(reply)) {
             this.subs.add(reply);
-           session.socket.subscribe(reply, opts.subscriptionOpts);
+           session.socket.subscribe(reply, {
+            ...opts.subscriptionOpts,
+            callback: (err: any, msg:Msg) => {
+                session.emit(ev.CUSTOM_MESSAGE, err, msg);
+            }
+           });
         }
 
         const id = packet.id!;

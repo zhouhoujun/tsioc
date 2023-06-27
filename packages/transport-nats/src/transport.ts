@@ -1,7 +1,7 @@
-import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, IncomingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
-import { NatsConnection } from 'nats';
+import { Msg, NatsConnection, headers as createHeaders } from 'nats';
 import { Buffer } from 'buffer';
 import { NatsSessionOpts } from './options';
 
@@ -49,20 +49,24 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {
         const topic = packet.topic ?? packet.url!;
-        const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
+        const headers = this.options.publishOpts?.headers ?? createHeaders();
+        packet.headers && Object.keys(packet.headers).forEach(k => {
+            headers.set(k, String(packet?.headers?.[k] ?? ''))
+        });
+
+        headers.set(hdr.IDENTITY, packet.id);
+
         const replys = this.options.serverSide ? undefined : {
             reply: packet.replyTo
         };
+
         this.socket.publish(
             topic,
             buffer,
             {
-                ...replys,
                 ...this.options.publishOpts,
-                headers,
-                // contentType: headers[hdr.CONTENT_TYPE],
-                // contentEncoding: headers[hdr.CONTENT_ENCODING],
-                // correlationId: packet.id,
+                ...replys,
+                headers
             }
         )
     }
@@ -127,44 +131,43 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     }
 
 
-    protected onData(queue: string, msg: ConsumeMessage): void {
+    protected onData(queue: string, msg: Msg): void {
         try {
             let chl = this.queues.get(queue);
             if (!chl) {
                 chl = {
                     queue,
                     buffer: null,
-                    contentLength: ~~msg.properties.headers[hdr.CONTENT_LENGTH],
+                    contentLength: ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0'),
                     pkgs: new Map()
                 }
                 this.queues.set(queue, chl)
             } else if (chl.contentLength === null) {
                 chl.buffer = null;
-                chl.contentLength = ~~msg.properties.headers[hdr.CONTENT_LENGTH];
+                chl.contentLength = ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0');
             }
-            if (!chl.pkgs.has(msg.properties.correlationId)) {
-                const headers = { ...msg.properties.headers };
-                if (!headers[hdr.CONTENT_TYPE]) {
-                    headers[hdr.CONTENT_TYPE] = msg.properties.contentType;
-                }
-                if (!headers[hdr.CONTENT_ENCODING]) {
-                    headers[hdr.CONTENT_ENCODING] = msg.properties.contentEncoding;
-                }
-                chl.pkgs.set(msg.properties.correlationId, {
-                    id: msg.properties.correlationId,
-                    url: headers[hdr.PATH],
-                    replyTo: msg.properties.replyTo,
+            const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
+            if (id && !chl.pkgs.has(id)) {
+                const headers: IncomingHeaders = {};
+                msg.headers?.keys().forEach(key => {
+                    headers[key] = msg.headers?.get(key);
+                });
+
+                chl.pkgs.set(id, {
+                    id,
+                    url: msg.subject,
+                    replyTo: msg.reply,
                     headers
                 })
             }
-            this.handleData(chl, msg.properties.correlationId, msg.content);
+            this.handleData(chl, id, Buffer.from(msg.data));
         } catch (ev) {
             const e = ev as any;
             this.emit(e.ERROR, e.message);
         }
     }
 
-    protected handleData(chl: QueueBuffer, id: string, dataRaw: string | Buffer) {
+    protected handleData(chl: QueueBuffer, id: string | number, dataRaw: string | Buffer) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -184,13 +187,13 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         }
     }
 
-    protected handleMessage(chl: QueueBuffer, id: string, message: any) {
+    protected handleMessage(chl: QueueBuffer, id: string | number, message: any) {
         chl.contentLength = null;
         chl.buffer = null;
         this.emitMessage(chl, id, message);
     }
 
-    protected emitMessage(chl: QueueBuffer, id: string, chunk: Buffer) {
+    protected emitMessage(chl: QueueBuffer, id: string | number, chunk: Buffer) {
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         const pkg = chl.pkgs.get(id);
         if (pkg) {
