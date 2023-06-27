@@ -47,6 +47,10 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
 
+    protected override getBindEvents(): string[] {
+        return [];
+    }
+
     protected writeBuffer(buffer: Buffer, packet: Packet) {
         const topic = packet.topic ?? packet.url!;
         const headers = this.options.publishOpts?.headers ?? createHeaders();
@@ -84,10 +88,10 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         this.emit(ev.ERROR, error.message)
     }
     protected onSocket(name: string, event: (...args: any[]) => void): void {
-        // this.socket.on(name, event)
+        this.on(name, event)
     }
     protected offSocket(name: string, event: (...args: any[]) => void): void {
-        // this.socket.off(name, event)
+        this.off(name, event)
     }
 
     protected override async generate(data: Packet): Promise<Buffer> {

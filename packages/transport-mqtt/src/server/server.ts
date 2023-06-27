@@ -23,6 +23,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
 
     private subscribes?: string[];
     private mqtt?: Client | null;
+    private _session?: TransportSession<Client>;
 
     constructor(
         readonly endpoint: MqttEndpoint,
@@ -67,7 +68,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
             });
 
         const factory = this.endpoint.injector.get(MqttTransportSessionFactory);
-        const session = factory.create(this.mqtt, { ...this.options.transportOpts, serverSide: true });
+        const session = this._session = factory.create(this.mqtt, { ...this.options.transportOpts, serverSide: true });
 
         session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
             this.requestHandler(session, packet)
@@ -87,6 +88,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
 
     protected override async onShutdown(): Promise<any> {
         if (!this.mqtt) return;
+        this._session?.destroy();
         if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
         // this.mqtt.end();
         await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)

@@ -21,7 +21,9 @@ export interface NatsClientOpts extends ConfigableHandlerOptions<TransportReques
      * connect options.
      */
     connectOpts?: ConnectionOptions;
-
+    /**
+     * subscription options.
+     */
     subscriptionOpts?: SubscriptionOptions;
     /**
      * request timeout.

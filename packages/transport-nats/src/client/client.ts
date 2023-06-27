@@ -1,15 +1,17 @@
 import { Inject, Injectable, InvocationContext, isPlainObject } from '@tsdi/ioc';
-import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { NatsConnection, connect } from 'nats';
 import { NatsHandler } from './handler';
 import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
 import { NATS_CONNECTION } from '../consts';
+import { NatsTransportSessionFactory } from '../transport';
 
 
 @Injectable({ static: false })
 export class NatsClient extends Client<TransportRequest, TransportEvent> {
     private conn?: NatsConnection;
+    private _session?: TransportSession<NatsConnection>;
 
     @InjectLog()
     private logger!: Logger;
@@ -53,11 +55,12 @@ export class NatsClient extends Client<TransportRequest, TransportEvent> {
                     break;
             }
         }
+        this._session = this.handler.injector.get(NatsTransportSessionFactory).create(conn, { ...this.options.transportOpts });
     }
 
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(NATS_CONNECTION, this.conn)
+        context.setValue(TRANSPORT_SESSION, this._session)
     }
 
     protected async onShutdown(): Promise<void> {

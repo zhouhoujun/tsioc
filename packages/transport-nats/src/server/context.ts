@@ -1,34 +1,49 @@
-import { Incoming, Outgoing } from '@tsdi/core';
 import { AbstractAssetContext } from '@tsdi/transport';
+import { NatsMicroServiceOpts } from './options';
+import { isString } from '@tsdi/ioc';
+import { NatsIncoming } from './incoming';
+import { NatsOutgoing } from './outgoing';
 
 
-export class NatsContext extends AbstractAssetContext<Incoming, Outgoing, number> {
+export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing, number, NatsMicroServiceOpts> {
     isAbsoluteUrl(url: string): boolean {
-        throw new Error('Method not implemented.');
+        return abstl.test(url)
     }
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean | undefined): URL {
-        throw new Error('Method not implemented.');
+    protected parseURL(req: NatsIncoming, proxy?: boolean | undefined): URL {
+        const url = req.url ?? '';
+        if (this.isAbsoluteUrl(url)) {
+            return new URL(url);
+        } else {
+            const baseUrl = isString(this.serverOptions.connectOpts) ? new URL(this.serverOptions.connectOpts)
+                : new URL(`${this.serverOptions.connectOpts?.tls ? 'nats' : 'nats'}://${this.serverOptions.connectOpts?.servers ?? 'localhost'}:${this.serverOptions.connectOpts?.port ?? 4222}`);
+            const uri = new URL(url, baseUrl);
+            return uri;
+        }
     }
     get writable(): boolean {
-        throw new Error('Method not implemented.');
+        return this.response.writable
     }
-    get protocol(): string {
-        throw new Error('Method not implemented.');
-    }
+
     get status(): number {
-        throw new Error('Method not implemented.');
+        return this.response.statusCode
     }
     set status(status: number) {
-        throw new Error('Method not implemented.');
+        this._explicitStatus = true;
+        this.response.statusCode = status;
+        if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
+
     get statusMessage(): string {
-        throw new Error('Method not implemented.');
+        return this.response.statusMessage
     }
     set statusMessage(message: string) {
-        throw new Error('Method not implemented.');
+        this.response.statusMessage = message
     }
+
     get secure(): boolean {
-        throw new Error('Method not implemented.');
+        return !!this.serverOptions.connectOpts?.tls
     }
 
 }
+
+const abstl = /^nats:\/\//i;
