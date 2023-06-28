@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
-import { LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
+import { DisconnectExecption, LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import * as mqtt from 'mqtt';
 import { Observable, of } from 'rxjs';
@@ -19,8 +19,6 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
     private logger?: Logger;
 
     private mqtt?: mqtt.Client | null;
-
-    private clientId?: string;
     private _session?: TransportSession<mqtt.Client>;
 
     constructor(
@@ -29,40 +27,34 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
         super()
     }
 
-
-    protected isValidate(mqtt: mqtt.Client | null | undefined): boolean {
-        return (mqtt && !mqtt.disconnected && mqtt.connected) as boolean
-    }
-
     protected connect(): Observable<any> {
-        if (this.isValidate(this.mqtt)) {
-            return of(this.mqtt);
-        }
 
         return new Observable((sbscriber) => {
-            const opts = {
-                host: LOCALHOST,
-                port: 1883,
-                ...this.options.connectOpts
-            };
-            const client = this.mqtt ?? (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
+            let hasConn: boolean;
+            if (!this.mqtt) {
+                hasConn = false;
+                this.mqtt = this.createConnection();
+            } else {
+                hasConn = true;
+            }
+            const client = this.mqtt;
+
             const onError = (err: any) => {
                 this.logger?.error(err);
                 sbscriber.error(err);
             }
-            const onConnect = (packet: mqtt.IConnectPacket) => {
-                this.mqtt = client;
-                this.clientId = packet.clientId;
-                this._session = this.handler.injector.get(MqttTransportSessionFactory).create(client, this.options.transportOpts!);
+            const onConnect = (packet: mqtt.IConnackPacket) => {
                 sbscriber.next(client);
                 sbscriber.complete();
             }
 
             const onOffline = () => {
-                sbscriber.next(new OfflineExecption());
+                this.logger?.info('mqtt client offline!');
+                sbscriber.error(new OfflineExecption());
             }
             const onDisConnect = (packet: mqtt.IDisconnectPacket) => {
-
+                this.logger?.info('mqtt client disconnected!', packet.reasonCode);
+                sbscriber.error(new DisconnectExecption('mqtt client disconnected! ' + packet.reasonCode ?? ''));
             };
 
             client.on(ev.ERROR, onError);
@@ -70,15 +62,33 @@ export class MqttClient extends Client<TransportRequest, TransportEvent> {
             client.on(ev.OFFLINE, onOffline);
             client.on(ev.DISCONNECT, onDisConnect);
 
+            if (hasConn) {
+                if (client.connected) {
+                    sbscriber.next(client);
+                    sbscriber.complete();
+                } else if (client.disconnected) {
+                    client.reconnect()
+                }
+            }
+
             return () => {
                 client.off(ev.ERROR, onError);
                 client.off(ev.CONNECT, onConnect);
                 client.off(ev.OFFLINE, onOffline);
                 client.off(ev.DISCONNECT, onDisConnect);
             }
-
         })
+    }
 
+    protected createConnection() {
+        const opts = {
+            host: LOCALHOST,
+            port: 1883,
+            ...this.options.connectOpts
+        };
+        const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
+        this._session = this.handler.injector.get(MqttTransportSessionFactory).create(conn, this.options.transportOpts!);
+        return conn;
     }
 
     protected override initContext(context: InvocationContext<any>): void {

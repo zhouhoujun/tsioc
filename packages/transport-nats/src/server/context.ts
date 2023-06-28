@@ -1,6 +1,6 @@
 import { AbstractAssetContext } from '@tsdi/transport';
 import { NatsMicroServiceOpts } from './options';
-import { isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, isString } from '@tsdi/ioc';
 import { NatsIncoming } from './incoming';
 import { NatsOutgoing } from './outgoing';
 
@@ -14,8 +14,8 @@ export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const baseUrl = isString(this.serverOptions.connectOpts) ? new URL(this.serverOptions.connectOpts)
-                : new URL(`${this.serverOptions.connectOpts?.tls ? 'nats' : 'nats'}://${this.serverOptions.connectOpts?.servers ?? 'localhost'}:${this.serverOptions.connectOpts?.port ?? 4222}`);
+            const { servers, port } = this.serverOptions.connectOpts ?? EMPTY_OBJ;
+            const baseUrl = new URL(`nats://${servers ? (isString(servers) ? servers : servers[0]) : 'localhost'}:${port ?? 4222}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }

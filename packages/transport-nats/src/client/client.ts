@@ -4,7 +4,6 @@ import { InjectLog, Logger } from '@tsdi/logs';
 import { NatsConnection, connect } from 'nats';
 import { NatsHandler } from './handler';
 import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
-import { NATS_CONNECTION } from '../consts';
 import { NatsTransportSessionFactory } from '../transport';
 
 
@@ -25,7 +24,7 @@ export class NatsClient extends Client<TransportRequest, TransportEvent> {
 
     protected async connect(): Promise<any> {
         if (this.conn) return this.conn;
-
+        
         const conn = this.conn = await connect(this.options.connectOpts);
         for await (const status of conn.status()) {
             const data = isPlainObject(status.data)

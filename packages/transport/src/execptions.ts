@@ -32,6 +32,12 @@ export class OfflineExecption extends Execption {
     }
 }
 
+export class DisconnectExecption extends Execption {
+    constructor(message = 'Connection disconnect') {
+        super(`DisconnectExecption: ${message}`)
+    }
+}
+
 export class PushDisabledExecption extends Execption {
     constructor(message = 'Push disabled') {
         super(`PushDisabledExecption: ${message}`)

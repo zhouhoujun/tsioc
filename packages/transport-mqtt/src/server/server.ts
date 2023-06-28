@@ -39,13 +39,27 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
             ...this.options.connectOpts
         };
         this.mqtt = opts.url ? connect(opts.url, opts) : connect(opts);
-
+        const defer = lang.defer();
         this.mqtt.on(ev.ERROR, (err) => this.logger.error(err));
 
-        const defer = lang.defer();
-        this.mqtt.on(ev.CONNECT, defer.resolve);
-        await defer.promise;
+        this.mqtt.on(ev.CONNECT, (packet) => {
+            this.logger?.info('Mqtt client connected!', 'return code', packet.returnCode);
+            defer.resolve();
+        });
 
+        this.mqtt.on(ev.DISCONNECT, (packet) => {
+            this.logger?.info('Mqtt client disconnected!', 'reason code', packet.reasonCode);
+        });
+
+        this.mqtt.on(ev.OFFLINE, () => {
+            this.logger?.info('mqtt microservice offline!');
+        });
+
+        this.mqtt.on(ev.END, () => {
+            this.logger.info(`Mqtt microservice closed!`);
+        })
+
+        await defer.promise;
     }
 
     protected override async onStart(): Promise<any> {
@@ -90,13 +104,11 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         if (!this.mqtt) return;
         this._session?.destroy();
         if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
-        // this.mqtt.end();
         await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;
             });
-
         this.mqtt = null;
     }
 

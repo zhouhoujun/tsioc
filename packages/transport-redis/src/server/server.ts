@@ -120,6 +120,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
         await this.subscriber?.quit();
         await this.publisher?.quit();
         this.publisher = this.subscriber = null;
+        this.logger.info(`Redis microservice closed!`);
     }
 
     protected createRetryStrategy(options: RedisServerOpts): (times: number) => undefined | number {

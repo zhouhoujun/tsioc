@@ -18,6 +18,7 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
 
     @InjectLog() logger!: Logger;
     protected isSecure = false;
+    protected micro = true;
     constructor(
         readonly endpoint: CoapMicroEndpoint,
         @Inject(COAP_MICRO_SERV_OPTS) protected options: CoapServerOpts) {
@@ -54,7 +55,7 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
         if (!this._server) throw new InternalServerExecption();
 
         this._server.on(ev.CLOSE, (err) => {
-            this.logger.info('Coap Server closed!');
+            this.logger.info(`Coap ${this.micro? 'microservice': 'server'} closed!`);
             if (err) this.logger.error(err);
         });
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
@@ -113,6 +114,7 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
  */
 @Injectable()
 export class CoapServer extends CoapMicroService {
+    protected micro = false;
     constructor(
         endpoint: CoapEndpoint,
         @Inject(COAP_SERV_OPTS) options: CoapServerOpts) {

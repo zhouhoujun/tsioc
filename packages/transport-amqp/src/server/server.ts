@@ -45,6 +45,7 @@ export class AmqpServer extends Server<AmqpContext> {
         });
         conn.on(ev.CLOSE, (err) => {
             err && this.logger.error(err);
+            this.logger.info(`Amqp microservice closed!`);
         });
         conn.on(ev.ERROR, (err) => {
             this.logger.error(err)

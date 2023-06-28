@@ -1,5 +1,5 @@
 import { MESSAGE, MircoServRouters, Packet, PatternFormatter, Server, TransportSession } from '@tsdi/core';
-import { Execption, Inject, Injectable, Token, isPlainObject } from '@tsdi/ioc';
+import { Execption, Inject, Injectable, isPlainObject } from '@tsdi/ioc';
 import { NatsConnection, connect, Subscription as NatsSubs } from 'nats';
 import { NatsContext } from './context';
 import { NatsEndpoint } from './endpoint';
@@ -100,6 +100,7 @@ export class NatsServer extends Server<NatsContext> {
         });
         this._session?.destroy();
         if (this.conn) await this.conn.close();
+        this.logger.info(`Nats microservice closed!`);
         this.conn = null!;
     }
 

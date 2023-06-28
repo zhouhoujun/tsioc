@@ -138,6 +138,8 @@ export class KafkaServer extends Server<KafkaContext> {
         if (this.producer) {
             await this.producer.disconnect();
         }
+        
+        this.logger.info(`Kafka microservice closed!`);
         this.consumer = null!;
         this.producer = null!;
         this.client = null!;

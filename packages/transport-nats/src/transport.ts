@@ -30,8 +30,8 @@ export class NatsTransportSessionFactoryImpl implements TransportSessionFactory<
 
 
 
-export interface QueueBuffer {
-    queue: string;
+export interface SubjectBuffer {
+    subject: string;
     buffer: Buffer | null;
     contentLength: number | null;
     pkgs: Map<number | string, Packet>;
@@ -39,7 +39,7 @@ export interface QueueBuffer {
 }
 
 export class NatsTransportSession extends AbstractTransportSession<NatsConnection, NatsSessionOpts> {
-    protected queues: Map<string, QueueBuffer> = new Map();
+    protected subjects: Map<string, SubjectBuffer> = new Map();
 
     protected override bindMessageEvent(options: NatsSessionOpts): void {
         const onRespond = this.onData.bind(this);
@@ -135,17 +135,17 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     }
 
 
-    protected onData(queue: string, msg: Msg): void {
+    protected onData(subject: string, msg: Msg): void {
         try {
-            let chl = this.queues.get(queue);
+            let chl = this.subjects.get(subject);
             if (!chl) {
                 chl = {
-                    queue,
+                    subject: subject,
                     buffer: null,
                     contentLength: ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0'),
                     pkgs: new Map()
                 }
-                this.queues.set(queue, chl)
+                this.subjects.set(subject, chl)
             } else if (chl.contentLength === null) {
                 chl.buffer = null;
                 chl.contentLength = ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0');
@@ -171,7 +171,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         }
     }
 
-    protected handleData(chl: QueueBuffer, id: string | number, dataRaw: string | Buffer) {
+    protected handleData(chl: SubjectBuffer, id: string | number, dataRaw: string | Buffer) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -191,19 +191,19 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         }
     }
 
-    protected handleMessage(chl: QueueBuffer, id: string | number, message: any) {
+    protected handleMessage(chl: SubjectBuffer, id: string | number, message: any) {
         chl.contentLength = null;
         chl.buffer = null;
         this.emitMessage(chl, id, message);
     }
 
-    protected emitMessage(chl: QueueBuffer, id: string | number, chunk: Buffer) {
+    protected emitMessage(chl: SubjectBuffer, id: string | number, chunk: Buffer) {
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         const pkg = chl.pkgs.get(id);
         if (pkg) {
             pkg.payload = data.length ? data : null;
             chl.pkgs.delete(id);
-            this.emit(ev.MESSAGE, chl.queue, pkg);
+            this.emit(ev.MESSAGE, chl.subject, pkg);
         }
     }
 }
