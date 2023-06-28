@@ -5,7 +5,7 @@ import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
 import { TcpStatusVaildator } from '../status';
 import { TcpRequestAdapter } from './request';
-import { TcpClient } from './clinet';
+import { TcpClient } from './client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts, TcpClientsOpts } from './options';
 import { TcpHandler } from './handler';
 

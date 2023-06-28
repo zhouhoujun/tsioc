@@ -4,7 +4,7 @@ export * from './client/handler';
 export * from './client/client';
 export * from './client/client.module';
 
-export * from './options';
+export * from './server/options';
 export * from './server/endpoint';
 export * from './server/context';
 export * from './server/incoming';

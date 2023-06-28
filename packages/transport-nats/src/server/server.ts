@@ -4,7 +4,7 @@ import { NatsConnection, connect, Subscription as NatsSubs } from 'nats';
 import { NatsContext } from './context';
 import { NatsEndpoint } from './endpoint';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { NATS_SERV_OPTS, NatsMicroServiceOpts } from './options';
+import { NATS_SERV_OPTS, NatsMicroServOpts } from './options';
 import { Content, ev, hdr } from '@tsdi/transport';
 import { NatsTransportSessionFactory } from '../transport';
 import { NatsIncoming } from './incoming';
@@ -23,7 +23,7 @@ export class NatsServer extends Server<NatsContext> {
 
     constructor(
         readonly endpoint: NatsEndpoint,
-        @Inject(NATS_SERV_OPTS) private options: NatsMicroServiceOpts
+        @Inject(NATS_SERV_OPTS) private options: NatsMicroServOpts
     ) {
         super()
         this.subscribes = [];

@@ -7,7 +7,7 @@ import { NatsSessionOpts } from '../options';
 
 
 
-export interface NatsMicroServiceOpts extends TransportEndpointOptions<NatsContext> {
+export interface NatsMicroServOpts extends TransportEndpointOptions<NatsContext> {
     /**
      * connect options.
      */
@@ -29,7 +29,7 @@ export interface NatsMicroServiceOpts extends TransportEndpointOptions<NatsConte
 }
 
 
-export const NATS_SERV_OPTS = tokenId<NatsMicroServiceOpts>('NATS_SERV_OPTS');
+export const NATS_SERV_OPTS = tokenId<NatsMicroServOpts>('NATS_SERV_OPTS');
 
 /**
  * Nats server interceptors.

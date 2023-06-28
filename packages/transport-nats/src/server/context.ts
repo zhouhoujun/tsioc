@@ -1,11 +1,11 @@
 import { AbstractAssetContext } from '@tsdi/transport';
-import { NatsMicroServiceOpts } from './options';
+import { NatsMicroServOpts } from './options';
 import { EMPTY_OBJ, isString } from '@tsdi/ioc';
 import { NatsIncoming } from './incoming';
 import { NatsOutgoing } from './outgoing';
 
 
-export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing, number, NatsMicroServiceOpts> {
+export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing, number, NatsMicroServOpts> {
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)
     }
