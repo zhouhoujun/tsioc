@@ -110,11 +110,10 @@ export class NatsOutgoing extends PassThrough implements Outgoing<NatsConnection
         }
         super.end(chunk, encoding, cb);
 
-        const url = this.getReply(this.url);
+        const url = this.replyTo ?? this.getReply(this.url);
         this.session.send({
             id: this.id,
             url,
-            replyTo: this.replyTo,
             headers: this.getHeaders(),
             payload: this,
         });

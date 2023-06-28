@@ -15,6 +15,7 @@ export class NatsIncoming extends Readable implements Incoming<NatsConnection> {
 
     readonly id: number;
     readonly url: string;
+    readonly originalUrl: string;
     readonly method: string;
 
     constructor(readonly session: TransportSession<NatsConnection>, private packet: Packet) {
@@ -22,8 +23,9 @@ export class NatsIncoming extends Readable implements Incoming<NatsConnection> {
         this.id = packet.id;
         this.setMaxListeners(0);
         const headers = this.headers = packet.headers || {};
-        this.url = packet.url ?? headers[hdr.PATH] ?? '',
-            this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';
+        this.url = packet.url ?? headers[hdr.PATH] ?? '';
+        this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
+        this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';
 
         this._payloadIndex = 0
         session.on(ev.END, this.emit.bind(this, ev.END));

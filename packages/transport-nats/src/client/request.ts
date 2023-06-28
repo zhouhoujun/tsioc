@@ -1,6 +1,6 @@
-import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StatusVaildator, StreamAdapter, TransportSession, Packet, UuidGenerator } from '@tsdi/core';
+import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StatusVaildator, StreamAdapter, TransportSession, Packet, UuidGenerator, Incoming } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
+import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter, hdr, StatusPacket } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { NatsConnection, Msg } from 'nats';
 import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
@@ -65,6 +65,16 @@ export class NatsRequestAdapter extends SessionRequestAdapter<NatsConnection> {
 
     protected override getPacketId(): string {
         return this.uuidGenner.generate()
+    }
+
+    protected override parseStatusPacket(incoming: Incoming): StatusPacket<number> {
+        return {
+            headers: incoming.headers,
+            status: ~~(incoming.headers[hdr.STATUS] ?? this.vaildator.none.toString()),
+            statusText: String(incoming.headers[hdr.STATUS_MESSAGE]),
+            body: incoming.body,
+            payload: incoming.payload
+        }
     }
 
 }

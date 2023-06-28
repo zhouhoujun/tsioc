@@ -40,7 +40,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                     url,
                     error,
                     statusText: 'Unknown Error',
-                    status: error?.status ?? error.statusCode ?? status
+                    status: error?.status ?? error?.statusCode ?? status
                 });
                 observer.error(res)
             };

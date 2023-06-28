@@ -3,6 +3,7 @@ import { NatsMicroServOpts } from './options';
 import { EMPTY_OBJ, isString } from '@tsdi/ioc';
 import { NatsIncoming } from './incoming';
 import { NatsOutgoing } from './outgoing';
+import { normalize } from '@tsdi/core';
 
 
 export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing, number, NatsMicroServOpts> {
@@ -20,6 +21,18 @@ export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing
             return uri;
         }
     }
+
+    protected override getOriginalUrl(request: NatsIncoming): string {
+        return normalize(request.originalUrl);
+    }
+
+    override getRequestFilePath() {
+        const pathname = this.originalUrl;
+        this.mimeAdapter.lookup(pathname);
+        return this.mimeAdapter.lookup(pathname) ? pathname : null;
+    }
+
+    
     get writable(): boolean {
         return this.response.writable
     }

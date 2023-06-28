@@ -1,4 +1,4 @@
-import { ExecptionHandlerFilter, StatusVaildator, MicroServRouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, StatusVaildator, MicroServRouterModule, TransformModule, createTransportEndpoint, PatternFormatter } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -8,16 +8,15 @@ import { NatsEndpoint } from './endpoint';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NATS_SERV_OPTS, NatsMicroServOpts } from './options';
 import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl } from '../transport';
 import { NatsStatusVaildator } from '../status';
+import { NatsPatternFormatter } from '../pattern';
+import { NatsExecptionHandlers } from './execption.handles';
 
 
 
 
 
 const defaultServOpts = {
-    encoding: 'utf8',
     transportOpts: {
-        delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
     },
     content: {
         root: 'public',
@@ -27,7 +26,7 @@ const defaultServOpts = {
     interceptorsToken: NATS_SERV_INTERCEPTORS,
     filtersToken: NATS_SERV_FILTERS,
     guardsToken: NATS_SERV_GUARDS,
-    backend: MicroServRouterModule.getToken('mqtt'),
+    backend: MicroServRouterModule.getToken('nats'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -41,7 +40,8 @@ const defaultServOpts = {
         Bodyparser
     ],
     providers: [
-        { provide: StatusVaildator, useExisting: NatsStatusVaildator }
+        { provide: StatusVaildator, useExisting: NatsStatusVaildator },
+        { provide: PatternFormatter, useExisting: NatsPatternFormatter }
     ]
 } as NatsMicroServOpts;
 
@@ -52,14 +52,18 @@ const defaultServOpts = {
 @Module({
     imports: [
         TransformModule,
-        MicroServRouterModule.forRoot('nats'),
+        MicroServRouterModule.forRoot('nats', {
+            formatter: NatsPatternFormatter
+        }),
         TransportModule,
         ServerTransportModule
     ],
     providers: [
+        NatsStatusVaildator,
+        NatsPatternFormatter,
+        NatsExecptionHandlers,
         { provide: NatsTransportSessionFactory, useClass: NatsTransportSessionFactoryImpl, asDefault: true },
         { provide: NATS_SERV_OPTS, useValue: { ...defaultServOpts }, asDefault: true },
-        NatsStatusVaildator,
         {
             provide: NatsEndpoint,
             useFactory: (injector: Injector, opts: NatsMicroServOpts) => {

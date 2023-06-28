@@ -72,12 +72,12 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' }, 'mqtt')
+    @Handle({ cmd: 'xxx' }, 'nats')
     async subMessage(@Payload() message: string) {
         return message;
     }
 
-    @Handle('dd/+')
+    @Handle('dd/*')
     async subMessage1(@Payload() message: string) {
         return message;
     }

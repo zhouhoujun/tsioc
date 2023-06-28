@@ -23,17 +23,17 @@ export class NatsService {
         return message;
     }
 
-    @Handle('sensor.message/+')
+    @Handle('sensor.message/*')
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Handle('sensor/message/+', 'nats')
+    @Handle('sensor/message/*', 'nats')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/submessage/+')
+    @Subscribe('sensor/submessage/*')
     async subMessage2(@Payload() message: string) {
         return message;
     }
@@ -62,7 +62,7 @@ export class NatsService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 200
+                timeout: 500
             }
         }),
         NatsMicroServModule

@@ -1,4 +1,4 @@
-import { StatusVaildator, createHandler } from '@tsdi/core';
+import { PatternFormatter, StatusVaildator, createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { BodyContentInterceptor, TransportBackend, TransportModule, RequestAdapter } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
@@ -8,6 +8,7 @@ import { NatsRequestAdapter } from './request';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS, NatsClientOpts, NatsClientsOpts } from './options';
 import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl } from '../transport';
 import { NatsStatusVaildator } from '../status';
+import { NatsPatternFormatter } from '../pattern';
 
 
 
@@ -22,7 +23,8 @@ const defClientOpts = {
     },
     providers: [
         { provide: StatusVaildator, useExisting: NatsStatusVaildator },
-        { provide: RequestAdapter, useExisting: NatsRequestAdapter }
+        { provide: RequestAdapter, useExisting: NatsRequestAdapter },
+        { provide: PatternFormatter, useExisting: NatsPatternFormatter }
     ]
 } as NatsClientOpts;
 
@@ -38,6 +40,7 @@ const defClientOpts = {
     providers: [
         NatsStatusVaildator,
         NatsRequestAdapter,
+        NatsPatternFormatter,
         { provide: NatsTransportSessionFactory, useClass: NatsTransportSessionFactoryImpl, asDefault: true },
         { provide: NATS_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         {

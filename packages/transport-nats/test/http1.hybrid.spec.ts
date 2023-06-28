@@ -35,12 +35,12 @@ describe('Nats hybrid Http Server & Nats Client & Http', () => {
     let injector: Injector;
 
     let client: Http;
-    let mqttClient: NatsClient
+    let natsClient: NatsClient
 
     before(async () => {
         ctx = await Application.run(NatsTestModule);
         injector = ctx.injector;
-        mqttClient = injector.get(NatsClient);
+        natsClient = injector.get(NatsClient);
         client = injector.get(Http);
     });
 
@@ -231,7 +231,7 @@ describe('Nats hybrid Http Server & Nats Client & Http', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(mqttClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(natsClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -242,7 +242,7 @@ describe('Nats hybrid Http Server & Nats Client & Http', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(mqttClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(natsClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);

@@ -30,35 +30,7 @@ export class NatsServer extends Server<NatsContext> {
     }
 
     protected async onStartup(): Promise<any> {
-        const conn = this.conn = await connect(this.options.connectOpts);
-        for await (const status of conn.status()) {
-            const data = isPlainObject(status.data)
-                ? JSON.stringify(status.data)
-                : status.data;
-
-            switch (status.type) {
-                case 'error':
-                case 'disconnect':
-                    this.logger.error(
-                        `NatsError: type: "${status.type}", data: "${data}".`,
-                    );
-                    break;
-
-                case 'pingTimer':
-                    if (this.options.debug) {
-                        this.logger.debug(
-                            `NatsStatus: type: "${status.type}", data: "${data}".`,
-                        );
-                    }
-                    break;
-
-                default:
-                    this.logger.log(
-                        `NatsStatus: type: "${status.type}", data: "${data}".`,
-                    );
-                    break;
-            }
-        }
+        this.conn = await connect(this.options.connectOpts);
     }
 
     protected async onStart(): Promise<any> {
@@ -66,14 +38,18 @@ export class NatsServer extends Server<NatsContext> {
 
         const router = this.endpoint.injector.get(MircoServRouters).get('nats');
         if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            const content = this.endpoint.injector.get(PatternFormatter).format(`${this.options.content.prefix}/#`);
+            const content = this.endpoint.injector.get(PatternFormatter).format(`${this.options.content.prefix}.>`);
             router.matcher.register(content, true);
         }
 
 
         const conn = this.conn;
         const subs = router.matcher.getPatterns();
-        const session = this._session = this.endpoint.injector.get(NatsTransportSessionFactory).create(conn, { ... this.options.transportOpts });
+        const session = this._session = this.endpoint.injector.get(NatsTransportSessionFactory).create(conn, { ... this.options.transportOpts, serverSide: true });
+
+        session.on(ev.ERROR, (err)=> {
+            this.logger.error(err);
+        });
 
         session.on(ev.MESSAGE, (topic: string, packet: Packet) => {
             this.requestHandler(session, packet)
@@ -90,6 +66,11 @@ export class NatsServer extends Server<NatsContext> {
                 },
             }))
         });
+        this.logger.info(
+            `Subscribed successfully! This server is currently subscribed topics.`,
+            subs
+        );
+
     }
 
 

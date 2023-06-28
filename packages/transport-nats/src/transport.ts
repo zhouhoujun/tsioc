@@ -135,8 +135,10 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     }
 
 
-    protected onData(subject: string, msg: Msg): void {
+    protected onData(error: Error | null, msg: Msg): void {
         try {
+            const subject = msg.subject;
+            if (this.options.serverSide && subject.endsWith('.reply')) return;
             let chl = this.subjects.get(subject);
             if (!chl) {
                 chl = {
@@ -164,14 +166,14 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
                     headers
                 })
             }
-            this.handleData(chl, id, Buffer.from(msg.data));
+            this.handleData(chl, id, msg.data);
         } catch (ev) {
             const e = ev as any;
             this.emit(e.ERROR, e.message);
         }
     }
 
-    protected handleData(chl: SubjectBuffer, id: string | number, dataRaw: string | Buffer) {
+    protected handleData(chl: SubjectBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
