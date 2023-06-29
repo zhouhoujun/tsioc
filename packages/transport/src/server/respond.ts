@@ -71,10 +71,8 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
 
-        const streamAdapter = ctx.streamAdapter;
-        if (streamAdapter.isStream(body)) {
-            if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
-            return await streamAdapter.pipeTo(body, res);
+        if (ctx.streamAdapter.isStream(body)) {
+            return await this.respondStream(body, res, ctx);
         }
 
         // body: json
@@ -84,6 +82,12 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         }
         res.end(body);
         return res
+    }
+
+    protected respondStream(body: any, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<void> {
+        const streamAdapter = ctx.streamAdapter;
+        if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+        return streamAdapter.pipeTo(body, res);
     }
 
     protected statusMessage(ctx: AssetContext<TRequest, TResponse, TStatus>, status: TStatus): string {

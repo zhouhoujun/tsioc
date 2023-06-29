@@ -15,13 +15,13 @@ import { TcpHandler } from './handler';
  * TCP client default options.
  */
 const defClientOpts = {
-    interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,
     },
-    interceptors: [BodyContentInterceptor],
+    interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     filtersToken: TCP_CLIENT_FILTERS,
+    interceptors: [BodyContentInterceptor],
     backend: TransportBackend,
     providers: [
         { provide: StatusVaildator, useExisting: TcpStatusVaildator },

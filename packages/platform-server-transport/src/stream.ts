@@ -54,7 +54,7 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
     }
 
     isWritable(stream: any): stream is IWritableStream<any> {
-        return stream instanceof Writable || (this.isStream(stream) && (stream as Writable).writable);
+        return stream instanceof Writable || (isFunction(stream.write) && (stream as Writable).writable);
     }
     passThrough(options?: {
         allowHalfOpen?: boolean | undefined;

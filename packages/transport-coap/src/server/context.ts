@@ -24,7 +24,7 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
         }
     }
     get writable(): boolean {
-        return !this.response.response.closed && !this.response.response.destroyed
+        return !this.response.closed && !this.response.destroyed
     }
     get protocol(): string {
         return 'coap';

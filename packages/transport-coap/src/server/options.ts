@@ -15,12 +15,10 @@ export interface CoapServerOpts extends TransportEndpointOptions<AssetContext, O
 }
 
 export const COAP_SERV_OPTS = tokenId<CoapServerOpts>('COAP_SERV_OPTS');
-
 /**
  * CoAP server interceptors.
  */
 export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor<AssetContext, Outgoing>[]>('COAP_SERV_INTERCEPTORS');
-
 /**
  * CoAP server filters.
  */
@@ -32,15 +30,13 @@ export const COAP_SERV_GUARDS = tokenId<CanActivate[]>('COAP_SERV_GUARDS');
 
 
 /**
- * coap micro server options
+ * CoAP micro server options
  */
 export const COAP_MICRO_SERV_OPTS = tokenId<CoapServerOpts>('COAP_MICRO_SERV_OPTS');
-
 /**
  * CoAP micro server interceptors.
  */
 export const COAP_MICRO_SERV_INTERCEPTORS = tokenId<Interceptor<AssetContext, Outgoing>[]>('COAP_MICRO_SERV_INTERCEPTORS');
-
 /**
  * CoAP micro server filters.
  */

@@ -1,13 +1,15 @@
-import { ExecptionHandlerFilter, HybridRouter, MicroServRouterModule, RouterModule, StatusVaildator, TransformModule, createTransportEndpoint } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { ExecptionHandlerFilter, HybridRouter, MicroServRouterModule, RouterModule, StatusVaildator, TransformModule, createTransportEndpoint } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { CoapMicroService, CoapServer } from './server';
-import { COAP_SERV_FILTERS, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS, COAP_MICRO_SERV_OPTS, COAP_MICRO_SERV_INTERCEPTORS, COAP_MICRO_SERV_FILTERS, COAP_MICRO_SERV_GUARDS } from './options';
+import { CoapExecptionHandlers } from './execption.handles';
+import {
+    COAP_SERV_FILTERS, COAP_SERV_OPTS, COAP_SERV_INTERCEPTORS, CoapServerOpts, COAP_SERV_GUARDS, COAP_MICRO_SERV_OPTS,
+    COAP_MICRO_SERV_INTERCEPTORS, COAP_MICRO_SERV_FILTERS, COAP_MICRO_SERV_GUARDS
+} from './options';
 import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
 import { CoapMicroStatusVaildator, CoapStatusVaildator } from '../status';
-import { CoapExecptionHandlers } from './execption.handles';
-
 
 
 
@@ -21,13 +23,13 @@ const defMicroServOpts = {
     interceptorsToken: COAP_MICRO_SERV_INTERCEPTORS,
     filtersToken: COAP_MICRO_SERV_FILTERS,
     guardsToken: COAP_MICRO_SERV_GUARDS,
+    backend: MicroServRouterModule.getToken('coap'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
-    backend: MicroServRouterModule.getToken('coap'),
     interceptors: [
         Session,
         Content,
@@ -36,7 +38,8 @@ const defMicroServOpts = {
     ],
     listenOpts: 5683,
     providers: [
-        { provide: StatusVaildator, useExisting: CoapMicroStatusVaildator }
+        { provide: StatusVaildator, useExisting: CoapMicroStatusVaildator },
+        // { provide: RespondAdapter, useExisting: CoapRespondAdapter }
     ]
 } as CoapServerOpts;
 
@@ -51,8 +54,10 @@ const defMicroServOpts = {
         ServerTransportModule
     ],
     providers: [
-        CoapMicroStatusVaildator,
         { provide: COAP_MICRO_SERV_OPTS, useValue: { ...defMicroServOpts }, asDefault: true },
+        CoapMicroStatusVaildator,
+        // CoapRespondAdapter,
+        CoapExecptionHandlers,
         {
             provide: CoapMicroEndpoint,
             useFactory: (injector: Injector, opts: CoapServerOpts) => {
@@ -61,7 +66,6 @@ const defMicroServOpts = {
             asDefault: true,
             deps: [Injector, COAP_MICRO_SERV_OPTS]
         },
-        CoapExecptionHandlers,
         CoapMicroService
     ]
 })
@@ -85,7 +89,7 @@ export class CoapMicroServModule {
     }): ModuleWithProviders<CoapMicroServModule> {
         const providers: ProviderType[] = [
             {
-                provide: COAP_SERV_OPTS,
+                provide: COAP_MICRO_SERV_OPTS,
                 useValue: {
                     ...defMicroServOpts,
                     ...options.serverOpts,
@@ -116,19 +120,23 @@ const defServOpts = {
     interceptorsToken: COAP_SERV_INTERCEPTORS,
     filtersToken: COAP_SERV_FILTERS,
     guardsToken: COAP_SERV_GUARDS,
+    backend: HybridRouter,
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
         ServerFinalizeFilter
     ],
-    backend: HybridRouter,
-    listenOpts: 5683,
     interceptors: [
         Session,
         Content,
         Json,
         Bodyparser
+    ],
+    listenOpts: 5683,
+    providers: [
+        { provide: StatusVaildator, useExisting: CoapStatusVaildator },
+        // { provide: RespondAdapter, useExisting: CoapRespondAdapter }
     ]
 } as CoapServerOpts;
 
@@ -143,8 +151,9 @@ const defServOpts = {
         ServerTransportModule
     ],
     providers: [
-        { provide: StatusVaildator, useClass: CoapStatusVaildator },
         { provide: COAP_SERV_OPTS, useValue: { ...defServOpts }, asDefault: true },
+        CoapStatusVaildator,
+        // CoapRespondAdapter,
         {
             provide: CoapEndpoint,
             useFactory: (injector: Injector, opts: CoapServerOpts) => {
@@ -176,7 +185,14 @@ export class CoapServerModule {
         serverOpts?: CoapServerOpts;
     }): ModuleWithProviders<CoapServerModule> {
         const providers: ProviderType[] = [
-            { provide: COAP_SERV_OPTS, useValue: { ...defServOpts, ...options.serverOpts } }
+            {
+                provide: COAP_SERV_OPTS,
+                useValue: {
+                    ...defServOpts,
+                    ...options.serverOpts,
+                    providers: [...defServOpts.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
+                }
+            }
         ];
 
         if (options.endpoint) {

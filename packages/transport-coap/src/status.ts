@@ -114,9 +114,11 @@ const retryStatus: Record<number | string, boolean> = {
  *    Each entry in the sub-registry must include the Response Code in the
  *    range 2.00-5.31, a description of the Response Code, and a reference
  *    to the Response Code's documentation.
-
+ * 
+ *    https://www.iana.org/assignments/core-parameters/core-parameters.xhtml#content-formats
+ * 
  *    Initial entries in this sub-registry are as follows:
-
+ *
  *             +------+------------------------------+-----------+
  *             | Code | Description                  | Reference |
  *             +------+------------------------------+-----------+
@@ -125,6 +127,8 @@ const retryStatus: Record<number | string, boolean> = {
  *             | 2.03 | Valid                        | [RFC7252] |
  *             | 2.04 | Changed                      | [RFC7252] |
  *             | 2.05 | Content                      | [RFC7252] |
+ *             | 2.31 |	Continue	                 | [RFC7959] |
+ *             | 3.00-3.31 |	Reserved	         | [RFC7252] |
  *             | 4.00 | Bad Request                  | [RFC7252] |
  *             | 4.01 | Unauthorized                 | [RFC7252] |
  *             | 4.02 | Bad Option                   | [RFC7252] |
@@ -142,6 +146,7 @@ const retryStatus: Record<number | string, boolean> = {
  *             | 5.04 | Gateway Timeout              | [RFC7252] |
  *             | 5.05 | Proxying Not Supported       | [RFC7252] |
  *             +------+------------------------------+-----------+
+ * 
  */
 export enum CoapStatuCode {
     Created = '2.01',
@@ -149,6 +154,7 @@ export enum CoapStatuCode {
     Valid = '2.03',
     Changed = '2.04',
     Content = '2.05',
+    Continue = '2.31',
     BadRequest = '4.00',
     Unauthorized = '4.01',
     BadOption = '4.02',
@@ -156,16 +162,19 @@ export enum CoapStatuCode {
     NotFound = '4.04',
     MethodNotAllowed = '4.05',
     NotAcceptable = '4.06',
+    Conflict = '4.09',
     PreconditionFailed = '4.12',
     RequestEntityTooLarge = '4.13',
     UnsupportedContentFormat = '4.15',
+    UnprocessableEntity = '4.22',
+    TooManyRequests = "4.29",
     InternalServerError = '5.00',
     NotImplemented = '5.01',
     BadGateway = '5.02',
     ServiceUnavailable = '5.03',
     GatewayTimeout = '5.04',
-    ProxyingNotSupported = '5.05'
-
+    ProxyingNotSupported = '5.05',
+    HopLimitReached = '5.08'
 }
 
 export const CoapMessages = {
@@ -174,6 +183,7 @@ export const CoapMessages = {
     '2.03': 'Valid',
     '2.04': 'Changed',
     '2.05': 'Content',
+    '2.31': 'Continue',
     '4.00': 'Bad Request',
     '4.01': 'Unauthorized',
     '4.02': 'Bad Option',
@@ -181,13 +191,17 @@ export const CoapMessages = {
     '4.04': 'Not Found',
     '4.05': 'Method Not Allowed',
     '4.06': 'Not Acceptable',
+    '4.09': 'Conflict',
     '4.12': 'Precondition Failed',
     '4.13': 'Request Entity Too Large',
     '4.15': 'Unsupported Content-Format',
+    '4.22': 'Unprocessable Entity',
+    '4.29': 'Too Many Requests',
     '5.00': 'Internal Server Error',
     '5.01': 'Not Implemented',
     '5.02': 'Bad Gateway',
     '5.03': 'Service Unavailable',
     '5.04': 'Gateway Timeout',
-    '5.05': 'Proxying Not Supported'
+    '5.05': 'Proxying Not Supported',
+    '5.08': 'Hop Limit Reached'
 }

@@ -96,10 +96,10 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
 
-        const maxAge = opts.maxAge ?? 0;
         ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
         if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
         if (!ctx.response.getHeader(hdr.CACHE_CONTROL)) {
+            const maxAge = opts.maxAge ?? 0;
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (opts.immutable) {
                 directives.push('immutable')

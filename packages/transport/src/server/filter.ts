@@ -8,15 +8,11 @@ import { RespondAdapter } from './respond';
 @Injectable({ static: true })
 export class ServerFinalizeFilter extends Filter {
 
-    constructor(private respondAdapter: RespondAdapter) {
-        super()
-    }
-
     intercept(context: AssetContext, next: Handler): Observable<any> {
         return next.handle(context)
             .pipe(
                 mergeMap(res => {
-                    return this.respondAdapter.respond(context)
+                    return context.get(RespondAdapter).respond(context)
                 })
             )
     }
