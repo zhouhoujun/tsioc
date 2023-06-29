@@ -223,7 +223,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
      * Whether the status code is ok
      */
     abstract set ok(ok: boolean);
-
     /**
      * Return request header.
      *

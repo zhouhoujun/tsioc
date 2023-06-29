@@ -52,7 +52,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         });
 
         this.mqtt.on(ev.OFFLINE, () => {
-            this.logger?.info('mqtt microservice offline!');
+            this.logger?.info('Mqtt microservice offline!');
         });
 
         this.mqtt.on(ev.END, () => {

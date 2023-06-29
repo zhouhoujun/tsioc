@@ -47,7 +47,7 @@ export class NatsServer extends Server<NatsContext> {
         const subs = router.matcher.getPatterns();
         const session = this._session = this.endpoint.injector.get(NatsTransportSessionFactory).create(conn, { ... this.options.transportOpts, serverSide: true });
 
-        session.on(ev.ERROR, (err)=> {
+        session.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
 
@@ -99,6 +99,9 @@ export class NatsServer extends Server<NatsContext> {
         const res = new NatsOutgoing(session, packet.replyTo!, packet.url!, packet.id);
 
         const ctx = this.createContext(req, res);
+        if (packet.error) {
+            ctx.execption = packet.error;
+        }
         const cancel = this.endpoint.handle(ctx)
             .pipe(finalize(() => {
                 ctx.destroy();

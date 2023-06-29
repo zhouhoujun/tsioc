@@ -21,10 +21,20 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         this.doneFn = options.isDone;
         this.setValue(getClass(this), this);
     }
+    private _execption: any;
     /**
      * execption.
      */
-    execption?: any;
+    get execption(): any {
+        return this._execption;
+    }
+
+    set execption(err: any) {
+        this._execption = err;
+        this.onExecption(err);
+    }
+
+    protected onExecption(err: any) { }
 
     sent?: boolean;
 

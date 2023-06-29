@@ -50,6 +50,14 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this.init(request);
     }
 
+    protected override onExecption(err: any): void {
+        const status = err.status ?? err.statusCode;
+        if (status) {
+            this.status = status;
+            this.statusMessage = err.message;
+        }
+    }
+
     protected getOriginalUrl(request: TRequest) {
         return normalize(request.url?.toString() ?? '');
     }

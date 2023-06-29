@@ -25,11 +25,11 @@ export class NatsClient extends Client<TransportRequest, TransportEvent> {
 
     protected async connect(): Promise<any> {
         if (this.conn) return this.conn;
-        
+
         const conn = this.conn = await connect(this.options.connectOpts);
-        
+
         const session = this._session = this.handler.injector.get(NatsTransportSessionFactory).create(conn, { ...this.options.transportOpts });
-        session.on(ev.ERROR, (err)=> {
+        session.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
 

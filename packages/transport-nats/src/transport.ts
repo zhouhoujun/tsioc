@@ -138,7 +138,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     protected onData(error: Error | null, msg: Msg): void {
         try {
             const subject = msg.subject;
-            if (this.options.serverSide && subject.endsWith('.reply')) return;
+            if (this.options.serverSide && (!msg.reply || subject.endsWith('.reply'))) return;
             let chl = this.subjects.get(subject);
             if (!chl) {
                 chl = {
@@ -161,6 +161,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
 
                 chl.pkgs.set(id, {
                     id,
+                    error,
                     url: msg.subject,
                     replyTo: msg.reply,
                     headers
