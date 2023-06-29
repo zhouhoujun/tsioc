@@ -15,15 +15,14 @@ import { Bodyparser, Content, Json } from '@tsdi/transport';
     imports: [
         ServerModule,
         LoggerModule,
-        CoapClientModule,
-        // CoapClientModule.withOption({
-        //     clientOpts: {
-        //         connectOpts: {
-        //             type: 'udp4',
-        //             port: 2000
-        //         },
-        //     }
-        // }),
+        // CoapClientModule,
+        CoapClientModule.withOption({
+            clientOpts: {
+                transportOpts: {
+                    // agent: 
+                }
+            }
+        }),
         MicroServRouterModule.forRoot('coap'),
         CoapServerModule.withOption({
             serverOpts: {

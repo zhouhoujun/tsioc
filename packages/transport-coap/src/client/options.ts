@@ -1,26 +1,20 @@
 import { Client } from '@grpc/grpc-js';
 import { ConfigableHandlerOptions, ExecptionFilter, Interceptor, TransportEvent, TransportRequest } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
-import { Agent, AgentOptions, OptionValue } from 'coap';
-import { CoapMethod, OptionName } from 'coap-packet';
+import { Agent, OptionValue } from 'coap';
+import { OptionName } from 'coap-packet';
 
 
 
 export interface CoapClientOpts extends ConfigableHandlerOptions<TransportRequest, TransportEvent>  {
-    encoding?: BufferEncoding;
-    connectOpts: AgentOptions;
     /**
      * transport session options.
      */
     transportOpts?: {
-        host?: string;
         hostname?: string;
         port?: number;
-        method?: CoapMethod;
         confirmable?: boolean;
         observe?: 0 | 1 | boolean | string;
-        pathname?: string;
-        query?: string;
         options?: Partial<Record<OptionName, OptionValue>>;
         headers?: Partial<Record<OptionName, OptionValue>>;
         agent?: Agent | false;

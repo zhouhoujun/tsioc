@@ -1,11 +1,14 @@
 import { tokenId } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
-import { ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
 import { HttpEvent, HttpRequest } from '@tsdi/common';
+import { ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
+import { Options } from '@grpc/proto-loader';
 
 
 
 export interface GrpcClientOptions extends ConfigableHandlerOptions {
+    filename: string | string[];
+    loadOptions?: Options
     packageDef: Record<string, ServiceDefinition | ProtobufTypeDefinition>;
 }
 

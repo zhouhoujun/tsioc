@@ -51,15 +51,15 @@ export class CoapService {
     imports: [
         ServerModule,
         LoggerModule,
-        CoapClientModule,
-        // CoapClientModule.withOption({
-        //     clientOpts: {
-        //         // connectOpts: {
-        //         //     port: 6379
-        //         // },
-        //         // timeout: 1000
-        //     }
-        // }),
+        // CoapClientModule,
+        CoapClientModule.withOption({
+            clientOpts: {
+                transportOpts: {
+                    // agent: 
+                }
+                // timeout: 1000
+            }
+        }),
         
         CoapMicroServModule
         // CoapMicroServiceModule.withOption({

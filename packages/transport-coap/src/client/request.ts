@@ -23,12 +23,10 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     protected createRequest(url: string, req: TransportRequest<any>): IEndable {
 
         const opts = req.context.get(COAP_CLIENT_OPTS);
-        const agent = req.context.get(Agent);
-        const uri = new URL(coaptl.test(url) ? url : `coap://${opts.connectOpts.socket?.remoteAddress()?.address ?? 'localhost'}:${opts.connectOpts.port}/${url}`);
+        const uri = new URL(coaptl.test(url) ? url : `coap://${opts.transportOpts?.hostname ?? 'localhost'}:${opts.transportOpts?.port ?? 5683}/${url}`);
         const options = req.headers.headers as Partial<Record<OptionName, OptionValue>>;
 
         const requestStream = request({
-            agent,
             ...opts.transportOpts,
             hostname: uri.hostname,
             port: parseInt(uri.port),
