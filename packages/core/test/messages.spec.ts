@@ -70,33 +70,10 @@ class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' })
-    async subMessage() {
-
-    }
-
-    @Handle('dd*')
-    async subMessage1() {
-
-    }
-
-
-
 
 }
 
-// @RouteMapping('/map')
-// class MapController {
 
-//     @Inject() mapAdapter: MapAdapter;
-
-//     @RouteMapping('/mark', 'POST')
-//     drawMark(name: string, @Inject(CONTEXT) ctx: MessageContext ) {
-//         ctx.body;
-//         this.mapAdapter.drow(ctx.body);
-//     }
-
-// }
 
 @Handle({
     route: '/hdevice'
