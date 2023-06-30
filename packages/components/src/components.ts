@@ -5,7 +5,6 @@ import { TemplateOutletDirective } from './directivies/outlet';
 import { Plural, PluralCase } from './directivies/plural';
 import { DirSwitch, DirSwitchCase, DirSwitchDefault } from './directivies/switch';
 import { AsyncPipe } from './pipes/async';
-import { ComponentRunnableFactory } from './runnable';
 import { ComponentState } from './state';
 
 
@@ -18,8 +17,7 @@ import { ComponentState } from './state';
  */
 @Module({
     providers:[
-        ComponentState,
-        ComponentRunnableFactory
+        ComponentState
     ],
     exports:[
         DirSwitch,

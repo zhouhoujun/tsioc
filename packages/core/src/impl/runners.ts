@@ -3,7 +3,7 @@ import {
     StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
-import { ApplicationRunners, RunnableRef } from '../ApplicationRunners';
+import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { PipeTransform } from '../pipes/pipe';
@@ -86,10 +86,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         }
 
 
-        const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef);
+        const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef || (r as StaticProviders).provide === RunnableFactory);
         if (hasAdapter) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
-            const endpoint = new FnHandler((ctx) => targetRef.resolve(RunnableRef).invoke(ctx));
+            const hasFactory = target.providers.some(r => (r as StaticProviders).provide === RunnableFactory);
+            const endpoint = new FnHandler((ctx) => hasFactory ? targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : targetRef.resolve(RunnableRef).invoke(ctx));
             this._maps.set(target.type, [endpoint]);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));

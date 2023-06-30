@@ -1,5 +1,5 @@
+import { Module } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
-import { Module } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { RunAspect } from './aop/RunAspect';
 import { WorkflowService } from './service';

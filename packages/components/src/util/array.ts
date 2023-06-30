@@ -18,7 +18,7 @@ export function addAllToArray(items: any[], arr: any[]) {
  * @param identityAccessor Optional function for extracting stable object identity from a value in
  *     the array.
  */
- export function arrayEquals<T>(a: T[], b: T[], identityAccessor?: (value: T) => unknown): boolean {
+export function arrayEquals<T>(a: T[], b: T[], identityAccessor?: (value: T) => unknown): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
     let valueA = a[i];
@@ -237,7 +237,7 @@ export function arrayIndexOfSorted(array: string[], value: string): number {
  *
  * See: `keyValueArraySet`, `keyValueArrayGet`, `keyValueArrayIndexOf`, `keyValueArrayDelete`.
  */
-export interface KeyValueArray<VALUE> extends Array<VALUE|string> {
+export interface KeyValueArray<VALUE> extends Array<VALUE | string> {
   __brand__: 'array-map';
 }
 
@@ -250,7 +250,7 @@ export interface KeyValueArray<VALUE> extends Array<VALUE|string> {
  * @returns index (always even) of where the value vas set.
  */
 export function keyValueArraySet<V>(
-    keyValueArray: KeyValueArray<V>, key: string, value: V): number {
+  keyValueArray: KeyValueArray<V>, key: string, value: V): number {
   let index = keyValueArrayIndexOf(keyValueArray, key);
   if (index >= 0) {
     // if we found it set it.
@@ -269,7 +269,7 @@ export function keyValueArraySet<V>(
  * @param key The key to locate.
  * @return The `value` stored at the `key` location or `undefined if not found.
  */
-export function keyValueArrayGet<V>(keyValueArray: KeyValueArray<V>, key: string): V|undefined {
+export function keyValueArrayGet<V>(keyValueArray: KeyValueArray<V>, key: string): V | undefined {
   const index = keyValueArrayIndexOf(keyValueArray, key);
   if (index >= 0) {
     // if we found it retrieve it.

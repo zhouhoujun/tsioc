@@ -31,6 +31,7 @@ export * from './refs/container';
 export * from './refs/element';
 export * from './refs/template';
 export * from './refs/view';
+export * from './refs/runnable';
 
 // interfaces
 export * from './interfaces/container';
@@ -44,6 +45,5 @@ export * from './interfaces/chk';
 export * from './util/array';
 export * from './util/stringify';
 
-export * from './runnable';
 export * from './lifecycle';
 export * from './components';

@@ -1,13 +1,15 @@
 import {
-    Token, InjectableMetadata, isArray, getClass,
-    refl, createDecorator, createPropDecorator, createParamDecorator, ActionTypes
+    Token, InjectableMetadata, isArray, getClass, refl, createDecorator, 
+    createPropDecorator, createParamDecorator, ActionTypes
 } from '@tsdi/ioc';
+import { RunnableFactory } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, QueryMetadata, VaildateMetadata
 } from './meta';
 import { AnnotationDef, ComponentDef, DirectiveDef } from '../type';
 import { CompilerFacade } from '../compile/facade';
+import { ComponentRunnableFactory } from '../refs/runnable';
 
 
 /**
@@ -126,7 +128,10 @@ export const Component: Component = createDecorator<ComponentMetadata>('Componen
             ctx.class.setAnnotation(compiler.compileComponent(compRefl));
             next();
         }
-    }
+    },
+    providers: [
+        { provide: RunnableFactory, useExisting: ComponentRunnableFactory }
+    ]
 });
 
 
@@ -320,113 +325,6 @@ export const HostListener: HostListenerPropertyDecorator = createPropDecorator<H
 });
 
 
-// /**
-//  * decorator used to define Request route mapping.
-//  *
-//  * @export
-//  * @interface IHostMappingDecorator
-//  */
-// export interface IHostMappingDecorator {
-//     /**
-//      * use component selector as route or use the component method name as an route.
-//      */
-//     (): ClassMethodDecorator;
-//     /**
-//      * route decorator. define the component method as an route.
-//      *
-//      * @param {string} route route sub path. default use component selector.
-//      * @param {Type<Router>} [parent] the middlewares for the route.
-//      */
-//     (route: string, parent: Type<Router>): ClassDecorator;
-//     /**
-//      * route decorator. define the component method as an route.
-//      *
-//      * @param {string} route route sub path.
-//      * @param {MiddlewareInst[]} [middlewares] the middlewares for the route.
-//      */
-//     (route: string, middlewares?: MiddlewareInst[]): ClassMethodDecorator;
-
-//     /**
-//      * route decorator. define the component method as an route.
-//      *
-//      * @param {string} route route sub path.
-//      * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
-//      *  [parent] set parent route.
-//      *  [middlewares] the middlewares for the route.
-//      */
-//     (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareInst[] }): ClassDecorator;
-//     /**
-//      * route decorator. define the controller method as an route.
-//      *
-//      * @param {string} route route sub path.
-//      * @param {RequestMethod} [method] set request method.
-//      */
-//     (route: string, method: string): MethodDecorator;
-
-//     /**
-//      * route decorator. define the controller method as an route.
-//      *
-//      * @param {string} route route sub path.
-//      * @param {{ middlewares?: MiddlewareInst[], contentType?: string, method?: string}} options
-//      *  [middlewares] the middlewares for the route.
-//      *  [contentType] set request contentType.
-//      *  [method] set request method.
-//      */
-//     (route: string, options: { middlewares: MiddlewareInst[], contentType?: string, method?: string }): MethodDecorator;
-
-//     /**
-//      * route decorator. define the controller method as an route.
-//      *
-//      * @param {RouteMetadata} [metadata] route metadata.
-//      */
-//     (metadata: RouteMappingMetadata): ClassMethodDecorator;
-// }
-
-// /**
-//  * HostMapping decorator
-//  */
-// export const HostMapping: IHostMappingDecorator = createDecorator<RouteMappingMetadata>('HostMapping', {
-//     props: (route: string, arg2?: Type<Router> | MiddlewareInst[] | string | { middlewares: MiddlewareInst[], contentType?: string, method?: string }) => {
-//         if (isArray(arg2)) {
-//             return { route, middlewares: arg2 };
-//         } else if (isString(arg2)) {
-//             return { route, method: arg2 };
-//         } else if (lang.isBaseOf(arg2, Router)) {
-//             return { route, parent: arg2 };
-//         } else {
-//             return { ...arg2, route };
-//         }
-//     },
-//     def: {
-//         class: (ctx, next) => {
-//             ctx.def.annotation = ctx.metadata;
-//             return next();
-//         }
-//     },
-//     design: {
-//         afterAnnoation: (ctx, next) => {
-//             const def = ctx.def as MappingReflect;
-//             const { parent } = def.annotation;
-//             const injector = ctx.injector;
-//             let queue: Middlewares;
-//             if (parent) {
-//                 queue = injector.get(parent);
-//             } else {
-//                 queue = injector.get(HostMappingRoot);
-//             }
-
-//             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
-//             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
-
-//             const mapping = new HostMappingRoute(def, injector, queue.getPath());
-//             injector.onDestroy(() => queue.unuse(mapping));
-//             queue.use(mapping);
-//             next();
-//         }
-//     }
-// });
-
-
 /**
  * Property Binding decorator. define property binding in template.
  *
@@ -541,7 +439,7 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
 export abstract class Query { }
 
 function isDirOrComponent(target: any) {
-    const anTy = refl.get(getClass(target)).getAnnotation<AnnotationDef>().annoType;
+    const anTy = refl.get(getClass(target))?.getAnnotation<AnnotationDef>()?.annoType;
     return anTy === 'component' || anTy === 'directive';
 }
 

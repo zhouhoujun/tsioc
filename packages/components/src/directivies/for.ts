@@ -225,8 +225,7 @@ export class ForDirective<T, U extends IterableType<T> = IterableType<T>> implem
         }
 
         changes.forEachIdentityChange((record: any) => {
-            const viewRef =
-                <EmbeddedViewRef<DirEachContext<T, U>>>this._viewContainer.get(record.currentIndex);
+            const viewRef = this._viewContainer.get(record.currentIndex) as EmbeddedViewRef<DirEachContext<T, U>>;
             viewRef.context.$implicit = record.item;
         });
     }

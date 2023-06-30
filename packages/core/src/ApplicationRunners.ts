@@ -1,4 +1,4 @@
-import { Abstract, Class, InvocationContext, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
+import { Abstract, Class, InvocationContext, ModuleRef, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
 import { Filter } from './filters/filter';
@@ -99,3 +99,14 @@ export abstract class RunnableRef<T = any> {
   abstract invoke(context: InvocationContext): any;
 }
 
+/**
+ * Runnable Factory.
+ */
+@Abstract()
+export abstract class RunnableFactory {
+  /**
+   * runnable factory.
+   * @param typeRef 
+   */
+  abstract create<T>(typeRef: ReflectiveRef<T>, moduleRef?: ModuleRef): RunnableRef<T>
+}

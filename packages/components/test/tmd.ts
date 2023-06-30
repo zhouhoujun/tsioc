@@ -62,7 +62,6 @@ export class AppComponent implements OnInit {
         this.value = '';
     }
 
-    @HostMapping('/getData', 'post')
     message(lable: string, vaule: string) {
         this.label = lable;
         this.value = vaule;
@@ -95,7 +94,7 @@ class CustomeService {
 }
 
 
-@HostMapping()
+
 @Component({
     selector: 'comp',
     template: `
@@ -110,7 +109,6 @@ export class Components {
     @ViewChild('se1') se1: ElementRef<Selector1>;
     @ViewChild('se3') se3: ElementRef<Selector3>;
 
-    @HostMapping('/address', 'post')
     updateAddress(name: string, address: string) {
         this.name = name;
         this.address = address;
