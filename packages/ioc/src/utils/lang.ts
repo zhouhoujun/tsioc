@@ -151,7 +151,6 @@ export function remove<T>(list: T[] | null | undefined, el: T) {
     return idx >= 0 ? list.splice(idx, 1) : null
 }
 
-
 /**
  * last.
  *
@@ -166,8 +165,6 @@ export function last<T>(list: T[]): T {
     }
     return null!
 }
-
-
 
 /**
  * get class name.
@@ -235,6 +232,7 @@ export function forInClassChain(target: Type, express: (token: Type) => any): vo
 export function hasItem(arr: any): boolean {
     return isArray(arr) && arr.length > 0;
 }
+
 /**
  * is base class type of.
  * @param target target type
@@ -342,7 +340,6 @@ export class Defer<T = any> {
     }
 }
 
-
 /**
  * create defer.
  *
@@ -354,7 +351,6 @@ export class Defer<T = any> {
 export function defer<T = any>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
     return Defer.create(then)
 }
-
 
 /**
  * create delay.
@@ -409,7 +405,6 @@ export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | Promi
 export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | PromiseLike<T>))[], filter: (v: T) => boolean): Promise<T> {
     return step(promises, undefined, (v) => !filter(v));
 }
-
 
 /**
  * to promise.

@@ -1,6 +1,6 @@
-import { global, IDuplexStream, IReadableStream, isFormData, ITransformStream, IWritableStream } from '@tsdi/core';
+import { BrotliOptions, global, IDuplexStream, IReadableStream, isFormData, ITransformStream, IWritableStream, PipeSource, ZipOptions } from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
-import { BrotliOptions, PipeSource, StreamAdapter, ZipOptions, ev, isBuffer } from '@tsdi/transport';
+import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform } from 'readable-stream';
 import * as pumpify from 'pumpify';
 import * as FormData from 'form-data';
@@ -8,7 +8,7 @@ import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
 
 @Injectable({ static: true })
-export class BrowserStreamAdapter extends StreamAdapter {
+export class BrowserStreamAdapter extends AbstractStreamAdapter {
 
     async pipeTo(source: PipeSource | Stream, destination: IWritableStream<any>): Promise<void> {
         if (this.isStream(source) && !this.isReadable(source)) {

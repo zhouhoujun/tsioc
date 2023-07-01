@@ -15,6 +15,7 @@ import { createContainerRef } from './container';
 import { createElementRef, unwrapElementRef } from './element';
 import { locateDirectiveOrProvider, storeCleanupWithContext } from './share';
 import { createTemplateRef } from './template';
+import { getNodeInjectable } from './injector';
 
 
 declare let devMode: any;
