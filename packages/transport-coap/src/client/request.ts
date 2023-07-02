@@ -27,14 +27,15 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         const options = req.headers.headers as Partial<Record<OptionName, OptionValue>>;
 
         const requestStream = request({
+            observe: true,
+            confirmable: true,
             ...opts.transportOpts,
             hostname: uri.hostname,
             port: parseInt(uri.port),
             pathname: uri.pathname,
             query: uri.search,
             method: this.tpCoapMethod(req.method),
-            options,
-            headers: options,
+            options
             // host?: string;
             // hostname?: string;
             // port?: number;
@@ -86,6 +87,23 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             headers,
             body: incoming.body,
             payload: incoming.payload
+        }
+    }
+
+    protected write(request: IEndable, req: TransportRequest, callback: (error?: Error | null) => void): void {
+        const data = this.getPayload(req);
+        if (data === null) {
+            request.end();
+            callback();
+        } else {
+            this.streamAdapter.sendbody(
+                this.encoder ? this.encoder.encode(data) : data,
+                request,
+                (err?) => {
+                    request.end();
+                    callback(err);
+                },
+                req.headers.get(hdr.CONTENT_ENCODING) as string);
         }
     }
 

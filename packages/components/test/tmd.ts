@@ -71,21 +71,25 @@ export class AppComponent implements OnInit {
 
 @Directive('selector1, [selector1]')
 export class Selector1 {
-    @Binding() id: string;
-    @Binding() name: string;
+    @Binding()
+    id!: string;
+    @Binding()
+    name!: string;
 }
 
 @Directive('selector3, [selector3]')
 export class Selector3 extends Selector1 {
-    @Binding() address: string;
-    @Binding() phone: string;
+    @Binding()
+    address!: string;
+    @Binding()
+    phone!: string;
 }
 
 @Injectable()
 class CustomeService {
 
     @Inject()
-    injector: Injector;
+    injector!: Injector;
 
     createComponent3() {
         // console.log(this.container.resolve(BuildHandleRegisterer));
@@ -103,11 +107,11 @@ class CustomeService {
     `
 })
 export class Components {
-    name: string;
-    address: string;
+    name: string | undefined;
+    address: string | undefined;
 
-    @ViewChild('se1') se1: ElementRef<Selector1>;
-    @ViewChild('se3') se3: ElementRef<Selector3>;
+    @ViewChild('se1') se1!: ElementRef<Selector1>;
+    @ViewChild('se3') se3!: ElementRef<Selector3>;
 
     updateAddress(name: string, address: string) {
         this.name = name;
@@ -137,11 +141,11 @@ export class SubModule {
 }
 
 @Module({
-    imports:[
+    imports: [
         SubModule
     ],
     declarations: [
-        Text,
+        TextDirective,
         ContainerDirective,
         FieldComponent,
         AppComponent
