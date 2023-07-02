@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IReadableStream, FileAdapter, normalize } from '@tsdi/core';
+import { IReadableStream, FileAdapter, normalize, joinPath } from '@tsdi/core';
 import { PassThrough } from 'readable-stream';
 
 
@@ -14,10 +14,10 @@ export class BrowserFileAdapter extends FileAdapter {
         return normalize(path)
     }
     join(...paths: string[]): string {
-        return paths.join('/')
+        return joinPath(...paths)
     }
     resolve(...paths: string[]): string {
-        return paths.join('/')
+        return joinPath(...paths)
     }
     extname(path: string, zipExt?: string | undefined): string {
         if (zipExt && path.lastIndexOf('.' + zipExt) == path.length - 2 - zipExt.length) {

@@ -11,7 +11,7 @@ import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { GuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinprefix, normalize, Route, Routes } from './route';
+import { joinPath, normalize, Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { RouteMatcher, Router } from './router';
@@ -454,7 +454,7 @@ export class MappingRoute implements Middleware, Endpoint {
         }
 
         if (this.route.interceptors || this.route.guards || this.route.filters) {
-            const route = joinprefix(this.route.path);
+            const route = joinPath(this.route.path);
             const gendpt = new GuardHandler(this.injector, endpoint, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
             setHandlerOptions(gendpt, this.route);
             endpoint = gendpt;

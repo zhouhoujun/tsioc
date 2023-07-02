@@ -6,7 +6,7 @@ import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { TransportParameterDecorator } from '../metadata';
 import { TransportParameter } from '../endpoints/resolver';
-import { joinprefix, normalize } from './route';
+import { joinPath, normalize } from './route';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router';
 import { DELETE, GET, HEAD, PATCH, POST, Protocol, PUT, RequestMethod } from './protocols';
 import { Middleware, MiddlewareFn } from './middleware';
@@ -62,7 +62,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const routers = injector.get(MircoServRouters);
             if (!routers) throw new Execption('has no router!');
 
-            const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
+            const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
 
             defines.forEach(def => {
@@ -142,7 +142,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const routers = injector.get(MircoServRouters);
             if (!routers) throw new Execption(lang.getClassName(parent) + 'has not registered!');
 
-            const prefix = joinprefix(mapping.prefix, mapping.version, mapping.route);
+            const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
 
             defines.forEach(def => {

@@ -9,7 +9,7 @@ import { AbstractGuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinprefix, normalize } from './route';
+import { joinPath, normalize } from './route';
 import { Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
@@ -40,7 +40,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         this.routes = new Map();
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
-        prefix = this.prefix = joinprefix(prefix, mapping.prefix, mapping.version, mapping.route);
+        prefix = this.prefix = joinPath(prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
         this.sortRoutes = factory.typeRef.class.defs
             .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
