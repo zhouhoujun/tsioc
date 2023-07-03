@@ -1,4 +1,4 @@
-import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
+import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders, IReadableStream } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isNil, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer } from '../utils';
@@ -68,7 +68,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
                 // HTTP fetch step 5
                 if (isNil(body)) {
-                    body = this.streamAdapter.pipeline(this.streamAdapter.isStream(incoming) ? incoming : request as IDuplexStream, this.streamAdapter.passThrough(), (err) => {
+                    body = this.pipeline(this.streamAdapter.isReadable(incoming) ? incoming : request as IDuplexStream, (err) => {
                         error = err;
                         ok = !err;
                     });
@@ -204,6 +204,10 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 request.off(ev.TIMEOUT, onError);
             }
         });
+    }
+
+    protected pipeline(stream: IReadableStream, err: (err: any) => void) {
+        return this.streamAdapter.pipeline(stream, this.streamAdapter.passThrough(), err);
     }
 
     hasResponse(req: TRequest) {

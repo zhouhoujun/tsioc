@@ -1,11 +1,11 @@
 import { IncomingHeader, Outgoing, OutgoingHeaders } from '@tsdi/core';
-import { isNumber } from '@tsdi/ioc';
-import { hdr } from '@tsdi/transport';
+import { isArray, isNumber, isString } from '@tsdi/ioc';
+import { hdr, isBuffer } from '@tsdi/transport';
 import { OutgoingMessage } from 'coap';
-import { CoapMethod, OptionName } from 'coap-packet';
+import { OptionName } from 'coap-packet';
 
 
-export class CoapOutgoing extends OutgoingMessage implements Outgoing {
+export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
     socket?: any;
     statusMessage?: string | undefined;
@@ -15,22 +15,11 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
 
 
-    getHeaders?(): OutgoingHeaders {
-        return this._packet.options?.reduceRight((v, c) => v[c.name] = c.value, {} as any) as any;
-    }
-    hasHeader(field: string): boolean {
-        return this._packet.options?.some(o => o.name = field) == true;
-    }
-    getHeader(field: string): IncomingHeader {
-        return this._packet.options?.find(o => o.name = field) as IncomingHeader;
-    }
+    abstract getHeaders(): OutgoingHeaders;
+    abstract hasHeader(field: string): boolean;
+    abstract getHeader(field: string): IncomingHeader;
 
-    removeHeader(field: string): void {
-        const idx = this._packet.options?.findIndex(o => o.name === field);
-        if (isNumber(idx) && idx >= 0) {
-            this._packet.options?.splice(idx, 1);
-        }
-    }
+    abstract removeHeader(field: string): void;
 
     static parse(outgoing: OutgoingMessage): CoapOutgoing {
 
@@ -51,18 +40,29 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
         Object.defineProperty(outgoing, 'setHeader', {
             value(name: any, values: any) {
                 if (transforms[name]) {
-                    setheaderFunc(transforms[name], values);
+                    setheaderFunc(transforms[name], generHead(values));
                 } else if (ignores.indexOf(name) < 0) {
-                    setheaderFunc(name, values)
+                    setheaderFunc(name, generHead(values))
                 }
             }
         });
         return outgoing as CoapOutgoing;
     }
 
+
+}
+
+function generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
+    if(isString(head) && head.indexOf(';')> 0){
+        head = head.substring(0, head.indexOf(';'));
+    }
+    if (isArray(head)) return head.map(v => Buffer.from(v.trim()))
+    if (isBuffer(head) || isNumber(head)) return head;
+    return `${head}`;
 }
 
 const transforms: Record<string, OptionName> = {
+    'content-type': 'Content-Format',
 };
 
 const ignores = [

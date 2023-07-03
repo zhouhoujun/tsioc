@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { AssetContext } from '@tsdi/core';
-import { RespondAdapter, toBuffer } from '@tsdi/transport';
+import { AssetContext, MessageExecption } from '@tsdi/core';
+import { RespondAdapter } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
 import { CoapOutgoing } from './outgoing';
 
@@ -8,7 +8,10 @@ import { CoapOutgoing } from './outgoing';
 export class CoapRespondAdapter extends RespondAdapter<IncomingMessage, CoapOutgoing, number> {
 
     protected override async respondStream(body: any, res: CoapOutgoing, ctx: AssetContext<IncomingMessage, CoapOutgoing, number, any>): Promise<void> {
-        const buffers = await toBuffer(body);
-        res.end(buffers);
+        const streamAdapter = ctx.streamAdapter;
+        if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+        return streamAdapter.pipeTo(body, res).finally(()=>{
+            res.end();
+        });
     }
 }

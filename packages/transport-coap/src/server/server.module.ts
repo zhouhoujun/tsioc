@@ -1,6 +1,6 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, HybridRouter, MicroServRouterModule, RouterModule, StatusVaildator, TransformModule, createTransportEndpoint } from '@tsdi/core';
-import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
+import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
 import { CoapMicroService, CoapServer } from './server';
 import { CoapExecptionHandlers } from './execption.handles';
@@ -10,6 +10,7 @@ import {
 } from './options';
 import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
 import { CoapMicroStatusVaildator, CoapStatusVaildator } from '../status';
+import { CoapRespondAdapter } from './respond';
 
 
 
@@ -39,7 +40,7 @@ const defMicroServOpts = {
     listenOpts: 5683,
     providers: [
         { provide: StatusVaildator, useExisting: CoapMicroStatusVaildator },
-        // { provide: RespondAdapter, useExisting: CoapRespondAdapter }
+        { provide: RespondAdapter, useExisting: CoapRespondAdapter }
     ]
 } as CoapServerOpts;
 
@@ -56,7 +57,7 @@ const defMicroServOpts = {
     providers: [
         { provide: COAP_MICRO_SERV_OPTS, useValue: { ...defMicroServOpts }, asDefault: true },
         CoapMicroStatusVaildator,
-        // CoapRespondAdapter,
+        CoapRespondAdapter,
         CoapExecptionHandlers,
         {
             provide: CoapMicroEndpoint,
@@ -136,7 +137,7 @@ const defServOpts = {
     listenOpts: 5683,
     providers: [
         { provide: StatusVaildator, useExisting: CoapStatusVaildator },
-        // { provide: RespondAdapter, useExisting: CoapRespondAdapter }
+        { provide: RespondAdapter, useExisting: CoapRespondAdapter }
     ]
 } as CoapServerOpts;
 
@@ -153,7 +154,7 @@ const defServOpts = {
     providers: [
         { provide: COAP_SERV_OPTS, useValue: { ...defServOpts }, asDefault: true },
         CoapStatusVaildator,
-        // CoapRespondAdapter,
+        CoapRespondAdapter,
         {
             provide: CoapEndpoint,
             useFactory: (injector: Injector, opts: CoapServerOpts) => {
