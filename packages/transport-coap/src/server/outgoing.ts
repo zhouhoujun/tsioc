@@ -2,6 +2,7 @@ import { IncomingHeader, Outgoing, OutgoingHeaders } from '@tsdi/core';
 import { isNumber } from '@tsdi/ioc';
 import { hdr } from '@tsdi/transport';
 import { OutgoingMessage } from 'coap';
+import { CoapMethod, OptionName } from 'coap-packet';
 
 
 export class CoapOutgoing extends OutgoingMessage implements Outgoing {
@@ -11,7 +12,7 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
     headersSent?: boolean | undefined;
     closed?: boolean;
     destroyed?: boolean;
-    
+
 
 
     getHeaders?(): OutgoingHeaders {
@@ -49,7 +50,9 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
         Object.defineProperty(outgoing, 'setHeader', {
             value(name: any, values: any) {
-                if(ignores.indexOf(name)<0){
+                if (transforms[name]) {
+                    setheaderFunc(transforms[name], values);
+                } else if (ignores.indexOf(name) < 0) {
                     setheaderFunc(name, values)
                 }
             }
@@ -58,6 +61,9 @@ export class CoapOutgoing extends OutgoingMessage implements Outgoing {
     }
 
 }
+
+const transforms: Record<string, OptionName> = {
+};
 
 const ignores = [
     hdr.LAST_MODIFIED,

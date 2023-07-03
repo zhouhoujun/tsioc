@@ -177,7 +177,7 @@ export enum CoapStatuCode {
     HopLimitReached = '5.08'
 }
 
-export const CoapMessages = {
+export const CoapMessages: Record<string, string> = {
     '2.01': 'Created',
     '2.02': 'Deleted',
     '2.03': 'Valid',

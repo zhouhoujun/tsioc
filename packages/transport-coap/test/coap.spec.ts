@@ -77,8 +77,21 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+    // it('fetch json', async () => {
+    //     const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
+
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
+    
+
+    it('fetch json 2', async () => {
+        const res: any = await lastValueFrom(client.send('jsons/data1.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -86,7 +99,7 @@ describe('CoAP Server & CoAP Client', () => {
                 })));
 
         expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        expect(res.test).toEqual('ok');
     })
 
 
@@ -98,8 +111,9 @@ describe('CoAP Server & CoAP Client', () => {
                     return of(err)
                 })
             ));
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual('4.04');
     });
+
 
     it('bad request', async () => {
         const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
@@ -109,12 +123,12 @@ describe('CoAP Server & CoAP Client', () => {
                     return of(err)
                 })
             ));
-        expect(a.status).toEqual(400);
+        expect(a.status).toEqual('4.00');
     })
 
     it('post route response object', async () => {
         const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
-        expect(a.status).toEqual(200);
+        expect(a.status).toEqual('2.02');
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
@@ -127,7 +141,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(b.status).toEqual(200);
+        expect(b.status).toEqual('2.02');
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
     });
@@ -135,7 +149,7 @@ describe('CoAP Server & CoAP Client', () => {
     it('route with request body pipe', async () => {
         const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
         // a.error && console.log(a.error);
-        expect(a.status).toEqual(200);
+        expect(a.status).toEqual('2.02');
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.year).toStrictEqual(50);
@@ -149,7 +163,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.status).toEqual('4.00');
         // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
@@ -160,13 +174,13 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual('5.00');
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
+        expect(a.status).toEqual('2.01');
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
@@ -178,7 +192,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.status).toEqual('4.00');
         // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
@@ -189,13 +203,13 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual('5.00');
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
+        expect(a.status).toEqual('2.01');
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
@@ -207,7 +221,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.status).toEqual('4.00');
         // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
@@ -218,7 +232,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(500);
+        expect(r.status).toEqual('5.00');
         // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
@@ -230,14 +244,14 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(200);
+        expect(r.status).toEqual('2.01');
         expect(r.body).toEqual('working');
     })
 
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
-        expect(r.status).toEqual(200);
+        expect(r.status).toEqual('2.01');
         expect(r.body).toEqual(result);
     })
 
@@ -248,7 +262,7 @@ describe('CoAP Server & CoAP Client', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        expect(r.status).toEqual('2.01');
         expect(r.body).toEqual(result);
     })
 
@@ -259,7 +273,7 @@ describe('CoAP Server & CoAP Client', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        expect(r.status).toEqual('2.01');
         expect(r.body).toEqual(result);
     })
 

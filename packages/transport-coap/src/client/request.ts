@@ -1,9 +1,10 @@
-import { Injectable, Optional, isArray } from '@tsdi/ioc';
+import { Injectable, Optional, isArray, isNil, isNumber } from '@tsdi/ioc';
 import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, TransportEvent, TransportRequest, Incoming } from '@tsdi/core';
-import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer } from '@tsdi/transport';
-import { request, OptionValue, Agent } from 'coap';
+import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer, ctype } from '@tsdi/transport';
+import { request } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';
+import { CoapMessages } from '../status';
 
 @Injectable()
 export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, string> {
@@ -23,19 +24,21 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     protected createRequest(url: string, req: TransportRequest<any>): IEndable {
 
         const opts = req.context.get(COAP_CLIENT_OPTS);
-        const uri = new URL(coaptl.test(url) ? url : `coap://${opts.transportOpts?.hostname ?? 'localhost'}:${opts.transportOpts?.port ?? 5683}/${url}`);
-        const options = req.headers.headers as Partial<Record<OptionName, OptionValue>>;
+        const uri = new URL(coaptl.test(url) ? url : `coap://${opts.transportOpts?.hostname ?? 'localhost'}${opts.transportOpts?.port ? `:${opts.transportOpts?.port}` : ''}/${url}`);
 
-        const requestStream = request({
-            observe: true,
-            confirmable: true,
+        let hostname = uri.hostname;
+        if (hostname.startsWith('[') && hostname.endsWith(']')) {
+            hostname = hostname.substring(1, hostname.length - 1);
+        }
+        const coapreq = request({
             ...opts.transportOpts,
-            hostname: uri.hostname,
-            port: parseInt(uri.port),
+            observe: true,
+            // confirmable: true,
+            hostname,
+            query: uri.search?.substring(1),
+            port: uri.port ? parseInt(uri.port) : undefined,
             pathname: uri.pathname,
-            query: uri.search,
-            method: this.tpCoapMethod(req.method),
-            options
+            method: this.tpCoapMethod(req.method)
             // host?: string;
             // hostname?: string;
             // port?: number;
@@ -55,8 +58,26 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             // contentFormat?: string | number;
             // accept?: string | number;
         });
-        return requestStream as any;
 
+        // coapreq.setOption('Accept', ctype.REQUEST_ACCEPT);
+
+        req.headers.forEach((key, value) => {
+            if (isNil(value)) return;
+            if (transforms[key]) {
+                coapreq.setOption(transforms[key], this.generHead(value));
+            } else if (ignores.indexOf(key) < 0) {
+                coapreq.setOption(key, this.generHead(value))
+            }
+        })
+
+        return coapreq as any;
+
+    }
+
+    protected generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
+        if (isArray(head)) return head.map(v => Buffer.from(v))
+        if (isBuffer(head) || isNumber(head)) return head;
+        return Buffer.from(`${head}`);
     }
 
     protected override getResponseEvenName(): string {
@@ -75,15 +96,15 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         }
     }
 
-    protected parseStatusPacket(incoming: Incoming): StatusPacket<string> {
+    protected parseStatusPacket(incoming: Incoming & { code: string }): StatusPacket<string> {
         const headers: Record<string, IncomingHeader> = {};
         Object.keys(incoming.headers).forEach(n => {
             const value = incoming.headers[n as OptionName];
             headers[n] = isArray(value) ? value.map(v => v.toString()) : (isBuffer(value) ? value.toString() : value ?? undefined);
         });
         return {
-            status: headers[hdr.STATUS] as string,
-            statusText: String(headers[hdr.STATUS_MESSAGE]),
+            status: incoming.code,
+            statusText: headers[hdr.STATUS_MESSAGE] as string ?? CoapMessages[incoming.code] ?? '',
             headers,
             body: incoming.body,
             payload: incoming.payload
@@ -108,5 +129,14 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     }
 
 }
+
+const transforms: Record<string, OptionName> = {
+};
+
+const ignores = [
+    hdr.LAST_MODIFIED,
+    hdr.CACHE_CONTROL
+]
+
 
 const coaptl = /^coap(s)?:\/\//i;

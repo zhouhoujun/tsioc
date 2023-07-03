@@ -140,7 +140,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         if (res.id != id) return;
         const { status, headers: inHeaders, statusText, body: resbody, payload } = this.parseStatusPacket(res);
         const headers = this.parseHeaders(inHeaders, res);
-        let body = resbody ?? payload;
+        let body = resbody ?? payload ?? null;
 
         if (this.vaildator.isEmpty(status)) {
             body = null;

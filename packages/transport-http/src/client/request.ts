@@ -80,10 +80,7 @@ export class HttpRequestAdapter extends StreamRequestAdapter<HttpRequest, HttpEv
         let headers: IncomingHeaders;
         if (incoming instanceof http.IncomingMessage) {
             status = incoming.statusCode ?? 0;
-            statusText = incoming.statusMessage ?? 'OK';
-            if (status !== HttpStatusCode.NoContent) {
-                body = statusText;
-            }
+            statusText = incoming.statusMessage ?? '';
             if (status === 0 && body) {
                 status = 200;
             }

@@ -9,7 +9,7 @@ import {  of } from 'rxjs';
 export class DeviceController {
 
     @Post('/init')
-    req(name: string) {
+    req(@RequestParam() name: string) {
         console.log('DeviceController init:', name);
         return { name };
     }

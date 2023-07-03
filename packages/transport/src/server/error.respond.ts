@@ -41,8 +41,8 @@ export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
         // ENOENT support
         if (ENOENT === err.code) status = vaildator.notFound;
 
-        // default to 500
-        if (!isNumber(status) || !vaildator.isStatus(status)) status = vaildator.serverError;
+        // default to serverError
+        if (!vaildator.isStatus(status)) status = vaildator.serverError;
         // respond
         msg = err.message;
 

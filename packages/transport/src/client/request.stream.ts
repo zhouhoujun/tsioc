@@ -1,7 +1,7 @@
 import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, isNil, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
-import { toBuffer } from '../utils';
+import { isBuffer, toBuffer } from '../utils';
 import { ev, hdr } from '../consts';
 import { RequestAdapter } from './request';
 
@@ -50,7 +50,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 let body: any;
                 const packet = this.parseStatusPacket(incoming);
                 const headers = this.parseHeaders(packet.headers, incoming);
-                body = packet.body ?? packet.payload;
+                body = packet.body ?? packet.payload ?? null;
                 status = packet.status;
                 statusText = packet.statusText;
 
@@ -67,12 +67,12 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 }
 
                 // HTTP fetch step 5
-                body = this.streamAdapter.pipeline(this.streamAdapter.isStream(incoming) ? incoming : request as IDuplexStream, this.streamAdapter.passThrough(), (err) => {
-                    error = err;
-                    ok = !err;
-                });
-
-
+                if (isNil(body)) {
+                    body = this.streamAdapter.pipeline(this.streamAdapter.isStream(incoming) ? incoming : request as IDuplexStream, this.streamAdapter.passThrough(), (err) => {
+                        error = err;
+                        ok = !err;
+                    });
+                }
 
                 if (this.vaildator.isRedirect(status)) {
                     // HTTP fetch step 5.2
@@ -83,8 +83,12 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
                 if (!ok) {
                     if (!error) {
-                        body = await toBuffer(body);
-                        body = new TextDecoder().decode(body);
+                        if (this.streamAdapter.isReadable(body)) {
+                            body = await toBuffer(body);
+                        }
+                        if (isBuffer(body)) {
+                            body = new TextDecoder().decode(body);
+                        }
                     }
                     return observer.error(this.createErrorResponse({
                         url,
