@@ -16,13 +16,7 @@ import { Bodyparser, Content, Json } from '@tsdi/transport';
         ServerModule,
         LoggerModule,
         // CoapClientModule,
-        CoapClientModule.withOption({
-            clientOpts: {
-                transportOpts: {
-                    // agent: 
-                }
-            }
-        }),
+        CoapClientModule,
         MicroServRouterModule.forRoot('coap'),
         CoapServerModule.withOption({
             serverOpts: {
@@ -33,18 +27,7 @@ import { Bodyparser, Content, Json } from '@tsdi/transport';
                     { useExisting: MicroServRouterModule.getToken('coap') }
                 ]
             }
-        }),
-        // CoapMicroServiceModule.withOption({
-        //     // timeout: 1000,
-        //     serverOpts: {
-        //         connectOpts: {
-        //             type: 'udp4'
-        //         },
-        //         listenOpts: {
-        //             port: 2000
-        //         }
-        //     },
-        // })
+        })
     ],
     declarations: [
         DeviceController
@@ -65,15 +48,7 @@ describe('CoAP Server & CoAP Client', () => {
     before(async () => {
         ctx = await Application.run(CoapTestModule);
         injector = ctx.injector;
-        client = injector.resolve(CoapClient, {
-            provide: COAP_CLIENT_OPTS,
-            useValue: {
-                connectOpts: {
-                    type: 'udp4',
-                    port: 2000
-                }
-            } as CoapClientOpts
-        });
+        client = injector.resolve(CoapClient);
     });
 
 

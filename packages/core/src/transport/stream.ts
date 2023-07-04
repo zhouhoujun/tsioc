@@ -350,7 +350,7 @@ export interface IReadableStream<T = any> extends IStream {
 
 export interface IEnd<T = any>  {
     end(cb?: () => void): this;
-    end(data: T, cb?: () => void): this;
+    end(data: T, cb?: (err?: Error | null) => void): this;
     end(str: string, encoding?: BufferEncoding, cb?: () => void): this;
 }
 

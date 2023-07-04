@@ -31,11 +31,11 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
     }
 
     get status(): string {
-        return this.response.code;
+        return this.response.statusCode;
     }
     set status(status: string) {
         this._explicitStatus = true;
-        this.response.code = status;
+        this.response.statusCode = status;
         if (this.body && this.vaildator.isEmpty(status)) this.body = null;
     }
 

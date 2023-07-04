@@ -35,14 +35,12 @@ export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
             value: removeHeader
         });
 
-        const setheaderFunc = outgoing.setHeader.bind(outgoing);
-
         Object.defineProperty(outgoing, 'setHeader', {
             value(name: any, values: any) {
                 if (transforms[name]) {
-                    setheaderFunc(transforms[name], generHead(values));
+                    originSetHeader.apply(this, [transforms[name], generHead(values)]);
                 } else if (ignores.indexOf(name) < 0) {
-                    setheaderFunc(name, generHead(values))
+                    originSetHeader.apply(this, [name, generHead(values)])
                 }
             }
         });
@@ -51,6 +49,9 @@ export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
 
 }
+
+const originSetHeader = OutgoingMessage.prototype.setHeader;
+
 
 function generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
     if(isString(head) && head.indexOf(';')> 0){
@@ -62,7 +63,7 @@ function generHead(head: string | number | readonly string[] | undefined): Buffe
 }
 
 const transforms: Record<string, OptionName> = {
-    'content-type': 'Content-Format',
+    'content-type': 'Content-Format'
 };
 
 const ignores = [

@@ -163,7 +163,6 @@ const defServOpts = {
             asDefault: true,
             deps: [Injector, COAP_SERV_OPTS]
         },
-
         CoapExecptionHandlers,
         CoapServer
     ]

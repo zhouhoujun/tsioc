@@ -1,5 +1,5 @@
 import { Injectable, Optional, isArray, isNil, isNumber, isString } from '@tsdi/ioc';
-import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, TransportEvent, TransportRequest, Incoming, IDuplexStream, IReadableStream } from '@tsdi/core';
+import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, TransportEvent, TransportRequest, Incoming } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer, ctype } from '@tsdi/transport';
 import { request } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
@@ -31,6 +31,8 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             hostname = hostname.substring(1, hostname.length - 1);
         }
         const coapreq = request({
+            // observe: true,
+            accept: ctype.APPL_JSON,
             ...opts.transportOpts,
             hostname,
             query: uri.search?.substring(1),
@@ -57,7 +59,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             // accept?: string | number;
         });
 
-        coapreq.setOption('Accept', ctype.APPL_JSON);
+        // coapreq.setOption('Accept', ctype.APPL_JSON);
 
         req.headers.forEach((key, value) => {
             if (isNil(value)) return;
@@ -97,10 +99,6 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         }
     }
 
-    // protected override pipeline(stream: IReadableStream<any>, err: (err: any) => void): IDuplexStream<any> {
-    //     return stream.pipe(this.streamAdapter.passThrough())
-    // }
-
     protected parseStatusPacket(incoming: Incoming & { code: string, options: any }): StatusPacket<string> {
         const headers: Record<string, IncomingHeader> = {};
         Object.keys(incoming.headers).forEach(n => {
@@ -112,7 +110,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             statusText: headers[hdr.STATUS_MESSAGE] as string ?? CoapMessages[incoming.code] ?? '',
             headers,
             body: null,
-            payload: null
+            payload: incoming.payload?.length ? incoming.payload : null
         }
     }
 

@@ -1,4 +1,4 @@
-import { AssetContext, HEAD, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
+import { AssetContext, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
@@ -71,7 +71,7 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         if (isBuffer(body)) return res.end(body);
         if (isString(body)) return res.end(Buffer.from(body));
 
-        if (ctx.streamAdapter.isStream(body)) {
+        if (ctx.streamAdapter.isReadable(body)) {
             return await this.respondStream(body, res, ctx);
         }
 
@@ -81,10 +81,11 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
             ctx.length = Buffer.byteLength(body)
         }
         res.end(body);
+
         return res
     }
 
-    protected respondStream(body: any, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<void> {
+    protected respondStream(body: IReadableStream, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<void> {
         const streamAdapter = ctx.streamAdapter;
         if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
         return streamAdapter.pipeTo(body, res);
