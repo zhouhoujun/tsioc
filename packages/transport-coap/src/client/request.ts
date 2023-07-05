@@ -63,8 +63,9 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
 
         req.headers.forEach((key, value) => {
             if (isNil(value)) return;
-            if (transforms[key]) {
-                coapreq.setOption(transforms[key], this.generHead(value));
+            const lower = key.toLowerCase();
+            if (transforms[lower]) {
+                coapreq.setOption(transforms[lower], this.generHead(value));
             } else if (ignores.indexOf(key) < 0) {
                 coapreq.setOption(key, this.generHead(value))
             }

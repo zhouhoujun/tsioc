@@ -15,7 +15,7 @@ export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
 
 
-    abstract getHeaders(): OutgoingHeaders;
+    // abstract getHeaders(): OutgoingHeaders;
     abstract hasHeader(field: string): boolean;
     abstract getHeader(field: string): IncomingHeader;
 
@@ -36,11 +36,12 @@ export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
         });
 
         Object.defineProperty(outgoing, 'setHeader', {
-            value(name: any, values: any) {
-                if (transforms[name]) {
-                    originSetHeader.apply(this, [transforms[name], generHead(values)]);
+            value(name: string, values: any) {
+                const lower = name.toLowerCase();
+                if (transforms[lower]) {
+                    originSetHeader.apply(this, [transforms[lower], generHead(values)]);
                 } else if (ignores.indexOf(name) < 0) {
-                    originSetHeader.apply(this, [name, generHead(values)])
+                    originSetHeader.apply(this, [name as OptionName, generHead(values)])
                 }
             }
         });
@@ -54,7 +55,7 @@ const originSetHeader = OutgoingMessage.prototype.setHeader;
 
 
 function generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
-    if(isString(head) && head.indexOf(';')> 0){
+    if (isString(head) && head.indexOf(';') > 0) {
         head = head.substring(0, head.indexOf(';'));
     }
     if (isArray(head)) return head.map(v => Buffer.from(v.trim()))
