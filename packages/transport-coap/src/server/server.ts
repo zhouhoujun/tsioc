@@ -4,7 +4,7 @@ import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi
 import { InjectLog, Logger } from '@tsdi/logs';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
-import { Server, IncomingMessage, OutgoingMessage } from 'coap';
+import { createServer, Server, IncomingMessage, OutgoingMessage } from 'coap';
 import { COAP_MICRO_SERV_OPTS, COAP_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapEndpoint, CoapMicroEndpoint } from './endpoint';
 import { CoapOutgoing } from './outgoing';
@@ -49,8 +49,9 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
     }
 
     protected async onStartup(): Promise<any> {
-        this._server = this.createServer(this.options);
+        this._server = createServer(this.options.connectOpts);
     }
+    
     protected async onStart(): Promise<any> {
         if (!this._server) throw new InternalServerExecption();
 
@@ -68,10 +69,6 @@ export class CoapMicroService extends MircoServer<AssetContext, Outgoing> implem
     protected async onShutdown(): Promise<any> {
         if (!this._server) return;
         await promisify(this._server.close, this._server)();
-    }
-
-    protected createServer(opts: CoapServerOpts): Server {
-        return new Server(opts.connectOpts)
     }
 
     /**

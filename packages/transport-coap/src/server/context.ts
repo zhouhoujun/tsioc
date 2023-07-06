@@ -1,5 +1,5 @@
 import { Incoming } from '@tsdi/core';
-import { isNumber } from '@tsdi/ioc';
+import { EMPTY_OBJ, isNumber } from '@tsdi/ioc';
 import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
 import { CoapOutgoing } from './outgoing';
@@ -17,8 +17,8 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port } = isNumber(this.serverOptions.listenOpts) ? { port: this.serverOptions.listenOpts, host: LOCALHOST } : this.serverOptions.listenOpts!;
-            const baseUrl = new URL(`${this.protocol}://${host ?? LOCALHOST}:${port ?? 3000}`);
+            const { host, port } = isNumber(this.serverOptions.listenOpts) ? { port: this.serverOptions.listenOpts, host: LOCALHOST } : this.serverOptions.listenOpts ?? EMPTY_OBJ;
+            const baseUrl = new URL(`${this.protocol}://${host ?? LOCALHOST}${port ? ':' + port : ''}`);
             const uri = new URL(url, baseUrl);
             return uri;
         }

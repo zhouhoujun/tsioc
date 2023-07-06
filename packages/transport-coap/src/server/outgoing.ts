@@ -1,4 +1,4 @@
-import { IncomingHeader, Outgoing, OutgoingHeaders } from '@tsdi/core';
+import { IncomingHeader, Outgoing } from '@tsdi/core';
 import { isArray, isNumber, isString } from '@tsdi/ioc';
 import { hdr, isBuffer } from '@tsdi/transport';
 import { OutgoingMessage } from 'coap';

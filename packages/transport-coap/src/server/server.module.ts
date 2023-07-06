@@ -37,7 +37,6 @@ const defMicroServOpts = {
         Json,
         Bodyparser
     ],
-    listenOpts: 5683,
     providers: [
         { provide: StatusVaildator, useExisting: CoapMicroStatusVaildator },
         { provide: RespondAdapter, useExisting: CoapRespondAdapter }
@@ -134,7 +133,6 @@ const defServOpts = {
         Json,
         Bodyparser
     ],
-    listenOpts: 5683,
     providers: [
         { provide: StatusVaildator, useExisting: CoapStatusVaildator },
         { provide: RespondAdapter, useExisting: CoapRespondAdapter }

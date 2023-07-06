@@ -26,18 +26,19 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         const opts = req.context.get(COAP_CLIENT_OPTS);
         const uri = new URL(coaptl.test(url) ? url : `coap://${opts.transportOpts?.hostname ?? 'localhost'}${opts.transportOpts?.port ? `:${opts.transportOpts?.port}` : ''}/${url}`);
 
-        let hostname = uri.hostname;
-        if (hostname.startsWith('[') && hostname.endsWith(']')) {
-            hostname = hostname.substring(1, hostname.length - 1);
+        let host = uri.hostname;
+        if (host.startsWith('[') && host.endsWith(']')) {
+            host = host.substring(1, host.length - 1);
         }
-        const coapreq = request({
+
+        const options = {
             // observe: true,
+            confirmable: true,
             accept: ctype.APPL_JSON,
             ...opts.transportOpts,
-            hostname,
-            query: uri.search?.substring(1),
-            port: uri.port ? parseInt(uri.port) : undefined,
+            host,
             pathname: uri.pathname,
+            query: uri.search?.substring(1),
             method: this.tpCoapMethod(req.method)
             // host?: string;
             // hostname?: string;
@@ -57,9 +58,12 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             // token?: Buffer;
             // contentFormat?: string | number;
             // accept?: string | number;
-        });
+        };
+        if (uri.port) {
+            options.port = parseInt(uri.port);
+        }
 
-        // coapreq.setOption('Accept', ctype.APPL_JSON);
+        const coapreq = request(options);
 
         req.headers.forEach((key, value) => {
             if (isNil(value)) return;
@@ -76,7 +80,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     }
 
     protected generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
-        if(isString(head) && head.indexOf(';')> 0){
+        if (isString(head) && head.indexOf(';') > 0) {
             head = head.substring(0, head.indexOf(';'));
         }
         if (isArray(head)) return head.map(v => Buffer.from(v.trim()))
