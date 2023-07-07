@@ -1,9 +1,8 @@
 import { IncomingHeader, Outgoing } from '@tsdi/core';
-import { isArray, isNumber, isString } from '@tsdi/ioc';
-import { ctype, hdr, isBuffer } from '@tsdi/transport';
+import { isNumber } from '@tsdi/ioc';
 import { OutgoingMessage } from 'coap';
 import { OptionName } from 'coap-packet';
-import { ignores, transforms } from '../trans';
+import { ignores, transHead, transforms } from '../trans';
 
 
 export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
@@ -40,9 +39,9 @@ export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
             value(name: string, values: any) {
                 const lower = name.toLowerCase();
                 if (transforms[lower]) {
-                    originSetHeader.apply(this, [transforms[lower], generHead(values)]);
+                    originSetHeader.apply(this, [transforms[lower], transHead(values, name)]);
                 } else if (!ignores[name]) {
-                    originSetHeader.apply(this, [name as OptionName, generHead(values)])
+                    originSetHeader.apply(this, [name as OptionName, transHead(values, name)])
                 }
             }
         });
@@ -54,15 +53,6 @@ export abstract class CoapOutgoing extends OutgoingMessage implements Outgoing {
 
 const originSetHeader = OutgoingMessage.prototype.setHeader;
 
-
-function generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
-    if (isString(head) && head.startsWith(ctype.APPL_JSON + ';')) {
-        head = ctype.APPL_JSON
-    }
-    if (isArray(head)) return head.map(v => Buffer.from(v.trim()))
-    if (isBuffer(head) || isNumber(head) || isString(head)) return head;
-    return `${head}`;
-}
 
 
 function hasHeader(this: OutgoingMessage, field: string): boolean {

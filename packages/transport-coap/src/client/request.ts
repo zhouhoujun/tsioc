@@ -5,7 +5,7 @@ import { request } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';
 import { CoapMessages } from '../status';
-import { $coapurl, ignores, transforms } from '../trans';
+import { $coapurl, ignores, transHead, transforms } from '../trans';
 
 @Injectable()
 export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, string> {
@@ -70,9 +70,9 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             if (isNil(value)) return;
             const lower = key.toLowerCase();
             if (transforms[lower]) {
-                coapreq.setOption(transforms[lower], this.generHead(value));
+                coapreq.setOption(transforms[lower], transHead(value, key));
             } else if (!ignores[key]) {
-                coapreq.setOption(key, this.generHead(value))
+                coapreq.setOption(key, transHead(value, key))
             }
         })
 
@@ -80,14 +80,6 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
 
     }
 
-    protected generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
-        if (isString(head) && head.startsWith(ctype.APPL_JSON + ';')) {
-            head = ctype.APPL_JSON
-        }
-        if (isArray(head)) return head.map(v => Buffer.from(v.trim()))
-        if (isBuffer(head) || isNumber(head) || isString(head)) return head;
-        return `${head}`;
-    }
 
     protected override getResponseEvenName(): string {
         return ev.RESPONSE;
