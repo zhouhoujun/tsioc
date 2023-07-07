@@ -1,5 +1,5 @@
 import { MessageExecption, ENOENT, AssetContext } from '@tsdi/core';
-import { Injectable, isFunction, isNumber } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 
 
@@ -24,11 +24,7 @@ export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
         const res = context.response;
 
         // first unset all headers
-        if (isFunction(res.getHeaderNames)) {
-            res.getHeaderNames().forEach((name: string) => res.removeHeader(name))
-        } else {
-            (res as any)._headers = {} // Node < 7.7
-        }
+        context.removeHeaders();
 
         // then set those specified
         if (err.headers) context.setHeader(err.headers);

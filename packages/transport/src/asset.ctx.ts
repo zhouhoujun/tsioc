@@ -2,7 +2,7 @@ import {
     OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, AssetContext, EndpointInvokeOpts,
     normalize, StatusVaildator, StreamAdapter, FileAdapter
 } from '@tsdi/core';
-import { Abstract, Injector, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';
@@ -315,11 +315,13 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     getHeader(field: string): string {
-        field = field.toLowerCase();
+        field = this.toHeaderName(field);
         let h: IncomingHeader;
-        switch (field = field.toLowerCase()) {
+        switch (field) {
             case 'referer':
             case 'referrer':
+            case 'Referer':
+            case 'Referrer':
                 h = this.request.headers.referrer ?? this.request.headers.referr;
                 break;
             default:
@@ -328,6 +330,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
         if (isNil(h)) return '';
         return isArray(h) ? h[0] : String(h);
+    }
+
+    protected toHeaderName(field: string) {
+        return field.toLowerCase();
     }
 
 
@@ -832,7 +838,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     /**
-     * Remove header `field`.
+     * Remove header `field` of response.
      *
      * @param {String} name
      * @api public
@@ -840,6 +846,22 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     removeHeader(field: string): void {
         if (this.sent) return;
         this.response.removeHeader(field)
+    }
+
+    /**
+     * Remove all header of response.
+     * @api public
+     */
+    removeHeaders(): void {
+        if (this.sent) return;
+        // first unset all headers
+        const res = this.response;
+        if (isFunction(res.getHeaderNames)) {
+            res.getHeaderNames().forEach((name: string) => res.removeHeader(name))
+        } else if ((res as any)._headers) {
+            (res as any)._headers = {} // Node < 7.7
+        }
+
     }
 
     /**

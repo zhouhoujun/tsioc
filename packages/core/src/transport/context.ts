@@ -288,6 +288,13 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
     abstract removeHeader(field: string): void;
 
     /**
+     * Remove all response headers
+     *
+     * @api public
+     */
+    abstract removeHeaders(): void;
+
+    /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
      * If there is no request body, `null` is returned.

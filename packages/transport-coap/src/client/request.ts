@@ -5,6 +5,7 @@ import { request } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';
 import { CoapMessages } from '../status';
+import { $coapurl, ignores, transforms } from '../trans';
 
 @Injectable()
 export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, TransportEvent, string> {
@@ -24,7 +25,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     protected createRequest(url: string, req: TransportRequest<any>): IEndable {
 
         const opts = req.context.get(COAP_CLIENT_OPTS);
-        const uri = new URL(coaptl.test(url) ? url : `coap://${opts.transportOpts?.hostname ?? 'localhost'}${opts.transportOpts?.port ? `:${opts.transportOpts?.port}` : ''}/${url}`);
+        const uri = new URL($coapurl.test(url) ? url : `coap://${opts.transportOpts?.hostname ?? 'localhost'}${opts.transportOpts?.port ? `:${opts.transportOpts?.port}` : ''}/${url}`);
 
         let host = uri.hostname;
         if (host.startsWith('[') && host.endsWith(']')) {
@@ -70,7 +71,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             const lower = key.toLowerCase();
             if (transforms[lower]) {
                 coapreq.setOption(transforms[lower], this.generHead(value));
-            } else if (ignores.indexOf(key) < 0) {
+            } else if (!ignores[key]) {
                 coapreq.setOption(key, this.generHead(value))
             }
         })
@@ -80,11 +81,11 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     }
 
     protected generHead(head: string | number | readonly string[] | undefined): Buffer | string | number | Buffer[] {
-        if (isString(head) && head.indexOf(';') > 0) {
-            head = head.substring(0, head.indexOf(';'));
+        if (isString(head) && head.startsWith(ctype.APPL_JSON + ';')) {
+            head = ctype.APPL_JSON
         }
         if (isArray(head)) return head.map(v => Buffer.from(v.trim()))
-        if (isBuffer(head) || isNumber(head)) return head;
+        if (isBuffer(head) || isNumber(head) || isString(head)) return head;
         return `${head}`;
     }
 
@@ -137,15 +138,3 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     }
 
 }
-
-const transforms: Record<string, OptionName> = {
-    'content-type': 'Content-Format'
-};
-
-const ignores = [
-    hdr.LAST_MODIFIED,
-    hdr.CACHE_CONTROL
-]
-
-
-const coaptl = /^coap(s)?:\/\//i;

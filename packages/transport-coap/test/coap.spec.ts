@@ -52,17 +52,17 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
 
-    // it('fetch json', async () => {
-    //     const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch json', async () => {
+        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(isArray(res.features)).toBeTruthy();
-    // })
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
     
 
     it('fetch json 2', async () => {
