@@ -16,7 +16,7 @@ export class AmqpIncoming extends Readable implements Incoming<amqp.Channel> {
     readonly url: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<amqp.Channel>, private packet: Packet) {
+    constructor(readonly session: TransportSession<amqp.Channel>, private packet: Packet<Buffer>) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -43,11 +43,11 @@ export class AmqpIncoming extends Readable implements Incoming<amqp.Channel> {
     _read(size: number): void {
         const end = this._payloadIndex + size;
         const start = this._payloadIndex;
-        const payload = this.packet.payload;
+        const payload = this.packet.payload as Buffer;
         let buf: any = null
 
         if (payload != null && start < payload.length) {
-            buf = payload.slice(start, end)
+            buf = payload.subarray(start, end)
         }
 
         this._payloadIndex = end

@@ -16,7 +16,7 @@ export class MqttIncoming extends Readable implements Incoming<MqttClient> {
     readonly url: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<MqttClient>, private packet: Packet) {
+    constructor(readonly session: TransportSession<MqttClient>, private packet: Packet<Buffer>) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -47,7 +47,7 @@ export class MqttIncoming extends Readable implements Incoming<MqttClient> {
         let buf: any = null
 
         if (payload != null && start < payload.length) {
-            buf = payload.slice(start, end)
+            buf = payload.subarray(start, end)
         }
 
         this._payloadIndex = end

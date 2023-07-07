@@ -18,7 +18,7 @@ export class NatsIncoming extends Readable implements Incoming<NatsConnection> {
     readonly originalUrl: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<NatsConnection>, private packet: Packet) {
+    constructor(readonly session: TransportSession<NatsConnection>, private packet: Packet<Buffer>) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -50,7 +50,7 @@ export class NatsIncoming extends Readable implements Incoming<NatsConnection> {
         let buf: any = null
 
         if (payload != null && start < payload.length) {
-            buf = payload.slice(start, end)
+            buf = payload.subarray(start, end)
         }
 
         this._payloadIndex = end

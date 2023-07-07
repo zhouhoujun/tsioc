@@ -196,7 +196,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         if (this.contentLength == null) {
             const i = buffer.indexOf(this.delimiter);
             if (i !== -1) {
-                const rawContentLength = buffer.slice(0, i).toString();
+                const rawContentLength = buffer.subarray(0, i).toString();
                 this.contentLength = parseInt(rawContentLength, 10);
 
                 if (isNaN(this.contentLength)) {
@@ -204,7 +204,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                     this.buffer = null;
                     throw new PacketLengthException(rawContentLength);
                 }
-                this.buffer = buffer.slice(i + 1);
+                this.buffer = buffer.subarray(i + 1);
             }
         }
 
@@ -213,8 +213,8 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
             if (length === this.contentLength) {
                 this.handleMessage(this.buffer);
             } else if (length > this.contentLength) {
-                const message = this.buffer.slice(0, this.contentLength);
-                const rest = this.buffer.slice(this.contentLength);
+                const message = this.buffer.subarray(0, this.contentLength);
+                const rest = this.buffer.subarray(this.contentLength);
                 this.handleMessage(message);
                 this.handleData(rest);
             }
@@ -231,7 +231,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         if (data.indexOf(this._header) == 0) {
             let message: Packet;
-            const str = data.slice(1).toString();
+            const str = data.subarray(1).toString();
             try {
                 message = JSON.parse(str);
             } catch (e) {
@@ -251,7 +251,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
-                const payload = data.slice(3);
+                const payload = data.subarray(3);
                 let pkg = this.cachePkg.get(id);
                 if (pkg) {
                     pkg.payload = payload;
@@ -325,7 +325,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         if (chl.contentLength == null) {
             const i = buffer.indexOf(this.delimiter);
             if (i !== -1) {
-                const rawContentLength = buffer.slice(0, i).toString();
+                const rawContentLength = buffer.subarray(0, i).toString();
                 chl.contentLength = parseInt(rawContentLength, 10);
 
                 if (isNaN(chl.contentLength)) {
@@ -333,7 +333,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                     chl.buffer = null;
                     throw new PacketLengthException(rawContentLength);
                 }
-                chl.buffer = buffer.slice(i + 1);
+                chl.buffer = buffer.subarray(i + 1);
             }
         }
 
@@ -342,8 +342,8 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             if (length === chl.contentLength) {
                 this.handleMessage(chl, chl.buffer);
             } else if (length > chl.contentLength) {
-                const message = chl.buffer.slice(0, chl.contentLength);
-                const rest = chl.buffer.slice(chl.contentLength);
+                const message = chl.buffer.subarray(0, chl.contentLength);
+                const rest = chl.buffer.subarray(chl.contentLength);
                 this.handleMessage(chl, message);
                 this.handleData(chl, rest);
             }
@@ -360,7 +360,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         if (data.indexOf(this._header) == 0) {
             let message: Packet;
-            const str = data.slice(1).toString();
+            const str = data.subarray(1).toString();
             try {
                 message = JSON.parse(str);
             } catch (e) {
@@ -380,7 +380,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
-                const payload = data.slice(3);
+                const payload = data.subarray(3);
                 let pkg = chl.pkgs.get(id);
                 if (pkg) {
                     pkg.payload = payload;

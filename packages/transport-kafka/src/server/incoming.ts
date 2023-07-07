@@ -18,7 +18,7 @@ export class KafkaIncoming extends Readable implements Incoming<KafkaTransport> 
     readonly topic: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<KafkaTransport>, private packet: Packet) {
+    constructor(readonly session: TransportSession<KafkaTransport>, private packet: Packet<Buffer>) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -51,7 +51,7 @@ export class KafkaIncoming extends Readable implements Incoming<KafkaTransport> 
         let buf: any = null
 
         if (payload != null && start < payload.length) {
-            buf = payload.slice(start, end)
+            buf = payload.subarray(start, end)
         }
 
         this._payloadIndex = end

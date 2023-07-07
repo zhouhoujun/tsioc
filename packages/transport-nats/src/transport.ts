@@ -186,8 +186,8 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             if (length === chl.contentLength) {
                 this.handleMessage(chl, id, chl.buffer);
             } else if (length > chl.contentLength) {
-                const message = chl.buffer.slice(0, chl.contentLength);
-                const rest = chl.buffer.slice(chl.contentLength);
+                const message = chl.buffer.subarray(0, chl.contentLength);
+                const rest = chl.buffer.subarray(chl.contentLength);
                 this.handleMessage(chl, id, message);
                 this.handleData(chl, id, rest);
             }
