@@ -1,7 +1,7 @@
 import {
     BadRequestExecption, ExecptionHandler, ForbiddenExecption, InternalServerExecption,
     MethodNotAllowedExecption, NotAcceptableExecption, NotImplementedExecption, BadGatewayExecption,
-    ServiceUnavailableExecption, GatewayTimeoutExecption, NotSupportedExecption,
+    ServiceUnavailableExecption, GatewayTimeoutExecption, NotSupportedExecption, RequestTimeoutExecption,
     NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, HttpStatusCode, AssetContext
 } from '@tsdi/core';
 import { Abstract, ArgumentExecption, MissingParameterExecption } from '@tsdi/ioc';
@@ -54,6 +54,14 @@ export abstract class TransportExecptionHandlers {
         execption.status = HttpStatusCode.NotAcceptable;
         this.adpater.respond(ctx, execption)
     }
+
+
+    @ExecptionHandler(RequestTimeoutExecption)
+    timeoutExecpotion(ctx: AssetContext, execption: NotAcceptableExecption) {
+        execption.status = HttpStatusCode.RequestTimeout;
+        this.adpater.respond(ctx, execption)
+    }
+
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: AssetContext, execption: UnsupportedMediaTypeExecption) {

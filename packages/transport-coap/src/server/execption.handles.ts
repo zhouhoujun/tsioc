@@ -1,7 +1,7 @@
 import {
     AssetContext, BadGatewayExecption, BadRequestExecption, ExecptionHandler, ForbiddenExecption,
     GatewayTimeoutExecption, InternalServerExecption, MethodNotAllowedExecption, NotAcceptableExecption,
-    NotFoundExecption, NotImplementedExecption, NotSupportedExecption, ServiceUnavailableExecption,
+    NotFoundExecption, NotImplementedExecption, NotSupportedExecption, RequestTimeoutExecption, ServiceUnavailableExecption,
     UnauthorizedExecption, UnsupportedMediaTypeExecption
 } from '@tsdi/core';
 import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
@@ -48,12 +48,18 @@ export class CoapExecptionHandlers {
         this.adpater.respond(ctx, execption)
     }
 
-
     @ExecptionHandler(NotAcceptableExecption)
     notAcceptableExecption(ctx: AssetContext, execption: NotAcceptableExecption) {
         execption.status = CoapStatuCode.NotAcceptable;
         this.adpater.respond(ctx, execption)
     }
+
+    @ExecptionHandler(RequestTimeoutExecption)
+    timeoutExecpotion(ctx: AssetContext, execption: NotAcceptableExecption) {
+        execption.status = CoapStatuCode.NotFound;
+        this.adpater.respond(ctx, execption)
+    }
+
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
     unsupported(ctx: AssetContext, execption: UnsupportedMediaTypeExecption) {

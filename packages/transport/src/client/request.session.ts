@@ -1,6 +1,6 @@
 import {
     TransportEvent,TransportErrorResponse, Packet, Incoming,  TransportHeaderResponse, TransportRequest, TransportResponse,
-     ResHeaders, TimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
+     ResHeaders, RequestTimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
 } from '@tsdi/core';
 import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
@@ -56,7 +56,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                         observer.complete();
                     } else if (opts.timeout) {
                         timeout = setTimeout(() => {
-                            const error = new TimeoutExecption();
+                            const error = new RequestTimeoutExecption();
                             const res = this.createErrorResponse({
                                 url,
                                 error,

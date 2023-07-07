@@ -161,14 +161,14 @@ export class UnsupportedMediaTypeExecption extends MessageExecption {
 }
 
 /**
- * Timeout request execption.
+ * Request Timeout execption.
  *
  * @export
  * @class TimeoutExecption
  * @extends {MessageExecption}
  */
-export class TimeoutExecption extends MessageExecption {
-    constructor(message = 'Timeout', status?: number | string) {
+export class RequestTimeoutExecption extends MessageExecption {
+    constructor(message = 'Request Timeout', status?: number | string) {
         super(message, status)
     }
 }
