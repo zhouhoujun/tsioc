@@ -48,8 +48,8 @@ const defClientOpts = {
 export class CoapClientModule {
 
     /**
-     * import CoAP micro service module with options.
-     * @param options micro service module options.
+     * import CoAP micro service client module with options.
+     * @param options micro service client module options.
      * @returns 
      */
     static withOption(options: {

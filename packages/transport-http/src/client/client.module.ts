@@ -52,6 +52,11 @@ const defClientOpts = {
 })
 export class HttpModule {
 
+    /**
+     * import http client module with options.
+     * @param options http client module options.
+     * @returns 
+     */
     static withOption(options: {
         /**
          * client options.

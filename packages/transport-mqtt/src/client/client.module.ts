@@ -60,8 +60,8 @@ const defClientOpts = {
 export class MqttClientModule {
 
     /**
-     * import mqtt micro service module with options.
-     * @param options micro service module options.
+     * import mqtt micro service client module with options.
+     * @param options micro service client module options.
      * @returns 
      */
     static withOption(options: {

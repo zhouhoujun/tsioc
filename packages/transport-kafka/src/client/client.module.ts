@@ -63,8 +63,8 @@ const defClientOpts = {
 })
 export class KafkaClientModule {
     /**
-     * import Kafka micro service module with options.
-     * @param options micro service module options.
+     * import Kafka micro service client module with options.
+     * @param options micro service client module options.
      * @returns 
      */
     static withOption(options: {

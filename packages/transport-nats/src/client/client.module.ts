@@ -61,8 +61,8 @@ const defClientOpts = {
 export class NatsClientModule {
 
     /**
-     * import NATS micro service module with options.
-     * @param options micro service module options.
+     * import NATS micro service client module with options.
+     * @param options micro service client module options.
      * @returns 
      */
     static withOption(options: {

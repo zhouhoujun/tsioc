@@ -45,7 +45,7 @@ export const TCP_SERV_OPTS = tokenId<TcpServerOpts>('TCP_SERV_OPTS');
 export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor<Incoming, Outgoing>[]>('TCP_SERV_INTERCEPTORS');
 
 /**
- * TCP execption filters.
+ * TCP filters.
  */
 export const TCP_SERV_FILTERS = tokenId<Filter<Incoming, Outgoing>[]>('TCP_SERV_FILTERS');
 

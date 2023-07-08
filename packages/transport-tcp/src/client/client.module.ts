@@ -61,7 +61,7 @@ const defClientOpts = {
 export class TcpClientModule {
 
     /**
-     * import tcp server module with options.
+     * import tcp client module with options.
      * @param options module options.
      * @returns 
      */
