@@ -1,9 +1,10 @@
-import { TransportContext, InternalServerExecption, Server, ListenOpts, TransportSession, Packet, MESSAGE } from '@tsdi/core';
+import { TransportContext, InternalServerExecption, Server, ListenOpts, TransportSession, Packet, MESSAGE, HYBRID_HOST } from '@tsdi/core';
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Server as SocketServer, WebSocketServer } from 'ws';
-import * as https from 'http';
+import * as net from 'net';
+import * as tls from 'tls';
 import { Duplex } from 'stream';
 import { Subscription, finalize } from 'rxjs';
 import { WS_SERV_OPTS, WsServerOpts } from './options';
@@ -31,8 +32,25 @@ export class WsServer extends Server<TransportContext> {
 
 
     protected async onStartup(): Promise<any> {
-        const serverOpts = this.options.serverOpts;
-        this.serv = !(serverOpts?.port || serverOpts?.server) || serverOpts?.noServer? new WebSocketServer(serverOpts) : new SocketServer(this.options.serverOpts);
+        const serverOpts = {
+            ...this.options.serverOpts
+        };
+        if (!serverOpts.server && !serverOpts.port) {
+            const hostServer = this.endpoint.injector.get(HYBRID_HOST, null);
+            if (hostServer && (
+                hostServer instanceof net.Server
+                || hostServer instanceof tls.Server
+            )) {
+                serverOpts.server = hostServer as any;
+            } else {
+                serverOpts.port = 3000;
+            }
+        }
+        if (serverOpts.server) {
+            serverOpts.server.on(ev.CLOSE, () => this.close());
+        }
+        this.options.serverOpts = serverOpts;
+        this.serv = serverOpts?.noServer ? new WebSocketServer(serverOpts) : new SocketServer(this.options.serverOpts);
     }
 
     protected async onStart(): Promise<any> {
@@ -69,7 +87,7 @@ export class WsServer extends Server<TransportContext> {
         if (server.listening) {
             return this;
         }
-        const isSecure = server instanceof https.Server;
+        const isSecure = server instanceof tls.Server;
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {

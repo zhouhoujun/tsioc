@@ -35,12 +35,12 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
     let injector: Injector;
 
     let client: Http;
-    let natsClient: WsClient
+    let wsClient: WsClient
 
     before(async () => {
         ctx = await Application.run(WsTestModule);
         injector = ctx.injector;
-        natsClient = injector.get(WsClient);
+        wsClient = injector.get(WsClient);
         client = injector.get(Http);
     });
 
@@ -231,7 +231,7 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(natsClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(wsClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -242,7 +242,7 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(natsClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(wsClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);

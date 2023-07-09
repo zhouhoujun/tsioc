@@ -15,7 +15,7 @@ import { WsHandler } from './handler';
  * WS client default options.
  */
 const defClientOpts = {
-    url: 'ws://localhost',
+    url: 'ws://localhost:3000',
     transportOpts: {
         delimiter: '#',
         maxSize: 10 * 1024 * 1024,

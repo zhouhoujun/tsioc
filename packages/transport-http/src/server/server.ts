@@ -1,5 +1,5 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
-import { MiddlewareServer, ModuleLoader, ListenService, InternalServerExecption, HTTP_LISTEN_OPTS } from '@tsdi/core';
+import { MiddlewareServer, ModuleLoader, ListenService, InternalServerExecption, HTTP_LISTEN_OPTS, HYBRID_HOST } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -92,14 +92,15 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
         const option = opts.serverOpts ?? EMPTY_OBJ;
         const isSecure = this.isSecure;
         if (opts.majorVersion === 2) {
-            const server = this._server = isSecure ? http2.createSecureServer(option as http2.SecureServerOptions)
+            this._server = isSecure ? http2.createSecureServer(option as http2.SecureServerOptions)
                 : http2.createServer(option as http2.ServerOptions);
-            return server;
+
         } else {
-            const server = this._server = isSecure ? https.createServer(option as http.ServerOptions)
+            this._server = isSecure ? https.createServer(option as http.ServerOptions)
                 : http.createServer(option as https.ServerOptions);
-            return server;
         }
+        injector.get(ModuleRef).setValue(HYBRID_HOST, this._server);
+        return this._server;
     }
 
     protected override async onStart(): Promise<any> {
@@ -129,11 +130,13 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
         if (!this._server) return;
         await promisify(this._server.close, this._server)()
             .then(() => {
-                this._server?.removeAllListeners()
                 this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
             })
             .catch(err => {
                 this.logger.error(err);
+            })
+            .finally(() => {
+                this._server?.removeAllListeners()
             })
     }
 

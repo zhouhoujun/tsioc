@@ -4,7 +4,7 @@ import { ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import { WebSocket } from 'ws';
 import { WsHandler } from './handler';
-import { WsClientOpts } from './options';
+import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 import { WsTransportSession, WsTransportSessionFactory } from '../transport';
 
 
@@ -16,7 +16,7 @@ export class WsClient extends Client<TransportRequest, TransportEvent> {
 
     constructor(
         readonly handler: WsHandler,
-        @Inject() private options: WsClientOpts) {
+        @Inject(WS_CLIENT_OPTS) private options: WsClientOpts) {
         super();
     }
 
@@ -44,9 +44,10 @@ export class WsClient extends Client<TransportRequest, TransportEvent> {
                 .on(ev.CLOSE, onClose)
                 .on(ev.ERROR, onError);
 
-            if (this.socket.CLOSED || this.socket.CLOSING) {
-                this.session?.destroy();
-                this.session = null;
+            
+            if (this.socket.isPaused) {
+                // this.session?.destroy();
+                // this.session = null;
                 this.socket.resume();
             } else if (this.socket.OPEN) {
                 onOpen();

@@ -83,6 +83,7 @@ export class ApplicationStartedEvent extends ApplicationEvent {
  * rasie after Application close.
  */
 export class ApplicationShutdownEvent extends ApplicationEvent {
+
     /**
      * Application shutdown event.
      * rasie after Application close.
@@ -92,6 +93,10 @@ export class ApplicationShutdownEvent extends ApplicationEvent {
     constructor(source: Object, readonly signls?: string) {
         super(source)
     }
+    
+    // override getStrategy(): 'FIFO' | 'FILO' {
+    //     return 'FILO'
+    // }
 }
 
 
@@ -106,6 +111,10 @@ export class ApplicationDisposeEvent extends ApplicationEvent {
      */
     constructor(source: Object) {
         super(source)
+    }
+
+    override getStrategy(): 'FIFO' | 'FILO' {
+        return 'FILO'
     }
 }
 

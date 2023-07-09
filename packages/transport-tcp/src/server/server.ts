@@ -1,5 +1,5 @@
-import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, TransportSession, Server, MESSAGE, GET } from '@tsdi/core';
+import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, TransportSession, Server, MESSAGE, GET, HYBRID_HOST } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ContentOptions, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -155,6 +155,13 @@ export class TcpServer extends TcpMicroService {
         endpoint: TcpEndpoint,
         @Inject(TCP_SERV_OPTS) options: TcpServerOpts) {
         super(endpoint, options);
+    }
+
+
+    protected async onStartup(): Promise<any> {
+        const opts = this.options;
+        this.serv = this.createServer(opts);
+        this.endpoint.injector.get(ModuleRef).setValue(HYBRID_HOST, this.serv);
     }
 
 }
