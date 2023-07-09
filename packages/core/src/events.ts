@@ -94,9 +94,9 @@ export class ApplicationShutdownEvent extends ApplicationEvent {
         super(source)
     }
     
-    // override getStrategy(): 'FIFO' | 'FILO' {
-    //     return 'FILO'
-    // }
+    override getStrategy(): 'FIFO' | 'FILO' {
+        return 'FILO'
+    }
 }
 
 

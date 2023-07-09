@@ -262,7 +262,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                     const { filter, order, ...options } = decor.metadata;
 
                     const endpoint = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
-                    multicaster.addListener(filter ?? defaultFilter, endpoint, order ?? 0);
+                    multicaster.addListener(filter ?? defaultFilter, endpoint, order);
                     factory.onDestroy(() => multicaster.removeListener(filter ?? defaultFilter, endpoint))
                 });
                 next()
