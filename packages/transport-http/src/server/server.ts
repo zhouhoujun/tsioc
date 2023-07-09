@@ -31,7 +31,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
         return this._secure === true
     }
 
-    _server?: http2.Http2Server | http.Server | https.Server;
+    _server?: http2.Http2Server | http.Server | https.Server | null;
 
 
     listen(options: ListenOptions, listeningListener?: () => void): this;
@@ -128,6 +128,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
 
     protected override async onShutdown(): Promise<void> {
         if (!this._server) return;
+        this.endpoint.injector.get(ModuleRef).unregister(HYBRID_HOST);
         await promisify(this._server.close, this._server)()
             .then(() => {
                 this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
@@ -136,7 +137,8 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
                 this.logger.error(err);
             })
             .finally(() => {
-                this._server?.removeAllListeners()
+                this._server?.removeAllListeners();
+                this._server = null;
             })
     }
 

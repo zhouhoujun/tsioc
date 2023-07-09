@@ -157,7 +157,7 @@ describe('Ws Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.status).toEqual(404);
     });
 
     it('sensor.message/+ message', async () => {
@@ -189,7 +189,7 @@ describe('Ws Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.status).toEqual(404);
     });
 
     it('sensor/message/+ message', async () => {
@@ -253,7 +253,7 @@ describe('Ws Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.status).toEqual(404);
     });
 
 

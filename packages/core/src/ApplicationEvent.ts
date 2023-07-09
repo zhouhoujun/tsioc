@@ -25,8 +25,5 @@ export abstract class ApplicationEvent {
     getTimestamp(): number {
         return this._timestamp
     }
-    
-    getStrategy(): 'FIFO' | 'FILO' {
-        return 'FIFO'
-    }
+
 }

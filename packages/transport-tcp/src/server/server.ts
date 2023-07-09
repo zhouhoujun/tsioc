@@ -1,7 +1,7 @@
 import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, TransportSession, Server, MESSAGE, GET, HYBRID_HOST } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ContentOptions, ev } from '@tsdi/transport';
+import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -20,7 +20,7 @@ import { TcpTransportSessionFactory } from '../transport';
 @Injectable()
 export class TcpMicroService extends Server<TcpContext, Outgoing> implements ListenService {
 
-    protected serv!: net.Server | tls.Server;
+    protected serv?: net.Server | tls.Server | null;
 
     @InjectLog() logger!: Logger;
     protected isSecure: boolean;
@@ -97,8 +97,15 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
         }
     }
 
-    protected onShutdown(): Promise<any> {
-        return promisify(this.serv.close, this.serv)();
+    protected async onShutdown(): Promise<any> {
+        if (!this.serv) return;
+        if (!this.micro) this.endpoint.injector.get(ModuleRef).unregister(HYBRID_HOST);
+        await promisify(this.serv.close, this.serv)()
+            .finally(() => {
+                this.serv?.removeAllListeners();
+                this.serv = null;
+            });
+
     }
 
     protected createServer(opts: TcpServerOpts): net.Server | tls.Server {

@@ -1,7 +1,7 @@
-import { CanActivate, Filter, Interceptor, ListenOpts, TransportContext, TransportEndpointOptions, TransportSessionOpts } from '@tsdi/core';
+import { CanActivate, Filter, Interceptor, TransportContext, TransportEndpointOptions, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ContentOptions, MimeSource, SessionOptions } from '@tsdi/transport';
-import *  as ws from 'ws';
+import {  ServerOptions } from 'ws';
 
 
 
@@ -14,12 +14,11 @@ export interface WsServerOpts extends TransportEndpointOptions<TransportContext>
     mimeDb?: Record<string, MimeSource>;
     content?: boolean | ContentOptions;
     session?: boolean | SessionOptions;
-    serverOpts?: ws.ServerOptions;
+    serverOpts?: ServerOptions;
     /**
      * transport session options.
      */
     transportOpts?: TransportSessionOpts;
-    listenOpts?: ListenOpts;
     server?: any;
     detailError?: boolean;
 }

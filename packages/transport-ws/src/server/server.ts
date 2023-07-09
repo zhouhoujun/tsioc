@@ -1,7 +1,7 @@
-import { TransportContext, InternalServerExecption, Server, ListenOpts, TransportSession, Packet, MESSAGE, HYBRID_HOST } from '@tsdi/core';
-import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { TransportContext, InternalServerExecption, Server, TransportSession, Packet, MESSAGE, HYBRID_HOST } from '@tsdi/core';
+import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { LOCALHOST, ev } from '@tsdi/transport';
 import { Server as SocketServer, WebSocketServer } from 'ws';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -18,7 +18,7 @@ import { WsContext } from './context';
 @Injectable()
 export class WsServer extends Server<TransportContext> {
 
-    private serv?: SocketServer;
+    private serv?: SocketServer | null;
 
     @InjectLog()
     private logger!: Logger;
@@ -46,11 +46,7 @@ export class WsServer extends Server<TransportContext> {
                 serverOpts.port = 3000;
             }
         }
-        if (serverOpts.server) {
-            serverOpts.server.on(ev.CLOSE, () => this.close());
-        }
-        this.options.serverOpts = serverOpts;
-        this.serv = serverOpts?.noServer ? new WebSocketServer(serverOpts) : new SocketServer(this.options.serverOpts);
+        this.serv = serverOpts?.noServer ? new WebSocketServer(serverOpts) : new SocketServer(serverOpts);
     }
 
     protected async onStart(): Promise<any> {
@@ -63,58 +59,31 @@ export class WsServer extends Server<TransportContext> {
             const session = factory.create(socket, this.options.transportOpts!);
             session.on(ev.MESSAGE, (packet) => this.requestHandler(session, packet));
         })
-        if (this.options.listenOpts && this.options.serverOpts?.server) {
-            this.listen(this.options.listenOpts);
+
+        const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
+        const isSecure = server instanceof tls.Server;
+        if (port) {
+            this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host ?? LOCALHOST}:${port}`, '!');
+        } else {
+            this.logger.info(lang.getClassName(this), 'hybrid bind with', server);
         }
     }
 
     protected async onShutdown(): Promise<any> {
-        if (this.serv) {
-            await promisify(this.serv.close, this.serv)()
-                .catch(err => {
-                    this.logger?.error(err);
-                    return err;
-                });
-        }
+        if (!this.serv) return;
+
+        await promisify(this.serv.close, this.serv)()
+            .catch(err => {
+                this.logger?.error(err);
+                return err;
+            })
+            .finally(() => {
+                this.serv?.removeAllListeners();
+                this.serv = null;
+            });
+
     }
 
-
-    listen(options: ListenOpts, listeningListener?: () => void): this;
-    listen(port: number, host?: string, listeningListener?: () => void): this;
-    listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
-        if (!this.options.serverOpts?.server) throw new InternalServerExecption();
-        const server = this.options.serverOpts.server;
-        if (server.listening) {
-            return this;
-        }
-        const isSecure = server instanceof tls.Server;
-        if (isNumber(arg1)) {
-            const port = arg1;
-            if (isString(arg2)) {
-                const host = arg2;
-                if (!this.options.listenOpts) {
-                    this.options.listenOpts = { host, port };
-                }
-                this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host}:${port}`, '!')
-                server.listen(port, host, listeningListener);
-            } else {
-                listeningListener = arg2;
-                if (!this.options.listenOpts) {
-                    this.options.listenOpts = { port };
-                }
-                this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://localhost:${port}`, '!')
-                server.listen(port, listeningListener);
-            }
-        } else {
-            const opts = arg1;
-            if (!this.options.listenOpts) {
-                this.options.listenOpts = opts;
-            }
-            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `ws${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
-            server.listen(opts, listeningListener);
-        }
-        return this;
-    }
 
     /**
      * request handler.

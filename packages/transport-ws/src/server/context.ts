@@ -20,7 +20,7 @@ export class WsContext extends AbstractAssetContext<WsIncoming, WsOutgoing, numb
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
+            const { host, port, path } = this.serverOptions.serverOpts ?? EMPTY_OBJ;
             const protocol = this.secure ? 'wss' : 'ws';
             const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);

@@ -134,10 +134,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     handle(context: ApplicationEventContext): Observable<any> {
-        let endpoints = this.maps.get(getClass(context.payload));
-        if (context.payload.getStrategy() === 'FILO') {
-            endpoints = endpoints?.reverse();
-        }
+        const endpoints = this.maps.get(getClass(context.payload));
         return runHandlers(endpoints, context, v => v.isDone() === true);
     }
 

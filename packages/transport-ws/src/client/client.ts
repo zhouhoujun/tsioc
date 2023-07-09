@@ -9,7 +9,7 @@ import { WsTransportSession, WsTransportSessionFactory } from '../transport';
 
 
 
-@Injectable()
+@Injectable({ static: false })
 export class WsClient extends Client<TransportRequest, TransportEvent> {
     private socket?: WebSocket | null;
     private session?: WsTransportSession | null;
@@ -64,8 +64,11 @@ export class WsClient extends Client<TransportRequest, TransportEvent> {
     }
 
     protected async onShutdown(): Promise<void> {
-        this.socket?.close()
-        this.socket?.removeAllListeners();
+        if(!this.socket) return;
+        this.session?.destroy();
+        this.socket.terminate();
+        // this.socket.close();
+        this.socket.removeAllListeners();
         this.socket = null;
     }
 

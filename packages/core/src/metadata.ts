@@ -227,7 +227,7 @@ export interface EventHandler {
     <TArg>(event: Type<ApplicationEvent>, option?: EndpointOptions<TArg>): MethodDecorator;
 }
 
-function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler', dynamic?: boolean) {
+function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler', FILO?: boolean) {
     return createDecorator(name, {
         props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
@@ -235,7 +235,6 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                 if (ctx.class.getAnnotation().static === false) return;
                 const typeRef = ctx.class;
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
-                //typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
                 const multicaster = injector.get(ApplicationEventMulticaster);
@@ -243,18 +242,17 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                     const { filter, order, ...options } = decor.metadata;
 
                     const endpoint = factory.create(decor.propertyKey, options);
-                    multicaster.addListener(filter ?? defaultFilter, endpoint, order);
+                    multicaster.addListener(filter ?? defaultFilter, endpoint, FILO ? order ?? 0 : order);
                     factory.onDestroy(() => multicaster.removeListener(filter ?? defaultFilter, endpoint))
                 });
                 next()
             }
         },
-        runtime: dynamic ? {
+        runtime: FILO ? {
             method: (ctx, next) => {
                 if (ctx.class.getAnnotation().static !== false) return;
                 const typeRef = ctx.class;
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
-                // typeRef.getDecorDefines<EventHandlerMetadata<any>>(ctx.currDecor, Decors.method);
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
                 const multicaster = injector.get(ApplicationEventMulticaster);
@@ -262,7 +260,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                     const { filter, order, ...options } = decor.metadata;
 
                     const endpoint = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
-                    multicaster.addListener(filter ?? defaultFilter, endpoint, order);
+                    multicaster.addListener(filter ?? defaultFilter, endpoint, order ?? 0);
                     factory.onDestroy(() => multicaster.removeListener(filter ?? defaultFilter, endpoint))
                 });
                 next()
