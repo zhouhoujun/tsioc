@@ -1,4 +1,4 @@
-import { Client, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, TransportRequest } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';
 import { CoapHandler } from './handler';
@@ -8,7 +8,7 @@ import { CoapHandler } from './handler';
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends Client<TransportRequest, TransportEvent> {
+export class CoapClient extends Client<TransportRequest, string> {
 
     constructor(
         readonly handler: CoapHandler,

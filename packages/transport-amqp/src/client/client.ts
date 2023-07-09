@@ -1,4 +1,4 @@
-import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
@@ -10,7 +10,7 @@ import { AmqpTransportSessionFactory } from '../transport';
 
 
 @Injectable({ static: false })
-export class AmqpClient extends Client<TransportRequest, TransportEvent> {
+export class AmqpClient extends Client<TransportRequest, number> {
 
     @InjectLog()
     private logger!: Logger;

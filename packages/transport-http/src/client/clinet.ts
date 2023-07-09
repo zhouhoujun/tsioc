@@ -36,7 +36,7 @@ const NONE = {} as http2.ClientHttp2Session;
  * http client for nodejs
  */
 @Injectable({ static: false })
-export class Http extends Client<HttpRequest, HttpEvent> {
+export class Http extends Client<HttpRequest, number> {
 
     constructor(
         readonly handler: HttpHandler,

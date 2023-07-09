@@ -1,4 +1,4 @@
-import { Client, ServiceUnavailableExecption, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Client, ServiceUnavailableExecption, TransportRequest } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
@@ -10,7 +10,7 @@ import { WsTransportSession, WsTransportSessionFactory } from '../transport';
 
 
 @Injectable({ static: false })
-export class WsClient extends Client<TransportRequest, TransportEvent> {
+export class WsClient extends Client<TransportRequest, number> {
     private socket?: WebSocket | null;
     private session?: WsTransportSession | null;
 

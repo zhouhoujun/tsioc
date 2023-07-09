@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
@@ -12,7 +12,7 @@ import { RedisTransportSessionFactory, ReidsTransport } from '../transport';
  * Redis Client.
  */
 @Injectable({ static: false })
-export class RedisClient extends Client<TransportRequest, TransportEvent> {
+export class RedisClient extends Client<TransportRequest, number> {
 
     @InjectLog()
     private logger!: Logger;

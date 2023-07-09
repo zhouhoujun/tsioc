@@ -1,4 +1,4 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { Application, ApplicationContext, BadRequestExecption, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, TransportErrorResponse, TransportResponse } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
@@ -191,7 +191,7 @@ describe('IPC Server & IPC Client', () => {
     });
 
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
+        const a = await lastValueFrom(client.send('/device/init5', { observe: 'events', method: 'POST', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -225,7 +225,7 @@ describe('IPC Server & IPC Client', () => {
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
-                    return of(err);
+                    return of(err as TransportResponse);
                 })));
         expect(b.status).toEqual(200);
         expect(b.ok).toBeTruthy();
@@ -328,7 +328,7 @@ describe('IPC Server & IPC Client', () => {
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
-                    return of(err);
+                    return of(err as TransportResponse<any, number>);
                 })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
@@ -350,7 +350,7 @@ describe('IPC Server & IPC Client', () => {
         const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
-                return of(err);
+                return of(err as TransportResponse<any, number>);
             })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
@@ -361,7 +361,7 @@ describe('IPC Server & IPC Client', () => {
         const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
-                return of(err);
+                return of(err as TransportResponse<any, number>);
             })));
         expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);

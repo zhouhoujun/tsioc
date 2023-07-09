@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, Pattern, TransportEvent, TransportRequest, RequestInitOpts, TransportSession, TRANSPORT_SESSION } from '@tsdi/core';
+import { Client, Pattern, TransportRequest, RequestInitOpts, TransportSession, TRANSPORT_SESSION } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
@@ -14,7 +14,7 @@ import { TcpTransportSessionFactory } from '../transport';
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable({ static: false })
-export class TcpClient extends Client<TransportRequest, TransportEvent> {
+export class TcpClient extends Client<TransportRequest, number> {
 
     @InjectLog()
     private logger!: Logger;

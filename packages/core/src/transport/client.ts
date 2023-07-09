@@ -32,19 +32,19 @@ export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
  * abstract client.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TRespone = TransportEvent> {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> {
 
     /**
      * client handler
      */
-    abstract get handler(): ConfigableHandler<TRequest, TRespone>
+    abstract get handler(): ConfigableHandler<TRequest, TransportEvent<TStatus>>
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.
      *
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
-    send(req: TRequest): Observable<TRespone>;
+    send(req: TRequest): Observable<TransportEvent<TStatus>>;
 
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in
@@ -102,7 +102,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'arraybuffer',
-    }): Observable<TransportEvent<ArrayBuffer>>;
+    }): Observable<TransportEvent<ArrayBuffer, TStatus>>;
 
     /**
      * Constructs a request that interprets the body as a `Blob` and returns
@@ -117,7 +117,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'blob',
-    }): Observable<TransportEvent<Blob>>;
+    }): Observable<TransportEvent<Blob, TStatus>>;
 
     /**
      * Constructs a request which interprets the body as a text string and returns the full event
@@ -132,7 +132,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'text',
-    }): Observable<TransportEvent<string>>;
+    }): Observable<TransportEvent<string, TStatus>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -147,7 +147,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<TransportEvent<any>>;
+    }): Observable<TransportEvent<any, TStatus>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -162,7 +162,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send<R>(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<TransportEvent<R>>;
+    }): Observable<TransportEvent<R, TStatus>>;
 
 
     /**
@@ -177,7 +177,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      */
     send(url: Pattern, options: RequestOptions & {
         observe: 'emit',
-    }): Observable<TransportEvent<any>>;
+    }): Observable<TransportEvent<any, TStatus>>;
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
@@ -191,7 +191,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
-    }): Observable<TransportResponse<ArrayBuffer>>;
+    }): Observable<TransportResponse<ArrayBuffer, TStatus>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `TransportResponse`.
@@ -204,7 +204,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'blob';
-    }): Observable<TransportResponse<Blob>>;
+    }): Observable<TransportResponse<Blob, TStatus>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
@@ -218,7 +218,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'text';
-    }): Observable<TransportResponse<string>>;
+    }): Observable<TransportResponse<string, TStatus>>;
 
 
     /**
@@ -233,7 +233,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send<R = any>(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<TransportResponse<R>>;
+    }): Observable<TransportResponse<R, TStatus>>;
 
 
     /**
@@ -287,7 +287,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
-        const events$: Observable<TRespone> =
+        const events$: Observable<TransportEvent> =
             of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req)),
                 finalize(() => req.context?.destroy())

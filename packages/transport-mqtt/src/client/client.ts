@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
 import { DisconnectExecption, LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import * as mqtt from 'mqtt';
@@ -13,7 +13,7 @@ import { MqttTransportSessionFactory } from '../transport';
  * mqtt client.
  */
 @Injectable({ static: false })
-export class MqttClient extends Client<TransportRequest, TransportEvent> {
+export class MqttClient extends Client<TransportRequest, number> {
 
     @InjectLog()
     private logger?: Logger;

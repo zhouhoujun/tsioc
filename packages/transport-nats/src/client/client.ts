@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Client, TRANSPORT_SESSION, TransportEvent, TransportRequest, TransportSession } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { NatsConnection, connect } from 'nats';
@@ -9,7 +9,7 @@ import { NatsTransportSessionFactory } from '../transport';
 
 
 @Injectable({ static: false })
-export class NatsClient extends Client<TransportRequest, TransportEvent> {
+export class NatsClient extends Client<TransportRequest, number> {
     private conn?: NatsConnection;
     private _session?: TransportSession<NatsConnection>;
 

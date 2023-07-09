@@ -110,12 +110,12 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } }))
+            // .pipe(
+            //     catchError((err, ct) => {
+            //         ctx.getLogger().error(err);
+            //         return of(err);
+            //     })));
         expect(b.status).toEqual('2.02');
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
