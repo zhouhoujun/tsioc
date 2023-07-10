@@ -25,5 +25,12 @@ export abstract class ApplicationEvent {
     getTimestamp(): number {
         return this._timestamp
     }
+    /**
+     * run handles strategy, `FIFO` or `FILO`.
+     * @returns 
+     */
+    static getStrategy(): 'FIFO' | 'FILO' {
+        return 'FIFO'
+    }
 
 }

@@ -93,6 +93,14 @@ export class ApplicationShutdownEvent extends ApplicationEvent {
     constructor(source: Object, readonly signls?: string) {
         super(source)
     }
+
+    /**
+     * run handles strategy, `FIFO` or `FILO`.
+     * @returns 
+     */
+    static override getStrategy(): 'FIFO' | 'FILO' {
+        return 'FILO'
+    }
 }
 
 
@@ -107,6 +115,14 @@ export class ApplicationDisposeEvent extends ApplicationEvent {
      */
     constructor(source: Object) {
         super(source)
+    }
+
+    /**
+     * run handles strategy, `FIFO` or `FILO`.
+     * @returns 
+     */
+    static override getStrategy(): 'FIFO' | 'FILO' {
+        return 'FILO'
     }
 }
 

@@ -1,7 +1,7 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
-    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic
+    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic, isFunction
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -227,13 +227,13 @@ export interface EventHandler {
     <TArg>(event: Type<ApplicationEvent>, option?: EndpointOptions<TArg>): MethodDecorator;
 }
 
-function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'EventHandler', FILO?: boolean) {
+function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string) {
     return createDecorator(name, {
         props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
             method: (ctx, next) => {
-                if (ctx.class.getAnnotation().static === false) return;
                 const typeRef = ctx.class;
+                if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
@@ -242,16 +242,19 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                     const { filter, order, ...options } = decor.metadata;
 
                     const endpoint = factory.create(decor.propertyKey, options);
-                    multicaster.addListener(filter ?? defaultFilter, endpoint, FILO ? order ?? 0 : order);
-                    factory.onDestroy(() => multicaster.removeListener(filter ?? defaultFilter, endpoint))
+
+                    const event = filter ?? defaultFilter;
+                    const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
+                    multicaster.addListener(event, endpoint, isFILO ? order ?? 0 : order);
+                    factory.onDestroy(() => multicaster.removeListener(event, endpoint))
                 });
                 next()
             }
         },
-        runtime: FILO ? {
+        runtime: {
             method: (ctx, next) => {
-                if (ctx.class.getAnnotation().static !== false) return;
                 const typeRef = ctx.class;
+                if (typeRef.getAnnotation().static !== false && typeRef.getAnnotation().singleton) return;
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
@@ -260,12 +263,15 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
                     const { filter, order, ...options } = decor.metadata;
 
                     const endpoint = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
-                    multicaster.addListener(filter ?? defaultFilter, endpoint, order ?? 0);
-                    factory.onDestroy(() => multicaster.removeListener(filter ?? defaultFilter, endpoint))
+
+                    const event = filter ?? defaultFilter;
+                    const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
+                    multicaster.addListener(event, endpoint, isFILO ? order ?? 0 : order);
+                    factory.onDestroy(() => multicaster.removeListener(event, endpoint))
                 });
                 next()
             }
-        } : undefined
+        }
     })
 }
 
@@ -273,7 +279,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name = 'Event
  * event hander.
  * @EventHandler
  */
-export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent);
+export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent, 'EventHandler');
 
 
 /**
@@ -373,7 +379,7 @@ export interface ShutdownEventHandler {
  * rasie after Application close invoked.
  * @Shutdown
  */
-export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown', true);
+export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown');
 
 
 /**
@@ -396,7 +402,7 @@ export interface DisposeEventHandler {
  * rasie after `ApplicationShutdownEvent`
  * @Dispose
  */
-export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose', true);
+export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose');
 
 
 /**
