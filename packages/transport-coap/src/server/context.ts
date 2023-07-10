@@ -1,4 +1,4 @@
-import { Incoming } from '@tsdi/core';
+import { Incoming, NotSupportedExecption } from '@tsdi/core';
 import { EMPTY_OBJ, isNumber } from '@tsdi/ioc';
 import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
@@ -25,6 +25,10 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
             const uri = new URL(url, baseUrl);
             return uri;
         }
+    }
+    
+    override redirect(url: string, alt?: string | undefined): void {
+        throw new NotSupportedExecption();
     }
 
     get writable(): boolean {

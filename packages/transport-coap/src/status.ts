@@ -1,4 +1,4 @@
-import { GET, MESSAGE, POST, StatusVaildator } from '@tsdi/core';
+import { GET, MESSAGE, NotSupportedExecption, POST, StatusVaildator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
 
@@ -8,7 +8,8 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
         return CoapStatuCode.Content
     }
     get found(): string {
-        return '3.02'
+        // return '3.02'
+        throw new NotSupportedExecption();
     }
 
     get notFound(): string {
@@ -47,7 +48,8 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
         return emptyErrorStatus[status];
     }
     isRedirect(status: string): boolean {
-        return redirectStatus[status]
+        return false;
+        // return redirectStatus[status]
     }
     isRequestFailed(status: string): boolean {
         return /^4\./.test(status);
@@ -59,12 +61,14 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
         return retryStatus[status];
     }
     redirectBodify(status: string, method?: string | undefined): boolean {
-        if (!method) return status === '3.03';
-        return status === '3.03' || ((status === '3.01' || status === '3.02') && method === POST)
+        throw new NotSupportedExecption();
+        // if (!method) return status === '3.03';
+        // return status === '3.03' || ((status === '3.01' || status === '3.02') && method === POST)
     }
 
     redirectDefaultMethod(): string {
-        return GET;
+        throw new NotSupportedExecption();
+        // return GET;
     }
 
 }
@@ -93,18 +97,18 @@ const emptyErrorStatus: Record<number | string, boolean> =  {
     '4.04': true
 }
 
-/**
- * status codes for redirects
- */
-const redirectStatus: Record<number | string, boolean> = {
-    '3.00': true,
-    '3.01': true,
-    '3.02': true,
-    '3.03': true,
-    '3.05': true,
-    '3.07': true,
-    '3.08': true
-}
+// /**
+//  * status codes for redirects
+//  */
+// const redirectStatus: Record<number | string, boolean> = {
+//     '3.00': true,
+//     '3.01': true,
+//     '3.02': true,
+//     '3.03': true,
+//     '3.05': true,
+//     '3.07': true,
+//     '3.08': true
+// }
 
 /**
  * status codes for when you should retry the request
