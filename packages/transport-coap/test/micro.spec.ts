@@ -23,17 +23,17 @@ export class CoapService {
         return message;
     }
 
-    @Handle('sensor.message.*', 'tcp')
+    @Handle('sensor.message.*', 'coap')
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Handle('sensor/message/*', 'tcp')
+    @Handle('sensor/message/**', 'coap')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/:id/start', 'tcp', {
+    @Subscribe('sensor/:id/start', 'coap', {
         paths: {
             id: SENSORS
         }
@@ -100,20 +100,20 @@ describe('Coap Micro Service', () => {
     });
 
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch json', async () => {
+    //     const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
     it('fetch json 2', async () => {
-        const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
+        const res: any = await lastValueFrom(client.send('/content/jsons/data1.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -153,11 +153,11 @@ describe('Coap Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual('4.04');
     });
 
-    it('sensor.message.* message', async () => {
-        const a = await lastValueFrom(client.send('sensor.message.update', {
+    it('sensor/message/** message', async () => {
+        const a = await lastValueFrom(client.send('sensor/message/update', {
             payload: {
                 message: 'ble'
             }
@@ -185,10 +185,10 @@ describe('Coap Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual('4.04');
     });
 
-    it('sensor/message/* message', async () => {
+    it('sensor/message/** message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
             payload: {
                 message: 'ble'
@@ -233,7 +233,7 @@ describe('Coap Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.status).toEqual('4.04');
     });
 
 

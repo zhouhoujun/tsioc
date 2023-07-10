@@ -30,19 +30,25 @@ export class ErrorRespondAdapter<TCtx extends AssetContext = AssetContext> {
         if (err.headers) context.setHeader(err.headers);
 
         const vaildator = context.vaildator;
-        // force text/plain
-        context.type = 'text';
         let status = err.status || err.statusCode;
-        let msg;
         // ENOENT support
         if (ENOENT === err.code) status = vaildator.notFound;
 
         // default to serverError
         if (!vaildator.isStatus(status)) status = vaildator.serverError;
-        // respond
-        msg = err.message;
 
         context.status = status;
+        // empty response.
+        if (vaildator.isEmptyExecption(status)) {
+            return res.end();
+        }
+
+        // respond
+        let msg: any;
+        msg = err.message;
+        
+        // force text/plain
+        context.type = 'text';
         msg = Buffer.from(msg ?? context.statusMessage ?? '');
         context.length = Buffer.byteLength(msg);
         res.end(msg)

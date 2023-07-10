@@ -3,7 +3,6 @@ import { Injectable } from '@tsdi/ioc'
 
 @Injectable({ static: true })
 export class HttpStatusVaildator implements StatusVaildator<number> {
-
     get ok(): number {
         return HttpStatusCode.Ok
     }
@@ -38,6 +37,9 @@ export class HttpStatusVaildator implements StatusVaildator<number> {
     }
     isEmpty(status: number): boolean {
         return emptyStatus[status];
+    }
+    isEmptyExecption(status: number): boolean {
+        return false;
     }
     isRedirect(status: number): boolean {
         return redirectStatus[status];

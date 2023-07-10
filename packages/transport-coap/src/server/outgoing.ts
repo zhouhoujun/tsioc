@@ -57,17 +57,17 @@ const originSetHeader = OutgoingMessage.prototype.setHeader;
 
 function hasHeader(this: OutgoingMessage, field: string): boolean {
     field = transforms[field] ?? field;
-    return this._packet.options?.some(o => o.name = field) == true;
+    return this._packet.options?.some(o => o.name == field) == true;
 }
 
 function getHeader(this: OutgoingMessage, field: string): IncomingHeader {
     field = transforms[field] ?? field;
-    return this._packet.options?.find(o => o.name = field) as IncomingHeader;
+    return this._packet.options?.find(o => o.name == field) as IncomingHeader;
 }
 
 function removeHeader(this: OutgoingMessage, field: string): void {
     field = transforms[field] ?? field;
-    const idx = this._packet.options?.findIndex(o => o.name === field);
+    const idx = this._packet.options?.findIndex(o => o.name == field);
     if (isNumber(idx) && idx >= 0) {
         this._packet.options?.splice(idx, 1);
     }

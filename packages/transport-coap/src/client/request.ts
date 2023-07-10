@@ -1,4 +1,4 @@
-import { Injectable, Optional, isArray, isNil, isNumber, isString } from '@tsdi/ioc';
+import { Injectable, Optional, isArray, isNil } from '@tsdi/ioc';
 import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, TransportEvent, TransportRequest, Incoming } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer, ctype } from '@tsdi/transport';
 import { request } from 'coap';
@@ -115,16 +115,12 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
     protected write(request: IEndable, req: TransportRequest, callback: (error?: Error | null) => void): void {
         const data = this.getPayload(req);
         if (data === null) {
-            request.end();
-            callback();
+            request.end(callback);
         } else {
             this.streamAdapter.sendbody(
                 this.encoder ? this.encoder.encode(data) : data,
                 request,
-                (err?) => {
-                    request.end();
-                    callback(err);
-                },
+                callback,
                 req.headers.get(hdr.CONTENT_ENCODING) as string);
         }
     }

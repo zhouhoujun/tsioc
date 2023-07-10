@@ -152,7 +152,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
-        if (ctx.streamAdapter.isStream(ctx.request)) {
+        if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
             return ctx.request.pipe(ctx.streamAdapter.gunzip());
         }
         throw new UnsupportedMediaTypeExecption('incoming message not support streamable');

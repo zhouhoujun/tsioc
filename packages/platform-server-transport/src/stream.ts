@@ -50,7 +50,7 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
     }
 
     isReadable(stream: any): stream is IReadableStream<any> {
-        return isReadable ? isReadable(stream) : stream instanceof Readable;
+        return (isReadable ? isReadable(stream) : stream instanceof Readable) || (isFunction(stream.read) && isFunction(stream.pipe) && (stream as Readable).readable);
     }
 
     isWritable(stream: any): stream is IWritableStream<any> {

@@ -45,7 +45,6 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 observer.error(res)
             };
 
-
             const onResponse = this.hasResponse(req) ? async (incoming: Incoming) => {
                 let body: any;
                 const packet = this.parseStatusPacket(incoming);

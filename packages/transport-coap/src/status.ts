@@ -43,6 +43,9 @@ export class CoapStatusVaildator implements StatusVaildator<string>{
     isEmpty(status: string): boolean {
         return emptyStatus[status]
     }
+    isEmptyExecption(status: string): boolean{
+        return emptyErrorStatus[status];
+    }
     isRedirect(status: string): boolean {
         return redirectStatus[status]
     }
@@ -84,6 +87,10 @@ const emptyStatus: Record<number | string, boolean> = {
     '2.03': true,
     '2.04': true,
     '3.04': true
+}
+
+const emptyErrorStatus: Record<number | string, boolean> =  {
+    '4.04': true
 }
 
 /**

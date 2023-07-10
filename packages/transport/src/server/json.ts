@@ -52,11 +52,9 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
         const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
         if (strm) {
-            // resp.contentType = 'application/json';
             ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON);
             ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
-            // resp.contentType = 'application/json; charset=utf-8';
             ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON_UTF8);
             ctx.body = JSON.stringify(body, null, this.spaces);
         }
