@@ -1,12 +1,13 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule, TcpServer } from '../src';
+import { TCP_CLIENT_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -84,6 +85,7 @@ describe('TCP Micro Service', () => {
     before(async () => {
         ctx = await Application.run(MicroTcpTestModule, {
             providers: [
+                { provide: TCP_MICRO_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 { provide: SENSORS, useValue: 'sensor01', multi: true },
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
@@ -95,6 +97,18 @@ describe('TCP Micro Service', () => {
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

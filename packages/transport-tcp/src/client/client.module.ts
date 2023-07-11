@@ -74,10 +74,17 @@ export class TcpClientModule {
          * client handler provider
          */
         handler?: ProvdierOf<TcpHandler>;
-
+        /**
+         * transport factory.
+         */
         transportFactory?: ProvdierOf<TransportSessionFactory>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<TcpClientModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

@@ -92,8 +92,13 @@ export class WsMicroServModule {
          * server options
          */
         serverOpts?: WsServerOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<WsMicroServModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: WS_SERV_OPTS,
                 useValue: {

@@ -87,14 +87,21 @@ export class RedisMicroServModule {
          * service endpoint provider
          */
         endpoint?: ProvdierOf<RedisEndpoint>;
-
+        /**
+         * transport factory.
+         */
         transportFactory?: ProvdierOf<RedisTransportSessionFactory>;
         /**
          * server options
          */
         serverOpts?: RedisServerOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<RedisMicroServModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: REDIS_SERV_OPTS,
                 useValue: {

@@ -181,8 +181,13 @@ export class CoapServerModule {
          * server options
          */
         serverOpts?: CoapServerOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<CoapServerModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: COAP_SERV_OPTS,
                 useValue: {

@@ -66,8 +66,13 @@ export class HttpModule {
          * client handler provider
          */
         handler?: ProvdierOf<HttpHandler>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<HttpModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

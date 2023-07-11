@@ -82,8 +82,13 @@ export class AmqpClientModule {
          * transport factory.
          */
         transportFactory?: ProvdierOf<AmqpTransportSessionFactory>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<AmqpClientModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

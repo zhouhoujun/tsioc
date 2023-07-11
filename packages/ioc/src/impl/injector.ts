@@ -443,7 +443,7 @@ export class DefaultInjector extends Injector {
         const refti = this.get(ReflectiveFactory).create(tgRefl, this);
         const val = refti.invoke(propertyKey, context, instance);
         immediate(() => refti.destroy());
-        
+
         return val;
     }
 
@@ -720,7 +720,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle(value, token)
         }
-        if (isDef && isStatic) {
+        if (isDef && isStatic && rd?.fn !== MUTIL) {
             if (rd) {
                 if (isNil(rd.value)) {
                     rd.value = value
@@ -755,6 +755,14 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         }
         if (isDefined(rd.value) && value !== EMPTY) return rd.value;
         const deps = [];
+        if (rd.fn === MUTIL) {
+            if (parent && !(flags & InjectFlags.Self)) {
+                const values = parent.get(token, context, InjectFlags.Default, null);
+                if (values) {
+                    deps.push(...values)
+                }
+            }
+        }
         if (rd.deps?.length) {
             for (let i = 0; i < rd.deps.length; i++) {
                 const dep = rd.deps[i];

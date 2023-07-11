@@ -80,11 +80,9 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
 
     }
 
-
     protected override getResponseEvenName(): string {
         return ev.RESPONSE;
     }
-
 
     protected tpCoapMethod(method?: string): CoapMethod {
         if (!method) return 'GET';

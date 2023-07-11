@@ -7,7 +7,8 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
+import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 @RouteMapping('/device')
@@ -116,7 +117,10 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     Bodyparser,
                     { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
-            }
+            },
+            providers:[
+                { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            ]
         })
     ],
     declarations: [
@@ -154,6 +158,18 @@ describe('IPC Server & IPC Client', () => {
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

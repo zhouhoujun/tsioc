@@ -1,10 +1,11 @@
 import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { MqttClient, MqttClientModule, MqttMicroServModule, MqttServer } from '../src';
+import { MQTT_SERV_INTERCEPTORS, MqttClient, MqttClientModule, MqttMicroServModule, MqttServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -62,7 +63,7 @@ export class MqttService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 200
+                timeout: 2000
             }
         }),
         MqttMicroServModule
@@ -95,8 +96,9 @@ describe('Mqtt Micro Service', () => {
     before(async () => {
         ctx = await Application.run(MicroTestModule, {
             providers: [
+                { provide: MQTT_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 { provide: SENSORS, useValue: 'sensor01', multi: true },
-                { provide: SENSORS, useValue: 'sensor02', multi: true },
+                { provide: SENSORS, useValue: 'sensor02', multi: true }
             ]
         });
         injector = ctx.injector;
@@ -106,6 +108,18 @@ describe('Mqtt Micro Service', () => {
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('/content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

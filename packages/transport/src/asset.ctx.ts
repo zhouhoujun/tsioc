@@ -51,7 +51,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     protected override onExecption(err: any): void {
-        const status = err.status ?? err.statusCode;
+        const status = err?.status ?? err?.statusCode;
         if (status) {
             this.status = status;
             this.statusMessage = err.message;

@@ -101,8 +101,13 @@ export class KafkaMicroServModule {
          * server options
          */
         serverOpts?: KafkaServerOptions;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<KafkaMicroServModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: KAFKA_SERV_OPTS,
                 useValue: {

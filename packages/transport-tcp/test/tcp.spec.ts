@@ -4,8 +4,9 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
-import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '../src';
 import { LoggerModule } from '@tsdi/logs';
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 
@@ -109,7 +110,10 @@ export class DeviceController {
                     Bodyparser,
                     { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
-            }
+            },
+            providers:[
+                { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            ]
         })
     ],
     declarations: [
@@ -137,6 +141,18 @@ describe('TCP Server & TCP Client', () => {
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

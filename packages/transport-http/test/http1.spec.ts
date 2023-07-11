@@ -6,8 +6,9 @@ import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { Http, HttpServerModule, HttpServer, HttpModule } from '../src';
+import { Http, HttpServerModule, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 
@@ -24,7 +25,10 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
                 listenOpts: {
                     port: 3200
                 }
-            }
+            },
+            providers: [
+                { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            ]
         }),
         MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
         DeviceManageModule,
@@ -75,6 +79,18 @@ describe('http1.1 server, Http', () => {
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.get('510100_full.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

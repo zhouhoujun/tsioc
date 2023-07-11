@@ -80,8 +80,13 @@ export class KafkaClientModule {
          * transport factory.
          */
         transportFactory?: ProvdierOf<KafkaTransportSessionFactory>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<KafkaClientModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

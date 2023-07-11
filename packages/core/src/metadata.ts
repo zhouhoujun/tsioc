@@ -254,7 +254,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string)
         runtime: {
             method: (ctx, next) => {
                 const typeRef = ctx.class;
-                if (typeRef.getAnnotation().static !== false && typeRef.getAnnotation().singleton) return;
+                if (typeRef.getAnnotation().static !== false || typeRef.getAnnotation().singleton) return;
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);

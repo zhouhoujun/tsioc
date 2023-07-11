@@ -6,7 +6,6 @@ import { HeaderFormater, Logger } from './logger';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
 import { Level, Levels, levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
-import { config } from 'rxjs';
 
 /**
  * Configure logger manger. use to get configed logger manger.
@@ -48,7 +47,7 @@ export class LoggerManagers implements LoggerManager {
             throw new ArgumentExecption(`has no provider for LoggerManager ${adapter.toString()}.`)
         }
         const cfg = this.cfgs.get(adapter);
-        cfg?.config && mgr.configure(config);
+        cfg?.config && mgr.configure(cfg.config);
         return mgr;
     }
 

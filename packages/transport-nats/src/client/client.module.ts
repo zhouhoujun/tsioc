@@ -74,11 +74,18 @@ export class NatsClientModule {
          * client handler provider
          */
         handler?: ProvdierOf<NatsHandler>;
-
+        /**
+         * transport factory.
+         */
         transportFactory?: ProvdierOf<NatsTransportSessionFactory>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<NatsClientModule> {
 
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

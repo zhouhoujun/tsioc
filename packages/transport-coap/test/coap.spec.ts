@@ -4,9 +4,10 @@ import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { CoapClient, CoapServer, CoapClientOpts, COAP_CLIENT_OPTS, CoapClientModule, CoapServerModule } from '../src';
+import { CoapClient, CoapServer, CoapClientModule, CoapServerModule, COAP_SERV_INTERCEPTORS } from '../src';
 import { DeviceController } from './controller';
 import { Bodyparser, Content, Json } from '@tsdi/transport';
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 
@@ -46,24 +47,39 @@ describe('CoAP Server & CoAP Client', () => {
     let client: CoapClient;
 
     before(async () => {
-        ctx = await Application.run(CoapTestModule);
+        ctx = await Application.run(CoapTestModule, {
+            providers:[
+                { provide: COAP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            ]
+        });
         injector = ctx.injector;
         client = injector.resolve(CoapClient);
     });
 
 
-    // it('fetch json', async () => {
-    //     const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch json', async () => {
+        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(isArray(res.features)).toBeTruthy();
-    // })
-    
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('/content/big.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
 
     it('fetch json 2', async () => {
         const res: any = await lastValueFrom(client.send('jsons/data1.json')

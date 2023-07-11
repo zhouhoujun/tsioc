@@ -95,8 +95,13 @@ export class HttpServerModule {
          * server options
          */
         serverOpts?: HttpServerOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<HttpServerModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: HTTP_SERV_OPTS,
                 useValue: {

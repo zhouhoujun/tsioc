@@ -79,11 +79,18 @@ export class RedisClientModule {
          * client handler provider
          */
         handler?: ProvdierOf<RedisHandler>;
-
+        /**
+         * transport factory.
+         */
         transportFactory?: ProvdierOf<RedisTransportSessionFactory>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }
     ): ModuleWithProviders<RedisClientModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {

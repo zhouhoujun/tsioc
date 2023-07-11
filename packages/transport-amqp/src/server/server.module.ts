@@ -93,8 +93,13 @@ export class AmqpMicroServModule {
          * server options
          */
         serverOpts?: AmqpMicroServiceOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<AmqpMicroServModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: AMQP_SERV_OPTS,
                 useValue: {

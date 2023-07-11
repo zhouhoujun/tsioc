@@ -87,16 +87,23 @@ export class NatsMicroServModule {
          * service endpoint provider
          */
         endpoint?: ProvdierOf<NatsEndpoint>;
-
+        /**
+         * transport factory
+         */
         transportFactory?: ProvdierOf<NatsTransportSessionFactory>;
         /**
          * service options
          */
         serverOpts?: NatsMicroServOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }
     ): ModuleWithProviders<NatsMicroServModule> {
 
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: NATS_SERV_OPTS,
                 useValue: {

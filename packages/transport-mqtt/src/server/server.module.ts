@@ -84,16 +84,23 @@ export class MqttMicroServModule {
          * service endpoint provider
          */
         endpoint?: ProvdierOf<MqttEndpoint>;
-
+        /**
+         * transport factory.
+         */
         transportFactory?: ProvdierOf<MqttTransportSessionFactory>;
         /**
          * service options
          */
         serverOpts?: MqttServiceOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }
     ): ModuleWithProviders<MqttMicroServModule> {
 
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: MQTT_SERV_OPTS,
                 useValue: {

@@ -101,8 +101,13 @@ export class TcpMicroServModule {
          * server options
          */
         serverOpts?: TcpServerOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<TcpMicroServModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: TCP_MICRO_SERV_OPTS,
                 useValue: {
@@ -214,8 +219,13 @@ export class TcpServerModule {
          * server options
          */
         serverOpts?: TcpServerOpts;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<TcpServerModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             {
                 provide: TCP_SERV_OPTS,
                 useValue: {

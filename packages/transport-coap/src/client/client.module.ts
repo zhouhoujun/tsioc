@@ -4,15 +4,15 @@ import { TransportModule, RequestAdapter, TransportBackend, BodyContentIntercept
 import { CoapHandler } from './handler';
 import { CoapClient } from './client';
 import { CoapRequestAdapter } from './request';
-import { COAP_CLIENT_OPTS, COAP_FILTERS, COAP_INTERCEPTORS, CoapClientOpts, CoapClientsOpts } from './options';
+import { COAP_CLIENT_OPTS, COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, CoapClientOpts, CoapClientsOpts } from './options';
 import { CoapStatusVaildator } from '../status';
 
 
 
 
 const defClientOpts = {
-    interceptorsToken: COAP_INTERCEPTORS,
-    execptionsToken: COAP_FILTERS,
+    interceptorsToken: COAP_CLIENT_INTERCEPTORS,
+    execptionsToken: COAP_CLIENT_FILTERS,
     interceptors: [BodyContentInterceptor],
     backend: TransportBackend,
     providers: [
@@ -61,8 +61,13 @@ export class CoapClientModule {
          * client handler provider
          */
         handler?: ProvdierOf<CoapHandler>;
+        /**
+         * custom provider with module.
+         */
+        providers?: ProviderType[];
     }): ModuleWithProviders<CoapClientModule> {
         const providers: ProviderType[] = [
+            ...options.providers ?? EMPTY,
             ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
                 provide: opts.client,
                 useFactory: (injector: Injector) => {
