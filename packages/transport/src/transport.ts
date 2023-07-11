@@ -1,4 +1,4 @@
-import { Decoder, Encoder, InvalidJsonException, Packet, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, IReadableStream, InvalidJsonException, Packet, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
 import { isNil, isString } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
@@ -31,14 +31,26 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     }
 
-    async send(data: Packet): Promise<void> {
-        const buffers = await (isNil(data.payload) ? this.generateNoPayload(data) : this.generate(data));
-        this.writeBuffer(buffers, data);
+    async send(packet: Packet): Promise<void> {
+        const { payload, ...headers } = packet;
+        if (!headers.headers) {
+            headers.headers = {};
+        }
+        if (isNil(payload)) {
+            await this.writeBuffer(await this.generateNoPayload(headers), packet);
+        } else if (this.streamAdapter.isReadable(payload)) {
+            await this.writeStream(payload, headers);
+        } else {
+            await this.writeBuffer(await this.generate(payload, headers), packet);
+        }
     }
 
-    protected abstract generate(data: Packet): Promise<Buffer>;
-    protected abstract generateNoPayload(data: Packet): Promise<Buffer>;
+    protected abstract generate(payload: any, headers: Omit<Packet, 'payload'>): Promise<Buffer>;
+    protected abstract generateNoPayload(headers: Omit<Packet, 'payload'>): Promise<Buffer>;
+    protected abstract writeStream(payload: IReadableStream, headers: Omit<Packet, 'payload'>): Promise<void>;
+    protected abstract writeBuffer(buffer: Buffer, headers: Omit<Packet, 'payload'>): any;
 
+    
 
     destroy(error?: any): void {
         if (this._destroyed) return;
@@ -50,7 +62,6 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         this.removeAllListeners();
     }
 
-    protected abstract writeBuffer(buffer: Buffer, packet?: Packet): any;
 
     protected abstract handleFailed(error: any): void;
 
@@ -97,6 +108,24 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         this._body = Buffer.alloc(1, '1');
     }
 
+    // protected async writeStream(payload: IReadableStream, headers: Omit<Packet, 'payload'>): Promise<void> {
+    //     await this.writeBuffer(this.generateHeader(headers), headers);
+    //     this.
+    // }
+
+    protected generateHeader(headers: Omit<Packet, 'payload'>): Buffer {
+        let hmsg = Buffer.from(JSON.stringify(headers));
+        if (this.encoder) {
+            hmsg = this.encoder.encode(hmsg);
+        }
+
+        return Buffer.concat([
+            Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
+            this.delimiter,
+            this._header,
+            hmsg,
+        ]);
+    }
 
     protected async generate(data: Packet): Promise<Buffer> {
         const { payload, ...headers } = data;
@@ -111,8 +140,6 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
             body = Buffer.from(payload);
         } else if (Buffer.isBuffer(payload)) {
             body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
         } else {
             body = Buffer.from(JSON.stringify(payload));
         }
@@ -121,24 +148,19 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
             headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
-        let hmsg = Buffer.from(JSON.stringify(headers));
-
         if (this.encoder) {
-            hmsg = this.encoder.encode(hmsg);
-            if (isString(hmsg)) hmsg = Buffer.from(hmsg);
             body = this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
             len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
+        const headerBuff = this.generateHeader(headers);
+
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(id);
 
         return Buffer.concat([
-            Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
-            this.delimiter,
-            this._header,
-            hmsg,
+            headerBuff,
             Buffer.from(String(len + 3)),
             this.delimiter,
             this._body,

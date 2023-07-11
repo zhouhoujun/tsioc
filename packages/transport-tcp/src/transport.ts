@@ -1,6 +1,6 @@
-import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, Injectable, Optional, tokenId, } from '@tsdi/ioc';
-import { SocketTransportSession, ev } from '@tsdi/transport';
+import { Decoder, Encoder, IReadableStream, Packet, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
+import { SocketTransportSession, ev, hdr } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 
@@ -28,6 +28,25 @@ export class TcpTransportSessionFactoryImpl implements TcpTransportSessionFactor
 }
 
 export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | net.Socket> {
+
+
+    protected async writeStream(payload: IReadableStream<any>, headers: Omit<Packet<any>, 'payload'>): Promise<void> {
+        const headerBuff = this.generateHeader(headers);
+        const len = isString(headers.headers![hdr.CONTENT_LENGTH]) ? ~~headers.headers![hdr.CONTENT_LENGTH] : headers.headers![hdr.CONTENT_LENGTH]!;
+        const bufId = Buffer.alloc(2);
+        bufId.writeUInt16BE(headers.id);
+        this.socket.write(Buffer.from([
+            headerBuff,
+            Buffer.from(String(len + 3)),
+            this.delimiter,
+            this._body,
+            bufId
+        ] as any));
+        
+        await this.streamAdapter.pipeTo(
+            this.encoder ? this.encoder.encode(payload) : payload,
+            this.socket);
+    }
 
     protected writeBuffer(buffer: Buffer) {
         this.socket.write(buffer);
