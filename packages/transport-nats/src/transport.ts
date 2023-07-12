@@ -1,4 +1,4 @@
-import { Decoder, Encoder, IncomingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IReadableStream, IncomingHeaders, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
 import { Msg, NatsConnection, headers as createHeaders } from 'nats';
@@ -39,6 +39,7 @@ export interface SubjectBuffer {
 }
 
 export class NatsTransportSession extends AbstractTransportSession<NatsConnection, NatsSessionOpts> {
+
     protected subjects: Map<string, SubjectBuffer> = new Map();
 
     protected override bindMessageEvent(options: NatsSessionOpts): void {
@@ -49,6 +50,38 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
 
     protected override getBindEvents(): string[] {
         return [];
+    }
+
+    write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void {
+        const topic = packet.topic ?? packet.url!;
+        const headers = this.options.publishOpts?.headers ?? createHeaders();
+        packet.headers && Object.keys(packet.headers).forEach(k => {
+            headers.set(k, String(packet?.headers?.[k] ?? ''))
+        });
+
+        headers.set(hdr.IDENTITY, packet.id);
+
+        const replys = this.options.serverSide ? undefined : {
+            reply: packet.replyTo
+        };
+        try {
+            this.socket.publish(
+                topic,
+                chunk,
+                {
+                    ...this.options.publishOpts,
+                    ...replys,
+                    headers
+                }
+            )
+            callback && callback();
+        } catch (err) {
+            callback && callback(err);
+            throw err;
+        }
+    }
+    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
+        throw new Error('Method not implemented.');
     }
 
     protected writeBuffer(buffer: Buffer, packet: Packet) {

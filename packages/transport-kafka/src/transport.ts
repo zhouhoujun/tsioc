@@ -1,6 +1,6 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
 import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, IncomingHeaders, NotFoundExecption, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IReadableStream, IncomingHeaders, NotFoundExecption, Packet, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 
@@ -105,13 +105,12 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         }
     }
 
+    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
 
-    protected async generate(data: Packet<any>): Promise<Buffer> {
-        const { payload, ...headers } = data;
-        if (!headers.headers) {
-            headers.headers = {};
-        }
-
+    protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+        const headers = packet.headers!;
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
@@ -123,25 +122,24 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if (!headers.headers[hdr.CONTENT_LENGTH]) {
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        if (!headers[hdr.CONTENT_LENGTH]) {
+            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
         if (this.encoder) {
             body = this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
         return body;
     }
 
-    protected async generateNoPayload(data: Packet<any>): Promise<Buffer> {
+    protected async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
         return Buffer.alloc(0);
     }
 
-    protected writeBuffer(buffer: Buffer, packet: Packet<any> & { partition?: number }) {
-
+    write(buffer: Buffer, packet: Packet<any> & { partition?: number }, callback: (err?: any) => void) {
         const headers: IHeaders = {};
         Object.keys(packet.headers!).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
@@ -167,6 +165,8 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                 partition: packet.partition
             }]
         })
+            .then(() => callback())
+            .catch(err => callback(err))
     }
 
     protected getReplyTopic(topic: string) {

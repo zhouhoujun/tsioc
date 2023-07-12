@@ -1,5 +1,5 @@
 import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, TransportSession, Server, MESSAGE, GET, HYBRID_HOST } from '@tsdi/core';
+import { Outgoing, ListenOpts, InternalServerExecption, ListenService, Packet, Server, MESSAGE, GET, HYBRID_HOST } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
@@ -10,7 +10,7 @@ import { TcpContext } from './context';
 import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
-import { TcpTransportSessionFactory } from '../transport';
+import { TcpTransportSession, TcpTransportSessionFactory } from '../transport';
 
 
 
@@ -118,7 +118,7 @@ export class TcpMicroService extends Server<TcpContext, Outgoing> implements Lis
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: TransportSession<tls.TLSSocket | net.Socket>, packet: Packet): Subscription {
+    protected requestHandler(session: TcpTransportSession, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = this.micro ? MESSAGE : GET;
         }

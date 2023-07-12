@@ -26,7 +26,7 @@ export class NodeFileAdapter extends FileAdapter {
         return existsSync(path)
     }
 
-    read(path: string, options?: any): IReadableStream<any> {
+    read(path: string, options?: any): IReadableStream {
         return createReadStream(path, options)
     }
 }

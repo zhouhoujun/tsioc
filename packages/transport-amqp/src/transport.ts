@@ -1,4 +1,4 @@
-import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IReadableStream, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
@@ -44,27 +44,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
 
-    protected writeBuffer(buffer: Buffer, packet: Packet) {
-        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
-        const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
-        headers[hdr.PATH] = packet.url ?? packet.topic;
-        const replys = this.options.serverSide ? undefined : {
-            replyTo: packet.replyTo,
-            persistent: this.options.persistent,
-        };
-        this.socket.sendToQueue(
-            queue,
-            buffer,
-            {
-                ...replys,
-                ...this.options.publishOpts,
-                headers,
-                contentType: headers[hdr.CONTENT_TYPE],
-                contentEncoding: headers[hdr.CONTENT_ENCODING],
-                correlationId: packet.id,
-            }
-        )
-    }
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message)
     }
@@ -75,43 +54,62 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         this.socket.off(name, event)
     }
 
-    protected override async generate(data: Packet): Promise<Buffer> {
-        const { payload, ...headers } = data;
-        if (!headers.headers) {
-            headers.headers = {};
-        }
+    write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void {
+        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
+        const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
+        headers[hdr.PATH] = packet.url ?? packet.topic;
+        const replys = this.options.serverSide ? undefined : {
+            replyTo: packet.replyTo,
+            persistent: this.options.persistent,
+        };
+        const succeeded = this.socket.sendToQueue(
+            queue,
+            chunk,
+            {
+                ...replys,
+                ...this.options.publishOpts,
+                headers,
+                contentType: headers[hdr.CONTENT_TYPE],
+                contentEncoding: headers[hdr.CONTENT_ENCODING],
+                correlationId: packet.id,
+            }
+        );
+
+        callback && callback(succeeded ? undefined : 'sendToQueue failed.');
+    }
+    
+    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
+    protected override async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+        const headers = packet.headers!;
 
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
         } else if (Buffer.isBuffer(payload)) {
             body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
         } else {
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if (!headers.headers[hdr.CONTENT_LENGTH]) {
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        if (!headers[hdr.CONTENT_LENGTH]) {
+            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
         if (this.encoder) {
             body = this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
         return body;
 
     }
 
-    protected override async generateNoPayload(data: Packet<any>): Promise<Buffer> {
-        if (!data.headers) {
-            data.headers = {};
-        }
-        data.headers[hdr.CONTENT_LENGTH] = 0;
-
+    protected override async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+        packet.headers![hdr.CONTENT_LENGTH] = 0;
         return Buffer.alloc(0);
     }
 

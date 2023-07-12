@@ -1,6 +1,6 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, TransportSession } from '@tsdi/core';
-import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
-import { ev, hdr } from '@tsdi/transport';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, HeaderPacket } from '@tsdi/core';
+import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
+import { SocketTransportSession, ev, hdr } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 import { Writable } from 'stream';
@@ -18,10 +18,12 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
     destroyed = false;
     sendDate = true;
     private _headersSent = false;
+    private _bodflagSent = false;
+    private _hdpacket?: HeaderPacket;
 
     writable = true;
     constructor(
-        readonly session: TransportSession<tls.TLSSocket | net.Socket>,
+        readonly session: SocketTransportSession<tls.TLSSocket | net.Socket>,
         readonly id: number) {
         super({
             objectMode: true
@@ -109,17 +111,12 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
             }
             return this;
         }
+
+        if (!this.headersSent) {
+            this.writeHead();
+        }
+
         super.end(chunk, encoding, cb);
-
-        // if (!this.headersSent) {
-        //     this.writeHead(this.statusCode, this.statusMessage, this.getHeaders());
-        // }
-
-        this.session.send({
-            id: this.id,
-            headers: this.getHeaders(),
-            payload: this,
-        });
 
         this.ending = true;
 
@@ -127,9 +124,22 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
 
     }
 
-    writeHead(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        if (!this.headersSent) {
+            this.writeHead()
+        }
+        if (!this._bodflagSent) {
+            const bhdr = this.session.generatePayloadFlag(this._hdpacket!);
+            chunk = Buffer.concat([bhdr, chunk]);
+            this._bodflagSent = true;
+        }
+        this.session.write(chunk, this._hdpacket!, callback)
+    }
+
+    writeHead(statusCode?: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
     writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    writeHead(statusCode: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
+    writeHead(statusCode?: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
+        if (this.headersSent) return this;
         if (isString(statusMessage)) {
             this.setHeader(hdr.STATUS_MESSAGE, statusMessage)
         } else {
@@ -148,8 +158,17 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
                 this._hdr.setHeaders(headers);
             }
         }
-        this.setHeader(hdr.STATUS, statusCode);
-        this.setHeader(hdr.STATUS2, statusCode);
+        if (!isNil(statusCode)) {
+            this.setHeader(hdr.STATUS, statusCode);
+            this.setHeader(hdr.STATUS2, statusCode);
+        }
+
+        const packet = this._hdpacket = {
+            id: this.id,
+            headers: this.getHeaders()
+        }
+        this._headersSent = true;
+        this.session.write(this.session.generateHeader(packet), packet);
 
         return this;
     }

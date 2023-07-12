@@ -1,4 +1,4 @@
-import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IReadableStream, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
 import { TopicTransportSession, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
@@ -36,10 +36,16 @@ export class RedisTransportSessionFactoryImpl implements RedisTransportSessionFa
 const PATTERN_MSG_BUFFER = 'pmessageBuffer'
 
 export class RedisTransportSession extends TopicTransportSession<ReidsTransport> {
-
-    protected override writeBuffer(buffer: Buffer, packet: Packet) {
-        this.socket.publisher.publish(packet.url!, buffer);
+   
+   
+    override write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
+        this.socket.publisher.publish(packet.url!, chunk, callback);
     }
+
+    protected override pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
     protected override handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message);
     }

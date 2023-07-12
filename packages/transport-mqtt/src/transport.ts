@@ -1,4 +1,4 @@
-import { Decoder, Encoder, StreamAdapter, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, StreamAdapter, Packet, TransportSession, TransportSessionFactory, TransportSessionOpts, HeaderPacket, IReadableStream, SendOpts } from '@tsdi/core';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
 import { TopicTransportSession, ev } from '@tsdi/transport';
 import { Client } from 'mqtt';
@@ -27,9 +27,13 @@ export class MqttTransportSessionFactoryImpl implements MqttTransportSessionFact
 
 }
 export class MqttTransportSession extends TopicTransportSession<Client> {
-    protected writeBuffer(buffer: Buffer, packet: Packet<any>) {
-        this.socket.publish(packet.url!, buffer);
+    write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
+        this.socket.publish(packet.url!, chunk, callback);
     }
+    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message);
     }

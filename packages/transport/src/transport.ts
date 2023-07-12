@@ -1,5 +1,5 @@
-import { Decoder, Encoder, InvalidJsonException, Packet, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
-import { isNil, isString } from '@tsdi/ioc';
+import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
+import { isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { toBuffer } from './utils';
@@ -31,14 +31,37 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     }
 
-    async send(data: Packet): Promise<void> {
-        const buffers = await (isNil(data.payload) ? this.generateNoPayload(data) : this.generate(data));
-        this.writeBuffer(buffers, data);
+    /**
+     * send packet.
+     * @param chunk 
+     * @param packet
+     * @param callback
+     */
+    abstract write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
+
+    writeAsync(chunk: Buffer, packet: HeaderPacket): Promise<void> {
+        return promisify(this.write, this)(chunk, packet) as Promise<void>;
     }
 
-    protected abstract generate(data: Packet): Promise<Buffer>;
-    protected abstract generateNoPayload(data: Packet): Promise<Buffer>;
+    async send(packet: Packet, options?: SendOpts): Promise<void> {
+        const { payload, ...headers } = packet;
+        if (!headers.headers) {
+            headers.headers = {};
+        }
+        if (isNil(payload)) {
+            const buffs = await this.generateNoPayload(headers, options);
+            await this.writeAsync(buffs, packet);
+        } else if (this.streamAdapter.isReadable(payload)) {
+            await this.pipeStream(payload, headers, options);
+        } else {
+            const buffs = await this.generate(payload, headers, options);
+            await this.writeAsync(buffs, headers)
+        }
+    }
 
+    protected abstract pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void>;
+    protected abstract generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
+    protected abstract generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
 
     destroy(error?: any): void {
         if (this._destroyed) return;
@@ -50,7 +73,6 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         this.removeAllListeners();
     }
 
-    protected abstract writeBuffer(buffer: Buffer, packet?: Packet): any;
 
     protected abstract handleFailed(error: any): void;
 
@@ -98,51 +120,64 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
     }
 
 
-    protected async generate(data: Packet): Promise<Buffer> {
-        const { payload, ...headers } = data;
-        const id = data.id;
-        if (!headers.headers) {
-            headers.headers = {};
+    generateHeader(packet: HeaderPacket, options?: SendOpts): Buffer {
+        let msg = JSON.stringify(packet);
+        if (this.encoder) {
+            msg = this.encoder.encode(msg);
         }
-        let len = isString(headers.headers[hdr.CONTENT_LENGTH]) ? ~~headers.headers[hdr.CONTENT_LENGTH] : headers.headers[hdr.CONTENT_LENGTH]!;
+        const buffers = isString(msg) ? Buffer.from(msg) : msg;
+        return Buffer.concat([
+            Buffer.from(String(Buffer.byteLength(buffers) + 1)),
+            this.delimiter,
+            this._header,
+            buffers
+        ]);
+    }
+
+    generatePayloadFlag(packet: HeaderPacket, options?: SendOpts): Buffer {
+        const headers = packet.headers!;
+        const len = isString(headers[hdr.CONTENT_LENGTH]) ? ~~headers[hdr.CONTENT_LENGTH] : headers[hdr.CONTENT_LENGTH]!;
+        const bufId = Buffer.alloc(2);
+        bufId.writeUInt16BE(packet.id);
+
+        return Buffer.concat([
+            Buffer.from(String(len + 3)),
+            this.delimiter,
+            this._body,
+            bufId
+        ])
+
+    }
+
+    protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+        const id = packet.id;
+        const headers = packet.headers!
 
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
         } else if (Buffer.isBuffer(payload)) {
             body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
         } else {
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if (!headers.headers[hdr.CONTENT_LENGTH]) {
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        if (!headers[hdr.CONTENT_LENGTH]) {
+            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
-
-        let hmsg = Buffer.from(JSON.stringify(headers));
 
         if (this.encoder) {
-            hmsg = this.encoder.encode(hmsg);
-            if (isString(hmsg)) hmsg = Buffer.from(hmsg);
             body = this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
-            len = headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
 
-        const bufId = Buffer.alloc(2);
-        bufId.writeUInt16BE(id);
+        const headerBuff = this.generateHeader(packet, options);
+        const payloadFlag = this.generatePayloadFlag(packet, options);
 
         return Buffer.concat([
-            Buffer.from(String(Buffer.byteLength(hmsg) + 1)),
-            this.delimiter,
-            this._header,
-            hmsg,
-            Buffer.from(String(len + 3)),
-            this.delimiter,
-            this._body,
-            bufId,
+            headerBuff,
+            payloadFlag,
             body
         ]);
 

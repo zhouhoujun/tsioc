@@ -1,15 +1,14 @@
-import { TransportContext, InternalServerExecption, Server, TransportSession, Packet, MESSAGE, HYBRID_HOST } from '@tsdi/core';
+import { TransportContext, InternalServerExecption, Server, Packet, MESSAGE, HYBRID_HOST } from '@tsdi/core';
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { LOCALHOST, ev } from '@tsdi/transport';
 import { Server as SocketServer, WebSocketServer } from 'ws';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Duplex } from 'stream';
 import { Subscription, finalize } from 'rxjs';
 import { WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
-import { WsTransportSessionFactory } from '../transport';
+import { WsTransportSession, WsTransportSessionFactory } from '../transport';
 import { WsIncoming } from './incoming';
 import { WsOutgoing } from './outgoing';
 import { WsContext } from './context';
@@ -91,7 +90,7 @@ export class WsServer extends Server<TransportContext> {
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: TransportSession<Duplex>, packet: Packet): Subscription {
+    protected requestHandler(session: WsTransportSession, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = MESSAGE;
         }

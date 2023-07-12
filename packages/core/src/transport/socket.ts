@@ -1,6 +1,6 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { OutgoingHeader, OutgoingHeaders } from './headers';
-import { Packet } from './packet';
+import { HeaderPacket, Packet } from './packet';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
 import { Decoder, Encoder } from '../coding';
 
@@ -135,7 +135,7 @@ export const CONNECTION = tokenId<Connection>('CONNECTION');
 /**
  * server side incoming message.
  */
-export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableStream {
+export interface Incoming<TSocket = any> extends Packet<Buffer>, IReadableStream {
     /**
      * packet id.
      */
@@ -163,7 +163,7 @@ export interface Incoming<T = any, TSocket = any> extends Packet<T>, IReadableSt
 
     body?: any;
 
-    rawBody?: any;
+    rawBody?: Buffer;
 }
 
 /**
@@ -311,6 +311,16 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * @param encoder 
      */
     send(data: Packet, options?: SendOpts): Promise<void>;
+
+
+    /**
+     * send packet.
+     * @param chunk 
+     * @param packet
+     * @param callback
+     */
+    write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
+
     /**
      * Adds the `listener` function to the end of the listeners array for the
      * event named `eventName`. No checks are made to see if the `listener` has

@@ -19,7 +19,7 @@ export abstract class StreamAdapter {
      * @param source 
      * @param destination 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, destination: IWritableStream, callback?: (err: any | null) => void): T;
     /**
      *  pipe line
      * @param source source stream
@@ -27,7 +27,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -36,7 +36,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -46,7 +46,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
 
     /**
      * send body

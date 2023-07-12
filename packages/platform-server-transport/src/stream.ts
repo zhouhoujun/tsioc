@@ -17,7 +17,7 @@ const pmPipeline = promisify(pipeline);
 @Injectable({ static: true })
 export class NodeStreamAdapter extends AbstractStreamAdapter {
 
-    async pipeTo(source: PipeSource | Stream, destination: IWritableStream<any>): Promise<void> {
+    async pipeTo(source: PipeSource | Stream, destination: IWritableStream): Promise<void> {
         if (this.isStream(source) && !this.isReadable(source)) {
             const defer = lang.defer();
             source.once(ev.ERROR, (err) => {
@@ -39,15 +39,15 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
         }
     }
 
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream<any>, transform2: ITransformStream<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream<any>, transform2: ITransformStream<any>, transform3: ITransformStream<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends IDuplexStream>(...args: any[]): T {
         return (pipeline as any).apply(pipeline, args) as T;
     }
 
-    jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream<any> {
+    jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream {
         return new JsonStreamStringify(value, replacer, spaces, cycle);
     }
 
@@ -55,11 +55,11 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
         return target instanceof Stream;
     }
 
-    isReadable(stream: any): stream is IReadableStream<any> {
+    isReadable(stream: any): stream is IReadableStream {
         return (isReadable ? isReadable(stream) : stream instanceof Readable) || (isFunction(stream.read) && isFunction(stream.pipe) && (stream as Readable).readable);
     }
 
-    isWritable(stream: any): stream is IWritableStream<any> {
+    isWritable(stream: any): stream is IWritableStream {
         return stream instanceof Writable || (isFunction(stream.write) && (stream as Writable).writable);
     }
     passThrough(options?: {
@@ -160,7 +160,7 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
     isFormDataLike(target: any): boolean {
         return isFormData(target) || target instanceof FormData;
     }
-    createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: IReadableStream<any>, size: number): void; destroy?(this: IReadableStream<any>, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined) {
+    createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: IReadableStream, size: number): void; destroy?(this: IReadableStream, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined) {
         return new FormData(options);
     }
 
