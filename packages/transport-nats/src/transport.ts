@@ -84,30 +84,6 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         throw new Error('Method not implemented.');
     }
 
-    protected writeBuffer(buffer: Buffer, packet: Packet) {
-        const topic = packet.topic ?? packet.url!;
-        const headers = this.options.publishOpts?.headers ?? createHeaders();
-        packet.headers && Object.keys(packet.headers).forEach(k => {
-            headers.set(k, String(packet?.headers?.[k] ?? ''))
-        });
-
-        headers.set(hdr.IDENTITY, packet.id);
-
-        const replys = this.options.serverSide ? undefined : {
-            reply: packet.replyTo
-        };
-
-        this.socket.publish(
-            topic,
-            buffer,
-            {
-                ...this.options.publishOpts,
-                ...replys,
-                headers
-            }
-        )
-    }
-
     protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
         switch (observe) {
             case 'emit':

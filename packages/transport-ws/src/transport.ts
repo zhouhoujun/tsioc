@@ -41,10 +41,6 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
         payload.pipe(this.socket);
     }
 
-    protected writeBuffer(buffer: Buffer) {
-        this.socket.write(buffer);
-    }
-
     protected handleFailed(error: any): void {
         this.socket.emit(ev.ERROR, error.message);
         this.socket.end();
