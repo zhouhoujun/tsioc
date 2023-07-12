@@ -3,14 +3,14 @@ import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
 import { ev, hdr } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
-import { PassThrough } from 'stream';
+import { Writable } from 'stream';
 
 
 
 /**
  * outgoing message.
  */
-export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket | net.Socket, number> {
+export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | net.Socket, number> {
 
     _closed = false;
     ending = false;
@@ -18,13 +18,14 @@ export class TcpOutgoing extends PassThrough implements Outgoing<tls.TLSSocket |
     destroyed = false;
     sendDate = true;
     private _headersSent = false;
-    private _sentHeaders?: OutgoingHeaders;
 
     writable = true;
     constructor(
         readonly session: TransportSession<tls.TLSSocket | net.Socket>,
         readonly id: number) {
-        super({ objectMode: true });
+        super({
+            objectMode: true
+        });
         this.setMaxListeners(0);
         this._hdr = new ResHeaders();
         this.init();

@@ -1,4 +1,4 @@
-import { DestroyCallback, InjectFlags, Injector, InjectorScope, InvocationContext,  MethodType, Modules, Platform, ProviderType, RegisterOption, Token, Type, TypeDef, TypeOption, } from '@tsdi/ioc';
+import { DestroyCallback, InjectFlags, Injector, InjectorScope, InvocationContext,  MethodType, Modules, Platform, ProviderType, RegisterOption, Token, Type, TypeDef, TypeOption } from '@tsdi/ioc';
 import { TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode } from '../interfaces/node';
 import { FLAGS, INJECTOR, LView, LViewFlags, TView } from '../interfaces/view';
 import { DirectiveDef } from '../type';

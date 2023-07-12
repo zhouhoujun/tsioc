@@ -20,6 +20,33 @@ export abstract class StreamAdapter {
      * @param destination 
      */
     abstract pipeline<T extends IDuplexStream>(source: PipeSource, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    /**
+     *  pipe line
+     * @param source source stream
+     * @param transform transform stream
+     * @param destination destination stream
+     * @param callback 
+     */
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    /**
+     * pipe line
+     * @param source source stream
+     * @param transform transform stream
+     * @param transform2 transform stream
+     * @param destination destination stream
+     * @param callback 
+     */
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    /**
+     * pipe line
+     * @param source source stream
+     * @param transform transform stream
+     * @param transform2 transform stream
+     * @param transform3 transform stream
+     * @param destination destination stream
+     * @param callback 
+     */
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
 
     /**
      * send body
