@@ -85,10 +85,10 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         return res
     }
 
-    protected respondStream(body: IReadableStream, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<void> {
+    protected async respondStream(body: IReadableStream, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<void> {
         const streamAdapter = ctx.streamAdapter;
         if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
-        return streamAdapter.pipeTo(body, res);
+        return await streamAdapter.pipeTo(body, res);
     }
 
     protected statusMessage(ctx: AssetContext<TRequest, TResponse, TStatus>, status: TStatus): string {

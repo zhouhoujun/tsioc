@@ -2,7 +2,7 @@ import {
     IWritableStream, IDuplexStream, IReadableStream, ITransformStream, isFormData,
     BrotliOptions, PipeSource, ZipOptions
 } from '@tsdi/core';
-import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
+import { Execption, Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
 import { isReadable, Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
 import { promisify } from 'util';
@@ -32,13 +32,19 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
         } else {
-            await pmPipeline(source, destination);
-            if (source instanceof Readable) source.destroy();
+            await pmPipeline(source, destination)
+                .finally(() => {
+                    isFunction((source as any).destroy) && (source as any).destroy();
+                });
         }
     }
 
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T {
-        return pipeline(source, destination, callback) as T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream<any>, transform2: ITransformStream<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream<any>, transform2: ITransformStream<any>, transform3: ITransformStream<any>, destination: IWritableStream<any>, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends IDuplexStream>(...args: any[]): T {
+        return (pipeline as any).apply(pipeline, args) as T;
     }
 
     jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream<any> {
