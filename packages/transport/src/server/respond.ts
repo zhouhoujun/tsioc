@@ -68,8 +68,8 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
 
     protected async respondBody(body: any, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>) {
         // responses
-        if (isBuffer(body)) return await promisify<any, any>(res.end, res)(body);
-        if (isString(body)) return await promisify<any, any>(res.end, res)(Buffer.from(body));
+        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(body);
+        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
 
         if (ctx.streamAdapter.isReadable(body)) {
             return await this.respondStream(body, res, ctx);
@@ -81,7 +81,7 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
             ctx.length = Buffer.byteLength(body)
         }
 
-        await promisify<any, any>(res.end, res)(body);
+        await promisify<any, void>(res.end, res)(body);
         return res
     }
 

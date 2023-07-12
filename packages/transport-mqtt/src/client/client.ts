@@ -99,7 +99,7 @@ export class MqttClient extends Client<TransportRequest, number> {
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;
         this._session?.destroy();
-        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
+        await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;

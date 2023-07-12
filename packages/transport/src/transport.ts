@@ -2,7 +2,6 @@ import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, 
 import { isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
-import { toBuffer } from './utils';
 import { PacketLengthException } from './execptions';
 
 /**
@@ -40,7 +39,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
     abstract write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
 
     writeAsync(chunk: Buffer, packet: HeaderPacket): Promise<void> {
-        return promisify(this.write, this)(chunk, packet) as Promise<void>;
+        return promisify(this.write, this)(chunk, packet);
     }
 
     async send(packet: Packet, options?: SendOpts): Promise<void> {

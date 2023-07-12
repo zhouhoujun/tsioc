@@ -104,7 +104,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         if (!this.mqtt) return;
         this._session?.destroy();
         if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
-        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
+        await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;
