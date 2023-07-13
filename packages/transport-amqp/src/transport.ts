@@ -1,6 +1,6 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
-import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
+import { AbstractTransportSession, ev, hdr } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';
@@ -77,13 +77,12 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
 
         callback && callback(succeeded ? undefined : 'sendToQueue failed.');
     }
-    
+
     protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
     protected override async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        const headers = packet.headers!;
 
         let body: Buffer;
         if (isString(payload)) {
@@ -94,14 +93,13 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if (!headers[hdr.CONTENT_LENGTH]) {
-            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        if (!this.hasPayloadLength(packet)) {
+            this.setPayloadLength(packet, Buffer.byteLength(body));
         }
 
         if (this.encoder) {
             body = this.encoder.encode(body);
-            if (isString(body)) body = Buffer.from(body);
-            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            this.setPayloadLength(packet, Buffer.byteLength(body));
         }
 
         return body;
@@ -109,7 +107,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
     }
 
     protected override async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        packet.headers![hdr.CONTENT_LENGTH] = 0;
+        this.setPayloadLength(packet, 0);
         return Buffer.alloc(0);
     }
 

@@ -129,7 +129,7 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
             this.writeHead()
         }
         if (!this._bodflagSent) {
-            const bhdr = this.session.generatePayloadFlag(this._hdpacket!);
+            const bhdr = this.session.getPayloadPrefix(this._hdpacket!);
             chunk = Buffer.concat([bhdr, chunk]);
             this._bodflagSent = true;
         }

@@ -78,7 +78,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                 chl = {
                     topic,
                     buffer: null,
-                    contentLength: ~~(msg.message.headers?.[hdr.CONTENT_LENGTH]?.toString() ?? '0'),
+                    contentLength: this.getPayloadLength(msg.message as any), // ~~(msg.message.headers?.[hdr.CONTENT_LENGTH]?.toString() ?? '0'),
                     pkgs: new Map()
                 }
                 this.topics.set(topic, chl)

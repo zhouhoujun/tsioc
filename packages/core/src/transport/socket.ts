@@ -14,7 +14,7 @@ export interface Socket extends IDuplexStream {
      * @since v0.1.90
      * @return The socket itself.
      */
-    setEncoding(encoding?: BufferEncoding): this;
+    setEncoding(encoding?: string): this;
 
     /**
      * Pauses the reading of data. That is, `'data'` events will not be emitted.

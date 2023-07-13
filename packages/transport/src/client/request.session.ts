@@ -84,7 +84,6 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 request.off(ev.CLOSE, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
-                // request.destroy?.();
             }
         });
     }

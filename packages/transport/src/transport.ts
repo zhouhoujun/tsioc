@@ -4,6 +4,13 @@ import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
 
+export interface SendPacket extends HeaderPacket {
+    size?: number;
+    remnantSize?: number;
+    headersSent?: boolean;
+}
+
+
 /**
  * abstract transport session.
  */
@@ -30,13 +37,43 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     }
 
+
     /**
      * send packet.
      * @param chunk 
      * @param packet
      * @param callback
      */
-    abstract write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
+    abstract write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void 
+
+    // /**
+    //  * send packet.
+    //  * @param chunk 
+    //  * @param packet
+    //  * @param callback
+    //  */
+    // write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void {
+    //     if (isNil(packet.remnantSize)) {
+    //         packet.remnantSize = this.getPayloadLength(packet);
+    //     }
+    //     const len = Buffer.byteLength(chunk);
+    //     const maxSize = this.getPacketMaxSize();
+    //     if (!packet.size) {
+    //         packet.size = len;
+    //     } else if (maxSize < packet.size + len) {
+    //         packet.size += len;
+    //     }
+    // }
+
+    // protected abstract getPacketMaxSize(): number;
+
+    // /**
+    //  * write socket.
+    //  * @param chunk 
+    //  * @param packet 
+    //  * @param callback 
+    //  */
+    // protected abstract _write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
 
     writeAsync(chunk: Buffer, packet: HeaderPacket): Promise<void> {
         return promisify(this.write, this)(chunk, packet);
@@ -50,17 +87,67 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         if (isNil(payload)) {
             const buffs = await this.generateNoPayload(headers, options);
             await this.writeAsync(buffs, packet);
-        } else if (this.streamAdapter.isReadable(payload)) {
-            await this.pipeStream(payload, headers, options);
         } else {
-            const buffs = await this.generate(payload, headers, options);
-            await this.writeAsync(buffs, headers)
+            if (this.streamAdapter.isReadable(payload)) {
+                await this.pipeStream(payload, headers, options);
+            } else {
+                const buffs = await this.generate(payload, headers, options);
+                await this.writeAsync(buffs, headers)
+            }
         }
+    }
+
+    /**
+     * encode packet.
+     * @param payload 
+     * @param packet 
+     * @returns 
+     */
+    protected encodePayload(payload: any, packet: HeaderPacket): Buffer {
+        let body: Buffer;
+        if (isString(payload)) {
+            body = Buffer.from(payload);
+        } else if (Buffer.isBuffer(payload)) {
+            body = payload;
+        } else {
+            body = Buffer.from(JSON.stringify(payload));
+        }
+
+        let len = Buffer.byteLength(body);
+        if (!this.hasPayloadLength(packet)) {
+            this.setPayloadLength(packet, len);
+        }
+
+        if (this.encoder) {
+            body = this.encoder.encode(body);
+            len = Buffer.byteLength(body);
+            this.setPayloadLength(packet, len);
+        }
+
+        return body;
     }
 
     protected abstract pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void>;
     protected abstract generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
     protected abstract generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
+
+
+    protected hasPayloadLength(packet: HeaderPacket) {
+        return !isNil(packet.headers?.[hdr.CONTENT_LENGTH]);
+    }
+
+    protected getPayloadLength(packet: HeaderPacket): number {
+        const headers = packet.headers;
+        if (!headers) return 0;
+        return isString(headers[hdr.CONTENT_LENGTH]) ? ~~headers[hdr.CONTENT_LENGTH] : headers[hdr.CONTENT_LENGTH]!
+    }
+
+    protected setPayloadLength(packet: HeaderPacket, len: number) {
+        if (!packet.headers) {
+            packet.headers = {};
+        }
+        packet.headers[hdr.CONTENT_LENGTH] = len;
+    }
 
     destroy(error?: any): void {
         if (this._destroyed) return;
@@ -118,7 +205,6 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         this._body = Buffer.alloc(1, '1');
     }
 
-
     generateHeader(packet: HeaderPacket, options?: SendOpts): Buffer {
         let msg = JSON.stringify(packet);
         if (this.encoder) {
@@ -133,9 +219,8 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         ]);
     }
 
-    generatePayloadFlag(packet: HeaderPacket, options?: SendOpts): Buffer {
-        const headers = packet.headers!;
-        const len = isString(headers[hdr.CONTENT_LENGTH]) ? ~~headers[hdr.CONTENT_LENGTH] : headers[hdr.CONTENT_LENGTH]!;
+    getPayloadPrefix(packet: HeaderPacket, options?: SendOpts): Buffer {
+        const len = this.getPayloadLength(packet);
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(packet.id);
 
@@ -148,36 +233,17 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
 
     }
 
+
     protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        const id = packet.id;
-        const headers = packet.headers!
-
-        let body: Buffer;
-        if (isString(payload)) {
-            body = Buffer.from(payload);
-        } else if (Buffer.isBuffer(payload)) {
-            body = payload;
-        } else {
-            body = Buffer.from(JSON.stringify(payload));
-        }
-
-        if (!headers[hdr.CONTENT_LENGTH]) {
-            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        if (this.encoder) {
-            body = this.encoder.encode(body);
-            if (isString(body)) body = Buffer.from(body);
-            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
 
         const headerBuff = this.generateHeader(packet, options);
-        const payloadFlag = this.generatePayloadFlag(packet, options);
+        const payloadFlag = this.getPayloadPrefix(packet, options);
+        const payloadBuf = this.encodePayload(payload, packet);
 
         return Buffer.concat([
             headerBuff,
             payloadFlag,
-            body
+            payloadBuf
         ]);
 
     }
@@ -272,7 +338,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                 throw new InvalidJsonException(e, str);
             }
             message = message || {};
-            if (message.headers?.[hdr.CONTENT_LENGTH]) {
+            if (this.hasPayloadLength(message)) {
                 if (isNil(message.payload)) {
                     this.socket.emit(ev.HEADERS, message);
                     this.cachePkg.set(message.id, message);
@@ -401,7 +467,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                 throw new InvalidJsonException(e, str);
             }
             message = message || {};
-            if (message.headers?.[hdr.CONTENT_LENGTH]) {
+            if (this.hasPayloadLength(message)) {
                 if (isNil(message.payload)) {
                     this.emit(ev.HEADERS, message);
                     chl.pkgs.set(message.id, message);

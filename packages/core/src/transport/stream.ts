@@ -336,13 +336,13 @@ export interface IStream extends IEventEmitter {
 export interface IReadableStream extends IStream {
     readable: boolean;
     read(size?: number): any;
-    setEncoding(encoding: BufferEncoding): this;
+    setEncoding(encoding: string): this;
     pause(): this;
     resume(): this;
     isPaused(): boolean;
     pipe<T extends IWritableStream>(destination: T, options?: { end?: boolean | undefined; }): T;
     unpipe(destination?: IWritableStream): this;
-    unshift(chunk: any, encoding?: BufferEncoding): void;
+    unshift(chunk: any, encoding?: string): void;
     wrap(oldStream: IReadableStream): this;
     destroy?(error?: any): void;
     [Symbol.asyncIterator](): AsyncIterableIterator<any>;
@@ -351,7 +351,7 @@ export interface IReadableStream extends IStream {
 export interface IEnd {
     end(cb?: () => void): this;
     end(data: any, cb?: (err?: Error | null) => void): this;
-    end(data: any, encoding?: BufferEncoding, cb?: () => void): this;
+    end(data: any, encoding?: string, cb?: () => void): this;
 }
 
 export interface IEndable extends IEventEmitter, IEnd {
@@ -361,10 +361,10 @@ export interface IEndable extends IEventEmitter, IEnd {
 export interface IWritableStream extends IStream, IEndable {
     writable: boolean;
     write(data: any, cb?: (err?: Error | null) => void): boolean;
-    write(data: any, encoding?: BufferEncoding, cb?: (err?: Error | null) => void): boolean;
+    write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
     end(cb?: () => void): this;
     end(data: any, cb?: () => void): this;
-    end(data: any, encoding?: BufferEncoding, cb?: () => void): this;
+    end(data: any, encoding?: string, cb?: () => void): this;
 }
 
 export interface IDuplexStream extends IReadableStream, IWritableStream {
@@ -372,6 +372,6 @@ export interface IDuplexStream extends IReadableStream, IWritableStream {
 }
 
 export interface ITransformStream extends IDuplexStream {
-    _transform(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
+    _transform(chunk: any, encoding: string, callback: (error?: Error | null, data?: any) => void): void;
     _flush(callback: (error?: Error | null, data?: any) => void): void;
 }
