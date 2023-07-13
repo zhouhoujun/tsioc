@@ -1,3 +1,4 @@
+export * from './coding';
 export * from './protocols';
 export * from './pattern';
 export * from './status';

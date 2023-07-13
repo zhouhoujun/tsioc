@@ -4,7 +4,6 @@ import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { Filter, FilterService } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
-import { Decoder, Encoder } from '../coding';
 
 
 /**
@@ -36,9 +35,6 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
  */
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
     backend?: Token<Backend> | Backend;
-
-    encoder?: ProvdierOf<Encoder>;
-    decoder?: ProvdierOf<Decoder>;
 
     interceptorsToken?: Token<Interceptor<TInput>[]>;
     guardsToken?: Token<CanActivate<TInput>[]>;

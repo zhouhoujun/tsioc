@@ -4,7 +4,6 @@ import { ConfigableHandler, ConfigableHandlerOptions, setHandlerOptions } from '
 import { INTERCEPTORS_TOKEN } from '../Interceptor';
 import { GUARDS_TOKEN } from '../guard';
 import { FILTERS_TOKEN } from '../filters/filter';
-import { Decoder, Encoder } from '../coding';
 
 
 
@@ -22,13 +21,6 @@ export class ConfigableHandlerImpl<TInput = any, TOutput = any> extends GuardHan
             throw new Execption('ConfigableHandlerOptions has not set backend option')
         }
 
-        if (options.encoder) {
-            this.injector.inject(toProvider(Encoder, options.encoder))
-        }
-
-        if (options.decoder) {
-            this.injector.inject(toProvider(Decoder, options.decoder))
-        }
         setHandlerOptions(this, options);
     }
 }

@@ -2,7 +2,7 @@ import { Abstract, tokenId } from '@tsdi/ioc';
 import { OutgoingHeader, OutgoingHeaders } from './headers';
 import { HeaderPacket, Packet } from './packet';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
-import { Decoder, Encoder } from '../coding';
+import { Decoder, Encoder } from './coding';
 
 /**
  * Socket interface.
@@ -307,10 +307,10 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
     readonly socket: TSocket;
     /**
      * send packet.
-     * @param data 
-     * @param encoder 
+     * @param packet 
+     * @param options 
      */
-    send(data: Packet, options?: SendOpts): Promise<void>;
+    send(packet: Packet, options?: SendOpts): Promise<void>;
 
 
     /**

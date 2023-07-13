@@ -6,7 +6,6 @@ export * from './ApplicationEvent';
 export * from './ApplicationEventMulticaster';
 export * from './ApplicationEventPublisher';
 export * from './events';
-export * from './coding';
 export * from './lifecycle';
 export * from './ApplicationRunners';
 // metadata

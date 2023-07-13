@@ -4,7 +4,7 @@ import { ConfigableEndpoint } from '../endpoints/endpoint.factory';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { AssetContext, TransportContext } from './context';
-import { Decoder, Encoder } from '../coding';
+import { Decoder, Encoder } from './coding';
 import { Router } from './router';
 
 /**
@@ -23,6 +23,7 @@ export abstract class TransportEndpoint<TInput extends TransportContext, TOutput
  * 传输节点配置
  */
 export interface TransportEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T> {
+    
     encoder?: ProvdierOf<Encoder>;
     decoder?: ProvdierOf<Decoder>;
     /**

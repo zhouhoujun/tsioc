@@ -3,7 +3,7 @@ import { GuardHandler } from '../handlers/guards';
 import { TransportContext } from '../transport/context';
 import { TransportEndpoint, TransportEndpointOptions } from '../transport/endpoint';
 import { setHandlerOptions } from '../handlers/handler.service';
-import { Decoder, Encoder } from '../coding';
+import { Decoder, Encoder } from '../transport/coding';
 
 
 export class TransportEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any>
