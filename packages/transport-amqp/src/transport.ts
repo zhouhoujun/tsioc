@@ -29,7 +29,8 @@ export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<
 
 export interface QueueBuffer {
     queue: string;
-    buffer: Buffer | null;
+    buffers: Buffer[];
+    length: number;
     contentLength: number | null;
     pkgs: Map<number | string, Packet>;
 
@@ -78,10 +79,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         callback && callback(succeeded ? undefined : 'sendToQueue failed.');
     }
 
-    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
     protected override async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
 
         let body: Buffer;
@@ -118,13 +115,14 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
             if (!chl) {
                 chl = {
                     queue,
-                    buffer: null,
+                    buffers: [],
+                    length: 0,
                     contentLength: ~~msg.properties.headers[hdr.CONTENT_LENGTH],
                     pkgs: new Map()
                 }
                 this.queues.set(queue, chl)
             } else if (chl.contentLength === null) {
-                chl.buffer = null;
+                chl.buffers = [];
                 chl.contentLength = ~~msg.properties.headers[hdr.CONTENT_LENGTH];
             }
             if (!chl.pkgs.has(msg.properties.correlationId)) {
@@ -154,24 +152,32 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
-        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
+
+        chl.buffers.push(data);
+        chl.length += data.length;
 
         if (chl.contentLength !== null) {
-            const length = buffer.length;
+            const length = chl.length;
             if (length === chl.contentLength) {
-                this.handleMessage(chl, id, chl.buffer);
+                this.handleMessage(chl, id, this.concatCaches(chl));
             } else if (length > chl.contentLength) {
-                const message = chl.buffer.subarray(0, chl.contentLength);
-                const rest = chl.buffer.subarray(chl.contentLength);
+                const buffer = this.concatCaches(chl);
+                const message = buffer.subarray(0, chl.contentLength);
+                const rest = buffer.subarray(chl.contentLength);
                 this.handleMessage(chl, id, message);
                 this.handleData(chl, id, rest);
             }
         }
     }
 
+    protected concatCaches(chl: QueueBuffer) {
+        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
+    }
+
     protected handleMessage(chl: QueueBuffer, id: string, message: any) {
         chl.contentLength = null;
-        chl.buffer = null;
+        chl.length = 0;
+        chl.buffers = [];
         this.emitMessage(chl, id, message);
     }
 
@@ -179,9 +185,22 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         const pkg = chl.pkgs.get(id);
         if (pkg) {
-            pkg.payload = data.length ? data : null;
-            chl.pkgs.delete(id);
-            this.emit(ev.MESSAGE, chl.queue, pkg);
+            let payload = data;
+            if (pkg.payload) {
+                if (data.length) {
+                    payload = pkg.payload = Buffer.concat([pkg.payload, data]);
+                }
+            } else {
+                pkg.payload = data.length ? data : null;
+            }
+
+            const len = this.getPayloadLength(pkg);
+            if (len && payload.length == len) {
+                chl.pkgs.delete(id);
+                this.emit(ev.MESSAGE, chl.queue, pkg);
+            } else if (!len) {
+                this.emit(ev.MESSAGE, pkg);
+            }
         }
     }
 }

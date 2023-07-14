@@ -30,10 +30,6 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
     write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
         this.socket.publish(packet.url!, chunk, callback);
     }
-    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message);
     }

@@ -80,9 +80,6 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             throw err;
         }
     }
-    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
 
     protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
         switch (observe) {

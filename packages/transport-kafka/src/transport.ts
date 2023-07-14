@@ -1,6 +1,6 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
 import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, HeaderPacket, IReadableStream, IncomingHeaders, NotFoundExecption, Packet, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { AbstractTransportSession, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 
@@ -77,7 +77,8 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             if (!chl) {
                 chl = {
                     topic,
-                    buffer: null,
+                    buffers: [],
+                    length: 0,
                     contentLength: this.getPayloadLength(msg.message as any), // ~~(msg.message.headers?.[hdr.CONTENT_LENGTH]?.toString() ?? '0'),
                     pkgs: new Map()
                 }
@@ -103,10 +104,6 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             const e = ev as any;
             this.emit(e.ERROR, e.message);
         }
-    }
-
-    protected pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
-        throw new Error('Method not implemented.');
     }
 
     protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
@@ -203,24 +200,35 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
-        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
+
+
+        chl.buffers.push(data);
+        chl.length += data.length;
 
         if (chl.contentLength !== null) {
+            const buffer = this.concatCaches(chl);
             const length = buffer.length;
             if (length === chl.contentLength) {
-                this.handleMessage(chl, id, chl.buffer);
+                this.handleMessage(chl, id, buffer);
             } else if (length > chl.contentLength) {
-                const message = chl.buffer.subarray(0, chl.contentLength);
-                const rest = chl.buffer.subarray(chl.contentLength);
+                const buffer = this.concatCaches(chl);
+                const message = buffer.subarray(0, chl.contentLength);
+                const rest = buffer.subarray(chl.contentLength);
                 this.handleMessage(chl, id, message);
                 this.handleData(chl, id, rest);
             }
         }
     }
 
+    protected concatCaches(chl: TopicBuffer) {
+        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
+    }
+
+
     protected handleMessage(chl: TopicBuffer, id: string, message: any) {
         chl.contentLength = null;
-        chl.buffer = null;
+        chl.buffers = [];
+        chl.length = 0;
         this.emitMessage(chl, id, message);
     }
 
@@ -228,9 +236,21 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
         const pkg = chl.pkgs.get(id);
         if (pkg) {
-            pkg.payload = data.length ? data : null;
-            chl.pkgs.delete(id);
-            this.emit(ev.MESSAGE, chl.topic, pkg);
+            let payload = data;
+            if (pkg.payload) {
+                if (data.length) {
+                    payload = pkg.payload = Buffer.concat([pkg.payload, data]);
+                }
+            } else {
+                pkg.payload = data.length ? data : null;
+            }
+            const len = this.getPayloadLength(pkg);
+            if (len && payload.length == len) {
+                chl.pkgs.delete(id);
+                this.emit(ev.MESSAGE, chl.topic, pkg);
+            } else if (!len) {
+                this.emit(ev.MESSAGE, pkg);
+            }
         }
     }
 

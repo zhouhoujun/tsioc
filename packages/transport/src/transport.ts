@@ -3,6 +3,7 @@ import { isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
+import { isBuffer, toBuffer } from './utils';
 
 export interface SendPacket extends HeaderPacket {
     size?: number;
@@ -127,7 +128,11 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         return body;
     }
 
-    protected abstract pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void>;
+    protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void> {
+        const buff = await this.generate(await toBuffer(payload), packet, options);
+        return this.writeAsync(buff, packet);
+    }
+
     protected abstract generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
     protected abstract generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
 
@@ -290,8 +295,8 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         if (this.contentLength == null) {
             const i = data.indexOf(this.delimiter);
             if (i !== -1) {
-                const buffer = this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0];
-                const idx = data.length == this.length ? i : (this.length - data.length) + i;
+                const buffer = this.concatCaches();
+                const idx = this.length - data.length + i;
                 const rawContentLength = buffer.subarray(0, idx).toString();
                 this.contentLength = parseInt(rawContentLength, 10);
 
@@ -307,15 +312,19 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
 
         if (this.contentLength !== null) {
             if (this.length === this.contentLength) {
-                this.handleMessage(this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0]);
+                this.handleMessage(this.concatCaches());
             } else if (this.length > this.contentLength) {
-                const buffer = this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0];
+                const buffer = this.concatCaches();
                 const message = buffer.subarray(0, this.contentLength);
                 const rest = buffer.subarray(this.contentLength);
                 this.handleMessage(message);
                 this.handleData(rest);
             }
         }
+    }
+
+    protected concatCaches() {
+        return this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0]
     }
 
     protected handleMessage(message: any) {
@@ -341,7 +350,16 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                     this.socket.emit(ev.HEADERS, message);
                     this.cachePkg.set(message.id, message);
                 } else {
-                    this.emit(ev.MESSAGE, message);
+                    const len = this.getPayloadLength(message);
+                    let plen;
+                    if (isString(message) || isBuffer(message)) {
+                        plen = Buffer.byteLength(message.payload);
+                    } else {
+                        plen = Buffer.byteLength(JSON.stringify(message.payload));
+                    }
+                    if (plen == len) {
+                        this.emit(ev.MESSAGE, message);
+                    }
                 }
             } else {
                 this.emit(ev.MESSAGE, message);
@@ -349,18 +367,28 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
-                const payload = data.subarray(3);
+                let payload = data.subarray(3);
                 let pkg = this.cachePkg.get(id);
                 if (pkg) {
-                    pkg.payload = payload;
-                    this.cachePkg.delete(id);
+                    if (pkg.payload) {
+                        payload = pkg.payload = Buffer.concat([pkg.payload, payload]);
+                    } else {
+                        pkg.payload = payload;
+                    }
                 } else {
                     pkg = {
                         id,
                         payload
                     }
                 }
-                this.emit(ev.MESSAGE, pkg);
+
+                const len = this.getPayloadLength(pkg);
+                if (len && payload.length == len) {
+                    this.cachePkg.delete(id);
+                    this.emit(ev.MESSAGE, pkg);
+                } else if (!len) {
+                    this.emit(ev.MESSAGE, pkg);
+                }
             }
 
         }
@@ -371,7 +399,8 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
 
 export interface TopicBuffer {
     topic: string;
-    buffer: Buffer | null;
+    buffers: Buffer[];
+    length: number;
     contentLength: number | null;
     pkgs: Map<number | string, Packet>;
 }
@@ -400,7 +429,8 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             if (!chl) {
                 chl = {
                     topic,
-                    buffer: null,
+                    buffers: [],
+                    length: 0,
                     contentLength: null,
                     pkgs: new Map()
                 }
@@ -418,39 +448,50 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
-        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
+
+        chl.buffers.push(data);
+        chl.length += data.length;
 
         if (chl.contentLength == null) {
-            const i = buffer.indexOf(this.delimiter);
+            const i = data.indexOf(this.delimiter);
             if (i !== -1) {
-                const rawContentLength = buffer.subarray(0, i).toString();
+                const buffer = this.concatCaches(chl);
+                const idx = chl.length - data.length + i;
+                const rawContentLength = buffer.subarray(0, idx).toString();
                 chl.contentLength = parseInt(rawContentLength, 10);
 
                 if (isNaN(chl.contentLength)) {
                     chl.contentLength = null;
-                    chl.buffer = null;
+                    chl.buffers = [];
+                    chl.length = 0;
                     throw new PacketLengthException(rawContentLength);
                 }
-                chl.buffer = buffer.subarray(i + 1);
+                chl.buffers = [buffer.subarray(idx + 1)];
             }
         }
 
         if (chl.contentLength !== null) {
-            const length = buffer.length;
+            const length = chl.length;
             if (length === chl.contentLength) {
-                this.handleMessage(chl, chl.buffer);
+                this.handleMessage(chl, this.concatCaches(chl));
             } else if (length > chl.contentLength) {
-                const message = chl.buffer.subarray(0, chl.contentLength);
-                const rest = chl.buffer.subarray(chl.contentLength);
+                const buffer = this.concatCaches(chl);
+                const message = buffer.subarray(0, chl.contentLength);
+                const rest = buffer.subarray(chl.contentLength);
                 this.handleMessage(chl, message);
                 this.handleData(chl, rest);
             }
         }
     }
 
+    protected concatCaches(chl: TopicBuffer) {
+        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
+    }
+
     protected handleMessage(chl: TopicBuffer, message: any) {
         chl.contentLength = null;
-        chl.buffer = null;
+        chl.length = 0;
+        chl.buffers = [];
         this.emitMessage(chl, message);
     }
 
@@ -470,7 +511,16 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                     this.emit(ev.HEADERS, message);
                     chl.pkgs.set(message.id, message);
                 } else {
-                    this.emit(ev.MESSAGE, chl.topic, message);
+                    const len = this.getPayloadLength(message);
+                    let plen;
+                    if (isString(message) || isBuffer(message)) {
+                        plen = Buffer.byteLength(message.payload);
+                    } else {
+                        plen = Buffer.byteLength(JSON.stringify(message.payload));
+                    }
+                    if (plen == len) {
+                        this.emit(ev.MESSAGE, chl.topic, message);
+                    }
                 }
             } else {
                 this.emit(ev.MESSAGE, chl.topic, message);
@@ -478,18 +528,27 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
-                const payload = data.subarray(3);
+                let payload = data.subarray(3);
                 let pkg = chl.pkgs.get(id);
                 if (pkg) {
-                    pkg.payload = payload;
-                    chl.pkgs.delete(id);
+                    if (pkg.payload) {
+                        payload = pkg.payload = Buffer.concat([pkg.payload, payload]);
+                    } else {
+                        pkg.payload = payload;
+                    }
                 } else {
                     pkg = {
                         id,
                         payload
                     }
                 }
-                this.emit(ev.MESSAGE, chl.topic, pkg);
+                const len = this.getPayloadLength(pkg);
+                if (len && payload.length == len) {
+                    chl.pkgs.delete(id);
+                    this.emit(ev.MESSAGE, chl.topic, pkg);
+                } else if (!len) {
+                    this.emit(ev.MESSAGE, pkg);
+                }
             }
 
         }

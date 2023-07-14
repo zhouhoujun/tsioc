@@ -33,10 +33,11 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
     write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
         this.socket.write(chunk, callback);
     }
+
     protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
         this.socket.write(Buffer.concat([
             this.generateHeader(packet, options),
-            this.generatePayloadFlag(packet, options)
+            this.getPayloadPrefix(packet, options)
         ]));
         payload.pipe(this.socket);
     }

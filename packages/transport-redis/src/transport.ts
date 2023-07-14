@@ -42,10 +42,6 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
         this.socket.publisher.publish(packet.url!, chunk, callback);
     }
 
-    protected override pipeStream(payload: IReadableStream, headers: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-
     protected override handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message);
     }
