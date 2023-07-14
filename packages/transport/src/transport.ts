@@ -44,7 +44,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
      * @param packet
      * @param callback
      */
-    abstract write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void 
+    abstract write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void
 
     // /**
     //  * send packet.
@@ -248,18 +248,8 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
 
     }
 
-    protected async generateNoPayload(data: Packet): Promise<Buffer> {
-        let msg = JSON.stringify(data);
-        if (this.encoder) {
-            msg = this.encoder.encode(msg);
-        }
-        const buffers = isString(msg) ? Buffer.from(msg) : msg;
-        return Buffer.concat([
-            Buffer.from(String(Buffer.byteLength(buffers) + 1)),
-            this.delimiter,
-            this._header,
-            buffers
-        ]);
+    protected async generateNoPayload(packet: HeaderPacket): Promise<Buffer> {
+        return this.generateHeader(packet)
     }
 }
 
@@ -268,7 +258,8 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
  */
 export abstract class SocketTransportSession<T extends EventEmitter, TOpts extends TransportSessionOpts = TransportSessionOpts> extends BufferTransportSession<T, TOpts> {
 
-    private buffer: Buffer | null = null;
+    private buffers: Buffer[] = [];
+    private length = 0
     private contentLength: number | null = null;
     private cachePkg: Map<number | string, Packet> = new Map();
 
@@ -291,30 +282,36 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
-        const buffer = this.buffer = this.buffer ? Buffer.concat([this.buffer, data], this.buffer.length + data.length) : Buffer.from(data);
+
+
+        this.buffers.push(data);
+        this.length += data.length;
 
         if (this.contentLength == null) {
-            const i = buffer.indexOf(this.delimiter);
+            const i = data.indexOf(this.delimiter);
             if (i !== -1) {
-                const rawContentLength = buffer.subarray(0, i).toString();
+                const buffer = this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0];
+                const idx = data.length == this.length ? i : (this.length - data.length) + i;
+                const rawContentLength = buffer.subarray(0, idx).toString();
                 this.contentLength = parseInt(rawContentLength, 10);
 
                 if (isNaN(this.contentLength)) {
                     this.contentLength = null;
-                    this.buffer = null;
+                    this.length = 0;
+                    this.buffers = [];
                     throw new PacketLengthException(rawContentLength);
                 }
-                this.buffer = buffer.subarray(i + 1);
+                this.buffers = [buffer.subarray(idx + 1)];
             }
         }
 
         if (this.contentLength !== null) {
-            const length = buffer.length;
-            if (length === this.contentLength) {
-                this.handleMessage(this.buffer);
-            } else if (length > this.contentLength) {
-                const message = this.buffer.subarray(0, this.contentLength);
-                const rest = this.buffer.subarray(this.contentLength);
+            if (this.length === this.contentLength) {
+                this.handleMessage(this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0]);
+            } else if (this.length > this.contentLength) {
+                const buffer = this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0];
+                const message = buffer.subarray(0, this.contentLength);
+                const rest = buffer.subarray(this.contentLength);
                 this.handleMessage(message);
                 this.handleData(rest);
             }
@@ -323,7 +320,8 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
 
     protected handleMessage(message: any) {
         this.contentLength = null;
-        this.buffer = null;
+        this.length = 0;
+        this.buffers = [];
         this.emitMessage(message);
     }
 

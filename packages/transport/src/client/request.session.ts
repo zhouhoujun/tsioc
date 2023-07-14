@@ -1,6 +1,6 @@
 import {
-    TransportEvent,TransportErrorResponse, Packet, Incoming,  TransportHeaderResponse, TransportRequest, TransportResponse,
-     ResHeaders, RequestTimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
+    TransportEvent, TransportErrorResponse, Packet, Incoming, TransportHeaderResponse, TransportRequest, TransportResponse,
+    ResHeaders, RequestTimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
 } from '@tsdi/core';
 import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
@@ -103,7 +103,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     protected toPacket(id: number | string, url: string, req: TransportRequest) {
-        return {
+        const pkg = {
             id,
             method: req.method,
             headers: {
@@ -111,10 +111,15 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 ...req.headers.getHeaders()
             },
             url,
-            topic: url,
-            payload: req.body,
-            replyTo: this.getReply(url, req.observe)
+            payload: req.body
         } as Packet;
+
+        const replyTo = this.getReply(url, req.observe);
+        if (replyTo) {
+            pkg.replyTo = replyTo;
+        }
+
+        return pkg;
     }
 
     protected getSession(context: InvocationContext): TransportSession<T> {

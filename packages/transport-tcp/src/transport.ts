@@ -7,7 +7,7 @@ import * as tls from 'tls';
 
 @Abstract()
 export abstract class TcpTransportSessionFactory extends TransportSessionFactory<tls.TLSSocket | net.Socket> {
-    abstract create(socket: tls.TLSSocket | net.Socket, opts?: TransportSessionOpts): TcpTransportSession 
+    abstract create(socket: tls.TLSSocket | net.Socket, opts?: TransportSessionOpts): TcpTransportSession
 }
 
 
@@ -40,8 +40,6 @@ export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | 
         ]));
         payload.pipe(this.socket);
     }
-
-
 
     protected handleFailed(error: any): void {
         this.socket.emit(ev.ERROR, error.message);

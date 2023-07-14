@@ -112,15 +112,16 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     path: ipcpath
                 },
                 interceptors: [
+                    BigFileInterceptor,
                     Content,
                     Json,
                     Bodyparser,
                     { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
             },
-            providers:[
-                { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-            ]
+            // providers:[
+            //     { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            // ]
         })
     ],
     declarations: [

@@ -105,6 +105,7 @@ export class DeviceController {
                     port: 2000
                 },
                 interceptors: [
+                    // BigFileInterceptor,
                     Content,
                     Json,
                     Bodyparser,
