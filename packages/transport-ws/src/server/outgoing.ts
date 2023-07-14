@@ -124,7 +124,7 @@ export class WsOutgoing extends Writable implements Outgoing<Duplex, number> {
             this.writeHead()
         }
         if (!this._bodflagSent) {
-            const bhdr = this.session.generatePayloadFlag(this._hdpacket!);
+            const bhdr = this.session.getPayloadPrefix(this._hdpacket!);
             chunk = Buffer.concat([bhdr, chunk]);
             this._bodflagSent = true;
         }

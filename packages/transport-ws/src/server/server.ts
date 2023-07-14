@@ -52,7 +52,9 @@ export class WsServer extends Server<TransportContext> {
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info('WS server closed!'));
-        this.serv.on(ev.ERROR, (err) => this.logger.error(err));
+        this.serv.on(ev.ERROR, (err) => {
+            this.logger.error(err);
+        });
         const factory = this.endpoint.injector.get(WsTransportSessionFactory);
         this.serv.on(ev.CONNECTION, (socket) => {
             const session = factory.create(socket, this.options.transportOpts!);
