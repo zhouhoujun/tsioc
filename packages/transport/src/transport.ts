@@ -1,5 +1,5 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
-import { isNil, isString, lang, promisify } from '@tsdi/ioc';
+import { isNil, isPromise, isString, lang, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
@@ -204,18 +204,21 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
     protected _body!: Buffer;
 
     protected init(options: TOpts): void {
-
         this.delimiter = Buffer.from(options.delimiter || '#');
         this._header = Buffer.alloc(1, '0');
         this._body = Buffer.alloc(1, '1');
     }
 
     async generateHeader(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        const buffers = await this.serialize(packet);
+        const { id, ...headers } = packet;
+        const buffers = await this.serialize(headers);
+        const bufId = Buffer.alloc(2);
+        bufId.writeUInt16BE(packet.id);
         return Buffer.concat([
-            Buffer.from(String(Buffer.byteLength(buffers) + 1)),
+            Buffer.from(String(Buffer.byteLength(buffers) + 3)),
             this.delimiter,
             this._header,
+            bufId,
             buffers
         ]);
     }
@@ -285,7 +288,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
     private buffers: Buffer[] = [];
     private length = 0
     private contentLength: number | null = null;
-    private cachePkg: Map<number | string, Packet> = new Map();
+    private cachePkg: Map<number | string, Packet | Promise<Packet>> = new Map();
 
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.socket.on(name, event);
@@ -355,36 +358,41 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
 
     protected async emitMessage(chunk: Buffer) {
         if (chunk.indexOf(this._header) == 0) {
-            const message = await this.deserialize(chunk.subarray(1)) as Packet;
-            if (this.hasPayloadLength(message)) {
-                if (isNil(message.payload)) {
-                    this.socket.emit(ev.HEADERS, message);
-                    this.cachePkg.set(message.id, message);
-                } else {
-                    const len = this.getPayloadLength(message);
-                    let plen;
-                    if (isString(message) || isBuffer(message)) {
-                        plen = Buffer.byteLength(message.payload);
+            const id = chunk.readUInt16BE(1);
+            const msg$ = this.deserialize(chunk.subarray(3))
+                .then((message: Packet) => {
+                    message.id = id;
+                    if (this.hasPayloadLength(message)) {
+                        if (isNil(message.payload)) {
+                            this.socket.emit(ev.HEADERS, message);
+                            this.cachePkg.set(id, message);
+                        } else {
+                            const len = this.getPayloadLength(message);
+                            let plen;
+                            if (isString(message) || isBuffer(message)) {
+                                plen = Buffer.byteLength(message.payload);
+                            } else {
+                                plen = Buffer.byteLength(JSON.stringify(message.payload));
+                            }
+                            if (plen == len) {
+                                this.emit(ev.MESSAGE, message);
+                            }
+                        }
                     } else {
-                        plen = Buffer.byteLength(JSON.stringify(message.payload));
-                    }
-                    if (plen == len) {
                         this.emit(ev.MESSAGE, message);
                     }
-                }
-            } else {
-                this.emit(ev.MESSAGE, message);
-            }
+                    return message;
+                });
+            this.cachePkg.set(id, msg$);
+            await msg$
+
         } else if (chunk.indexOf(this._body) == 0) {
             const id = chunk.readUInt16BE(1);
             if (id) {
                 let payload = chunk.subarray(3);
                 let pkg = this.cachePkg.get(id);
-                let count = 10;
-                while (!pkg && count) {
-                    count--;
-                    await lang.delay(0);
-                    pkg = this.cachePkg.get(id);
+                if (isPromise(pkg)) {
+                    pkg = await pkg;
                 }
                 if (!pkg) throw new MessageExecption('No header found!');
 
@@ -418,7 +426,7 @@ export interface TopicBuffer {
     buffers: Buffer[];
     length: number;
     contentLength: number | null;
-    pkgs: Map<number | string, Packet>;
+    pkgs: Map<number | string, Packet | Promise<Packet>>;
 }
 
 /**
@@ -513,6 +521,34 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
 
     protected async emitMessage(chl: TopicBuffer, data: Buffer) {
         if (data.indexOf(this._header) == 0) {
+            const id = data.readUInt16BE(1);
+            const msg$ = this.deserialize(data.subarray(3))
+                .then((message: Packet) => {
+                    message.id = id;
+                    if (this.hasPayloadLength(message)) {
+                        if (isNil(message.payload)) {
+                            this.emit(ev.HEADERS, message);
+                            chl.pkgs.set(id, message);
+                        } else {
+                            const len = this.getPayloadLength(message);
+                            let plen;
+                            if (isString(message) || isBuffer(message)) {
+                                plen = Buffer.byteLength(message.payload);
+                            } else {
+                                plen = Buffer.byteLength(JSON.stringify(message.payload));
+                            }
+                            if (plen == len) {
+                                this.emit(ev.MESSAGE, message);
+                            }
+                        }
+                    } else {
+                        this.emit(ev.MESSAGE, message);
+                    }
+                    return message;
+                });
+            chl.pkgs.set(id, msg$);
+            await msg$;
+
             const message = await this.deserialize(data.subarray(1)) as Packet;
             if (this.hasPayloadLength(message)) {
                 if (isNil(message.payload)) {
@@ -538,11 +574,8 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             if (id) {
                 let payload = data.subarray(3);
                 let pkg = chl.pkgs.get(id);
-                let count = 10;
-                while (!pkg && count) {
-                    count--;
-                    await lang.delay(0);
-                    pkg = chl.pkgs.get(id);
+                if (isPromise(pkg)) {
+                    pkg = await pkg;
                 }
                 if (!pkg) throw new MessageExecption('No header found!');
 
