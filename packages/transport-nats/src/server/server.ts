@@ -1,5 +1,5 @@
 import { MESSAGE, MircoServRouters, Packet, PatternFormatter, Server, TransportSession } from '@tsdi/core';
-import { Execption, Inject, Injectable, isPlainObject } from '@tsdi/ioc';
+import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { NatsConnection, connect, Subscription as NatsSubs } from 'nats';
 import { Subscription, finalize } from 'rxjs';
 import { NatsContext } from './context';

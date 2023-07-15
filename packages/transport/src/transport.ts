@@ -368,7 +368,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                     message.id = id;
                     if (this.hasPayloadLength(message)) {
                         if (isNil(message.payload)) {
-                            this.socket.emit(ev.HEADERS, message);
+                            this.emit(ev.HEADERS, message);
                             this.cachePkg.set(id, message);
                         } else {
                             const len = this.getPayloadLength(message);

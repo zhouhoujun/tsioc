@@ -1,6 +1,6 @@
-import { Decoder, Encoder, HeaderPacket, IReadableStream, IncomingHeaders, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
-import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
+import { AbstractTransportSession, ev, hdr } from '@tsdi/transport';
 import { Msg, NatsConnection, headers as createHeaders } from 'nats';
 import { Buffer } from 'buffer';
 import { NatsSessionOpts } from './options';
@@ -100,43 +100,32 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         this.off(name, event)
     }
 
-    protected override async generate(data: Packet): Promise<Buffer> {
-        const { payload, ...headers } = data;
-        if (!headers.headers) {
-            headers.headers = {};
-        }
+    protected override async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
 
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
         } else if (Buffer.isBuffer(payload)) {
             body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
         } else {
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if (!headers.headers[hdr.CONTENT_LENGTH]) {
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+        if(!this.hasPayloadLength(packet)){
+            this.setPayloadLength(packet, Buffer.byteLength(body))
         }
 
         if (this.encoder) {
             body = await this.encoder.encode(body);
-            if (isString(body)) body = Buffer.from(body);
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
+            this.setPayloadLength(packet, Buffer.byteLength(body))
         }
 
         return body;
 
     }
 
-    protected override async generateNoPayload(data: Packet<any>): Promise<Buffer> {
-        if (!data.headers) {
-            data.headers = {};
-        }
-        data.headers[hdr.CONTENT_LENGTH] = 0;
-
+    protected override async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+        this.setPayloadLength(packet, 0);
         return Buffer.alloc(0);
     }
 

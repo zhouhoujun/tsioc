@@ -57,11 +57,11 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
     }
 
     isReadable(stream: any): stream is IReadableStream {
-        return (isReadable ? isReadable(stream) : stream instanceof Readable) || (isFunction(stream.read) && isFunction(stream.pipe) && (stream as Readable).readable);
+        return (isReadable ? isReadable(stream) : stream instanceof Readable) || (isFunction(stream?.read) && isFunction(stream?.pipe) && (stream as Readable)?.readable);
     }
 
     isWritable(stream: any): stream is IWritableStream {
-        return stream instanceof Writable || (isFunction(stream.write) && (stream as Writable).writable);
+        return stream instanceof Writable || (isFunction(stream?.write) && (stream as Writable)?.writable);
     }
     createPassThrough(options?: {
         allowHalfOpen?: boolean | undefined;
