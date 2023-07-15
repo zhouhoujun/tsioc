@@ -1,5 +1,5 @@
-import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
-import { isNil, isString, promisify } from '@tsdi/ioc';
+import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
+import { isNil, isString, lang, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
@@ -104,7 +104,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
      * @param packet 
      * @returns 
      */
-    protected encodePayload(payload: any, packet: HeaderPacket): Buffer {
+    protected async encodePayload(payload: any, packet: HeaderPacket): Promise<Buffer> {
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
@@ -120,7 +120,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         }
 
         if (this.encoder) {
-            body = this.encoder.encode(body);
+            body = await this.encoder.encode(body);
             len = Buffer.byteLength(body);
             this.setPayloadLength(packet, len);
         }
@@ -210,18 +210,37 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         this._body = Buffer.alloc(1, '1');
     }
 
-    generateHeader(packet: HeaderPacket, options?: SendOpts): Buffer {
-        let msg = JSON.stringify(packet);
-        if (this.encoder) {
-            msg = this.encoder.encode(msg);
-        }
-        const buffers = isString(msg) ? Buffer.from(msg) : msg;
+    async generateHeader(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+        const buffers = await this.serialize(packet);
         return Buffer.concat([
             Buffer.from(String(Buffer.byteLength(buffers) + 1)),
             this.delimiter,
             this._header,
             buffers
         ]);
+    }
+
+    protected async serialize(packet: HeaderPacket): Promise<Buffer> {
+        let buff = Buffer.from(JSON.stringify(packet))
+        if (this.encoder) {
+            buff = await this.encoder.encode(buff);
+        }
+        buff = await this.streamAdapter.gzip(buff)
+        return buff;
+    }
+
+    protected async deserialize(buff: Buffer): Promise<HeaderPacket> {
+        buff = await this.streamAdapter.gunzip(buff);
+        if (this.decoder) {
+            buff = await this.decoder.decode(buff);
+        }
+        const str = buff.toString();
+        try {
+            return JSON.parse(str);
+        } catch (err) {
+            throw new InvalidJsonException(err, str);
+
+        }
     }
 
     getPayloadPrefix(packet: HeaderPacket, options?: SendOpts): Buffer {
@@ -241,9 +260,9 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
 
     protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
 
-        const headerBuff = this.generateHeader(packet, options);
+        const headerBuff = await this.generateHeader(packet, options);
         const payloadFlag = this.getPayloadPrefix(packet, options);
-        const payloadBuf = this.encodePayload(payload, packet);
+        const payloadBuf = await this.encodePayload(payload, packet);
 
         return Buffer.concat([
             headerBuff,
@@ -334,17 +353,9 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         this.emitMessage(message);
     }
 
-    protected emitMessage(chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
-        if (data.indexOf(this._header) == 0) {
-            let message: Packet;
-            const str = data.subarray(1).toString();
-            try {
-                message = JSON.parse(str);
-            } catch (e) {
-                throw new InvalidJsonException(e, str);
-            }
-            message = message || {};
+    protected async emitMessage(chunk: Buffer) {
+        if (chunk.indexOf(this._header) == 0) {
+            const message = await this.deserialize(chunk.subarray(1)) as Packet;
             if (this.hasPayloadLength(message)) {
                 if (isNil(message.payload)) {
                     this.socket.emit(ev.HEADERS, message);
@@ -364,27 +375,32 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
             } else {
                 this.emit(ev.MESSAGE, message);
             }
-        } else if (data.indexOf(this._body) == 0) {
-            const id = data.readUInt16BE(1);
+        } else if (chunk.indexOf(this._body) == 0) {
+            const id = chunk.readUInt16BE(1);
             if (id) {
-                let payload = data.subarray(3);
+                let payload = chunk.subarray(3);
                 let pkg = this.cachePkg.get(id);
-                if (pkg) {
-                    if (pkg.payload) {
-                        payload = pkg.payload = Buffer.concat([pkg.payload, payload]);
-                    } else {
-                        pkg.payload = payload;
-                    }
-                } else {
-                    pkg = {
-                        id,
-                        payload
-                    }
+                let count = 10;
+                while (!pkg && count) {
+                    count--;
+                    await lang.delay(0);
+                    pkg = this.cachePkg.get(id);
                 }
+                if (!pkg) throw new MessageExecption('No header found!');
+
+                if (pkg.payload) {
+                    payload = pkg.payload = Buffer.concat([pkg.payload, payload]);
+                } else {
+                    pkg.payload = payload;
+                }
+
 
                 const len = this.getPayloadLength(pkg);
                 if (len && payload.length == len) {
                     this.cachePkg.delete(id);
+                    if (this.decoder) {
+                        pkg.payload = await this.decoder.decode(payload);
+                    }
                     this.emit(ev.MESSAGE, pkg);
                 } else if (!len) {
                     this.emit(ev.MESSAGE, pkg);
@@ -495,17 +511,9 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         this.emitMessage(chl, message);
     }
 
-    protected emitMessage(chl: TopicBuffer, chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
+    protected async emitMessage(chl: TopicBuffer, data: Buffer) {
         if (data.indexOf(this._header) == 0) {
-            let message: Packet;
-            const str = data.subarray(1).toString();
-            try {
-                message = JSON.parse(str);
-            } catch (e) {
-                throw new InvalidJsonException(e, str);
-            }
-            message = message || {};
+            const message = await this.deserialize(data.subarray(1)) as Packet;
             if (this.hasPayloadLength(message)) {
                 if (isNil(message.payload)) {
                     this.emit(ev.HEADERS, message);
@@ -530,21 +538,26 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             if (id) {
                 let payload = data.subarray(3);
                 let pkg = chl.pkgs.get(id);
-                if (pkg) {
-                    if (pkg.payload) {
-                        payload = pkg.payload = Buffer.concat([pkg.payload, payload]);
-                    } else {
-                        pkg.payload = payload;
-                    }
-                } else {
-                    pkg = {
-                        id,
-                        payload
-                    }
+                let count = 10;
+                while (!pkg && count) {
+                    count--;
+                    await lang.delay(0);
+                    pkg = chl.pkgs.get(id);
                 }
+                if (!pkg) throw new MessageExecption('No header found!');
+
+                if (pkg.payload) {
+                    payload = pkg.payload = Buffer.concat([pkg.payload, payload]);
+                } else {
+                    pkg.payload = payload;
+                }
+
                 const len = this.getPayloadLength(pkg);
                 if (len && payload.length == len) {
                     chl.pkgs.delete(id);
+                    if (this.decoder) {
+                        pkg.payload = await this.decoder.decode(payload);
+                    }
                     this.emit(ev.MESSAGE, chl.topic, pkg);
                 } else if (!len) {
                     this.emit(ev.MESSAGE, pkg);

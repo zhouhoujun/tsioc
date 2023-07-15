@@ -34,8 +34,9 @@ export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | 
     }
 
     protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void> {
+        const header = await this.generateHeader(packet, options);
         this.socket.write(Buffer.concat([
-            this.generateHeader(packet, options),
+            header,
             this.getPayloadPrefix(packet, options)
         ]));
         payload.pipe(this.socket);

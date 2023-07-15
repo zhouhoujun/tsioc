@@ -122,7 +122,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         }
 
         if (this.encoder) {
-            body = this.encoder.encode(body);
+            body = await this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
             headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
@@ -206,12 +206,14 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         this.emitMessage(chl, id, message);
     }
 
-    protected emitMessage(chl: SubjectBuffer, id: string | number, chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
+    protected async emitMessage(chl: SubjectBuffer, id: string | number, data: Buffer) {
         const pkg = chl.pkgs.get(id);
         if (pkg) {
             pkg.payload = data.length ? data : null;
             chl.pkgs.delete(id);
+            if (this.decoder && pkg.payload) {
+                pkg.payload = await this.decoder.decode(pkg.payload);
+            }
             this.emit(ev.MESSAGE, chl.subject, pkg);
         }
     }

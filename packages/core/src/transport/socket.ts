@@ -135,7 +135,7 @@ export const CONNECTION = tokenId<Connection>('CONNECTION');
 /**
  * server side incoming message.
  */
-export interface Incoming<TSocket = any> extends Packet<Buffer>, IReadableStream {
+export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableStream {
     /**
      * packet id.
      */
@@ -163,7 +163,7 @@ export interface Incoming<TSocket = any> extends Packet<Buffer>, IReadableStream
 
     body?: any;
 
-    rawBody?: Buffer;
+    rawBody?: Uint8Array;
 }
 
 /**

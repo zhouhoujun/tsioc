@@ -2,7 +2,7 @@ import {
     IWritableStream, IDuplexStream, IReadableStream, ITransformStream, isFormData,
     BrotliOptions, PipeSource, ZipOptions
 } from '@tsdi/core';
-import { Execption, Injectable, isFunction, isString, lang } from '@tsdi/ioc';
+import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
 import { isReadable, Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
 import { promisify } from 'util';
@@ -12,7 +12,8 @@ import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
 
 const pmPipeline = promisify(pipeline);
-
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 @Injectable({ static: true })
 export class NodeStreamAdapter extends AbstractStreamAdapter {
@@ -62,7 +63,7 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
     isWritable(stream: any): stream is IWritableStream {
         return stream instanceof Writable || (isFunction(stream.write) && (stream as Writable).writable);
     }
-    passThrough(options?: {
+    createPassThrough(options?: {
         allowHalfOpen?: boolean | undefined;
         readableObjectMode?: boolean | undefined;
         writableObjectMode?: boolean | undefined;
@@ -88,29 +89,36 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
         return new PassThrough(options);
     }
 
+    gzip<T extends Uint8Array>(buff: T): Promise<T> {
+        return gzip(buff) as any
+    }
+
+    gunzip<T extends Uint8Array>(buff: T): Promise<T> {
+        return gunzip(buff) as any;
+    }
 
     getZipConstants<T = any>(): T {
         return zlib.constants as T;
     }
 
-    gzip(options?: ZipOptions): ITransformStream {
+    createGzip(options?: ZipOptions): ITransformStream {
         return zlib.createGzip(options);
     }
-    gunzip(options?: ZipOptions): ITransformStream {
+    createGunzip(options?: ZipOptions): ITransformStream {
         return zlib.createGunzip(options);
     }
 
-    inflate(options?: ZipOptions | undefined): ITransformStream {
+    createInflate(options?: ZipOptions | undefined): ITransformStream {
         return zlib.createInflate(options);
     }
-    inflateRaw(options?: ZipOptions | undefined): ITransformStream {
+    createInflateRaw(options?: ZipOptions | undefined): ITransformStream {
         return zlib.createInflateRaw(options);
     }
 
-    brotliCompress(options?: BrotliOptions | undefined): ITransformStream {
+    createBrotliCompress(options?: BrotliOptions | undefined): ITransformStream {
         return zlib.createBrotliCompress(options);
     }
-    brotliDecompress(options?: BrotliOptions | undefined): ITransformStream {
+    createBrotliDecompress(options?: BrotliOptions | undefined): ITransformStream {
         return zlib.createBrotliDecompress(options);
     }
 

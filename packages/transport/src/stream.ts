@@ -42,7 +42,7 @@ export abstract class AbstractStreamAdapter extends StreamAdapter {
                 switch (encoding) {
                     case 'gzip':
                     case 'deflate':
-                        source = (this.isReadable(source) ? source : this.pipeline(source, this.passThrough())).pipe(this.gzip());
+                        source = (this.isReadable(source) ? source : this.pipeline(source, this.createPassThrough())).pipe(this.createGzip());
                         break;
                     case 'identity':
                         break;

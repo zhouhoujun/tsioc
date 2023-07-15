@@ -124,7 +124,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         }
 
         if (this.encoder) {
-            body = this.encoder.encode(body);
+            body =  await this.encoder.encode(body);
             if (isString(body)) body = Buffer.from(body);
             headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
         }
@@ -232,8 +232,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         this.emitMessage(chl, id, message);
     }
 
-    protected emitMessage(chl: TopicBuffer, id: string, chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
+    protected async emitMessage(chl: TopicBuffer, id: string, data: Buffer) {
         const pkg = chl.pkgs.get(id);
         if (pkg) {
             let payload = data;
@@ -244,9 +243,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             } else {
                 pkg.payload = data.length ? data : null;
             }
+
             const len = this.getPayloadLength(pkg);
             if (len && payload.length == len) {
                 chl.pkgs.delete(id);
+                if (this.decoder) {
+                    pkg.payload = await this.decoder.decode(payload);
+                }
                 this.emit(ev.MESSAGE, chl.topic, pkg);
             } else if (!len) {
                 this.emit(ev.MESSAGE, pkg);

@@ -125,24 +125,24 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
                     try {
                         if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
-                            const unzip = this.streamAdapter.gunzip(zlibOptions);
+                            const unzip = this.streamAdapter.createGunzip(zlibOptions);
                             await this.streamAdapter.pipeTo(body, unzip);
                             body = unzip;
                         } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
                             // Handle the infamous raw deflate response from old servers
                             // a hack for old IIS and Apache servers
-                            const raw = this.streamAdapter.passThrough();
+                            const raw = this.streamAdapter.createPassThrough();
                             await this.streamAdapter.pipeTo(body, raw);
                             const defer = lang.defer();
                             raw.on(ev.DATA, chunk => {
                                 if ((chunk[0] & 0x0F) === 0x08) {
-                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.inflate(), err => {
+                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.createInflate(), err => {
                                         if (err) {
                                             defer.reject(err);
                                         }
                                     });
                                 } else {
-                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.inflateRaw(), err => {
+                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.createInflateRaw(), err => {
                                         if (err) {
                                             defer.reject(err);
                                         }
@@ -155,7 +155,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                             await defer.promise;
 
                         } else if (codings === 'br') { // For br
-                            const unBr = this.streamAdapter.brotliDecompress();
+                            const unBr = this.streamAdapter.createBrotliDecompress();
                             await this.streamAdapter.pipeTo(body, unBr);
                             body = unBr;
                         }
@@ -209,7 +209,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
     }
 
     protected pipeline(stream: IReadableStream, err: (err: any) => void) {
-        return this.streamAdapter.pipeline(stream, this.streamAdapter.passThrough(), err);
+        return this.streamAdapter.pipeline(stream, this.streamAdapter.createPassThrough(), err);
     }
 
     hasResponse(req: TRequest) {

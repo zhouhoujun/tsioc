@@ -95,7 +95,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         }
 
         if (this.encoder) {
-            body = this.encoder.encode(body);
+            body = await this.encoder.encode(body);
             this.setPayloadLength(packet, Buffer.byteLength(body));
         }
 
@@ -181,22 +181,22 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         this.emitMessage(chl, id, message);
     }
 
-    protected emitMessage(chl: QueueBuffer, id: string, chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
+    protected async emitMessage(chl: QueueBuffer, id: string, chunk: Buffer) {
         const pkg = chl.pkgs.get(id);
         if (pkg) {
-            let payload = data;
+            let payload: Buffer | null;
             if (pkg.payload) {
-                if (data.length) {
-                    payload = pkg.payload = Buffer.concat([pkg.payload, data]);
-                }
+                payload = pkg.payload = chunk.length ? Buffer.concat([pkg.payload, chunk]) : pkg.payload;
             } else {
-                pkg.payload = data.length ? data : null;
+                payload = pkg.payload = chunk.length ? chunk : null;
             }
 
             const len = this.getPayloadLength(pkg);
-            if (len && payload.length == len) {
+            if (len && payload && payload.length == len) {
                 chl.pkgs.delete(id);
+                if (this.decoder) {
+                    pkg.payload = await this.decoder.decode(payload);
+                }
                 this.emit(ev.MESSAGE, chl.queue, pkg);
             } else if (!len) {
                 this.emit(ev.MESSAGE, pkg);

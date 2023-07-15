@@ -113,7 +113,11 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
         }
 
         if (!this.headersSent) {
-            this.writeHead();
+            return this.writeHead(undefined, undefined, (err) => {
+                if (err) throw err;
+                super.end(chunk, encoding, cb);
+                this.ending = true;
+            });
         }
 
         super.end(chunk, encoding, cb);
@@ -126,8 +130,15 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
         if (!this.headersSent) {
-            this.writeHead()
+            this.writeHead(undefined, undefined, () => {
+                this._writing(chunk, encoding, callback);
+            });
+            return;
         }
+        this._writing(chunk, encoding, callback);
+    }
+
+    private _writing(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
         if (!this._bodflagSent) {
             const bhdr = this.session.getPayloadPrefix(this._hdpacket!);
             chunk = Buffer.concat([bhdr, chunk]);
@@ -136,13 +147,14 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
         this.session.write(chunk, this._hdpacket!, callback)
     }
 
-    writeHead(statusCode?: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    writeHead(statusCode?: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
+    writeHead(statusCode?: number, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode?: number, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
         if (this.headersSent) return this;
         if (isString(statusMessage)) {
             this.setHeader(hdr.STATUS_MESSAGE, statusMessage)
         } else {
+            callback = headers;
             headers = statusMessage
         }
         if (headers) {
@@ -168,7 +180,10 @@ export class TcpOutgoing extends Writable implements Outgoing<tls.TLSSocket | ne
             headers: this.getHeaders()
         }
         this._headersSent = true;
-        this.session.write(this.session.generateHeader(packet), packet);
+        this.session.generateHeader(packet)
+            .then(buff => {
+                this.session.write(buff, packet, callback);
+            })
 
         return this;
     }

@@ -76,7 +76,7 @@ export abstract class StreamAdapter {
      * create PassThrough.
      * @param options 
      */
-    abstract passThrough(options?: {
+    abstract createPassThrough(options?: {
         allowHalfOpen?: boolean | undefined;
         readableObjectMode?: boolean | undefined;
         writableObjectMode?: boolean | undefined;
@@ -102,37 +102,40 @@ export abstract class StreamAdapter {
 
     abstract getZipConstants<T = any>(): T;
 
+    abstract gzip<T extends Uint8Array>(buff: T): Promise<T>
+    abstract gunzip<T extends Uint8Array>(buff: T): Promise<T>;
+
     /**
      * Creates and returns a new `Gzip` object.
      * @param options 
      */
-    abstract gzip(options?: ZipOptions): ITransformStream;
+    abstract createGzip(options?: ZipOptions): ITransformStream;
 
     /**
      * Creates and returns a new `Gunzip` object.
      * @param options 
      */
-    abstract gunzip(options?: ZipOptions): ITransformStream;
+    abstract createGunzip(options?: ZipOptions): ITransformStream;
 
     /**
      * Creates and returns a new `Inflate` object.
      * @param options 
      */
-    abstract inflate(options?: ZipOptions): ITransformStream;
+    abstract createInflate(options?: ZipOptions): ITransformStream;
     /**
      * Creates and returns a new `InflateRaw` object.
      * @param options 
      */
-    abstract inflateRaw(options?: ZipOptions): ITransformStream;
+    abstract createInflateRaw(options?: ZipOptions): ITransformStream;
 
     /**
      * Creates and returns a new `BrotliCompress` object.
      */
-    abstract brotliCompress(options?: BrotliOptions): ITransformStream;
+    abstract createBrotliCompress(options?: BrotliOptions): ITransformStream;
     /**
      * Creates and returns a new `BrotliDecompress` object.
      */
-    abstract brotliDecompress(options?: BrotliOptions): ITransformStream;
+    abstract createBrotliDecompress(options?: BrotliOptions): ITransformStream;
 
     abstract isDuplex(target: any): target is IDuplexStream;
 
@@ -172,7 +175,7 @@ export abstract class StreamAdapter {
              */
             limit?: number | string | null;
         }) | string
-    ): Promise<Buffer>
+    ): Promise<Uint8Array>
 
     abstract createFormData(options?: {
         writable?: boolean;
@@ -256,7 +259,7 @@ export interface FormData extends IReadableStream {
         params: string | any,
         callback?: (error: Error | null, response: any) => void
     ): any;
-    getBuffer(): Buffer;
+    getBuffer(): Uint8Array;
     setBoundary(boundary: string): void;
     getBoundary(): string;
     getLength(callback: (err: Error | null, length: number) => void): void;

@@ -146,14 +146,14 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
                 if (ctx.streamAdapter.isReadable(ctx.request)) {
                     return ctx.request
                 } else if (ctx.streamAdapter.isStream(ctx.request)) {
-                    return ctx.request.pipe(ctx.streamAdapter.passThrough());
+                    return ctx.request.pipe(ctx.streamAdapter.createPassThrough());
                 }
                 throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
         if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
-            return ctx.request.pipe(ctx.streamAdapter.gunzip());
+            return ctx.request.pipe(ctx.streamAdapter.createGunzip());
         }
         throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
     }

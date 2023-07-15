@@ -32,6 +32,6 @@ export abstract class Publisher<PublishOptions = any, Packet = any> {
      *     client.publish('topic', 'message', {qos: 1, retain: true})
      * @example client.publish('topic', 'message', console.log)
      */
-    abstract publish(topic: string, message: string | Buffer, callback?: Function): any
+    abstract publish(topic: string, message: any, callback?: Function): any
 
 }
