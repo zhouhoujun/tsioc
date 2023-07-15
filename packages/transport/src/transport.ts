@@ -542,37 +542,17 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                                 plen = Buffer.byteLength(JSON.stringify(message.payload));
                             }
                             if (plen == len) {
-                                this.emit(ev.MESSAGE, message);
+                                this.emit(ev.MESSAGE, chl.topic, message);
                             }
                         }
                     } else {
-                        this.emit(ev.MESSAGE, message);
+                        this.emit(ev.MESSAGE, chl.topic, message);
                     }
                     return message;
                 });
             chl.pkgs.set(id, msg$);
             await msg$;
 
-            const message = await this.deserialize(data.subarray(1)) as Packet;
-            if (this.hasPayloadLength(message)) {
-                if (isNil(message.payload)) {
-                    this.emit(ev.HEADERS, message);
-                    chl.pkgs.set(message.id, message);
-                } else {
-                    const len = this.getPayloadLength(message);
-                    let plen;
-                    if (isString(message) || isBuffer(message)) {
-                        plen = Buffer.byteLength(message.payload);
-                    } else {
-                        plen = Buffer.byteLength(JSON.stringify(message.payload));
-                    }
-                    if (plen == len) {
-                        this.emit(ev.MESSAGE, chl.topic, message);
-                    }
-                }
-            } else {
-                this.emit(ev.MESSAGE, chl.topic, message);
-            }
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
@@ -597,7 +577,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                     }
                     this.emit(ev.MESSAGE, chl.topic, pkg);
                 } else if (!len) {
-                    this.emit(ev.MESSAGE, pkg);
+                    this.emit(ev.MESSAGE, chl.topic, pkg);
                 }
             }
 
