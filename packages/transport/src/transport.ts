@@ -228,12 +228,16 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         if (this.encoder) {
             buff = await this.encoder.encode(buff);
         }
-        buff = await this.streamAdapter.gzip(buff)
+        if (this.options.zipHeader) {
+            buff = await this.streamAdapter.gzip(buff)
+        }
         return buff;
     }
 
     protected async deserialize(buff: Buffer): Promise<HeaderPacket> {
-        buff = await this.streamAdapter.gunzip(buff);
+        if (this.options.zipHeader) {
+            buff = await this.streamAdapter.gunzip(buff);
+        }
         if (this.decoder) {
             buff = await this.decoder.decode(buff);
         }
