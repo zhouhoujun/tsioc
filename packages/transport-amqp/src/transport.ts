@@ -199,7 +199,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
                 }
                 this.emit(ev.MESSAGE, chl.queue, pkg);
             } else if (!len) {
-                this.emit(ev.MESSAGE, pkg);
+                this.emit(ev.MESSAGE, chl.queue, pkg);
             }
         }
     }

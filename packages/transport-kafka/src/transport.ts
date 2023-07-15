@@ -233,7 +233,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     }
 
     protected async emitMessage(chl: TopicBuffer, id: string, data: Buffer) {
-        const pkg = chl.pkgs.get(id);
+        const pkg = chl.pkgs.get(id) as Packet;
         if (pkg) {
             let payload = data;
             if (pkg.payload) {
@@ -252,7 +252,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                 }
                 this.emit(ev.MESSAGE, chl.topic, pkg);
             } else if (!len) {
-                this.emit(ev.MESSAGE, pkg);
+                this.emit(ev.MESSAGE, chl.topic, pkg);
             }
         }
     }
