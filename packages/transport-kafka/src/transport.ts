@@ -142,7 +142,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             headers[k] = this.generHead(packet.headers![k]);
         });
         headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
-        const topic = packet.topic ?? packet.url!;
+        const topic = packet.topic || packet.url!;
         if (!this.options.serverSide) {
             const replyTopic = packet.replyTo ?? this.getReplyTopic(topic);
             headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);

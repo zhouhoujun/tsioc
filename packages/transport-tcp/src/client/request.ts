@@ -37,7 +37,7 @@ export class TcpRequestAdapter extends SessionRequestAdapter<net.Socket | tls.TL
 
     protected bindMessageEvent(session: TransportSession<any>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>): [string, (...args: any[]) => void] {
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (res: any) => this.handleMessage(id, url, req, observer, res);
         session.on(ev.MESSAGE, onMessage);
         return [ev.MESSAGE, onMessage];

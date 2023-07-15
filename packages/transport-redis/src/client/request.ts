@@ -47,7 +47,7 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsTransport, R
             session.socket.subscriber.subscribe(reply);
         }
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (channel: string, res: any) => {
             if (channel !== reply) return;
             this.handleMessage(id, url, req, observer, res)

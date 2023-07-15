@@ -25,7 +25,7 @@ export class KafkaIncoming extends Readable implements Incoming<KafkaTransport> 
         const headers = this.headers = packet.headers || {};
         this.url = packet.url ?? '';
         this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
-        this.topic = packet.topic ?? packet.url ?? '';
+        this.topic = packet.topic || packet.url || '';
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? 'GET';
 
         this._payloadIndex = 0

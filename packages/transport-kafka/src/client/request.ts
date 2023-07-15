@@ -41,7 +41,7 @@ export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, K
     protected bindMessageEvent(session: TransportSession<KafkaTransport>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts: KafkaClientOpts): [string, (...args: any[]) => void] {
         const replyTopic = packet.replyTo;
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (topic: string, res: Packet) => {
             if (topic !== replyTopic) return;
             this.handleMessage(id, url, req, observer, res);

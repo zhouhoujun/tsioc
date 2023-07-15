@@ -53,7 +53,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     }
 
     write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void {
-        const topic = packet.topic ?? packet.url!;
+        const topic = packet.topic || packet.url!;
         const headers = this.options.publishOpts?.headers ?? createHeaders();
         packet.headers && Object.keys(packet.headers).forEach(k => {
             headers.set(k, String(packet?.headers?.[k] ?? ''))

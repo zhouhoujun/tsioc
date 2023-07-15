@@ -52,7 +52,7 @@ export class NatsRequestAdapter extends SessionRequestAdapter<NatsConnection> {
         }
 
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (topic: string, res: Packet) => {
             if (topic !== reply || res.id !== id) return;
             this.handleMessage(id, url, req, observer, res);
