@@ -108,11 +108,8 @@ export class AmqpServer extends Server<AmqpContext> {
      * @param res 
      */
     protected requestHandler(session: TransportSession<amqp.Channel>, queue: string, packet: Packet): Subscription {
-        if (!packet.method) {
-            packet.method = MESSAGE;
-        }
-        const req = new AmqpIncoming(session, packet);
-        const res = new AmqpOutgoing(session, packet.replyTo!, packet.url!, packet.id);
+        const req = new AmqpIncoming(session, packet, MESSAGE);
+        const res = new AmqpOutgoing(session, packet.id, packet.url!, packet.replyTo!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

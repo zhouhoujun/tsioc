@@ -124,7 +124,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
             packet.method = MESSAGE;
         }
         const req = new MqttIncoming(session, packet);
-        const res = new MqttOutgoing(session, packet.url!, packet.id);
+        const res = new MqttOutgoing(session, packet.id, packet.topic || packet.url!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

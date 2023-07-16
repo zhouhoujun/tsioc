@@ -92,11 +92,8 @@ export class NatsServer extends Server<NatsContext> {
      * @param res 
      */
     protected requestHandler(session: TransportSession<NatsConnection>, packet: Packet): Subscription {
-        if (!packet.method) {
-            packet.method = MESSAGE;
-        }
-        const req = new NatsIncoming(session, packet);
-        const res = new NatsOutgoing(session, packet.replyTo!, packet.url!, packet.id);
+        const req = new NatsIncoming(session, packet, MESSAGE);
+        const res = new NatsOutgoing(session, packet.id, packet.url!, packet.replyTo!);
 
         const ctx = this.createContext(req, res);
         if (packet.error) {
