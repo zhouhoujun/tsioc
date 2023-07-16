@@ -146,7 +146,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
             packet.method = MESSAGE;
         }
         const req = new RedisIncoming(session, packet);
-        const res = new RedisOutgoing(session, packet.url!, packet.id);
+        const res = new RedisOutgoing(session, packet.id, packet.url!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

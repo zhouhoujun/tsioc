@@ -1,5 +1,5 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
-import { isNil, isPromise, isString, lang, promisify } from '@tsdi/ioc';
+import { isNil, isPromise, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
@@ -7,8 +7,7 @@ import { isBuffer, toBuffer } from './utils';
 
 export interface SendPacket extends HeaderPacket {
     size?: number;
-    remnantSize?: number;
-    headersSent?: boolean;
+    sendSize?: number;
 }
 
 
@@ -54,11 +53,17 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
     //  * @param callback
     //  */
     // write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void {
-    //     if (isNil(packet.remnantSize)) {
-    //         packet.remnantSize = this.getPayloadLength(packet);
-    //     }
-    //     const len = Buffer.byteLength(chunk);
+    //     const packetSize = this.getPacketSize(packet);
     //     const maxSize = this.getPacketMaxSize();
+    //     if(packetSize <= maxSize) {
+    //         return this._write(chunk, packet, callback);
+    //     } else {
+    //         if (isNil(packet.remnantSize)) {
+    //             packet.remnantSize = this.getPayloadLength(packet);
+    //         }
+    //     }
+
+    //     const len = Buffer.byteLength(chunk);
     //     if (!packet.size) {
     //         packet.size = len;
     //     } else if (maxSize < packet.size + len) {
@@ -66,6 +71,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
     //     }
     // }
 
+    // protected abstract getPacketSize(packet: SendPacket): number;
     // protected abstract getPacketMaxSize(): number;
 
     // /**

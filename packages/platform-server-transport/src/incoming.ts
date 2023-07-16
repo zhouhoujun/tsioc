@@ -13,6 +13,8 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
 
     readonly id: number;
     readonly url: string;
+    readonly originalUrl: string;
+    readonly topic: string;
     readonly method: string;
 
     constructor(readonly session: TransportSession<T>, private packet: Packet<Buffer>, private defaultMethod = 'GET') {
@@ -21,7 +23,8 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
         this.setMaxListeners(0);
         const headers = this.headers = packet.headers || {};
         this.url = packet.url ?? headers[hdr.PATH] ?? '';
-
+        this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
+        this.topic = packet.topic || packet.url || '';
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? this.defaultMethod;
 
         this._payloadIndex = 0
