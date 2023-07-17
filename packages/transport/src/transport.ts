@@ -11,6 +11,10 @@ export interface SendPacket extends HeaderPacket {
     size?: number;
     headerSize?: number;
     payloadSize?: number;
+
+    caches?: Buffer[];
+    cacheSize?: number;
+    residueSize?: number;
 }
 
 
@@ -181,12 +185,12 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         const buffers = await this.serialize(headers);
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(packet.id);
-        const len = Buffer.byteLength(buffers) + 3;
+        const len = Buffer.byteLength(buffers);
         packet.headerSize = len;
-        packet.payloadSize = this.getPayloadLength(packet) + 3;
+        packet.payloadSize = this.getPayloadLength(packet);
         packet.size = packet.headerSize + packet.payloadSize;
         return Buffer.concat([
-            Buffer.from(String(len)),
+            Buffer.from(String(len + 3)),
             this.delimiter,
             this._header,
             bufId,
@@ -226,7 +230,7 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(packet.id);
         return Buffer.concat([
-            Buffer.from(String(size)),
+            Buffer.from(String(size + 3)),
             this.delimiter,
             this._body,
             bufId

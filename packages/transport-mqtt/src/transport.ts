@@ -27,7 +27,7 @@ export class MqttTransportSessionFactoryImpl implements MqttTransportSessionFact
 
 }
 export class MqttTransportSession extends TopicTransportSession<Client> {
-    write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
+    write(packet: HeaderPacket, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         this.socket.publish(packet.url!, chunk, callback);
     }
     protected handleFailed(error: any): void {

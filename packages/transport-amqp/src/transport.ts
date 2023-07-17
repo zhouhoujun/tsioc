@@ -55,7 +55,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         this.socket.off(name, event)
     }
 
-    write(packet: HeaderPacket, chunk: Buffer|null, callback?: (err?: any) => void): void {
+    write(packet: HeaderPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
         const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
         const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
         headers[hdr.PATH] = packet.url ?? packet.topic;
@@ -77,30 +77,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         );
 
         callback && callback(succeeded ? undefined : 'sendToQueue failed.');
-    }
-
-    protected override async generatePayload(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-
-        let body: Buffer;
-        if (isString(payload)) {
-            body = Buffer.from(payload);
-        } else if (Buffer.isBuffer(payload)) {
-            body = payload;
-        } else {
-            body = Buffer.from(JSON.stringify(payload));
-        }
-
-        if (!this.hasPayloadLength(packet)) {
-            this.setPayloadLength(packet, Buffer.byteLength(body));
-        }
-
-        if (this.encoder) {
-            body = await this.encoder.encode(body);
-            this.setPayloadLength(packet, Buffer.byteLength(body));
-        }
-
-        return body;
-
     }
 
 

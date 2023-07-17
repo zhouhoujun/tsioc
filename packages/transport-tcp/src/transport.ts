@@ -36,7 +36,11 @@ export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | 
                 .then((buff) => {
                     this.socket.write(buff, (err) => {
                         packet.headerSent = true;
-                        callback && callback(err);
+                        if (!err && chunk) {
+                            this.write(packet, chunk, callback);
+                        } else {
+                            callback && callback(err);
+                        }
                     })
                 })
                 .catch(err => callback && callback(err))

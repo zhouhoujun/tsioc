@@ -106,37 +106,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         }
     }
 
-    protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        const headers = packet.headers!;
-        let body: Buffer;
-        if (isString(payload)) {
-            body = Buffer.from(payload);
-        } else if (Buffer.isBuffer(payload)) {
-            body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
-        } else {
-            body = Buffer.from(JSON.stringify(payload));
-        }
-
-        if (!headers[hdr.CONTENT_LENGTH]) {
-            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        if (this.encoder) {
-            body =  await this.encoder.encode(body);
-            if (isString(body)) body = Buffer.from(body);
-            headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        return body;
-    }
-
-    protected async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        return Buffer.alloc(0);
-    }
-
-    write(packet: HeaderPacket & { partition?: number }, buffer: Buffer| null, callback: (err?: any) => void) {
+    write(packet: HeaderPacket & { partition?: number }, buffer: Buffer | null, callback: (err?: any) => void) {
         const headers: IHeaders = {};
         Object.keys(packet.headers!).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
@@ -158,7 +128,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             topic,
             messages: [{
                 headers,
-                value: buffer,
+                value: buffer ?? Buffer.alloc(0),
                 partition: packet.partition
             }]
         })
