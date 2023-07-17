@@ -1,6 +1,6 @@
 import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, HeaderPacket, IEventEmitter, TransportSession } from '@tsdi/core';
 import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
-import { SocketTransportSession, ev, hdr } from '@tsdi/transport';
+import { SendPacket, SocketTransportSession, ev, hdr } from '@tsdi/transport';
 import { Writable } from 'stream';
 
 
@@ -15,8 +15,7 @@ export class MessageOutgoing<T, TStatus extends OutgoingHeader = number> extends
     private _hdr: ResHeaders;
     destroyed = false;
     sendDate = true;
-    private _headersSent = false;
-    private _headerPacket?: HeaderPacket;
+    private _sentpkt?: SendPacket;
 
     writable = true;
     constructor(
@@ -64,7 +63,7 @@ export class MessageOutgoing<T, TStatus extends OutgoingHeader = number> extends
     }
 
     get headersSent() {
-        return this._headersSent;
+        return this._sentpkt?.headerSent == true;
     }
 
     getHeaders(): Record<string, OutgoingHeader> {
@@ -117,13 +116,13 @@ export class MessageOutgoing<T, TStatus extends OutgoingHeader = number> extends
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        if (!this._headerPacket) {
-            this._headerPacket = this.createHeaderPacket();
+        if (!this._sentpkt) {
+            this._sentpkt = this.createSentPacket();
         }
-        this.session.write(chunk, this._headerPacket, callback);
+        this.session.write(this._sentpkt, chunk, callback);
     }
 
-    createHeaderPacket(): HeaderPacket {
+    createSentPacket(): HeaderPacket {
         return {
             id: this.id,
             topic: this.topic,
@@ -181,9 +180,7 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
     private _hdr: ResHeaders;
     destroyed = false;
     sendDate = true;
-    private _headersSent = false;
-    private _bodflagSent = false;
-    private _hdpacket?: HeaderPacket;
+    private _sentpkt?: SendPacket;
 
     writable = true
     constructor(
@@ -231,7 +228,7 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
     }
 
     get headersSent() {
-        return this._headersSent;
+        return this._sentpkt?.headerSent == true;
     }
 
     getHeaders(): Record<string, OutgoingHeader> {
@@ -295,21 +292,31 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
         if (!this.headersSent) {
             this.writeHead(undefined, undefined, () => {
-                this._writing(chunk, encoding, callback);
+                this.session.write(this._sentpkt!, chunk, callback);
             });
             return;
         }
-        this._writing(chunk, encoding, callback);
+        this.session.write(this._sentpkt!, chunk, callback)
     }
 
-    private _writing(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
-        if (!this._bodflagSent) {
-            const bhdr = this.session.getPayloadPrefix(this._hdpacket!);
-            chunk = Buffer.concat([bhdr, chunk]);
-            this._bodflagSent = true;
-        }
-        this.session.write(chunk, this._hdpacket!, callback)
-    }
+    // override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+    //     if (!this.headersSent) {
+    //         this.writeHead(undefined, undefined, () => {
+    //             this._writing(chunk, encoding, callback);
+    //         });
+    //         return;
+    //     }
+    //     this._writing(chunk, encoding, callback);
+    // }
+
+    // private _writing(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
+    //     if (!this._bodflagSent) {
+    //         const bhdr = this.session.getPayloadPrefix(this._hdpacket!);
+    //         chunk = Buffer.concat([bhdr, chunk]);
+    //         this._bodflagSent = true;
+    //     }
+    //     this.session.write(chunk, this._hdpacket!, callback)
+    // }
 
     writeHead(statusCode?: TStatus, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
     writeHead(statusCode: TStatus, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
@@ -339,17 +346,22 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
             this.setHeader(hdr.STATUS2, statusCode);
         }
 
-        const packet = this._hdpacket = {
+        if (!this._sentpkt) {
+            this._sentpkt = this.createSentPacket();
+        }
+        const packet = this._sentpkt;
+
+        this.session.write(packet, null, callback);
+
+
+        return this;
+    }
+
+    createSentPacket(): HeaderPacket {
+        return {
             id: this.id,
             headers: this.getHeaders()
         }
-        this._headersSent = true;
-        this.session.generateHeader(packet)
-            .then(buff => {
-                this.session.write(buff, packet, callback);
-            })
-
-        return this;
     }
 
     setTimeout(msecs: number, callback?: () => void): this {

@@ -1,6 +1,6 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
-import { SocketTransportSession, ev } from '@tsdi/transport';
+import { SendPacket, SocketTransportSession, ev } from '@tsdi/transport';
 import { Duplex } from 'stream';
 import { WebSocket, createWebSocketStream } from 'ws';
 
@@ -30,8 +30,29 @@ export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory 
 
 export class WsTransportSession extends SocketTransportSession<Duplex> {
 
-    write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
-        this.socket.write(chunk, callback);
+    maxSize = 1024 * 256;
+
+    write(packet: SendPacket, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
+        const pkgSize = packet.size ?? 0;
+        if (pkgSize <= this.maxSize) {
+            this.socket.write(chunk, callback);
+        } else {
+            const size = Buffer.byteLength(chunk);
+            if (!packet.sentSize) {
+                packet.sentSize = size
+            } else {
+                packet.sentSize += size
+            }
+            if (packet.sentSize > this.maxSize) {
+                packet.sentSize = size;
+                this.socket.write(0);
+                this.socket.write(chunk, callback);
+            } else if (packet.sentSize == this.maxSize) {
+                this.socket.write(chunk, callback);
+                this.socket.write(0);
+                packet.sentSize = 0;
+            }
+        }
     }
 
     protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts | undefined): Promise<void> {

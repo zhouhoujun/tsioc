@@ -312,14 +312,13 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      */
     send(packet: Packet, options?: SendOpts): Promise<void>;
 
-
     /**
-     * send packet.
+     * write packet.
      * @param chunk 
      * @param packet
      * @param callback
      */
-    write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
+    write(packet: HeaderPacket, chunk: Uint8Array | null, callback?: (err?: any) => void): void;
 
     /**
      * Adds the `listener` function to the end of the listeners array for the

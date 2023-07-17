@@ -18,7 +18,7 @@ export class KafkaOutgoing extends MessageOutgoing<KafkaTransport, number> {
     }
 
 
-    override createHeaderPacket(): HeaderPacket {
+    override createSentPacket(): HeaderPacket {
         const topic = this.replyTopic ?? this.getReply(this.topic);
         return {
             id: this.id,

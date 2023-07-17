@@ -17,7 +17,7 @@ export class MqttOutgoing extends MessageOutgoing<MqttClient, number> {
     }
 
 
-    override createHeaderPacket(): HeaderPacket {
+    override createSentPacket(): HeaderPacket {
         const topic = this.getReply(this.topic);
         return {
             id: this.id,

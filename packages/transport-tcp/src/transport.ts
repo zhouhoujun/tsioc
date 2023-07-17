@@ -1,6 +1,6 @@
-import { Decoder, Encoder, HeaderPacket, IReadableStream, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, Injectable, Optional } from '@tsdi/ioc';
-import { SocketTransportSession, ev } from '@tsdi/transport';
+import { Decoder, Encoder, IReadableStream, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Injectable, Optional } from '@tsdi/ioc';
+import { SendPacket, SocketTransportSession, ev } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 
@@ -29,16 +29,31 @@ export class TcpTransportSessionFactoryImpl implements TcpTransportSessionFactor
 
 export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | net.Socket> {
 
-    write(chunk: Buffer, packet?: HeaderPacket | undefined, callback?: ((err?: any) => void) | undefined): void {
-        this.socket.write(chunk, callback)
+
+    write(packet: SendPacket, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
+        if (!packet.headerSent) {
+            this.generateHeader(packet)
+                .then((buff) => {
+                    this.socket.write(buff, (err) => {
+                        packet.headerSent = true;
+                        callback && callback(err);
+                    })
+                })
+                .catch(err => callback && callback(err))
+            return;
+        }
+        if (!chunk) throw new ArgumentExecption('chunk can not be null!')
+        if (!packet.payloadSent) {
+            const prefix = this.getPayloadPrefix(packet, packet.payloadSize!);
+            packet.payloadSent = true;
+            this.socket.write(chunk ? Buffer.concat([prefix, chunk]) : chunk, callback)
+        } else {
+            this.socket.write(chunk, callback)
+        }
     }
 
-    protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void> {
-        const header = await this.generateHeader(packet, options);
-        this.socket.write(Buffer.concat([
-            header,
-            this.getPayloadPrefix(packet, options)
-        ]));
+    protected async pipeStream(payload: IReadableStream, packet: SendPacket, options?: SendOpts): Promise<void> {
+        await this.writeAsync(packet, null);
         payload.pipe(this.socket);
     }
 

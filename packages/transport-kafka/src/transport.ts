@@ -136,7 +136,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         return Buffer.alloc(0);
     }
 
-    write(buffer: Buffer, packet: HeaderPacket & { partition?: number }, callback: (err?: any) => void) {
+    write(packet: HeaderPacket & { partition?: number }, buffer: Buffer| null, callback: (err?: any) => void) {
         const headers: IHeaders = {};
         Object.keys(packet.headers!).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);

@@ -13,6 +13,7 @@ export interface HeaderPacket {
     headers?: IncomingHeaders | OutgoingHeaders;
     error?: any;
     replyTo?: string;
+
 }
 
 /**

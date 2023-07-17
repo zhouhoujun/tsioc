@@ -6,8 +6,11 @@ import { PacketLengthException } from './execptions';
 import { isBuffer, toBuffer } from './utils';
 
 export interface SendPacket extends HeaderPacket {
+    payloadSent?: boolean;
+    headerSent?: boolean;
     size?: number;
-    sendSize?: number;
+    headerSize?: number;
+    payloadSize?: number;
 }
 
 
@@ -37,53 +40,16 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     }
 
-
     /**
      * send packet.
      * @param chunk 
      * @param packet
      * @param callback
      */
-    abstract write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void
+    abstract write(packet: SendPacket, chunk: Buffer | null, callback?: (err?: any) => void): void
 
-    // /**
-    //  * send packet.
-    //  * @param chunk 
-    //  * @param packet
-    //  * @param callback
-    //  */
-    // write(chunk: Buffer, packet: SendPacket, callback?: (err?: any) => void): void {
-    //     const packetSize = this.getPacketSize(packet);
-    //     const maxSize = this.getPacketMaxSize();
-    //     if(packetSize <= maxSize) {
-    //         return this._write(chunk, packet, callback);
-    //     } else {
-    //         if (isNil(packet.remnantSize)) {
-    //             packet.remnantSize = this.getPayloadLength(packet);
-    //         }
-    //     }
-
-    //     const len = Buffer.byteLength(chunk);
-    //     if (!packet.size) {
-    //         packet.size = len;
-    //     } else if (maxSize < packet.size + len) {
-    //         packet.size += len;
-    //     }
-    // }
-
-    // protected abstract getPacketSize(packet: SendPacket): number;
-    // protected abstract getPacketMaxSize(): number;
-
-    // /**
-    //  * write socket.
-    //  * @param chunk 
-    //  * @param packet 
-    //  * @param callback 
-    //  */
-    // protected abstract _write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void;
-
-    writeAsync(chunk: Buffer, packet: HeaderPacket): Promise<void> {
-        return promisify(this.write, this)(chunk, packet);
+    writeAsync(packet: SendPacket, chunk: Buffer | null): Promise<void> {
+        return promisify(this.write, this)(packet, chunk);
     }
 
     async send(packet: Packet, options?: SendOpts): Promise<void> {
@@ -92,14 +58,13 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
             headers.headers = {};
         }
         if (isNil(payload)) {
-            const buffs = await this.generateNoPayload(headers, options);
-            await this.writeAsync(buffs, packet);
+            await this.writeAsync(packet, null);
         } else {
             if (this.streamAdapter.isReadable(payload)) {
                 await this.pipeStream(payload, headers, options);
             } else {
-                const buffs = await this.generate(payload, headers, options);
-                await this.writeAsync(buffs, headers)
+                const buffs = await this.generatePayload(payload, headers);
+                await this.writeAsync(headers, buffs)
             }
         }
     }
@@ -110,7 +75,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
      * @param packet 
      * @returns 
      */
-    protected async encodePayload(payload: any, packet: HeaderPacket): Promise<Buffer> {
+    protected async generatePayload(payload: any, packet: SendPacket): Promise<Buffer> {
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
@@ -134,14 +99,10 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         return body;
     }
 
-    protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts): Promise<void> {
-        const buff = await this.generate(await toBuffer(payload), packet, options);
-        return this.writeAsync(buff, packet);
+    protected async pipeStream(payload: IReadableStream, packet: SendPacket, options?: SendOpts): Promise<void> {
+        const buff = await this.generatePayload(await toBuffer(payload), packet);
+        return this.writeAsync(packet, buff);
     }
-
-    protected abstract generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
-    protected abstract generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer>;
-
 
     protected hasPayloadLength(packet: HeaderPacket) {
         return !isNil(packet.headers?.[hdr.CONTENT_LENGTH]);
@@ -215,13 +176,17 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         this._body = Buffer.alloc(1, '1');
     }
 
-    async generateHeader(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        const { id, ...headers } = packet;
+    async generateHeader(packet: SendPacket, options?: SendOpts): Promise<Buffer> {
+        const { id, headerSent, headerSize, payloadSize, size, ...headers } = packet;
         const buffers = await this.serialize(headers);
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(packet.id);
+        const len = Buffer.byteLength(buffers) + 3;
+        packet.headerSize = len;
+        packet.payloadSize = this.getPayloadLength(packet) + 3;
+        packet.size = packet.headerSize + packet.payloadSize;
         return Buffer.concat([
-            Buffer.from(String(Buffer.byteLength(buffers) + 3)),
+            Buffer.from(String(len)),
             this.delimiter,
             this._header,
             bufId,
@@ -256,13 +221,12 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         }
     }
 
-    getPayloadPrefix(packet: HeaderPacket, options?: SendOpts): Buffer {
-        const len = this.getPayloadLength(packet);
+
+    getPayloadPrefix(packet: HeaderPacket, size: number, options?: SendOpts): Buffer {
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(packet.id);
-
         return Buffer.concat([
-            Buffer.from(String(len + 3)),
+            Buffer.from(String(size)),
             this.delimiter,
             this._body,
             bufId
@@ -270,24 +234,19 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
 
     }
 
+    // protected async generate(payload: any, packet: SendPacket, options?: SendOpts): Promise<Buffer> {
 
-    protected async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+    //     const headerBuff = await this.generateHeader(packet, options);
+    //     const payloadFlag = this.getPayloadPrefix(packet, packet.payloadSize!, options);
+    //     const payloadBuf = await this.generatePayload(payload, packet);
 
-        const headerBuff = await this.generateHeader(packet, options);
-        const payloadFlag = this.getPayloadPrefix(packet, options);
-        const payloadBuf = await this.encodePayload(payload, packet);
+    //     return Buffer.concat([
+    //         headerBuff,
+    //         payloadFlag,
+    //         payloadBuf
+    //     ]);
 
-        return Buffer.concat([
-            headerBuff,
-            payloadFlag,
-            payloadBuf
-        ]);
-
-    }
-
-    protected async generateNoPayload(packet: HeaderPacket): Promise<Buffer> {
-        return this.generateHeader(packet)
-    }
+    // }
 }
 
 /**

@@ -55,7 +55,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         this.socket.off(name, event)
     }
 
-    write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void {
+    write(packet: HeaderPacket, chunk: Buffer|null, callback?: (err?: any) => void): void {
         const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
         const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
         headers[hdr.PATH] = packet.url ?? packet.topic;
@@ -65,7 +65,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         };
         const succeeded = this.socket.sendToQueue(
             queue,
-            chunk,
+            chunk ?? Buffer.alloc(0),
             {
                 ...replys,
                 ...this.options.publishOpts,
@@ -79,7 +79,7 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         callback && callback(succeeded ? undefined : 'sendToQueue failed.');
     }
 
-    protected override async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+    protected override async generatePayload(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
 
         let body: Buffer;
         if (isString(payload)) {
@@ -101,11 +101,6 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
 
         return body;
 
-    }
-
-    protected override async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        this.setPayloadLength(packet, 0);
-        return Buffer.alloc(0);
     }
 
 
