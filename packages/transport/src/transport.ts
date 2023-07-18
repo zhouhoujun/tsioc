@@ -138,7 +138,6 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     protected abstract handleFailed(error: any): void;
 
-
     protected bindEvent(options: TOpts) {
         this.getBindEvents().forEach(event => {
             const fn = (...args: any[]) => {
@@ -181,10 +180,10 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
     }
 
     async generateHeader(packet: SendPacket, options?: SendOpts): Promise<Buffer> {
-        const { id, headerSent, headerSize, payloadSize, size, ...headers } = packet;
+        const { id, headerSent, headerSize, payloadSize, size, cacheSize, caches, residueSize, ...headers } = packet;
         const buffers = await this.serialize(headers);
         const bufId = Buffer.alloc(2);
-        bufId.writeUInt16BE(packet.id);
+        bufId.writeUInt16BE(id);
         const len = Buffer.byteLength(buffers);
         packet.headerSize = len;
         packet.payloadSize = this.getPayloadLength(packet);
@@ -238,19 +237,11 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
 
     }
 
-    // protected async generate(payload: any, packet: SendPacket, options?: SendOpts): Promise<Buffer> {
-
-    //     const headerBuff = await this.generateHeader(packet, options);
-    //     const payloadFlag = this.getPayloadPrefix(packet, packet.payloadSize!, options);
-    //     const payloadBuf = await this.generatePayload(payload, packet);
-
-    //     return Buffer.concat([
-    //         headerBuff,
-    //         payloadFlag,
-    //         payloadBuf
-    //     ]);
-
+    // protected async pipeStream(payload: IReadableStream, packet: SendPacket, options?: SendOpts): Promise<void> {
+    //     await this.writeAsync(packet, null);
+    //     await this.streamAdapter.pipeTo(payload, this);
     // }
+    
 }
 
 /**

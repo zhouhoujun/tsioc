@@ -290,33 +290,11 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        if (!this.headersSent) {
-            this.writeHead(undefined, undefined, () => {
-                this.session.write(this._sentpkt!, chunk, callback);
-            });
-            return;
+        if (!this._sentpkt) {
+            this._sentpkt =  this.createSentPacket();
         }
-        this.session.write(this._sentpkt!, chunk, callback)
+        this.session.write(this._sentpkt, chunk, callback)
     }
-
-    // override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-    //     if (!this.headersSent) {
-    //         this.writeHead(undefined, undefined, () => {
-    //             this._writing(chunk, encoding, callback);
-    //         });
-    //         return;
-    //     }
-    //     this._writing(chunk, encoding, callback);
-    // }
-
-    // private _writing(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void) {
-    //     if (!this._bodflagSent) {
-    //         const bhdr = this.session.getPayloadPrefix(this._hdpacket!);
-    //         chunk = Buffer.concat([bhdr, chunk]);
-    //         this._bodflagSent = true;
-    //     }
-    //     this.session.write(chunk, this._hdpacket!, callback)
-    // }
 
     writeHead(statusCode?: TStatus, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
     writeHead(statusCode: TStatus, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;

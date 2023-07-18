@@ -1,8 +1,8 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
 import { SendPacket, SocketTransportSession, ev } from '@tsdi/transport';
-import { Duplex } from 'stream';
 import { WebSocket, createWebSocketStream } from 'ws';
+import { Duplex } from 'stream';
 
 
 
@@ -105,22 +105,6 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                     this.socket.write(data, callback);
                 }
             }
-
-            // const size = Buffer.byteLength(chunk);
-            // if (!packet.sentSize) {
-            //     packet.sentSize = size
-            // } else {
-            //     packet.sentSize += size
-            // }
-            // if (packet.sentSize > this.maxSize) {
-            //     packet.sentSize = size;
-            //     this.socket.write(0);
-            //     this.socket.write(chunk, callback);
-            // } else if (packet.sentSize == this.maxSize) {
-            //     this.socket.write(chunk, callback);
-            //     this.socket.write(0);
-            //     packet.sentSize = 0;
-            // }
         }
     }
 
