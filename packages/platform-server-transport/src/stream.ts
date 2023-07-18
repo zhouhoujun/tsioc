@@ -63,6 +63,20 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
     isWritable(stream: any): stream is IWritableStream {
         return stream instanceof Writable || (isFunction(stream?.write) && (stream as Writable)?.writable);
     }
+
+    createWritable(options?: {
+        emitClose?: boolean | undefined;
+        highWaterMark?: number | undefined;
+        objectMode?: boolean | undefined;
+        destroy?(this: Writable, error: Error | null, callback: (error: Error | null) => void): void;
+        autoDestroy?: boolean | undefined;
+        decodeStrings?: boolean | undefined;
+        defaultEncoding?: string | undefined;
+        write?(this: Writable, chunk: any, encoding: string, callback: (error?: Error | null) => void): void;
+        final?(this: Writable, callback: (error?: Error | null) => void): void;
+    }): Writable {
+        return new Writable(options);
+    }
     createPassThrough(options?: {
         allowHalfOpen?: boolean | undefined;
         readableObjectMode?: boolean | undefined;

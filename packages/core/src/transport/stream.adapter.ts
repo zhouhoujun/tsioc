@@ -73,6 +73,21 @@ export abstract class StreamAdapter {
     abstract isWritable(stream: any): stream is IWritableStream;
 
     /**
+     * create writable.
+     * @param options 
+     */
+    abstract createWritable(options?: {
+        emitClose?: boolean | undefined;
+        highWaterMark?: number | undefined;
+        objectMode?: boolean | undefined;
+        destroy?(this: IWritableStream, error: Error | null, callback: (error: Error | null) => void): void;
+        autoDestroy?: boolean | undefined;
+        decodeStrings?: boolean | undefined;
+        defaultEncoding?: string | undefined;
+        write?(this: IWritableStream, chunk: any, encoding: string, callback: (error?: Error | null) => void): void;
+        final?(this: IWritableStream, callback: (error?: Error | null) => void): void;
+    }): IWritableStream;
+    /**
      * create PassThrough.
      * @param options 
      */

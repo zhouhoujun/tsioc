@@ -1,4 +1,4 @@
-import { Decoder, Encoder, HeaderPacket, IReadableStream, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
 import { SendPacket, SocketTransportSession, ev } from '@tsdi/transport';
 import { WebSocket, createWebSocketStream } from 'ws';
@@ -48,8 +48,10 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                 .catch(err => callback && callback(err))
             return;
         }
-        if (!chunk) throw new ArgumentExecption('chunk can not be null!')
-        const pkgSize = packet.payloadSize ?? 0;
+        if (!chunk) throw new ArgumentExecption('chunk can not be null!');
+
+
+        const pkgSize = packet.size ?? 0;
         if (pkgSize <= this.maxSize) {
             if (!packet.payloadSent) {
                 const prefix = this.getPayloadPrefix(packet, packet.payloadSize!);
@@ -106,11 +108,6 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                 }
             }
         }
-    }
-
-    protected async pipeStream(payload: IReadableStream, packet: HeaderPacket, options?: SendOpts | undefined): Promise<void> {
-        await this.writeAsync(packet, null);
-        await this.streamAdapter.pipeTo(payload, this.socket);
     }
 
     protected handleFailed(error: any): void {

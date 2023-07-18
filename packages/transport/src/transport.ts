@@ -1,5 +1,5 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
-import { isNil, isPromise, isString, promisify } from '@tsdi/ioc';
+import { ArgumentExecption, isNil, isPromise, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
@@ -104,8 +104,11 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
     }
 
     protected async pipeStream(payload: IReadableStream, packet: SendPacket, options?: SendOpts): Promise<void> {
-        const buff = await this.generatePayload(await toBuffer(payload), packet);
-        return this.writeAsync(packet, buff);
+        await this.streamAdapter.pipeTo(payload, this.streamAdapter.createWritable({
+            write: (chunk, encoding, callback) => {
+                this.write(packet, chunk, callback);
+            }
+        }));
     }
 
     protected hasPayloadLength(packet: HeaderPacket) {
@@ -237,11 +240,6 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
 
     }
 
-    // protected async pipeStream(payload: IReadableStream, packet: SendPacket, options?: SendOpts): Promise<void> {
-    //     await this.writeAsync(packet, null);
-    //     await this.streamAdapter.pipeTo(payload, this);
-    // }
-    
 }
 
 /**

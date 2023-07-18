@@ -1,5 +1,5 @@
-import { Decoder, Encoder, IReadableStream, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, ArgumentExecption, Injectable, Optional } from '@tsdi/ioc';
+import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Injectable, Optional, promisify } from '@tsdi/ioc';
 import { SendPacket, SocketTransportSession, ev } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -54,11 +54,6 @@ export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | 
         } else {
             this.socket.write(chunk, callback)
         }
-    }
-
-    protected async pipeStream(payload: IReadableStream, packet: SendPacket, options?: SendOpts): Promise<void> {
-        await this.writeAsync(packet, null);
-        payload.pipe(this.socket);
     }
 
     protected handleFailed(error: any): void {
