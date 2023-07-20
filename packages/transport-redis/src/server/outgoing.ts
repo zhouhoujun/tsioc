@@ -16,7 +16,7 @@ export class RedisOutgoing extends MessageOutgoing<ReidsTransport, number> {
         super(session, id, topic);
     }
 
-    override createHeaderPacket(): HeaderPacket {
+    override createSentPacket(): HeaderPacket {
         const topic = this.getReply(this.topic);
         return {
             id: this.id,

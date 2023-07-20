@@ -29,7 +29,6 @@ export class TcpTransportSessionFactoryImpl implements TcpTransportSessionFactor
 
 export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | net.Socket> {
 
-
     write(packet: SendPacket, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
         if (!packet.headerSent) {
             this.generateHeader(packet)

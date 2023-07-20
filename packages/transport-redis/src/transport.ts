@@ -1,6 +1,6 @@
-import { Decoder, Encoder, HeaderPacket, IReadableStream, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
-import { TopicTransportSession, ev } from '@tsdi/transport';
+import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Injectable, Optional, isNil, isString } from '@tsdi/ioc';
+import { Subpackage, TopicTransportSession, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { Buffer } from 'buffer';
 
@@ -36,10 +36,69 @@ export class RedisTransportSessionFactoryImpl implements RedisTransportSessionFa
 const PATTERN_MSG_BUFFER = 'pmessageBuffer'
 
 export class RedisTransportSession extends TopicTransportSession<ReidsTransport> {
-   
-   
-    override write(chunk: Buffer, packet: HeaderPacket, callback?: ((err?: any) => void) | undefined): void {
-        this.socket.publisher.publish(packet.url!, chunk, callback);
+
+    maxSize = 1024 * 256 - 6;
+
+    override write(packet: Subpackage, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
+        if (!packet.headerSent) {
+            this.generateHeader(packet)
+                .then((buff) => {
+                    if (this.hasPayloadLength(packet)) {
+                        packet.residueSize = packet.payloadSize ?? 0;
+                        packet.caches = [buff];
+                        packet.cacheSize = Buffer.byteLength(buff);
+                        packet.headerSent = true;
+                        packet.headCached = true;
+                        if (chunk) {
+                            this.write(packet, chunk, callback)
+                        } else {
+                            callback?.();
+                        }
+                    } else {
+                        this.socket.publisher.publish(packet.url!, buff, callback);
+                    }
+                })
+                .catch(err => callback?.(err))
+            return;
+        }
+
+        if (!chunk) throw new ArgumentExecption('chunk can not be null!');
+
+
+        const bufSize = Buffer.byteLength(chunk);
+        const maxSize = this.maxSize - (packet.headCached ? 6 : 3);
+        
+        const tol = packet.cacheSize + bufSize;
+        if (tol == maxSize) {
+            packet.caches.push(chunk);
+            const data = this.getSendBuffer(packet, maxSize);
+            packet.residueSize -= bufSize;
+            this.socket.publisher.publish(packet.url!, data, callback);
+        } else if (tol > maxSize) {
+            const idx = bufSize - (tol - maxSize);
+            const message = chunk.subarray(0, idx);
+            const rest = chunk.subarray(idx);
+            packet.caches.push(message);
+            const data = this.getSendBuffer(packet, maxSize);
+            packet.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.socket.publisher.publish(packet.url!, data, (err) => {
+                if (err) throw err;
+                if (rest.length) {
+                    this.write(packet, rest, callback)
+                }
+            })
+        } else {
+            packet.caches.push(chunk);
+            packet.cacheSize += bufSize;
+            packet.residueSize -= bufSize;
+            if (packet.residueSize <= 0) {
+                const data = this.getSendBuffer(packet, packet.cacheSize);
+                this.socket.publisher.publish(packet.url!, data, callback);
+            } else if (callback) {
+                callback()
+            }
+        }
+
     }
 
     protected override handleFailed(error: any): void {

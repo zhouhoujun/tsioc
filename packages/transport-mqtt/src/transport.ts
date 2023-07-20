@@ -1,6 +1,6 @@
 import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts, HeaderPacket } from '@tsdi/core';
-import { Abstract, Injectable, Optional } from '@tsdi/ioc';
-import { TopicTransportSession, ev } from '@tsdi/transport';
+import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
+import { Subpackage, TopicTransportSession, ev } from '@tsdi/transport';
 import { Client } from 'mqtt';
 import { Buffer } from 'buffer';
 
@@ -27,8 +27,68 @@ export class MqttTransportSessionFactoryImpl implements MqttTransportSessionFact
 
 }
 export class MqttTransportSession extends TopicTransportSession<Client> {
-    write(packet: HeaderPacket, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
-        this.socket.publish(packet.url!, chunk, callback);
+
+    maxSize = 1024 * 256 - 6;
+
+    write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
+        if (!packet.headerSent) {
+            this.generateHeader(packet)
+                .then((buff) => {
+                    if (this.hasPayloadLength(packet)) {
+                        packet.residueSize = packet.payloadSize ?? 0;
+                        packet.caches = [buff];
+                        packet.cacheSize = Buffer.byteLength(buff);
+                        packet.headerSent = true;
+                        packet.headCached = true;
+                        if (chunk) {
+                            this.write(packet, chunk, callback)
+                        } else {
+                            callback?.();
+                        }
+                    } else {
+                        this.socket.publish(packet.url!, buff, callback);
+                    }
+                })
+                .catch(err => callback?.(err))
+            return;
+        }
+
+        if (!chunk) throw new ArgumentExecption('chunk can not be null!');
+
+
+        const bufSize = Buffer.byteLength(chunk);
+        const maxSize = this.maxSize - (packet.headCached ? 6 : 3);
+    
+        const tol = packet.cacheSize + bufSize;
+        if (tol == maxSize) {
+            packet.caches.push(chunk);
+            const data = this.getSendBuffer(packet, maxSize);
+            packet.residueSize -= bufSize;
+            this.socket.publish(packet.url!, data, callback);
+        } else if (tol > maxSize) {
+            const idx = bufSize - (tol - maxSize);
+            const message = chunk.subarray(0, idx);
+            const rest = chunk.subarray(idx);
+            packet.caches.push(message);
+            const data = this.getSendBuffer(packet, maxSize);
+            packet.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.socket.publish(packet.url!, data, (err) => {
+                if (err) throw err;
+                if (rest.length) {
+                    this.write(packet, rest, callback)
+                }
+            })
+        } else {
+            packet.caches.push(chunk);
+            packet.cacheSize += bufSize;
+            packet.residueSize -= bufSize;
+            if (packet.residueSize <= 0) {
+                const data = this.getSendBuffer(packet, packet.cacheSize);
+                this.socket.publish(packet.url!, data, callback);
+            } else if (callback) {
+                callback()
+            }
+        }
     }
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message);

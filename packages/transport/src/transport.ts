@@ -12,11 +12,15 @@ export interface SendPacket extends HeaderPacket {
     headerSize?: number;
     payloadSize?: number;
 
-    caches?: Buffer[];
-    cacheSize?: number;
-    residueSize?: number;
+
 }
 
+export interface Subpackage extends SendPacket {
+    caches: Buffer[];
+    cacheSize: number;
+    headCached?: boolean;
+    residueSize: number;
+}
 
 /**
  * abstract transport session.
@@ -183,7 +187,7 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
     }
 
     async generateHeader(packet: SendPacket, options?: SendOpts): Promise<Buffer> {
-        const { id, headerSent, headerSize, payloadSize, size, cacheSize, caches, residueSize, ...headers } = packet;
+        const { id, headerSent, headerSize, payloadSize, size, cacheSize, caches, residueSize, ...headers } = packet as Subpackage;
         const buffers = await this.serialize(headers);
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(id);
@@ -237,7 +241,21 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
             this._body,
             bufId
         ])
+    }
 
+    getSendBuffer(packet: Subpackage, size: number) {
+        let data: Buffer[];
+        if (packet.headCached) {
+            packet.headCached = false;
+            const prefix = this.getPayloadPrefix(packet, size - Buffer.byteLength(packet.caches[0]));
+            data = [packet.caches[0], prefix, ...packet.caches.slice(1)];
+        } else {
+            const prefix = this.getPayloadPrefix(packet, size);
+            data = [prefix, ...packet.caches];
+        }
+        packet.caches = [];
+        packet.cacheSize = 0;
+        return Buffer.concat(data);
     }
 
 }
@@ -301,8 +319,9 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                 const buffer = this.concatCaches();
                 const message = buffer.subarray(0, this.contentLength);
                 const rest = buffer.subarray(this.contentLength);
-                this.handleMessage(message);
-                this.handleData(rest);
+                this.handleMessage(message).then(() => {
+                    rest.length && this.handleData(rest);
+                });
             }
         }
     }
@@ -315,7 +334,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         this.contentLength = null;
         this.length = 0;
         this.buffers = [];
-        this.emitMessage(message);
+        return this.emitMessage(message);
     }
 
     protected async emitMessage(chunk: Buffer) {
@@ -464,8 +483,9 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message);
-                this.handleData(chl, rest);
+                this.handleMessage(chl, message).then(() => {
+                    rest.length && this.handleData(chl, rest);
+                });
             }
         }
     }
@@ -478,7 +498,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        this.emitMessage(chl, message);
+        return this.emitMessage(chl, message);
     }
 
     protected async emitMessage(chl: TopicBuffer, data: Buffer) {

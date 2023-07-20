@@ -1,6 +1,6 @@
 import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
-import { SendPacket, SocketTransportSession, ev } from '@tsdi/transport';
+import { SocketTransportSession, Subpackage, ev } from '@tsdi/transport';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { Duplex } from 'stream';
 
@@ -32,7 +32,8 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
 
     maxSize = 1024 * 256 - 6 - 3;
 
-    write(packet: SendPacket, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
+    write(packet: Subpackage, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
+        
         if (!packet.headerSent) {
             this.generateHeader(packet)
                 .then((buff) => {
@@ -41,17 +42,17 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                         if (!err && chunk) {
                             this.write(packet, chunk, callback);
                         } else {
-                            callback && callback(err);
+                            callback?.(err);
                         }
                     })
                 })
-                .catch(err => callback && callback(err))
+                .catch(err => callback?.(err))
             return;
         }
         if (!chunk) throw new ArgumentExecption('chunk can not be null!');
 
 
-        const pkgSize = packet.size ?? 0;
+        const pkgSize = packet.payloadSize ?? 0;
         if (pkgSize <= this.maxSize) {
             if (!packet.payloadSent) {
                 const prefix = this.getPayloadPrefix(packet, packet.payloadSize!);
@@ -70,7 +71,6 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             if (isNil(packet.caches)) {
                 packet.caches = [];
             }
-
 
             const bufSize = Buffer.byteLength(chunk);
 
@@ -104,7 +104,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                 packet.cacheSize += bufSize;
                 packet.residueSize -= bufSize;
                 if (packet.residueSize <= 0) {
-                    const prefix = this.getPayloadPrefix(packet,  packet.cacheSize);
+                    const prefix = this.getPayloadPrefix(packet, packet.cacheSize);
                     const data = Buffer.concat([prefix, ...packet.caches]);
                     packet.caches = [];
                     packet.cacheSize = 0;
