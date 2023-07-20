@@ -52,7 +52,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         return [];
     }
 
-    write(chunk: Buffer, packet: HeaderPacket, callback?: (err?: any) => void): void {
+    write(packet: HeaderPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
         const topic = packet.topic || packet.url!;
         const headers = this.options.publishOpts?.headers ?? createHeaders();
         packet.headers && Object.keys(packet.headers).forEach(k => {
@@ -67,7 +67,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         try {
             this.socket.publish(
                 topic,
-                chunk,
+                chunk ?? Buffer.alloc(0),
                 {
                     ...this.options.publishOpts,
                     ...replys,
@@ -100,7 +100,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         this.off(name, event)
     }
 
-    protected override async generate(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
+    protected override async generatePayload(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
 
         let body: Buffer;
         if (isString(payload)) {
@@ -111,7 +111,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if(!this.hasPayloadLength(packet)){
+        if (!this.hasPayloadLength(packet)) {
             this.setPayloadLength(packet, Buffer.byteLength(body))
         }
 
@@ -123,12 +123,6 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         return body;
 
     }
-
-    protected override async generateNoPayload(packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-        this.setPayloadLength(packet, 0);
-        return Buffer.alloc(0);
-    }
-
 
     protected onData(error: Error | null, msg: Msg): void {
         try {

@@ -4,7 +4,7 @@ import {
 } from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
-import { isReadable, Stream, Writable, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
+import { isReadable, Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
 import { promisify } from 'util';
 import * as zlib from 'zlib';
 import * as FormData from 'form-data';
@@ -64,17 +64,7 @@ export class NodeStreamAdapter extends AbstractStreamAdapter {
         return stream instanceof Writable || (isFunction(stream?.write) && (stream as Writable)?.writable);
     }
 
-    createWritable(options?: {
-        emitClose?: boolean | undefined;
-        highWaterMark?: number | undefined;
-        objectMode?: boolean | undefined;
-        destroy?(this: Writable, error: Error | null, callback: (error: Error | null) => void): void;
-        autoDestroy?: boolean | undefined;
-        decodeStrings?: boolean | undefined;
-        defaultEncoding?: string | undefined;
-        write?(this: Writable, chunk: any, encoding: string, callback: (error?: Error | null) => void): void;
-        final?(this: Writable, callback: (error?: Error | null) => void): void;
-    }): Writable {
+    createWritable(options?: WritableOptions): Writable {
         return new Writable(options);
     }
     createPassThrough(options?: {

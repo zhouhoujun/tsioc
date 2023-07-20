@@ -30,7 +30,7 @@ export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory 
 
 export class WsTransportSession extends SocketTransportSession<Duplex> {
 
-    maxSize = 1024 * 256 - 3;
+    maxSize = 1024 * 256 - 6 - 3;
 
     write(packet: SendPacket, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
         if (!packet.headerSent) {
@@ -79,7 +79,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                 const prefix = this.getPayloadPrefix(packet, this.maxSize);
                 packet.caches.push(chunk);
                 const data = Buffer.concat([prefix, ...packet.caches]);
-                packet.residueSize -= this.maxSize;
+                packet.residueSize -= bufSize;
                 packet.caches = [];
                 packet.cacheSize = 0;
                 this.socket.write(data, callback);
@@ -90,21 +90,27 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                 const prefix = this.getPayloadPrefix(packet, this.maxSize);
                 packet.caches.push(message);
                 const data = Buffer.concat([prefix, ...packet.caches]);
-                packet.caches = [rest];
-                packet.cacheSize = rest.length;
-                packet.residueSize -= this.maxSize;
-                this.socket.write(data, callback);
+                packet.residueSize -= (bufSize - rest.length)
+                packet.caches = [];
+                packet.cacheSize = 0;
+                this.socket.write(data, (err) => {
+                    if (err) throw err;
+                    if (rest.length) {
+                        this.write(packet, rest, callback)
+                    }
+                })
             } else {
                 packet.caches.push(chunk);
                 packet.cacheSize += bufSize;
                 packet.residueSize -= bufSize;
                 if (packet.residueSize <= 0) {
-                    const prefix = this.getPayloadPrefix(packet, packet.residueSize > this.maxSize ? this.maxSize : packet.residueSize);
-                    packet.residueSize -= this.maxSize;
+                    const prefix = this.getPayloadPrefix(packet,  packet.cacheSize);
                     const data = Buffer.concat([prefix, ...packet.caches]);
                     packet.caches = [];
                     packet.cacheSize = 0;
                     this.socket.write(data, callback);
+                } else if (callback) {
+                    callback()
                 }
             }
         }

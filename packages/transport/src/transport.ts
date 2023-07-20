@@ -1,9 +1,9 @@
 import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
-import { ArgumentExecption, isNil, isPromise, isString, promisify } from '@tsdi/ioc';
+import { isNil, isPromise, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
-import { isBuffer, toBuffer } from './utils';
+import { isBuffer } from './utils';
 
 export interface SendPacket extends HeaderPacket {
     payloadSent?: boolean;
