@@ -31,6 +31,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
     maxSize = 1024 * 256 - 6;
 
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
+        const topic = packet.topic ?? packet.url!;
         if (!packet.headerSent) {
             this.generateHeader(packet)
                 .then((buff) => {
@@ -46,7 +47,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
                             callback?.();
                         }
                     } else {
-                        this.socket.publish(packet.url!, buff, callback);
+                        this.socket.publish(topic, buff, callback);
                     }
                 })
                 .catch(err => callback?.(err))
@@ -64,7 +65,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.publish(packet.url!, data, callback);
+            this.socket.publish(topic, data, callback);
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -72,7 +73,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
             packet.caches.push(message);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-            this.socket.publish(packet.url!, data, (err) => {
+            this.socket.publish(topic, data, (err) => {
                 if (err) throw err;
                 if (rest.length) {
                     this.write(packet, rest, callback)
@@ -84,7 +85,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.publish(packet.url!, data, callback);
+                this.socket.publish(topic, data, callback);
             } else if (callback) {
                 callback()
             }

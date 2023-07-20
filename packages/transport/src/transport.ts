@@ -292,13 +292,13 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
 
 
         this.buffers.push(data);
-        this.length += data.length;
+        this.length += Buffer.byteLength(data);
 
         if (this.contentLength == null) {
             const i = data.indexOf(this.delimiter);
             if (i !== -1) {
                 const buffer = this.concatCaches();
-                const idx = this.length - data.length + i;
+                const idx = this.length - Buffer.byteLength(data) + i;
                 const rawContentLength = buffer.subarray(0, idx).toString();
                 this.contentLength = parseInt(rawContentLength, 10);
 
@@ -455,13 +455,13 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
             : Buffer.from(dataRaw);
 
         chl.buffers.push(data);
-        chl.length += data.length;
+        chl.length += Buffer.byteLength(data);
 
         if (chl.contentLength == null) {
             const i = data.indexOf(this.delimiter);
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
-                const idx = chl.length - data.length + i;
+                const idx = chl.length - Buffer.byteLength(data) + i;
                 const rawContentLength = buffer.subarray(0, idx).toString();
                 chl.contentLength = parseInt(rawContentLength, 10);
 

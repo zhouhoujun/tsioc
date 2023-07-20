@@ -40,6 +40,7 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
     maxSize = 1024 * 256 - 6;
 
     override write(packet: Subpackage, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
+        const topic = packet.topic ?? packet.url!;
         if (!packet.headerSent) {
             this.generateHeader(packet)
                 .then((buff) => {
@@ -55,7 +56,7 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
                             callback?.();
                         }
                     } else {
-                        this.socket.publisher.publish(packet.url!, buff, callback);
+                        this.socket.publisher.publish(topic, buff, callback);
                     }
                 })
                 .catch(err => callback?.(err))
@@ -67,13 +68,13 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
 
         const bufSize = Buffer.byteLength(chunk);
         const maxSize = this.maxSize - (packet.headCached ? 6 : 3);
-        
+
         const tol = packet.cacheSize + bufSize;
         if (tol == maxSize) {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.publisher.publish(packet.url!, data, callback);
+            this.socket.publisher.publish(topic, data, callback);
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -81,7 +82,7 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
             packet.caches.push(message);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-            this.socket.publisher.publish(packet.url!, data, (err) => {
+            this.socket.publisher.publish(topic, data, (err) => {
                 if (err) throw err;
                 if (rest.length) {
                     this.write(packet, rest, callback)
@@ -93,7 +94,7 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.publisher.publish(packet.url!, data, callback);
+                this.socket.publisher.publish(topic, data, callback);
             } else if (callback) {
                 callback()
             }
