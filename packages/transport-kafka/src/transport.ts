@@ -1,7 +1,7 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
 import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, SendOpts, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { MessageTransportSession, Subpackage, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
+import { Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { MessageTransportSession, Subpackage, ev, hdr, isBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 
 
@@ -89,6 +89,7 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
             packet.kafkaheaders = headers;
             packet.headerSent = true;
             packet.caches = [];
+            packet.cacheSize = 0;
             packet.residueSize = this.getPayloadLength(packet);
             if (!packet.residueSize) {
                 this.writing(packet, null, callback);

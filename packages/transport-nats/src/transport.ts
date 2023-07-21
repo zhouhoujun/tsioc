@@ -55,6 +55,7 @@ export class NatsTransportSession extends MessageTransportSession<NatsConnection
             packet.natsheaders = headers;
             packet.headerSent = true;
             packet.caches = [];
+            packet.cacheSize = 0;
             packet.residueSize = this.getPayloadLength(packet);
             if (!packet.residueSize) {
                 this.writing(packet, null, callback);

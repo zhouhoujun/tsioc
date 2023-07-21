@@ -197,6 +197,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                     observer.complete();
                 } else if (req.timeout) {
                     timeout = setTimeout(() => {
+                        clearTimeout(timeout);
                         const error = new RequestTimeoutExecption();
                         const res = this.createErrorResponse({
                             url,

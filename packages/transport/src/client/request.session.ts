@@ -56,6 +56,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                         observer.complete();
                     } else if (req.timeout || opts.timeout) {
                         timeout = setTimeout(() => {
+                            clearTimeout(timeout);
                             const error = new RequestTimeoutExecption();
                             const res = this.createErrorResponse({
                                 url,
@@ -64,7 +65,6 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                                 status: this.vaildator.gatewayTimeout
                             });
                             observer.error(res);
-                            clearTimeout(timeout);
                         }, req.timeout || opts.timeout)
                     }
                 })
