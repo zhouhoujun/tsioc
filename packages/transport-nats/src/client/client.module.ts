@@ -20,6 +20,7 @@ const defClientOpts = {
     backend: TransportBackend,
     interceptors: [BodyContentInterceptor],
     transportOpts: {
+        maxSize: 1024 * 256
     },
     providers: [
         { provide: StatusVaildator, useExisting: NatsStatusVaildator },

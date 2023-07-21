@@ -18,7 +18,7 @@ const defClientOpts = {
     interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: 1024 * 256 - 6,
     },
     retryAttempts: 3,
     interceptors: [BodyContentInterceptor],

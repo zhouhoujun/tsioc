@@ -20,7 +20,7 @@ const defClientOpts = {
     interceptors: [BodyContentInterceptor],
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: 1024 * 256 - 6,
     },
     providers: [
         { provide: StatusVaildator, useExisting: MqttStatusVaildator },

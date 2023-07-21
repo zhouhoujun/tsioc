@@ -17,6 +17,7 @@ import { NatsExecptionHandlers } from './execption.handles';
 
 const defaultServOpts = {
     transportOpts: {
+        maxSize: 1024 * 256
     },
     content: {
         root: 'public',

@@ -58,8 +58,8 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
 
 
         const bufSize = Buffer.byteLength(chunk);
-        const maxSize = this.maxSize - (packet.headCached ? 6 : 3);
-    
+        const maxSize = (this.options.maxSize || this.maxSize) - (packet.headCached ? 6 : 3);
+
         const tol = packet.cacheSize + bufSize;
         if (tol == maxSize) {
             packet.caches.push(chunk);
@@ -74,7 +74,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.socket.write(data, (err) => {
-                if (err) throw err;
+                if (err) return callback?.(err);
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }
@@ -94,7 +94,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
 
     // maxSize = 1024 * 256 - 6 -3;
     // write(packet: Subpackage, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
-        
+
     //     if (!packet.headerSent) {
     //         this.generateHeader(packet)
     //             .then((buff) => {

@@ -18,7 +18,7 @@ const defClientOpts = {
     url: 'ws://localhost:3000',
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: 1024 * 256 - 6,
     },
     interceptorsToken: WS_CLIENT_INTERCEPTORS,
     filtersToken: WS_CLIENT_FILTERS,

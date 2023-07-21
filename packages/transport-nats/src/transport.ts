@@ -1,7 +1,7 @@
-import { Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, HeaderPacket, IncomingHeaders, OutgoingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, EMPTY, Injectable, Optional } from '@tsdi/ioc';
-import { AbstractTransportSession, ev, hdr } from '@tsdi/transport';
-import { Msg, NatsConnection, headers as createHeaders } from 'nats';
+import { HeaderFixedTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
+import { Msg, MsgHdrs, NatsConnection, headers as createHeaders } from 'nats';
 import { Buffer } from 'buffer';
 import { NatsSessionOpts } from './options';
 
@@ -28,22 +28,15 @@ export class NatsTransportSessionFactoryImpl implements TransportSessionFactory<
 }
 
 
+export class NatsTransportSession extends HeaderFixedTransportSession<NatsConnection, Msg, NatsSessionOpts> {
 
-
-export interface SubjectBuffer {
-    subject: string;
-    buffer: Buffer | null;
-    contentLength: number | null;
-    pkgs: Map<number | string, Packet>;
-
-}
-
-export class NatsTransportSession extends AbstractTransportSession<NatsConnection, NatsSessionOpts> {
-
-    protected subjects: Map<string, SubjectBuffer> = new Map();
+    maxSize = 1024 * 256;
 
     protected override bindMessageEvent(options: NatsSessionOpts): void {
-        const onRespond = this.onData.bind(this);
+        const onRespond = (error: Error | null, msg: Msg) => {
+            if (this.options.serverSide && (!msg.reply || msg.subject.endsWith('.reply'))) return;
+            this.onData(msg, msg.subject, error);
+        }
         this.onSocket(ev.CUSTOM_MESSAGE, onRespond);
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
@@ -52,15 +45,63 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         return EMPTY;
     }
 
-    write(packet: HeaderPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
+    write(packet: Subpackage & { natsheaders: MsgHdrs }, chunk: Buffer | null, callback?: (err?: any) => void): void {
+        if (!packet.headerSent) {
+            const headers = this.options.publishOpts?.headers ?? createHeaders();
+            packet.headers && Object.keys(packet.headers).forEach(k => {
+                headers.set(k, String(packet?.headers?.[k] ?? ''))
+            });
+            headers.set(hdr.IDENTITY, packet.id);
+            packet.natsheaders = headers;
+            packet.headerSent = true;
+            packet.caches = [];
+            packet.residueSize = this.getPayloadLength(packet);
+            if (!packet.residueSize) {
+                this.writing(packet, null, callback);
+                return;
+            }
+        }
+
+        if (!chunk) return callback?.();
+
+        const bufSize = Buffer.byteLength(chunk);
+        const maxSize = this.options.maxSize || this.maxSize;
+
+        const tol = packet.cacheSize + bufSize;
+        if (tol == maxSize) {
+            packet.caches.push(chunk);
+            const data = this.getSendBuffer(packet, maxSize);
+            packet.residueSize -= bufSize;
+            this.writing(packet, data, callback);
+        } else if (tol > maxSize) {
+            const idx = bufSize - (tol - maxSize);
+            const message = chunk.subarray(0, idx);
+            const rest = chunk.subarray(idx);
+            packet.caches.push(message);
+            const data = this.getSendBuffer(packet, maxSize);
+            packet.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.writing(packet, data, (err) => {
+                if (err) return callback?.(err);
+                if (rest.length) {
+                    this.write(packet, rest, callback)
+                }
+            })
+        } else {
+            packet.caches.push(chunk);
+            packet.cacheSize += bufSize;
+            packet.residueSize -= bufSize;
+            if (packet.residueSize <= 0) {
+                const data = this.getSendBuffer(packet, packet.cacheSize);
+                this.writing(packet, data, callback);
+            } else if (callback) {
+                callback()
+            }
+        }
+
+    }
+
+    writing(packet: HeaderPacket & { natsheaders: MsgHdrs }, chunk: Buffer | null, callback?: (err?: any) => void) {
         const topic = packet.topic || packet.url!;
-        const headers = this.options.publishOpts?.headers ?? createHeaders();
-        packet.headers && Object.keys(packet.headers).forEach(k => {
-            headers.set(k, String(packet?.headers?.[k] ?? ''))
-        });
-
-        headers.set(hdr.IDENTITY, packet.id);
-
         const replys = this.options.serverSide ? undefined : {
             reply: packet.replyTo
         };
@@ -71,24 +112,28 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
                 {
                     ...this.options.publishOpts,
                     ...replys,
-                    headers
+                    headers: packet.natsheaders
                 }
             )
-            callback && callback();
+            callback?.();
         } catch (err) {
-            callback && callback(err);
-            throw err;
+            this.logger?.error(err);
+            if(callback) {
+                callback(err);
+            } else {
+                throw err;
+            }
         }
     }
 
-    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
-        switch (observe) {
-            case 'emit':
-                return '';
-            default:
-                return url + '.reply'
-        }
-    }
+    // protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+    //     switch (observe) {
+    //         case 'emit':
+    //             return '';
+    //         default:
+    //             return url + '.reply'
+    //     }
+    // }
 
     protected handleFailed(error: any): void {
         this.emit(ev.ERROR, error.message)
@@ -100,80 +145,40 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         this.off(name, event)
     }
 
-    protected onData(error: Error | null, msg: Msg): void {
-        try {
-            const subject = msg.subject;
-            if (this.options.serverSide && (!msg.reply || subject.endsWith('.reply'))) return;
-            let chl = this.subjects.get(subject);
-            if (!chl) {
-                chl = {
-                    subject: subject,
-                    buffer: null,
-                    contentLength: ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0'),
-                    pkgs: new Map()
-                }
-                this.subjects.set(subject, chl)
-            } else if (chl.contentLength === null) {
-                chl.buffer = null;
-                chl.contentLength = ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0');
-            }
-            const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
-            if (id && !chl.pkgs.has(id)) {
-                const headers: IncomingHeaders = {};
-                msg.headers?.keys().forEach(key => {
-                    headers[key] = msg.headers?.get(key);
-                });
 
-                chl.pkgs.set(id, {
-                    id,
-                    error,
-                    url: msg.subject,
-                    replyTo: msg.reply,
-                    headers
-                })
-            }
-            this.handleData(chl, id, msg.data);
-        } catch (ev) {
-            const e = ev as any;
-            this.emit(e.ERROR, e.message);
+    protected createPackage(id: string | number, topic: string, replyTo: string, headers: IncomingHeaders, msg: Msg, error?: any): HeaderPacket {
+        return {
+            id,
+            error,
+            url: msg.subject,
+            replyTo,
+            headers
         }
     }
 
-    protected handleData(chl: SubjectBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
-
-        const data = Buffer.isBuffer(dataRaw)
-            ? dataRaw
-            : Buffer.from(dataRaw);
-        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
-
-        if (chl.contentLength !== null) {
-            const length = buffer.length;
-            if (length === chl.contentLength) {
-                this.handleMessage(chl, id, chl.buffer);
-            } else if (length > chl.contentLength) {
-                const message = chl.buffer.subarray(0, chl.contentLength);
-                const rest = chl.buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, id, message);
-                this.handleData(chl, id, rest);
-            }
-        }
+    protected getIncomingHeaders(msg: Msg): OutgoingHeaders {
+        const headers = {} as OutgoingHeaders;
+        msg.headers?.keys().forEach(key => {
+            headers[key] = msg.headers?.get(key);
+        });
+        return headers
     }
-
-    protected handleMessage(chl: SubjectBuffer, id: string | number, message: any) {
-        chl.contentLength = null;
-        chl.buffer = null;
-        this.emitMessage(chl, id, message);
+    protected getIncomingPacketId(msg: Msg): string | number {
+        return msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
     }
-
-    protected async emitMessage(chl: SubjectBuffer, id: string | number, data: Buffer) {
-        const pkg = chl.pkgs.get(id);
-        if (pkg) {
-            pkg.payload = data.length ? data : null;
-            chl.pkgs.delete(id);
-            if (this.decoder && pkg.payload) {
-                pkg.payload = await this.decoder.decode(pkg.payload);
-            }
-            this.emit(ev.MESSAGE, chl.subject, pkg);
-        }
+    protected getIncomingReplyTo(msg: Msg): string {
+        return msg.reply!;
+    }
+    protected getIncomingContentType(msg: Msg): string | undefined {
+        return msg.headers?.get(hdr.CONTENT_TYPE)
+    }
+    protected getIncomingContentEncoding(msg: Msg): string | undefined {
+        return msg.headers?.get(hdr.CONTENT_ENCODING);
+    }
+    protected getIncomingContentLength(msg: Msg): number {
+        return ~~(msg.headers?.get(hdr.CONTENT_LENGTH) ?? '0')
+    }
+    protected getIncomingPayload(msg: Msg): string | Buffer | Uint8Array {
+        return msg.data;
     }
 }

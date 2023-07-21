@@ -1,7 +1,5 @@
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, TransportSession, HeaderPacket } from '@tsdi/core';
-import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
+import { TransportSession, HeaderPacket } from '@tsdi/core';
 import { MessageOutgoing } from '@tsdi/platform-server-transport';
-import { ev, hdr } from '@tsdi/transport';
 import { NatsConnection } from 'nats';
 
 
@@ -19,7 +17,7 @@ export class NatsOutgoing extends MessageOutgoing<NatsConnection, number> {
         super(session, id, url, replyTo);
     }
 
-    override createHeaderPacket(): HeaderPacket {
+    override createSentPacket(): HeaderPacket {
         const url = this.replyTo ?? this.url;
         return {
             id: this.id,

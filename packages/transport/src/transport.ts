@@ -1,5 +1,5 @@
 import {
-    Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption,
+    Decoder, Encoder, HeaderPacket, IReadableStream, IncomingHeaders, InvalidJsonException, MessageExecption,
     Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts
 } from '@tsdi/core';
 import { isNil, isPromise, isString, promisify } from '@tsdi/ioc';
@@ -7,6 +7,7 @@ import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
 import { PacketLengthException } from './execptions';
 import { isBuffer } from './utils';
+import { Logger } from '@tsdi/logs';
 
 export interface SendPacket extends HeaderPacket {
     payloadSent?: boolean;
@@ -32,12 +33,13 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     protected _evs: Array<[string, (...args: any[]) => void]>;
     private _destroyed = false;
+    logger?: Logger;
     constructor(
         readonly socket: T,
         protected streamAdapter: StreamAdapter,
         protected encoder: Encoder | undefined,
         protected decoder: Decoder | undefined,
-        protected options: TOpts
+        protected options: TOpts,
     ) {
         super()
         this.setMaxListeners(0);
@@ -562,4 +564,131 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
 
         }
     }
+}
+
+
+/**
+ * Header fixed transport session.
+ */
+export abstract class HeaderFixedTransportSession<T, TMsg, TOpts> extends AbstractTransportSession<T, TOpts> {
+
+    protected topics: Map<string, TopicBuffer> = new Map();
+
+    protected async onData(msg: TMsg, topic: string, error?: any): Promise<void> {
+        try {
+            let chl = this.topics.get(topic);
+            if (!chl) {
+                chl = this.createTopicBuffer(msg, topic);
+                this.topics.set(topic, chl);
+            } else if (chl.contentLength === null) {
+                chl.buffers = [];
+                chl.contentLength = this.getIncomingContentLength(msg);
+            }
+            const id = this.getIncomingPacketId(msg);
+            if (!chl.pkgs.has(id)) {
+                const headers = this.getIncomingHeaders(msg);
+                if (!headers[hdr.CONTENT_TYPE]) {
+                    headers[hdr.CONTENT_TYPE] = this.getIncomingContentType(msg);
+                }
+                if (!headers[hdr.CONTENT_ENCODING]) {
+                    headers[hdr.CONTENT_ENCODING] = this.getIncomingContentEncoding(msg);
+                }
+                chl.pkgs.set(id, this.createPackage(id, topic, this.getIncomingReplyTo(msg), headers, msg, error))
+            }
+            this.handleData(chl, id, this.getIncomingPayload(msg));
+        } catch (ev) {
+            const e = ev as any;
+            this.emit(e.ERROR, e.message);
+        }
+
+    }
+
+    protected handleData(chl: TopicBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
+
+        const data = Buffer.isBuffer(dataRaw)
+            ? dataRaw
+            : Buffer.from(dataRaw);
+
+
+        chl.buffers.push(data);
+        chl.length += data.length;
+
+        if (chl.contentLength !== null) {
+            const buffer = this.concatCaches(chl);
+            const length = buffer.length;
+            if (length === chl.contentLength) {
+                this.handleMessage(chl, id, buffer);
+            } else if (length > chl.contentLength) {
+                const buffer = this.concatCaches(chl);
+                const message = buffer.subarray(0, chl.contentLength);
+                const rest = buffer.subarray(chl.contentLength);
+                this.handleMessage(chl, id, message).then(() => {
+                    rest.length && this.handleData(chl, id, rest);
+                });
+            }
+        }
+    }
+
+    protected concatCaches(chl: TopicBuffer) {
+        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
+    }
+
+    protected handleMessage(chl: TopicBuffer, id: string | number, message: any) {
+        chl.contentLength = null;
+        chl.buffers = [];
+        chl.length = 0;
+        return this.emitMessage(chl, id, message);
+    }
+
+    protected async emitMessage(chl: TopicBuffer, id: string | number, data: Buffer) {
+        const pkg = chl.pkgs.get(id) as Packet;
+        if (pkg) {
+            let payload = data;
+            if (pkg.payload) {
+                if (data.length) {
+                    payload = pkg.payload = Buffer.concat([pkg.payload, data]);
+                }
+            } else {
+                pkg.payload = data.length ? data : null;
+            }
+
+            const len = this.getPayloadLength(pkg);
+            if (len && payload.length == len) {
+                chl.pkgs.delete(id);
+                if (this.decoder) {
+                    pkg.payload = await this.decoder.decode(payload);
+                }
+                this.emit(ev.MESSAGE, chl.topic, pkg);
+            } else if (!len) {
+                this.emit(ev.MESSAGE, chl.topic, pkg);
+            }
+        }
+    }
+
+    protected abstract createPackage(id: string | number, topic: string, replyTo: string,  headers: IncomingHeaders, msg: TMsg, error?: any): HeaderPacket;
+    protected abstract getIncomingHeaders(msg: TMsg): IncomingHeaders;
+    protected abstract getIncomingPacketId(msg: TMsg): number | string;
+    protected abstract getIncomingReplyTo(msg: TMsg): string;
+    protected abstract getIncomingContentType(msg: TMsg): string | undefined;
+    protected abstract getIncomingContentEncoding(msg: TMsg): string | undefined;
+    protected abstract getIncomingContentLength(msg: TMsg): number;
+    protected abstract getIncomingPayload(msg: TMsg): string | Buffer | Uint8Array;
+
+    protected createTopicBuffer(msg: TMsg, topic: string): TopicBuffer {
+        return {
+            topic,
+            buffers: [],
+            length: 0,
+            contentLength: this.getIncomingContentLength(msg),
+            pkgs: new Map()
+        }
+    }
+
+    protected getSendBuffer(packet: Subpackage, size: number) {
+        const data = Buffer.concat(packet.caches);
+        packet.caches = [];
+        packet.cacheSize = 0;
+        return data;
+    }
+
 }

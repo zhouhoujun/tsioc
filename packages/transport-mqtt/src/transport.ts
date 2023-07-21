@@ -58,7 +58,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
 
 
         const bufSize = Buffer.byteLength(chunk);
-        const maxSize = this.maxSize - (packet.headCached ? 6 : 3);
+        const maxSize = (this.options.maxSize || this.maxSize) - (packet.headCached ? 6 : 3);
     
         const tol = packet.cacheSize + bufSize;
         if (tol == maxSize) {
@@ -74,7 +74,7 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.socket.publish(topic, data, (err) => {
-                if (err) throw err;
+                if (err) return callback?.(err);
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }

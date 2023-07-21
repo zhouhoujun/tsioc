@@ -18,7 +18,7 @@ import { RedisPatternFormatter } from '../pattern';
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: 1024 * 256 - 6
     },
     content: {
         root: 'public',

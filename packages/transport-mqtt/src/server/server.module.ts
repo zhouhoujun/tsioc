@@ -17,7 +17,7 @@ const defaultServOpts = {
     encoding: 'utf8',
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: 1024 * 256 - 6,
     },
     content: {
         root: 'public',

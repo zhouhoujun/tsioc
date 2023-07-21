@@ -18,7 +18,7 @@ export interface AmqpMicroServiceOpts extends TransportEndpointOptions<AmqpConte
     retryAttempts?: number;
     retryDelay?: number;
     content?: ContentOptions;
-    transportOpts?: AmqpSessionOpts;
+    transportOpts?: AmqpSessionOpts & { maxSize?: number};
 }
 
 

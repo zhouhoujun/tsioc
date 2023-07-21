@@ -29,6 +29,7 @@ export class NatsClient extends Client<TransportRequest, number> {
         const conn = this.conn = await connect(this.options.connectOpts);
 
         const session = this._session = this.handler.injector.get(NatsTransportSessionFactory).create(conn, { ...this.options.transportOpts });
+        session.logger = this.logger;
         session.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
