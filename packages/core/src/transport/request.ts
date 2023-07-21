@@ -25,6 +25,11 @@ export class TransportRequest<T = any> {
     readonly withCredentials: boolean;
     readonly urlWithParams: string;
 
+    /**
+     * client side timeout.
+     */
+    readonly timeout?: number;
+
     constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
         this.context = options.context!;
         const url = this.url = this.context.get(PatternFormatter).format(pattern);
@@ -34,6 +39,7 @@ export class TransportRequest<T = any> {
         this.responseType = options.responseType ?? 'json';
         this.reportProgress = !!options.reportProgress;
         this.withCredentials = !!options.withCredentials;
+        this.timeout = options.timeout;
         this.observe = options.observe || 'body';
         this.body = options.body ?? options.payload ?? null;
         this.headers = new ReqHeaders(options.headers ?? options.options);
@@ -77,6 +83,7 @@ export class TransportRequest<T = any> {
         url?: Pattern | undefined;
         setHeaders?: { [name: string]: string | string[]; } | undefined;
         setParams?: { [param: string]: string; } | undefined;
+        timeout?: number | null;
     } = {}): TransportRequest<T> {
         const method = update.method || this.method;
         const url = update.url || this.url;
@@ -115,8 +122,10 @@ export class TransportRequest<T = any> {
                 .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
 
+        const timeout = update.timeout ?? this.timeout;
         // Finally, construct the new HttpRequest using the pieces from above.
         return new TransportRequest(url, {
+            timeout,
             method,
             body,
             params,
@@ -179,6 +188,8 @@ export interface RequestOptions {
      * parameter codec.
      */
     encoder?: ParameterCodec;
+
+    timeout?: number;
 }
 
 /**

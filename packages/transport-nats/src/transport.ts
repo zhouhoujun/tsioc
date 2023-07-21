@@ -1,5 +1,5 @@
-import { Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
+import { Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Abstract, EMPTY, Injectable, Optional } from '@tsdi/ioc';
 import { AbstractTransportSession, ev, hdr } from '@tsdi/transport';
 import { Msg, NatsConnection, headers as createHeaders } from 'nats';
 import { Buffer } from 'buffer';
@@ -49,7 +49,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     }
 
     protected override getBindEvents(): string[] {
-        return [];
+        return EMPTY;
     }
 
     write(packet: HeaderPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
@@ -98,30 +98,6 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     }
     protected offSocket(name: string, event: (...args: any[]) => void): void {
         this.off(name, event)
-    }
-
-    protected override async generatePayload(payload: any, packet: HeaderPacket, options?: SendOpts): Promise<Buffer> {
-
-        let body: Buffer;
-        if (isString(payload)) {
-            body = Buffer.from(payload);
-        } else if (Buffer.isBuffer(payload)) {
-            body = payload;
-        } else {
-            body = Buffer.from(JSON.stringify(payload));
-        }
-
-        if (!this.hasPayloadLength(packet)) {
-            this.setPayloadLength(packet, Buffer.byteLength(body))
-        }
-
-        if (this.encoder) {
-            body = await this.encoder.encode(body);
-            this.setPayloadLength(packet, Buffer.byteLength(body))
-        }
-
-        return body;
-
     }
 
     protected onData(error: Error | null, msg: Msg): void {

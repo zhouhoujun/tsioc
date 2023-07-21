@@ -63,7 +63,7 @@ export class WsService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                // timeout: 1000
+                // timeout: 200
             }
         }),
         WsMicroServModule

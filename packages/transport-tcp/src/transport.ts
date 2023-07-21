@@ -38,18 +38,18 @@ export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | 
                         if (!err && chunk) {
                             this.write(packet, chunk, callback);
                         } else {
-                            callback && callback(err);
+                            callback?.(err);
                         }
                     })
                 })
-                .catch(err => callback && callback(err))
+                .catch(err => callback?.(err))
             return;
         }
         if (!chunk) throw new ArgumentExecption('chunk can not be null!')
         if (!packet.payloadSent) {
             const prefix = this.getPayloadPrefix(packet, packet.payloadSize!);
             packet.payloadSent = true;
-            this.socket.write(chunk ? Buffer.concat([prefix, chunk]) : chunk, callback)
+            this.socket.write(Buffer.concat([prefix, chunk]), callback)
         } else {
             this.socket.write(chunk, callback)
         }

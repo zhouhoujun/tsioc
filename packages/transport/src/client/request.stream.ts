@@ -1,6 +1,6 @@
 import {
     TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse,
-    TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders, IReadableStream
+    TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders, IReadableStream, RequestTimeoutExecption
 } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isNil, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
@@ -183,6 +183,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
+            let timeout: any;
             this.write(request, req, (err) => {
                 if (err) {
                     onError(err);
@@ -194,11 +195,22 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                         body: true
                     }))
                     observer.complete();
+                } else if (req.timeout) {
+                    timeout = setTimeout(() => {
+                        const error = new RequestTimeoutExecption();
+                        const res = this.createErrorResponse({
+                            url,
+                            error,
+                            statusText: error.message,
+                            status: this.vaildator.gatewayTimeout
+                        });
+                        observer.error(res);
+                    }, req.timeout)
                 }
             });
 
-
             return () => {
+                timeout && clearTimeout(timeout);
                 onResponse && request.off(respEventName, onResponse);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);

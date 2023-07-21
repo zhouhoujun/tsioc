@@ -63,7 +63,7 @@ export class NatsService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 500
+                timeout: 200
             }
         }),
         NatsMicroServModule
@@ -119,7 +119,7 @@ describe('Nats Micro Service', () => {
     })
 
     it('fetch big json', async () => {
-        const res: any = await lastValueFrom(client.send('content/big.json')
+        const res: any = await lastValueFrom(client.send('content/big.json', { timeout: 5000 })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

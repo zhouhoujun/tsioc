@@ -1,4 +1,7 @@
-import { Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption, Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts } from '@tsdi/core';
+import {
+    Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, MessageExecption,
+    Packet, SendOpts, StreamAdapter, TransportSession, TransportSessionOpts
+} from '@tsdi/core';
 import { isNil, isPromise, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from './consts';
@@ -93,15 +96,13 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        let len = Buffer.byteLength(body);
         if (!this.hasPayloadLength(packet)) {
-            this.setPayloadLength(packet, len);
+            this.setPayloadLength(packet, Buffer.byteLength(body));
         }
 
         if (this.encoder) {
             body = await this.encoder.encode(body);
-            len = Buffer.byteLength(body);
-            this.setPayloadLength(packet, len);
+            this.setPayloadLength(packet, Buffer.byteLength(body));
         }
 
         return body;

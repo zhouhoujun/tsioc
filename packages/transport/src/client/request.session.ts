@@ -54,7 +54,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                             body: true
                         }));
                         observer.complete();
-                    } else if (opts.timeout) {
+                    } else if (req.timeout || opts.timeout) {
                         timeout = setTimeout(() => {
                             const error = new RequestTimeoutExecption();
                             const res = this.createErrorResponse({
@@ -64,7 +64,8 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                                 status: this.vaildator.gatewayTimeout
                             });
                             observer.error(res);
-                        }, opts.timeout)
+                            clearTimeout(timeout);
+                        }, req.timeout || opts.timeout)
                     }
                 })
                 .catch(err => {

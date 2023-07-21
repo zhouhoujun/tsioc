@@ -273,14 +273,6 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
             return this;
         }
 
-        if (!this.headersSent) {
-            return this.writeHead(undefined, undefined, (err) => {
-                if (err) throw err;
-                super.end(chunk, encoding, cb);
-                this.ending = true;
-            });
-        }
-
         super.end(chunk, encoding, cb);
 
         this.ending = true;
