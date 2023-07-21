@@ -288,7 +288,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         }
     }
 
-    protected handleData(dataRaw: string | Buffer) {
+    protected async handleData(dataRaw: string | Buffer) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -322,9 +322,10 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                 const buffer = this.concatCaches();
                 const message = buffer.subarray(0, this.contentLength);
                 const rest = buffer.subarray(this.contentLength);
-                this.handleMessage(message).then(() => {
-                    rest.length && this.handleData(rest);
-                });
+                await this.handleMessage(message);
+                if(rest.length){
+                    await this.handleData(rest);
+                }
             }
         }
     }

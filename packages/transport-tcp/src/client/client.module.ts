@@ -17,7 +17,7 @@ import { TcpHandler } from './handler';
 const defClientOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: 1024 * 256 - 6,
     },
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     filtersToken: TCP_CLIENT_FILTERS,

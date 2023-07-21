@@ -272,7 +272,6 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
             }
             return this;
         }
-
         super.end(chunk, encoding, cb);
 
         this.ending = true;

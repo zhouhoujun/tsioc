@@ -25,7 +25,7 @@ const defMicroOpts = {
     listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: 1024 * 256 - 6
     },
     content: {
         root: 'public',
@@ -142,7 +142,7 @@ const defServerOpts = {
     listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: 1024 * 256 - 6
     },
     content: {
         root: 'public'
