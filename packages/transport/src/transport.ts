@@ -568,9 +568,9 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
 
 
 /**
- * Header fixed transport session.
+ * custom message transport session.
  */
-export abstract class HeaderFixedTransportSession<T, TMsg, TOpts> extends AbstractTransportSession<T, TOpts> {
+export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTransportSession<T, TOpts> {
 
     protected topics: Map<string, TopicBuffer> = new Map();
 
@@ -595,7 +595,7 @@ export abstract class HeaderFixedTransportSession<T, TMsg, TOpts> extends Abstra
                 }
                 chl.pkgs.set(id, this.createPackage(id, topic, this.getIncomingReplyTo(msg), headers, msg, error))
             }
-            this.handleData(chl, id, this.getIncomingPayload(msg));
+            await this.handleData(chl, id, this.getIncomingPayload(msg));
         } catch (ev) {
             const e = ev as any;
             this.emit(e.ERROR, e.message);
@@ -603,7 +603,7 @@ export abstract class HeaderFixedTransportSession<T, TMsg, TOpts> extends Abstra
 
     }
 
-    protected handleData(chl: TopicBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
+    protected async handleData(chl: TopicBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -622,9 +622,10 @@ export abstract class HeaderFixedTransportSession<T, TMsg, TOpts> extends Abstra
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, id, message).then(() => {
-                    rest.length && this.handleData(chl, id, rest);
-                });
+                await this.handleMessage(chl, id, message);
+                if(rest.length) {
+                    await this.handleData(chl, id, rest);
+                }
             }
         }
     }

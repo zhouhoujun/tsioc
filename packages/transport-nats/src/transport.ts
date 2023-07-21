@@ -1,6 +1,6 @@
 import { Decoder, Encoder, HeaderPacket, IncomingHeaders, OutgoingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, EMPTY, Injectable, Optional } from '@tsdi/ioc';
-import { HeaderFixedTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
+import { MessageTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
 import { Msg, MsgHdrs, NatsConnection, headers as createHeaders } from 'nats';
 import { Buffer } from 'buffer';
 import { NatsSessionOpts } from './options';
@@ -28,7 +28,7 @@ export class NatsTransportSessionFactoryImpl implements TransportSessionFactory<
 }
 
 
-export class NatsTransportSession extends HeaderFixedTransportSession<NatsConnection, Msg, NatsSessionOpts> {
+export class NatsTransportSession extends MessageTransportSession<NatsConnection, Msg, NatsSessionOpts> {
 
     maxSize = 1024 * 256;
 
@@ -117,7 +117,7 @@ export class NatsTransportSession extends HeaderFixedTransportSession<NatsConnec
             )
             callback?.();
         } catch (err) {
-            this.logger?.error(err);
+            this.handleFailed(err);
             if(callback) {
                 callback(err);
             } else {

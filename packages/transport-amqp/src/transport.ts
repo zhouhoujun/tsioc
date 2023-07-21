@@ -1,6 +1,6 @@
 import { Decoder, Encoder, HeaderPacket, IncomingHeaders, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
-import { HeaderFixedTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
+import { MessageTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';
@@ -29,7 +29,7 @@ export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<
 
 
 
-export class AmqpTransportSession extends HeaderFixedTransportSession<Channel, ConsumeMessage, AmqpSessionOpts> {
+export class AmqpTransportSession extends MessageTransportSession<Channel, ConsumeMessage, AmqpSessionOpts> {
 
     maxSize = 1024 * 256;
 
