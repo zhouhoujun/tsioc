@@ -312,18 +312,19 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                     throw new PacketLengthException(rawContentLength);
                 }
                 this.buffers = [buffer.subarray(idx + 1)];
+                this.length -= idx + 1;
             }
         }
 
         if (this.contentLength !== null) {
             if (this.length === this.contentLength) {
-                this.handleMessage(this.concatCaches());
+                await this.handleMessage(this.concatCaches());
             } else if (this.length > this.contentLength) {
                 const buffer = this.concatCaches();
                 const message = buffer.subarray(0, this.contentLength);
                 const rest = buffer.subarray(this.contentLength);
                 await this.handleMessage(message);
-                if(rest.length){
+                if (rest.length) {
                     await this.handleData(rest);
                 }
             }
@@ -432,7 +433,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         this._evs.push([pe, pevent]);
     }
 
-    protected onData(topic: string, chunk: any) {
+    protected async onData(topic: string, chunk: any) {
         try {
             let chl = this.topics.get(topic);
             if (!chl) {
@@ -445,14 +446,14 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                 }
                 this.topics.set(topic, chl)
             }
-            this.handleData(chl, chunk);
+            await this.handleData(chl, chunk);
         } catch (ev) {
             const e = ev as any;
             this.emit(e.ERROR, e.message);
         }
     }
 
-    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer) {
+    protected async handleData(chl: TopicBuffer, dataRaw: string | Buffer) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -476,20 +477,20 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                     throw new PacketLengthException(rawContentLength);
                 }
                 chl.buffers = [buffer.subarray(idx + 1)];
+                chl.length -= idx + 1;
             }
         }
 
         if (chl.contentLength !== null) {
             const length = chl.length;
             if (length === chl.contentLength) {
-                this.handleMessage(chl, this.concatCaches(chl));
+                await this.handleMessage(chl, this.concatCaches(chl));
             } else if (length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message).then(() => {
-                    rest.length && this.handleData(chl, rest);
-                });
+                await this.handleMessage(chl, message);
+                if (rest.length) await this.handleData(chl, rest);
             }
         }
     }
@@ -618,13 +619,13 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
             const buffer = this.concatCaches(chl);
             const length = buffer.length;
             if (length === chl.contentLength) {
-                this.handleMessage(chl, id, buffer);
+                await this.handleMessage(chl, id, buffer);
             } else if (length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
                 await this.handleMessage(chl, id, message);
-                if(rest.length) {
+                if (rest.length) {
                     await this.handleData(chl, id, rest);
                 }
             }
@@ -667,7 +668,7 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
         }
     }
 
-    protected abstract createPackage(id: string | number, topic: string, replyTo: string,  headers: IncomingHeaders, msg: TMsg, error?: any): HeaderPacket;
+    protected abstract createPackage(id: string | number, topic: string, replyTo: string, headers: IncomingHeaders, msg: TMsg, error?: any): HeaderPacket;
     protected abstract getIncomingHeaders(msg: TMsg): IncomingHeaders;
     protected abstract getIncomingPacketId(msg: TMsg): number | string;
     protected abstract getIncomingReplyTo(msg: TMsg): string;
