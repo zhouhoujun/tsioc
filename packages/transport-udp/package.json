@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/transport-tcp",
+  "name": "@tsdi/transport-udp",
   "version": "6.0.31",
   "description": "Application transport. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {

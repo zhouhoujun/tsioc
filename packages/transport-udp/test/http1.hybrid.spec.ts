@@ -1,13 +1,12 @@
-import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { CoapClient, CoapServer, CoapClientModule, CoapServerModule, COAP_SERV_INTERCEPTORS } from '../src';
+import { Http, HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
+import { UdpClientModule, UdpClient, UdpMicroServModule, UdpServer } from '../src';
 import { DeviceController } from './controller';
-import { Bodyparser, Content, Json } from '@tsdi/transport';
-import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 
@@ -16,47 +15,37 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        // CoapClientModule,
-        CoapClientModule,
-        MicroServRouterModule.forRoot('coap'),
-        CoapServerModule.withOption({
-            serverOpts: {
-                interceptors: [
-                    // Content,
-                    Json,
-                    Bodyparser,
-                    { useExisting: MicroServRouterModule.getToken('coap') }
-                ]
-            }
-        })
+        HttpModule,
+        HttpServerModule,
+        UdpClientModule,
+        UdpMicroServModule
     ],
     declarations: [
         DeviceController
     ],
-    bootstrap: CoapServer
+    bootstrap: [HttpServer, UdpServer]
 })
-export class CoapTestModule {
+export class UdpTestModule {
 
 }
 
 
-describe('CoAP Server & CoAP Client', () => {
+describe('Udp hybrid Http Server & Udp Client & Http', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: CoapClient;
+    let client: Http;
+    let wsClient: UdpClient
 
     before(async () => {
-        ctx = await Application.run(CoapTestModule, {
-            providers:[
-                { provide: COAP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-            ]
-        });
+        ctx = await Application.run(UdpTestModule);
         injector = ctx.injector;
-        client = injector.resolve(CoapClient);
+        wsClient = injector.get(UdpClient);
+        client = injector.get(Http);
     });
 
 
+    
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(
@@ -69,42 +58,42 @@ describe('CoAP Server & CoAP Client', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
-    it('fetch big json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json')
+    it('query all', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(2);
+        expect(a[0].name).toEqual('1');
+    });
 
-    it('fetch json 2', async () => {
-        const res: any = await lastValueFrom(client.send('jsons/data1.json')
+    it('query with params ', async () => {
+        const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(res.test).toEqual('ok');
-    })
-
+        expect(isArray(a)).toBeTruthy();
+        expect(a.length).toEqual(1);
+        expect(a[0].name).toEqual('2');
+    });
 
     it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'GET', params: { name: 'test' } })
+        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
                     return of(err)
                 })
             ));
-        expect(a.status).toEqual('4.04');
+        expect(a.status).toEqual(404);
     });
-
 
     it('bad request', async () => {
         const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
@@ -114,25 +103,25 @@ describe('CoAP Server & CoAP Client', () => {
                     return of(err)
                 })
             ));
-        expect(a.status).toEqual('4.00');
+        expect(a.status).toEqual(400);
     })
 
     it('post route response object', async () => {
         const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
-        expect(a.status).toEqual('2.05');
+        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } }))
-            // .pipe(
-            //     catchError((err, ct) => {
-            //         ctx.getLogger().error(err);
-            //         return of(err);
-            //     })));
-        expect(b.status).toEqual('2.05');
+        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+        expect(b.status).toEqual(200);
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
     });
@@ -140,7 +129,7 @@ describe('CoAP Server & CoAP Client', () => {
     it('route with request body pipe', async () => {
         const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
         // a.error && console.log(a.error);
-        expect(a.status).toEqual('2.05');
+        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.year).toStrictEqual(50);
@@ -154,8 +143,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('4.00');
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
+        expect(r.status).toEqual(400);
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -165,13 +153,12 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('4.00');
-        // expect(r.error).toBeInstanceOf(ArgumentError)
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual('2.05');
+        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
@@ -183,8 +170,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('4.00');
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -194,13 +180,12 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('4.00');
-        // expect(r.error).toBeInstanceOf(ArgumentError)
+        expect(r.status).toEqual(400);
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual('2.05');
+        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
@@ -212,8 +197,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('4.04');
-        // expect(r.error).toBeInstanceOf(MissingParameterError);
+        expect(r.status).toEqual(400);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -223,8 +207,7 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('4.00');
-        // expect(r.error).toBeInstanceOf(ArgumentError);
+        expect(r.status).toEqual(400);
     })
 
 
@@ -235,36 +218,36 @@ describe('CoAP Server & CoAP Client', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual('2.05');
+        expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })
 
-    // it('redirect', async () => {
-    //     const result = 'reload';
-    //     const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
-    //     expect(r.status).toEqual('2.05');
-    //     expect(r.body).toEqual(result);
-    // })
+    it('redirect', async () => {
+        const result = 'reload';
+        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
+        expect(r.status).toEqual(200);
+        expect(r.body).toEqual(result);
+    })
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(wsClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual('2.05');
+        expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(wsClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual('2.05');
+        expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })
 

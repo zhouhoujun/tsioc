@@ -1,6 +1,6 @@
 import {
     TransportEvent, TransportErrorResponse, Packet, Incoming, TransportHeaderResponse, TransportRequest, TransportResponse,
-    ResHeaders, RequestTimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
+    ResHeaders, RequestTimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders, InvalidJsonException
 } from '@tsdi/core';
 import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
@@ -141,7 +141,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     protected async handleMessage(id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
-        res = isString(res) ? JSON.parse(res) : res;
+        res = isString(res) ? this.deserialize(res) : res;
         if (res.id != id) return;
         const { status, headers: inHeaders, statusText, body: resbody, payload } = this.parseStatusPacket(res);
         const headers = this.parseHeaders(inHeaders, res);
@@ -173,6 +173,15 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             observer.error(result);
         }
 
+    }
+
+    protected deserialize(msg: string) {
+        try {
+            return JSON.parse(msg);
+        } catch (err) {
+            throw new InvalidJsonException(err, msg);
+
+        }
     }
 
     protected parseHeaders(headers: IncomingHeaders | OutgoingHeaders, incoming?: Incoming): ResHeaders {

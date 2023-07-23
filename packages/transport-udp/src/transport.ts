@@ -1,19 +1,18 @@
-import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
-import { SocketTransportSession, Subpackage, ev } from '@tsdi/transport';
-import { WebSocket, createWebSocketStream } from 'ws';
-import { Duplex } from 'stream';
+import { Decoder, Encoder, HeaderPacket, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Injectable, Optional } from '@tsdi/ioc';
+import { TopicTransportSession, Subpackage, ev } from '@tsdi/transport';
+import { Socket, RemoteInfo } from 'dgram';
 
 
 
 @Abstract()
-export abstract class WsTransportSessionFactory extends TransportSessionFactory<Duplex> {
-    abstract create(socket: Duplex | WebSocket, opts: TransportSessionOpts): WsTransportSession;
+export abstract class UdpTransportSessionFactory extends TransportSessionFactory<Socket> {
+    abstract create(socket: Socket, opts: TransportSessionOpts): UdpTransportSession;
 }
 
 
 @Injectable()
-export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory {
+export class UdpTransportSessionFactoryImpl implements UdpTransportSessionFactory {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -22,15 +21,30 @@ export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory 
 
     }
 
-    create(socket: Duplex | WebSocket, opts: TransportSessionOpts): WsTransportSession {
-        return new WsTransportSession(socket instanceof Duplex ? socket : createWebSocketStream(socket, opts), this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
+    create(socket: Socket, opts: TransportSessionOpts): UdpTransportSession {
+        return new UdpTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
 
-export class WsTransportSession extends SocketTransportSession<Duplex> {
+export class UdpTransportSession extends TopicTransportSession<Socket> {
 
-    maxSize = 1024 * 256 - 6;
+    protected onSocket(name: string, event: (...args: any[]) => void): void {
+        this.socket.on(name, event);
+    }
+    protected offSocket(name: string, event: (...args: any[]) => void): void {
+        this.socket.off(name, event);
+    }
+
+    protected override bindMessageEvent(options: TransportSessionOpts) {
+        const fn = (msg: Buffer, rinfo: RemoteInfo) => {
+            this.onData(`${rinfo.address}:${rinfo.port}`, msg);
+        }
+        this.onSocket(ev.MESSAGE, fn);
+        this._evs.push([ev.MESSAGE, fn]);
+    }
+
+    maxSize = 1024 * 64 - 6;
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         if (!packet.headerSent) {
             this.generateHeader(packet)
@@ -47,7 +61,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                             callback?.();
                         }
                     } else {
-                        this.socket.write(buff, callback);
+                        this.writing(packet, buff, callback);
                     }
                 })
                 .catch(err => callback?.(err))
@@ -65,7 +79,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.write(data, callback);
+            this.writing(packet, data, callback);
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -73,7 +87,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.caches.push(message);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-            this.socket.write(data, (err) => {
+            this.writing(packet, data, (err) => {
                 if (err) return callback?.(err);
                 if (rest.length) {
                     this.write(packet, rest, callback)
@@ -85,16 +99,28 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.write(data, callback);
+                this.writing(packet, data, callback);
             } else if (callback) {
                 callback()
             }
         }
     }
 
+    writing(packet: HeaderPacket, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
+        if (!packet.topic) throw new ArgumentExecption('topic can not be empty.')
+        const idx = packet.topic.lastIndexOf(':');
+        const port = parseInt(packet.topic.substring(idx + 1));
+        const addr = packet.topic.substring(0, idx);
+        if (!addr) {
+            this.socket.send(chunk, port, callback)
+        } else {
+            this.socket.send(chunk, port, addr, callback)
+        }
+    }
+
     protected handleFailed(error: any): void {
         this.socket.emit(ev.ERROR, error.message);
-        this.socket.end();
+        this.socket.disconnect();
     }
 
 }

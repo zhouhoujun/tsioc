@@ -25,6 +25,7 @@ export interface CoapClientOpts extends ConfigableHandlerOptions<TransportReques
         token?: Buffer;
         contentFormat?: string | number;
         accept?: string | number;
+        maxSize?: number;
     };
     
 }

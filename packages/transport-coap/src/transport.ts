@@ -1,19 +1,18 @@
 import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
 import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
 import { SocketTransportSession, Subpackage, ev } from '@tsdi/transport';
-import { WebSocket, createWebSocketStream } from 'ws';
-import { Duplex } from 'stream';
+import { Socket } from 'dgram';
 
 
 
 @Abstract()
-export abstract class WsTransportSessionFactory extends TransportSessionFactory<Duplex> {
-    abstract create(socket: Duplex | WebSocket, opts: TransportSessionOpts): WsTransportSession;
+export abstract class CoapTransportSessionFactory extends TransportSessionFactory<Socket> {
+    abstract create(socket: Socket, opts: TransportSessionOpts): CoapTransportSession;
 }
 
 
 @Injectable()
-export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory {
+export class CoapTransportSessionFactoryImpl implements CoapTransportSessionFactory {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -22,15 +21,15 @@ export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory 
 
     }
 
-    create(socket: Duplex | WebSocket, opts: TransportSessionOpts): WsTransportSession {
-        return new WsTransportSession(socket instanceof Duplex ? socket : createWebSocketStream(socket, opts), this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
+    create(socket: Socket, opts: TransportSessionOpts): CoapTransportSession {
+        return new CoapTransportSession(socket, this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
 
-export class WsTransportSession extends SocketTransportSession<Duplex> {
+export class CoapTransportSession extends SocketTransportSession<Socket> {
 
-    maxSize = 1024 * 256 - 6;
+    maxSize = 1024  - 6;
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         if (!packet.headerSent) {
             this.generateHeader(packet)
@@ -47,7 +46,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                             callback?.();
                         }
                     } else {
-                        this.socket.write(buff, callback);
+                        this.socket.send(buff, callback);
                     }
                 })
                 .catch(err => callback?.(err))
@@ -65,7 +64,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.write(data, callback);
+            this.socket.send(data, callback);
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -73,7 +72,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.caches.push(message);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-            this.socket.write(data, (err) => {
+            this.socket.send(data, (err) => {
                 if (err) return callback?.(err);
                 if (rest.length) {
                     this.write(packet, rest, callback)
@@ -85,7 +84,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.write(data, callback);
+                this.socket.send(data, callback);
             } else if (callback) {
                 callback()
             }
@@ -94,7 +93,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
 
     protected handleFailed(error: any): void {
         this.socket.emit(ev.ERROR, error.message);
-        this.socket.end();
+        this.socket.disconnect();
     }
 
 }

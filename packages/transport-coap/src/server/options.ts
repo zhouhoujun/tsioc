@@ -1,6 +1,7 @@
 
-import { AssetContext, TransportEndpointOptions, ExecptionFilter, Interceptor, Outgoing, CanActivate } from '@tsdi/core';
+import { AssetContext, TransportEndpointOptions, ExecptionFilter, Interceptor, Outgoing, CanActivate, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
+import { ContentOptions } from '@tsdi/transport';
 import { CoapServerOptions } from 'coap';
 
 
@@ -8,7 +9,8 @@ import { CoapServerOptions } from 'coap';
  * Coap server options.
  */
 export interface CoapServerOpts extends TransportEndpointOptions<AssetContext, Outgoing> {
-    encoding?: BufferEncoding;
+    content?: ContentOptions;
+    transportOpts?: TransportSessionOpts;
     connectOpts?: CoapServerOptions;
     listenOpts?: number | { host?:string, port?: number, listener?: () => void };
     detailError?: boolean;

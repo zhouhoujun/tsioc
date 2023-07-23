@@ -2,33 +2,33 @@ import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
 import { ExecptionHandlerFilter, StatusVaildator, TransformModule, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { WS_SERV_INTERCEPTORS, WsServerOpts, WS_SERV_FILTERS, WS_SERV_OPTS, WS_SERV_GUARDS } from './options';
-import { WsServer } from './server';
-import { WsEndpoint } from './endpoint';
-import { WsExecptionHandlers } from './execption.handles';
-import { WsStatusVaildator } from '../status';
-import { WsTransportSessionFactory, WsTransportSessionFactoryImpl } from '../transport';
+import { UDP_SERV_INTERCEPTORS, UdpServerOpts, UDP_SERV_FILTERS, UDP_SERV_OPTS, UDP_SERV_GUARDS } from './options';
+import { UdpServer } from './server';
+import { UdpEndpoint } from './endpoint';
+import { UdpExecptionHandlers } from './execption.handles';
+import { UdpStatusVaildator } from '../status';
+import { UdpTransportSessionFactory, UdpTransportSessionFactoryImpl } from '../transport';
 
 
 
 
 /**
- * ws microservice default options.
+ * UDP microservice default options.
  */
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6
+        maxSize: 1024 * 64 - 6
     },
     content: {
         root: 'public',
         prefix: 'content'
     },
     detailError: true,
-    interceptorsToken: WS_SERV_INTERCEPTORS,
-    filtersToken: WS_SERV_FILTERS,
-    guardsToken: WS_SERV_GUARDS,
-    backend: MicroServRouterModule.getToken('ws'),
+    interceptorsToken: UDP_SERV_INTERCEPTORS,
+    filtersToken: UDP_SERV_FILTERS,
+    guardsToken: UDP_SERV_GUARDS,
+    backend: MicroServRouterModule.getToken('udp'),
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -42,38 +42,38 @@ const defMicroOpts = {
         Bodyparser
     ],
     providers: [
-        { provide: StatusVaildator, useExisting: WsStatusVaildator }
+        { provide: StatusVaildator, useExisting: UdpStatusVaildator }
     ]
 
-} as WsServerOpts;
+} as UdpServerOpts;
 
 /**
- * WS microservice Module.
+ * UDP microservice Module.
  */
 @Module({
     imports: [
         TransformModule,
-        MicroServRouterModule.forRoot('ws'),
+        MicroServRouterModule.forRoot('udp'),
         TransportModule,
         ServerTransportModule
     ],
     providers: [
-        { provide: WsTransportSessionFactory, useClass: WsTransportSessionFactoryImpl, asDefault: true },
-        { provide: WS_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
-        WsStatusVaildator,
-        WsExecptionHandlers,
+        { provide: UdpTransportSessionFactory, useClass: UdpTransportSessionFactoryImpl, asDefault: true },
+        { provide: UDP_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
+        UdpStatusVaildator,
+        UdpExecptionHandlers,
         {
-            provide: WsEndpoint,
-            useFactory: (injector: Injector, opts: WsServerOpts) => {
+            provide: UdpEndpoint,
+            useFactory: (injector: Injector, opts: UdpServerOpts) => {
                 return createTransportEndpoint(injector, opts)
             },
             asDefault: true,
-            deps: [Injector, WS_SERV_OPTS]
+            deps: [Injector, UDP_SERV_OPTS]
         },
-        WsServer
+        UdpServer
     ]
 })
-export class WsMicroServModule {
+export class UdpMicroServModule {
     /**
      * import tcp micro service module with options.
      * @param options micro service module options.
@@ -83,24 +83,24 @@ export class WsMicroServModule {
         /**
          * service endpoint provider
          */
-        endpoint?: ProvdierOf<WsEndpoint>;
+        endpoint?: ProvdierOf<UdpEndpoint>;
         /**
          * transport session factory.
          */
-        transportFactory?: ProvdierOf<WsTransportSessionFactory>;
+        transportFactory?: ProvdierOf<UdpTransportSessionFactory>;
         /**
          * server options
          */
-        serverOpts?: WsServerOpts;
+        serverOpts?: UdpServerOpts;
         /**
          * custom provider with module.
          */
         providers?: ProviderType[];
-    }): ModuleWithProviders<WsMicroServModule> {
+    }): ModuleWithProviders<UdpMicroServModule> {
         const providers: ProviderType[] = [
             ...options.providers ?? EMPTY,
             {
-                provide: WS_SERV_OPTS,
+                provide: UDP_SERV_OPTS,
                 useValue: {
                     ...defMicroOpts,
                     ...options.serverOpts,
@@ -110,13 +110,13 @@ export class WsMicroServModule {
         ];
 
         if (options.endpoint) {
-            providers.push(toProvider(WsEndpoint, options.endpoint))
+            providers.push(toProvider(UdpEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(WsTransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(UdpTransportSessionFactory, options.transportFactory))
         }
         return {
-            module: WsMicroServModule,
+            module: UdpMicroServModule,
             providers
         }
     }
