@@ -143,13 +143,16 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
             ...this.options.send,
             topic,
             messages: [{
-                headers:packet.kafkaheaders,
+                headers: packet.kafkaheaders,
                 value: chunk ?? Buffer.alloc(0),
                 partition: packet.partition
             }]
         })
             .then(() => callback?.())
-            .catch(err => callback?.(err))
+            .catch(err => {
+                this.handleFailed(err);
+                callback?.(err)
+            })
     }
 
     protected createPackage(id: string | number, topic: string, replyTo: string, headers: IncomingHeaders, msg: EachMessagePayload, error?: any): HeaderPacket {
@@ -207,10 +210,6 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
         if (isNumber(head)) return Buffer.from(head.toString());
         if (isArray(head)) return head.map(v => v.toString())
         return Buffer.from(`${head}`);
-    }
-
-    protected handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message)
     }
 
     protected onSocket(name: string, event: (...args: any[]) => void): void {

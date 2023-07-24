@@ -41,9 +41,6 @@ export class AmqpTransportSession extends MessageTransportSession<Channel, Consu
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
 
-    protected handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message)
-    }
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.socket.on(name, event)
     }
@@ -110,20 +107,25 @@ export class AmqpTransportSession extends MessageTransportSession<Channel, Consu
             persistent: this.options.persistent,
         };
         const headers = packet.headers!;
-        const succeeded = this.socket.sendToQueue(
-            queue,
-            chunk ?? Buffer.alloc(0),
-            {
-                ...replys,
-                ...this.options.publishOpts,
-                headers,
-                contentType: headers[hdr.CONTENT_TYPE],
-                contentEncoding: headers[hdr.CONTENT_ENCODING],
-                correlationId: packet.id,
-            }
-        );
+        try {
+            const succeeded = this.socket.sendToQueue(
+                queue,
+                chunk ?? Buffer.alloc(0),
+                {
+                    ...replys,
+                    ...this.options.publishOpts,
+                    headers,
+                    contentType: headers[hdr.CONTENT_TYPE],
+                    contentEncoding: headers[hdr.CONTENT_ENCODING],
+                    correlationId: packet.id,
+                }
+            );
+            callback && callback(succeeded ? undefined : 'sendToQueue failed.');
+        } catch (err) {
+            this.handleFailed(err);
+            return callback?.(err);
 
-        callback && callback(succeeded ? undefined : 'sendToQueue failed.');
+        }
     }
 
     protected createPackage(id: string | number, topic: string, replyTo: string, headers: IncomingHeaders, msg: ConsumeMessage, error?: any): HeaderPacket {

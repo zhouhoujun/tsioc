@@ -47,7 +47,12 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
                             callback?.();
                         }
                     } else {
-                        this.socket.publish(topic, buff, callback);
+                        this.socket.publish(topic, buff, (err) => {
+                            if (err) {
+                                this.handleFailed(err);
+                            }
+                            callback?.(err);
+                        });
                     }
                 })
                 .catch(err => callback?.(err))
@@ -65,7 +70,12 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.publish(topic, data, callback);
+            this.socket.publish(topic, data, (err) => {
+                if (err) {
+                    this.handleFailed(err);
+                }
+                callback?.(err);
+            });
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -85,15 +95,18 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.publish(topic, data, callback);
+                this.socket.publish(topic, data, (err) => {
+                    if (err) {
+                        this.handleFailed(err);
+                    }
+                    callback?.(err);
+                });
             } else if (callback) {
                 callback()
             }
         }
     }
-    protected handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message);
-    }
+
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.socket.on(name, event);
     }

@@ -47,7 +47,12 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
                             callback?.();
                         }
                     } else {
-                        this.socket.write(buff, callback);
+                        this.socket.write(buff, (err) => {
+                            if (err) {
+                                this.handleFailed(err);
+                            }
+                            callback?.(err);
+                        });
                     }
                 })
                 .catch(err => callback?.(err))
@@ -65,7 +70,12 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.write(data, callback);
+            this.socket.write(data, (err) => {
+                if (err) {
+                    this.handleFailed(err);
+                }
+                callback?.(err);
+            });
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -74,7 +84,10 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.socket.write(data, (err) => {
-                if (err) return callback?.(err);
+                if (err) {
+                    this.handleFailed(err);
+                    return callback?.(err)
+                }
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }
@@ -85,7 +98,12 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.write(data, callback);
+                this.socket.write(data, (err) => {
+                    if (err) {
+                        this.handleFailed(err);
+                    }
+                    callback?.(err);
+                });
             } else if (callback) {
                 callback()
             }
@@ -93,7 +111,7 @@ export class WsTransportSession extends SocketTransportSession<Duplex> {
     }
 
     protected handleFailed(error: any): void {
-        this.socket.emit(ev.ERROR, error.message);
+        this.socket.emit(ev.ERROR, error);
         this.socket.end();
     }
 

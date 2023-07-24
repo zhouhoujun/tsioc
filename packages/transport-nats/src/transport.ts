@@ -82,7 +82,9 @@ export class NatsTransportSession extends MessageTransportSession<NatsConnection
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.writing(packet, data, (err) => {
-                if (err) return callback?.(err);
+                if (err) {
+                    return callback?.(err);
+                }
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }
@@ -127,18 +129,6 @@ export class NatsTransportSession extends MessageTransportSession<NatsConnection
         }
     }
 
-    // protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
-    //     switch (observe) {
-    //         case 'emit':
-    //             return '';
-    //         default:
-    //             return url + '.reply'
-    //     }
-    // }
-
-    protected handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message)
-    }
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.on(name, event)
     }

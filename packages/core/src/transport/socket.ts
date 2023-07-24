@@ -307,10 +307,6 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      */
     readonly socket: TSocket;
     /**
-     * logger;
-     */
-    logger?: Logger;
-    /**
      * send packet.
      * @param packet 
      * @param options 

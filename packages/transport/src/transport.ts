@@ -33,7 +33,6 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
     protected _evs: Array<[string, (...args: any[]) => void]>;
     private _destroyed = false;
-    logger?: Logger;
     constructor(
         readonly socket: T,
         protected streamAdapter: StreamAdapter,
@@ -146,7 +145,9 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
     }
 
 
-    protected abstract handleFailed(error: any): void;
+    protected handleFailed(error: any): void {
+        this.emit(ev.ERROR, error)
+    }
 
     protected bindEvent(options: TOpts) {
         this.getBindEvents().forEach(event => {

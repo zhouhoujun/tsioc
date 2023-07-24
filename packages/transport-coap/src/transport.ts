@@ -29,7 +29,7 @@ export class CoapTransportSessionFactoryImpl implements CoapTransportSessionFact
 
 export class CoapTransportSession extends SocketTransportSession<Socket> {
 
-    maxSize = 1024  - 6;
+    maxSize = 1024 - 6;
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         if (!packet.headerSent) {
             this.generateHeader(packet)
@@ -46,7 +46,12 @@ export class CoapTransportSession extends SocketTransportSession<Socket> {
                             callback?.();
                         }
                     } else {
-                        this.socket.send(buff, callback);
+                        this.socket.send(buff, (err) => {
+                            if (err) {
+                                this.handleFailed(err);
+                            }
+                            callback?.(err);
+                        });
                     }
                 })
                 .catch(err => callback?.(err))
@@ -64,7 +69,12 @@ export class CoapTransportSession extends SocketTransportSession<Socket> {
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.send(data, callback);
+            this.socket.send(data, (err) => {
+                if (err) {
+                    this.handleFailed(err);
+                }
+                callback?.(err)
+            });
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -73,7 +83,10 @@ export class CoapTransportSession extends SocketTransportSession<Socket> {
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.socket.send(data, (err) => {
-                if (err) return callback?.(err);
+                if (err) {
+                    this.handleFailed(err);
+                    return callback?.(err);
+                }
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }
@@ -84,16 +97,16 @@ export class CoapTransportSession extends SocketTransportSession<Socket> {
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.send(data, callback);
+                this.socket.send(data, (err) => {
+                    if (err) {
+                        this.handleFailed(err);
+                    }
+                    callback?.(err);
+                });
             } else if (callback) {
                 callback()
             }
         }
-    }
-
-    protected handleFailed(error: any): void {
-        this.socket.emit(ev.ERROR, error.message);
-        this.socket.disconnect();
     }
 
 }

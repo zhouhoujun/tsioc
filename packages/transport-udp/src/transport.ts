@@ -88,7 +88,9 @@ export class UdpTransportSession extends TopicTransportSession<Socket> {
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.writing(packet, data, (err) => {
-                if (err) return callback?.(err);
+                if (err) {
+                    return callback?.(err);
+                }
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }
@@ -112,15 +114,20 @@ export class UdpTransportSession extends TopicTransportSession<Socket> {
         const port = parseInt(packet.topic.substring(idx + 1));
         const addr = packet.topic.substring(0, idx);
         if (!addr) {
-            this.socket.send(chunk, port, callback)
+            this.socket.send(chunk, port, (err) => {
+                if (err) {
+                    this.handleFailed(err);
+                }
+                callback?.(err);
+            })
         } else {
-            this.socket.send(chunk, port, addr, callback)
+            this.socket.send(chunk, port, addr, (err) => {
+                if (err) {
+                    this.handleFailed(err);
+                }
+                callback?.(err);
+            })
         }
-    }
-
-    protected handleFailed(error: any): void {
-        this.socket.emit(ev.ERROR, error.message);
-        this.socket.disconnect();
     }
 
 }

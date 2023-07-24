@@ -56,7 +56,12 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
                             callback?.();
                         }
                     } else {
-                        this.socket.publisher.publish(topic, buff, callback);
+                        this.socket.publisher.publish(topic, buff, (err) => {
+                            if (err) {
+                                this.handleFailed(err);
+                            }
+                            callback?.(err);
+                        });
                     }
                 })
                 .catch(err => callback?.(err))
@@ -74,7 +79,12 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
             packet.caches.push(chunk);
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= bufSize;
-            this.socket.publisher.publish(topic, data, callback);
+            this.socket.publisher.publish(topic, data, (err) => {
+                if (err) {
+                    this.handleFailed(err);
+                }
+                callback?.(err);
+            });
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
@@ -83,7 +93,10 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
             const data = this.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             this.socket.publisher.publish(topic, data, (err) => {
-                if (err) return callback?.(err);
+                if (err) {
+                    this.handleFailed(err);
+                    return callback?.(err);
+                }
                 if (rest.length) {
                     this.write(packet, rest, callback)
                 }
@@ -94,18 +107,18 @@ export class RedisTransportSession extends TopicTransportSession<ReidsTransport>
             packet.residueSize -= bufSize;
             if (packet.residueSize <= 0) {
                 const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.socket.publisher.publish(topic, data, callback);
+                this.socket.publisher.publish(topic, data, (err) => {
+                    if (err) {
+                        this.handleFailed(err);
+                    }
+                    callback?.(err);
+                });
             } else if (callback) {
                 callback()
             }
         }
 
     }
-
-    protected override handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message);
-    }
-
 
     protected override bindMessageEvent(): void {
         const e = ev.MESSAGE_BUFFER;
