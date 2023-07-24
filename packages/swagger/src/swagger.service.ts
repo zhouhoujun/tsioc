@@ -1,5 +1,5 @@
 import { ApplicationContext, ControllerRoute, RouteMappingMetadata, Router, Started, joinPath, normalize } from '@tsdi/core';
-import { EMPTY_OBJ, Injectable, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Execption, Injectable, isString } from '@tsdi/ioc';
 import { JsonObject, serve, setup } from 'swagger-ui-express';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT } from './swagger.json';
 import { compose } from 'koa-convert';
@@ -36,16 +36,18 @@ export class SwaggerService {
             if (v instanceof ControllerRoute) {
                 v.ctrlRef.class.defs.forEach(df => {
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
-                    if(jsonDoc.paths[joinPath(prefix, route, df.metadata.route as string)]) return;
+                    const path = joinPath(prefix, route, df.metadata.route as string);
+                    
+                    if (jsonDoc.paths[path]) throw new Execption('has mutil route address:', path);
                     const api: Record<string, any> = {};
                     api[df.metadata.method?.toLowerCase() ?? 'get'] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
                         description: "",
                         operationId: df.propertyKey,
                         tags: [df.metadata.route],
-                        parameters:[]
+                        parameters: []
                     }
-                    jsonDoc.paths[joinPath(prefix, route, df.metadata.route as string)] = api;
+                    jsonDoc.paths[path] = api;
                 });
                 // jsonDoc.paths[v.ctrlRef.class.] = {
 
