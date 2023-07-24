@@ -11,6 +11,7 @@ export * from './router';
 export * from './router.micro';
 export * from './router.hybrid';
 export * from './router.mapping';
+export * from './controller';
 export * from './metadata';
 export * from './params';
 export * from  './context';

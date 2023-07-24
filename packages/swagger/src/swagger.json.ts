@@ -1,4 +1,4 @@
-import { Inject, tokenId } from '@tsdi/ioc';
+import { Inject, InjectorEvent, tokenId } from '@tsdi/ioc';
 import { Bean, Configuration } from '@tsdi/core';
 import { SwaggerOptions, JsonObject, SwaggerUiOptions } from 'swagger-ui-express';
 
@@ -57,16 +57,19 @@ export const SWAGGER_SETUP_OPTIONS = tokenId<SwaggerSetupOptions>('SWAGGER_SETUP
  */
 export const SWAGGER_DOCUMENT = tokenId<JsonObject>('SWAGGER_DOCUMENT');
 
-@Configuration()
-export class SwaggerJson {
+// @Configuration()
+// export class SwaggerJson {
 
-    constructor(@Inject(SWAGGER_SETUP_OPTIONS) private options: SwaggerSetupOptions) {
+//     constructor(
+//         private scan: InjectorEvent,
+//         @Inject(SWAGGER_SETUP_OPTIONS) private options: SwaggerSetupOptions) {
+  
+//     }
 
-    }
+//     @Bean(SWAGGER_DOCUMENT)
+//     build(): SwaggerOptions {
+//         const json = {... this.options.options };
+//         return json;
+//     }
 
-    @Bean(SWAGGER_DOCUMENT)
-    build(): any {
-        
-    }
-
-}
+// }

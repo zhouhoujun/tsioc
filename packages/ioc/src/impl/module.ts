@@ -96,14 +96,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             }, moduleRefl)
     }
 
-    protected override onRegistered(def: Class): void {
-
-    }
-
-    protected override onResolved(value: any, token?: Token): void {
-
-    }
-
     protected override clear() {
         this.platform()?.modules.delete(this._type);
         super.clear();

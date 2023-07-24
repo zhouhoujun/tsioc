@@ -20,6 +20,8 @@ export abstract class Router<T = Endpoint> extends Backend<TransportContext> imp
      * route prefix.
      */
     abstract get prefix(): string;
+
+    abstract get routes(): Map<string, T>;
     /**
     * route matcher.
     */
