@@ -8,6 +8,7 @@ import { UdpEndpoint } from './endpoint';
 import { UdpExecptionHandlers } from './execption.handles';
 import { UdpStatusVaildator } from '../status';
 import { UdpTransportSessionFactory, UdpTransportSessionFactoryImpl } from '../transport';
+import { defaultMaxSize } from '../const';
 
 
 
@@ -18,7 +19,7 @@ import { UdpTransportSessionFactory, UdpTransportSessionFactoryImpl } from '../t
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 64 - 6
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

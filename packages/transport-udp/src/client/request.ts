@@ -5,6 +5,7 @@ import { Socket } from 'dgram';
 import { Observer } from 'rxjs';
 import { UDP_CLIENT_OPTS, UdpClientOpts } from './options';
 import { UdpTransportSession } from '../transport';
+import { udptl } from '../const';
 
 /**
  * tcp request adapter.
@@ -59,4 +60,3 @@ export class UdpRequestAdapter extends SessionRequestAdapter<Socket, UdpClientOp
 }
 
 
-const udptl = /^(udp|udps):\/\//i;

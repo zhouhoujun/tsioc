@@ -2,6 +2,7 @@ import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { UdpIncoming } from './incoming';
 import { UdpOutgoing } from './outgoing';
 import { UdpServerOpts } from './options';
+import { udptl } from '../const';
 
 
 /**
@@ -52,4 +53,3 @@ export class UdpContext extends AbstractAssetContext<UdpIncoming, UdpOutgoing, n
 
 }
 
-const udptl = /^(udp|udps):\/\//i;

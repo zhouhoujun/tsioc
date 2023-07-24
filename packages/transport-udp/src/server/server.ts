@@ -10,6 +10,7 @@ import { UdpTransportSession, UdpTransportSessionFactory } from '../transport';
 import { UdpIncoming } from './incoming';
 import { UdpOutgoing } from './outgoing';
 import { UdpContext } from './context';
+import { defaultMaxSize } from '../const';
 
 
 @Injectable()
@@ -31,6 +32,7 @@ export class UdpServer extends Server<TransportContext> {
     protected async onStartup(): Promise<any> {
         const serverOpts = {
             type: 'udp4',
+            sendBufferSize: this.options.transportOpts?.maxSize ?? defaultMaxSize,
             ...this.options.serverOpts
         } as SocketOptions;
         this.serv = createSocket(serverOpts);
@@ -44,7 +46,6 @@ export class UdpServer extends Server<TransportContext> {
             this.logger.error(err);
         });
         const factory = this.endpoint.injector.get(UdpTransportSessionFactory);
-        // this.serv.on(ev.CONNECTION, (socket) => {
         const session = factory.create(this.serv, this.options.transportOpts!);
         session.on(ev.MESSAGE, (topic, packet) => {
             try {
@@ -53,10 +54,9 @@ export class UdpServer extends Server<TransportContext> {
                 this.logger.error(err);
             }
         });
-        // });
 
 
-        const isSecure = false; //this.options.serverOpts
+        const isSecure = false;
         const bindOpts = this.options.bindOpts ?? { port: 3000, address: LOCALHOST };
         this.serv.on(ev.LISTENING, () => {
             this.logger.info(lang.getClassName(this), 'access with url:', `udp${isSecure ? 's' : ''}://${bindOpts.address ?? LOCALHOST}:${bindOpts.port}`, '!');

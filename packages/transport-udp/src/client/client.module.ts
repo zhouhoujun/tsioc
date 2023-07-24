@@ -8,6 +8,7 @@ import { UdpRequestAdapter } from './request';
 import { UdpClient } from './client';
 import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS, UDP_CLIENT_OPTS, UdpClientOpts, UdpClientsOpts } from './options';
 import { UdpHandler } from './handler';
+import { defaultMaxSize } from '../const';
 
 
 
@@ -18,7 +19,7 @@ const defClientOpts = {
     url: 'ws://localhost:3000',
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 64 - 6,
+        maxSize: defaultMaxSize,
     },
     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
     filtersToken: UDP_CLIENT_FILTERS,

@@ -2,6 +2,7 @@ import { Decoder, Encoder, HeaderPacket, StreamAdapter, TransportSessionFactory,
 import { Abstract, ArgumentExecption, Injectable, Optional } from '@tsdi/ioc';
 import { TopicTransportSession, Subpackage, ev } from '@tsdi/transport';
 import { Socket, RemoteInfo } from 'dgram';
+import { defaultMaxSize } from './const';
 
 
 
@@ -44,7 +45,7 @@ export class UdpTransportSession extends TopicTransportSession<Socket> {
         this._evs.push([ev.MESSAGE, fn]);
     }
 
-    maxSize = 1024 * 64 - 6;
+    maxSize = defaultMaxSize;
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         if (!packet.headerSent) {
             this.generateHeader(packet)
