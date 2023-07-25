@@ -1,5 +1,4 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Logger } from '@tsdi/logs';
 import { OutgoingHeader, OutgoingHeaders } from './headers';
 import { HeaderPacket, Packet } from './packet';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';

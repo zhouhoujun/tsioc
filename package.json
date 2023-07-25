@@ -64,6 +64,7 @@
     "eslint-plugin-promise": "^6.0.0",
     "execa": "^4.0.2",
     "expect": "^25.3.0",
+    "express": "^4.18.2",
     "findup": "^0.1.5",
     "globby": "^11.0.0",
     "gulp-filter": "^6.0.0",

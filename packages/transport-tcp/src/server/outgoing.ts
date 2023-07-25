@@ -1,4 +1,4 @@
-import { SocketOutgoing } from '@tsdi/platform-server-transport';
+import { SocketOutgoing } from '@tsdi/transport';
 import * as net from 'net';
 import * as tls from 'tls';
 

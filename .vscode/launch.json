@@ -527,6 +527,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test swagger",
+            "args": [
+                "${workspaceRoot}/packages/swagger/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test components",
             "args": [
                 "${workspaceRoot}/packages/components/unit.ts" 

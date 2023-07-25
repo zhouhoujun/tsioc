@@ -295,6 +295,18 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
  */
 export const RouteMapping: RouteMapping = createMappingDecorator('RouteMapping');
 
+/**
+ * Request header param decorator.
+ * 
+ * @exports {@link TransportParameterDecorator}
+ */
+export const RequestHeader: TransportParameterDecorator = createParamDecorator('RequestHeader', {
+    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    appendProps: meta => {
+        meta.scope = 'headers'
+    }
+});
+
 
 /**
  * Request path param decorator.

@@ -1,4 +1,4 @@
-import { MessageOutgoing } from '@tsdi/platform-server-transport';
+import { MessageOutgoing } from '@tsdi/transport';
 import { Socket } from 'dgram';
 
 

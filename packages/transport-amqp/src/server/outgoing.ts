@@ -1,5 +1,5 @@
 import * as amqp from 'amqplib';
-import { MessageOutgoing } from '@tsdi/platform-server-transport';
+import { MessageOutgoing } from '@tsdi/transport';
 
 
 

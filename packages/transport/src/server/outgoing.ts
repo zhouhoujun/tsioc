@@ -1,7 +1,7 @@
 import { OutgoingHeader, OutgoingHeaders, ResHeaders, Outgoing, HeaderPacket, IEventEmitter, TransportSession } from '@tsdi/core';
 import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { SendPacket, SocketTransportSession, ev, hdr } from '@tsdi/transport';
-import { Writable } from 'stream';
+import { Writable } from 'readable-stream';
 
 
 

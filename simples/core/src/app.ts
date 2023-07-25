@@ -5,7 +5,7 @@ import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
-// import { SwaggerModule } from '@tsdi/swagger';
+import { SwaggerModule } from '@tsdi/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { User } from './models/User';
@@ -107,9 +107,9 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 }
             }
         }),
-        // SwaggerModule.withOptions({
-        //     title: ''
-        // })
+        SwaggerModule.withOptions({
+            title: ''
+        })
     ],
     declarations: [
         UserController,

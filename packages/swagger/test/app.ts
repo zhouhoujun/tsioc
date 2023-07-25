@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
@@ -41,7 +41,7 @@ export const option = <ConnectionOptions>{
     baseURL: __dirname,
     imports: [
         ServerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 2
             }

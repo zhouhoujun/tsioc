@@ -1,4 +1,4 @@
-import { MessageIncoming } from '@tsdi/platform-server-transport';
+import { MessageIncoming } from '@tsdi/transport';
 import { NatsConnection } from 'nats';
 
 
