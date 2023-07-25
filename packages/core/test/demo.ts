@@ -6,7 +6,7 @@ import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logs';
 import * as net from 'net';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerLogsModule } from '@tsdi/platform-server/log4js';
+import { ServerLog4Module } from '@tsdi/platform-server/log4js';
 
 export class TestService {
     testFiled = 'test';
@@ -152,7 +152,7 @@ export class StatupModule { }
     imports: [
         SharedModule,
         ServerModule,
-        ServerLogsModule,
+        ServerLog4Module,
         StatupModule,
     ],
     providers: [

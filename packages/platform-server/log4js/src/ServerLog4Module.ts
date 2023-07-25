@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { ServerJoinpointLogFormater } from './ServerLogFormater';
+import { ServerJoinpointLogFormater } from './ServerLog4Formater';
 import { Log4jsAdapter } from './Log4jsAdapter';
 
 @Module({
@@ -8,4 +8,4 @@ import { Log4jsAdapter } from './Log4jsAdapter';
         Log4jsAdapter
     ]
 })
-export class ServerLogsModule { }
+export class ServerLog4Module { }

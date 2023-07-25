@@ -1,4 +1,5 @@
-import { LoggerModule, Module } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { HttpModule } from '@tsdi/transport-http';

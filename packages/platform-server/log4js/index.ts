@@ -1,2 +1,2 @@
 
-export { ServerLogsModule } from './src/ServerLogsModule';
+export { ServerLog4Module } from './src/ServerLog4Module';

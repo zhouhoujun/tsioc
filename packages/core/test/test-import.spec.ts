@@ -1,5 +1,5 @@
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerLogsModule } from '@tsdi/platform-server/log4js';
+import { ServerLog4Module } from '@tsdi/platform-server/log4js';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { HttpClient, HttpClientModule } from '@tsdi/common/http';
 import { LoggerModule } from '@tsdi/logs';
@@ -138,7 +138,7 @@ describe('di module', () => {
                 LoggerModule
             ],
             deps: [
-                ServerLogsModule
+                ServerLog4Module
             ]
         });
         const ser = ctx.injector.get(SocketService);

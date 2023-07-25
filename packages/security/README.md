@@ -168,7 +168,7 @@ export class StatupModule { }
         LogModule,
         Logger,
         ServerBootstrapModule,
-        ServerLogsModule
+        ServerLog4Module
     ],
     providers:[
         ClassSevice,
