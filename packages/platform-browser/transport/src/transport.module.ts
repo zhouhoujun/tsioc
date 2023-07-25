@@ -1,6 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { FileAdapter, StreamAdapter } from '@tsdi/core';
-import { ContentSendAdapter, ResponseStatusFormater } from '@tsdi/transport';
+import { FileAdapter, StreamAdapter, ContentSendAdapter, ResponseStatusFormater } from '@tsdi/transport';
 import { BrowserResponseStatusFormater } from './formater';
 import { BrowserStreamAdapter } from './stream';
 import { BrowserContentSendAdapter } from './send';
