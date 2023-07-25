@@ -1,10 +1,8 @@
+import { tokenId } from '@tsdi/ioc';
 
 /**
  * Listen options.
  */
-
-import { tokenId } from "@tsdi/ioc";
-
 export interface ListenOpts {
 
     [x: string]: any;

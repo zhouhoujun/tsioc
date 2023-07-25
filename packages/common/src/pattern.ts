@@ -1,4 +1,4 @@
-import { isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { Abstract, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 
 /**
  * Command pattern.
@@ -23,6 +23,7 @@ export type Pattern = string | number | CommandPattern | ObjectPattern;
 /**
  * pattern formatter.
  */
+@Abstract()
 export abstract class PatternFormatter {
     /**
      * Transforms the Pattern to Route.
