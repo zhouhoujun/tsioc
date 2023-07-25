@@ -1,5 +1,8 @@
 import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from './stream';
 import { Abstract } from '@tsdi/ioc';
+import { isArrayBuffer, isBlob, isFormData, UnsupportedMediaTypeExecption } from '@tsdi/common';
+import { Buffer } from 'buffer';
+import { toBuffer } from './utils';
 
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
 
@@ -8,6 +11,64 @@ export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStre
  */
 @Abstract()
 export abstract class StreamAdapter {
+
+    /**
+     * send body
+     * @param data 
+     * @param request 
+     * @param callback 
+     * @param encoding 
+     */
+    async sendbody(data: any, request: IWritableStream | IEndable, callback: (err?: any) => void, encoding?: string): Promise<void> {
+        let source: PipeSource;
+        try {
+            if (isArrayBuffer(data)) {
+                source = Buffer.from(data);
+            } else if (Buffer.isBuffer(data)) {
+                source = data;
+            } else if (isBlob(data)) {
+                const arrbuff = await data.arrayBuffer();
+                source = Buffer.from(arrbuff);
+            } else if (this.isFormDataLike(data)) {
+                if (isFormData(data)) {
+                    const form = this.createFormData();
+                    data.forEach((v, k, parent) => {
+                        form.append(k, v);
+                    });
+                    data = form;
+                }
+                source = data.getBuffer();
+            } else {
+                source = String(data);
+            }
+            if (encoding) {
+                switch (encoding) {
+                    case 'gzip':
+                    case 'deflate':
+                        source = (this.isReadable(source) ? source : this.pipeline(source, this.createPassThrough())).pipe(this.createGzip());
+                        break;
+                    case 'identity':
+                        break;
+                    default:
+                        throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
+                }
+            }
+            if (this.isStream(request)) {
+                await this.pipeTo(source, request);
+                callback();
+            } else {
+                if (this.isStream(source)) {
+                    const buffers = await toBuffer(source);
+                    request.end(buffers, callback);
+                } else {
+                    request.end(source, callback);
+                }
+            }
+        } catch (err) {
+            callback(err);
+        }
+    }
+
     /**
      * pipe line
      * @param source 
@@ -47,15 +108,6 @@ export abstract class StreamAdapter {
      * @param callback 
      */
     abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
-
-    /**
-     * send body
-     * @param data 
-     * @param request 
-     * @param callback 
-     * @param encoding 
-     */
-    abstract sendbody(data: any, request: IWritableStream | IEndable, callback: (err?: any) => void, encoding?: string): Promise<void>
 
     /**
      * json streamify

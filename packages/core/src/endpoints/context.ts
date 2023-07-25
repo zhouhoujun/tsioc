@@ -12,12 +12,11 @@ export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
  * endpoint context.
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
-
     private doneFn?: (ctx: EndpointContext<TInput>) => boolean
     constructor(
         injector: Injector,
         options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
-        super(injector, options)
+        super(injector, options);
         this.doneFn = options.isDone;
         this.setValue(getClass(this), this);
     }

@@ -1,10 +1,10 @@
-import { Interceptor, Filter, MiddlewareEndpointOptions, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, CanActivate } from '@tsdi/core';
 import { tokenId, Type } from '@tsdi/ioc';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { ListenOptions } from 'net';
-import { CorsOptions, MimeSource, ContentOptions, SessionOptions, CsrfOptions, ProxyOpts } from '@tsdi/transport';
+import { CorsOptions, MimeSource, ContentOptions, SessionOptions, CsrfOptions, ProxyOpts, MiddlewareEndpointOptions } from '@tsdi/transport';
 import { HttpServRequest, HttpServResponse } from './context';
 
 /**

@@ -1,8 +1,10 @@
-import { AssetContext, IReadableStream, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { HEAD } from '@tsdi/common';
+import { HEAD, MessageExecption } from '@tsdi/common';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
+import { Incoming, Outgoing } from '../socket';
+import { AssetContext } from '../context';
+import { IReadableStream } from '../stream';
 
 
 @Injectable()

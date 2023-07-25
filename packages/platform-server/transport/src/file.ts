@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IReadableStream, FileAdapter } from '@tsdi/core';
+import { IReadableStream, FileAdapter } from '@tsdi/transport';
 import { isAbsolute, resolve, join, normalize, extname, basename } from 'path';
 import { existsSync, createReadStream } from 'fs';
 

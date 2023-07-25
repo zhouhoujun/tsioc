@@ -1,5 +1,6 @@
-import { AssetContext, TypedRespond } from '@tsdi/core';
+import { TypedRespond } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
+import { AssetContext } from '../context';
 
 @Injectable({ static: true })
 export class TranspotTypedRespond extends TypedRespond {

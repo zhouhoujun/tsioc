@@ -1,5 +1,8 @@
-import { AssetContext, ResultValue, IStream } from '@tsdi/core';
+import { ResultValue } from '@tsdi/core';
 import { hdr } from '../../consts';
+import { IStream } from '../../stream';
+import { AssetContext } from '../../context';
+
 /**
  * EventStream Result
  *

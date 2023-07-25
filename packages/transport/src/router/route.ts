@@ -1,7 +1,6 @@
 import { tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { Handler } from '../Handler';
-import { Middleware, MiddlewareFn } from './middleware';
-import { EndpointOptions } from '../endpoints/endpoint.service';
+import { Handler, EndpointOptions } from '@tsdi/core';
+import { Middleware, MiddlewareFn } from '../middleware/middleware';
 
 /**
  * Route.

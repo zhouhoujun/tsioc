@@ -1,7 +1,6 @@
 import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
 import { Pattern } from '@tsdi/common';
-import { OperationEndpoint } from '../endpoints/endpoint.factory';
-import { EndpointOptions } from '../endpoints/endpoint.service';
+import { OperationEndpoint, EndpointOptions } from '@tsdi/core';
 
 
 /**

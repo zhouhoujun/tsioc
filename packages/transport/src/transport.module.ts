@@ -1,4 +1,4 @@
-import { RouterModule, TransformModule } from '@tsdi/core';
+import { TransformModule } from '@tsdi/core';
 import { Module, ProviderType, ModuleWithProviders } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
@@ -9,6 +9,7 @@ import {
     ExecptionFinalizeFilter, ServerFinalizeFilter, RespondAdapter, ErrorRespondAdapter
 } from './server';
 import { StreamTransportBackend, TransportBackend } from './client/backend';
+import { RouterModule } from './router/router.module';
 
 
 

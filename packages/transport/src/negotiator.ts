@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { AssetContext } from '@tsdi/core';
+import { AssetContext } from './context';
 
 /**
  * negotiator.

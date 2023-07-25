@@ -1,6 +1,6 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { Protocol } from '@tsdi/common';
-import { Endpoint } from '../endpoints/endpoint';
+import { Endpoint } from '@tsdi/core';
 import { Router } from './router';
 
 /**

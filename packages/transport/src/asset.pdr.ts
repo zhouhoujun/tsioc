@@ -1,5 +1,5 @@
 
-import { Redirector, TypedRespond } from '@tsdi/core';
+import { TypedRespond } from '@tsdi/core';
 import { ProviderType } from '@tsdi/ioc';
 import { MimeAdapter, MimeDb, MimeTypes } from './mime';
 import { Negotiator } from './negotiator';
@@ -8,6 +8,7 @@ import { MimeTypesImpl, TrasportMimeAdapter } from './impl/mime';
 import { TransportNegotiator } from './impl/negotiator';
 import { AssetRedirector } from './impl/redirector';
 import { TranspotTypedRespond } from './impl/typed.respond';
+import { Redirector } from './redirector';
 
 
 export const MIME_PROVIDERS: ProviderType[] = [

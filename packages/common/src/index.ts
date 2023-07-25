@@ -1,6 +1,7 @@
 export * from './platform';
 export * from './global';
 
+export * from './execptions';
 export * from './headers';
 export * from './listen';
 export * from './packet';

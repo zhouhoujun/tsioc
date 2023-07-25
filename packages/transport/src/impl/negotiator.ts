@@ -1,8 +1,8 @@
 /* eslint-disable no-useless-escape */
-import { AssetContext } from '@tsdi/core';
 import { Injectable, isArray, isString } from '@tsdi/ioc';
 import { hdr, identity } from '../consts';
 import { Negotiator } from '../negotiator';
+import { AssetContext } from '../context';
 
 
 

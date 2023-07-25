@@ -1,5 +1,6 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { MicroServRouterModule } from '@tsdi/transport';
 import { LoggerModule } from '@tsdi/logs';
 import { ServerModule } from '@tsdi/platform-server';
 

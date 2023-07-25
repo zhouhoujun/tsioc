@@ -2,8 +2,9 @@ import { InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getT
 import { Protocol, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
-import { TRANSPORT_CONTEXT_IMPL } from './context';
-import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
+import { TRANSPORT_CONTEXT_IMPL } from '../context';
+import { TRANSPORT_ENDPOINT_IMPL } from '../endpoint';
+import { MIDDLEEARE_ENDPOINT_IMPL } from '../middleware/middleware.endpoint';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteReolver } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';

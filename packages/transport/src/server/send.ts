@@ -1,5 +1,5 @@
-import { AssetContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { AssetContext } from '../context';
 
 
 export interface SendOptions<TStats = any> {

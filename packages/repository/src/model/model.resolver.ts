@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, Type, CtorType, Parameter, OperationInvoker } from '@tsdi/ioc';
-import { ModelArgumentResolver, EndpointContext, TransportContext } from '@tsdi/core';
+import { ModelArgumentResolver, EndpointContext } from '@tsdi/core';
 import { PUT } from '@tsdi/common';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
@@ -79,7 +79,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.name] ?? p.default))
-                    || ((ctx as TransportContext).method?.toUpperCase() !== PUT && p.primary === true),
+                    || ((ctx as any).method?.toUpperCase() !== PUT && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS)
         }

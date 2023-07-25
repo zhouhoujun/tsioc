@@ -1,10 +1,10 @@
 import { ProvdierOf, Abstract } from '@tsdi/ioc';
-import { EndpointService } from '../endpoints/endpoint.service';
+import { EndpointService } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { MiddlewareEndpoint } from './endpoint';
-import { AssetContext } from './context';
-import { Server } from './microservice';
+import { MiddlewareEndpoint } from './middleware.endpoint';
+import { AssetContext } from '../context';
+import { Server } from '../microservice';
 
 
 

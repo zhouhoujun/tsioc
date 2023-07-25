@@ -1,11 +1,11 @@
-import { Incoming, IDuplexStream, IEndable, IReadableStream, RequestTimeoutExecption } from '@tsdi/core';
-import { TransportEvent, TransportErrorResponse, TransportHeaderResponse, TransportRequest, TransportResponse, IncomingHeaders, OutgoingHeaders, ResHeaders, HEAD } from '@tsdi/common';
+import { TransportEvent, TransportErrorResponse, TransportHeaderResponse, TransportRequest, TransportResponse, IncomingHeaders, OutgoingHeaders, ResHeaders, HEAD, RequestTimeoutExecption } from '@tsdi/common';
 import { Abstract, EMPTY_OBJ, isNil, lang } from '@tsdi/ioc';
 import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer } from '../utils';
 import { ev, hdr } from '../consts';
 import { RequestAdapter } from './request';
-
+import { IDuplexStream, IEndable, IReadableStream } from '../stream';
+import { Incoming } from '../socket';
 
 /**
  * stream request adapter.

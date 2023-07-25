@@ -1,10 +1,12 @@
-import { Handler, Interceptor, StreamAdapter, FormData, IStream } from '@tsdi/core';
+import { Handler, Interceptor } from '@tsdi/core';
 import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Injectable, isString } from '@tsdi/ioc';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
+import { StreamAdapter } from '../stream.adapter';
+import { IStream } from '../stream';
 
 
 /**

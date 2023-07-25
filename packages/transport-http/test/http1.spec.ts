@@ -1,6 +1,7 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
+import { MicroServRouterModule } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 
 import expect = require('expect');

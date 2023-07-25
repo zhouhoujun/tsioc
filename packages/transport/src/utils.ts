@@ -1,7 +1,8 @@
 import { ArgumentExecption, TypeExecption } from '@tsdi/ioc';
-import { Outgoing, IReadableStream } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { hdr } from './consts';
+import { IReadableStream } from './stream';
+import { Outgoing } from './socket';
 
 export function isBuffer(body: any): body is Buffer {
   return Buffer.isBuffer(body)

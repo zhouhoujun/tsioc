@@ -1,6 +1,5 @@
 import { IncomingHeaders, Packet } from '@tsdi/common';
-import { Incoming, TransportSession } from '@tsdi/core';
-import { ev, hdr } from '@tsdi/transport';
+import { Incoming, TransportSession, ev, hdr } from '@tsdi/transport';
 import { Readable } from 'readable-stream';
 
 
