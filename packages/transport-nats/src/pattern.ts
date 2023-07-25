@@ -1,4 +1,4 @@
-import { Pattern, PatternFormatter, normalize, patternToPath } from '@tsdi/core';
+import { Pattern, PatternFormatter, normalize, patternToPath } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable()

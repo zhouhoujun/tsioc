@@ -1,5 +1,6 @@
-import { PatternFormatter, StatusVaildator, createHandler } from '@tsdi/core';
+import { StatusVaildator, createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
+import { PatternFormatter } from '@tsdi/common';
 import { BodyContentInterceptor, TransportBackend, TransportModule, RequestAdapter } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { NatsClient } from './client';

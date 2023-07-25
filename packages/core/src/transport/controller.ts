@@ -1,4 +1,5 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, tokenId, Type } from '@tsdi/ioc';
+import { joinPath, normalize } from '@tsdi/common';
 import { lastValueFrom, throwError } from 'rxjs';
 import { Backend } from '../Handler';
 import { CanActivate } from '../guard';
@@ -9,7 +10,6 @@ import { AbstractGuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { NotFoundExecption, PushDisabledExecption } from '../execptions';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinPath, normalize } from './route';
 import { Middleware } from './middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';

@@ -1,12 +1,12 @@
-import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportSession } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
+import { TransportRequest } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
 import { AmqpTransportSessionFactory } from '../transport';
-
 
 
 @Injectable({ static: false })

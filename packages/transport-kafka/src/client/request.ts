@@ -1,11 +1,11 @@
-import {
-    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, Packet, StreamAdapter, StatusVaildator, UuidGenerator, ResHeaders, Incoming
-} from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
+import {  Encoder, Decoder, Redirector, TransportSession, StreamAdapter, StatusVaildator, UuidGenerator, Incoming } from '@tsdi/core';
+import { Packet, TransportEvent, TransportRequest } from '@tsdi/common';
 import { MimeTypes, MimeAdapter, SessionRequestAdapter, ev, StatusPacket, hdr } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaTransport } from '../const';
+
 
 /**
  * kafka request adapter.

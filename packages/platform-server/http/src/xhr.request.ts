@@ -1,11 +1,11 @@
-
+import { Execption, isFunction } from '@tsdi/ioc';
+import { InvalidStateExecption, SecurityExecption } from '@tsdi/core';
+import { GET } from '@tsdi/common';
 import * as http from 'http';
 import * as https from 'https';
 import * as fs from 'fs';
 import { URL } from 'url';
 import { spawn } from 'child_process';
-import { Execption, isFunction } from '@tsdi/ioc';
-import { GET, InvalidStateExecption, SecurityExecption } from '@tsdi/core';
 
 /**
  * refactor XMLHttpRequest.js

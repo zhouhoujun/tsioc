@@ -1,5 +1,5 @@
 import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, ArgumentExecption, Injectable, Optional, isNil } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, Optional } from '@tsdi/ioc';
 import { SocketTransportSession, Subpackage, ev } from '@tsdi/transport';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { Duplex } from 'stream';

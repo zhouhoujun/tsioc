@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
-import { AbstractGuardHandler, TransportEvent, TransportRequest } from '@tsdi/core';
+import { AbstractGuardHandler } from '@tsdi/core';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 
 
 @Abstract()

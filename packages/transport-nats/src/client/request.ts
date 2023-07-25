@@ -1,5 +1,6 @@
-import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StatusVaildator, StreamAdapter, TransportSession, Packet, UuidGenerator, Incoming } from '@tsdi/core';
+import { Encoder, Decoder, Redirector, StatusVaildator, StreamAdapter, TransportSession, UuidGenerator, Incoming } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
+import { Packet, TransportEvent, TransportRequest } from '@tsdi/common';
 import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter, hdr, StatusPacket } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { NatsConnection, Msg } from 'nats';

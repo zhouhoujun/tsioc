@@ -1,5 +1,6 @@
-import { Backend, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Backend } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestAdapter } from './request';
 import { StreamRequestAdapter } from './request.stream';

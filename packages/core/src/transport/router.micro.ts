@@ -1,7 +1,7 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
+import { Protocol } from '@tsdi/common';
 import { Endpoint } from '../endpoints/endpoint';
 import { Router } from './router';
-import { Protocol } from './protocols';
 
 /**
  * microserivce router

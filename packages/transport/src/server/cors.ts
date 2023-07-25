@@ -1,5 +1,6 @@
-import { AssetContext, Middleware, RequestMethod, InternalServerExecption } from '@tsdi/core';
+import { AssetContext, Middleware, InternalServerExecption } from '@tsdi/core';
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
+import { RequestMethod } from '@tsdi/common';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
 

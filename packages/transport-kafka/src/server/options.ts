@@ -1,5 +1,6 @@
-import { CanActivate, Filter, Interceptor, TransportEndpointOptions, TransportRequest } from '@tsdi/core';
+import { CanActivate, Filter, Interceptor, TransportEndpointOptions } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
+import { TransportRequest } from '@tsdi/common';
 import { ContentOptions } from '@tsdi/transport';
 import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
 import { KafkaTransportOpts } from '../transport';

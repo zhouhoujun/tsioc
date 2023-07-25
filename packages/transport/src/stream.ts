@@ -1,4 +1,5 @@
-import { UnsupportedMediaTypeExecption, IWritableStream, isArrayBuffer, isBlob, isFormData, IEndable, StreamAdapter, PipeSource } from '@tsdi/core';
+import { UnsupportedMediaTypeExecption, IWritableStream, IEndable, StreamAdapter, PipeSource } from '@tsdi/core';
+import { isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { Abstract } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { toBuffer } from './utils';

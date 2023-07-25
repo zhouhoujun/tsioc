@@ -1,4 +1,4 @@
-import { GET, MESSAGE } from '@tsdi/core';
+import { GET, MESSAGE } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
 import { HttpStatusVaildator } from '@tsdi/transport';
 

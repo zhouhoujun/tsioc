@@ -1,5 +1,5 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { PatternFormatter, StatusVaildator, createHandler } from '@tsdi/core';
+import { StatusVaildator, createHandler } from '@tsdi/core';
 import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
@@ -9,6 +9,7 @@ import { RedisHandler } from './handler';
 import { RedisClient } from './client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS, RedisClientOpts, RedisClientsOpts } from './options';
 import { RedisPatternFormatter } from '../pattern';
+import { PatternFormatter } from '@tsdi/common';
 
 
 /**

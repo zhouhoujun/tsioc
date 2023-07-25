@@ -1,6 +1,7 @@
 import { Injectable, Optional, isArray, isNil } from '@tsdi/ioc';
-import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, TransportEvent, TransportRequest, Incoming } from '@tsdi/core';
+import { Decoder, Encoder, IEndable, Redirector, StatusVaildator, StreamAdapter, Incoming } from '@tsdi/core';
 import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer, ctype } from '@tsdi/transport';
+import { IncomingHeader, TransportEvent, TransportRequest } from '@tsdi/common';
 import { request } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';

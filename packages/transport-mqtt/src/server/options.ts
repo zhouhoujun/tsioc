@@ -1,6 +1,7 @@
-import { AssetContext, CanActivate, Filter, Interceptor, TransportEvent, TransportRequest, TransportSessionOpts } from '@tsdi/core';
+import { AssetContext, CanActivate, Filter, Interceptor, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { TransportEndpointOptions } from '@tsdi/core';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { ContentOptions } from '@tsdi/transport';
 import { MqttConnectOpts } from '../connect';
 

@@ -2,6 +2,7 @@ import {
     EMPTY, ModuleRef, isFunction, lang, OnDestroy, pomiseOf, Injector,
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
+import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { CanActivate, getGuardsToken } from '../guard';
@@ -11,14 +12,13 @@ import { BadRequestExecption, NotFoundExecption } from '../execptions';
 import { GuardHandler } from '../handlers/guards';
 import { setHandlerOptions } from '../handlers/handler.service';
 import { Endpoint } from '../endpoints/endpoint';
-import { joinPath, normalize, Route, Routes } from './route';
+import { Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from './middleware';
 import { MiddlewareBackend, NEXT } from './middleware.compose';
 import { RouteMatcher, Router } from './router';
 import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { AssetContext, TransportContext } from './context';
-import { Pattern, PatternFormatter } from './pattern';
 import { RouteEndpoint } from './route.endpoint';
 
 

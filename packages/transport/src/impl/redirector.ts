@@ -1,5 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { BadRequestExecption, Client, RequestMethod, Redirector, ReqHeaders, ResHeaders, HeaderSet, TransportRequest, StatusVaildator, StreamAdapter } from '@tsdi/core';
+import { BadRequestExecption, Client, Redirector,  StatusVaildator, StreamAdapter } from '@tsdi/core';
+import { ReqHeaders, ResHeaders, HeaderSet, TransportRequest, RequestMethod } from '@tsdi/common';
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { hdr } from '../consts';

@@ -1,5 +1,6 @@
-import { MESSAGE, MircoServRouters, Outgoing, Packet, PatternFormatter, Server, TransportContext, TransportSession } from '@tsdi/core';
+import { MircoServRouters, Outgoing, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
+import { Packet, PatternFormatter, MESSAGE } from '@tsdi/common';
 import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import Redis from 'ioredis';
@@ -108,7 +109,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
             }
         });
 
-    
+
         router.matcher.eachPattern((topic, pattern) => {
             if (topic !== pattern) {
                 this.logger.info('Transform pattern', pattern, 'to topic', topic)

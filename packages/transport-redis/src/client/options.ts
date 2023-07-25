@@ -1,5 +1,6 @@
-import { Client, ConfigableHandlerOptions, Filter, Interceptor, TransportEvent, TransportRequest, TransportSessionOpts } from '@tsdi/core';
+import { Client, ConfigableHandlerOptions, Filter, Interceptor, TransportSessionOpts } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
+import { TransportRequest, TransportEvent } from '@tsdi/common';
 import { RedisOptions } from 'ioredis';
 
 /**

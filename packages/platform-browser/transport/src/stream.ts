@@ -1,6 +1,6 @@
-import { BrotliOptions, IDuplexStream, IReadableStream, isFormData, ITransformStream, IWritableStream, PipeSource, ZipOptions } from '@tsdi/core';
+import { BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions } from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
-import { global } from '@tsdi/common';
+import { global, isFormData } from '@tsdi/common';
 import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import * as pumpify from 'pumpify';

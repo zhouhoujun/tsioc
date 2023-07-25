@@ -1,4 +1,5 @@
-import { Packet, TransportContext, TransportEndpoint } from '@tsdi/core';
+import { Packet } from '@tsdi/common';
+import { TransportContext, TransportEndpoint } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 
 

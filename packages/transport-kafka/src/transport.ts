@@ -1,6 +1,7 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
 import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { Decoder, Encoder, NotFoundExecption, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
+import { HeaderPacket, IncomingHeaders } from '@tsdi/common';
 import { MessageTransportSession, Subpackage, ev, hdr, isBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 

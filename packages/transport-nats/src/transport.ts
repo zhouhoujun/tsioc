@@ -1,5 +1,6 @@
-import { Decoder, Encoder, HeaderPacket, IncomingHeaders, OutgoingHeaders, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, EMPTY, Injectable, Optional } from '@tsdi/ioc';
+import { HeaderPacket, IncomingHeaders, OutgoingHeaders } from '@tsdi/common';
 import { MessageTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
 import { Msg, MsgHdrs, NatsConnection, headers as createHeaders } from 'nats';
 import { Buffer } from 'buffer';

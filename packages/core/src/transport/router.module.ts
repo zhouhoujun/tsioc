@@ -1,9 +1,8 @@
 import { InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
-import { ROUTES, Routes, normalize } from './route';
+import { Protocol, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
+import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
-import { Protocol } from './protocols';
 import { TRANSPORT_CONTEXT_IMPL } from './context';
-import { PatternFormatter, patternToPath } from './pattern';
 import { MIDDLEEARE_ENDPOINT_IMPL, TRANSPORT_ENDPOINT_IMPL } from './endpoint';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteReolver } from './controller';

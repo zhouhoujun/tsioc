@@ -1,4 +1,4 @@
-import { ParameterCodec, TransportParams } from '@tsdi/core';
+import { ParameterCodec, TransportParams } from '@tsdi/common';
 
 
 /**

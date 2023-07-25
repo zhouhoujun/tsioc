@@ -1,5 +1,5 @@
 import { Abstract, EMPTY_OBJ, Inject, Injectable, InvocationContext, Token, tokenId } from '@tsdi/ioc';
-import { Client, ConfigableHandler, RequestOptions, TransportRequest } from '@tsdi/core';
+import { Client, ConfigableHandler } from '@tsdi/core';
 import { loadPackageDefinition, ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { load, loadFileDescriptorSetFromObject } from '@grpc/proto-loader';

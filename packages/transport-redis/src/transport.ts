@@ -1,5 +1,5 @@
 import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { Abstract, ArgumentExecption, Injectable, Optional, isNil, isString } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, Optional, isString } from '@tsdi/ioc';
 import { Subpackage, TopicTransportSession, ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { Buffer } from 'buffer';

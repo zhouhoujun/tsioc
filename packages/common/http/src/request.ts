@@ -1,5 +1,5 @@
 
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/core';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/common';
 import { isString, InvocationContext, EMPTY_OBJ } from '@tsdi/ioc';
 import { HttpParams } from './params';
 
@@ -239,7 +239,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         // it can just be returned directly.
         if (isArrayBuffer(this.body) || isBlob(this.body) || isFormData(this.body) ||
             isUrlSearchParams(this.body) || isString(this.body)) {
-            return this.body
+            return this.body as any;
         }
         // Check whether the body is an instance of HttpUrlEncodedParams.
         if (this.body instanceof HttpParams) {

@@ -1,9 +1,10 @@
-import { Decoder, Encoder, HeaderPacket, IncomingHeaders, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
+import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
 import { MessageTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';
+import { HeaderPacket, IncomingHeaders } from '@tsdi/common';
 
 
 @Abstract()

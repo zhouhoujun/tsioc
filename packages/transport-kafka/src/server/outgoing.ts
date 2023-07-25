@@ -1,4 +1,5 @@
-import { TransportSession, HeaderPacket } from '@tsdi/core';
+import { TransportSession } from '@tsdi/core';
+import { HeaderPacket } from '@tsdi/common';
 import { MessageOutgoing } from '@tsdi/transport';
 import { KafkaTransport } from '../const';
 

@@ -1,7 +1,4 @@
-import {
-    IWritableStream, IDuplexStream, IReadableStream, ITransformStream, isFormData,
-    BrotliOptions, PipeSource, ZipOptions
-} from '@tsdi/core';
+import { IWritableStream, IDuplexStream, IReadableStream, ITransformStream, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/core';
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { AbstractStreamAdapter, ev, isBuffer } from '@tsdi/transport';
 import { isReadable, Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
@@ -10,6 +7,7 @@ import * as zlib from 'zlib';
 import * as FormData from 'form-data';
 import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
+import { isFormData } from '@tsdi/common';
 
 const pmPipeline = promisify(pipeline);
 const gzip = promisify(zlib.gzip);

@@ -1,5 +1,6 @@
-import { Interceptor, TransportEvent, TransportRequest, ConfigableHandlerOptions, Filter, Client } from '@tsdi/core';
+import { Interceptor, ConfigableHandlerOptions, Filter, Client } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import * as amqp from 'amqplib';
 import { AmqpSessionOpts } from '../options';
 

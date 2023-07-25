@@ -1,5 +1,6 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
+import { Client, TRANSPORT_SESSION, TransportSession } from '@tsdi/core';
+import { TransportRequest } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { ev } from '@tsdi/transport';
 import { NatsConnection, connect } from 'nats';

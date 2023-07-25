@@ -1,5 +1,6 @@
-import { Client, ConfigableEndpointOptions, Filter, Interceptor, TransportEvent, TransportRequest, TransportSessionOpts } from '@tsdi/core';
+import { Client, ConfigableEndpointOptions, Filter, Interceptor, TransportSessionOpts } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
+import { TransportRequest, TransportEvent } from '@tsdi/common';
 import { ClientOptions } from 'ws';
 
 export interface WsClientOpts extends ConfigableEndpointOptions<TransportRequest> {

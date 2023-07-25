@@ -1,6 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { OutgoingHeader, OutgoingHeaders } from './headers';
-import { HeaderPacket, Packet } from './packet';
+import { OutgoingHeader, OutgoingHeaders, HeaderPacket, Packet  } from '@tsdi/common';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
 import { Decoder, Encoder } from './coding';
 

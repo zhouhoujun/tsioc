@@ -1,4 +1,5 @@
-import { Client, TransportRequest } from '@tsdi/core';
+import { Client } from '@tsdi/core';
+import { TransportRequest } from '@tsdi/common';
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';
 import { CoapHandler } from './handler';

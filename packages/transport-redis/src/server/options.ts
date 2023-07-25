@@ -1,5 +1,6 @@
-import { CanActivate, Filter, Interceptor, TransportContext, TransportEndpointOptions, TransportRequest, TransportSessionOpts } from '@tsdi/core';
+import { CanActivate, Filter, Interceptor, TransportContext, TransportEndpointOptions, TransportSessionOpts } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
+import { TransportRequest } from '@tsdi/common';
 import { ContentOptions } from '@tsdi/transport';
 import Redis, { RedisOptions } from 'ioredis';
 

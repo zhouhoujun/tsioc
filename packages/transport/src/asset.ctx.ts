@@ -1,8 +1,6 @@
-import {
-    OutgoingHeader, IncomingHeader, OutgoingHeaders, Incoming, Outgoing, EndpointInvokeOpts,
-    AssetContext, normalize, StatusVaildator, StreamAdapter, FileAdapter
-} from '@tsdi/core';
+import { Incoming, Outgoing, EndpointInvokeOpts, AssetContext, StatusVaildator, StreamAdapter, FileAdapter } from '@tsdi/core';
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
+import { OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from './consts';
 import { CONTENT_DISPOSITION } from './content';

@@ -1,5 +1,6 @@
-import { Interceptor, TransportRequest, TransportEndpointOptions, Filter, CanActivate } from '@tsdi/core';
+import { Interceptor, TransportEndpointOptions, Filter, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
+import { TransportRequest } from '@tsdi/common';
 import { ContentOptions } from '@tsdi/transport';
 import { ConnectionOptions, SubscriptionOptions } from 'nats';
 import { NatsContext } from './context';
