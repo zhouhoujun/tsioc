@@ -1,5 +1,5 @@
 import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
 import { Component } from '@tsdi/components';
 import { Application, Module } from '@tsdi/core';
 import { ActivityModule } from './src/ActivityModule';

@@ -1,6 +1,6 @@
 import { PackModule, LibPackBuilderOption, LibBundleOption } from '@tsdi/pack';
 import { Workflow, Task } from '@tsdi/activities';
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
 
 @Task({
     deps: [
