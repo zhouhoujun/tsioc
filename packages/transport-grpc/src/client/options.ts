@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
-import { HttpEvent, HttpRequest } from '@tsdi/common';
+import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { ServiceDefinition, ProtobufTypeDefinition } from '@grpc/grpc-js';
 import { Options } from '@grpc/proto-loader';
 
