@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { HTTP_LISTEN_OPTS, Handler, Interceptor } from '@tsdi/core';
-import { HttpEvent, HttpRequest } from '@tsdi/common';
+import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { Observable } from 'rxjs';
 import { HTTP_CLIENT_OPTS } from './option';
 

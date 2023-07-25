@@ -4,7 +4,7 @@ import {
     TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/core';
 import { ev } from '@tsdi/transport';
-import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';

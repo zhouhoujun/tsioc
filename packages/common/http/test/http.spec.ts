@@ -1,18 +1,18 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, BadRequestExecption, EndpointContext, AssetContext, compose, NEXT
+    Middleware, BadRequestExecption, AssetContext, compose, NEXT, MicroServRouterModule
 } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerHttpClientModule } from '@tsdi/platform-server-common';
+import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
-import { HttpClient, HttpClientModule } from '../src';
+import { HttpClient, HttpClientModule } from '..';
 
 
 @RouteMapping('/device')
@@ -197,7 +197,7 @@ class DeviceAModule {
         ServerModule,
         LoggerModule,
         // TcpModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1,
                 // allowHTTP1: true,
@@ -206,6 +206,7 @@ class DeviceAModule {
             }
         }),
         HttpClientModule,
+        MicroServRouterModule.forRoot('tcp'),
         ServerHttpClientModule,
         DeviceManageModule,
         DeviceAModule

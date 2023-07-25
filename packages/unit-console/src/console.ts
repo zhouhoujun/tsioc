@@ -1,7 +1,8 @@
 import { Token, lang, Module } from '@tsdi/ioc';
 import { TimeFormatPipe } from '@tsdi/core';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
-import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerLogsModule } from '@tsdi/platform-server/log4js';
 import * as chalk from 'chalk';
 
 @Module({

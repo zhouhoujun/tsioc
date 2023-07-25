@@ -11,7 +11,7 @@ import { Observable, Observer } from 'rxjs';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpErrorResponse, HttpEvent, HttpEventType, HttpResponse } from './response';
-import { DOCUMENT } from '../platform';
+import { DOCUMENT } from '../../src/platform';
 
 
 // Every request made through JSONP needs a callback name that's unique across the

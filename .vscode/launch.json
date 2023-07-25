@@ -127,9 +127,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test common",
+            "name": "test common http",
             "args": [
-                "${workspaceRoot}/packages/common/unit.ts" 
+                "${workspaceRoot}/packages/common/http/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
