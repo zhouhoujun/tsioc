@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { XhrFactory } from '@tsdi/common';
+import { XhrFactory } from '@tsdi/common/http';
 
 /**
  * A factory for `HttpXhrBackend` that uses the `XMLHttpRequest` browser API.

@@ -1,7 +1,7 @@
 import { ExecptionHandlerFilter, TransformModule, StatusVaildator, createTransportEndpoint, MicroServRouterModule, PatternFormatter } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { KafkaEndpoint } from './endpoint';
 import { KafkaServer } from './server';
 import { KafkaTransportSessionFactory, KafkaTransportSessionFactoryImpl } from '../transport';

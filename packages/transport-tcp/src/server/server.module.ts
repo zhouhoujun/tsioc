@@ -1,7 +1,7 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, HybridRouter, StatusVaildator, RouterModule, TransformModule, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import {
     TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_OPTS, TCP_SERV_GUARDS,
     TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_FILTERS, TCP_MICRO_SERV_GUARDS

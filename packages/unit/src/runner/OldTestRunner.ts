@@ -1,11 +1,10 @@
 import { lang, Singleton, isFunction, Injector, Type } from '@tsdi/ioc';
+import { global as globals } from '@tsdi/common';
 import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
 
 
-declare let window: any;
-declare let global: any;
 
 const gls = {
     describe: undefined,
@@ -21,7 +20,7 @@ const gls = {
 } as any;
 const testkeys = Object.keys(gls);
 
-const globals = typeof window !== 'undefined' ? window : global;
+
 
 /**
  * Suite runner.

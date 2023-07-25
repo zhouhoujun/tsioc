@@ -1,7 +1,7 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, MicroServRouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
 import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
 import { RedisServer } from './server';
 import { RedisStatusVaildator } from '../status';

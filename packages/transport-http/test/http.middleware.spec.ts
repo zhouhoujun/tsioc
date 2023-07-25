@@ -2,7 +2,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logs';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';

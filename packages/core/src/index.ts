@@ -20,7 +20,6 @@ export { DefaultApplicationContext } from './impl/context';
 
 export { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 export * from './Application';
-export * from './global';
 
 export * from './Handler';
 export * from './Interceptor';

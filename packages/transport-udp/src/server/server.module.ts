@@ -1,7 +1,7 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, StatusVaildator, TransformModule, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
 import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { UDP_SERV_INTERCEPTORS, UdpServerOpts, UDP_SERV_FILTERS, UDP_SERV_OPTS, UDP_SERV_GUARDS } from './options';
 import { UdpServer } from './server';
 import { UdpEndpoint } from './endpoint';

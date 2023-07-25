@@ -1,4 +1,4 @@
-import { global as _global } from '@tsdi/core';
+import { global as _global } from '@tsdi/common';
 
 
 declare const Symbol: any;

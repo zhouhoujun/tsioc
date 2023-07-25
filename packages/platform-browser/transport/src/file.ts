@@ -30,7 +30,7 @@ export class BrowserFileAdapter extends FileAdapter {
         return false
     }
 
-    read(path: string, options?: any): IReadableStream<any> {
+    read(path: string, options?: any): IReadableStream {
 
         const stream = new PassThrough();
 
