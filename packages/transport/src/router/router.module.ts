@@ -1,5 +1,5 @@
 import { InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
-import { Protocol, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
+import { Transport, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
 import { TRANSPORT_CONTEXT_IMPL } from '../TransportContext';
@@ -130,14 +130,14 @@ export class MicroServRouterModule {
      * @return The new Module.
      *
      */
-    static forRoot(protocol: Protocol, options?: {
+    static forRoot(protocol: Transport, options?: {
         matcher?: TypeOf<RouteMatcher>;
         formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
         routes?: Routes;
     }): ModuleWithProviders<MicroServRouterModule>
     static forRoot(options: {
-        protocol: Protocol;
+        protocol: Transport;
         matcher?: TypeOf<RouteMatcher>;
         formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
@@ -176,12 +176,12 @@ export class MicroServRouterModule {
         }
     }
 
-    static getToken(protocol: Protocol): Token<MircoServRouter> {
+    static getToken(protocol: Transport): Token<MircoServRouter> {
         return getMircServRouter(protocol)
     }
 }
 
-export function getMircServRouter(protocol: Protocol): Token<MircoServRouter> {
+export function getMircServRouter(protocol: Transport): Token<MircoServRouter> {
     return getToken(MircoServRouter, protocol)
 }
 

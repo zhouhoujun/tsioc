@@ -2,7 +2,7 @@ import {
     isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, PatternMetadata,
     ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, Protocol, PUT, RequestMethod } from '@tsdi/common';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, Transport, PUT, RequestMethod } from '@tsdi/common';
 import { CanActivate, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
@@ -34,7 +34,7 @@ export interface Subscribe {
      * @param {string} topic message match pattern.
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    (topic: string, protocol?: Protocol, option?: RouteOptions): MethodDecorator;
+    (topic: string, protocol?: Transport, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface Subscribe {
  */
 export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (route: string, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
+    props: (route: string, arg1?: Transport | ProtocolRouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
         method: (ctx, next) => {
@@ -105,7 +105,7 @@ export interface Handle {
      * @param {Pattern} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: Pattern, protocol?: Protocol, option?: RouteOptions): MethodDecorator;
+    (pattern: Pattern, protocol?: Transport, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -119,7 +119,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     isMatadata: (args) => {
         return isMetadataObject(args) && isString(args.route)
     },
-    props: (route: Pattern, arg1?: Protocol | ProtocolRouteOptions, option?: RouteOptions) =>
+    props: (route: Pattern, arg1?: Transport | ProtocolRouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx, next) => {
@@ -700,6 +700,6 @@ export interface HandleMetadata<TArg = any> extends TypeMetadata, PatternMetadat
     /**
      * protocol
      */
-    protocol?: Protocol;
+    protocol?: Transport;
 }
 
