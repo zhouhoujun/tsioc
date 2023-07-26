@@ -1,4 +1,4 @@
-import { Server, TransportEndpoint } from '@tsdi/core';
+import { Server, TransportEndpoint } from '@tsdi/transport';
 import { Injectable, Token } from '@tsdi/ioc';
 import * as modbus from 'modbus-serial';
 import { Observable, Subscription } from 'rxjs';

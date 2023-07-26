@@ -1,8 +1,7 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
-import { Server, MircoServRouters, ServiceUnavailableExecption, TransportSession, StatusVaildator } from '@tsdi/core';
-import { MESSAGE, Packet, PatternFormatter } from '@tsdi/common';
 import { InjectLog, Level, Logger } from '@tsdi/logs';
-import { Content, ev } from '@tsdi/transport';
+import { MESSAGE, Packet, PatternFormatter, ServiceUnavailableExecption } from '@tsdi/common';
+import { Server, MircoServRouters, TransportSession, StatusVaildator, Content, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
@@ -105,7 +104,7 @@ export class KafkaServer extends Server<KafkaContext> {
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
 
-        const transportOpts  = {
+        const transportOpts = {
             ...this.options.transportOpts,
             serverSide: true
         };
@@ -139,7 +138,7 @@ export class KafkaServer extends Server<KafkaContext> {
         if (this.producer) {
             await this.producer.disconnect();
         }
-        
+
         this.logger.info(`Kafka microservice closed!`);
         this.consumer = null!;
         this.producer = null!;

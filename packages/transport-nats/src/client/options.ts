@@ -1,6 +1,7 @@
-import { Interceptor, ConfigableHandlerOptions, Filter, Client } from '@tsdi/core';
+import { Interceptor, ConfigableHandlerOptions, Filter } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { Client } from '@tsdi/transport';
 import { ConnectionOptions, SubscriptionOptions } from 'nats';
 import { NatsSessionOpts } from '../options';
 

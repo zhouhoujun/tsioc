@@ -1,7 +1,7 @@
-import { Interceptor, TransportEndpointOptions, Filter, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { TransportRequest } from '@tsdi/common';
-import { ContentOptions } from '@tsdi/transport';
+import { TransportEndpointOptions, ContentOptions } from '@tsdi/transport';
 import { ConnectionOptions, SubscriptionOptions } from 'nats';
 import { NatsContext } from './context';
 import { NatsSessionOpts } from '../options';
@@ -26,7 +26,7 @@ export interface NatsMicroServOpts extends TransportEndpointOptions<NatsContext>
     retryAttempts?: number;
     retryDelay?: number;
     content?: ContentOptions;
-    debug?:boolean;
+    debug?: boolean;
 }
 
 

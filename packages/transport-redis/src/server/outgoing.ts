@@ -1,6 +1,5 @@
-import { TransportSession } from '@tsdi/core';
 import { HeaderPacket } from '@tsdi/common';
-import { MessageOutgoing } from '@tsdi/transport';
+import { TransportSession, MessageOutgoing } from '@tsdi/transport';
 import { ReidsTransport } from '../transport';
 
 

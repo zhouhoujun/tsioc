@@ -1,6 +1,7 @@
 import { Token, tokenId } from '@tsdi/ioc';
-import { Interceptor, ConfigableEndpointOptions, Filter, TransportSessionOpts } from '@tsdi/core';
+import { Interceptor, ConfigableEndpointOptions, Filter } from '@tsdi/core';
 import { RequestOptions, TransportEvent, TransportRequest } from '@tsdi/common';
+import { TransportSessionOpts } from '@tsdi/transport';
 import { Packet } from 'mqtt';
 import { MqttConnectOpts } from '../connect';
 

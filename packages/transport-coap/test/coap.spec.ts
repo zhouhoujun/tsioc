@@ -1,12 +1,12 @@
-import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logs';
+import { MicroServRouterModule, Bodyparser, Content, Json } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { CoapClient, CoapServer, CoapClientModule, CoapServerModule, COAP_SERV_INTERCEPTORS } from '../src';
 import { DeviceController } from './controller';
-import { Bodyparser, Content, Json } from '@tsdi/transport';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 

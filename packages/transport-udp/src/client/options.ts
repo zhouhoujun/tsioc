@@ -1,6 +1,7 @@
-import { Client, ConfigableEndpointOptions, Filter, Interceptor, TransportSessionOpts } from '@tsdi/core';
+import { ConfigableEndpointOptions, Filter, Interceptor } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { Client, TransportSessionOpts } from '@tsdi/transport';
 import { SocketOptions } from 'dgram';
 
 

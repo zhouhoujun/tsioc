@@ -1,5 +1,7 @@
-import { ApplicationContext, ControllerRoute, HTTP_LISTEN_OPTS, RouteMappingMetadata, Router, Started, TransportParameter, joinPath } from '@tsdi/core';
+import { ApplicationContext, Started, TransportParameter } from '@tsdi/core';
 import { EMPTY_OBJ, Execption, InjectFlags, Injectable, isNil, isString } from '@tsdi/ioc';
+import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
+import { ControllerRoute, RouteMappingMetadata, Router } from '@tsdi/transport';
 import { JsonObject, serve, setup } from 'swagger-ui-express';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT } from './swagger.json';
 import { compose } from 'koa-convert';
@@ -36,7 +38,7 @@ export class SwaggerService {
 
         const httpopts = ctx.get(HTTP_LISTEN_OPTS);
         this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${opts.prefix ?? 'api-doc'}`, '!')
-        
+
     }
 
     buildDoc(router: Router, jsonDoc: JsonObject, prefix?: string) {

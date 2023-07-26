@@ -1,5 +1,7 @@
-import { Injectable, Token } from '@tsdi/ioc';
-import { Client, ConfigableHandler, TransportEvent, TransportRequest } from '@tsdi/core';
+import { Injectable, InvocationContext, Token } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { ConfigableHandler, } from '@tsdi/core';
+import { Client } from '@tsdi/transport';
 import { EventEmitter } from 'events';
 import ModbusRTU from 'modbus-serial';
 import { Observable, of } from 'rxjs';
@@ -19,6 +21,9 @@ export class ModbusClient extends Client<TransportRequest, TransportEvent> {
         // return modbus.connectRTU('');
     }
 
+    protected initContext(context: InvocationContext<any>): void {
+        throw new Error('Method not implemented.');
+    }
     protected onShutdown(): Promise<void> {
         throw new Error('Method not implemented.');
     }

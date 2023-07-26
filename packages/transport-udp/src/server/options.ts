@@ -1,6 +1,6 @@
-import { CanActivate, Filter, Interceptor, TransportContext, TransportEndpointOptions, TransportSessionOpts } from '@tsdi/core';
+import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { ContentOptions, MimeSource, SessionOptions } from '@tsdi/transport';
+import { ContentOptions, MimeSource, SessionOptions, TransportContext, TransportEndpointOptions, TransportSessionOpts } from '@tsdi/transport';
 import { SocketOptions, BindOptions } from 'dgram';
 
 

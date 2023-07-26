@@ -1,6 +1,6 @@
-import { Client } from '@tsdi/core';
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { TransportRequest } from '@tsdi/common';
+import { Client } from '@tsdi/transport';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UDP_CLIENT_OPTS, UdpClientOpts } from './options';

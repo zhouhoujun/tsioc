@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { InternalServerExecption } from '@tsdi/core';
+import { InternalServerExecption } from '@tsdi/common';
 import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
 import { User } from '../models/models';

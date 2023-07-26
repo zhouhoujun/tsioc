@@ -1,7 +1,7 @@
-import { BadRequestExecption, Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/core';
+import { RedirectResult, Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/transport';
 import { lang } from '@tsdi/ioc';
-import { RedirectResult } from '@tsdi/transport';
-import {  of } from 'rxjs';
+import { BadRequestExecption } from '@tsdi/common';
+import { of } from 'rxjs';
 
 
 

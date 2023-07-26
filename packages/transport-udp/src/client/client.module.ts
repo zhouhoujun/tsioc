@@ -1,6 +1,6 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { TransportSessionFactory, StatusVaildator, createHandler } from '@tsdi/core';
-import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
+import { createHandler } from '@tsdi/core';
+import { TransportModule, TransportSessionFactory, StatusVaildator, BodyContentInterceptor, RequestAdapter, TransportBackend } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { UdpTransportSessionFactory, UdpTransportSessionFactoryImpl } from '../transport';
 import { UdpStatusVaildator } from '../status';

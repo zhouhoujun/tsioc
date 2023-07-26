@@ -1,6 +1,5 @@
 import { HeaderPacket } from '@tsdi/common';
-import { TransportSession } from '@tsdi/core';
-import { MessageOutgoing } from '@tsdi/transport';
+import { TransportSession, MessageOutgoing } from '@tsdi/transport';
 import { NatsConnection } from 'nats';
 
 

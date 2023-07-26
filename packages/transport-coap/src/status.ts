@@ -1,5 +1,6 @@
-import { GET, MESSAGE, NotSupportedExecption, POST, StatusVaildator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
+import { GET, MESSAGE, POST, NotSupportedExecption } from '@tsdi/common';
+import { StatusVaildator } from '@tsdi/transport';
 
 
 @Injectable({ static: true })

@@ -1,4 +1,4 @@
-import { AssetContext, MiddlewareEndpoint, Outgoing } from '@tsdi/core';
+import { AssetContext, MiddlewareEndpoint, Outgoing } from '@tsdi/transport';
 import { Abstract } from '@tsdi/ioc';
 
 @Abstract()

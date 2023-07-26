@@ -1,6 +1,6 @@
 import { Execption, Injectable, isArray, isUndefined } from '@tsdi/ioc';
-import { Server, Router } from '@tsdi/core';
 import { NO_STREAM, RX_STREAM, PT_STREAM } from '@tsdi/common';
+import { Server, Router } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logs';
 import { Http2ServerResponse } from 'http2';
 import { Server as GServer, ServerCredentials, loadPackageDefinition, UntypedHandleCall } from '@grpc/grpc-js';

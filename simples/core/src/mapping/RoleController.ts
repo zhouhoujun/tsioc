@@ -1,4 +1,4 @@
-import { RouteMapping, RequestParam, RequestPath } from '@tsdi/core';
+import { RouteMapping, RequestParam, RequestPath } from '@tsdi/transport';
 import { Log, Logger } from '@tsdi/logs';
 import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';

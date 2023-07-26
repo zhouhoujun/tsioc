@@ -1,6 +1,7 @@
-import { Client, ConfigableHandlerOptions, Filter, Interceptor, TransportSessionOpts } from '@tsdi/core';
+import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { Client, TransportSessionOpts } from '@tsdi/transport';
 import { RedisOptions } from 'ioredis';
 
 /**
@@ -11,7 +12,7 @@ export interface RedisClientOpts extends ConfigableHandlerOptions<TransportReque
      * connect options.
      */
     connectOpts?: RedisOptions;
-    
+
     retryAttempts?: number;
     retryDelay?: number;
     transportOpts?: TransportSessionOpts;

@@ -1,8 +1,8 @@
 import { Token, tokenId } from '@tsdi/ioc';
-import { Client, ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
+import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
 import { Pattern, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Client, ContentOptions } from '@tsdi/transport';
 import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
-import { ContentOptions } from '@tsdi/transport';
 import { KafkaTransportOpts } from '../transport';
 
 

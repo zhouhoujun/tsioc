@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
-import { HttpClientModule } from '@tsdi/common';
-import { ServerHttpClientModule } from '@tsdi/platform-server-common';
+import { HttpClientModule } from '@tsdi/common/http';
+import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logs';
 import * as fs from 'fs';

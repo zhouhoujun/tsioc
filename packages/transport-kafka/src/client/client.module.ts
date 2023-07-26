@@ -1,7 +1,7 @@
-import { RouterModule, TransformModule, StatusVaildator, createHandler } from '@tsdi/core';
+import { TransformModule, createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
-import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
+import { RouterModule, StatusVaildator, BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { KafkaHandler } from './handler';
 import { KafkaClient } from './client';

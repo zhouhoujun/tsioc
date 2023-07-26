@@ -1,10 +1,10 @@
 import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
+import { BadRequestExecption } from '@tsdi/common';
 import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, BadRequestExecption, AssetContext, compose, NEXT, Get, Payload
-} from '@tsdi/core';
+    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, RedirectResult,
+    Middleware, AssetContext, compose, NEXT, Get, Payload
+} from '@tsdi/transport';
 import { of } from 'rxjs'; 
-import { RedirectResult } from '../src';
 
 
 @RouteMapping('/device')

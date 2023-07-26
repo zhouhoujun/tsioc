@@ -1,4 +1,4 @@
-import { StatusVaildator } from '@tsdi/core';
+import { StatusVaildator } from '@tsdi/transport';
 import { Consumer, Producer } from 'kafkajs';
 
 
