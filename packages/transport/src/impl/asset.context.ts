@@ -3,7 +3,7 @@ import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lan
 import { OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from '../consts';
-import { CONTENT_DISPOSITION } from '../content';
+import { CONTENT_DISPOSITION_TOKEN } from '../content';
 import { MimeAdapter } from '../MimeAdapter';
 import { Negotiator } from '../Negotiator';
 import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from '../utils';
@@ -615,24 +615,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     /**
-     * Get response status.
-     */
-    abstract get status(): TStatus;
-    /**
-     * Set response status, defaults to OK.
-     */
-    abstract set status(status: TStatus);
-
-    /**
-     * Get response status message.
-     */
-    abstract get statusMessage(): string;
-    /**
-     * Set response status message.
-     */
-    abstract set statusMessage(message: string);
-
-    /**
      * Set Content-Length field to `n`.
      *
      * @param {Number} n
@@ -694,7 +676,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         } else if (filename) {
             this.type = this.fileAdapter.extname(filename);
         }
-        const func = this.get(CONTENT_DISPOSITION);
+        const func = this.get(CONTENT_DISPOSITION_TOKEN);
         this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
     }
 
