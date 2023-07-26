@@ -7,7 +7,8 @@ import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { RequestAdapter, StatusPacket } from './request';
 import { ctype, ev, hdr } from '../consts';
-import { Incoming, TRANSPORT_SESSION, TransportSession } from '../socket';
+import { Incoming } from '../socket';
+import { TRANSPORT_SESSION, TransportSession } from '../TransportSession';
 
 @Abstract()
 export abstract class SessionRequestAdapter<T = any, Option = any> extends RequestAdapter<TransportRequest, TransportEvent, number | string> {

@@ -5,9 +5,9 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
-import { MimeTypes } from '../mime';
+import { MimeTypes } from '../MimeAdapter';
 import { Middleware } from '../middleware/middleware';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 import { IReadableStream } from '../stream';
 
 

@@ -1,10 +1,11 @@
 import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
 import { OutgoingHeader, OutgoingHeaders, ResHeaders, HeaderPacket } from '@tsdi/common';
 import { Writable } from 'readable-stream';
-import { SendPacket, SocketTransportSession } from '../transport';
-import { Outgoing, TransportSession } from '../socket';
-import { ev, hdr } from '../consts';
+import { Outgoing } from '../socket';
 import { IEventEmitter } from '../stream';
+import { TransportSession } from '../TransportSession';
+import { SendPacket, SocketTransportSession } from '../impl/transport.session';
+import { ev, hdr } from '../consts';
 
 
 

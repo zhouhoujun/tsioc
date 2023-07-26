@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
 import { hdr } from '../consts';
 import { Middleware } from '../middleware/middleware';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 export type XFrameAction = 'DENY' | 'ALLOW-FROM' | 'SAMEORIGIN';

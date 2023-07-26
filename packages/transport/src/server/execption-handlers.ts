@@ -8,7 +8,7 @@ import { ExecptionHandler } from '@tsdi/core';
 import { Abstract, ArgumentExecption, MissingParameterExecption } from '@tsdi/ioc';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { ErrorRespondAdapter } from './error.respond';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 

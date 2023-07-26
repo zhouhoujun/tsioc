@@ -3,7 +3,7 @@ import { HEAD, MessageExecption } from '@tsdi/common';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
 import { Incoming, Outgoing } from '../socket';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 import { IReadableStream } from '../stream';
 
 

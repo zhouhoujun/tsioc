@@ -2,7 +2,7 @@ import { ExecptionFilter } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ErrorRespondAdapter } from './error.respond';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 @Injectable({ static: true })

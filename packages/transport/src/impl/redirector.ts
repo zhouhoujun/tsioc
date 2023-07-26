@@ -3,9 +3,9 @@ import { ReqHeaders, ResHeaders, HeaderSet, TransportRequest, RequestMethod, Bad
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { hdr } from '../consts';
-import { Redirector } from '../redirector';
-import { StatusVaildator } from '../status';
-import { StreamAdapter } from '../stream.adapter';
+import { Redirector } from '../Redirector';
+import { StatusVaildator } from '../StatusVaildator';
+import { StreamAdapter } from '../StreamAdapter';
 import { Client } from '../client/client';
 
 @Injectable()

@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
-import { AssetContext } from '../../context';
+import { AssetContext } from '../../AssetContext';
 
 @Abstract()
 export abstract class ViewRenderer {

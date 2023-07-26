@@ -2,7 +2,7 @@ import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { GET, HEAD, OPTIONS, ForbiddenExecption } from '@tsdi/common';
 import { hdr } from '../consts';
 import { SessionAdapter } from './session';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 import { Middleware } from '../middleware/middleware';
 
 

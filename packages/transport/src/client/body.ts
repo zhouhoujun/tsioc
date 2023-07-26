@@ -5,7 +5,7 @@ import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
-import { StreamAdapter } from '../stream.adapter';
+import { StreamAdapter } from '../StreamAdapter';
 import { IStream } from '../stream';
 
 

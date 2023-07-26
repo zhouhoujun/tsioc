@@ -15,7 +15,8 @@ import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';
 import { RouteMatcher, Router } from './router';
 import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
-import { AssetContext, TransportContext } from '../context';
+import { TransportContext } from '../TransportContext';
+import { AssetContext } from '../AssetContext';
 import { RouteEndpoint } from './route.endpoint';
 
 

@@ -2,7 +2,7 @@ import { chain, isFunction } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
 import { defer, Observable } from 'rxjs';
 import { MiddlewareFn, MiddlewareLike } from './middleware';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 

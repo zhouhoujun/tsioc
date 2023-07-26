@@ -1,6 +1,6 @@
 import { Abstract, Execption, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { EndpointOptions, EndpointService, ConfigableEndpoint } from '@tsdi/core';
-import { TransportContext } from './context';
+import { TransportContext } from './TransportContext';
 import { Decoder, Encoder } from './coding';
 import { Router } from './router/router';
 

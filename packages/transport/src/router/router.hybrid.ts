@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { Endpoint } from '@tsdi/core';
 import { Router } from './router';
 import { Middleware, MiddlewareLike } from '../middleware/middleware';
-import { TransportContext } from '../context';
+import { TransportContext } from '../TransportContext';
 
 /**
  * Hybird route.

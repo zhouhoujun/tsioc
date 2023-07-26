@@ -2,8 +2,8 @@ import { Abstract, Execption, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { EndpointOptions, EndpointService } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { AssetContext } from '../context';
-import { TransportEndpoint } from '../endpoint';
+import { AssetContext } from '../AssetContext';
+import { TransportEndpoint } from '../TransportEndpoint';
 
 /**
  * transport middleware endpoint.

@@ -3,7 +3,7 @@ import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Observable, map } from 'rxjs';
 import { ctype, hdr } from '../consts';
 import { Middleware } from '../middleware/middleware';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 @Abstract()

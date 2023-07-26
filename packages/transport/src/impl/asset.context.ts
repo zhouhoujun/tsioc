@@ -2,17 +2,17 @@ import { EndpointInvokeOpts } from '@tsdi/core';
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { ctype, hdr } from './consts';
-import { CONTENT_DISPOSITION } from './content';
-import { MimeAdapter } from './mime';
-import { Negotiator } from './negotiator';
-import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from './utils';
-import { ContentOptions } from './server/content';
-import { StatusVaildator } from './status';
-import { Incoming, Outgoing } from './socket';
-import { StreamAdapter } from './stream.adapter';
-import { FileAdapter } from './file.adapter';
-import { AssetContext } from './context';
+import { ctype, hdr } from '../consts';
+import { CONTENT_DISPOSITION } from '../content';
+import { MimeAdapter } from '../MimeAdapter';
+import { Negotiator } from '../Negotiator';
+import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from '../utils';
+import { ContentOptions } from '../server/content';
+import { StatusVaildator } from '../StatusVaildator';
+import { Incoming, Outgoing } from '../socket';
+import { StreamAdapter } from '../StreamAdapter';
+import { FileAdapter } from '../FileAdapter';
+import { AssetContext } from '../AssetContext';
 
 
 export interface ProxyOpts {
@@ -26,10 +26,12 @@ export interface ServerOptions extends Record<string, any> {
 }
 
 /**
- * asset server context.
+ * abstract mime asset transport context.
+ * 
+ * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = number | string, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TStatus, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TStatus, TServOpts> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
@@ -81,7 +83,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         (this.request as any)['query'] = this.query;
     }
 
-    override getRequestFilePath() {
+    getRequestFilePath() {
         const pathname = this.pathname;
         this.mimeAdapter.lookup(pathname);
         return this.mimeAdapter.lookup(pathname) ? pathname : null;
@@ -611,6 +613,24 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     protected onNullBody() {
         this._explicitNullBody = true;
     }
+
+    /**
+     * Get response status.
+     */
+    abstract get status(): TStatus;
+    /**
+     * Set response status, defaults to OK.
+     */
+    abstract set status(status: TStatus);
+
+    /**
+     * Get response status message.
+     */
+    abstract get statusMessage(): string;
+    /**
+     * Set response status message.
+     */
+    abstract set statusMessage(message: string);
 
     /**
      * Set Content-Length field to `n`.

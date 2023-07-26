@@ -6,7 +6,7 @@ import { lastValueFrom, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');

@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injector } from '@tsdi/ioc';
-import { TransportContext, TransportContextOpts } from '../context';
+import { TransportContext, TransportContextOpts } from '../TransportContext';
 import { Socket } from '../socket';
 
 

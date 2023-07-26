@@ -2,7 +2,7 @@ import { Handler, Filter } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
 import { RespondAdapter } from './respond';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 

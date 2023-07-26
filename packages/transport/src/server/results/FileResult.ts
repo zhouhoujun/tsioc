@@ -2,7 +2,7 @@ import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { Buffer } from 'buffer';
 import { IStream } from '../../stream';
-import { AssetContext } from '../../context';
+import { AssetContext } from '../../AssetContext';
 
 /**
  * controller method return result type of file.

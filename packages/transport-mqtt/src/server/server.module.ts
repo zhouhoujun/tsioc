@@ -54,10 +54,10 @@ const defaultServOpts = {
  */
 @Module({
     imports: [
-        TransformModule,
         MicroServRouterModule.forRoot('mqtt'),
+        TransformModule,
         TransportModule,
-        ServerTransportModule
+        ServerTransportModule,
     ],
     providers: [
         { provide: MqttTransportSessionFactory, useClass: MqttTransportSessionFactoryImpl, asDefault: true },

@@ -1,7 +1,7 @@
 import { Injector, createContext, toProvider } from '@tsdi/ioc';
 import { GuardHandler, setHandlerOptions } from '@tsdi/core';
-import { TransportContext } from '../context';
-import { TransportEndpoint, TransportEndpointOptions } from '../endpoint';
+import { TransportContext } from '../TransportContext';
+import { TransportEndpoint, TransportEndpointOptions } from '../TransportEndpoint';
 import { Decoder, Encoder } from '../coding';
 
 

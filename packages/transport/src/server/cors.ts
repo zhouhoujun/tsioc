@@ -2,7 +2,7 @@ import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '
 import { RequestMethod, InternalServerExecption } from '@tsdi/common';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 import { Middleware } from '../middleware/middleware';
 
 

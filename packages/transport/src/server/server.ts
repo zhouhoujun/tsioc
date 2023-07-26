@@ -1,7 +1,7 @@
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, Startup } from '@tsdi/core';
-import { TransportEndpoint } from './endpoint';
-import { TransportContext } from './context';
+import { TransportEndpoint } from '../TransportEndpoint';
+import { TransportContext } from '../TransportContext';
 
 
 /**

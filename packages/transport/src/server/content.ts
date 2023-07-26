@@ -4,7 +4,7 @@ import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
 import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
 import { Middleware } from '../middleware/middleware';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 
 
 /**

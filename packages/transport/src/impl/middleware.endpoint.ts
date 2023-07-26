@@ -1,6 +1,6 @@
 import { ArgumentExecption, Injector, ProvdierOf, Token, createContext, getClassName, refl } from '@tsdi/ioc';
 import { Backend, AbstractGuardHandler, setHandlerOptions } from '@tsdi/core';
-import { AssetContext } from '../context';
+import { AssetContext } from '../AssetContext';
 import { MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend } from '../middleware/middleware.compose';
 import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../middleware/middleware.endpoint';

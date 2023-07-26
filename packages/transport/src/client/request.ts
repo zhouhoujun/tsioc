@@ -1,13 +1,13 @@
 import { Abstract } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest, ResHeaders, ResponseJsonParseError, IncomingHeaders, OutgoingHeaders } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { MimeAdapter, MimeTypes } from '../mime';
+import { MimeAdapter, MimeTypes } from '../MimeAdapter';
 import { hdr } from '../consts';
 import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
-import { StatusVaildator } from '../status';
-import { StreamAdapter } from '../stream.adapter';
+import { StatusVaildator } from '../StatusVaildator';
+import { StreamAdapter } from '../StreamAdapter';
 import { Decoder, Encoder } from '../coding';
-import { Redirector } from '../redirector';
+import { Redirector } from '../Redirector';
 
 
 /**
