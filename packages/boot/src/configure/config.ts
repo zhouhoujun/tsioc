@@ -1,3 +1,4 @@
+import { Transport } from '@tsdi/common';
 import { LoadType } from '@tsdi/core';
 import { Type, Abstract, Injector, tokenId, Token, ProviderType } from '@tsdi/ioc';
 import { LogConfigure } from '@tsdi/logs';
@@ -66,7 +67,7 @@ export abstract class ApplicationConfiguration implements Record<string, any> {
     /**
      * boot services.
      */
-    abstract boot: BootServiceOptions | BootServiceOptions[];
+    abstract boot?: BootServiceOptions | BootServiceOptions[];
 
 }
 
@@ -96,7 +97,7 @@ export interface BootServiceOptions extends SecureContextOptions, Record<string,
     /**
      * boot service type.
      */
-    protocol: 'http2' | 'http1' | 'tcp' | 'amqp' | 'grpc' | 'mqtt' | 'modbus' | 'kafka' | 'nats' | 'redis' | 'ws' | Type;
+    transport: Transport | Type;
     /**
      * service controllers via dynamic loading. 
      * simple as `['./controllers/**\/*.(ts|js)']`

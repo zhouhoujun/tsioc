@@ -31,8 +31,8 @@ BootApplication.run({
                 // useNewUrlParser: true,
                 synchronize: true, // 同步数据库
                 logging: false  // 日志
-            }
-
+            },
+            boot: [{ transport: 'tcp' }]
         }
     ]
 });

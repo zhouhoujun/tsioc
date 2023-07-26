@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { HttpClientModule } from '@tsdi/common';
+import { HttpClientModule } from '@tsdi/common/http';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
-import { ServerHttpClientModule } from '@tsdi/platform-server-common';
+import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
-import { HttpModule, HttpServer } from '@tsdi/transport-http';
+import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { Connection } from 'typeorm';
 import { Role, User } from './models/models';
 import { UserController } from './controllers/UserController';
@@ -46,7 +46,7 @@ export const option = {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1
             }
@@ -80,7 +80,7 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1
             }
@@ -111,7 +111,7 @@ export class MockBootLoadTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        HttpServerModule.withOption({
             serverOpts: {
                 majorVersion: 1
             }
