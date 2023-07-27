@@ -162,7 +162,7 @@ Module manager, application bootstrap. base on AOP.
 ```ts
 import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
-import { Log, Logger } from '@tsdi/logger';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
 import { InternalServerError } from '@tsdi/transport';
 import { User } from '../models/models';
@@ -172,9 +172,9 @@ import { UserRepository } from '../repositories/UserRepository';
 export class UserController {
 
     // @Inject() injector!: Injector;
-    // @Log() logger!: ILogger;
-
-    constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
+    // @Log() logger!: Logger;
+    // @InjectLog() logger!: Logger;
+    constructor(private usrRep: UserRepository, @InjectLog() private logger: Logger) {
 
     }
 

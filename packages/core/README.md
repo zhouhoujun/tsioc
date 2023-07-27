@@ -53,7 +53,7 @@ import { UserRepository } from '../repositories/UserRepository';
 export class UserController {
 
     // @Inject() injector!: Injector;
-    // @Log() logger!: ILogger;
+    // @Log() logger!: Logger;
 
     constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
 
