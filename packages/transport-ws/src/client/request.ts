@@ -2,10 +2,9 @@ import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc'
 import { TransportRequest, TransportEvent, Packet } from '@tsdi/common';
 import {
     Encoder, Decoder, StreamAdapter, StatusVaildator, Redirector, TransportSession,
-    ev, MimeTypes, MimeAdapter, SessionRequestAdapter
+    ev, MimeTypes, MimeAdapter, SessionRequestAdapter, IDuplexStream
 } from '@tsdi/transport';
 import { Observer } from 'rxjs';
-import { Duplex } from 'stream';
 import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 import { WsTransportSession } from '../transport';
 
@@ -13,7 +12,7 @@ import { WsTransportSession } from '../transport';
  * tcp request adapter.
  */
 @Injectable()
-export class WsRequestAdapter extends SessionRequestAdapter<Duplex, WsClientOpts> {
+export class WsRequestAdapter extends SessionRequestAdapter<IDuplexStream, WsClientOpts> {
 
     constructor(
         readonly mimeTypes: MimeTypes,
@@ -26,7 +25,7 @@ export class WsRequestAdapter extends SessionRequestAdapter<Duplex, WsClientOpts
         super()
     }
 
-    protected getSession(context: InvocationContext): TransportSession<Duplex> {
+    protected getSession(context: InvocationContext): TransportSession<IDuplexStream> {
         return context.get(WsTransportSession, InjectFlags.Self)
     }
 

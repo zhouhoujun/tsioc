@@ -1,13 +1,12 @@
 import { Abstract, ArgumentExecption, Injectable, Optional } from '@tsdi/ioc';
-import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts, SocketTransportSession, Subpackage, ev } from '@tsdi/transport';
+import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts, SocketTransportSession, Subpackage, ev, IDuplexStream } from '@tsdi/transport';
 import { WebSocket, createWebSocketStream } from 'ws';
-import { Duplex } from 'stream';
 
 
 
 @Abstract()
-export abstract class WsTransportSessionFactory extends TransportSessionFactory<Duplex> {
-    abstract create(socket: Duplex | WebSocket, opts: TransportSessionOpts): WsTransportSession;
+export abstract class WsTransportSessionFactory extends TransportSessionFactory<IDuplexStream> {
+    abstract create(socket: IDuplexStream | WebSocket, opts: TransportSessionOpts): WsTransportSession;
 }
 
 
@@ -21,13 +20,13 @@ export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory 
 
     }
 
-    create(socket: Duplex | WebSocket, opts: TransportSessionOpts): WsTransportSession {
-        return new WsTransportSession(socket instanceof Duplex ? socket : createWebSocketStream(socket, opts), this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
+    create(socket: IDuplexStream | WebSocket, opts: TransportSessionOpts): WsTransportSession {
+        return new WsTransportSession(this.streamAdapter.isDuplex(socket)? socket : createWebSocketStream(socket, opts), this.streamAdapter, opts.encoder ?? this.encoder, opts.decoder ?? this.decoder, opts);
     }
 
 }
 
-export class WsTransportSession extends SocketTransportSession<Duplex> {
+export class WsTransportSession extends SocketTransportSession<IDuplexStream> {
 
     maxSize = 1024 * 256 - 6;
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {

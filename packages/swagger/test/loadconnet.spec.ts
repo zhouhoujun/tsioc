@@ -1,14 +1,13 @@
 import { ApplicationContext, Application } from '@tsdi/core';
-
-import { User } from './models/models';
+import { HttpClient } from '@tsdi/common/http';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import { TypeOrmHelper } from '@tsdi/typeorm-adapter';
+import { lastValueFrom } from 'rxjs';
 import * as expect from 'expect';
+
+import { User } from './models/models';
 import { UserRepository } from './repositories/UserRepository';
 import { option, MockBootTest } from './app';
-import { HttpClient } from '@tsdi/common';
-import { lastValueFrom } from 'rxjs';
-
 
 @Suite('load Repository test')
 export class LoadReposTest {

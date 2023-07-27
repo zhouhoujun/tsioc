@@ -1,6 +1,6 @@
-import { MessageIncoming } from '@tsdi/transport';
-import { Duplex } from 'stream';
+import { IDuplexStream, MessageIncoming } from '@tsdi/transport';
 
-export class WsIncoming extends MessageIncoming<Duplex> {
+
+export class WsIncoming extends MessageIncoming<IDuplexStream> {
 
 }

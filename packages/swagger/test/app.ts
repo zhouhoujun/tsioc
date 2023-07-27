@@ -7,7 +7,7 @@ import { UserController } from './mapping/UserController';
 import { SwaggerModule } from '../src/swagger.module';
 import { ServerModule } from '@tsdi/platform-server';
 import { ConnectionOptions } from '@tsdi/repository';
-import { HttpClientModule } from '@tsdi/common';
+import { HttpClientModule } from '@tsdi/common/http';
 
 
 export const option = <ConnectionOptions>{

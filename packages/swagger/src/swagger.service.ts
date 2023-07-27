@@ -1,12 +1,13 @@
 import { ApplicationContext, Started, TransportParameter } from '@tsdi/core';
 import { EMPTY_OBJ, Execption, InjectFlags, Injectable, isNil, isString } from '@tsdi/ioc';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
 import { ControllerRoute, RouteMappingMetadata, Router } from '@tsdi/transport';
+import { compose } from 'koa-convert';
 import { JsonObject, serve, setup } from 'swagger-ui-express';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT } from './swagger.json';
-import { compose } from 'koa-convert';
 import { ApiParamMetadata } from './metadata';
-import { InjectLog, Logger } from '@tsdi/logger';
+
 
 @Injectable()
 export class SwaggerService {
@@ -31,13 +32,14 @@ export class SwaggerService {
         };
 
 
-        router.use(opts.prefix ?? '/api-doc', compose(
+        const prefix = opts.prefix ?? 'api-doc';
+        router.use(prefix, compose(
             serve as any,
             setup(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle) as any
         ));
 
         const httpopts = ctx.get(HTTP_LISTEN_OPTS);
-        this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${opts.prefix ?? 'api-doc'}`, '!')
+        this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${prefix}`, '!')
 
     }
 

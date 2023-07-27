@@ -1,11 +1,10 @@
-import { SocketOutgoing } from '@tsdi/transport';
-import { Duplex } from 'stream';
+import { IDuplexStream, SocketOutgoing } from '@tsdi/transport';
 
 
 
 /**
  * outgoing message.
  */
-export class WsOutgoing extends SocketOutgoing<Duplex, number> {
+export class WsOutgoing extends SocketOutgoing<IDuplexStream, number> {
 
 }
