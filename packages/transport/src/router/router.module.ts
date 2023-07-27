@@ -34,12 +34,13 @@ const defaultFormatter: PatternFormatter = {
     format: (pattern) => normalize(patternToPath(pattern))
 }
 
+const factoryResolver = new RouteEndpointFactoryResolverImpl();
 /*
  * Router module.
  */
 @Module({
     providers: [
-        { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
+        { provide: RouteEndpointFactoryResolver, useValue: factoryResolver },
         {
             provide: HybridRouter,
             useFactory: (injector: Injector, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
@@ -99,7 +100,7 @@ export class RouterModule {
  */
 @Module({
     providers: [
-        { provide: RouteEndpointFactoryResolver, useValue: new RouteEndpointFactoryResolverImpl() },
+        { provide: RouteEndpointFactoryResolver, useValue: factoryResolver },
         { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true },
         { provide: MircoServRouters, useClass: MircoServiceRouterImpl },
     ]
