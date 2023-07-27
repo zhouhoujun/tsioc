@@ -1,4 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
+import { Logger } from '@tsdi/logger';
 import { AssetContext, ResponseStatusFormater } from '@tsdi/transport';
 import hrtime = require('browser-process-hrtime');
 
@@ -12,42 +13,26 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         return hrtime(time);
     }
 
-    format(ctx: AssetContext, hrtime: [number, number]): string[] {
+    format(logger: Logger, ctx: AssetContext, hrtime?: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
-        return [
+        return hrtime ? [
+            this.outgoing,
+            ctx.method,
+            ctx.url,
             status,
             this.formatHrtime(hrtime),
             this.formatSize(ctx.length),
             message
+        ] : [
+            this.incoming,
+            ctx.method,
+            ctx.url
         ]
     }
 
     private formatStatus(ctx: AssetContext): [string, string] {
         const { status, statusMessage } = ctx;
         return [String(status), statusMessage];
-
-        // if (this.vaildator.isOk(status)) {
-        //     return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
-        // }
-
-        // if (this.vaildator.isRedirect(status)) {
-        //     return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
-        // }
-
-        // if (this.vaildator.isRequestFailed(status)) {
-        //     return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
-        // }
-
-        // if (this.vaildator.isServerError(status)) {
-        //     return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
-        // }
-
-        // if (this.vaildator.isRetry(status)) {
-        //     return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
-        // }
-
-        // return [chalk.cyan(status), statusMessage ? chalk.cyan(statusMessage) : '']
-
     }
 
 }

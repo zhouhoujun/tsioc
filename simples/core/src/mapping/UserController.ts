@@ -1,7 +1,7 @@
 import { InternalServerExecption } from '@tsdi/common';
 import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/transport';
 import { lang } from '@tsdi/ioc';
-import { Log, Logger } from '@tsdi/logs';
+import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
 import { Repository as TypeormRepository } from 'typeorm';
 import { User } from '../models/User';

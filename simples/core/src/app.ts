@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { LoggerModule, LogConfigure } from '@tsdi/logs';
+import { LoggerModule, LogConfigure } from '@tsdi/logger';
 import { HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';

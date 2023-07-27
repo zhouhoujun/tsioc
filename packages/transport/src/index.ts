@@ -38,7 +38,8 @@ export * from './utils';
 
 export * from './AssetContext';
 export * from './asset.pdr';
-export * from './logger';
+export * from './logger/log';
+export * from './logger/status.formater';
 
 export * from './server';
 export * from './client';

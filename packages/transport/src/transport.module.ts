@@ -1,7 +1,7 @@
 import { Module, ProviderType, ModuleWithProviders } from '@tsdi/ioc';
 import { BodyContentInterceptor } from './client/body';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
-import { LogInterceptor } from './logger';
+import { LogInterceptor } from './logger/log';
 import {
     Bodyparser, Content, Json, Session, 
     CorsMiddleware, CsrfMiddleware, HelmetMiddleware,
