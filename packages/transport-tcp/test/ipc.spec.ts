@@ -1,7 +1,7 @@
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { TransportResponse, BadRequestExecption } from '@tsdi/common';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
 import { catchError, lastValueFrom, of } from 'rxjs';

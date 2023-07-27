@@ -87,9 +87,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test logs",
+            "name": "test logger",
             "args": [
-                "${workspaceRoot}/packages/logs/unit.ts" 
+                "${workspaceRoot}/packages/logger/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

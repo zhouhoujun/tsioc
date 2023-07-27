@@ -44,7 +44,7 @@ Module manager, application bootstrap. base on AOP.
 ### Quick start
 ```ts
 import { Application, Module, Transactional, TransactionModule, RouteMapping, Repository }  from '@tsdi/core';
-import { ILogger, Logger, LogModule } from '@tsdi/logs';
+import { ILogger, Logger, LogModule } from '@tsdi/logger';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { Repository as ORMRepository } from 'typeorm';
@@ -173,7 +173,7 @@ export class RoleController {
 
 ```ts
 import { Application, Module, TransactionModule }  from '@tsdi/core';
-import { LogModule } from '@tsdi/logs';
+import { LogModule } from '@tsdi/logger';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 
@@ -214,7 +214,7 @@ Application.run({
 
 ```ts
 import { Application, Module, TransactionModule }  from '@tsdi/core';
-import { LogModule } from '@tsdi/logs';
+import { LogModule } from '@tsdi/logger';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { BrowserBootstrapModule } from '@tsdi/platform-browser';
 

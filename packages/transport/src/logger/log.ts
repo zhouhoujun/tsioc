@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Interceptor, Handler, Filter } from '@tsdi/core';
-import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logs';
+import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import * as chalk from 'chalk';
 import { Observable, catchError, map, throwError } from 'rxjs';
 import { ResponseStatusFormater } from './status.formater';

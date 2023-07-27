@@ -1,6 +1,6 @@
 import { Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { Packet, MESSAGE, InternalServerExecption } from '@tsdi/common';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { TransportContext, Server, LOCALHOST, ev } from '@tsdi/transport';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { Subscription, finalize } from 'rxjs';

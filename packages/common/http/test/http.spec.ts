@@ -3,7 +3,7 @@ import {
     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath,
     Middleware, BadRequestExecption, AssetContext, compose, NEXT, MicroServRouterModule
 } from '@tsdi/core';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedirectResult } from '@tsdi/transport';
 import { HttpServer, HttpServerModule } from '@tsdi/transport-http';

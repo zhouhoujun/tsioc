@@ -62,12 +62,12 @@ container.inject(AopModule)
 
 ```shell
 // install aop logs
-npm install @tsdi/logs
+npm install @tsdi/logger
 ```
 
 ```ts
 
-import { LogModule } from '@tsdi/logs';
+import { LogModule } from '@tsdi/logger';
 // in server
 import { ContainerBuilder } from '@tsdi/platform-server'
 // in browser
@@ -151,7 +151,7 @@ Module manager, application bootstrap. base on AOP.
 ```ts
 import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
-import { Log, Logger } from '@tsdi/logs';
+import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
 import { InternalServerExecption } from '@tsdi/transport';
 import { User } from '../models/models';
@@ -267,7 +267,7 @@ export class RoleController {
 
 ```ts
 import { Application, Module }  from '@tsdi/core';
-import { LogModule } from '@tsdi/logs';
+import { LogModule } from '@tsdi/logger';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { Http, HttpClientOptions, HttpModule, HttpServer } from '@tsdi/transport';
@@ -323,7 +323,7 @@ Application.run(Http2ServerModule);
 
 ```ts
 import { Application, Module }  from '@tsdi/core';
-import { LogModule } from '@tsdi/logs';
+import { LogModule } from '@tsdi/logger';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { BrowserModule } from '@tsdi/platform-browser';

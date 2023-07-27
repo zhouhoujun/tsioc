@@ -4,7 +4,7 @@ import { TransportErrorResponse } from '@tsdi/common';
 import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
 import { TCP_CLIENT_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');

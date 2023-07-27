@@ -1,6 +1,6 @@
 import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { ListenOpts, ListenService, Packet, MESSAGE, GET, InternalServerExecption } from '@tsdi/common';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { Outgoing, Server, HYBRID_HOST, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import * as net from 'net';

@@ -1,6 +1,6 @@
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { Packet, PatternFormatter, MESSAGE } from '@tsdi/common';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { MircoServRouters, Outgoing, Server, TransportContext, TransportSession, Content, LOCALHOST, ev } from '@tsdi/transport';
 import { Client, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';

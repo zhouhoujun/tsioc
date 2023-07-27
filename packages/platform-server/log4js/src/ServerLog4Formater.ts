@@ -1,6 +1,6 @@
 import { Refs, Static } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
-import { LogAspect, JoinpointFormater, Level, Logger, DefaultJoinpointFormater, ConsoleLog } from '@tsdi/logs';
+import { LogAspect, JoinpointFormater, Level, Logger, DefaultJoinpointFormater, ConsoleLog } from '@tsdi/logger';
 import * as chalk from 'chalk';
 
 

@@ -54,7 +54,7 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs',
+                    '@tsdi/logger',
                     '@tsdi/boot',
                     '@tsdi/activities'
                 ];
@@ -78,7 +78,7 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs',
+                    '@tsdi/logger',
                     '@tsdi/boot',
                     '@tsdi/platform-server',
                     '@tsdi/activities',
@@ -98,7 +98,7 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs',
+                    '@tsdi/logger',
                     '@tsdi/boot'
                 ];
                 if (options.browser) {
@@ -117,7 +117,7 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs'
+                    '@tsdi/logger'
                 ];
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);

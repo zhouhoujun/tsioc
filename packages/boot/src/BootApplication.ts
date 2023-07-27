@@ -1,6 +1,6 @@
 import { CtorType, Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
 import { Application, ApplicationArguments, ApplicationFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT, ROOT_DEFAULT_PROVIDERS } from '@tsdi/core';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';

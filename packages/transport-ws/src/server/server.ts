@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { Packet, MESSAGE, InternalServerExecption } from '@tsdi/common';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { TransportContext, Server, HYBRID_HOST, LOCALHOST, ev } from '@tsdi/transport';
 import { Server as SocketServer, WebSocketServer } from 'ws';
 import * as net from 'net';

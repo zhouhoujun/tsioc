@@ -1,7 +1,7 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
 import { ModuleLoader } from '@tsdi/core';
 import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption } from '@tsdi/common';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { MiddlewareServer, CONTENT_DISPOSITION_TOKEN, ev, HYBRID_HOST } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { ListenOptions } from 'net';

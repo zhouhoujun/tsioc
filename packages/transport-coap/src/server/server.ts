@@ -1,6 +1,6 @@
 
 import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { InternalServerExecption, BindListenning } from '@tsdi/common';
 import { AssetContext, Server as MircoServer, Outgoing, LOCALHOST, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';

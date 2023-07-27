@@ -5,7 +5,7 @@ import { NatsConnection, connect, Subscription as NatsSubs } from 'nats';
 import { Subscription, finalize } from 'rxjs';
 import { NatsContext } from './context';
 import { NatsEndpoint } from './endpoint';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { NATS_SERV_OPTS, NatsMicroServOpts } from './options';
 import { NatsTransportSessionFactory } from '../transport';
 import { NatsIncoming } from './incoming';

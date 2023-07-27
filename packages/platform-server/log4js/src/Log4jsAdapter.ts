@@ -1,7 +1,7 @@
 import { Inject, Injectable, lang } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { PROCESS_ROOT } from '@tsdi/core';
-import { LoggerManager, Logger } from '@tsdi/logs';
+import { LoggerManager, Logger } from '@tsdi/logger';
 import * as log4js from 'log4js';
 import { isAbsolute, join } from 'path';
 

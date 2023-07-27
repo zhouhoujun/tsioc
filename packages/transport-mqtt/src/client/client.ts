@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, DisconnectExecption, OfflineExecption } from '@tsdi/common';
 import { Client, TRANSPORT_SESSION, TransportSession, LOCALHOST, ev } from '@tsdi/transport';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
 import { Observable, of } from 'rxjs';
 import { MqttHandler } from './handler';

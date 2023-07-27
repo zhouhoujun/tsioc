@@ -1,6 +1,6 @@
 import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/transport';
 import { lang } from '@tsdi/ioc';
-import { Log, Logger } from '@tsdi/logs';
+import { Log, Logger } from '@tsdi/logger';
 import { InternalServerExecption } from '@tsdi/common';
 import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';

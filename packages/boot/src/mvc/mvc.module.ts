@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { TransactionModule } from '@tsdi/repository';
 import { HttpServerModule } from '@tsdi/transport-http';

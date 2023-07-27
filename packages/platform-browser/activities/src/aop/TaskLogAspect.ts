@@ -1,6 +1,6 @@
 import { lang } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
-import { LogProcess } from '@tsdi/logs';
+import { LogProcess } from '@tsdi/logger';
 import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/activities';
 
 /**

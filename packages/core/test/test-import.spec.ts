@@ -2,7 +2,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { HttpClient, HttpClientModule } from '@tsdi/common/http';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';

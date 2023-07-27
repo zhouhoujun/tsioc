@@ -149,7 +149,7 @@ const loggerResolver = {
             } else {
                 local = ' '
             }
-            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LoggerModule in package '@tsdi/logs',  please register LoggerModule first. `)
+            throw new ArgumentExecption(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LoggerModule in package '@tsdi/logger',  please register LoggerModule first. `)
         }
         const adapter = pr.adapter;
         if (!managers.getLoggerManager(adapter)) {

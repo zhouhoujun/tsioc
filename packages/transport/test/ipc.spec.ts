@@ -1,6 +1,6 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, Token, getToken, isArray, lang } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { BadRequestExecption } from '@tsdi/common';
 import { ServerModule } from '@tsdi/platform-server';
 import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';

@@ -6,7 +6,7 @@ import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
 import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult  } from '@tsdi/transport';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 
 
 

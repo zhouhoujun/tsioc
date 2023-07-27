@@ -1,5 +1,5 @@
 import { Static } from '@tsdi/ioc';
-import { HeaderFormater } from '@tsdi/logs';
+import { HeaderFormater } from '@tsdi/logger';
 import * as chalk from 'chalk';
 
 /**

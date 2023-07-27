@@ -1,7 +1,7 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { Packet, PatternFormatter, MESSAGE } from '@tsdi/common';
 import { MircoServRouters, Outgoing, Server, TransportContext, TransportSession, Content, LOCALHOST, ev } from '@tsdi/transport';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { Subscription, finalize } from 'rxjs';
 import { RedisEndpoint } from './endpoint';

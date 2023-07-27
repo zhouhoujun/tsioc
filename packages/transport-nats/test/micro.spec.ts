@@ -4,7 +4,7 @@ import { TransportErrorResponse } from '@tsdi/common';
 import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
 import { NATS_SERV_INTERCEPTORS, NatsClient, NatsClientModule, NatsMicroServModule, NatsServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { BigFileInterceptor } from './BigFileInterceptor';

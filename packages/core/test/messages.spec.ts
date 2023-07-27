@@ -13,7 +13,7 @@
 //     compose,
 //     NEXT
 // } from '../src';
-// import { LoggerModule } from '@tsdi/logs';
+// import { LoggerModule } from '@tsdi/logger';
 // import { Http, HttpContext, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
 
 

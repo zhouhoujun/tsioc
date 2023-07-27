@@ -1,5 +1,5 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
-import { InjectLog, Level, Logger } from '@tsdi/logs';
+import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { MESSAGE, Packet, PatternFormatter, ServiceUnavailableExecption } from '@tsdi/common';
 import { Server, MircoServRouters, TransportSession, StatusVaildator, Content, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';

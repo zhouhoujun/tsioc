@@ -6,7 +6,7 @@ import { JsonObject, serve, setup } from 'swagger-ui-express';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT } from './swagger.json';
 import { compose } from 'koa-convert';
 import { ApiParamMetadata } from './metadata';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 
 @Injectable()
 export class SwaggerService {

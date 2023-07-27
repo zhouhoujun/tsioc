@@ -2,7 +2,7 @@ import {
     ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
     InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments, CtorType
 } from '@tsdi/ioc';
-import { Logger } from '@tsdi/logs';
+import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';

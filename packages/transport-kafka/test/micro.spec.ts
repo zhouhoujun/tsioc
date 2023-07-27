@@ -3,7 +3,7 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { TransportErrorResponse } from '@tsdi/common';
 import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { KAFKA_SERV_INTERCEPTORS, KafkaClient, KafkaClientModule, KafkaMicroServModule, KafkaServer } from '../src';

@@ -1,5 +1,5 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { LogAspect } from '@tsdi/logs';
+import { LogAspect } from '@tsdi/logger';
 import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 
 import { DefaultTestReport } from '../reports/TestReport';

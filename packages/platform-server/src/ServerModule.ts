@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { PROCESS_ROOT, ApplicationArguments, ModuleLoader } from '@tsdi/core';
-import { HeaderFormater } from '@tsdi/logs';
+import { HeaderFormater } from '@tsdi/logger';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { LogHeaderFormater } from './formater';

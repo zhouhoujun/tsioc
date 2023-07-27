@@ -1,7 +1,7 @@
 {
-  "name": "@tsdi/logs",
+  "name": "@tsdi/logger",
   "version": "6.0.31",
-  "description": "@tsdi/logs is logger for boot application, Ioc container, via typescript decorator",
+  "description": "@tsdi/logger is logger for boot application, Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },

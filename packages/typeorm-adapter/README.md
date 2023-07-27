@@ -26,7 +26,7 @@ npm install @tsdi/typeorm-adapter
 
 ```ts
 import { Application, Module, Transactional, TransactionModule, RouteMapping, Repository }  from '@tsdi/core';
-import { ILogger, Logger, LogModule } from '@tsdi/logs';
+import { ILogger, Logger, LogModule } from '@tsdi/logger';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { ServerBootstrapModule } from '@tsdi/platform-server';
 import { Repository as ORMRepository } from 'typeorm';

@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, Pattern, RequestInitOpts } from '@tsdi/common';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, TransportSession, TRANSPORT_SESSION, LOCALHOST, ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';

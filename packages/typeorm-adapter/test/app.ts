@@ -4,7 +4,7 @@ import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { TransactionModule } from '@tsdi/repository';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DataSource } from 'typeorm';

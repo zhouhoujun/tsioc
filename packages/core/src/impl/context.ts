@@ -2,7 +2,7 @@ import {
     Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
     Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
-import { Logger, LoggerManagers } from '@tsdi/logs';
+import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
