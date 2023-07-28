@@ -36,7 +36,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         }
 
         const options = {
-            // observe: true,
+            observe: req.headers.get('observe') === 'true',
             confirmable: true,
             accept: ctype.APPL_JSON,
             ...opts.transportOpts,

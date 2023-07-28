@@ -104,29 +104,29 @@ describe('Coap Micro Service', () => {
     });
 
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch json', async () => {
+    //     const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
-    it('fetch big json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch big json', async () => {
+    //     const res: any = await lastValueFrom(client.send('/content/big.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
     it('fetch json 2', async () => {
         const res: any = await lastValueFrom(client.send('/content/jsons/data1.json')

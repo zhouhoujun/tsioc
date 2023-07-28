@@ -4,7 +4,7 @@ import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer } from '../utils';
 import { ev, hdr } from '../consts';
 import { RequestAdapter } from './request';
-import { IDuplexStream, IEndable, IReadableStream } from '../stream';
+import { IDuplexStream, IEnd, IEndable, IReadableStream } from '../stream';
 import { Incoming } from '../socket';
 
 /**
@@ -215,9 +215,12 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
+                this.destoryRequest(request);
             }
         });
     }
+
+    protected destoryRequest(request: IEnd) { }
 
     protected pipeline(stream: IReadableStream, err: (err: any) => void) {
         return this.streamAdapter.pipeline(stream, this.streamAdapter.createPassThrough(), err);

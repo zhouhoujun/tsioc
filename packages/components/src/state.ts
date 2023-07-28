@@ -1,4 +1,4 @@
-import { Injectable, Injector, InvocationContext, ModuleRef, isFunction, lang, Type, TypeDef } from '@tsdi/ioc';
+import { Injectable, Injector, InvocationContext, ModuleRef, isFunction, lang, Type } from '@tsdi/ioc';
 import { OnDestroy } from './lifecycle';
 import { ComponentRef } from './refs/component';
 import { ViewRef, InternalViewRef } from './refs/view';

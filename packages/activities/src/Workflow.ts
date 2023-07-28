@@ -1,4 +1,4 @@
-import { Type, isFunction } from '@tsdi/ioc';
+import { ModuleDef, Type, isFunction } from '@tsdi/ioc';
 import { Application, ApplicationContext, EnvironmentOption } from '@tsdi/core';
 import { ActivityOption } from './options';
 import { ActivityModule } from './ActivityModule';
@@ -14,7 +14,7 @@ import { ActivityModule } from './ActivityModule';
 export class Workflow {
 
     /**
-     * run activity.
+     * run activity with dynamic module.
      *
      * @template T
      * @param {(Type<T> | ActivityOption )} target activity or  activity option.
@@ -28,7 +28,7 @@ export class Workflow {
 }
 
 /**
- * run activity.
+ * run activity with dynamic module.
  *
  * @template T
  * @param {(Type<T> | ActivityOption )} target activity or  activity option.
@@ -42,6 +42,6 @@ export function runActivity<T>(target: Type<T> | ActivityOption, option?: Enviro
         module: {
             ...op,
             imports: [ActivityModule, ...op.imports ?? []]
-        }
+        } as ModuleDef<T>
     });
 }

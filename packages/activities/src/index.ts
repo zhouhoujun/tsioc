@@ -10,3 +10,5 @@ export * from './aop/RunAspect';
 export * from './activities';
 export * from './ActivityModule';
 export * from './service';
+
+export * from './Workflow';

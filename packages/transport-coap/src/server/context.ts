@@ -1,4 +1,4 @@
-import { NotSupportedExecption } from '@tsdi/core';
+import { NotSupportedExecption } from '@tsdi/common';
 import { EMPTY_OBJ, isNumber } from '@tsdi/ioc';
 import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
