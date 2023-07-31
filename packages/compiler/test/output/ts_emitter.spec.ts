@@ -496,7 +496,7 @@ const externalModuleIdentifier = new o.ExternalReference(anotherModuleUrl, 'some
                     ])])];
                 const { sourceText, context } =
                     emitter.emitStatementsAndContext('a.ts', statements, '/* some preamble /*\n\n');
-                const spanOf = (text: string, after: number = 0) => {
+                const spanOf = (text: string, after = 0) => {
                     const location = sourceText.indexOf(text, after);
                     const { line, col } = calculateLineCol(sourceText, location);
                     return context.spanOf(line, col);

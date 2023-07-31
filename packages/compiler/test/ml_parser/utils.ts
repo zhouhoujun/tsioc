@@ -12,7 +12,7 @@ import * as html from '../../src/ml_parser/ast';
  import {ParseTreeResult} from '../../src/ml_parser/html_parser';
  import {ParseLocation} from '../../src/util';
  
- export function humanizeDom(parseResult: ParseTreeResult, addSourceSpan: boolean = false): any[] {
+ export function humanizeDom(parseResult: ParseTreeResult, addSourceSpan = false): any[] {
    if (parseResult.errors.length > 0) {
      const errorString = parseResult.errors.join('\n');
      throw new Error(`Unexpected parse errors:\n${errorString}`);
@@ -25,7 +25,7 @@ import * as html from '../../src/ml_parser/ast';
    return humanizeDom(parseResult, true);
  }
  
- export function humanizeNodes(nodes: html.Node[], addSourceSpan: boolean = false): any[] {
+ export function humanizeNodes(nodes: html.Node[], addSourceSpan = false): any[] {
    const humanizer = new _Humanizer(addSourceSpan);
    html.visitAll(humanizer, nodes);
    return humanizer.result;
@@ -37,7 +37,7 @@ import * as html from '../../src/ml_parser/ast';
  
  class _Humanizer implements html.Visitor {
    result: any[] = [];
-   elDepth: number = 0;
+   elDepth = 0;
  
    constructor(private includeSourceSpan: boolean) {}
  
@@ -120,7 +120,7 @@ class _SerializerVisitor implements html.Visitor {
       return ` ${expansionCase.value} {${this._visitAll(expansionCase.expression)}}`;
     }
   
-    private _visitAll(nodes: html.Node[], join: string = ''): string {
+    private _visitAll(nodes: html.Node[], join = ''): string {
       if (nodes.length == 0) {
         return '';
       }

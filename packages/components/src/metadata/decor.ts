@@ -5,7 +5,7 @@ import {
 import { RunnableFactory } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
-    HostListenerMetadata, QueryMetadata, VaildateMetadata
+    HostListenerMetadata, QueryMetadata
 } from './meta';
 import { AnnotationDef, ComponentDef, DirectiveDef } from '../type';
 import { CompilerFacade } from '../compile/facade';

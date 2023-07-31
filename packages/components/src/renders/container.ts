@@ -15,7 +15,7 @@ import { getNativeByTNode, unwrapRNode, viewAttachedToContainer } from '../util/
 import { assertTNodeType } from './assert';
 import { createElementRef } from './element';
 import { NodeInjector } from './injector';
-import { addViewToContainer, destroyLView, getBeforeNodeForView, insertView } from './manipulation';
+import { addViewToContainer, destroyLView, detachView, getBeforeNodeForView, insertView } from './manipulation';
 import { createLContainer } from './share';
 import { ViewRefImpl } from './view_ref';
 
@@ -37,21 +37,6 @@ export class ViewContainerRefImpl extends ViewContainerRef {
 
     override get injector(): Injector {
         return new NodeInjector(this._hostTNode, this._hostLView);
-    }
-
-    /** @deprecated No replacement */
-    override get parentInjector(): Injector {
-        const parentLocation = getParentInjectorLocation(this._hostTNode, this._hostLView);
-        if (hasParentInjector(parentLocation)) {
-            const parentView = getParentInjectorView(parentLocation, this._hostLView);
-            const injectorIndex = getParentInjectorIndex(parentLocation);
-            // devMode && assertNodeInjector(parentView, injectorIndex);
-            const parentTNode =
-                parentView[TVIEW].data[injectorIndex + NodeInjectorOffset.TNODE] as TElementNode;
-            return new NodeInjector(parentTNode, parentView);
-        } else {
-            return new NodeInjector(null, this._hostLView);
-        }
     }
 
     override clear(): void {
@@ -105,7 +90,7 @@ export class ViewContainerRefImpl extends ViewContainerRef {
 
         if (devMode) {
             assertDefined(
-                getComponentDef(componentFactoryOrType),
+                getComponentDef(componentType),
                 `Provided Component class doesn't contain Component definition. ` +
                 `Please check whether provided class has @Component decorator.`);
             assertEqual(
@@ -130,7 +115,7 @@ export class ViewContainerRefImpl extends ViewContainerRef {
         const componentFactory = new ComponentFactoryImpl(isFunction(componentType));
         const contextInjector = options.injector || this.parentInjector;
 
-        // If an `NgModuleRef` is not provided explicitly, try retrieving it from the DI tree.
+        // If an `ModuleRef` is not provided explicitly, try retrieving it from the DI tree.
         if (!environmentInjector) {
             environmentInjector = createContext(options.moduleRef ?? contextInjector);
         }

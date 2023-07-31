@@ -7,7 +7,7 @@
  */
 
 import { CompileDirectiveSummary, CompilePipeSummary } from '../metadata';
-import { AbsoluteSourceSpan, ASTWithSource, BindingPipe, BindingType, BoundElementProperty, EmptyExpr, ParsedEvent, ParsedEventType, ParsedProperty, ParsedPropertyType, ParsedVariable, ParserError, RecursiveAstVisitor, TemplateBinding, VariableBinding } from '../expression_parser/ast';
+import { AbsoluteSourceSpan, ASTWithSource, BindingPipe, BindingType, BoundElementProperty, EmptyExpr, ParsedEvent, ParsedEventType, ParsedProperty, ParsedPropertyType, ParsedVariable, ParserError, RecursiveAstVisitor, TemplateBinding, VariableBinding } from '../exp_parser/ast';
 import { Parser } from '../exp_parser/parser';
 import { mergeNsAndName } from '../ml_parser/tags';
 import { ParseError, ParseErrorLevel, Markers, SecurityContext, ParseLocation, ParseSourceSpan, splitAtColon, splitAtPeriod } from '../util';
@@ -362,8 +362,8 @@ export class BindingParser {
   }
 
   createBoundElementProperty(
-    elementSelector: string, boundProp: ParsedProperty, skipValidation: boolean = false,
-    mapPropertyName: boolean = true): BoundElementProperty {
+    elementSelector: string, boundProp: ParsedProperty, skipValidation = false,
+    mapPropertyName = true): BoundElementProperty {
     if (boundProp.isAnimation) {
       return new BoundElementProperty(
         boundProp.name, BindingType.Animation, SecurityContext.NONE, boundProp.expression, null,
@@ -379,7 +379,7 @@ export class BindingParser {
     // Check for special cases (prefix style, attr, class)
     if (parts.length > 1) {
       if (parts[0] == ATTRIBUTE_PREFIX) {
-        boundPropertyName = parts.slice(1).join(PROPERTY_PARTS_SEPARATOR);
+        boundPropertyName = parts.slice(1).join(PROPERTY_PARTS_SEPARATOR) as string;
         if (!skipValidation) {
           this._validatePropertyOrAttributeName(boundPropertyName, boundProp.sourceSpan, true);
         }

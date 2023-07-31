@@ -302,6 +302,7 @@ function lex(text: string): any[] {
           expectNumberToken(lex('123_456')[0], 0, 7, 123_456);
           expectNumberToken(lex('1_000_000_000')[0], 0, 13, 1_000_000_000);
           expectNumberToken(lex('123_456.78')[0], 0, 10, 123_456.78);
+          // eslint-disable-next-line @typescript-eslint/no-loss-of-precision
           expectNumberToken(lex('123_456_789.123_456_789')[0], 0, 23, 123_456_789.123_456_789);
           expectNumberToken(lex('1_2_3_4')[0], 0, 7, 1_2_3_4);
           expectNumberToken(lex('1_2_3_4.5_6_7_8')[0], 0, 15, 1_2_3_4.5_6_7_8);
