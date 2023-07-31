@@ -1,4 +1,4 @@
-import { Injectable, isArray, isNil, isString, lang } from '@tsdi/ioc';
+import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
 import { BadRequestExecption } from '@tsdi/common';
 import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/transport';
 
@@ -26,7 +26,12 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         } catch {
             throw new BadRequestExecption('failed to decode url');
         }
-        const index = opts.index;
+
+        let index = opts.index;
+        if (index && isBoolean(index)) {
+            index = 'index.html';
+        }
+        
         if (index && endSlash) path += index;
         if (absPath.test(path)) {
             throw new BadRequestExecption('Malicious Path');

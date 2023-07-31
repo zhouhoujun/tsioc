@@ -2,11 +2,12 @@ import { ApplicationContext, Started, TransportParameter } from '@tsdi/core';
 import { EMPTY_OBJ, Execption, InjectFlags, Injectable, isNil, isString } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
-import { ControllerRoute, RouteMappingMetadata, Router } from '@tsdi/transport';
-import { compose } from 'koa-convert';
-import { JsonObject, serve, setup } from 'swagger-ui-express';
-import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT } from './swagger.json';
+import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
+import { HttpServer } from '@tsdi/transport-http'
+import { getAbsoluteFSPath } from 'swagger-ui-dist';
+import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, JsonObject, SwaggerOptions, SwaggerUiOptions } from './swagger.json';
 import { ApiParamMetadata } from './metadata';
+
 
 
 @Injectable()
@@ -22,7 +23,7 @@ export class SwaggerService {
         const jsonDoc: JsonObject = {
             paths: {}
         }
-        const router = ctx.get(Router);
+        const router = ctx.get(HybridRouter);
 
         this.buildDoc(router, jsonDoc);
 
@@ -31,19 +32,52 @@ export class SwaggerService {
             ...jsonDoc
         };
 
+        const fspath = getAbsoluteFSPath();
+
+        
+        const http = ctx.get(HttpServer);
+
+        http.useInterceptors(Content.create({
+            root: fspath,
+            index: false
+        }), 1);
 
         const prefix = opts.prefix ?? 'api-doc';
-        router.use(prefix, compose(
-            serve as any,
-            setup(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle) as any
-        ));
+        router.use(prefix, async (ctx, next) => {
+            const html = this.generateHTML(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle);
+            (ctx as AssetContext).contentType = ctype.TEXT_HTML;
+            (ctx as AssetContext).body = html;
+        });
 
         const httpopts = ctx.get(HTTP_LISTEN_OPTS);
         this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${prefix}`, '!')
 
     }
 
-    buildDoc(router: Router, jsonDoc: JsonObject, prefix?: string) {
+    /**
+     * Generates the custom HTML page for the UI API.
+     *
+     * @param swaggerDoc JSON object with the API schema.
+     * @param opts swagger-ui-express options.
+     * @param options custom Swagger options.
+     * @param customCss string with a custom CSS to embed into the page.
+     * @param customfavIcon link to a custom favicon.
+     * @param swaggerUrl URL of the Swagger API schema, can be specified instead of the swaggerDoc.
+     * @param customSiteTitle custom title for a page.
+     * @returns the generated HTML page.
+     */
+    generateHTML(
+        swaggerDoc?: JsonObject,
+        opts?: SwaggerUiOptions,
+        options?: SwaggerOptions,
+        customCss?: string,
+        customfavIcon?: string,
+        swaggerUrl?: string,
+        customSiteTitle?: string): string {
+        return ''
+    }
+
+    buildDoc(router: Router | HybridRouter, jsonDoc: JsonObject, prefix?: string) {
         router.routes.forEach((v, route) => {
             if (v instanceof ControllerRoute) {
                 v.ctrlRef.class.defs.forEach(df => {

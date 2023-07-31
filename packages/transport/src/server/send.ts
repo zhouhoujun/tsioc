@@ -5,7 +5,7 @@ import { AssetContext } from '../AssetContext';
 export interface SendOptions<TStats = any> {
     root: string | string[];
     prefix?: string;
-    index?: string;
+    index?: string|boolean;
     maxAge?: number;
     immutable?: boolean;
     hidden?: boolean;
