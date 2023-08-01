@@ -1,5 +1,6 @@
 import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
-import { BadRequestExecption } from '@tsdi/common';
+import { BadRequestExecption, joinPath } from '@tsdi/common';
+import { PROCESS_ROOT } from '@tsdi/core';
 import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/transport';
 
 
@@ -38,11 +39,13 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         }
 
 
+        const baseUrl = ctx.get(PROCESS_ROOT);
         const fsdir = new FileSystemDirectoryEntry();
         let flieEntry: FileSystemEntry|undefined;
         await lang.some(roots.map(root => () => {
             const defer = lang.defer();
-            fsdir.getFile(root + '/' + path, {
+            const rpath = isString(opts.baseUrl) ? joinPath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? joinPath(root, path!) : joinPath(baseUrl, root, path!);
+            fsdir.getFile(rpath, {
                 create: false
             }, (entry) => {
                 if(!entry.isFile) defer.resolve()

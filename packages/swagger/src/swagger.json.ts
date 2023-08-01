@@ -1,6 +1,5 @@
-import { Inject, InjectorEvent, tokenId } from '@tsdi/ioc';
-import { Bean, Configuration } from '@tsdi/core';
-import { SwaggerConfigs } from 'swagger-ui-dist';
+import { tokenId } from '@tsdi/ioc';
+
 
 
 export interface SwaggerOptions {
@@ -12,16 +11,18 @@ export interface JsonObject {
 }
 
 export interface SwaggerUiOptions {
-    customCss?: string | undefined;
-    customCssUrl?: string | undefined;
-    customfavIcon?: string | undefined;
-    customJs?: string | undefined;
-    customSiteTitle?: string | undefined;
-    explorer?: boolean | undefined;
-    isExplorer?: boolean | undefined;
-    swaggerOptions?: SwaggerOptions | undefined;
-    swaggerUrl?: string | undefined;
-    swaggerUrls?: string[] | undefined;
+    customCss?: string;
+    customCssUrl?: string;
+    customfavIcon?: string;
+    customJs?: string;
+    customJsStr?: string;
+    customSiteTitle?: string;
+    customRobots?: string;
+    explorer?: boolean;
+    isExplorer?: boolean;
+    swaggerOptions?: SwaggerOptions;
+    swaggerUrl?: string;
+    swaggerUrls?: string[];
 }
 
 
@@ -46,7 +47,7 @@ export interface SwaggerSetupOptions {
      */
     prefix?: string;
     /**
-     * swagger-ui-express options.
+     * swagger-ui options.
      */
     opts?: SwaggerUiOptions;
     /**

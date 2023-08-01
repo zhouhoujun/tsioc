@@ -44,7 +44,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         }
         let filename = '', encodingExt = '';
         roots.some(root => {
-            const rpath = this.resolvePath(baseUrl, root, path!);
+            const rpath = isString(opts.baseUrl) ? this.resolvePath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? this.resolvePath(root, path!) : this.resolvePath(baseUrl, root, path!);
             if (!opts.hidden && isHidden(root, rpath)) return false;
             // serve brotli file when possible otherwise gzipped file when possible
             if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
