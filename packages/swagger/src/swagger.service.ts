@@ -104,14 +104,17 @@ export class SwaggerService {
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
                     const path = joinPath(prefix, route, df.metadata.route as string);
 
-                    const api: Record<string, any> = { ...jsonDoc.paths[path] };
+                    if(!jsonDoc.paths[path]) {
+                        jsonDoc.paths[path] = {};
+                    }
+                    const api: Record<string, any> = jsonDoc.paths[path];
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
                     if (api[method]) throw new Execption(`has mutil route address ${path}, with same method ${method}`);
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
                         description: "",
                         operationId: df.propertyKey,
-                        tags: [df.metadata.route],
+                        tags: [v.ctrlRef.class.className],
                         parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => !p.autowired)?.map(p => {
                             return {
                                 name: p.name,
@@ -121,7 +124,6 @@ export class SwaggerService {
                             }
                         })
                     }
-                    jsonDoc.paths[path] = api;
                 });
             } else if (v instanceof Router) {
                 this.buildDoc(v, jsonDoc, route);
