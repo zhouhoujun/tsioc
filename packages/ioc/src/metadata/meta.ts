@@ -211,6 +211,10 @@ export interface ParameterMetadata extends ProvideMetadata, DesignParam {
      * @type {string}
      */
     propertyKey?: string;
+    /**
+     * autowired or not.
+     */
+    autowired?: boolean;
 }
 
 

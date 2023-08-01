@@ -34,6 +34,7 @@ export class SwaggerService {
         const opts = {
             options: {
                 swagger: '2.0',
+                version: '1.0',
                 produces: ["application/json"],
                 ...options
             },
@@ -48,6 +49,13 @@ export class SwaggerService {
         this.buildDoc(router, jsonDoc);
 
         const doc = {
+            openapi: '3.0.0',
+            info: {
+                title: opts.title,
+                description: opts.description,
+                version: opts.version ?? '1.0.0',
+                contact: {}
+            },
             ...ctx.get(SWAGGER_DOCUMENT),
             ...jsonDoc
         };
@@ -90,6 +98,7 @@ export class SwaggerService {
 
     buildDoc(router: Router | HybridRouter, jsonDoc: JsonObject, prefix?: string) {
         router.routes.forEach((v, route) => {
+            if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
                 v.ctrlRef.class.defs.forEach(df => {
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
@@ -103,7 +112,7 @@ export class SwaggerService {
                         description: "",
                         operationId: df.propertyKey,
                         tags: [df.metadata.route],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.map(p => {
+                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => !p.autowired)?.map(p => {
                             return {
                                 name: p.name,
                                 type: this.toDocType(p.type),
@@ -360,9 +369,7 @@ function stringify(obj: any): string {
         }
         return value
     }, 2)
-    json = json.replace(new RegExp('"' + placeholder + '"', 'g'), function (_) {
-        return fns.shift()
-    })
+    json = json.replace(new RegExp('"' + placeholder + '"', 'g'), () => fns.shift())
     return 'var options = ' + json + ';'
 }
 
