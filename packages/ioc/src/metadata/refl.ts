@@ -6,7 +6,7 @@ import { isBoolean, isFunction } from '../utils/chk';
 import { runChain, Handle } from '../handle';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
-    RunnableMetadata, InjectableMetadata, MethodMetadata
+    RunnableMetadata, InjectableMetadata, MethodMetadata, ParamFlags
 } from './meta';
 import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
@@ -260,6 +260,12 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
             const idx = ctx.define.parameterIndex || 0;
             const desgmeta = params[idx] || EMPTY_OBJ;
             assign(meta, desgmeta);
+            if (meta.paramFlags) {
+                meta.paramFlags &= ParamFlags.autowried;
+            } else {
+                meta.paramFlags = ParamFlags.autowried
+            }
+
             params.splice(idx, 1, meta)
         }
     }
@@ -462,12 +468,12 @@ export function dispatchTypeDecor(type: Type, define: DecorDefine, options: Deco
 }
 
 export function dispatchPorpDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
-    if(!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
+    if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(propDecorActions, type, type.constructor, define, options)
 }
 
 export function dispatchMethodDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
-    if(!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
+    if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(methodDecorActions, type, type.constructor, define, options)
 }
 
@@ -478,7 +484,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
     } else {
         type = type.constructor
     }
-    if(!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
+    if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(paramDecorActions, target, type, define, options)
 }
 

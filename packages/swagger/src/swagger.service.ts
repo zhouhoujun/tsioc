@@ -7,7 +7,7 @@
 
 
 import { ApplicationContext, Started, TransportParameter } from '@tsdi/core';
-import { EMPTY_OBJ, Execption, InjectFlags, Injectable, Type, getClassName, isNil, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Execption, InjectFlags, Injectable, ParamFlags, Type, getClassName, isNil, isString } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
 import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
@@ -104,7 +104,7 @@ export class SwaggerService {
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
                     const path = joinPath(prefix, route, df.metadata.route as string);
 
-                    if(!jsonDoc.paths[path]) {
+                    if (!jsonDoc.paths[path]) {
                         jsonDoc.paths[path] = {};
                     }
                     const api: Record<string, any> = jsonDoc.paths[path];
@@ -115,7 +115,7 @@ export class SwaggerService {
                         description: "",
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => !p.autowired)?.map(p => {
+                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => !p.paramFlags || (p.paramFlags & ParamFlags.request))?.map(p => {
                             return {
                                 name: p.name,
                                 type: this.toDocType(p.type),

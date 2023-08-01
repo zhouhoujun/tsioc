@@ -212,9 +212,9 @@ export interface Autowired {
 export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowired', {
     props: (provider: Token, alias?: string | Record<string, any>) => {
         if (alias) {
-            return isString(alias) ? { autowired: true, provider: getToken(provider, alias) } : { autowired: true, provider: getToken(provider, alias.alias), ...alias, alias: undefined }
+            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
         } else {
-            return { autowired: true, provider: provider }
+            return { provider: provider }
         }
     }
 });
@@ -333,9 +333,9 @@ export interface Inject {
 export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
     props: (provider: Token, alias?: string | Record<string, any>) => {
         if (alias) {
-            return isString(alias) ? { autowired: true, provider: getToken(provider, alias) } : { autowired: true, provider: getToken(provider, alias.alias), ...alias, alias: undefined }
+            return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
         } else {
-            return { autowired: true, provider }
+            return { provider }
         }
     }
 });

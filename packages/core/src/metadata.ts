@@ -1,7 +1,7 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
-    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic, isFunction
+    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic, isFunction, ParamFlags
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -542,6 +542,7 @@ export interface TransportParameterDecorator {
 export const Payload: TransportParameterDecorator = createParamDecorator('Payload', {
     props: (field: string, pipe?: { pipe: string | TypeOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
+        meta.paramFlags = ParamFlags.request;
         meta.scope = 'payload'
     }
 });
@@ -554,6 +555,7 @@ export const Payload: TransportParameterDecorator = createParamDecorator('Payloa
 export const Topic: TransportParameterDecorator = createParamDecorator('Topic', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
+        meta.paramFlags = ParamFlags.request;
         meta.scope = 'topic'
     }
 });

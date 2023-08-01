@@ -197,6 +197,12 @@ export interface MethodMetadata extends Record<string, any> {
 export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
 
 
+export enum ParamFlags {
+    none = 1,
+    autowried = 2,
+    request = 4
+}
+
 /**
  * parameter metadata.
  *
@@ -212,9 +218,9 @@ export interface ParameterMetadata extends ProvideMetadata, DesignParam {
      */
     propertyKey?: string;
     /**
-     * autowired or not.
+     * param dector flags.
      */
-    autowired?: boolean;
+    paramFlags?: ParamFlags;
 }
 
 
