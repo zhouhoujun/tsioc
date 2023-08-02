@@ -6,8 +6,8 @@
  */
 
 
-import { ApplicationContext, Started, TransportParameter } from '@tsdi/core';
-import { EMPTY_OBJ, Execption, InjectFlags, Injectable, ParamFlags, Type, getClassName, isNil, isString } from '@tsdi/ioc';
+import { ApplicationContext, MODEL_RESOLVERS, Started, TransportParameter } from '@tsdi/core';
+import { EMPTY_OBJ, Execption, InjectFlags, Injectable, ModuleRef, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
 import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
@@ -27,6 +27,7 @@ export class SwaggerService {
 
     private swaggerInit?: string;
 
+
     @Started()
     setup(ctx: ApplicationContext) {
 
@@ -44,9 +45,19 @@ export class SwaggerService {
         const jsonDoc: JsonObject = {
             paths: {}
         }
-        const router = ctx.get(HybridRouter);
 
-        this.buildDoc(router, jsonDoc);
+        const moduleRef = ctx.injector.get(ModuleRef);
+        const router = moduleRef.get(HybridRouter);
+
+        const models = moduleRef.get(MODEL_RESOLVERS);
+
+        const isModel = (target?: any) => {
+            if (!target) return false;
+            if (!isType(target)) return false;
+            return models.some(m => m.isModel(target))
+        }
+
+        this.buildDoc(router, jsonDoc, isModel);
 
         const doc = {
             openapi: '3.0.0',
@@ -56,14 +67,14 @@ export class SwaggerService {
                 version: opts.version ?? '1.0.0',
                 contact: {}
             },
-            ...ctx.get(SWAGGER_DOCUMENT),
+            ...moduleRef.get(SWAGGER_DOCUMENT, null),
             ...jsonDoc
         };
 
         const fspath = getAbsoluteFSPath();
 
 
-        const http = ctx.get(HttpServer);
+        const http = moduleRef.get(HttpServer);
 
         http.useInterceptors(Content.create({
             root: fspath,
@@ -90,13 +101,13 @@ export class SwaggerService {
             (ctx as AssetContext).body = html;
         });
 
-        const httpopts = ctx.get(HTTP_LISTEN_OPTS);
+        const httpopts = moduleRef.get(HTTP_LISTEN_OPTS);
         this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${prefix}`, '!')
 
     }
 
 
-    buildDoc(router: Router | HybridRouter, jsonDoc: JsonObject, prefix?: string) {
+    buildDoc(router: Router | HybridRouter, jsonDoc: JsonObject, isModel: (type: any) => boolean, prefix?: string) {
         router.routes.forEach((v, route) => {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
@@ -115,18 +126,18 @@ export class SwaggerService {
                         description: "",
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => !p.paramFlags || (p.paramFlags & ParamFlags.request))?.map(p => {
+                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && isModel(p.type)))?.map(p => {
                             return {
                                 name: p.name,
                                 type: this.toDocType(p.type),
                                 in: this.toDocIn((p as TransportParameter).scope),
-                                required: isNil((p as ApiParamMetadata).required) ? !p.nullable || !(p.flags && (p.flags & InjectFlags.Optional) > 0) : (p as ApiParamMetadata).required
+                                required: isNil((p as ApiParamMetadata).required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : (p as ApiParamMetadata).required
                             }
                         })
                     }
                 });
             } else if (v instanceof Router) {
-                this.buildDoc(v, jsonDoc, route);
+                this.buildDoc(v, jsonDoc, isModel, route);
             }
         })
     }

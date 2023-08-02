@@ -1,4 +1,4 @@
-import { Parameter, tokenId, OperationInvoker } from '@tsdi/ioc';
+import { Parameter, tokenId, OperationInvoker, Type } from '@tsdi/ioc';
 import { EndpointContext } from './context';
 
 
@@ -18,6 +18,13 @@ import { EndpointContext } from './context';
      * @param ctx InvocationContext
      */
     resolve<T>(parameter: Parameter<T>, ctx: EndpointContext<TInput>): T;
+
+    /**
+     * the type is model or not.
+     * @param type class type.
+     * @returns boolean.
+     */
+    isModel(type: Type | undefined): boolean;
 }
 
 /**

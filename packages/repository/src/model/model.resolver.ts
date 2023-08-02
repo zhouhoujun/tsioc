@@ -90,7 +90,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
      * @param type class type.
      * @returns boolean.
      */
-    protected abstract isModel(type: Type | undefined): boolean;
+    abstract isModel(type: Type | undefined): boolean;
     /**
      * get db property metadatas.
      */
@@ -123,7 +123,7 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
     get resolvers(): ModelFieldResolver<C>[] {
         return this.option.fieldResolvers ?? EMPTY
     }
-    protected isModel(type: Type<any>): boolean {
+    isModel(type: Type<any>): boolean {
         return this.option.isModel(type)
     }
     protected getPropertyMeta(type: Type<any>): DBPropertyMetadata<any>[] {

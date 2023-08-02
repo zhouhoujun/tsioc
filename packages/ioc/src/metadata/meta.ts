@@ -39,7 +39,6 @@ export interface ProvideMetadata {
      */
     multi?: boolean;
 
-
     /**
      * inject flags.
      */
@@ -197,12 +196,6 @@ export interface MethodMetadata extends Record<string, any> {
 export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
 
 
-export enum ParamFlags {
-    none = 1,
-    autowried = 2,
-    request = 4
-}
-
 /**
  * parameter metadata.
  *
@@ -217,10 +210,6 @@ export interface ParameterMetadata extends ProvideMetadata, DesignParam {
      * @type {string}
      */
     propertyKey?: string;
-    /**
-     * param dector flags.
-     */
-    paramFlags?: ParamFlags;
 }
 
 

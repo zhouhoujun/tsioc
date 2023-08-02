@@ -6,7 +6,7 @@ import { isBoolean, isFunction } from '../utils/chk';
 import { runChain, Handle } from '../handle';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
-    RunnableMetadata, InjectableMetadata, MethodMetadata, ParamFlags
+    RunnableMetadata, InjectableMetadata, MethodMetadata
 } from './meta';
 import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
@@ -260,12 +260,6 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
             const idx = ctx.define.parameterIndex || 0;
             const desgmeta = params[idx] || EMPTY_OBJ;
             assign(meta, desgmeta);
-            if (meta.paramFlags) {
-                meta.paramFlags &= ParamFlags.autowried;
-            } else {
-                meta.paramFlags = ParamFlags.autowried
-            }
-
             params.splice(idx, 1, meta)
         }
     }

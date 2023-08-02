@@ -1,6 +1,6 @@
 import {
-    isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, PatternMetadata,
-    ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine, ParamFlags
+    isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, PatternMetadata, InjectFlags,
+    ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, Transport, PUT, RequestMethod } from '@tsdi/common';
 import { CanActivate, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
@@ -300,7 +300,11 @@ export const RouteMapping: RouteMapping = createMappingDecorator('RouteMapping')
 export const RequestHeader: TransportParameterDecorator = createParamDecorator('RequestHeader', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
-        meta.paramFlags = ParamFlags.request;
+        if (meta.flags) {
+            meta.flags |= InjectFlags.Request;
+        } else {
+            meta.flags = InjectFlags.Request;
+        }
         meta.scope = 'headers'
     }
 });
@@ -314,7 +318,11 @@ export const RequestHeader: TransportParameterDecorator = createParamDecorator('
 export const RequestPath: TransportParameterDecorator = createParamDecorator('RequestPath', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
-        meta.paramFlags = ParamFlags.request;
+        if (meta.flags) {
+            meta.flags |= InjectFlags.Request;
+        } else {
+            meta.flags = InjectFlags.Request;
+        }
         meta.scope = 'param'
     }
 });
@@ -327,7 +335,11 @@ export const RequestPath: TransportParameterDecorator = createParamDecorator('Re
 export const RequestParam: TransportParameterDecorator = createParamDecorator('RequestParam', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
-        meta.paramFlags = ParamFlags.request;
+        if (meta.flags) {
+            meta.flags |= InjectFlags.Request;
+        } else {
+            meta.flags = InjectFlags.Request;
+        }
         meta.scope = 'query';
     }
 });
@@ -340,7 +352,11 @@ export const RequestParam: TransportParameterDecorator = createParamDecorator('R
 export const RequestBody: TransportParameterDecorator = createParamDecorator('RequestBody', {
     props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
-        meta.paramFlags = ParamFlags.request;
+        if (meta.flags) {
+            meta.flags |= InjectFlags.Request;
+        } else {
+            meta.flags = InjectFlags.Request;
+        }
         meta.scope = 'body'
     }
 });

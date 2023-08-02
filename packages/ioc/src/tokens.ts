@@ -117,6 +117,11 @@ export enum InjectFlags {
      * HostOnly for InvocationContext.
      */
     HostOnly = 0b10000,
+
+    /**
+     * Param provide with Request Context.
+     */
+    Request = 0b100000
 }
 
 
