@@ -1,6 +1,6 @@
 import {
-    Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
-    Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
+    Type, Injector, ProviderType, InvokeArguments, DefaultInvocationContext,
+    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf, EMPTY_OBJ
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';

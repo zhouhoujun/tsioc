@@ -70,6 +70,19 @@ export interface SwaggerSetupOptions {
      * custom title for a page.
      */
     customSiteTitle?: string;
+
+
+    termsOfService?: string,
+    contact?: {
+        name: string;
+        url: string;
+        email: string;
+    }
+
+    license?: {
+        name: string;
+        url: string;
+    }
 }
 
 export const SWAGGER_SETUP_OPTIONS = tokenId<SwaggerSetupOptions>('SWAGGER_SETUP_OPTIONS');

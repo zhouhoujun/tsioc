@@ -1,13 +1,5 @@
-/**
- * @license
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/scottie1984/swagger-ui-express/blob/master/LICENSE
- */
-
-
 import { ApplicationContext, MODEL_RESOLVERS, Started, TransportParameter } from '@tsdi/core';
-import { EMPTY_OBJ, Execption, InjectFlags, Injectable, ModuleRef, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
+import { EMPTY_OBJ, Execption, InjectFlags, Injectable, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
 import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
@@ -46,7 +38,7 @@ export class SwaggerService {
             paths: {}
         }
 
-        const moduleRef = ctx.injector.get(ModuleRef);
+        const moduleRef = ctx.injector;
         const router = moduleRef.get(HybridRouter);
 
         const models = moduleRef.get(MODEL_RESOLVERS);
@@ -65,7 +57,9 @@ export class SwaggerService {
                 title: opts.title,
                 description: opts.description,
                 version: opts.version ?? '1.0.0',
-                contact: {}
+                contact: opts.contact ?? {},
+                license: opts.license,
+                termsOfService: opts.termsOfService
             },
             ...moduleRef.get(SWAGGER_DOCUMENT, null),
             ...jsonDoc
@@ -235,7 +229,12 @@ export class SwaggerService {
 }
 
 
-
+/**
+ * @license
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/scottie1984/swagger-ui-express/blob/master/LICENSE
+ */
 const _htmlTplString = `
 <!-- HTML for static distribution bundle build -->
 <!DOCTYPE html>
