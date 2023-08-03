@@ -132,20 +132,20 @@ export class SwaggerService {
         };
 
         if (type === 'array') {
-            lang.assign(schema, this.toArraySchema(p.provider as Type, getModelResolver))
+            lang.assign(schema, this.toArraySchema(p.provider as Type, p.provider as Type, getModelResolver))
         }
-        if (type === 'object') {
-            lang.assign(schema, this.toModelSchema(p.type!, getModelResolver));
+        if (type === 'object' && p.type !== Object) {
+            lang.assign(schema, this.toModelSchema(p.type!, p.type!, getModelResolver));
         }
         return schema;
     }
 
-    toArraySchema(itemType: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
+    toArraySchema(root: Type, itemType: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
         const type = this.toDocType(itemType);
         let exts: any;
 
-        if (type === 'object') {
-            exts = this.toModelSchema(itemType, modelResolver);
+        if (type === 'object' && itemType !== Object && itemType !== root) {
+            exts = this.toModelSchema(root, itemType, modelResolver);
         }
         return {
             type: 'array',
@@ -157,7 +157,12 @@ export class SwaggerService {
         }
     }
 
-    toModelSchema(type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
+    toModelSchema(root: Type, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
+        if (type === Object) {
+            return {
+                type: 'object'
+            }
+        }
         const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
         if (!resovler) {
             return {
@@ -167,13 +172,12 @@ export class SwaggerService {
         return {
             type: 'object',
             properties: resovler.getPropertyMeta(type).map(p => {
-                const dbField = p as DBPropertyMetadata;
                 const fType = this.toDocType(p.type);
-                if (p.multi || fType == 'array') {
-                    return this.toArraySchema(p.provider as Type, resovler)
+                if (fType == 'array') {
+                    return this.toArraySchema(root, p.provider as Type, resovler)
                 }
-                if (fType === 'object') {
-                    return this.toModelSchema(p.type!, resovler);
+                if (fType === 'object' && p.type !== Object && p.type !== root) {
+                    return this.toModelSchema(root, p.type!, resovler);
                 }
 
                 return {
