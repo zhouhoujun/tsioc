@@ -114,7 +114,7 @@ export function composeFieldResolver<T extends ModelFieldResolver, TP extends DB
     }
 }
 
-const intExp = /^((tiny|small|medium|big)?int\w*|long)$/;
+const intExp = /^((tiny|small|medium)?int\w*|long)$/;
 const floatExp = /^float\d*$/;
 const doubleExp = /^double(\sprecision)?$/;
 const decExp = /^(\w*decimal|dec|real|numeric|number)$/;
@@ -161,6 +161,16 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
                 const value = args[prop.name];
                 if (isNil(value)) return null;
                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('boolean');
+                if (!pipe) throw missingPropPipe(prop, target);
+                return pipe.transform(value)
+            }
+        },
+        {
+            canResolve: (prop, ctx, args) => prop.dbtype === 'bigint',
+            resolve: (prop, ctx, args, target) => {
+                const value = args[prop.name] ?? prop.default;
+                if (isNil(value)) return null;
+                const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('bigint');
                 if (!pipe) throw missingPropPipe(prop, target);
                 return pipe.transform(value)
             }

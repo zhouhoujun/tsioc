@@ -1,4 +1,4 @@
-import { ApplicationContext, MODEL_RESOLVERS, Started, TransportParameter } from '@tsdi/core';
+import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
 import { Execption, InjectFlags, Injectable, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.json';
 import { ApiParamMetadata } from './metadata';
+import { DBPropertyMetadata } from '@tsdi/repository';
 
 
 
@@ -33,13 +34,12 @@ export class SwaggerService {
 
         const models = moduleRef.get(MODEL_RESOLVERS);
 
-        const isModel = (target?: any) => {
-            if (!target) return false;
-            if (!isType(target)) return false;
-            return models.some(m => m.isModel(target))
+        const getModelResolver = (target?: any) => {
+            if (!target || !isType(target)) return undefined;
+            return models.find(m => m.hasModel(target))
         }
 
-        this.buildDoc(router, jsonDoc, isModel);
+        this.buildDoc(router, jsonDoc, getModelResolver);
 
         const doc = {
             openapi: '3.0.0',
@@ -92,7 +92,7 @@ export class SwaggerService {
     }
 
 
-    buildDoc(router: Router | HybridRouter, jsonDoc: OpenAPIObject, isModel: (type: any) => boolean, prefix?: string) {
+    buildDoc(router: Router | HybridRouter, jsonDoc: OpenAPIObject, getModelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
         router.routes.forEach((v, route) => {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
@@ -111,16 +111,16 @@ export class SwaggerService {
                         description: v.ctrlRef.class.getAnnotation<any>().description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && isModel(p.type)))?.map(p => this.toSchema(p as TransportParameter))
+                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && getModelResolver(p.type)))?.map(p => this.toSchema(p as TransportParameter, getModelResolver))
                     }
                 });
             } else if (v instanceof Router) {
-                this.buildDoc(v, jsonDoc, isModel, route);
+                this.buildDoc(v, jsonDoc, getModelResolver, route);
             }
         })
     }
 
-    toSchema(p: TransportParameter & ApiParamMetadata): any {
+    toSchema(p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
         const name = p.name;
         const type = this.toDocType(p.type);
         const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
@@ -132,7 +132,12 @@ export class SwaggerService {
         };
 
         if (type === 'object') {
-            schema.properties = [];
+            schema.properties = getModelResolver(p.type)?.getPropertyMeta(p.type!).map((p) => {
+                const dbField = p as DBPropertyMetadata;
+                
+
+
+            });
         }
         return schema
     }
@@ -143,6 +148,7 @@ export class SwaggerService {
         if (type === Number) return 'number';
         if (type === Date) return 'Datetime';
         if (type === Boolean) return 'boolean';
+        if (type === Array) return 'array';
         return 'object';
     }
 
