@@ -1,12 +1,12 @@
 import { ApplicationContext, MODEL_RESOLVERS, Started, TransportParameter } from '@tsdi/core';
-import { EMPTY_OBJ, Execption, InjectFlags, Injectable, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
+import { Execption, InjectFlags, Injectable, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
 import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
 import { HttpServer } from '@tsdi/transport-http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
-import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, JsonObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.json';
+import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.json';
 import { ApiParamMetadata } from './metadata';
 
 
@@ -22,23 +22,13 @@ export class SwaggerService {
 
     @Started()
     setup(ctx: ApplicationContext) {
-
-        const { options, ...cfg } = ctx.get(SWAGGER_SETUP_OPTIONS) ?? EMPTY_OBJ;
-        const opts = {
-            options: {
-                swagger: '2.0',
-                version: '1.0',
-                produces: ["application/json"],
-                ...options
-            },
-            ...cfg
-        } as SwaggerSetupOptions;
-
-        const jsonDoc: JsonObject = {
-            paths: {}
-        }
-
         const moduleRef = ctx.injector;
+        const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
+
+        const jsonDoc: OpenAPIObject = {
+            paths: {}
+        };
+
         const router = moduleRef.get(HybridRouter);
 
         const models = moduleRef.get(MODEL_RESOLVERS);
@@ -53,10 +43,11 @@ export class SwaggerService {
 
         const doc = {
             openapi: '3.0.0',
+            produces: ["application/json"],
             info: {
                 title: opts.title,
                 description: opts.description,
-                version: opts.version ?? '1.0.0',
+                version: opts.version,
                 contact: opts.contact ?? {},
                 license: opts.license,
                 termsOfService: opts.termsOfService
@@ -101,7 +92,7 @@ export class SwaggerService {
     }
 
 
-    buildDoc(router: Router | HybridRouter, jsonDoc: JsonObject, isModel: (type: any) => boolean, prefix?: string) {
+    buildDoc(router: Router | HybridRouter, jsonDoc: OpenAPIObject, isModel: (type: any) => boolean, prefix?: string) {
         router.routes.forEach((v, route) => {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
@@ -117,17 +108,10 @@ export class SwaggerService {
                     if (api[method]) throw new Execption(`has mutil route address ${path}, with same method ${method}`);
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
-                        description: "",
+                        description: v.ctrlRef.class.getAnnotation<any>().description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && isModel(p.type)))?.map(p => {
-                            return {
-                                name: p.name,
-                                type: this.toDocType(p.type),
-                                in: this.toDocIn((p as TransportParameter).scope),
-                                required: isNil((p as ApiParamMetadata).required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : (p as ApiParamMetadata).required
-                            }
-                        })
+                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && isModel(p.type)))?.map(p => this.toSchema(p as TransportParameter))
                     }
                 });
             } else if (v instanceof Router) {
@@ -136,25 +120,47 @@ export class SwaggerService {
         })
     }
 
+    toSchema(p: TransportParameter & ApiParamMetadata): any {
+        const name = p.name;
+        const type = this.toDocType(p.type);
+        const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
+        const schema: Record<string, any> = {
+            name,
+            type,
+            in: this.toDocIn(p),
+            required
+        };
+
+        if (type === 'object') {
+            schema.properties = [];
+        }
+        return schema
+    }
+
     toDocType(type?: Type): string {
         if (!type) return '';
         if (type === String) return 'string';
         if (type === Number) return 'number';
         if (type === Date) return 'Datetime';
         if (type === Boolean) return 'boolean';
-        return getClassName(type);
+        return 'object';
     }
 
-    toDocIn(scope?: 'headers' | 'query' | 'param' | 'path' | 'payload' | 'body' | 'topic') {
-        if (!scope) return 'query';
-        switch (scope) {
+    toDocIn(p: TransportParameter) {
+        if (!p.scope) return (!p.provider && p.type) ? 'formData' : 'query';
+        switch (p.scope) {
             case 'headers':
                 return 'header';
+
             case 'body':
             case 'payload':
                 return 'formData';
+
+            case 'query':
+            case 'param':
+                return 'query'
             default:
-                return scope;
+                return p.scope;
         }
     }
 
@@ -171,7 +177,7 @@ export class SwaggerService {
      * @returns the generated HTML page.
      */
     generateHTML(
-        swaggerDoc?: JsonObject,
+        swaggerDoc?: OpenAPIObject,
         opts?: SwaggerUiOptions,
         options?: SwaggerOptions,
         customCss?: string,

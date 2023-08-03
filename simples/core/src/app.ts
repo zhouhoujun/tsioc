@@ -109,7 +109,10 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
             }
         }),
         SwaggerModule.withOptions({
-            title: ''
+            title: 'api document',
+            description: 'platform basic api',
+            version: 'v1',
+            prefix: 'api-doc'
         })
     ],
     declarations: [
