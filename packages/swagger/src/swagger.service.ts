@@ -1,14 +1,14 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
-import { Execption, InjectFlags, Injectable, Type, getClassName, isNil, isString, isType } from '@tsdi/ioc';
+import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
+import { DBPropertyMetadata } from '@tsdi/repository';
 import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
 import { HttpServer } from '@tsdi/transport-http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.json';
 import { ApiParamMetadata } from './metadata';
-import { DBPropertyMetadata } from '@tsdi/repository';
 
 
 
@@ -122,7 +122,7 @@ export class SwaggerService {
 
     toSchema(p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
         const name = p.name;
-        const type = this.toDocType(p.type);
+        const type = p.dataType ?? this.toDocType(p.type);
         const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
         const schema: Record<string, any> = {
             name,
@@ -131,22 +131,63 @@ export class SwaggerService {
             required
         };
 
-        if (type === 'object') {
-            schema.properties = getModelResolver(p.type)?.getPropertyMeta(p.type!).map((p) => {
-                const dbField = p as DBPropertyMetadata;
-                
-
-
-            });
+        if (type === 'array') {
+            lang.assign(schema, this.toArraySchema(p.provider as Type, getModelResolver))
         }
-        return schema
+        if (type === 'object') {
+            lang.assign(schema, this.toModelSchema(p.type!, getModelResolver));
+        }
+        return schema;
+    }
+
+    toArraySchema(itemType: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
+        const type = this.toDocType(itemType);
+        let exts: any;
+
+        if (type === 'object') {
+            exts = this.toModelSchema(itemType, modelResolver);
+        }
+        return {
+            type: 'array',
+            collectionFormat: 'multi',
+            items: {
+                type,
+                ...exts
+            }
+        }
+    }
+
+    toModelSchema(type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
+        const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
+        if (!resovler) {
+            return {
+                type: 'object'
+            }
+        }
+        return {
+            type: 'object',
+            properties: resovler.getPropertyMeta(type).map(p => {
+                const dbField = p as DBPropertyMetadata;
+                const fType = this.toDocType(p.type);
+                if (p.multi || fType == 'array') {
+                    return this.toArraySchema(p.provider as Type, resovler)
+                }
+                if (fType === 'object') {
+                    return this.toModelSchema(p.type!, resovler);
+                }
+
+                return {
+                    type: fType
+                }
+            })
+        }
     }
 
     toDocType(type?: Type): string {
         if (!type) return '';
         if (type === String) return 'string';
         if (type === Number) return 'number';
-        if (type === Date) return 'Datetime';
+        if (type === Date) return 'date-time';
         if (type === Boolean) return 'boolean';
         if (type === Array) return 'array';
         return 'object';
