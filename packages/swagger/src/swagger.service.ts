@@ -26,10 +26,6 @@ export class SwaggerService {
         const moduleRef = ctx.injector;
         const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
 
-        const jsonDoc: OpenAPIObject = {
-            paths: {}
-        };
-
         const router = moduleRef.get(HybridRouter);
 
         const models = moduleRef.get(MODEL_RESOLVERS);
@@ -38,8 +34,6 @@ export class SwaggerService {
             if (!target || !isType(target)) return undefined;
             return models.find(m => m.hasModel(target))
         }
-
-        this.buildDoc(router, jsonDoc, getModelResolver);
 
         const doc = {
             openapi: '3.0.0',
@@ -52,9 +46,11 @@ export class SwaggerService {
                 license: opts.license,
                 termsOfService: opts.termsOfService
             },
+            paths:{},
             ...moduleRef.get(SWAGGER_DOCUMENT, null),
-            ...jsonDoc
-        };
+        } as OpenAPIObject;
+
+        this.buildDoc(router, doc, getModelResolver);
 
         const fspath = getAbsoluteFSPath();
 
