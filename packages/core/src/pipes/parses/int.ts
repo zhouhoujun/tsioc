@@ -27,7 +27,7 @@ export class IntPipe implements PipeTransform<number> {
 
 
 /**
- * parse int.
+ * parse bigint.
  */
 @Pipe('bigint')
 export class BigintPipe implements PipeTransform<bigint> {

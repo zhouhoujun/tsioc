@@ -11,9 +11,93 @@ export interface SwaggerOptions extends SwaggerConfigs {
  * OpenAPI definition
  */
 export interface OpenAPIObject {
-    [key: string]: any;
+    openapi: string;
+    info: InfoObject;
+    servers?: ServerObject[];
+    paths: Record<string, PathItemObject>;
+    components?: any;
+    security?: Record<string, string[]>[];
+    tags?: TagObject[];
+    externalDocs?: ExternalDocumentationObject;
 }
 
+export interface TagObject {
+    name: string;
+    description?: string;
+    externalDocs?: ExternalDocumentationObject;
+  }
+export interface InfoObject {
+    title: string;
+    description?: string;
+    termsOfService?: string;
+    contact?: ContactObject;
+    license?: LicenseObject;
+    version: string;
+  }
+  
+  export interface ContactObject {
+    name?: string;
+    url?: string;
+    email?: string;
+  }
+  
+  export interface LicenseObject {
+    name: string;
+    url?: string;
+  }
+
+  export interface ServerObject {
+    url: string;
+    description?: string;
+    variables?: Record<string, ServerVariableObject>;
+  }
+  
+  export interface ServerVariableObject {
+    enum?: string[] | boolean[] | number[];
+    default: string | boolean | number;
+    description?: string;
+  }
+  
+
+  export interface PathItemObject {
+    $ref?: string;
+    summary?: string;
+    description?: string;
+    get?: OperationObject;
+    put?: OperationObject;
+    post?: OperationObject;
+    delete?: OperationObject;
+    options?: OperationObject;
+    head?: OperationObject;
+    patch?: OperationObject;
+    trace?: OperationObject;
+    servers?: ServerObject[];
+    parameters?: any[];
+  }
+
+  export interface OperationObject {
+    tags?: string[];
+    summary?: string;
+    description?: string;
+    externalDocs?: ExternalDocumentationObject;
+    operationId?: string;
+    parameters?:any[];
+    requestBody?: any;
+    responses: any;
+    callbacks?: any;
+    deprecated?: boolean;
+    security?: Record<string, string[]>[];
+    servers?: ServerObject[];
+  }
+
+  export interface ExternalDocumentationObject {
+    description?: string;
+    url: string;
+  }
+  
+/**
+ * Swagger ui options.
+ */
 export interface SwaggerUiOptions {
     customCss?: string;
     customCssUrl?: string;
@@ -24,7 +108,7 @@ export interface SwaggerUiOptions {
     customRobots?: string;
     explorer?: boolean;
     isExplorer?: boolean;
-    swaggerOptions?: SwaggerOptions;
+    swaggerOptions?: Omit<SwaggerOptions, 'spec'|'url'|'urls'>;
     swaggerUrl?: string;
     swaggerUrls?: string[];
 }
@@ -57,7 +141,7 @@ export interface SwaggerSetupOptions {
     /**
      * custom Swagger options.
      */
-    options?: SwaggerOptions;
+    options?: Omit<SwaggerOptions, 'spec'|'url'|'urls'>;
     /**
      * string with a custom CSS to embed into the page.
      */
@@ -75,18 +159,9 @@ export interface SwaggerSetupOptions {
      */
     customSiteTitle?: string;
 
-
     termsOfService?: string,
-    contact?: {
-        name: string;
-        url: string;
-        email: string;
-    }
-
-    license?: {
-        name: string;
-        url: string;
-    }
+    contact?: ContactObject;
+    license?: LicenseObject
 }
 
 export const SWAGGER_SETUP_OPTIONS = tokenId<SwaggerSetupOptions>('SWAGGER_SETUP_OPTIONS');
