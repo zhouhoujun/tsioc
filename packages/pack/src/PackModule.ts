@@ -9,7 +9,7 @@ import { NodeActivityContext } from './NodeActivityContext';
 import { PlatformService } from './PlatformService';
 import * as pipes from './pipes';
 
-@DIModule({
+@Module({
     regIn: 'root',
     imports: [
         ServerBootstrapModule,
