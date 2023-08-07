@@ -2,13 +2,13 @@ import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, Tr
 import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
-import { DBPropertyMetadata } from '@tsdi/repository';
+import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
 import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
 import { HttpServer } from '@tsdi/transport-http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
-import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.json';
-import { ApiParamMetadata } from './metadata';
+import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
+import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
 
 
 
@@ -46,7 +46,10 @@ export class SwaggerService {
                 license: opts.license,
                 termsOfService: opts.termsOfService
             },
-            paths:{},
+            components: {
+                schemas: {}
+            },
+            paths: {},
             ...moduleRef.get(SWAGGER_DOCUMENT, null),
         } as OpenAPIObject;
 
@@ -88,13 +91,16 @@ export class SwaggerService {
     }
 
 
-    buildDoc(router: Router | HybridRouter, jsonDoc: OpenAPIObject, getModelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
+    buildDoc(router: Router | HybridRouter, jsonDoc: OpenAPIObject, modelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
         router.routes.forEach((v, route) => {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
                 v.ctrlRef.class.defs.forEach(df => {
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
-                    const path = joinPath(prefix, route, df.metadata.route as string);
+                    let path = joinPath(prefix, route, df.metadata.route as string);
+                    if (!/^\//.test(path)) {
+                        path = '/' + path;
+                    }
 
                     if (!jsonDoc.paths[path]) {
                         jsonDoc.paths[path] = {};
@@ -102,46 +108,93 @@ export class SwaggerService {
                     const api: Record<string, any> = jsonDoc.paths[path];
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
                     if (api[method]) throw new Execption(`has mutil route address ${path}, with same method ${method}`);
+
+                    const returnType = df.metadata.returnType ?? df.metadata.type;
+                    let returnTypeName = '';
+                    if (returnType && returnType != Object && returnType != Promise) {
+                        if (!jsonDoc.components.schemas[returnTypeName]) {
+                            this.regSchema(jsonDoc, returnType, modelResolver);
+                        }
+                        returnTypeName = getClassName(returnType);
+                    }
+
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
                         description: v.ctrlRef.class.getAnnotation<any>().description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && getModelResolver(p.type)))?.map(p => this.toSchema(p as TransportParameter, getModelResolver))
+                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && modelResolver(p.type)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
+                        responses: df.metadata.responses ?? {
+                            '200': {
+                                description: "Success",
+                                content: {
+                                    "text/plain": {
+                                        "schema": returnTypeName ? {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": `#/components/schemas/${returnTypeName}`
+                                            }
+                                        } : undefined
+                                    },
+                                    "application/json": {
+                                        "schema": returnTypeName ? {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": `#/components/schemas/${returnTypeName}`
+                                            }
+                                        } : undefined
+                                    },
+                                    "text/json": {
+                                        "schema": returnTypeName ? {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": `#/components/schemas/${returnTypeName}`
+                                            }
+                                        } : undefined
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             } else if (v instanceof Router) {
-                this.buildDoc(v, jsonDoc, getModelResolver, route);
+                this.buildDoc(v, jsonDoc, modelResolver, route);
             }
         })
     }
 
-    toSchema(p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
+    toParamObject(jsonDoc: OpenAPIObject, p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
         const name = p.name;
         const type = p.dataType ?? this.toDocType(p.type);
         const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
-        const schema: Record<string, any> = {
+        const paramObj: Record<string, any> = {
             name,
-            type,
+            description: p.description,
+            example: p.example,
             in: this.toDocIn(p),
             required
         };
 
         if (type === 'array') {
-            lang.assign(schema, this.toArraySchema(p.provider as Type, p.provider as Type, getModelResolver))
+            paramObj.schema = this.toArraySchema(p.provider as Type, getModelResolver)
         }
         if (type === 'object' && p.type !== Object) {
-            lang.assign(schema, this.toModelSchema(p.type!, p.type!, getModelResolver));
+            paramObj.schema = this.toModelSchema(jsonDoc, p.type!, getModelResolver);
         }
-        return schema;
+        return paramObj;
     }
 
-    toArraySchema(root: Type, itemType: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
+    toArraySchema(itemType: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
         const type = this.toDocType(itemType);
         let exts: any;
 
-        if (type === 'object' && itemType !== Object && itemType !== root) {
-            exts = this.toModelSchema(root, itemType, modelResolver);
+        if (type === 'object' && itemType !== Object) {
+            return {
+                type: 'array',
+                items: {
+                    "$ref": `#/components/schemas/${getClassName(itemType)}`
+                }
+            }
         }
         return {
             type: 'array',
@@ -153,35 +206,84 @@ export class SwaggerService {
         }
     }
 
-    toModelSchema(root: Type, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
-        if (type === Object) {
-            return {
-                type: 'object'
-            }
-        }
+    regSchema(jsonDoc: OpenAPIObject, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
+        if (type === Object) return;
         const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
-        if (!resovler) {
-            return {
-                type: 'object'
-            }
+        if (!resovler || !resovler.hasModel(type)) return;
+
+        jsonDoc.components.schemas[getClassName(type)] = {
+            type: 'object',
+            properties: resovler.getPropertyMeta(type).reduceRight((ps, prop) => {
+                const p = prop as DBPropertyMetadata & ApiModelPropertyMetadata;
+                if (!p.name) throw new MissingModelFieldExecption([p], type)
+                const fType = this.toDocType(p.type);
+                const pobj = ps[p.name] = { ...lang.omit(p, 'type', 'provider', 'default', 'dbtype', 'length', 'width', 'update'), type: fType, nullable: p.nullable } as any;
+                if (p.length && !pobj.maxLenght) {
+                    pobj.maxLenght = p.length;
+                }
+                if (isNil(pobj.readOnly) && !isNil(p.update)) {
+                    pobj.readOnly = p.update;
+                }
+                if (fType == 'array') {
+                    Object.assign(pobj, this.toArraySchema(p.provider as Type, resovler));
+                    return ps;
+                }
+                if (fType === 'object' && p.type !== Object) {
+                    Object.assign(pobj, this.toModelSchema(jsonDoc, p.type, resovler));
+                    return ps;
+                }
+                return ps;
+            }, {} as Record<string, any>)
+        };
+    }
+
+    toModelSchema(jsonDoc: OpenAPIObject, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
+        const modelName = getClassName(type);
+        if (jsonDoc.components.schemas[modelName]) {
+            this.regSchema(jsonDoc, type, modelResolver);
         }
         return {
-            type: 'object',
-            properties: resovler.getPropertyMeta(type).map(p => {
-                const fType = this.toDocType(p.type);
-                if (fType == 'array') {
-                    return this.toArraySchema(root, p.provider as Type, resovler)
-                }
-                if (fType === 'object' && p.type !== Object && p.type !== root) {
-                    return this.toModelSchema(root, p.type!, resovler);
-                }
-
-                return {
-                    type: fType
-                }
-            })
-        }
+            "$ref": `#/components/schemas/${modelName}`
+        };
     }
+
+    // toModelSchema(root: Type, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
+    //     if (type === Object) {
+    //         return {
+    //             type: 'object'
+    //         }
+    //     }
+    //     const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
+    //     if (!resovler) {
+    //         return {
+    //             type: 'object'
+    //         }
+    //     }
+    //     return {
+    //         type: 'object',
+    //         properties: resovler.getPropertyMeta(type).reduceRight((ps, prop) => {
+    //             const p = prop as DBPropertyMetadata & ApiModelPropertyMetadata;
+    //             if (!p.name) throw new MissingModelFieldExecption([p], type)
+    //             const fType = this.toDocType(p.type);
+    //             const pobj = ps[p.name] = { ...lang.omit(p, 'type', 'provider', 'default', 'dbtype', 'length', 'width', 'update'), type: fType, nullable: p.nullable } as any;
+    //             if (p.length && !pobj.maxLenght) {
+    //                 pobj.maxLenght = p.length;
+    //             }
+    //             if (isNil(pobj.readOnly) && !isNil(p.update)) {
+    //                 pobj.readOnly = p.update;
+    //             }
+    //             if (fType == 'array') {
+    //                 Object.assign(pobj, this.toArraySchema(root, p.provider as Type, resovler));
+    //                 return ps;
+    //             }
+    //             if (fType === 'object' && p.type !== Object && p.type !== root) {
+    //                 Object.assign(pobj, this.toModelSchema(root, p.type!, resovler));
+    //                 return ps;
+    //             }
+    //             return ps;
+    //         }, {} as Record<string, any>)
+    //     }
+    // }
 
     toDocType(type?: Type): string {
         if (!type) return '';

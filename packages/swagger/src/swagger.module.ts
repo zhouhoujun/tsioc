@@ -1,5 +1,5 @@
 import { Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { SWAGGER_SETUP_OPTIONS, SwaggerSetupOptions } from './swagger.json';
+import { SWAGGER_SETUP_OPTIONS, SwaggerSetupOptions } from './swagger.config';
 import { SwaggerService } from './swagger.service';
 
 @Module({
