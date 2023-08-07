@@ -247,44 +247,6 @@ export class SwaggerService {
         };
     }
 
-    // toModelSchema(root: Type, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
-    //     if (type === Object) {
-    //         return {
-    //             type: 'object'
-    //         }
-    //     }
-    //     const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
-    //     if (!resovler) {
-    //         return {
-    //             type: 'object'
-    //         }
-    //     }
-    //     return {
-    //         type: 'object',
-    //         properties: resovler.getPropertyMeta(type).reduceRight((ps, prop) => {
-    //             const p = prop as DBPropertyMetadata & ApiModelPropertyMetadata;
-    //             if (!p.name) throw new MissingModelFieldExecption([p], type)
-    //             const fType = this.toDocType(p.type);
-    //             const pobj = ps[p.name] = { ...lang.omit(p, 'type', 'provider', 'default', 'dbtype', 'length', 'width', 'update'), type: fType, nullable: p.nullable } as any;
-    //             if (p.length && !pobj.maxLenght) {
-    //                 pobj.maxLenght = p.length;
-    //             }
-    //             if (isNil(pobj.readOnly) && !isNil(p.update)) {
-    //                 pobj.readOnly = p.update;
-    //             }
-    //             if (fType == 'array') {
-    //                 Object.assign(pobj, this.toArraySchema(root, p.provider as Type, resovler));
-    //                 return ps;
-    //             }
-    //             if (fType === 'object' && p.type !== Object && p.type !== root) {
-    //                 Object.assign(pobj, this.toModelSchema(root, p.type!, resovler));
-    //                 return ps;
-    //             }
-    //             return ps;
-    //         }, {} as Record<string, any>)
-    //     }
-    // }
-
     toDocType(type?: Type): string {
         if (!type) return '';
         if (type === String) return 'string';
