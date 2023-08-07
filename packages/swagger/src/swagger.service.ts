@@ -98,8 +98,12 @@ export class SwaggerService {
                 v.ctrlRef.class.defs.forEach(df => {
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
                     let path = joinPath(prefix, route, df.metadata.route as string);
-                    if (!/^\//.test(path)) {
+                    if (!absReg.test(path)) {
                         path = '/' + path;
+                    }
+
+                    if (restReg.test(path)) {
+                        path = path.replace(restReg, p => `/{${p.substring(2)}}`);
                     }
 
                     if (!jsonDoc.paths[path]) {
@@ -224,6 +228,10 @@ export class SwaggerService {
                 if (isNil(pobj.readOnly) && !isNil(p.update)) {
                     pobj.readOnly = p.update;
                 }
+                if (p.dbtype === 'uuid') {
+                    pobj.type = 'string';
+                    return ps;
+                }
                 if (fType == 'array') {
                     Object.assign(pobj, this.toArraySchema(p.provider as Type, resovler));
                     return ps;
@@ -239,7 +247,7 @@ export class SwaggerService {
 
     toModelSchema(jsonDoc: OpenAPIObject, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
         const modelName = getClassName(type);
-        if (jsonDoc.components.schemas[modelName]) {
+        if (!jsonDoc.components.schemas[modelName]) {
             this.regSchema(jsonDoc, type, modelResolver);
         }
         return {
@@ -267,9 +275,6 @@ export class SwaggerService {
             case 'payload':
                 return 'formData';
 
-            case 'query':
-            case 'param':
-                return 'query'
             default:
                 return p.scope;
         }
@@ -345,6 +350,8 @@ export class SwaggerService {
     }
 }
 
+const absReg = /^\//g;
+const restReg = /\/:\w+/g;
 
 /**
  * @license

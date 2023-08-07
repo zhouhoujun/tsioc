@@ -35,7 +35,7 @@ export class RouteEndpointImpl<TInput extends AssetContext = AssetContext, TOutp
                 }
             });
             if (has) {
-                ctx.payload.param = restParams;
+                ctx.payload.path = restParams;
             }
         }
     }

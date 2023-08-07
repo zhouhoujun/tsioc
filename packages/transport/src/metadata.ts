@@ -323,7 +323,7 @@ export const RequestPath: TransportParameterDecorator = createParamDecorator('Re
         } else {
             meta.flags = InjectFlags.Request;
         }
-        meta.scope = 'param'
+        meta.scope = 'path'
     }
 });
 
