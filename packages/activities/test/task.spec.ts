@@ -10,11 +10,11 @@ describe('activity test', () => {
     describe('#run acitivity as boot', ()=> {
         it('should bootstrap with single task.', async () => {
             const ctx = await Workflow.run(SimpleTask);
-            const runner = ctx.runners.runners[0];
+            const runner = ctx.runners.getRef(SimpleTask);
             // console.log(ctx.startup);
-            expect(runner.instance instanceof SimpleTask).toBe(true);
+            expect(runner.getInstance() instanceof SimpleTask).toBe(true);
             // console.log(result);
-            expect(runner.instance.text).toEqual('simple task');
+            expect(runner.getInstance().text).toEqual('simple task');
         });
 
     })
