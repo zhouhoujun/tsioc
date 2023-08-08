@@ -1,4 +1,3 @@
-import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 /**
@@ -6,15 +5,15 @@ import { Observable } from 'rxjs';
  * 
  * 处理器，是服务端和客户端的基本构建块。
  */
-@Abstract()
-export abstract class Handler<TInput = any, TOutput = any> {
+
+export interface Handler<TInput = any, TOutput = any> {
     /**
      * handle.
      * 
      * 处理句柄
      * @param input request input.
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    handle(input: TInput): Observable<TOutput>;
 
     /**
      * is this equals to target or not
@@ -22,7 +21,7 @@ export abstract class Handler<TInput = any, TOutput = any> {
      * 该实例等于目标与否？
      * @param target 
      */
-    abstract equals?(target: any): boolean;
+    equals?(target: any): boolean;
 }
 
 
@@ -31,11 +30,10 @@ export abstract class Handler<TInput = any, TOutput = any> {
  * 
  * 后段处理器，是服务端和客户端的最终处理器。
  */
-@Abstract()
-export abstract class Backend<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export interface Backend<TInput = any, TOutput = any> extends Handler<TInput, TOutput> {
     /**
      * transport endpoint handle.
      * @param input request input.
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    handle(input: TInput): Observable<TOutput>;
 }

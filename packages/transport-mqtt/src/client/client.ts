@@ -3,7 +3,7 @@ import { TransportRequest, DisconnectExecption, OfflineExecption } from '@tsdi/c
 import { Client, TRANSPORT_SESSION, TransportSession, LOCALHOST, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
 import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
 import { MqttTransportSessionFactory } from '../transport';

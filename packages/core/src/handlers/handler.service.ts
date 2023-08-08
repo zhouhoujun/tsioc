@@ -4,6 +4,7 @@ import { Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { Filter, FilterService } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
+import { Observable } from 'rxjs';
 
 
 /**
@@ -54,8 +55,10 @@ export interface HandlerService extends FilterService, PipeService, InterceptorS
 * Configable hanlder
 */
 @Abstract()
-export abstract class ConfigableHandler<TInput = any, TOutput = any> extends Handler<TInput, TOutput> implements HandlerService {
-
+export abstract class ConfigableHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput>, HandlerService {
+    
+    abstract handle(input: TInput): Observable<TOutput>;
+    
     abstract get injector(): Injector;
 
     abstract useGuards(guards: ProvdierOf<CanActivate<TInput>> | ProvdierOf<CanActivate<TInput>>[], order?: number): this;

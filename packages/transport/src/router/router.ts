@@ -11,7 +11,9 @@ import { Route } from './route';
  * public api for global router
  */
 @Abstract()
-export abstract class Router<T = Endpoint> extends Backend<TransportContext> implements Interceptor<TransportContext> {
+export abstract class Router<T = Endpoint> implements Backend<TransportContext>, Interceptor<TransportContext> {
+    
+    abstract handle(input: TransportContext): Observable<any>;
     /**
      * route prefix.
      */
