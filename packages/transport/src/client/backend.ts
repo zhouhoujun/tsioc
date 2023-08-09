@@ -9,7 +9,7 @@ import { StreamRequestAdapter } from './request.stream';
  * transport client endpoint backend.
  */
 @Injectable()
-export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Backend<TRequest, TResponse>  {
+export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
 
     constructor() { }
 
@@ -24,7 +24,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
  * stream transport client endpoint backend.
  */
 @Injectable()
-export class StreamTransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Backend<TRequest, TResponse>  {
+export class StreamTransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
 
     constructor() { }
 

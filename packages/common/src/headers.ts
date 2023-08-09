@@ -17,18 +17,18 @@ export interface IncomingHeaders extends Record<string, IncomingHeader> {
     'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
-    ':method'?: string | undefined;
-    ':path'?: string | undefined;
+    ':method'?: string;
+    ':path'?: string;
     'origin-path'?: string;
-    ':authority'?: string | undefined;
-    ':scheme'?: string | undefined;
-    ':topic'?: string | undefined;
+    ':authority'?: string;
+    ':scheme'?: string;
+    ':topic'?: string;
 
 }
 
 export interface IncomingStatusHeaders {
-    status?: number | string | undefined;
-    ':status'?: number | string | undefined;
+    status?: number | string;
+    ':status'?: number | string;
 }
 
 export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
@@ -39,12 +39,12 @@ export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
     'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
-    ':authority'?: string | undefined;
-    ':path'?: string | undefined;
+    ':authority'?: string;
+    ':path'?: string;
     'origin-path'?: string;
-    ':method'?: string | undefined;
+    ':method'?: string;
     ':type'?: string | number;
-    ':topic'?: string | undefined;
+    ':topic'?: string;
 }
 
 
