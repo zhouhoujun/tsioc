@@ -22,8 +22,13 @@ export interface CodingContext<TInput, TOutput> {
     output: TOutput;
 }
 
-export abstract class CodingHandler<TInput, TOutput> {
-    abstract handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
+export interface Encoding<TInput = SendPacket, TOutput = Buffer> {
+    handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
+}
+
+
+export interface Decoding<TInput = Buffer, TOutput = Packet> {
+    handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
 }
 
 
@@ -55,6 +60,6 @@ export class JsonDecoder {
 
 
 
-export const ENCODERS = tokenId<CodingHandler<SendPacket, Buffer>[]>('ENCODERS');
+export const ENCODINGS = tokenId<Encoding[]>('ENCODINGS');
 
-export const DECODERS = tokenId<CodingHandler<Buffer, SendPacket>[]>('DECODERS');
+export const DECODINGS = tokenId<Decoding[]>('DECODINGS');
