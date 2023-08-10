@@ -1,27 +1,27 @@
 import { Interceptor, Handler, Backend } from '@tsdi/core';
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { NotSupportedExecption } from '@tsdi/common';
+import { NotSupportedExecption, Packet } from '@tsdi/common';
 import { Observable, lastValueFrom, of, throwError } from 'rxjs';
 import { isBuffer } from './utils';
 
 
 @Abstract()
-export abstract class Encoder<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export abstract class Encoder {
 
-    abstract handle(input: TInput): Observable<TOutput>;
+    abstract handle(input: Packet): Buffer;
 
-    encode(input: TInput): Promise<TOutput> {
-        return lastValueFrom(this.handle(input));
+    encode(input: Packet): Buffer {
+        return this.handle(input);
     }
 }
 
 @Abstract()
-export abstract class Decoder<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export abstract class Decoder {
 
-    abstract handle(input: TInput): Observable<TOutput>;
+    abstract handle(input: Buffer): Packet;
 
-    decode(input: TInput): Promise<TOutput> {
-        return lastValueFrom(this.handle(input));
+    decode(input: Buffer): Packet {
+        return this.handle(input);
     }
 }
 

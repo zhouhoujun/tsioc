@@ -14,10 +14,6 @@ import { Redirector } from '../Redirector';
  * Packet with status
  */
 export interface StatusPacket<TStatus> {
-    // id?: any;
-    // url?: string;
-    // topic?: string;
-    // method?: string;
     type?: number;
     headers: IncomingHeaders | OutgoingHeaders;
     error?: any;

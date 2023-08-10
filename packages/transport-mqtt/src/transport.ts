@@ -32,29 +32,26 @@ export class MqttTransportSession extends TopicTransportSession<Client> {
     write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         const topic = packet.topic ?? packet.url!;
         if (!packet.headerSent) {
-            this.generateHeader(packet)
-                .then((buff) => {
-                    if (this.hasPayloadLength(packet)) {
-                        packet.residueSize = packet.payloadSize ?? 0;
-                        packet.caches = [buff];
-                        packet.cacheSize = Buffer.byteLength(buff);
-                        packet.headerSent = true;
-                        packet.headCached = true;
-                        if (chunk) {
-                            this.write(packet, chunk, callback)
-                        } else {
-                            callback?.();
-                        }
-                    } else {
-                        this.socket.publish(topic, buff, (err) => {
-                            if (err) {
-                                this.handleFailed(err);
-                            }
-                            callback?.(err);
-                        });
+            const buff = this.generateHeader(packet);
+            if (this.hasPayloadLength(packet)) {
+                packet.residueSize = packet.payloadSize ?? 0;
+                packet.caches = [buff];
+                packet.cacheSize = Buffer.byteLength(buff);
+                packet.headerSent = true;
+                packet.headCached = true;
+                if (chunk) {
+                    this.write(packet, chunk, callback)
+                } else {
+                    callback?.();
+                }
+            } else {
+                this.socket.publish(topic, buff, (err) => {
+                    if (err) {
+                        this.handleFailed(err);
                     }
-                })
-                .catch(err => callback?.(err))
+                    callback?.(err);
+                });
+            }
             return;
         }
 

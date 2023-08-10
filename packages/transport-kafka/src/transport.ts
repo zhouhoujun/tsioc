@@ -63,7 +63,7 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
             ...this.options.run,
             eachMessage: async (payload) => {
                 if (this.options.serverSide && payload.topic.endsWith('.reply')) return;
-                await this.onData(payload, payload.topic)
+                this.onData(payload, payload.topic)
             }
         })
     }

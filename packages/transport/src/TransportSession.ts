@@ -139,8 +139,6 @@ export interface TransportSessionOpts {
     encoder?: Encoder;
 
     decoder?: Decoder;
-
-    zipHeader?: boolean;
 }
 
 /**

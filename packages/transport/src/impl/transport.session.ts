@@ -86,7 +86,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
      * @param packet 
      * @returns 
      */
-    protected async generatePayload(payload: any, packet: SendPacket): Promise<Buffer> {
+    protected generatePayload(payload: any, packet: SendPacket): Buffer {
         let body: Buffer;
         if (isString(payload)) {
             body = Buffer.from(payload);
@@ -97,11 +97,6 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         }
 
         if (!this.hasPayloadLength(packet)) {
-            this.setPayloadLength(packet, Buffer.byteLength(body));
-        }
-
-        if (this.encoder) {
-            body = await this.encoder.encode(body);
             this.setPayloadLength(packet, Buffer.byteLength(body));
         }
 
@@ -189,9 +184,9 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         this._body = Buffer.alloc(1, '1');
     }
 
-    async generateHeader(packet: SendPacket, options?: SendOpts): Promise<Buffer> {
+    generateHeader(packet: SendPacket, options?: SendOpts): Buffer {
         const { id, headerSent, headerSize, payloadSize, size, cacheSize, caches, residueSize, ...headers } = packet as Subpackage;
-        const buffers = await this.serialize(headers);
+        const buffers = this.serialize(headers);
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(id);
         const len = Buffer.byteLength(buffers);
@@ -207,24 +202,15 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         ]);
     }
 
-    protected async serialize(packet: HeaderPacket): Promise<Buffer> {
-        let buff = Buffer.from(JSON.stringify(packet))
-        if (this.encoder) {
-            buff = await this.encoder.encode(buff);
-        }
-        if (this.options.zipHeader) {
-            buff = await this.streamAdapter.gzip(buff)
-        }
-        return buff;
+    protected serialize(packet: HeaderPacket): Buffer {
+        return this.encoder ? this.encoder.encode(packet) : Buffer.from(JSON.stringify(packet));
     }
 
-    protected async deserialize(buff: Buffer): Promise<HeaderPacket> {
-        if (this.options.zipHeader) {
-            buff = await this.streamAdapter.gunzip(buff);
-        }
+    protected deserialize(buff: Buffer): Packet {
         if (this.decoder) {
-            buff = await this.decoder.decode(buff);
+            return this.decoder.decode(buff);
         }
+
         const str = buff.toString();
         try {
             return JSON.parse(str);
@@ -271,7 +257,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
     private buffers: Buffer[] = [];
     private length = 0
     private contentLength: number | null = null;
-    private cachePkg: Map<number | string, Packet | Promise<Packet>> = new Map();
+    private cachePkg: Map<number | string, Packet> = new Map();
 
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.socket.on(name, event);
@@ -288,7 +274,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         }
     }
 
-    protected async handleData(dataRaw: string | Buffer) {
+    protected handleData(dataRaw: string | Buffer) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -318,14 +304,14 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
 
         if (this.contentLength !== null) {
             if (this.length === this.contentLength) {
-                await this.handleMessage(this.concatCaches());
+                this.handleMessage(this.concatCaches());
             } else if (this.length > this.contentLength) {
                 const buffer = this.concatCaches();
                 const message = buffer.subarray(0, this.contentLength);
                 const rest = buffer.subarray(this.contentLength);
-                await this.handleMessage(message);
+                this.handleMessage(message);
                 if (rest.length) {
-                    await this.handleData(rest);
+                    this.handleData(rest);
                 }
             }
         }
@@ -342,44 +328,39 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
         return this.emitMessage(message);
     }
 
-    protected async emitMessage(chunk: Buffer) {
+    protected emitMessage(chunk: Buffer) {
+        // this.deserialize(chunk);
         if (chunk.indexOf(this._header) == 0) {
             const id = chunk.readUInt16BE(1);
-            const msg$ = this.deserialize(chunk.subarray(3))
-                .then((message: Packet) => {
-                    message.id = id;
-                    if (this.hasPayloadLength(message)) {
-                        if (isNil(message.payload)) {
-                            this.emit(ev.HEADERS, message);
-                            this.cachePkg.set(id, message);
-                        } else {
-                            const len = this.getPayloadLength(message);
-                            let plen;
-                            if (isString(message) || isBuffer(message)) {
-                                plen = Buffer.byteLength(message.payload);
-                            } else {
-                                plen = Buffer.byteLength(JSON.stringify(message.payload));
-                            }
-                            if (plen == len) {
-                                this.emit(ev.MESSAGE, message);
-                            }
-                        }
+            const message = this.deserialize(chunk.subarray(3))
+
+            message.id = id;
+            if (this.hasPayloadLength(message)) {
+                if (isNil(message.payload)) {
+                    this.emit(ev.HEADERS, message);
+                    this.cachePkg.set(id, message);
+                } else {
+                    const len = this.getPayloadLength(message);
+                    let plen;
+                    if (isString(message) || isBuffer(message)) {
+                        plen = Buffer.byteLength(message.payload);
                     } else {
+                        plen = Buffer.byteLength(JSON.stringify(message.payload));
+                    }
+                    if (plen == len) {
                         this.emit(ev.MESSAGE, message);
                     }
-                    return message;
-                });
-            this.cachePkg.set(id, msg$);
-            await msg$
+                }
+            } else {
+                this.emit(ev.MESSAGE, message);
+            }
 
         } else if (chunk.indexOf(this._body) == 0) {
             const id = chunk.readUInt16BE(1);
             if (id) {
                 let payload = chunk.subarray(3);
-                let pkg = this.cachePkg.get(id);
-                if (isPromise(pkg)) {
-                    pkg = await pkg;
-                }
+                const pkg = this.cachePkg.get(id);
+
                 if (!pkg) throw new MessageExecption('No header found!');
 
                 if (pkg.payload) {
@@ -388,13 +369,9 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                     pkg.payload = payload;
                 }
 
-
                 const len = this.getPayloadLength(pkg);
                 if (len && payload.length == len) {
                     this.cachePkg.delete(id);
-                    if (this.decoder) {
-                        pkg.payload = await this.decoder.decode(payload);
-                    }
                     this.emit(ev.MESSAGE, pkg);
                 } else if (!len) {
                     this.emit(ev.MESSAGE, pkg);
@@ -412,7 +389,7 @@ export interface TopicBuffer {
     buffers: Buffer[];
     length: number;
     contentLength: number | null;
-    pkgs: Map<number | string, Packet | Promise<Packet>>;
+    pkgs: Map<number | string, Packet>;
 }
 
 /**
@@ -433,7 +410,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         this._evs.push([pe, pevent]);
     }
 
-    protected async onData(topic: string, chunk: any) {
+    protected onData(topic: string, chunk: any) {
         try {
             let chl = this.topics.get(topic);
             if (!chl) {
@@ -446,14 +423,14 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                 }
                 this.topics.set(topic, chl)
             }
-            await this.handleData(chl, chunk);
+            this.handleData(chl, chunk);
         } catch (ev) {
             const e = ev as any;
             this.emit(e.ERROR, e.message);
         }
     }
 
-    protected async handleData(chl: TopicBuffer, dataRaw: string | Buffer) {
+    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -484,13 +461,13 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         if (chl.contentLength !== null) {
             const length = chl.length;
             if (length === chl.contentLength) {
-                await this.handleMessage(chl, this.concatCaches(chl));
+                this.handleMessage(chl, this.concatCaches(chl));
             } else if (length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                await this.handleMessage(chl, message);
-                if (rest.length) await this.handleData(chl, rest);
+                this.handleMessage(chl, message);
+                if (rest.length) this.handleData(chl, rest);
             }
         }
     }
@@ -506,44 +483,36 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
         return this.emitMessage(chl, message);
     }
 
-    protected async emitMessage(chl: TopicBuffer, data: Buffer) {
+    protected emitMessage(chl: TopicBuffer, data: Buffer) {
         if (data.indexOf(this._header) == 0) {
             const id = data.readUInt16BE(1);
-            const msg$ = this.deserialize(data.subarray(3))
-                .then((message: Packet) => {
-                    message.id = id;
-                    if (this.hasPayloadLength(message)) {
-                        if (isNil(message.payload)) {
-                            this.emit(ev.HEADERS, message);
-                            chl.pkgs.set(id, message);
-                        } else {
-                            const len = this.getPayloadLength(message);
-                            let plen;
-                            if (isString(message) || isBuffer(message)) {
-                                plen = Buffer.byteLength(message.payload);
-                            } else {
-                                plen = Buffer.byteLength(JSON.stringify(message.payload));
-                            }
-                            if (plen == len) {
-                                this.emit(ev.MESSAGE, chl.topic, message);
-                            }
-                        }
+            const message = this.deserialize(data.subarray(3))
+            message.id = id;
+            if (this.hasPayloadLength(message)) {
+                if (isNil(message.payload)) {
+                    this.emit(ev.HEADERS, message);
+                    chl.pkgs.set(id, message);
+                } else {
+                    const len = this.getPayloadLength(message);
+                    let plen;
+                    if (isString(message) || isBuffer(message)) {
+                        plen = Buffer.byteLength(message.payload);
                     } else {
+                        plen = Buffer.byteLength(JSON.stringify(message.payload));
+                    }
+                    if (plen == len) {
                         this.emit(ev.MESSAGE, chl.topic, message);
                     }
-                    return message;
-                });
-            chl.pkgs.set(id, msg$);
-            await msg$;
+                }
+            } else {
+                this.emit(ev.MESSAGE, chl.topic, message);
+            }
 
         } else if (data.indexOf(this._body) == 0) {
             const id = data.readUInt16BE(1);
             if (id) {
                 let payload = data.subarray(3);
-                let pkg = chl.pkgs.get(id);
-                if (isPromise(pkg)) {
-                    pkg = await pkg;
-                }
+                const pkg = chl.pkgs.get(id);
                 if (!pkg) throw new MessageExecption('No header found!');
 
                 if (pkg.payload) {
@@ -555,9 +524,6 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                 const len = this.getPayloadLength(pkg);
                 if (len && payload.length == len) {
                     chl.pkgs.delete(id);
-                    if (this.decoder) {
-                        pkg.payload = await this.decoder.decode(payload);
-                    }
                     this.emit(ev.MESSAGE, chl.topic, pkg);
                 } else if (!len) {
                     this.emit(ev.MESSAGE, chl.topic, pkg);
@@ -576,7 +542,7 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
 
     protected topics: Map<string, TopicBuffer> = new Map();
 
-    protected async onData(msg: TMsg, topic: string, error?: any): Promise<void> {
+    protected onData(msg: TMsg, topic: string, error?: any): void {
         try {
             let chl = this.topics.get(topic);
             if (!chl) {
@@ -597,7 +563,7 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
                 }
                 chl.pkgs.set(id, this.createPackage(id, topic, this.getIncomingReplyTo(msg), headers, msg, error))
             }
-            await this.handleData(chl, id, this.getIncomingPayload(msg));
+            this.handleData(chl, id, this.getIncomingPayload(msg));
         } catch (ev) {
             const e = ev as any;
             this.emit(e.ERROR, e.message);
@@ -605,7 +571,7 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
 
     }
 
-    protected async handleData(chl: TopicBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
+    protected handleData(chl: TopicBuffer, id: string | number, dataRaw: string | Buffer | Uint8Array) {
 
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -619,14 +585,14 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
             const buffer = this.concatCaches(chl);
             const length = buffer.length;
             if (length === chl.contentLength) {
-                await this.handleMessage(chl, id, buffer);
+                this.handleMessage(chl, id, buffer);
             } else if (length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                await this.handleMessage(chl, id, message);
+                this.handleMessage(chl, id, message);
                 if (rest.length) {
-                    await this.handleData(chl, id, rest);
+                    this.handleData(chl, id, rest);
                 }
             }
         }
@@ -643,7 +609,7 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
         return this.emitMessage(chl, id, message);
     }
 
-    protected async emitMessage(chl: TopicBuffer, id: string | number, data: Buffer) {
+    protected emitMessage(chl: TopicBuffer, id: string | number, data: Buffer) {
         const pkg = chl.pkgs.get(id) as Packet;
         if (pkg) {
             let payload = data;
@@ -658,9 +624,6 @@ export abstract class MessageTransportSession<T, TMsg, TOpts> extends AbstractTr
             const len = this.getPayloadLength(pkg);
             if (len && payload.length == len) {
                 chl.pkgs.delete(id);
-                if (this.decoder) {
-                    pkg.payload = await this.decoder.decode(payload);
-                }
                 this.emit(ev.MESSAGE, chl.topic, pkg);
             } else if (!len) {
                 this.emit(ev.MESSAGE, chl.topic, pkg);
