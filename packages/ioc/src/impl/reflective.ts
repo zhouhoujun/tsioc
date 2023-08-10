@@ -236,7 +236,7 @@ export function hasContext<TArg>(option: InvokeArguments<TArg>) {
     return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.payload)
 }
 
-export class ReflectiveResolverImpl extends ReflectiveFactory {
+export class ReflectiveFactoryImpl extends ReflectiveFactory {
 
     create<T, TArg>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
         return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);

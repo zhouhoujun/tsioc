@@ -18,7 +18,7 @@ import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ReflectiveFactory } from '../reflective';
-import { ReflectiveResolverImpl, hasContext } from './reflective';
+import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
@@ -833,7 +833,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
-    const factory = new ReflectiveResolverImpl();
+    const factory = new ReflectiveFactoryImpl();
     container.setValue(ReflectiveFactory, factory);
     // container.onDestroy(factory)
     // bing action.
