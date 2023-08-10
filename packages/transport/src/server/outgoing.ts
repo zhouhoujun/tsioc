@@ -3,8 +3,8 @@ import { OutgoingHeader, OutgoingHeaders, ResHeaders, HeaderPacket } from '@tsdi
 import { Writable } from 'readable-stream';
 import { Outgoing } from '../socket';
 import { IEventEmitter } from '../stream';
-import { TransportSession } from '../TransportSession';
-import { SendPacket, SocketTransportSession } from '../impl/transport.session';
+import { SendPacket, TransportSession } from '../TransportSession';
+import { SocketTransportSession } from '../impl/transport.session';
 import { ev, hdr } from '../consts';
 
 

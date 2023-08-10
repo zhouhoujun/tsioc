@@ -1,58 +1,53 @@
-import { Interceptor, Handler, Backend } from '@tsdi/core';
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { NotSupportedExecption, Packet } from '@tsdi/common';
-import { Observable, lastValueFrom, of, throwError } from 'rxjs';
+import { InvalidJsonException, NotSupportedExecption, Packet } from '@tsdi/common';
 import { isBuffer } from './utils';
+import { SendPacket } from './TransportSession';
 
 
 @Abstract()
 export abstract class Encoder {
-
-    abstract handle(input: Packet): Buffer;
-
-    encode(input: Packet): Buffer {
-        return this.handle(input);
-    }
+    abstract encode(input: Packet): Buffer;
 }
 
 @Abstract()
 export abstract class Decoder {
+    abstract decode(input: Buffer): Packet;
+}
 
-    abstract handle(input: Buffer): Packet;
 
-    decode(input: Buffer): Packet {
-        return this.handle(input);
-    }
+export interface CodingContext<TInput, TOutput> {
+    [x: string]: any;
+    input: TInput;
+    chunk?: Buffer;
+    output: TOutput;
+}
+
+export abstract class CodingHandler<TInput, TOutput> {
+    abstract handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
 }
 
 
 @Injectable()
-export class JsonEncoder implements Backend {
+export class JsonEncoder {
 
-    handle(input: any): Observable<any> {
-        if (isBuffer(input) || isString(input)) return throwError(() => new NotSupportedExecption())
-        try {
-            const json = JSON.stringify(input);
-            return of(json);
-        } catch (err) {
-            return throwError(() => err);
-        }
+    handle(input: any): any {
+        if (isBuffer(input) || isString(input)) throw new NotSupportedExecption();
+        return JSON.stringify(input);
     }
 
 }
 
 @Injectable()
-export class JsonDecoder implements Backend {
+export class JsonDecoder {
 
-    handle(input: any): Observable<any> {
+    handle(input: any): any {
         if (isBuffer(input)) {
             input = new TextDecoder().decode(input);
         }
         try {
-            const json = JSON.parse(input);
-            return of(json);
+            return JSON.parse(input);
         } catch (err) {
-            return throwError(() => err);
+            throw new InvalidJsonException(err, input);
         }
     }
 
@@ -60,6 +55,6 @@ export class JsonDecoder implements Backend {
 
 
 
-export const ENCODERS = tokenId<Interceptor[]>('ENCODERS');
+export const ENCODERS = tokenId<CodingHandler<SendPacket, Buffer>[]>('ENCODERS');
 
-export const DECODERS = tokenId<Interceptor[]>('DECODERS');
+export const DECODERS = tokenId<CodingHandler<Buffer, SendPacket>[]>('DECODERS');

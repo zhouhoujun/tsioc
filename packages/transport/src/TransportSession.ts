@@ -6,6 +6,24 @@ import { IEventEmitter } from './stream';
 
 
 
+export interface SendPacket extends HeaderPacket {
+    payloadSent?: boolean;
+    headerSent?: boolean;
+    size?: number;
+    headerSize?: number;
+    payloadSize?: number;
+
+
+}
+
+export interface Subpackage extends SendPacket {
+    caches: Buffer[];
+    cacheSize: number;
+    headCached?: boolean;
+    residueSize: number;
+}
+
+
 
 export interface SendOpts extends Record<string, any> {
     /**

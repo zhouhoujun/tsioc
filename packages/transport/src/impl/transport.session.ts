@@ -1,29 +1,13 @@
 import { HeaderPacket, IncomingHeaders, Packet, InvalidJsonException, MessageExecption, PacketLengthException } from '@tsdi/common';
-import { isNil, isPromise, isString, promisify } from '@tsdi/ioc';
+import { isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from '../consts';
 import { isBuffer } from '../utils';
 import { StreamAdapter } from '../StreamAdapter';
 import { Decoder, Encoder } from '../coding';
-import { SendOpts, TransportSession, TransportSessionOpts } from '../TransportSession';
+import { SendOpts, SendPacket, Subpackage, TransportSession, TransportSessionOpts } from '../TransportSession';
 import { IReadableStream } from '../stream';
 
-export interface SendPacket extends HeaderPacket {
-    payloadSent?: boolean;
-    headerSent?: boolean;
-    size?: number;
-    headerSize?: number;
-    payloadSize?: number;
-
-
-}
-
-export interface Subpackage extends SendPacket {
-    caches: Buffer[];
-    cacheSize: number;
-    headCached?: boolean;
-    residueSize: number;
-}
 
 /**
  * abstract transport session.
