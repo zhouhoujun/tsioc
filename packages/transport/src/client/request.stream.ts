@@ -268,7 +268,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             request.end(callback);
         } else {
             this.streamAdapter.sendbody(
-                this.encoder ? this.encoder.encode(data) : data,
+                data,
                 request,
                 (err?) => callback(err),
                 req.headers.get(hdr.CONTENT_ENCODING) as string);

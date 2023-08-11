@@ -6,7 +6,6 @@ import { hdr } from '../consts';
 import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
 import { StatusVaildator } from '../StatusVaildator';
 import { StreamAdapter } from '../StreamAdapter';
-import { Decoder, Encoder } from '../coding';
 import { Redirector } from '../Redirector';
 
 
@@ -33,8 +32,6 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
     abstract get mimeAdapter(): MimeAdapter;
     abstract get vaildator(): StatusVaildator<TStatus>;
     abstract get streamAdapter(): StreamAdapter;
-    abstract get encoder(): Encoder | null;
-    abstract get decoder(): Decoder | null;
     abstract get redirector(): Redirector<TStatus> | null;
 
     /**
@@ -113,7 +110,6 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
             }
         }
         body = responseType !== 'stream' && this.streamAdapter.isReadable(body) ? await toBuffer(body) : body;
-        body = this.decoder ? this.decoder.decode(body) : body;
         switch (responseType) {
             case 'json':
                 // Save the original body, before attempting XSSI prefix stripping.

@@ -2,7 +2,7 @@ import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { BadRequestExecption } from '@tsdi/common';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, RedirectResult,
-    Middleware, AssetContext, compose, NEXT, Get, Payload
+    Middleware, AssetContext, compose, NEXT_VOID, Get, Payload
 } from '@tsdi/transport';
 import { of } from 'rxjs'; 
 
@@ -108,7 +108,7 @@ export class DeviceQueue implements Middleware {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
+        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT_VOID);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
