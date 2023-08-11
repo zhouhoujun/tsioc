@@ -1,11 +1,13 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
+import { Logger } from '@tsdi/logger';
 import { SendPacket } from './TransportSession';
 
 
 @Abstract()
 export abstract class Encoder {
-    abstract encode(input: SendPacket, maxSize?: number, chunk?: Buffer, callback?: (err?: any) => void): Buffer;
+    abstract encode(input: SendPacket): Buffer;
+    abstract write(input: SendPacket, maxSize?: number, chunk?: Buffer, callback?: (err?: any) => void): void;
 }
 
 @Abstract()
@@ -20,6 +22,7 @@ export interface CodingContext<TInput, TOutput> {
     output?: TOutput;
     maxSize?: number;
     chunk?: Buffer;
+    logger?: Logger;
 }
 
 export const NEXT_VOID = () => { };
