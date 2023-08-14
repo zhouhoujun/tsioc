@@ -1,14 +1,13 @@
 import { Abstract, Handle, chain, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { Observable, of, throwError } from 'rxjs';
 import { SendPacket } from './TransportSession';
-import { Observable } from 'rxjs';
 
 
 @Abstract()
 export abstract class Encoder {
-    abstract write(input: SendPacket, maxSize?: number, chunk?: Buffer, callback?: (err?: any) => void): void;
-    abstract get packet(): Observable<Buffer>;
+    abstract encode(input: SendPacket, chunk: Buffer|null, maxSize?: number): Observable<null | Buffer>;
 }
 
 
@@ -21,21 +20,21 @@ export abstract class AbstractEncoder extends Encoder {
 
     protected abstract get encodings(): Encoding[];
 
-    write(input: SendPacket, maxSize?: number, chunk?: Buffer, callback?: (err?: any) => void): void {
-        const ctx = { input, maxSize, chunk, callback, logger: this.logger } as CodingContext<SendPacket, Buffer>;
-        this.encode(ctx, callback);
-    }
-
-    protected encode(ctx: CodingContext<SendPacket, Buffer>, callback?: (err?: any) => void) {
-        if (!this.china) {
-            this.china = chain(this.encodings.map(c => c.handle.bind(c)));
-        }
-        try {
-            this.china(ctx, callback ?? NEXT_VOID);
+    encode(input: SendPacket, chunk: Buffer|null, maxSize?: number): Observable<null | Buffer> {
+        const ctx = { input, maxSize, chunk, logger: this.logger } as CodingContext<SendPacket, Buffer>;
+        try { 
+            if (!this.china) {
+                this.china = chain(this.encodings.map(c => c.handle.bind(c)));
+            }
+            this.china(ctx, NEXT_VOID);
         } catch (err) {
             this.logger.error(err);
-            callback?.(err)
+            return throwError(() => err);
         }
+        if (ctx.output) {
+            return of(ctx.output);
+        }
+        return of(null);
     }
 
 }
@@ -43,8 +42,7 @@ export abstract class AbstractEncoder extends Encoder {
 
 @Abstract()
 export abstract class Decoder {
-    abstract onData(...args: any[]): void;
-    abstract get packet(): Observable<Packet>;
+    abstract decode(...args: any[]): Observable<null | Packet>;
 }
 
 @Abstract()
@@ -56,15 +54,15 @@ export abstract class AbstractDecoder extends Decoder {
 
     protected abstract get decodings(): Decoding[];
 
-    protected decode(ctx: CodingContext<Buffer | string, Packet>, callback?: (err?: any) => void): Packet {
+    protected runDecode(ctx: CodingContext<Buffer | string, Packet>): Packet {
         if (!this.china) {
             this.china = chain(this.decodings.map(c => c.handle.bind(c)));
         }
         try {
-            this.china(ctx, callback ?? NEXT_VOID);
+            this.china(ctx, NEXT_VOID);
         } catch (err) {
             this.logger.error(err);
-            callback?.(err)
+            throw err;
         }
         return ctx.output!;
     }
@@ -79,6 +77,7 @@ export interface CodingContext<TInput, TOutput> {
     maxSize?: number;
     chunk?: Buffer;
     logger?: Logger;
+    complete(packet?: TOutput): void;
 }
 
 export const NEXT_VOID = () => { };

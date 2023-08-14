@@ -1,6 +1,7 @@
 import { HeaderPacket, IncomingHeaders, Packet, InvalidJsonException, MessageExecption, PacketLengthException } from '@tsdi/common';
 import { isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
+import { filter, mergeMap, of } from 'rxjs';
 import { ev, hdr } from '../consts';
 import { isBuffer } from '../utils';
 import { StreamAdapter } from '../StreamAdapter';
@@ -41,7 +42,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
      * @param packet
      * @param callback
      */
-    abstract write(packet: SendPacket, chunk: Buffer | null, callback?: (err?: any) => void): void
+    abstract write(packet: SendPacket, chunk: Buffer | null, callback?: (err?: any) => void): void;
 
     writeAsync(packet: SendPacket, chunk: Buffer | null): Promise<void> {
         return promisify(this.write, this)(packet, chunk);
@@ -155,6 +156,53 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
 
 
 }
+
+
+export abstract class CustomTransportSession<T, TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts> {
+
+    /**
+     * send packet.
+     * @param chunk 
+     * @param packet
+     * @param callback
+     */
+    write(packet: SendPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
+        this.encoder!.encode(packet, chunk, this.options.maxSize)
+            .pipe(
+                mergeMap(pkg => {
+                    if (pkg) {
+                        return this.sending(packet, pkg);
+                    }
+                    return of(pkg);
+                })
+            )
+            .subscribe({
+                next: v => callback?.(),
+                error: err => callback?.(err)
+            })
+    }
+
+    abstract sending(packet: SendPacket, chunk: Buffer): Promise<void>;
+
+    protected handleData(dataRaw: string | Buffer) {
+        const data = Buffer.isBuffer(dataRaw)
+            ? dataRaw
+            : Buffer.from(dataRaw);
+
+        this.decoder!.decode(data)
+            .pipe(
+                filter(p => !!p)
+            )
+            .subscribe({
+                next: pkg => this.emit(ev.MESSAGE, pkg),
+                error: err => this.emit(ev.ERROR, err)
+            });
+    }
+
+
+}
+
+
 
 export abstract class BufferTransportSession<T, TOpts extends TransportSessionOpts = TransportSessionOpts> extends AbstractTransportSession<T, TOpts> {
 
