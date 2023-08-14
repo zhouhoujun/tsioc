@@ -119,7 +119,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             request.end(callback);
         } else {
             this.streamAdapter.sendbody(
-                this.encoder ? this.encoder.encode(data) : data,
+                data,
                 request,
                 callback,
                 req.headers.get(hdr.CONTENT_ENCODING) as string);

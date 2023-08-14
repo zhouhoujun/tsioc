@@ -3,11 +3,12 @@ import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable, of, throwError } from 'rxjs';
 import { SendPacket } from './TransportSession';
+import { Interceptor } from '@tsdi/core';
 
 
 @Abstract()
 export abstract class Encoder {
-    abstract encode(input: SendPacket, chunk: Buffer|null, maxSize?: number): Observable<null | Buffer>;
+    abstract encode(input: SendPacket, chunk: Buffer | null, maxSize?: number): Observable<null | Buffer>;
 }
 
 
@@ -20,9 +21,13 @@ export abstract class AbstractEncoder extends Encoder {
 
     protected abstract get encodings(): Encoding[];
 
-    encode(input: SendPacket, chunk: Buffer|null, maxSize?: number): Observable<null | Buffer> {
+    encode(input: SendPacket, chunk: Buffer | null, maxSize?: number): Observable<null | Buffer> {
         const ctx = { input, maxSize, chunk, logger: this.logger } as CodingContext<SendPacket, Buffer>;
-        try { 
+        return this.handle(ctx);
+    }
+
+    protected handle(ctx: CodingContext<SendPacket, Buffer>): Observable<null | Buffer> {
+        try {
             if (!this.china) {
                 this.china = chain(this.encodings.map(c => c.handle.bind(c)));
             }
@@ -54,7 +59,7 @@ export abstract class AbstractDecoder extends Decoder {
 
     protected abstract get decodings(): Decoding[];
 
-    protected runDecode(ctx: CodingContext<Buffer | string, Packet>): Packet {
+    protected handle(ctx: CodingContext<Buffer | string, Packet>): Packet {
         if (!this.china) {
             this.china = chain(this.decodings.map(c => c.handle.bind(c)));
         }
@@ -77,17 +82,19 @@ export interface CodingContext<TInput, TOutput> {
     maxSize?: number;
     chunk?: Buffer;
     logger?: Logger;
-    complete(packet?: TOutput): void;
+    topic?: string;
+    channel?: string;
 }
 
 export const NEXT_VOID = () => { };
 
-export interface Encoding<TInput = SendPacket, TOutput = Buffer> {
+export interface Encoding<TInput = SendPacket, TOutput = Buffer> extends Interceptor<CodingContext<TInput, TOutput>, void> {
     handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
 }
 
 
-export interface Decoding<TInput = Buffer | string, TOutput = Packet> {
+
+export interface Decoding<TInput = Buffer | string, TOutput = Packet> extends Interceptor<CodingContext<TInput, TOutput>, void>  {
     handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
 }
 
