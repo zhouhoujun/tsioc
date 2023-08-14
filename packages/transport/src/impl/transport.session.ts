@@ -58,7 +58,7 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
             if (this.streamAdapter.isReadable(payload)) {
                 await this.pipeStream(payload, headers, options);
             } else {
-                const buffs = await this.generatePayload(payload, headers);
+                const buffs = this.generatePayload(payload, headers);
                 await this.writeAsync(headers, buffs)
             }
         }
@@ -187,14 +187,10 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
     }
 
     protected serialize(packet: HeaderPacket): Buffer {
-        return this.encoder ? this.encoder.encode(packet) : Buffer.from(JSON.stringify(packet));
+        return Buffer.from(JSON.stringify(packet));
     }
 
     protected deserialize(buff: Buffer): Packet {
-        if (this.decoder) {
-            return this.decoder.decode(buff);
-        }
-
         const str = buff.toString();
         try {
             return JSON.parse(str);

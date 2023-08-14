@@ -52,8 +52,7 @@ export * from './impl/typed.respond';
 export * from './impl/status';
 export * from './impl/asset.context';
 export * from './impl/transport.session';
-export * from './impl/encoding';
-export * from './impl/decoding';
+export * from './impl/json.coding';
 
 
 export * from './transport.module';

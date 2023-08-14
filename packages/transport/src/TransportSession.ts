@@ -6,7 +6,7 @@ import { IEventEmitter } from './stream';
 
 
 
-export interface SendPacket extends HeaderPacket {
+export interface SendPacket extends Packet {
     payloadSent?: boolean;
     headerSent?: boolean;
     size?: number;
