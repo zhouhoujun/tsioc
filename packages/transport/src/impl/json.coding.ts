@@ -1,9 +1,8 @@
 import { Inject, Injectable, Module, tokenId } from '@tsdi/ioc';
 import { InvalidJsonException, Packet } from '@tsdi/common';
 import { isBuffer } from '../utils';
-import { CodingContext, Decoding, AbstractDecoder, Encoding, AbstractEncoder } from '../coding';
+import { CodingContext, Decoding, AbstractDecoder, Encoding, AbstractEncoder, CodingOption } from '../coding';
 import { SendPacket } from '../TransportSession';
-import { Observable } from 'rxjs';
 
 
 @Injectable()
@@ -22,9 +21,6 @@ export const JSON_ENCODINGS = tokenId<Encoding[]>('JSON_ENCODINGS');
 
 @Injectable()
 export class JsonEncoder extends AbstractEncoder {
-    get packet(): Observable<Buffer> {
-        throw new Error('Method not implemented.');
-    }
 
     constructor(@Inject(JSON_ENCODINGS) readonly encodings: Encoding[]) {
         super()
@@ -64,14 +60,6 @@ export const JSON_DECODINGS = tokenId<Decoding>('JSON_DECODINGS');
 
 @Injectable()
 export class JsonDecoder extends AbstractDecoder {
-    
-    decode(chunk: Buffer): Packet<any> | null {
-        throw new Error('Method not implemented.');
-    }
-
-    get packet(): Observable<Packet<any>> {
-        throw new Error('Method not implemented.');
-    }
 
     constructor(@Inject(JSON_DECODINGS) readonly decodings: Decoding[]) {
         super()

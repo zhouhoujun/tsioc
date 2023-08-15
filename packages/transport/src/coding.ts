@@ -55,6 +55,11 @@ export abstract class AbstractDecoder extends Decoder {
 
     protected abstract get decodings(): Decoding[];
 
+    decode(chunk: Buffer, options?: CodingOption): Packet | null {
+        const ctx = { ...options, chunk, logger: this.logger } as CodingContext<Buffer, Packet>;
+        return this.handle(ctx);
+    }
+
     protected handle(ctx: CodingContext<Buffer, Packet>): Packet | null {
         if (!this.china) {
             this.china = chain(this.decodings.map(c => c.handle.bind(c)));
