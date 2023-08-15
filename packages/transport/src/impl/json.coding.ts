@@ -64,7 +64,8 @@ export const JSON_DECODINGS = tokenId<Decoding>('JSON_DECODINGS');
 
 @Injectable()
 export class JsonDecoder extends AbstractDecoder {
-    decode(...args: any[]): Observable<Packet<any> | null> {
+    
+    decode(chunk: Buffer): Packet<any> | null {
         throw new Error('Method not implemented.');
     }
 

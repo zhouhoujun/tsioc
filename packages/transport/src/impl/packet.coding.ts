@@ -13,7 +13,7 @@ export class PacketEncoder extends AbstractEncoder {
     get packet(): Observable<Buffer> {
         throw new Error('Method not implemented.');
     }
-    protected readonly encodings: Encoding<SendPacket, Buffer>[];
+    protected readonly encodings: Encoding<SendPacket>[];
 
     constructor(
         @Inject(HEADER_ENCODINGS) headerEncodings: Encoding[],

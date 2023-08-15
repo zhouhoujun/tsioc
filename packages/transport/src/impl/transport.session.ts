@@ -1,11 +1,10 @@
 import { HeaderPacket, IncomingHeaders, Packet, InvalidJsonException, MessageExecption, PacketLengthException } from '@tsdi/common';
 import { isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
-import { filter, mergeMap, of } from 'rxjs';
 import { ev, hdr } from '../consts';
 import { isBuffer } from '../utils';
 import { StreamAdapter } from '../StreamAdapter';
-import { Decoder, Encoder } from '../coding';
+import { CodingOption, Decoder, Encoder } from '../coding';
 import { SendOpts, SendPacket, Subpackage, TransportSession, TransportSessionOpts } from '../TransportSession';
 import { IReadableStream } from '../stream';
 
@@ -20,8 +19,8 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
     constructor(
         readonly socket: T,
         protected streamAdapter: StreamAdapter,
-        protected encoder: Encoder | undefined,
-        protected decoder: Decoder | undefined,
+        protected encoder: Encoder,
+        protected decoder: Decoder,
         protected options: TOpts,
     ) {
         super()
@@ -167,39 +166,38 @@ export abstract class CustomTransportSession<T, TOpts extends TransportSessionOp
      * @param callback
      */
     write(packet: SendPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
-        this.encoder!.encode(packet, chunk, this.options.maxSize)
-            .pipe(
-                mergeMap(pkg => {
-                    if (pkg) {
-                        return this.sending(packet, pkg);
-                    }
-                    return of(pkg);
-                })
-            )
-            .subscribe({
-                next: v => callback?.(),
-                error: err => callback?.(err)
-            })
+        try {
+            const data = this.serialize(packet, chunk, { maxSize: this.options.maxSize, delimiter: this.options.delimiter });
+            if (data) {
+                this.sending(packet, data, callback)
+            } else {
+                callback?.();
+            }
+        } catch (err) {
+            callback?.(err);
+        }
     }
 
-    abstract sending(packet: SendPacket, chunk: Buffer): Promise<void>;
+    abstract sending(packet: SendPacket, data: Buffer, callback?: (err?: any) => void): void;
 
-    protected handleData(dataRaw: string | Buffer) {
+    protected serialize(packet: SendPacket, chunk: Buffer | null, options: CodingOption) {
+        return this.encoder.encode(packet, chunk, options);
+    }
+    
+    protected deserialize(dataRaw: string | Buffer, options: CodingOption) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
 
-        this.decoder!.decode(data)
-            .pipe(
-                filter(p => !!p)
-            )
-            .subscribe({
-                next: pkg => this.emit(ev.MESSAGE, pkg),
-                error: err => this.emit(ev.ERROR, err)
-            });
+        try {
+            const pkg = this.decoder.decode(data, options);
+            if (pkg) {
+                this.emit(ev.MESSAGE, pkg);
+            }
+        } catch (err) {
+            this.emit(ev.ERROR, err);
+        }
     }
-
-
 }
 
 

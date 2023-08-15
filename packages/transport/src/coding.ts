@@ -1,14 +1,12 @@
 import { Abstract, Handle, chain, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Observable, of, throwError } from 'rxjs';
 import { SendPacket } from './TransportSession';
-import { Interceptor } from '@tsdi/core';
 
 
 @Abstract()
 export abstract class Encoder {
-    abstract encode(input: SendPacket, chunk: Buffer | null, maxSize?: number): Observable<null | Buffer>;
+    abstract encode(input: SendPacket, chunk: Buffer | null, options?: CodingOption): Buffer | null;
 }
 
 
@@ -21,12 +19,12 @@ export abstract class AbstractEncoder extends Encoder {
 
     protected abstract get encodings(): Encoding[];
 
-    encode(input: SendPacket, chunk: Buffer | null, maxSize?: number): Observable<null | Buffer> {
-        const ctx = { input, maxSize, chunk, logger: this.logger } as CodingContext<SendPacket, Buffer>;
+    encode(input: SendPacket, chunk: Buffer | null, options?: CodingOption): Buffer | null {
+        const ctx = { ...options, input, chunk, logger: this.logger } as CodingContext<SendPacket, Buffer>;
         return this.handle(ctx);
     }
 
-    protected handle(ctx: CodingContext<SendPacket, Buffer>): Observable<null | Buffer> {
+    protected handle(ctx: CodingContext<SendPacket, Buffer>): Buffer | null {
         try {
             if (!this.china) {
                 this.china = chain(this.encodings.map(c => c.handle.bind(c)));
@@ -34,12 +32,10 @@ export abstract class AbstractEncoder extends Encoder {
             this.china(ctx, NEXT_VOID);
         } catch (err) {
             this.logger.error(err);
-            return throwError(() => err);
+            throw err;
         }
-        if (ctx.output) {
-            return of(ctx.output);
-        }
-        return of(null);
+
+        return ctx.output ?? null;
     }
 
 }
@@ -47,7 +43,7 @@ export abstract class AbstractEncoder extends Encoder {
 
 @Abstract()
 export abstract class Decoder {
-    abstract decode(...args: any[]): Observable<null | Packet>;
+    abstract decode(chunk: Buffer, options?: CodingOption): Packet | null;
 }
 
 @Abstract()
@@ -55,11 +51,11 @@ export abstract class AbstractDecoder extends Decoder {
 
     @InjectLog() private logger!: Logger;
 
-    private china?: Handle<CodingContext<Buffer | string, Packet>, void>;
+    private china?: Handle<CodingContext<Buffer, Packet>, void>;
 
     protected abstract get decodings(): Decoding[];
 
-    protected handle(ctx: CodingContext<Buffer | string, Packet>): Packet {
+    protected handle(ctx: CodingContext<Buffer, Packet>): Packet | null {
         if (!this.china) {
             this.china = chain(this.decodings.map(c => c.handle.bind(c)));
         }
@@ -69,9 +65,22 @@ export abstract class AbstractDecoder extends Decoder {
             this.logger.error(err);
             throw err;
         }
-        return ctx.output!;
+        return ctx.output ?? null;
     }
 
+}
+
+export interface CodingOption {
+    /**
+     * packet delimiter flag
+     */
+    delimiter?: string;
+    /**
+     * packet size limit.
+     */
+    maxSize?: number;
+    topic?: string;
+    channel?: string;
 }
 
 
@@ -88,14 +97,12 @@ export interface CodingContext<TInput, TOutput> {
 
 export const NEXT_VOID = () => { };
 
-export interface Encoding<TInput = SendPacket, TOutput = Buffer> extends Interceptor<CodingContext<TInput, TOutput>, void> {
-    handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
+export interface Encoding<TInput extends Packet = SendPacket> {
+    handle(ctx: CodingContext<TInput, Buffer>, next: () => void): void;
 }
 
-
-
-export interface Decoding<TInput = Buffer | string, TOutput = Packet> extends Interceptor<CodingContext<TInput, TOutput>, void>  {
-    handle(ctx: CodingContext<TInput, TOutput>, next: () => void): void;
+export interface Decoding<TOutput extends Packet = Packet> {
+    handle(ctx: CodingContext<Buffer, TOutput>, next: () => void): void;
 }
 
 export const ENCODINGS = tokenId<Encoding[]>('ENCODINGS');
