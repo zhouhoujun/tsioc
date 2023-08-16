@@ -46,6 +46,7 @@ export class JsonHeadersEncoding implements Encoding {
 export class VaildPayloadEncoding implements Encoding {
     handle(ctx: CodingContext<Subpackage, Buffer>, next: () => void): void {
         if (ctx.chunk) {
+            
             return next();
         }
     }
@@ -71,7 +72,8 @@ export class PayloadEncoding implements Encoding {
             const data = ctx.getSendBuffer(packet, maxSize);
             packet.residueSize -= (bufSize - Buffer.byteLength(rest));
             ctx.output = data;
-            // ctx.input.caches.push(rest);
+            ctx.input.caches.push(rest);
+            ctx.input.cacheSize = Buffer.byteLength(rest);
             
             // this.writing(packet, data, (err) => {
             //     if (err) return callback?.(err);
