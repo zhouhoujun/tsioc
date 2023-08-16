@@ -1,7 +1,7 @@
 import { Inject, Injectable, Module, tokenId } from '@tsdi/ioc';
 import { InvalidJsonException, Packet } from '@tsdi/common';
 import { isBuffer } from '../utils';
-import { CodingContext, Decoding, AbstractDecoder, Encoding, AbstractEncoder, CodingOption } from '../coding';
+import { CodingContext, Decoding, AbstractDecoder, Encoding, AbstractEncoder } from '../coding';
 import { SendPacket } from '../TransportSession';
 
 
@@ -9,6 +9,7 @@ import { SendPacket } from '../TransportSession';
 export class JsonEncoding implements Encoding {
 
     handle(ctx: CodingContext<SendPacket, Buffer>, next: () => void): void {
+        if(ctx.output) return;
         if (ctx.chunk && !ctx.input.payload) {
             ctx.input.payload = isBuffer(ctx.chunk) ? new TextDecoder().decode(ctx.chunk) : ctx.chunk;
         }
@@ -22,7 +23,7 @@ export const JSON_ENCODINGS = tokenId<Encoding[]>('JSON_ENCODINGS');
 @Injectable()
 export class JsonEncoder extends AbstractEncoder {
 
-    constructor(@Inject(JSON_ENCODINGS) readonly encodings: Encoding[]) {
+    constructor(@Inject(JSON_ENCODINGS) protected readonly encodings: Encoding[]) {
         super()
     }
 
@@ -46,6 +47,7 @@ export class JsonEncodingModule {
 export class JsonDecoding implements Decoding {
 
     handle(ctx: CodingContext<Buffer | string, Packet>, next: () => void): void {
+        if(ctx.output) return;
         const jsonStr = isBuffer(ctx.input) ? new TextDecoder().decode(ctx.input) : ctx.input;
         try {
             return JSON.parse(jsonStr);
@@ -61,7 +63,7 @@ export const JSON_DECODINGS = tokenId<Decoding>('JSON_DECODINGS');
 @Injectable()
 export class JsonDecoder extends AbstractDecoder {
 
-    constructor(@Inject(JSON_DECODINGS) readonly decodings: Decoding[]) {
+    constructor(@Inject(JSON_DECODINGS) protected readonly decodings: Decoding[]) {
         super()
     }
 

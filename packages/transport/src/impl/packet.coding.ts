@@ -1,12 +1,11 @@
 import { Inject, tokenId } from '@tsdi/ioc';
+import { Packet } from '@tsdi/common';
 import { SendPacket } from '../TransportSession';
 import { AbstractDecoder, AbstractEncoder, Decoding, Encoding } from '../coding';
-import { Packet } from '@tsdi/common';
 
 
 export const HEADER_ENCODINGS = tokenId<Encoding[]>('HEADER_ENCODINGS');
 export const PAYLOAD_ENCODINGS = tokenId<Encoding[]>('PAYLOAD_ENCODINGS');
-
 
 
 export class PacketEncoder extends AbstractEncoder {

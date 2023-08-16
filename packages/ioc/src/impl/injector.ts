@@ -548,22 +548,37 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean) {
-    const type = isType(typeOrDef) ? typeOrDef : typeOrDef.module;
-    if (!isFunction(typeOrDef)) {
+    let type: Type;
+    if (isType(typeOrDef)) {
+        type = typeOrDef;
+    } else {
+        type = typeOrDef.module;
         deepForEach(
             typeOrDef.providers,
             pdr => processProvider(pdr, typeOrDef.providers),
-            v => isPlainObject(v) && !v.provide //&& !(isFunction(v.module) && isArray(v.providers))
+            v => isPlainObject(v) && !v.provide
         )
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
+    if (isDuplicate) {
+        return;
+    }
+
+    dedupStack.push(type);
     const typeRef = moduleRefl ?? get<ModuleDef>(type);
     const annotation = typeRef.getAnnotation<ModuleDef>();
-    if (annotation.module && !isDuplicate) {
-        dedupStack.push(type);
+    if (annotation.module) {
         annotation.imports?.forEach(imp => {
             processInjectorType(imp, dedupStack, processProvider, regType, undefined, true)
         });
+
+        if (annotation.providers) {
+            deepForEach(
+                annotation.providers,
+                pdr => processProvider(pdr, annotation.providers),
+                v => isPlainObject(v) && !v.provide
+            )
+        }
 
         if (imported && !(annotation.providedIn === Scopes.root || annotation.providedIn === Scopes.platform)) {
             annotation.exports?.forEach(d => {
@@ -577,25 +592,9 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })
         }
-
-        if (annotation.providers) {
-            deepForEach(
-                annotation.providers,
-                pdr => processProvider(pdr, annotation.providers),
-                v => isPlainObject(v) && !v.provide // && !(isFunction(v.module) && isArray(v.providers))
-            )
-        }
     }
-    // // private providers.
-    // if (typeRef.class.providers && !isDuplicate) {
-    //     deepForEach(
-    //         typeRef.class.providers,
-    //         pdr => processProvider(pdr, typeRef.class.providers),
-    //         v => isPlainObject(v) && !v.provide
-    //     );
-    // }
-
     regType(typeRef, type)
+
 }
 
 
