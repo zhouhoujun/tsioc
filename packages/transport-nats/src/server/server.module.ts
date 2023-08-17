@@ -8,9 +8,8 @@ import {
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { NatsServer } from './server';
 import { NatsEndpoint } from './endpoint';
-// import { NatsExecptionHandlers } from './execption.handles';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NATS_SERV_OPTS, NatsMicroServOpts } from './options';
-import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl } from '../transport';
+import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { NatsStatusVaildator } from '../status';
 import { NatsPatternFormatter } from '../pattern';
 import { NatsExecptionHandlers } from './execption.handles';
@@ -21,7 +20,7 @@ import { NatsExecptionHandlers } from './execption.handles';
 
 const defaultServOpts = {
     transportOpts: {
-        maxSize: 1024 * 256
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

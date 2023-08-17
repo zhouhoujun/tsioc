@@ -28,9 +28,12 @@ export class NatsTransportSessionFactoryImpl implements TransportSessionFactory<
 }
 
 
+export const defaultMaxSize = 1024 * 256;
+
+
 export class NatsTransportSession extends MessageTransportSession<NatsConnection, Msg, NatsSessionOpts> {
 
-    maxSize = 1024 * 256;
+    maxSize = defaultMaxSize;
 
     protected override bindMessageEvent(options: NatsSessionOpts): void {
         const onRespond = (error: Error | null, msg: Msg) => {

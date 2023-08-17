@@ -26,9 +26,11 @@ export class WsTransportSessionFactoryImpl implements WsTransportSessionFactory 
 
 }
 
+export const defaultMaxSize = 1024 * 256 - 6;
+
 export class WsTransportSession extends SocketTransportSession<IDuplexStream> {
 
-    maxSize = 1024 * 256 - 6;
+    maxSize = defaultMaxSize;
     write(subpkg: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         if (!subpkg.headerSent) {
             const buff = this.generateHeader(subpkg);

@@ -14,7 +14,7 @@ import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
 import { TcpRespondAdapter } from './respond';
 import { TcpMicroStatusVaildator, TcpStatusVaildator } from '../status';
-import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
+import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 
 
 
@@ -28,7 +28,7 @@ const defMicroOpts = {
     listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

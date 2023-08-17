@@ -10,7 +10,7 @@ import { WsServer } from './server';
 import { WsEndpoint } from './endpoint';
 import { WsExecptionHandlers } from './execption.handles';
 import { WsStatusVaildator } from '../status';
-import { WsTransportSessionFactory, WsTransportSessionFactoryImpl } from '../transport';
+import { WsTransportSessionFactory, WsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 
 
 
@@ -21,7 +21,7 @@ import { WsTransportSessionFactory, WsTransportSessionFactoryImpl } from '../tra
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

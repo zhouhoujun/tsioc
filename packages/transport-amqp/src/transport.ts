@@ -27,11 +27,11 @@ export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<
 
 }
 
-
+export const defaultMaxSize = 1024 * 256;
 
 export class AmqpTransportSession extends MessageTransportSession<Channel, ConsumeMessage, AmqpSessionOpts> {
 
-    maxSize = 1024 * 256;
+    maxSize = defaultMaxSize;
 
     protected override bindMessageEvent(options: AmqpSessionOpts): void {
         const onRespond = (queue: string, msg: ConsumeMessage) => {

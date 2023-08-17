@@ -32,11 +32,13 @@ export class RedisTransportSessionFactoryImpl implements RedisTransportSessionFa
 }
 
 
-const PATTERN_MSG_BUFFER = 'pmessageBuffer'
+const PATTERN_MSG_BUFFER = 'pmessageBuffer';
+
+export const defaultMaxSize = 1024 * 256 - 6;
 
 export class RedisTransportSession extends TopicTransportSession<ReidsTransport> {
 
-    maxSize = 1024 * 256 - 6;
+    maxSize = defaultMaxSize;
 
     override write(subpkg: Subpackage, chunk: Buffer | null, callback?: ((err?: any) => void) | undefined): void {
         const topic = subpkg.packet.topic ?? subpkg.packet.url!;

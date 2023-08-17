@@ -7,7 +7,7 @@ import { NatsClient } from './client';
 import { NatsHandler } from './handler';
 import { NatsRequestAdapter } from './request';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS, NatsClientOpts, NatsClientsOpts } from './options';
-import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl } from '../transport';
+import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { NatsStatusVaildator } from '../status';
 import { NatsPatternFormatter } from '../pattern';
 
@@ -21,7 +21,7 @@ const defClientOpts = {
     backend: TransportBackend,
     interceptors: [BodyContentInterceptor],
     transportOpts: {
-        maxSize: 1024 * 256
+        maxSize: defaultMaxSize
     },
     providers: [
         { provide: StatusVaildator, useExisting: NatsStatusVaildator },

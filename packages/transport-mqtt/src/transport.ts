@@ -25,9 +25,12 @@ export class MqttTransportSessionFactoryImpl implements MqttTransportSessionFact
     }
 
 }
+
+export const defaultMaxSize = 1024 * 256 - 6;
+
 export class MqttTransportSession extends TopicTransportSession<Client> {
 
-    maxSize = 1024 * 256 - 6;
+    maxSize = defaultMaxSize;
 
     write(subpkg: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
         const topic = subpkg.packet.topic ?? subpkg.packet.url!;

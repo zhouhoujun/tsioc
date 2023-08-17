@@ -5,7 +5,7 @@ import {
     Content, Json, LogInterceptor, ServerFinalizeFilter, Session, ExecptionFinalizeFilter
 } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
-import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
+import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { RedisServer } from './server';
 import { RedisStatusVaildator } from '../status';
 import { RedisExecptionHandlers } from './execption.handles';
@@ -21,7 +21,7 @@ import { RedisPatternFormatter } from '../pattern';
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

@@ -9,7 +9,7 @@ import { MqttServer } from './server';
 import { MqttEndpoint } from './endpoint';
 import { MqttExecptionHandlers } from './execption.handles';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './options';
-import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl } from '../transport';
+import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { MqttStatusVaildator } from '../status';
 
 
@@ -20,7 +20,7 @@ const defaultServOpts = {
     encoding: 'utf8',
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6,
+        maxSize: defaultMaxSize,
     },
     content: {
         root: 'public',

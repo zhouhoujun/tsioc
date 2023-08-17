@@ -2,7 +2,7 @@ import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
 import { createHandler } from '@tsdi/core';
 import { TransportModule, TransportSessionFactory, StatusVaildator, BodyContentInterceptor, RequestAdapter, TransportBackend } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
-import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
+import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { TcpStatusVaildator } from '../status';
 import { TcpRequestAdapter } from './request';
 import { TcpClient } from './client';
@@ -17,7 +17,7 @@ import { TcpHandler } from './handler';
 const defClientOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6,
+        maxSize: defaultMaxSize,
     },
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     filtersToken: TCP_CLIENT_FILTERS,

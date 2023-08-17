@@ -2,7 +2,7 @@ import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
 import { createHandler } from '@tsdi/core';
 import { TransportModule, TransportSessionFactory, StatusVaildator, BodyContentInterceptor, RequestAdapter, TransportBackend } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
-import { WsTransportSessionFactory, WsTransportSessionFactoryImpl } from '../transport';
+import { WsTransportSessionFactory, WsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { WsStatusVaildator } from '../status';
 import { WsRequestAdapter } from './request';
 import { WsClient } from './client';
@@ -18,7 +18,7 @@ const defClientOpts = {
     url: 'ws://localhost:3000',
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6,
+        maxSize: defaultMaxSize,
     },
     interceptorsToken: WS_CLIENT_INTERCEPTORS,
     filtersToken: WS_CLIENT_FILTERS,

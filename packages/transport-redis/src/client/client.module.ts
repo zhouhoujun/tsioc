@@ -2,7 +2,7 @@ import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
 import { createHandler } from '@tsdi/core';
 import { TransportModule, BodyContentInterceptor, RequestAdapter, TransportBackend, StatusVaildator } from '@tsdi/transport';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
-import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
+import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { RedisStatusVaildator } from '../status';
 import { RedisRequestAdapter } from './request';
 import { RedisHandler } from './handler';
@@ -19,7 +19,7 @@ const defClientOpts = {
     interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
     transportOpts: {
         delimiter: '#',
-        maxSize: 1024 * 256 - 6,
+        maxSize: defaultMaxSize,
     },
     retryAttempts: 3,
     interceptors: [BodyContentInterceptor],
