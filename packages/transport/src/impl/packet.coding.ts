@@ -1,6 +1,5 @@
 import { EMPTY_OBJ, Inject, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
-import { Packet } from '@tsdi/common';
-import { AbstractDecoder, AbstractEncoder, Decoding, DecodingContext, Encoding, EncodingContext } from '../coding';
+import { AbstractDecoder, AbstractEncoder, Decoding, DecodingContext, Encoding, EncodingContext, push } from '../coding';
 import { hdr } from '../consts';
 
 
@@ -17,6 +16,9 @@ export class InitSubpackageEncoding implements Encoding {
             ctx.input.caches = [];
             ctx.input.residueSize = ctx.input.payloadSize;
             ctx.input.cacheSize = 0;
+            Object.defineProperty(ctx.input, 'push', {
+                value: push
+            })
         }
         return next();
     }
@@ -45,7 +47,6 @@ export class JsonHeadersEncoding implements Encoding {
 export class VaildPayloadEncoding implements Encoding {
     handle(ctx: EncodingContext, next: () => void): void {
         if (ctx.chunk) {
-
             return next();
         }
     }
@@ -54,30 +55,9 @@ export class VaildPayloadEncoding implements Encoding {
 @Injectable()
 export class PayloadEncoding implements Encoding {
     handle(ctx: EncodingContext, next: () => void): void {
-        const chunk = ctx.chunk!;
-        const bufSize = Buffer.byteLength(chunk);
-        const maxSize = ctx.maxSize!;
-        const total = ctx.input.cacheSize + bufSize;
-        const packet = ctx.input;
-        if (total == maxSize) {
-            packet.caches.push(chunk);
-            // ctx.output = ctx.getSendBuffer(packet, maxSize);
-            packet.residueSize -= bufSize;
-        } else if (total > maxSize) {
-            const idx = bufSize - (total - maxSize);
-            const message = chunk.subarray(0, idx);
-            const rest = chunk.subarray(idx);
-            packet.caches.push(message);
-            // const data = ctx.getSendBuffer(packet, maxSize);
-            packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-        } else {
-            packet.caches.push(chunk);
-            packet.cacheSize += bufSize;
-            packet.residueSize -= bufSize;
-            if (packet.residueSize <= 0) {
-                // const data = ctx.getSendBuffer(packet, packet.cacheSize);
-                // ctx.output = data;
-            }
+        const data = ctx.input.push?.(ctx.chunk!, ctx.limit!);
+        if (data) {
+            ctx.output = data;
         }
     }
 }

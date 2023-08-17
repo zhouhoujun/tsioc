@@ -4,8 +4,8 @@ import { EventEmitter } from 'events';
 import { ev, hdr } from '../consts';
 import { isBuffer } from '../utils';
 import { StreamAdapter } from '../StreamAdapter';
-import { CodingOption, Decoder, Encoder } from '../coding';
-import { SendOpts, SendPacket, Subpackage, TransportSession, TransportSessionOpts } from '../TransportSession';
+import { CodingOption, Decoder, Encoder, Subpackage } from '../coding';
+import { SendOpts, SendPacket, TransportSession, TransportSessionOpts } from '../TransportSession';
 import { IReadableStream } from '../stream';
 
 

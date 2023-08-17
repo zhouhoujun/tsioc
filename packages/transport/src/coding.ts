@@ -1,14 +1,67 @@
 import { Abstract, Handle, chain, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Subpackage } from './TransportSession';
+import { SendPacket } from './TransportSession';
 
 
 export type EncodingBuffers = [Buffer, Buffer | null];
 
+export interface Subpackage extends SendPacket {
+    caches: Buffer[];
+    cacheSize: number;
+    headCached?: boolean;
+    residueSize: number;
+    push?(chunk: Buffer, limit: number): EncodingBuffers | null
+}
+
+
 @Abstract()
 export abstract class Encoder {
     abstract encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers | null;
+}
+
+
+function concatSub(subpkg: Subpackage, size: number): Buffer {
+    let data: Buffer[];
+    if (subpkg.headCached) {
+        subpkg.headCached = false;
+        data = [subpkg.caches[0], ...subpkg.caches.slice(1)];
+    } else {
+        data = subpkg.caches;
+    }
+    subpkg.caches = [];
+    subpkg.cacheSize = 0;
+    return Buffer.concat(data);
+}
+
+
+export function push(this: Subpackage, chunk: Buffer, limit: number): EncodingBuffers | null {
+    const bufSize = Buffer.byteLength(chunk);
+    const total = this.cacheSize + bufSize;
+
+    if (total == limit) {
+        this.caches.push(chunk);
+        const data = concatSub(this, limit);
+        return [data, null];
+    } else if (total > limit) {
+        const idx = bufSize - (total - limit);
+        const message = chunk.subarray(0, idx);
+        const rest = chunk.subarray(idx);
+        this.caches.push(message);
+        const data = concatSub(this, limit);
+        this.residueSize -= (bufSize - Buffer.byteLength(rest));
+        return [data, rest];
+    } else {
+        this.caches.push(chunk);
+        this.cacheSize += bufSize;
+        this.residueSize -= bufSize;
+        if (this.residueSize <= 0) {
+            const data = concatSub(this, this.cacheSize);
+            return [data, null];
+        }
+
+    }
+    return null;
 }
 
 
@@ -95,27 +148,21 @@ export interface CodingOption {
 }
 
 
-export interface EncodingContext {
+export interface EncodingContext extends CodingOption {
     input: Subpackage;
     output?: EncodingBuffers;
     packSize?: number;
-    maxSize?: number;
     chunk?: Buffer;
     logger?: Logger;
-    topic?: string;
-    channel?: string;
 }
 
-export interface DecodingContext {
+export interface DecodingContext extends CodingOption  {
     cache: BufferCache;
     input?: Buffer;
     output?: Packet;
     packSize?: number;
-    maxSize?: number;
     chunk?: Buffer;
     logger?: Logger;
-    topic?: string;
-    channel?: string;
 }
 
 export interface BufferCache {
