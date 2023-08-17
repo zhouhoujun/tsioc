@@ -1,5 +1,5 @@
 import { HeaderPacket, IncomingHeaders, Packet, InvalidJsonException, MessageExecption, PacketLengthException } from '@tsdi/common';
-import { isNil, isString, promisify } from '@tsdi/ioc';
+import { EMPTY, isNil, isString, promisify } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { ev, hdr } from '../consts';
 import { isBuffer } from '../utils';
@@ -52,14 +52,15 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
         if (!headers.headers) {
             headers.headers = {};
         }
+        const pkg = { packet };
         if (isNil(payload)) {
-            await this.writeAsync(packet, null);
+            await this.writeAsync(pkg, null);
         } else {
             if (this.streamAdapter.isReadable(payload)) {
-                await this.pipeStream(payload, headers, options);
+                await this.pipeStream(payload, pkg, options);
             } else {
-                const buffs = this.generatePayload(payload, headers);
-                await this.writeAsync(headers, buffs)
+                const buffs = this.generatePayload(payload, pkg);
+                await this.writeAsync(pkg, buffs)
             }
         }
     }
@@ -80,8 +81,8 @@ export abstract class AbstractTransportSession<T, TOpts> extends EventEmitter im
             body = Buffer.from(JSON.stringify(payload));
         }
 
-        if (!this.hasPayloadLength(packet)) {
-            this.setPayloadLength(packet, Buffer.byteLength(body));
+        if (!this.hasPayloadLength(packet.packet)) {
+            this.setPayloadLength(packet.packet, Buffer.byteLength(body));
         }
 
         return body;
@@ -162,14 +163,19 @@ export abstract class CustomTransportSession<T, TOpts extends TransportSessionOp
     /**
      * send packet.
      * @param chunk 
-     * @param packet
+     * @param subpkg
      * @param callback
      */
-    write(packet: SendPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
+    write(subpkg: Subpackage, chunk: Buffer | null, callback?: (err?: any) => void): void {
         try {
-            const data = this.serialize(packet, chunk, { maxSize: this.options.maxSize, delimiter: this.options.delimiter });
+            const [data, rest] = this.serialize(subpkg, chunk, this.options) ?? EMPTY;
             if (data) {
-                this.sending(packet, data, callback)
+                this.sending(subpkg.packet, data, (err) => {
+                    if (err) return callback?.(err);
+                    if (rest && rest.length) {
+                        this.write(subpkg, rest, callback)
+                    }
+                })
             } else {
                 callback?.();
             }
@@ -178,12 +184,12 @@ export abstract class CustomTransportSession<T, TOpts extends TransportSessionOp
         }
     }
 
-    abstract sending(packet: SendPacket, data: Buffer, callback?: (err?: any) => void): void;
+    abstract sending(packet: Packet, data: Buffer, callback?: (err?: any) => void): void;
 
-    protected serialize(packet: SendPacket, chunk: Buffer | null, options: CodingOption) {
+    protected serialize(packet: Subpackage, chunk: Buffer | null, options: CodingOption) {
         return this.encoder.encode(packet, chunk, options);
     }
-    
+
     protected deserialize(dataRaw: string | Buffer, options: CodingOption) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
@@ -214,14 +220,14 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         this._body = Buffer.alloc(1, '1');
     }
 
-    generateHeader(packet: SendPacket, options?: SendOpts): Buffer {
-        const { id, headerSent, headerSize, payloadSize, size, cacheSize, caches, residueSize, ...headers } = packet as Subpackage;
+    generateHeader(packet: Subpackage, options?: SendOpts): Buffer {
+        const { id, payload, ...headers } = packet.packet;
         const buffers = this.serialize(headers);
         const bufId = Buffer.alloc(2);
         bufId.writeUInt16BE(id);
         const len = Buffer.byteLength(buffers);
         packet.headerSize = len;
-        packet.payloadSize = this.getPayloadLength(packet);
+        packet.payloadSize = this.getPayloadLength(packet.packet);
         packet.size = packet.headerSize + packet.payloadSize;
         return Buffer.concat([
             Buffer.from(String(len + 3)),
@@ -258,18 +264,18 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         ])
     }
 
-    getSendBuffer(packet: Subpackage, size: number) {
+    getSendBuffer(subpkg: Subpackage, size: number) {
         let data: Buffer[];
-        if (packet.headCached) {
-            packet.headCached = false;
-            const prefix = this.getPayloadPrefix(packet, size - Buffer.byteLength(packet.caches[0]));
-            data = [packet.caches[0], prefix, ...packet.caches.slice(1)];
+        if (subpkg.headCached) {
+            subpkg.headCached = false;
+            const prefix = this.getPayloadPrefix(subpkg.packet, size - Buffer.byteLength(subpkg.caches[0]));
+            data = [subpkg.caches[0], prefix, ...subpkg.caches.slice(1)];
         } else {
-            const prefix = this.getPayloadPrefix(packet, size);
-            data = [prefix, ...packet.caches];
+            const prefix = this.getPayloadPrefix(subpkg.packet, size);
+            data = [prefix, ...subpkg.caches];
         }
-        packet.caches = [];
-        packet.cacheSize = 0;
+        subpkg.caches = [];
+        subpkg.cacheSize = 0;
         return Buffer.concat(data);
     }
 

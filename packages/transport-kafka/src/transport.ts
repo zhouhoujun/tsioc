@@ -69,16 +69,16 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
     }
 
 
-    write(packet: Subpackage & { partition?: number, kafkaheaders: IHeaders }, chunk: Buffer | null, callback: (err?: any) => void) {
-        if (!packet.headerSent) {
+    write(subpkg: Subpackage & { partition?: number, kafkaheaders: IHeaders }, chunk: Buffer | null, callback: (err?: any) => void) {
+        if (!subpkg.headerSent) {
             const headers: IHeaders = {};
-            Object.keys(packet.headers!).forEach(k => {
-                headers[k] = this.generHead(packet.headers![k]);
+            Object.keys(subpkg.packet.headers!).forEach(k => {
+                headers[k] = this.generHead(subpkg.packet.headers![k]);
             });
-            headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
-            const topic = packet.topic || packet.url!;
+            headers[KafkaHeaders.CORRELATION_ID] = `${subpkg.packet.id}`;
+            const topic = subpkg.packet.topic || subpkg.packet.url!;
             if (!this.options.serverSide) {
-                const replyTopic = packet.replyTo ?? this.getReplyTopic(topic);
+                const replyTopic = subpkg.packet.replyTo ?? this.getReplyTopic(topic);
                 headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
                 if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
                     headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
@@ -86,13 +86,13 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
                     throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
                 }
             }
-            packet.kafkaheaders = headers;
-            packet.headerSent = true;
-            packet.caches = [];
-            packet.cacheSize = 0;
-            packet.residueSize = this.getPayloadLength(packet);
-            if (!packet.residueSize) {
-                this.writing(packet, null, callback);
+            subpkg.kafkaheaders = headers;
+            subpkg.headerSent = true;
+            subpkg.caches = [];
+            subpkg.cacheSize = 0;
+            subpkg.residueSize = this.getPayloadLength(subpkg.packet);
+            if (!subpkg.residueSize) {
+                this.writing(subpkg, null, callback);
                 return;
             }
         }
@@ -102,32 +102,32 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
         const bufSize = Buffer.byteLength(chunk);
         const maxSize = this.options.maxSize || this.maxSize;
 
-        const tol = packet.cacheSize + bufSize;
+        const tol = subpkg.cacheSize + bufSize;
         if (tol == maxSize) {
-            packet.caches.push(chunk);
-            const data = this.getSendBuffer(packet, maxSize);
-            packet.residueSize -= bufSize;
-            this.writing(packet, data, callback);
+            subpkg.caches.push(chunk);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= bufSize;
+            this.writing(subpkg, data, callback);
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
             const rest = chunk.subarray(idx);
-            packet.caches.push(message);
-            const data = this.getSendBuffer(packet, maxSize);
-            packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-            this.writing(packet, data, (err) => {
+            subpkg.caches.push(message);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.writing(subpkg, data, (err) => {
                 if (err) return callback?.(err);
                 if (rest.length) {
-                    this.write(packet, rest, callback)
+                    this.write(subpkg, rest, callback)
                 }
             })
         } else {
-            packet.caches.push(chunk);
-            packet.cacheSize += bufSize;
-            packet.residueSize -= bufSize;
-            if (packet.residueSize <= 0) {
-                const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.writing(packet, data, callback);
+            subpkg.caches.push(chunk);
+            subpkg.cacheSize += bufSize;
+            subpkg.residueSize -= bufSize;
+            if (subpkg.residueSize <= 0) {
+                const data = this.getSendBuffer(subpkg, subpkg.cacheSize);
+                this.writing(subpkg, data, callback);
             } else if (callback) {
                 callback()
             }

@@ -46,22 +46,22 @@ export class UdpTransportSession extends TopicTransportSession<Socket> {
     }
 
     maxSize = defaultMaxSize;
-    write(packet: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
-        if (!packet.headerSent) {
-            const buff = this.generateHeader(packet);
-            if (this.hasPayloadLength(packet)) {
-                packet.residueSize = packet.payloadSize ?? 0;
-                packet.caches = [buff];
-                packet.cacheSize = Buffer.byteLength(buff);
-                packet.headerSent = true;
-                packet.headCached = true;
+    write(subpkg: Subpackage, chunk: Buffer, callback?: ((err?: any) => void) | undefined): void {
+        if (!subpkg.headerSent) {
+            const buff = this.generateHeader(subpkg);
+            if (this.hasPayloadLength(subpkg.packet)) {
+                subpkg.residueSize = subpkg.payloadSize ?? 0;
+                subpkg.caches = [buff];
+                subpkg.cacheSize = Buffer.byteLength(buff);
+                subpkg.headerSent = true;
+                subpkg.headCached = true;
                 if (chunk) {
-                    this.write(packet, chunk, callback)
+                    this.write(subpkg, chunk, callback)
                 } else {
                     callback?.();
                 }
             } else {
-                this.writing(packet, buff, callback);
+                this.writing(subpkg.packet, buff, callback);
             }
             return;
         }
@@ -70,36 +70,36 @@ export class UdpTransportSession extends TopicTransportSession<Socket> {
 
 
         const bufSize = Buffer.byteLength(chunk);
-        const maxSize = (this.options.maxSize || this.maxSize) - (packet.headCached ? 6 : 3);
+        const maxSize = (this.options.maxSize || this.maxSize) - (subpkg.headCached ? 6 : 3);
 
-        const tol = packet.cacheSize + bufSize;
+        const tol = subpkg.cacheSize + bufSize;
         if (tol == maxSize) {
-            packet.caches.push(chunk);
-            const data = this.getSendBuffer(packet, maxSize);
-            packet.residueSize -= bufSize;
-            this.writing(packet, data, callback);
+            subpkg.caches.push(chunk);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= bufSize;
+            this.writing(subpkg.packet, data, callback);
         } else if (tol > maxSize) {
             const idx = bufSize - (tol - maxSize);
             const message = chunk.subarray(0, idx);
             const rest = chunk.subarray(idx);
-            packet.caches.push(message);
-            const data = this.getSendBuffer(packet, maxSize);
-            packet.residueSize -= (bufSize - Buffer.byteLength(rest));
-            this.writing(packet, data, (err) => {
+            subpkg.caches.push(message);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.writing(subpkg.packet, data, (err) => {
                 if (err) {
                     return callback?.(err);
                 }
                 if (rest.length) {
-                    this.write(packet, rest, callback)
+                    this.write(subpkg, rest, callback)
                 }
             })
         } else {
-            packet.caches.push(chunk);
-            packet.cacheSize += bufSize;
-            packet.residueSize -= bufSize;
-            if (packet.residueSize <= 0) {
-                const data = this.getSendBuffer(packet, packet.cacheSize);
-                this.writing(packet, data, callback);
+            subpkg.caches.push(chunk);
+            subpkg.cacheSize += bufSize;
+            subpkg.residueSize -= bufSize;
+            if (subpkg.residueSize <= 0) {
+                const data = this.getSendBuffer(subpkg, subpkg.cacheSize);
+                this.writing(subpkg.packet, data, callback);
             } else if (callback) {
                 callback()
             }

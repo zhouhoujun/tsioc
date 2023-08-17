@@ -1,19 +1,26 @@
-import { Inject, Injectable, Module, tokenId } from '@tsdi/ioc';
-import { InvalidJsonException, Packet } from '@tsdi/common';
+import { ArgumentExecption, Inject, Injectable, Module, tokenId } from '@tsdi/ioc';
+import { InvalidJsonException, PacketLengthException } from '@tsdi/common';
 import { isBuffer } from '../utils';
-import { CodingContext, Decoding, AbstractDecoder, Encoding, AbstractEncoder } from '../coding';
-import { SendPacket } from '../TransportSession';
+import { Decoding, AbstractDecoder, Encoding, AbstractEncoder, EncodingContext, DecodingContext } from '../coding';
+import { ctype, hdr } from '../consts';
 
 
 @Injectable()
 export class JsonEncoding implements Encoding {
 
-    handle(ctx: CodingContext<SendPacket, Buffer>, next: () => void): void {
-        if(ctx.output) return;
-        if (ctx.chunk && !ctx.input.payload) {
-            ctx.input.payload = isBuffer(ctx.chunk) ? new TextDecoder().decode(ctx.chunk) : ctx.chunk;
+    handle(ctx: EncodingContext, next: () => void): void {
+        if (ctx.output) return;
+        if (ctx.chunk) {
+            ctx.input.packet.payload = isBuffer(ctx.chunk) ? new TextDecoder().decode(ctx.chunk) : ctx.chunk;
+            if ((ctx.input.packet.headers?.[hdr.CONTENT_TYPE] ?? '').indexOf(ctype.APPL_JSON) >= 0) {
+                ctx.input.packet.payload = JSON.parse(ctx.input.packet.payload);
+            }
         }
-        ctx.output = Buffer.from(JSON.stringify(ctx.input));
+        const data = Buffer.from(JSON.stringify(ctx.input.packet));
+        if (ctx.maxSize && Buffer.byteLength(data) > ctx.maxSize) {
+            throw new PacketLengthException('packet size large than max size ' + ctx.maxSize);
+        }
+        ctx.output = [Buffer.from(JSON.stringify(ctx.input.packet)), null];
 
     }
 }
@@ -46,8 +53,9 @@ export class JsonEncodingModule {
 @Injectable()
 export class JsonDecoding implements Decoding {
 
-    handle(ctx: CodingContext<Buffer | string, Packet>, next: () => void): void {
-        if(ctx.output) return;
+    handle(ctx: DecodingContext, next: () => void): void {
+        if (ctx.output) return;
+        if (!ctx.input) throw new ArgumentExecption('json decoding input empty');
         const jsonStr = isBuffer(ctx.input) ? new TextDecoder().decode(ctx.input) : ctx.input;
         try {
             return JSON.parse(jsonStr);

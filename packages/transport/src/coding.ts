@@ -1,12 +1,14 @@
 import { Abstract, Handle, chain, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { SendPacket } from './TransportSession';
+import { Subpackage } from './TransportSession';
 
+
+export type EncodingBuffers = [Buffer, Buffer | null];
 
 @Abstract()
 export abstract class Encoder {
-    abstract encode(input: SendPacket, chunk: Buffer | null, options?: CodingOption): Buffer | null;
+    abstract encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers | null;
 }
 
 
@@ -15,16 +17,16 @@ export abstract class AbstractEncoder extends Encoder {
 
     @InjectLog() private logger!: Logger;
 
-    private china?: Handle<CodingContext<SendPacket, Buffer>, void>;
+    private china?: Handle<EncodingContext, void>;
 
     protected abstract get encodings(): Encoding[];
 
-    encode(input: SendPacket, chunk: Buffer | null, options?: CodingOption): Buffer | null {
-        const ctx = { ...options, input, chunk, logger: this.logger } as CodingContext<SendPacket, Buffer>;
+    encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers | null {
+        const ctx = { ...options, input: input, chunk, logger: this.logger } as EncodingContext;
         return this.handle(ctx);
     }
 
-    protected handle(ctx: CodingContext<SendPacket, Buffer>): Buffer | null {
+    protected handle(ctx: EncodingContext): EncodingBuffers | null {
         try {
             if (!this.china) {
                 this.china = chain(this.encodings.map(c => c.handle.bind(c)));
@@ -51,16 +53,16 @@ export abstract class AbstractDecoder extends Decoder {
 
     @InjectLog() private logger!: Logger;
 
-    private china?: Handle<CodingContext<Buffer, Packet>, void>;
+    private china?: Handle<DecodingContext, void>;
 
     protected abstract get decodings(): Decoding[];
 
     decode(chunk: Buffer, options?: CodingOption): Packet | null {
-        const ctx = { ...options, chunk, logger: this.logger } as CodingContext<Buffer, Packet>;
+        const ctx = { ...options, chunk, logger: this.logger } as DecodingContext;
         return this.handle(ctx);
     }
 
-    protected handle(ctx: CodingContext<Buffer, Packet>): Packet | null {
+    protected handle(ctx: DecodingContext): Packet | null {
         if (!this.china) {
             this.china = chain(this.decodings.map(c => c.handle.bind(c)));
         }
@@ -81,7 +83,11 @@ export interface CodingOption {
      */
     delimiter?: string;
     /**
-     * packet size limit.
+     * packet max size limit.
+     */
+    limit?: number;
+    /**
+     * payload max size limit
      */
     maxSize?: number;
     topic?: string;
@@ -89,10 +95,10 @@ export interface CodingOption {
 }
 
 
-export interface CodingContext<TInput, TOutput> {
-    [x: string]: any;
-    input: TInput;
-    output?: TOutput;
+export interface EncodingContext {
+    input: Subpackage;
+    output?: EncodingBuffers;
+    packSize?: number;
     maxSize?: number;
     chunk?: Buffer;
     logger?: Logger;
@@ -100,14 +106,33 @@ export interface CodingContext<TInput, TOutput> {
     channel?: string;
 }
 
-export const NEXT_VOID = () => { };
-
-export interface Encoding<TInput extends Packet = SendPacket> {
-    handle(ctx: CodingContext<TInput, Buffer>, next: () => void): void;
+export interface DecodingContext {
+    cache: BufferCache;
+    input?: Buffer;
+    output?: Packet;
+    packSize?: number;
+    maxSize?: number;
+    chunk?: Buffer;
+    logger?: Logger;
+    topic?: string;
+    channel?: string;
 }
 
-export interface Decoding<TOutput extends Packet = Packet> {
-    handle(ctx: CodingContext<Buffer, TOutput>, next: () => void): void;
+export interface BufferCache {
+    buffers: Buffer[];
+    length: number;
+    contentLength: number | null;
+    pkgs: Map<number | string, Packet>;
+}
+
+export const NEXT_VOID = () => { };
+
+export interface Encoding {
+    handle(ctx: EncodingContext, next: () => void): void;
+}
+
+export interface Decoding {
+    handle(ctx: DecodingContext, next: () => void): void;
 }
 
 export const ENCODINGS = tokenId<Encoding[]>('ENCODINGS');

@@ -1,19 +1,18 @@
 
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { HeaderPacket, Packet } from '@tsdi/common';
+import { Packet } from '@tsdi/common';
 import { Decoder, Encoder } from './coding';
 import { IEventEmitter } from './stream';
 
 
 
-export interface SendPacket extends Packet {
+export interface SendPacket {
+    packet: Packet;
     payloadSent?: boolean;
     headerSent?: boolean;
     size?: number;
     headerSize?: number;
     payloadSize?: number;
-
-
 }
 
 export interface Subpackage extends SendPacket {
@@ -59,7 +58,7 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
      * @param packet
      * @param callback
      */
-    write(packet: HeaderPacket, chunk: Uint8Array | null, callback?: (err?: any) => void): void;
+    write(packet: SendPacket, chunk: Uint8Array | null, callback?: (err?: any) => void): void;
 
     /**
      * Adds the `listener` function to the end of the listeners array for the
@@ -147,6 +146,10 @@ export interface TransportSessionOpts {
     delimiter?: string;
     /**
      * packet size limit.
+     */
+    limit?: number;
+    /**
+     * payload max size limit.
      */
     maxSize?: number;
     /**

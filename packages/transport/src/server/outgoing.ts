@@ -126,12 +126,14 @@ export class MessageOutgoing<T, TStatus extends OutgoingHeader = number> extends
         this.session.write(this._sentpkt, chunk, callback);
     }
 
-    createSentPacket(): HeaderPacket {
+    createSentPacket(): SendPacket {
         return {
-            id: this.id,
-            topic: this.topic,
-            replyTo: this.replyTo,
-            headers: this.getHeaders()
+            packet: {
+                id: this.id,
+                topic: this.topic,
+                replyTo: this.replyTo,
+                headers: this.getHeaders()
+            }
         }
     }
 
@@ -286,7 +288,7 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
         if (!this._sentpkt) {
-            this._sentpkt =  this.createSentPacket();
+            this._sentpkt = this.createSentPacket();
         }
         this.session.write(this._sentpkt, chunk, callback)
     }
@@ -330,10 +332,12 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
         return this;
     }
 
-    createSentPacket(): HeaderPacket {
+    createSentPacket(): SendPacket {
         return {
-            id: this.id,
-            headers: this.getHeaders()
+            packet: {
+                id: this.id,
+                headers: this.getHeaders()
+            }
         }
     }
 
