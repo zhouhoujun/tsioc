@@ -168,7 +168,7 @@ export abstract class CustomTransportSession<T, TOpts extends TransportSessionOp
      */
     write(subpkg: Subpackage, chunk: Buffer | null, callback?: (err?: any) => void): void {
         try {
-            const [data, rest] = this.serialize(subpkg, chunk, this.options) ?? EMPTY;
+            const [data, rest] = this.serialize(subpkg, chunk, this.options);
             if (data) {
                 this.sending(subpkg.packet, data, (err) => {
                     if (err) return callback?.(err);

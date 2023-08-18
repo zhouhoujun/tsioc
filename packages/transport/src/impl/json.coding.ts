@@ -10,8 +10,15 @@ export class JsonEncoding implements Encoding {
 
     handle(ctx: EncodingContext, next: () => void): void {
         if (ctx.output) return;
+        let rest: Buffer | null = null;
         if (ctx.chunk) {
-            ctx.input.packet.payload = isBuffer(ctx.chunk) ? new TextDecoder().decode(ctx.chunk) : ctx.chunk;
+            let data: Buffer;
+            [data, rest] = ctx.input.push(ctx.chunk!, ctx.limit!);
+            if (!data) {
+                return;
+            }
+
+            ctx.input.packet.payload = new TextDecoder().decode(data);
             if ((ctx.input.packet.headers?.[hdr.CONTENT_TYPE] ?? '').indexOf(ctype.APPL_JSON) >= 0) {
                 ctx.input.packet.payload = JSON.parse(ctx.input.packet.payload);
             }
@@ -20,7 +27,7 @@ export class JsonEncoding implements Encoding {
         if (ctx.maxSize && Buffer.byteLength(data) > ctx.maxSize) {
             throw new PacketLengthException('packet size large than max size ' + ctx.maxSize);
         }
-        ctx.output = [Buffer.from(JSON.stringify(ctx.input.packet)), null];
+        ctx.output = [Buffer.from(JSON.stringify(ctx.input.packet)), rest];
 
     }
 }

@@ -1,5 +1,5 @@
 import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
-import { OutgoingHeader, OutgoingHeaders, ResHeaders, HeaderPacket } from '@tsdi/common';
+import { OutgoingHeader, OutgoingHeaders, ResHeaders } from '@tsdi/common';
 import { Writable } from 'readable-stream';
 import { Outgoing } from '../socket';
 import { IEventEmitter } from '../stream';

@@ -15,7 +15,6 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
 
     async respond(ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<any> {
 
-
         const vaildator = ctx.vaildator;
         if (ctx.destroyed || !ctx.writable) return;
 

@@ -1,4 +1,4 @@
-import { Abstract, Handle, chain, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Handle, chain, isFunction, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { SendPacket } from './TransportSession';
@@ -11,13 +11,13 @@ export interface Subpackage extends SendPacket {
     cacheSize: number;
     headCached?: boolean;
     residueSize: number;
-    push?(chunk: Buffer, limit: number): EncodingBuffers | null
+    push(chunk: Buffer, limit: number): EncodingBuffers
 }
 
 
 @Abstract()
 export abstract class Encoder {
-    abstract encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers | null;
+    abstract encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers;
 }
 
 
@@ -35,7 +35,7 @@ function concatSub(subpkg: Subpackage, size: number): Buffer {
 }
 
 
-export function push(this: Subpackage, chunk: Buffer, limit: number): EncodingBuffers | null {
+export function push(this: Subpackage, chunk: Buffer, limit: number): EncodingBuffers {
     const bufSize = Buffer.byteLength(chunk);
     const total = this.cacheSize + bufSize;
 
@@ -59,9 +59,8 @@ export function push(this: Subpackage, chunk: Buffer, limit: number): EncodingBu
             const data = concatSub(this, this.cacheSize);
             return [data, null];
         }
-
     }
-    return null;
+    return EMPTY as EncodingBuffers;
 }
 
 
@@ -74,12 +73,17 @@ export abstract class AbstractEncoder extends Encoder {
 
     protected abstract get encodings(): Encoding[];
 
-    encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers | null {
+    encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers {
+        if (!isFunction(input.push)) {
+            Object.defineProperty(input, 'push', {
+                value: push
+            });
+        }
         const ctx = { ...options, input: input, chunk, logger: this.logger } as EncodingContext;
         return this.handle(ctx);
     }
 
-    protected handle(ctx: EncodingContext): EncodingBuffers | null {
+    protected handle(ctx: EncodingContext): EncodingBuffers {
         try {
             if (!this.china) {
                 this.china = chain(this.encodings.map(c => c.handle.bind(c)));
@@ -90,7 +94,7 @@ export abstract class AbstractEncoder extends Encoder {
             throw err;
         }
 
-        return ctx.output ?? null;
+        return ctx.output ?? EMPTY as EncodingBuffers;
     }
 
 }
@@ -156,7 +160,7 @@ export interface EncodingContext extends CodingOption {
     logger?: Logger;
 }
 
-export interface DecodingContext extends CodingOption  {
+export interface DecodingContext extends CodingOption {
     cache: BufferCache;
     input?: Buffer;
     output?: Packet;

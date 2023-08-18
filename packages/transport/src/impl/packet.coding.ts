@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Inject, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
-import { AbstractDecoder, AbstractEncoder, Decoding, DecodingContext, Encoding, EncodingContext, push } from '../coding';
+import { AbstractDecoder, AbstractEncoder, Decoding, DecodingContext, Encoding, EncodingContext } from '../coding';
 import { hdr } from '../consts';
 
 
@@ -16,9 +16,6 @@ export class InitSubpackageEncoding implements Encoding {
             ctx.input.caches = [];
             ctx.input.residueSize = ctx.input.payloadSize;
             ctx.input.cacheSize = 0;
-            Object.defineProperty(ctx.input, 'push', {
-                value: push
-            })
         }
         return next();
     }
