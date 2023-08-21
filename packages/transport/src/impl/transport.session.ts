@@ -168,7 +168,7 @@ export abstract class CustomTransportSession<T, TOpts extends TransportSessionOp
      */
     write(subpkg: Subpackage, chunk: Buffer | null, callback?: (err?: any) => void): void {
         try {
-            const [data, rest] = this.serialize(subpkg, chunk, this.options);
+            const [data, rest] = this.serialize(subpkg, chunk, this.options as any);
             if (data) {
                 this.sending(subpkg.packet, data, (err) => {
                     if (err) return callback?.(err);
@@ -227,8 +227,8 @@ export abstract class BufferTransportSession<T, TOpts extends TransportSessionOp
         bufId.writeUInt16BE(id);
         const len = Buffer.byteLength(buffers);
         packet.headerSize = len;
-        packet.payloadSize = this.getPayloadLength(packet.packet);
-        packet.size = packet.headerSize + packet.payloadSize;
+        packet.cacheSize = this.getPayloadLength(packet.packet);
+        packet.size = packet.headerSize + packet.cacheSize;
         return Buffer.concat([
             Buffer.from(String(len + 3)),
             this.delimiter,

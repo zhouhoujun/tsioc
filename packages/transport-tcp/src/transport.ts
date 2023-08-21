@@ -36,7 +36,7 @@ export class TcpTransportSession extends SocketTransportSession<tls.TLSSocket | 
         if (!subpkg.headerSent) {
             const buff = this.generateHeader(subpkg);
             if (this.hasPayloadLength(subpkg.packet)) {
-                subpkg.residueSize = subpkg.payloadSize ?? 0;
+                subpkg.residueSize = subpkg.cacheSize ?? 0;
                 subpkg.caches = [buff];
                 subpkg.cacheSize = Buffer.byteLength(buff);
                 subpkg.headerSent = true;

@@ -13,9 +13,6 @@ export class InitSubpackageEncoding implements Encoding {
         if (isNil(ctx.input.payloadSize) && ctx.input.packet.headers) {
             const len = ctx.input.packet.headers[hdr.CONTENT_LENGTH];
             ctx.input.payloadSize = isString(len) ? ~~len : len ?? 0;
-            ctx.input.caches = [];
-            ctx.input.residueSize = ctx.input.payloadSize;
-            ctx.input.cacheSize = 0;
         }
         return next();
     }
@@ -24,13 +21,11 @@ export class InitSubpackageEncoding implements Encoding {
 @Injectable()
 export class JsonHeadersEncoding implements Encoding {
     handle(ctx: EncodingContext, next: () => void): void {
-        if (!ctx.input.headCached) {
+        if (!ctx.input.header) {
             const headerBuff = Buffer.from(JSON.stringify(ctx.input.packet.headers ?? EMPTY_OBJ));
-            if (ctx.input.payloadSize) {
-                ctx.input.caches.push(headerBuff);
-                ctx.input.cacheSize += Buffer.byteLength(headerBuff);
-                ctx.input.headCached = true;
-            } else {
+            ctx.input.header = headerBuff;
+            ctx.input.headerSize = Buffer.byteLength(headerBuff);
+            if (!ctx.input.payloadSize) {
                 ctx.output = [headerBuff, null];
                 return;
             }
@@ -52,12 +47,28 @@ export class VaildPayloadEncoding implements Encoding {
 @Injectable()
 export class PayloadEncoding implements Encoding {
     handle(ctx: EncodingContext, next: () => void): void {
-        const data = ctx.input.push?.(ctx.chunk!, ctx.limit!);
+        const [data, rest] = ctx.input.push(ctx.chunk!, ctx.limit!);
         if (data) {
-            ctx.output = data;
+            const bufId = Buffer.alloc(2);
+            bufId.writeUInt16BE(ctx.input.packet.id);
+            const headSize = Buffer.alloc(2);
+            let result: Buffer;
+            if (!ctx.input.headerSent) {
+                ctx.input.headerSent = true;
+                headSize.writeUInt16BE(ctx.input.headerSize);
+                result = Buffer.concat([Buffer.from(String(ctx.input.headerSize +  Buffer.byteLength(data) + 5)), ctx.delimiter, bufId, headSize, ctx.input.header, data])
+            } else {
+                ctx.input.packet.id;
+                headSize.writeUInt16BE(0);
+                result = Buffer.concat([Buffer.from(String(Buffer.byteLength(data) + 5)), ctx.delimiter, bufId, headSize, ctx.input.header, data])
+            }
+            ctx.output = [result, rest];
         }
     }
+
 }
+
+
 
 
 export class PacketEncoder extends AbstractEncoder {

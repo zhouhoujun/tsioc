@@ -1,15 +1,27 @@
-import { Abstract, EMPTY, Handle, chain, isFunction, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Handle, chain, isFunction, isNil, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { SendPacket } from './TransportSession';
 
 
-export type EncodingBuffers = [Buffer, Buffer | null];
+export type EncodingBuffers = [
+    /**
+     * encoded buffer
+     */
+    Buffer, 
+    /**
+     * rest buffer
+     */
+    Buffer | null
+];
 
 export interface Subpackage extends SendPacket {
-    caches: Buffer[];
-    cacheSize: number;
     headCached?: boolean;
+    header: Buffer;
+    headerSize: number;
+    caches: Buffer[];
+    payloadSize: number;
+    cacheSize: number;
     residueSize: number;
     push(chunk: Buffer, limit: number): EncodingBuffers
 }
@@ -22,22 +34,23 @@ export abstract class Encoder {
 
 
 function concatSub(subpkg: Subpackage, size: number): Buffer {
-    let data: Buffer[];
-    if (subpkg.headCached) {
-        subpkg.headCached = false;
-        data = [subpkg.caches[0], ...subpkg.caches.slice(1)];
-    } else {
-        data = subpkg.caches;
-    }
+    const data = subpkg.caches;
     subpkg.caches = [];
     subpkg.cacheSize = 0;
     return Buffer.concat(data);
 }
 
-
+/**
+ * push payload
+ */
 export function push(this: Subpackage, chunk: Buffer, limit: number): EncodingBuffers {
+    if (!this.caches || isNil(this.residueSize)) {
+        this.caches = [];
+        this.residueSize = this.payloadSize;
+        this.cacheSize = 0;
+    }
     const bufSize = Buffer.byteLength(chunk);
-    const total = this.cacheSize + bufSize;
+    const total = (this.headerSent? 0 : this.headerSize) + this.cacheSize + bufSize;
 
     if (total == limit) {
         this.caches.push(chunk);
@@ -138,7 +151,7 @@ export interface CodingOption {
     /**
      * packet delimiter flag
      */
-    delimiter?: string;
+    delimiter: Buffer;
     /**
      * packet max size limit.
      */

@@ -12,7 +12,7 @@ export interface SendPacket {
     headerSent?: boolean;
     size?: number;
     headerSize?: number;
-    payloadSize?: number;
+    cacheSize?: number;
 }
 
 
