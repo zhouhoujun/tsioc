@@ -8,7 +8,7 @@ export type EncodingBuffers = [
     /**
      * encoded buffer
      */
-    Buffer, 
+    Buffer,
     /**
      * rest buffer
      */
@@ -25,7 +25,6 @@ export interface Subpackage extends SendPacket {
     residueSize: number;
     push(chunk: Buffer, limit: number): EncodingBuffers
 }
-
 
 @Abstract()
 export abstract class Encoder {
@@ -50,7 +49,7 @@ export function push(this: Subpackage, chunk: Buffer, limit: number): EncodingBu
         this.cacheSize = 0;
     }
     const bufSize = Buffer.byteLength(chunk);
-    const total = (this.headerSent? 0 : this.headerSize) + this.cacheSize + bufSize;
+    const total = (this.headerSent ? 0 : this.headerSize) + this.cacheSize + bufSize;
 
     if (total == limit) {
         this.caches.push(chunk);
@@ -87,11 +86,6 @@ export abstract class AbstractEncoder extends Encoder {
     protected abstract get encodings(): Encoding[];
 
     encode(input: Subpackage, chunk: Buffer | null, options?: CodingOption): EncodingBuffers {
-        if (!isFunction(input.push)) {
-            Object.defineProperty(input, 'push', {
-                value: push
-            });
-        }
         const ctx = { ...options, input: input, chunk, logger: this.logger } as EncodingContext;
         return this.handle(ctx);
     }

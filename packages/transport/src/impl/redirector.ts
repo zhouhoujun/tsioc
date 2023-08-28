@@ -11,8 +11,7 @@ import { Client } from '../client/client';
 @Injectable()
 export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
 
-    constructor(
-        ) {
+    constructor() {
         super();
     }
 

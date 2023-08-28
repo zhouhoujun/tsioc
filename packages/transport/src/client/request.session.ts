@@ -43,7 +43,6 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
 
-
             let timeout: any;
             const observe = req.observe;
             request.send(packet, { observe })

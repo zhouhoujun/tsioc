@@ -124,6 +124,11 @@ export interface TransportSession<TSocket = any> extends IEventEmitter {
     destroy(error?: any): void;
 }
 
+
+export interface PacketOptions {
+
+}
+
 /**
  * transport session options.
  */

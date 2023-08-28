@@ -172,18 +172,11 @@ export interface Outgoing<TSocket = any, TStatus = any> extends IEnd {
      * Set response status code.
      */
     set statusCode(status: TStatus);
-    // /**
-    //  * Textual description of response status code, defaults to OK.
-    //  *
-    //  * Do not depend on this.
-    //  */
-    // get statusMessage(): string;
-    // /**
-    //  * Textual description of response status code, defaults to OK.
-    //  *
-    //  * Do not depend on this.
-    //  */
-    // set statusMessage(msg: string);
+    /**
+     * Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
     statusMessage?: string;
 
     /**
