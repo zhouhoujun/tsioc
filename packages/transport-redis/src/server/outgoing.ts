@@ -1,5 +1,4 @@
-import { HeaderPacket } from '@tsdi/common';
-import { TransportSession, MessageOutgoing } from '@tsdi/transport';
+import { TransportSession, MessageOutgoing, SendPacket } from '@tsdi/transport';
 import { ReidsTransport } from '../transport';
 
 
@@ -16,12 +15,14 @@ export class RedisOutgoing extends MessageOutgoing<ReidsTransport, number> {
         super(session, id, topic);
     }
 
-    override createSentPacket(): HeaderPacket {
+    override createSentPacket(): SendPacket {
         const topic = this.getReply(this.topic);
         return {
-            id: this.id,
-            topic,
-            headers: this.getHeaders(),
+            packet: {
+                id: this.id,
+                topic,
+                headers: this.getHeaders(),
+            }
         }
     }
 

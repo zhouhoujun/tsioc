@@ -106,10 +106,10 @@ export class NatsTransportSession extends MessageTransportSession<NatsConnection
 
     }
 
-    writing(packet: HeaderPacket & { natsheaders: MsgHdrs }, chunk: Buffer | null, callback?: (err?: any) => void) {
-        const topic = packet.topic || packet.url!;
+    writing(packet: Subpackage & { natsheaders: MsgHdrs }, chunk: Buffer | null, callback?: (err?: any) => void) {
+        const topic = packet.packet.topic || packet.packet.url!;
         const replys = this.options.serverSide ? undefined : {
-            reply: packet.replyTo
+            reply: packet.packet.replyTo
         };
         try {
             this.socket.publish(

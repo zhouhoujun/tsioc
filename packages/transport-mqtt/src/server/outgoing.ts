@@ -1,5 +1,4 @@
-import { HeaderPacket } from '@tsdi/common';
-import { TransportSession, MessageOutgoing } from '@tsdi/transport';
+import { TransportSession, MessageOutgoing, SendPacket } from '@tsdi/transport';
 import { MqttClient } from 'mqtt';
 
 
@@ -17,12 +16,14 @@ export class MqttOutgoing extends MessageOutgoing<MqttClient, number> {
     }
 
 
-    override createSentPacket(): HeaderPacket {
+    override createSentPacket(): SendPacket {
         const topic = this.getReply(this.topic);
         return {
-            id: this.id,
-            topic,
-            headers: this.getHeaders()
+            packet: {
+                id: this.id,
+                topic,
+                headers: this.getHeaders()
+            }
         };
     }
 
