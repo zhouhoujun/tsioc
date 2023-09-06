@@ -1,5 +1,4 @@
-import { HeaderPacket } from '@tsdi/common';
-import { TransportSession, MessageOutgoing } from '@tsdi/transport';
+import { TransportSession, MessageOutgoing, SendPacket } from '@tsdi/transport';
 import { KafkaTransport } from '../const';
 
 
@@ -18,14 +17,16 @@ export class KafkaOutgoing extends MessageOutgoing<KafkaTransport, number> {
     }
 
 
-    override createSentPacket(): HeaderPacket {
+    override createSentPacket(): SendPacket {
         const topic = this.replyTopic ?? this.getReply(this.topic);
         return {
-            id: this.id,
-            topic,
-            headers: this.getHeaders(),
+            packet: {
+                id: this.id,
+                topic,
+                headers: this.getHeaders()
+            },
             partition: this.replyPartition
-        } as HeaderPacket;
+        } as SendPacket;
     }
 
     getReply(topic: string) {

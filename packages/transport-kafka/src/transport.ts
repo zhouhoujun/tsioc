@@ -136,8 +136,8 @@ export class KafkaTransportSession extends MessageTransportSession<KafkaTranspor
 
     }
 
-    writing(packet: HeaderPacket & { partition?: number, kafkaheaders: IHeaders }, chunk: Buffer | null, callback?: (err?: any) => void) {
-        const topic = packet.topic || packet.url!;
+    writing(packet: Subpackage & { partition?: number, kafkaheaders: IHeaders }, chunk: Buffer | null, callback?: (err?: any) => void) {
+        const topic = packet.packet.topic || packet.packet.url!;
 
         this.socket.producer.send({
             ...this.options.send,
