@@ -134,7 +134,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     handle(context: ApplicationEventContext): Observable<any> {
-        const endpoints = this.maps.get(getClass(context.payload));
+        const endpoints = this.maps.get(getClass(context.arguments));
         return runHandlers(endpoints, context, v => v.isDone() === true);
     }
 

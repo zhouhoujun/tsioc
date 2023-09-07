@@ -65,7 +65,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
         const payload = options.payload || options.arguments;
         if (payload) {
-            this.injector.inject(toProvider(CONTEXT_PAYLOAD, payload));
+            this.injector.inject(toProvider(CONTEXT_ARGUMENTS, payload));
             if (!isFunction(payload)) {
                 const argType = getClass(payload);
                 this.injector.setValue(argType, payload);
@@ -144,26 +144,19 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected _payload?: T;
+    protected _arguments?: T;
     /**
-     * the invocation context payload.
+     * the invocation context arguments.
      * 
-     * 上下文负载对象
+     * 上下文负载参数
      */
-    get payload(): T {
-        if (!this._payload) {
-            this._payload = this.injector.get(CONTEXT_PAYLOAD);
+    get arguments(): T {
+        if (!this._arguments) {
+            this._arguments = this.injector.get(CONTEXT_ARGUMENTS);
         }
-        return this._payload!;
+        return this._arguments!;
     }
 
-    /**
-     * the invocation arguments.
-     * @deprecated use `payload` instead.
-     */
-    get arguments() {
-        return this.payload;
-    }
 
     get used(): boolean {
         return this._injected
@@ -352,9 +345,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 }
 
 /**
- * context payload token.
+ * context arguments token.
  */
-export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
+export const CONTEXT_ARGUMENTS = tokenId('CONTEXT_ARGUMENTS');
 
 /**
  * Missing argument execption.

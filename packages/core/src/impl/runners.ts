@@ -175,12 +175,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     handle(context: EndpointContext<any>): Observable<any> {
-        if (isFunction(context.payload)) {
-            return runHandlers(this._maps.get(context.payload), context, v => v.isDone() === true)
+        if (isFunction(context.arguments)) {
+            return runHandlers(this._maps.get(context.arguments), context, v => v.isDone() === true)
         }
-        if (isArray(context.payload)) {
+        if (isArray(context.arguments)) {
             const handlers: Handler[] = [];
-            context.payload.forEach(type => {
+            context.arguments.forEach(type => {
                 handlers.push(...this._maps.get(type) || []);
             })
             return runHandlers(handlers, context, v => v.isDone() === true)

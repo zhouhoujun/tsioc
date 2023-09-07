@@ -74,22 +74,22 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
     }
 
     intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
-        if (!isUndefined(input.payload.body)) return next.handle(input);
+        if (!isUndefined(input.arguments.body)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.payload.payload = input.payload.body = res.body ?? {};
-                    if (isUndefined(input.payload.rawBody)) input.payload.rawBody = res.raw;
+                    input.arguments.payload = input.arguments.body = res.body ?? {};
+                    if (isUndefined(input.arguments.rawBody)) input.arguments.rawBody = res.raw;
                     return next.handle(input)
                 })
             )
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        if (!isUndefined(ctx.payload.body)) return await next();
+        if (!isUndefined(ctx.arguments.body)) return await next();
         const res = await this.parseBody(ctx);
-        ctx.payload.payload = ctx.payload.body = res.body ?? {};
-        if (isUndefined(ctx.payload.rawBody)) ctx.payload.rawBody = res.raw;
+        ctx.arguments.payload = ctx.arguments.body = res.body ?? {};
+        if (isUndefined(ctx.arguments.rawBody)) ctx.arguments.rawBody = res.raw;
         await next()
     }
 

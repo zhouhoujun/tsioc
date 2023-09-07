@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Handle, chain, isFunction, isNil, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Handle, chain, isNil, tokenId } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { SendPacket } from './TransportSession';

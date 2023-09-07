@@ -72,7 +72,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
             if (trespond) {
                 trespond.respond(ctx, res, this.options.response);
             } else {
-                ctx.payload[this.options.response] = res;
+                ctx.arguments[this.options.response] = res;
             }
         } else if (this.options.response) {
             const respond = ctx.get(this.options.response) ?? this.options.response;

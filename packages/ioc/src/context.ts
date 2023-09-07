@@ -48,9 +48,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract hasRef(ctx: InvocationContext): boolean;
     /**
-     * the invocation payload.
+     * the invocation arguments.
      */
-    abstract get payload(): T;
+    abstract get arguments(): T;
     /**
      * get value ify create by factory and register the value for the token.
      * 

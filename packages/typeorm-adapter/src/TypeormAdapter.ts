@@ -116,8 +116,8 @@ export class TypeormAdapter {
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
-            hasField: (parameter, ctx) => ctx.payload.body,
-            getFields: (parameter: TransportParameter, ctx: EndpointContext) => parameter.field ? ctx.payload.body[parameter.field] : ctx.payload.body,
+            hasField: (parameter, ctx) => ctx.arguments.body,
+            getFields: (parameter: TransportParameter, ctx: EndpointContext) => parameter.field ? ctx.arguments.body[parameter.field] : ctx.arguments.body,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
