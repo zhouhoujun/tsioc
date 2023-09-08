@@ -143,13 +143,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { arguments: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { args: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { arguments: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { args: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -175,12 +175,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     handle(context: EndpointContext<any>): Observable<any> {
-        if (isFunction(context.arguments)) {
-            return runHandlers(this._maps.get(context.arguments), context, v => v.isDone() === true)
+        if (isFunction(context.args)) {
+            return runHandlers(this._maps.get(context.args), context, v => v.isDone() === true)
         }
-        if (isArray(context.arguments)) {
+        if (isArray(context.args)) {
             const handlers: Handler[] = [];
-            context.arguments.forEach(type => {
+            context.args.forEach(type => {
                 handlers.push(...this._maps.get(type) || []);
             })
             return runHandlers(handlers, context, v => v.isDone() === true)

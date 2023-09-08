@@ -50,7 +50,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     /**
      * the invocation arguments.
      */
-    abstract get arguments(): T;
+    abstract get args(): T;
     /**
      * get value ify create by factory and register the value for the token.
      * 
@@ -192,11 +192,11 @@ export interface InvokeOptions {
  */
 export interface InvokeArguments<TArg = any> extends InvokeOptions {
     /**
-     * invocation arguments data.
+     * invocation arguments.
      * 
      * 调用接口负载对象
      */
-    arguments?: ProvdierOf<TArg>;
+    args?: ProvdierOf<TArg>;
     /**
      * parent InvocationContext,
      * 

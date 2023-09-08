@@ -36,7 +36,7 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
                 }
             });
             if (has) {
-                ctx.arguments.path = restParams;
+                ctx.args.path = restParams;
             }
         }
     }

@@ -53,7 +53,7 @@ export const FILTER_PROVIDERS: ProviderType[] = [
         provide: getResolversToken(PayloadApplicationEvent),
         useValue: createPayloadResolver(
             (ctx, scope, field) => {
-                let payload = ctx.arguments;
+                let payload = ctx.args;
                 if (scope) {
                     payload = payload[scope];
                     if (field) {

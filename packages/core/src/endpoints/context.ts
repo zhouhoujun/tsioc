@@ -42,8 +42,8 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
     }
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
-        if (!this.arguments) return EMPTY;
-        return this.injector.get(getResolversToken(this.arguments), this.playloadDefaultResolvers());
+        if (!this.args) return EMPTY;
+        return this.injector.get(getResolversToken(this.args), this.playloadDefaultResolvers());
     }
 
     protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] {

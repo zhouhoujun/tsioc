@@ -72,7 +72,7 @@ export function createTransportContext<TInput, TOutput, TSocket>(injector: Injec
 
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
-        let data = ctx.arguments;
+        let data = ctx.args;
 
         if (field && !scope) {
             scope = 'query'

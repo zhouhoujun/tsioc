@@ -63,7 +63,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        const args = options.arguments;
+        const args = options.args;
         if (args) {
             this.injector.inject(toProvider(CONTEXT_ARGUMENTS, args));
             if (!isFunction(args)) {
@@ -144,17 +144,17 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected _arguments?: T;
+    protected _args?: T;
     /**
      * the invocation context arguments.
      * 
      * 上下文负载参数
      */
-    get arguments(): T {
-        if (!this._arguments) {
-            this._arguments = this.injector.get(CONTEXT_ARGUMENTS);
+    get args(): T {
+        if (!this._args) {
+            this._args = this.injector.get(CONTEXT_ARGUMENTS);
         }
-        return this._arguments!;
+        return this._args!;
     }
 
 
