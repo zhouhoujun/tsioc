@@ -1,20 +1,22 @@
 import { EMPTY_OBJ, Injector } from '@tsdi/ioc';
 import { TransportContext, TransportContextOpts } from '../TransportContext';
-import { Socket } from '../socket';
 
 
 
-export class TransportContextIml<TInput = any> extends TransportContext<TInput> {
+export class TransportContextIml<TInput = any, TOutput= any> extends TransportContext<TInput> {
 
     private _url: string;
+    private _originalUrl: string;
     private _method: string;
-    private _socket: Socket | null;
+    private _socket: any;
     constructor(
         injector: Injector,
+        readonly request: TInput, 
+        readonly response: TOutput, 
         options: TransportContextOpts = EMPTY_OBJ
     ) {
         super(injector, options);
-        this._url = options.url ?? '';
+        this._url = this._originalUrl = options.url ?? '';
         this._method = options.method ?? '';
         this._socket = options.socket || null;
     }
@@ -32,6 +34,10 @@ export class TransportContextIml<TInput = any> extends TransportContext<TInput> 
         this._url = value;
     }
     
+    get originalUrl(): string {
+        return this._originalUrl;
+    }
+
     /**
      * The request method.
      */
@@ -39,7 +45,7 @@ export class TransportContextIml<TInput = any> extends TransportContext<TInput> 
         return this._method;
     }
 
-    get socket(): Socket {
-        return this._socket!;
+    get socket(): any {
+        return this._socket;
     }
 }

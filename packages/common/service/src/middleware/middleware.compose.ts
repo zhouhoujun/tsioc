@@ -2,7 +2,7 @@ import { chain, isFunction } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
 import { defer, Observable } from 'rxjs';
 import { MiddlewareFn, MiddlewareLike } from './middleware';
-import { AssetContext } from '../AssetContext';
+import { TransportContext } from '../TransportContext';
 
 
 
@@ -11,7 +11,7 @@ import { AssetContext } from '../AssetContext';
  * @param m type of {@link MiddlewareLike}
  * @returns 
  */
-export function middlewareFnify<T extends AssetContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
+export function middlewareFnify<T extends TransportContext>(m: MiddlewareLike<T>): MiddlewareFn<T> {
     return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
@@ -20,7 +20,7 @@ export function middlewareFnify<T extends AssetContext>(m: MiddlewareLike<T>): M
  * compose middlewares
  * @param middlewares 
  */
-export function compose<T extends AssetContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
+export function compose<T extends TransportContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
     const middleFns = middlewares.filter(m => m).map(m => middlewareFnify<T>(m));
     return chain(middleFns)
 }
@@ -34,7 +34,7 @@ export const NEXT = () => Promise.resolve();
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<Tx extends AssetContext, TResponse> implements Backend<Tx, TResponse> {
+export class MiddlewareBackend<Tx extends TransportContext, TResponse> implements Backend<Tx, TResponse> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) { }

@@ -192,16 +192,9 @@ export interface InvokeOptions {
  */
 export interface InvokeArguments<TArg = any> extends InvokeOptions {
     /**
-     * invocation payload data.
+     * invocation arguments data.
      * 
      * 调用接口负载对象
-     */
-    payload?: ProvdierOf<TArg>;
-    /**
-     * invocation payload data.
-     * 
-     * 调用接口负载对象
-     * @deprecated use `payload` instead.
      */
     arguments?: ProvdierOf<TArg>;
     /**

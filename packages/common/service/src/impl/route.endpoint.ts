@@ -1,12 +1,13 @@
 import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { normalize, patternToPath } from '@tsdi/common';
 import { OperationEndpointImpl } from '@tsdi/core';
+import { TransportContext } from '../TransportContext';
 import { AssetContext } from '../AssetContext';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../router/route.endpoint';
 
 
 
-export class RouteEndpointImpl<TInput extends AssetContext = AssetContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
+export class RouteEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
 
     private _prefix: string;
     readonly route: string;

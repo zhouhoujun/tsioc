@@ -63,12 +63,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        const payload = options.payload || options.arguments;
-        if (payload) {
-            this.injector.inject(toProvider(CONTEXT_ARGUMENTS, payload));
-            if (!isFunction(payload)) {
-                const argType = getClass(payload);
-                this.injector.setValue(argType, payload);
+        const args = options.arguments;
+        if (args) {
+            this.injector.inject(toProvider(CONTEXT_ARGUMENTS, args));
+            if (!isFunction(args)) {
+                const argType = getClass(args);
+                this.injector.setValue(argType, args);
             }
         }
 

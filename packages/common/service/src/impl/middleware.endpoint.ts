@@ -1,13 +1,13 @@
 import { ArgumentExecption, Injector, ProvdierOf, Token, createContext, getClassName, refl } from '@tsdi/ioc';
 import { Backend, AbstractGuardHandler, setHandlerOptions } from '@tsdi/core';
-import { AssetContext } from '../AssetContext';
+import { TransportContext } from '../TransportContext';
 import { MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend } from '../middleware/middleware.compose';
 import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../middleware/middleware.endpoint';
 
 
 
-export class MiddlewareEndpointImpl<TInput extends AssetContext = AssetContext, TOutput = any>
+export class MiddlewareEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any>
     extends AbstractGuardHandler<TInput, TOutput> implements MiddlewareEndpoint<TInput, TOutput> {
 
     protected midddlesToken: Token<MiddlewareLike<TInput>[]>;

@@ -88,7 +88,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     emit(value: ApplicationEvent): Observable<any> {
-        const ctx = new ApplicationEventContext(this.injector, { payload: value });
+        const ctx = new ApplicationEventContext(this.injector, { arguments: value });
         ctx.setValue(getClass(value), value);
         return this.handler.handle(ctx)
             .pipe(

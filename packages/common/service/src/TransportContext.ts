@@ -7,11 +7,16 @@ import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS, createPayloadReso
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TInput = any, TSocket = any> extends EndpointContext<TInput> {
+export abstract class TransportContext<TInput = any, TOutput = any, TSocket = any> extends EndpointContext<TInput> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
+
+    /**
+     * transport response.
+     */
+    abstract get response(): TOutput
 
     /**
      * Get request rul
@@ -21,6 +26,11 @@ export abstract class TransportContext<TInput = any, TSocket = any> extends Endp
      * Set request url
      */
     abstract set url(value: string);
+
+    /**
+     * original url
+     */
+    abstract get originalUrl(): string;
 
     /**
      * The request method.
@@ -44,7 +54,7 @@ export interface TransportContextOpts<T = any, TSocket = any> extends EndpointIn
 }
 
 export const TRANSPORT_CONTEXT_IMPL = {
-    create<T>(injector: Injector, options?: TransportContextOpts<T>): TransportContext<T> {
+    create<TInput, TOutput>(injector: Injector,  request: TInput, response: TOutput,options?: TransportContextOpts<TInput>): TransportContext<TInput, TOutput> {
         throw new Execption('not implemented.')
     }
 }
@@ -55,8 +65,8 @@ export const TRANSPORT_CONTEXT_IMPL = {
  * @param options 
  * @returns 
  */
-export function createTransportContext<TInput, TSocket>(injector: Injector, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TSocket> {
-    return TRANSPORT_CONTEXT_IMPL.create(injector, options)
+export function createTransportContext<TInput, TOutput, TSocket>(injector: Injector, request: TInput, response: TOutput, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TOutput, TSocket> {
+    return TRANSPORT_CONTEXT_IMPL.create(injector, request, response, options)
 }
 
 

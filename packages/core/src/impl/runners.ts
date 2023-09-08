@@ -143,13 +143,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { arguments: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { arguments: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );

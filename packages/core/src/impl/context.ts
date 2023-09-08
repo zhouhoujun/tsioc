@@ -121,8 +121,8 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         if (!option) {
             option = {};
         }
-        if (!option.payload) {
-            option.payload = ApplicationArguments as ProvdierOf<TArg>;
+        if (!option.arguments) {
+            option.arguments = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);
         return ctx
