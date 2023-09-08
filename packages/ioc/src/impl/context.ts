@@ -10,7 +10,7 @@ import { Injector, isInjector, Scopes } from '../injector';
 import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
-import { ProviderType, toProvider } from '../providers';
+import { ProvdierOf, ProviderType, toProvider } from '../providers';
 import { OperationInvoker } from '../operation';
 
 
@@ -62,15 +62,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
                 this.injector.setValue(par[0], par[1]);
             })
         }
-
-        const args = options.args;
-        if (args) {
-            this.injector.inject(toProvider(CONTEXT_ARGUMENTS, args));
-            if (!isFunction(args)) {
-                const argType = getClass(args);
-                this.injector.setValue(argType, args);
-            }
-        }
+        
+        options.args && this.initArgs(options.args);
 
         getClassChain(getClass(this)).forEach(c => {
             this.setValue(c, this);
@@ -79,6 +72,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
+    }
+
+    protected initArgs(args: ProvdierOf<T>): void {
+        this.injector.inject(toProvider(CONTEXT_ARGUMENTS, args));
+        if (!isFunction(args)) {
+            const argType = getClass(args);
+            this.injector.setValue(argType, args);
+        }
     }
 
     /**

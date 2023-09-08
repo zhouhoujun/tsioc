@@ -1,6 +1,6 @@
 import {
     tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
-    ParameterMetadata, lang, Type, DecorDefine, Defer, InvocationOption
+    ParameterMetadata, lang, Type, DecorDefine, Defer, InvocationOption, ProvdierOf, isArray, CONTEXT_ARGUMENTS
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -68,6 +68,15 @@ export class Joinpoint extends DefaultInvocationContext<any[]> implements IocCon
         this.params = options.params;
         this.annotations = options.annotations;
         this.state = options.state ?? JoinpointState.Before;
+    }
+    
+    protected override initArgs(args: ProvdierOf<any[]>): void {
+        if(isArray(args)) {
+            this._args = args;
+            this.injector.setValue(CONTEXT_ARGUMENTS, args);
+        } else {
+            super.initArgs(args);
+        }
     }
 
     get fullName(): string {
