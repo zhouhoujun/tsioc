@@ -378,7 +378,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                 }
             }
 
-            const context = options.context || createContext(this.handler.injector, options);
+            const context = options.context || createContext(this.handler.injector);
             this.initContext(context);
             // Construct the request.
             req = this.createRequest(first, {

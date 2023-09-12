@@ -1,0 +1,44 @@
+{
+  "name": "@tsdi/endpoints",
+  "version": "6.0.31",
+  "description": "Application transport endpoints. base on AOP, Ioc container, via @tsdi/core.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
+  },
+  "keywords": [
+    "transport",
+    "endpoints",
+    "frameworks",
+    "Application",
+    "AOP",
+    "aop",
+    "tsdi",
+    "@tsdi",
+    "tsioc",
+    "ioc",
+    "IoC",
+    "type",
+    "container",
+    "dependency",
+    "injection"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "@types/qs": "^6.9.7",
+    "qs": "^6.10.3"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "devDependencies": {}
+}
