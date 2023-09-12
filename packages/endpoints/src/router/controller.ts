@@ -6,7 +6,7 @@ import { lastValueFrom, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
 import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
 import { MappingDef, RouteMappingMetadata } from './router';
-import { AssetContext } from '../AssetContext';
+import { TransportContext } from '../TransportContext';
 
 
 export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');
@@ -18,7 +18,7 @@ export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
  * 
  * 控制器路由终端
  */
-export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<AssetContext>, Endpoint, OnDestroy {
+export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<TransportContext>, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[];
@@ -46,12 +46,12 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         return this.factory?.typeRef;
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    protected getBackend(): Backend<AssetContext, any> {
+    protected getBackend(): Backend<TransportContext, any> {
         return new FnHandler((ctx) => {
             if (ctx.sent) return throwError(() => new PushDisabledExecption());
 
@@ -80,7 +80,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         (this as any).factory = null!;
     }
 
-    protected getRouteMetaData(ctx: AssetContext) {
+    protected getRouteMetaData(ctx: TransportContext) {
         const subRoute = normalize(ctx.url, this.prefix);
 
         return this.sortRoutes.find(m => m

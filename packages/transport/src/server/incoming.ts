@@ -1,7 +1,8 @@
 import { IncomingHeaders, Packet } from '@tsdi/common';
-import { Incoming, TransportSession, ev, hdr } from '@tsdi/transport';
 import { Readable } from 'readable-stream';
-
+import { ev, hdr } from '../consts';
+import { Incoming } from '../socket';
+import { TransportSession } from '../TransportSession';
 
 export class MessageIncoming<T> extends Readable implements Incoming<T> {
 
