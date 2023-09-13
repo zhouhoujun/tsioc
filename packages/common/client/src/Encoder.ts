@@ -1,7 +1,7 @@
 import { Handler, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
+import { Packet } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { Packet } from './packet';
 
 export interface PacketOptions {
     /**

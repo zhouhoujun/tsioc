@@ -1,7 +1,7 @@
 import { Handler, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Packet } from './packet';
+import { Packet } from '../../src/packet';
 
 
 export interface DecodingContext {

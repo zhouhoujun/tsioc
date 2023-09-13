@@ -1,5 +1,5 @@
-import { Receiver, Sender } from '@tsdi/common';
 import { Abstract } from '@tsdi/ioc';
+import { Receiver, Sender } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 
 /**
