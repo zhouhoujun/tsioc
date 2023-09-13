@@ -1,7 +1,7 @@
 import { Handler, Filter } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { mergeMap, Observable } from 'rxjs';
-import { RespondAdapter } from './respond';
+import { Responder } from './Responder';
 import { TransportContext } from './TransportContext';
 
 
@@ -13,7 +13,7 @@ export class FinalizeFilter extends Filter {
         return next.handle(context)
             .pipe(
                 mergeMap(res => {
-                    return context.get(RespondAdapter).respond(context, res)
+                    return context.get(Responder).send(context, res)
                 })
             )
     }

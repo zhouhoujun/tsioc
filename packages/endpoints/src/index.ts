@@ -25,7 +25,7 @@ export * from './server';
 export * from './logger/log';
 export * from './logger/status.formater';
 
-export * from './respond';
+export * from './Sender';
 export * from './finalize.filter';
 
 export * from './execption.respond';

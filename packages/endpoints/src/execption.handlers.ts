@@ -7,126 +7,124 @@ import {
 import { ExecptionHandler } from '@tsdi/core';
 import { Abstract, ArgumentExecption, MissingParameterExecption } from '@tsdi/ioc';
 import { MissingModelFieldExecption } from '@tsdi/repository';
-import { ExecptionRespondAdapter } from './execption.respond';
-import { AssetContext } from './AssetContext';
+import { Responder } from './Responder';
+import { TransportContext } from './TransportContext';
 
 
 
 @Abstract()
 export abstract class TransportExecptionHandlers {
 
-    constructor(private adpater: ExecptionRespondAdapter) {
-
-    }
+    constructor() {}
 
     @ExecptionHandler(BadRequestExecption)
-    badReqExecption(ctx: AssetContext, execption: BadRequestExecption) {
+    badReqExecption(ctx: TransportContext, execption: BadRequestExecption) {
         execption.status = HttpStatusCode.BadRequest;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(UnauthorizedExecption)
-    unauthorized(ctx: AssetContext, execption: UnauthorizedExecption) {
+    unauthorized(ctx: TransportContext, execption: UnauthorizedExecption) {
         execption.status = HttpStatusCode.Unauthorized;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(ForbiddenExecption)
-    forbiddenExecption(ctx: AssetContext, execption: ForbiddenExecption) {
+    forbiddenExecption(ctx: TransportContext, execption: ForbiddenExecption) {
         execption.status = HttpStatusCode.Forbidden;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(NotFoundExecption)
-    notFoundExecption(ctx: AssetContext, execption: NotFoundExecption) {
+    notFoundExecption(ctx: TransportContext, execption: NotFoundExecption) {
         execption.status = HttpStatusCode.NotFound;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(MethodNotAllowedExecption)
-    notAllowedExecption(ctx: AssetContext, execption: MethodNotAllowedExecption) {
+    notAllowedExecption(ctx: TransportContext, execption: MethodNotAllowedExecption) {
         execption.status = HttpStatusCode.MethodNotAllowed;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
     @ExecptionHandler(NotAcceptableExecption)
-    notAcceptableExecption(ctx: AssetContext, execption: NotAcceptableExecption) {
+    notAcceptableExecption(ctx: TransportContext, execption: NotAcceptableExecption) {
         execption.status = HttpStatusCode.NotAcceptable;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
     @ExecptionHandler(RequestTimeoutExecption)
-    timeoutExecpotion(ctx: AssetContext, execption: NotAcceptableExecption) {
+    timeoutExecpotion(ctx: TransportContext, execption: NotAcceptableExecption) {
         execption.status = HttpStatusCode.RequestTimeout;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
     @ExecptionHandler(UnsupportedMediaTypeExecption)
-    unsupported(ctx: AssetContext, execption: UnsupportedMediaTypeExecption) {
+    unsupported(ctx: TransportContext, execption: UnsupportedMediaTypeExecption) {
         execption.status = HttpStatusCode.UnsupportedMediaType;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
     @ExecptionHandler(InternalServerExecption)
-    internalServerError(ctx: AssetContext, execption: InternalServerExecption) {
+    internalServerError(ctx: TransportContext, execption: InternalServerExecption) {
         execption.status = HttpStatusCode.InternalServerError;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(NotImplementedExecption)
-    notImplementedError(ctx: AssetContext, execption: NotImplementedExecption) {
+    notImplementedError(ctx: TransportContext, execption: NotImplementedExecption) {
         execption.status = HttpStatusCode.NotImplemented;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
     @ExecptionHandler(BadGatewayExecption)
-    badGatewayError(ctx: AssetContext, execption: BadGatewayExecption) {
+    badGatewayError(ctx: TransportContext, execption: BadGatewayExecption) {
         execption.status = HttpStatusCode.BadGateway;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(ServiceUnavailableExecption)
-    ServiceUnavailableError(ctx: AssetContext, execption: ServiceUnavailableExecption) {
+    ServiceUnavailableError(ctx: TransportContext, execption: ServiceUnavailableExecption) {
         execption.status = HttpStatusCode.ServiceUnavailable;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(GatewayTimeoutExecption)
-    gatewayTimeoutError(ctx: AssetContext, execption: GatewayTimeoutExecption) {
+    gatewayTimeoutError(ctx: TransportContext, execption: GatewayTimeoutExecption) {
         execption.status = HttpStatusCode.GatewayTimeout;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(NotSupportedExecption)
-    notSupportedError(ctx: AssetContext, execption: NotSupportedExecption) {
+    notSupportedError(ctx: TransportContext, execption: NotSupportedExecption) {
         execption.status = HttpStatusCode.BadGateway;
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
     @ExecptionHandler(ArgumentExecption)
-    anguExecption(ctx: AssetContext, err: ArgumentExecption) {
+    anguExecption(ctx: TransportContext, err: ArgumentExecption) {
         const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
-    missFieldExecption(ctx: AssetContext, err: MissingModelFieldExecption) {
+    missFieldExecption(ctx: TransportContext, err: MissingModelFieldExecption) {
         const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
     @ExecptionHandler(MissingParameterExecption)
-    missExecption(ctx: AssetContext, err: MissingParameterExecption) {
+    missExecption(ctx: TransportContext, err: MissingParameterExecption) {
         const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
-        this.adpater.respond(ctx, execption)
+        ctx.get(Responder).sendExecption(ctx, execption)
     }
 
 
-    protected abstract detailError(ctx: AssetContext): boolean;
+    protected abstract detailError(ctx: TransportContext): boolean;
 }

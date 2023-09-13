@@ -1,7 +1,7 @@
-import { Packet } from '@tsdi/common';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { Packet } from './packet';
 
 export interface PacketOptions {
     /**
@@ -45,9 +45,5 @@ export abstract class Encoder implements Handler<EncodingContext, Buffer> {
     abstract handle(input: EncodingContext): Observable<Buffer>;
 }
 
-@Abstract()
-export abstract class HeaderEncoder extends Encoder {
-
-}
 
 export const ENCODINGS = tokenId<Interceptor<EncodingContext, Buffer>[]>('ENCODINGS');
