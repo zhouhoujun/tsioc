@@ -1,22 +1,21 @@
 import { InvalidJsonException, Packet } from '@tsdi/common';
-import { Decoder } from '@tsdi/common/client';
+import { Context, Decoder } from '@tsdi/common/client';
 import { ArgumentExecption, Injectable, isString } from '@tsdi/ioc';
 import { Observable, of } from 'rxjs';
 
 @Injectable()
 export class JsonDecoder implements Decoder {
 
-    decode(input: Buffer): Observable<Packet<any>> {
-        return this.handle(input)
-    }
-    handle(input: Buffer): Observable<Packet<any>> {
-        if (!input) throw new ArgumentExecption('json decoding input empty');
-        const jsonStr = isString(input) ? input : new TextDecoder().decode(input) ;
+    handle(ctx: Context): Observable<Packet<any>> {
+        if (ctx.packet) return of(ctx.packet);
+        if (!ctx.raw) throw new ArgumentExecption('json decoding input empty');
+        const jsonStr = isString(ctx.raw) ? ctx.raw : new TextDecoder().decode(ctx.raw);
         try {
-            return of(JSON.parse(jsonStr));
+            ctx.packet = JSON.parse(jsonStr);
+            return of(ctx.packet);
         } catch (err) {
             throw new InvalidJsonException(err, jsonStr);
         }
     }
-    
+
 }

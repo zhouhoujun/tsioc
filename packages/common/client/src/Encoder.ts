@@ -1,49 +1,14 @@
 import { Handler, Interceptor } from '@tsdi/core';
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Packet } from '@tsdi/common';
 import { Observable } from 'rxjs';
+import { Context } from './context';
 
-export interface PacketOptions {
-    /**
-     * server side or not.
-     */
-    serverSide?: boolean;
-    /**
-     * packet delimiter flag
-     */
-    delimiter?: string;
-    /**
-     * packet size limit.
-     */
-    limit?: number;
-    /**
-     * payload max size limit.
-     */
-    maxSize?: number;
-    /**
-     * packet buffer encoding.
-     */
-    encoding?: BufferEncoding;
-
-}
-
-
-export interface EncodingContext {
-    packet: Packet;
-    chunk: Buffer | null;
-    options: PacketOptions;
-
-}
 
 @Abstract()
-export abstract class Encoder implements Handler<EncodingContext, Buffer> {
+export abstract class Encoder implements Handler<Context, Buffer> {
 
-    encode(input: EncodingContext): Observable<Buffer> {
-        return this.handle(input);
-    }
-
-    abstract handle(input: EncodingContext): Observable<Buffer>;
+    abstract handle(ctx: Context): Observable<Buffer>;
 }
 
 
-export const ENCODINGS = tokenId<Interceptor<EncodingContext, Buffer>[]>('ENCODINGS');
+export const ENCODINGS = tokenId<Interceptor<Context, Buffer>[]>('ENCODINGS');

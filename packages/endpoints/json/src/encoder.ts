@@ -1,21 +1,19 @@
 
-import { Encoder, EncodingContext } from '@tsdi/common/client';
+import { Context, Encoder } from '@tsdi/common/client';
 import { ArgumentExecption, Injectable } from '@tsdi/ioc';
 import { Observable, of } from 'rxjs';
-import { Buffer  } from 'buffer';
+import { Buffer } from 'buffer';
 
 
 @Injectable()
 export class JsonEncoder implements Encoder {
 
-    encode(input: EncodingContext): Observable<Buffer> {
-        return this.handle(input)
-    }
-    handle(input: EncodingContext): Observable<Buffer> {
-        if (!input || !input.packet) throw new ArgumentExecption('json decoding input empty');
-        const pkg = input.packet;
-
-        return of(Buffer.from(JSON.stringify(pkg)));
+    handle(ctx: Context): Observable<Buffer> {
+        if (ctx.raw) return of(ctx.raw);
+        if (!ctx || !ctx.packet) throw new ArgumentExecption('json decoding input empty');
+        const pkg = ctx.packet;
+        ctx.raw = Buffer.from(JSON.stringify(pkg));
+        return of(ctx.raw);
 
     }
 
