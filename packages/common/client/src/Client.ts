@@ -18,12 +18,20 @@ export const CLIENT_FILTERS = tokenId<Filter[]>('CLIENT_FILTERS');
  */
 export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 
-
 /**
  * abstract client.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> {
+export abstract class AbstractClient<TInput = any> {
+
+    abstract send<TOutput>(input: TInput): TOutput;
+}
+
+/**
+ * base client.
+ */
+@Abstract()
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> implements AbstractClient {
 
     /**
      * client handler
