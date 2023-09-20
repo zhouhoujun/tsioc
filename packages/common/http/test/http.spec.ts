@@ -135,8 +135,8 @@ class DeviceStartupHandle implements Middleware {
 
     invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.body.type === 'startup') {
+        console.log('DeviceStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
+        if (ctx.args.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -149,8 +149,8 @@ class DeviceStartupHandle implements Middleware {
 class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-        if (ctx.payload.body.type === 'startup') {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
+        if (ctx.args.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);

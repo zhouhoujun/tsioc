@@ -1,4 +1,5 @@
 import { Module } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { HttpClientModule } from '@tsdi/common/http';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
@@ -10,7 +11,6 @@ import { Role, User } from './models/models';
 import { UserController } from './controllers/UserController';
 import { RoleController } from './controllers/RoleController';
 import { UserRepository } from './repositories/UserRepository';
-import { LoggerModule } from '@tsdi/logger';
 
 
 

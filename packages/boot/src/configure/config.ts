@@ -1,6 +1,6 @@
-import { Transport } from '@tsdi/common';
-import { LoadType } from '@tsdi/core';
 import { Type, Abstract, Injector, tokenId, Token, ProviderType } from '@tsdi/ioc';
+import { LoadType } from '@tsdi/core';
+import { Transport } from '@tsdi/common';
 import { LogConfigure } from '@tsdi/logger';
 import { ConnectionOptions } from '@tsdi/repository';
 import { SecureContextOptions } from 'tls';
