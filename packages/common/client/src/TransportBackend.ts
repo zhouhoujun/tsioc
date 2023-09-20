@@ -1,19 +1,28 @@
-import { Injectable } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { Receiver, Sender, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { Requester } from './Requester';
 
 /**
  * transport client endpoint backend.
  */
-@Injectable()
-export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
+@Abstract()
+export abstract class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
 
-    handle(req: TRequest): Observable<TResponse> {
-        const requester = req.context.get(Requester);
-        return requester.request(req);
-    }
+    /**
+     * packet sender
+     */
+    abstract get sender(): Sender;
 
+    /**
+     * packet receiver.
+     */
+    abstract get receiver(): Receiver;
+    
+    /**
+     * handle client request
+     * @param req 
+     */
+    abstract handle(req: TRequest): Observable<TResponse>;
 }
 

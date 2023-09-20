@@ -1,20 +1,21 @@
 import { Handler, Interceptor } from '@tsdi/core';
-import { Abstract, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Packet } from './packet';
 
 
-@Abstract()
-export abstract class Context extends InvocationContext {
-
-    abstract get packet(): Packet;
-    abstract set packet(pkg: Packet);
-
-    abstract get raw(): Buffer;
-    abstract set raw(data: Buffer);
+/**
+ * coding context.
+ */
+export class Context extends DefaultInvocationContext {
+    constructor(
+        injector: Injector,
+        public packet?: Packet,
+        public raw?: Buffer,
+        options?: InvokeArguments) {
+        super(injector, options)
+    }
 }
-
-
 
 
 @Abstract()
