@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Filter, CanActivate, Interceptor, ConfigableHandler, Shutdown } from '@tsdi/core';
-import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse} from '@tsdi/common';
+import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 
 /**
@@ -24,14 +24,43 @@ export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 @Abstract()
 export abstract class AbstractClient<TInput = any> {
 
-    abstract send<TOutput>(input: TInput): TOutput;
+    send<TOutput>(pattern: Pattern, input: TInput): Observable<TOutput> {
+        if (isNil(input)) {
+            return throwError(() => new ArgumentExecption('Invalid message'))
+        }
+        const connecting = this.connect();
+        return (isObservable(connecting) ? connecting : defer(() => connecting))
+            .pipe(
+                catchError((err, caught) => throwError(() => this.onError(err))),
+                mergeMap(() => this.request<TOutput>(pattern, input))
+            )
+    }
+
+    @Shutdown()
+    close(): Promise<void> {
+        return this.onShutdown();
+    }
+
+
+    /**
+     * connect service.
+     */
+    protected abstract connect(): Promise<any> | Observable<any>;
+
+    protected abstract request<TOutput>(first: Pattern, options: any): Observable<TOutput>;
+
+    protected abstract onShutdown(): Promise<void>;
+
+    protected onError(err: Error): Error {
+        return err;
+    }
 }
 
 /**
  * base client.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> implements AbstractClient {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> extends AbstractClient {
 
     /**
      * client handler

@@ -1,9 +1,8 @@
-import { Injector, createContext, toProvider } from '@tsdi/ioc';
+import { Execption, Injector, createContext, toProvider } from '@tsdi/ioc';
 import { GuardHandler, setHandlerOptions } from '@tsdi/core';
-import { Decoder, Encoder } from '@tsdi/common/client';
+import { ForbiddenExecption, Decoder, Encoder } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 import { TransportEndpoint, TransportEndpointOptions } from '../TransportEndpoint';
-
 
 
 
@@ -27,5 +26,9 @@ export class TransportEndpointImpl<TInput extends TransportContext = TransportCo
             this.injector.inject(toProvider(Decoder, options.decoder))
         }
         setHandlerOptions(this, options);
+    }
+
+    protected override forbiddenError(): Execption {
+        return new ForbiddenExecption()
     }
 }

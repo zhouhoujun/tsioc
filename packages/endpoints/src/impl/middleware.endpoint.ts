@@ -1,9 +1,10 @@
-import { ArgumentExecption, Injector, ProvdierOf, Token, createContext, getClassName, refl } from '@tsdi/ioc';
+import { ArgumentExecption, Execption, Injector, ProvdierOf, Token, createContext, getClassName, refl } from '@tsdi/ioc';
 import { Backend, AbstractGuardHandler, setHandlerOptions } from '@tsdi/core';
 import { TransportContext } from '../TransportContext';
 import { MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend } from '../middleware/middleware.compose';
 import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../middleware/middleware.endpoint';
+import { ForbiddenExecption } from '@tsdi/common';
 
 
 
@@ -37,6 +38,10 @@ export class MiddlewareEndpointImpl<TInput extends TransportContext = TransportC
     protected override getBackend(): Backend<TInput, TOutput> {
         const middlewares = this.getMiddlewares();
         return new MiddlewareBackend(middlewares);
+    }
+
+    protected override forbiddenError(): Execption {
+        return new ForbiddenExecption()
     }
 
     protected getMiddlewares() {

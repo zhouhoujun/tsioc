@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { Encoder, Decoder } from '@tsdi/common/client';
+import { Encoder, Decoder } from '@tsdi/common';
 import { JsonEncoder } from './encoder';
 import { JsonDecoder } from './decoder';
 

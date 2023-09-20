@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { Decoder } from './Decoder';
 import { Observable } from 'rxjs';
-import { Packet } from '../../src/packet';
+import { Packet } from './packet';
+import { Decoder } from './coding';
 
 
 /**

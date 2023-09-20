@@ -5,7 +5,7 @@ import { BadRequestExecption } from '@tsdi/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
-import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult  } from '@tsdi/transport';
+import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping  } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 
 
@@ -59,14 +59,6 @@ export class DeviceController {
         return await defer.promise;
     }
 
-    @RouteMapping('/status', 'GET')
-    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
-        if (redirect === 'reload') {
-            return new RedirectResult('/device/reload');
-        }
-        return of('working');
-    }
-
     @RouteMapping('/reload', 'GET')
     redirect() {
         return 'reload';
@@ -103,13 +95,7 @@ export class DeviceController {
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000
-                },
-                interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
-                    { useExisting: MicroServRouterModule.getToken('tcp') }
-                ]
+                }
             }
         })
     ],

@@ -3,7 +3,7 @@ import { Injectable, isString } from '@tsdi/ioc';
 import { AssetContext } from '../AssetContext';
 
 @Injectable({ static: true })
-export class TranspotTypedRespond extends TypedRespond {
+export class TransportTypedRespond extends TypedRespond {
     respond(ctx: AssetContext, value: any, response: 'body' | 'header' | 'response'): void {
         if (response === 'body') {
             ctx.body = value

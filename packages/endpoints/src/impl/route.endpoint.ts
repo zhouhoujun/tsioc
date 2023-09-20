@@ -1,5 +1,5 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
-import { normalize, patternToPath } from '@tsdi/common';
+import { Class, Execption, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
+import { ForbiddenExecption, normalize, patternToPath } from '@tsdi/common';
 import { OperationEndpointImpl } from '@tsdi/core';
 import { TransportContext } from '../TransportContext';
 import { AssetContext } from '../AssetContext';
@@ -45,6 +45,10 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
         if (ctx instanceof AssetContext) {
             ctx.body = res;
         }
+    }
+
+    protected override forbiddenError(): Execption {
+        return new ForbiddenExecption()
     }
 }
 
