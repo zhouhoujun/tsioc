@@ -1,7 +1,7 @@
-import { Packet } from '@tsdi/common';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Abstract, InvocationContext, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { Packet } from './packet';
 
 
 @Abstract()
@@ -13,6 +13,8 @@ export abstract class Context extends InvocationContext {
     abstract get raw(): Buffer;
     abstract set raw(data: Buffer);
 }
+
+
 
 
 @Abstract()

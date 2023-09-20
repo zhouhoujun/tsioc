@@ -1,15 +1,16 @@
 import { Module } from '@tsdi/ioc';
-import { Encoder, Decoder } from '@tsdi/common';
 import { JsonEncoder } from './encoder';
 import { JsonDecoder } from './decoder';
+import { JsonSender } from './sender';
+import { JsonReceiver } from './receiver';
 
 
 @Module({
     providers: [
         JsonEncoder,
         JsonDecoder,
-        { provide: Encoder, useExisting: JsonEncoder },
-        { provide: Decoder, useExisting: JsonDecoder }
+        JsonReceiver,
+        JsonSender
     ]
 })
 export class JsonEndpointModule {
