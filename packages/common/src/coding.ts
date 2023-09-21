@@ -1,5 +1,5 @@
-import { Backend, Handler, Interceptor } from '@tsdi/core';
-import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, tokenId } from '@tsdi/ioc';
+import { Backend, Handler } from '@tsdi/core';
+import { Abstract, DefaultInvocationContext, Injector, InvokeArguments } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Packet } from './packet';
 
@@ -29,10 +29,6 @@ export abstract class EncoderBackend implements Backend<Context, Buffer> {
 }
 
 
-
-export const ENCODINGS = tokenId<Interceptor<Context, Buffer>[]>('ENCODINGS');
-
-
 @Abstract()
 export abstract class Decoder implements Handler<Context, Packet> {
     abstract handle(ctx: Context): Observable<Packet>;
@@ -43,7 +39,6 @@ export abstract class DecoderBackend implements Backend<Context, Packet> {
     abstract handle(ctx: Context): Observable<Packet>;
 }
 
-export const DECODINGS = tokenId<Interceptor<Context, Packet>[]>('DECODINGS');
 
 
 

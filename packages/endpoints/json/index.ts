@@ -1,2 +1,2 @@
 
-export * from './src/json.module';
+export * from './src';

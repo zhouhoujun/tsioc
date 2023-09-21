@@ -1,5 +1,5 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Context, Encoder, EncoderBackend } from '@tsdi/common';
 import { Observable, of } from 'rxjs';
 import { Buffer } from 'buffer';

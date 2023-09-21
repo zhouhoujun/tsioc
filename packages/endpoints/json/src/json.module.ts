@@ -1,17 +1,19 @@
 import { Module } from '@tsdi/ioc';
-import { JsonEncoder, JsonEncoderBackend, JsonInterceptingEncoder } from './encoder';
-import { JsonDecoder, JsonDecoderBackend, JsonInterceptingDecoder } from './decoder';
+import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend } from './encoder';
+import { JsonDecoder, SimpleJsonDecoderBackend, JsonInterceptingDecoder, JsonDecoderBackend } from './decoder';
 import { JsonSender } from './sender';
 import { JsonReceiver } from './receiver';
 
 
 @Module({
     providers: [
-        JsonEncoderBackend,
+        SimpleJsonEncoderBackend,
         JsonInterceptingEncoder,
+        { provide: JsonEncoderBackend, useExisting: SimpleJsonEncoderBackend, asDefault: true },
 
-        JsonDecoderBackend,
+        SimpleJsonDecoderBackend,
         JsonInterceptingDecoder,
+        { provide: JsonDecoderBackend, useExisting: SimpleJsonDecoderBackend, asDefault: true },
 
         { provide: JsonEncoder, useExisting: JsonInterceptingEncoder },
         { provide: JsonDecoder, useExisting: JsonInterceptingDecoder },
