@@ -1,7 +1,8 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { Context, Packet, PacketLengthException, Receiver } from '@tsdi/common';
+import { Context, Decoder, Packet, PacketLengthException, Receiver } from '@tsdi/common';
 import { BehaviorSubject, Observable, filter } from 'rxjs';
 import { JsonDecoder } from './decoder';
+
 
 @Injectable()
 export class JsonReceiver implements Receiver {
@@ -25,8 +26,9 @@ export class JsonReceiver implements Receiver {
         try {
             this.handleData(input);
         } catch (ev) {
-            this._packets.next(ev);
-            // this.handleFailed(ev as any);
+            this._packets.next({
+               error: ev
+            });
         }
     }
 

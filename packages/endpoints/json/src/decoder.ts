@@ -1,11 +1,45 @@
-import { InvalidJsonException, Packet, Context, Decoder } from '@tsdi/common';
-import { ArgumentExecption, Injectable, isString } from '@tsdi/ioc';
+import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend } from '@tsdi/common';
+import { Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
 import { Observable, of } from 'rxjs';
 
-@Injectable()
-export class JsonDecoder implements Decoder {
 
-    handle(ctx: Context): Observable<Packet<any>> {
+@Abstract()
+export abstract class JsonDecoder implements Decoder {
+    abstract handle(ctx: Context): Observable<Packet>;
+}
+
+
+
+@Abstract()
+export abstract class JsonDecoderBackend implements DecoderBackend {
+    abstract handle(ctx: Context): Observable<Packet>;
+}
+
+
+export const JSON_DECODER_INTERCEPTORS = tokenId<Interceptor<Context, Packet>[]>('JSON_DECODER_INTERCEPTORS')
+
+@Injectable()
+export class JsonInterceptingDecoder implements Decoder {
+    private chain!: Decoder;
+
+    constructor(private backend: JsonDecoderBackend, private injector: Injector) { }
+
+    handle(ctx: Context): Observable<Packet> {
+        if (!this.chain) {
+            const interceptors = this.injector.get(JSON_DECODER_INTERCEPTORS);
+            this.chain = interceptors.reduceRight(
+                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
+        }
+        return this.chain.handle(ctx)
+    }
+}
+
+
+@Injectable()
+export class SimpleJsonDecoderBackend implements JsonDecoderBackend {
+
+    handle(ctx: Context): Observable<Packet> {
         if (ctx.packet) return of(ctx.packet);
         if (!ctx.raw) throw new ArgumentExecption('json decoding input empty');
         const jsonStr = isString(ctx.raw) ? ctx.raw : new TextDecoder().decode(ctx.raw);
