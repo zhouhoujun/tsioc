@@ -6,9 +6,7 @@ import { WsStatusVaildator } from '../status';
 import { WsClient } from './client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS, WsClientOpts, WsClientsOpts } from './options';
 import { WsHandler } from './handler';
-
-
-const defaultMaxSize = 1024 * 256;
+import { WsTransportSessionFactory, defaultMaxSize } from '../factory';
 
 /**
  * WS client default options.
@@ -34,6 +32,8 @@ const defClientOpts = {
     providers: [
         { provide: WS_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         WsStatusVaildator,
+        WsTransportSessionFactory,
+        { provide: TransportSessionFactory, useExisting: WsTransportSessionFactory, asDefault: true },
         {
             provide: WsHandler,
             useFactory: (injector: Injector, opts: WsClientOpts) => {

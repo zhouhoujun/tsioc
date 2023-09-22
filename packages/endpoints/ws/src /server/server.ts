@@ -1,14 +1,14 @@
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { Packet, MESSAGE, InternalServerExecption } from '@tsdi/common';
+import { Packet, MESSAGE, InternalServerExecption, TransportSession, TransportSessionFactory, ev, LOCALHOST, HYBRID_HOST } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { TransportContext, Server, HYBRID_HOST, LOCALHOST, ev } from '@tsdi/transport';
-import { Server as SocketServer, WebSocketServer } from 'ws';
+import { Server, TransportContext } from '@tsdi/endpoints';
+import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import * as net from 'net';
 import * as tls from 'tls';
 import { Subscription, finalize } from 'rxjs';
 import { WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
-import { WsTransportSession, WsTransportSessionFactory } from '../transport';
+import { WsTransportSession, WsTransportSessionFactory } from '../factory';
 import { WsIncoming } from './incoming';
 import { WsOutgoing } from './outgoing';
 import { WsContext } from './context';
@@ -55,10 +55,11 @@ export class WsServer extends Server<TransportContext> {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const factory = this.endpoint.injector.get(WsTransportSessionFactory);
+        const factory = this.endpoint.injector.get(TransportSessionFactory);
         this.serv.on(ev.CONNECTION, (socket) => {
-            const session = factory.create(socket, this.options.transportOpts!);
-            session.on(ev.MESSAGE, (packet) => this.requestHandler(session, packet));
+            const stream = createWebSocketStream(socket);
+            const session = factory.create(stream, this.options.transportOpts!);
+            session.receiver.packet.subscribe(p=> this.requestHandler(session, p));
         })
 
         const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
@@ -92,7 +93,7 @@ export class WsServer extends Server<TransportContext> {
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: WsTransportSession, packet: Packet): Subscription {
+    protected requestHandler(session: TransportSession, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = MESSAGE;
         }

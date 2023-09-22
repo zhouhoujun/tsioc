@@ -41,18 +41,14 @@ export abstract class TransportFactory {
     abstract get injector(): Injector;
     /**
      * create receiver.
-     * @param context 
-     * @param decoder 
      * @param options 
      */
-    abstract createReceiver(options: TransportOpts): Receiver;
+    abstract createReceiver(options?: TransportOpts): Receiver;
     /**
      * create sender.
-     * @param context 
-     * @param encoder 
      * @param options 
      */
-    abstract createSender(options: TransportOpts): Sender;
+    abstract createSender(options?: TransportOpts): Sender;
 }
 
 
@@ -92,10 +88,6 @@ export abstract class TransportSession<TSocket = any> {
 
 @Abstract()
 export abstract class TransportSessionFactory<TSocket = any> {
-    /**
-     * injector.
-     */
-    abstract get injector(): Injector;
     /**
      * create transport session.
      * @param options 

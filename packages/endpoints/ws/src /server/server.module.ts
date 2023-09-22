@@ -1,16 +1,16 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
+import { TransportSessionFactory } from '@tsdi/common';
 import {
-    MicroServRouterModule, TransportModule, StatusVaildator, createTransportEndpoint,
-    Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session
-} from '@tsdi/transport';
+    MicroServRouterModule, createTransportEndpoint, ExecptionFinalizeFilter, LogInterceptor, FinalizeFilter
+} from '@tsdi/endpoints';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { WS_SERV_INTERCEPTORS, WsServerOpts, WS_SERV_FILTERS, WS_SERV_OPTS, WS_SERV_GUARDS } from './options';
 import { WsServer } from './server';
 import { WsEndpoint } from './endpoint';
 import { WsExecptionHandlers } from './execption.handles';
 import { WsStatusVaildator } from '../status';
-import { WsTransportSessionFactory, WsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
+import { WsTransportSessionFactory, defaultMaxSize } from '../factory';
 
 
 
@@ -36,7 +36,7 @@ const defMicroOpts = {
         LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
-        ServerFinalizeFilter
+        FinalizeFilter
     ],
     interceptors: [
         Session,
@@ -57,11 +57,10 @@ const defMicroOpts = {
     imports: [
         TransformModule,
         MicroServRouterModule.forRoot('ws'),
-        TransportModule,
         ServerTransportModule
     ],
     providers: [
-        { provide: WsTransportSessionFactory, useClass: WsTransportSessionFactoryImpl, asDefault: true },
+        { provide: TransportSessionFactory, useClass: WsTransportSessionFactory, asDefault: true },
         { provide: WS_SERV_OPTS, useValue: { ...defMicroOpts }, asDefault: true },
         WsStatusVaildator,
         WsExecptionHandlers,
@@ -116,7 +115,7 @@ export class WsMicroServModule {
             providers.push(toProvider(WsEndpoint, options.endpoint))
         }
         if (options.transportFactory) {
-            providers.push(toProvider(WsTransportSessionFactory, options.transportFactory))
+            providers.push(toProvider(TransportSessionFactory, options.transportFactory))
         }
         return {
             module: WsMicroServModule,
