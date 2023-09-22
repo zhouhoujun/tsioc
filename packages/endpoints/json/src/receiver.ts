@@ -1,10 +1,9 @@
-import { Injectable, Injector } from '@tsdi/ioc';
-import { Context, Decoder, Packet, PacketLengthException, Receiver } from '@tsdi/common';
+import { Injector } from '@tsdi/ioc';
+import { Context, Packet, PacketLengthException, Receiver } from '@tsdi/common';
 import { BehaviorSubject, Observable, filter } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
-@Injectable()
 export class JsonReceiver implements Receiver {
 
     private buffers: Buffer[] = [];
@@ -16,7 +15,8 @@ export class JsonReceiver implements Receiver {
     constructor(
         private injector: Injector,
         readonly decoder: JsonDecoder,
-        delimiter: string
+        delimiter: string,
+        private maxSize: number
     ) {
         this.delimiter = Buffer.from(delimiter);
         this._packets = new BehaviorSubject(null);
@@ -49,7 +49,7 @@ export class JsonReceiver implements Receiver {
                 const rawContentLength = buffer.subarray(0, idx).toString();
                 this.contentLength = parseInt(rawContentLength, 10);
 
-                if (isNaN(this.contentLength)) {
+                if (isNaN(this.contentLength) || this.contentLength > this.maxSize) {
                     this.contentLength = null;
                     this.length = 0;
                     this.buffers = [];

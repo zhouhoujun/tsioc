@@ -1,15 +1,14 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { TransportModule, TransportSessionFactory, StatusVaildator, BodyContentInterceptor, RequestAdapter, TransportBackend } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server/transport';
-import { WsTransportSessionFactory, WsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
+import { TransportSessionFactory } from '@tsdi/common';
+import { TransportBackend } from '@tsdi/common/client';
 import { WsStatusVaildator } from '../status';
-import { WsRequestAdapter } from './request';
 import { WsClient } from './client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS, WsClientOpts, WsClientsOpts } from './options';
 import { WsHandler } from './handler';
 
 
+const defaultMaxSize = 1024 * 256;
 
 /**
  * WS client default options.
@@ -23,10 +22,6 @@ const defClientOpts = {
     interceptorsToken: WS_CLIENT_INTERCEPTORS,
     filtersToken: WS_CLIENT_FILTERS,
     backend: TransportBackend,
-    providers: [
-        { provide: StatusVaildator, useExisting: WsStatusVaildator },
-        { provide: RequestAdapter, useExisting: WsRequestAdapter }
-    ]
 } as WsClientOpts;
 
 
@@ -35,14 +30,10 @@ const defClientOpts = {
  */
 @Module({
     imports: [
-        TransportModule,
-        ServerTransportModule
     ],
     providers: [
-        { provide: WsTransportSessionFactory, useClass: WsTransportSessionFactoryImpl, asDefault: true },
         { provide: WS_CLIENT_OPTS, useValue: { ...defClientOpts }, asDefault: true },
         WsStatusVaildator,
-        WsRequestAdapter,
         {
             provide: WsHandler,
             useFactory: (injector: Injector, opts: WsClientOpts) => {
@@ -75,9 +66,9 @@ export class WsClientModule {
          */
         handler?: ProvdierOf<WsHandler>;
         /**
-         * transport factory
+         * session factory
          */
-        transportFactory?: ProvdierOf<TransportSessionFactory>;
+        sessionFactory?: ProvdierOf<TransportSessionFactory>;
         /**
          * custom provider with module.
          */
@@ -98,8 +89,8 @@ export class WsClientModule {
         if (options.handler) {
             providers.push(toProvider(WsHandler, options.handler))
         }
-        if (options.transportFactory) {
-            providers.push(toProvider(WsTransportSessionFactory, options.transportFactory))
+        if (options.sessionFactory) {
+            providers.push(toProvider(TransportSessionFactory, options.sessionFactory))
         }
         return {
             module: WsClientModule,

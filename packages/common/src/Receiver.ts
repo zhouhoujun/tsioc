@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Packet } from './packet';
+import { ResponsePacket } from './packet';
 import { Decoder } from './coding';
 
 
@@ -21,6 +21,6 @@ export abstract class Receiver {
      */
     abstract receive(input: any): void;
 
-    abstract get packet(): Observable<Packet>;
+    abstract get packet(): Observable<ResponsePacket>;
 
 }

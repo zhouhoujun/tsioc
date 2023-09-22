@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, InvocationContext, isString } from '@tsdi/ioc';
+import { InvocationContext, isString } from '@tsdi/ioc';
 import { IncomingHeaders, ReqHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
 import { Pattern, PatternFormatter } from './pattern';
@@ -29,7 +29,7 @@ export class TransportRequest<T = any> {
      */
     readonly timeout?: number;
 
-    constructor(pattern: Pattern, options: RequestInitOpts = EMPTY_OBJ) {
+    constructor(pattern: Pattern, options: RequestInitOpts) {
         this.context = options.context!;
         const url = this.url = this.context.get(PatternFormatter).format(pattern);
         this.pattern = pattern;

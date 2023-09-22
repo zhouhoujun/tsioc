@@ -17,7 +17,7 @@ export class TransportErrorResponse<TStatus = any> {
 
     constructor(options: {
         url?: string,
-        headers?: ResHeaders;
+        headers?: ResHeadersLike;
         status: TStatus;
         error?: any;
         statusText?: string;

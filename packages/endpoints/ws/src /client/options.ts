@@ -1,7 +1,7 @@
-import { ConfigableEndpointOptions, Filter, Interceptor } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
-import { TransportRequest, TransportEvent } from '@tsdi/common';
-import { Client, TransportSessionOpts } from '@tsdi/transport';
+import { ConfigableEndpointOptions, Filter, Interceptor } from '@tsdi/core';
+import { TransportRequest, TransportEvent, TransportOpts } from '@tsdi/common';
+import { Client } from '@tsdi/common/client';
 import { ClientOptions } from 'ws';
 
 export interface WsClientOpts extends ConfigableEndpointOptions<TransportRequest> {
@@ -11,7 +11,7 @@ export interface WsClientOpts extends ConfigableEndpointOptions<TransportRequest
      */
     url?: string;
     connectOpts?: ClientOptions;
-    transportOpts?: TransportSessionOpts;
+    transportOpts?: TransportOpts;
     timeout?: number;
 }
 

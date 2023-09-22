@@ -1,30 +1,20 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString, tokenId } from '@tsdi/ioc';
-import { Filter, CanActivate, Interceptor, ConfigableHandler, Shutdown } from '@tsdi/core';
-import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse } from '@tsdi/common';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
+import { ConfigableHandler, Shutdown } from '@tsdi/core';
+import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, HeaderPacket, Packet, RequestPacket } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 
-/**
- *  Client interceptors multi token.
- */
-export const CLIENT_INTERCEPTORS = tokenId<Interceptor[]>('CLIENT_INTERCEPTORS');
-
-/**
- *  Client filters multi token.
- */
-export const CLIENT_FILTERS = tokenId<Filter[]>('CLIENT_FILTERS');
-
-/**
- *  Client guards multi token.
- */
-export const CLIENT_GUARDS = tokenId<CanActivate[]>('CLIENT_GUARDS');
 
 /**
  * abstract client.
  */
 @Abstract()
-export abstract class AbstractClient<TInput = any> {
+export abstract class AbstractClient<TRequest extends RequestPacket = any> {
+    /**
+     * client handler
+     */
+    abstract get handler(): ConfigableHandler<TRequest, any>
 
-    send<TOutput>(pattern: Pattern, input: TInput): Observable<TOutput> {
+    send<TOutput, TInput = any>(pattern: Pattern, input: TInput, options?: HeaderPacket): Observable<TOutput> {
         if (isNil(input)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
@@ -32,7 +22,7 @@ export abstract class AbstractClient<TInput = any> {
         return (isObservable(connecting) ? connecting : defer(() => connecting))
             .pipe(
                 catchError((err, caught) => throwError(() => this.onError(err))),
-                mergeMap(() => this.request<TOutput>(pattern, input))
+                mergeMap(() => this.request<TOutput>(pattern, input, options))
             )
     }
 
@@ -41,13 +31,23 @@ export abstract class AbstractClient<TInput = any> {
         return this.onShutdown();
     }
 
-
     /**
      * connect service.
      */
     protected abstract connect(): Promise<any> | Observable<any>;
 
-    protected abstract request<TOutput>(first: Pattern, options: any): Observable<TOutput>;
+    protected request<TOutput>(pattern: Pattern, payload: any, options?: HeaderPacket): Observable<TOutput> {
+        const req = this.createRequest(pattern, { ...options, payload });
+        const events$: Observable<any> =
+            of(req).pipe(
+                concatMap(() => this.handler.handle(req as TRequest)),
+                finalize(() => req.context?.destroy())
+            );
+
+        return events$;
+    }
+
+    protected abstract createRequest(pattern: Pattern, options: RequestInitOpts): TRequest;
 
     protected abstract onShutdown(): Promise<void>;
 
@@ -57,7 +57,7 @@ export abstract class AbstractClient<TInput = any> {
 }
 
 /**
- * base client.
+ * transport client.
  */
 @Abstract()
 export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> extends AbstractClient {
