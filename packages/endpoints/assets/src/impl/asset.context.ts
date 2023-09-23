@@ -1,16 +1,14 @@
 import { EndpointInvokeOpts } from '@tsdi/core';
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
-import { OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize } from '@tsdi/common';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from '../consts';
 import { CONTENT_DISPOSITION_TOKEN } from '../content';
 import { MimeAdapter } from '../MimeAdapter';
 import { Negotiator } from '../Negotiator';
 import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from '../utils';
-import { ContentOptions } from '../server/content';
+import { ContentOptions } from '../interceptors/content';
 import { StatusVaildator } from '../StatusVaildator';
-import { Incoming, Outgoing } from '../socket';
-import { StreamAdapter } from '../StreamAdapter';
 import { FileAdapter } from '../FileAdapter';
 import { AssetContext } from '../AssetContext';
 

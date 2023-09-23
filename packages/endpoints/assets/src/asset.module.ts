@@ -1,10 +1,11 @@
 import { Module, ProviderType, ModuleWithProviders } from '@tsdi/ioc';
+import { ExecptionFinalizeFilter, FinalizeFilter } from '@tsdi/endpoints';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import {
     Bodyparser, Content, Json, Session, 
     CorsMiddleware, CsrfMiddleware, HelmetMiddleware,
-    ExecptionFinalizeFilter, ServerFinalizeFilter, RespondAdapter, ErrorRespondAdapter
-} from './server';
+    RespondAdapter, ErrorRespondAdapter
+} from './interceptors';
 
 
 
@@ -23,7 +24,7 @@ import {
 
         RespondAdapter,
         ErrorRespondAdapter,
-        ServerFinalizeFilter,
+        FinalizeFilter,
         ExecptionFinalizeFilter
     ]
 })

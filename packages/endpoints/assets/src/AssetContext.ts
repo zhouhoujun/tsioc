@@ -1,8 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
+import { StreamAdapter } from '@tsdi/common';
 import { AssetContext as BaseAssetContext } from '@tsdi/endpoints';
 import { StatusVaildator } from './StatusVaildator';
 import { FileAdapter } from './FileAdapter';
-import { StreamAdapter } from './StreamAdapter';
 
 /**
  * abstract mime asset transport context.

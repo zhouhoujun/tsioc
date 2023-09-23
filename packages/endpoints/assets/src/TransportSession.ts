@@ -1,8 +1,7 @@
 
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Packet } from '@tsdi/common';
+import { IEventEmitter, Packet } from '@tsdi/common';
 import { Decoder, Encoder } from './coding';
-import { IEventEmitter } from './stream';
 
 
 

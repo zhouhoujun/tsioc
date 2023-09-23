@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { IReadableStream } from './stream';
+import { IReadableStream } from '@tsdi/common';
 
 /**
  * file adapter
