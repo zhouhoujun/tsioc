@@ -1,16 +1,59 @@
 import { Execption, Injectable } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, Packet, ResHeaders, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
+import { OutgoingHeaders, Packet, RequestPacket, ResHeaders, ResponsePacket, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
 import { Observable, catchError, map, of } from 'rxjs';
-
 
 
 /**
  * transport client endpoint backend.
  */
 @Injectable()
-export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
+export class MicroTransportBackend<TRequest extends RequestPacket = RequestPacket, TResponse extends ResponsePacket = ResponsePacket> implements Backend<TRequest, TResponse>  {
 
+    /**
+     * handle client request
+     * @param req 
+     */
+    handle(req: TRequest): Observable<TResponse> {
+
+        const url = this.getReqUrl(req);
+
+        const session = req.context.get(TransportSession);
+
+        return session.request(req)
+            .pipe(
+                map(p => {
+                    return this.toResponse(p);
+                }),
+                catchError((err, caught) => {
+                    return of(this.catchError(url, err))
+                })
+            );
+    }
+
+    protected toResponse(pkg: ResponsePacket): TResponse {
+        return pkg as TResponse;
+    }
+
+    protected getReqUrl(req: TRequest): string {
+        return req.url ?? req.topic ?? '';
+    }
+
+    protected catchError(url: string, error: any): TResponse {
+        return { url, error, status: error.status ?? error.statusCode, statusText: error.message } as TResponse
+    }
+
+    protected toPacket(url: string, req: TRequest): Packet {
+        const { context, ...pkg } = req;
+        return { url, ...pkg };
+    }
+}
+
+/**
+ * transport client endpoint backend.
+ */
+@Injectable()
+export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
 
     /**
      * handle client request
@@ -53,9 +96,10 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
         const pkg = {
             method: req.method,
             headers: req.headers.getHeaders(),
+            context: req.context,
             url,
             payload: req.body
-        } as Packet;
+        } as RequestPacket;
 
         return pkg;
     }

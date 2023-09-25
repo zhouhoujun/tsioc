@@ -1,7 +1,6 @@
-import { Incoming, IncomingHeaders, Packet, ev } from '@tsdi/common';
+import { Incoming, IncomingHeaders, Packet, TransportSession, ev } from '@tsdi/common';
 import { Readable } from 'readable-stream';
 import { hdr } from '../consts';
-import { TransportSession } from '../TransportSession';
 
 export class MessageIncoming<T> extends Readable implements Incoming<T> {
 
@@ -28,11 +27,11 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? this.defaultMethod;
 
         this._payloadIndex = 0
-        session.on(ev.END, this.emit.bind(this, ev.END));
-        session.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        session.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
-        session.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-        session.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
+        // session.on(ev.END, this.emit.bind(this, ev.END));
+        // session.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
+        // session.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
+        // session.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
+        // session.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
     }
 
     get socket() {

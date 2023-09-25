@@ -1,8 +1,7 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { HEAD, MessageExecption, Incoming, Outgoing, IReadableStream } from '@tsdi/common';
+import { HEAD, MessageExecption, Incoming, Outgoing, IReadableStream, isBuffer } from '@tsdi/common';
+import { AssetContext } from '@tsdi/endpoints';
 import { hdr } from '../consts';
-import { isBuffer } from '../utils';
-import { AssetContext } from '../AssetContext';
 
 
 @Injectable()

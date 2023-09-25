@@ -10,7 +10,7 @@ import { Router } from './router/router';
  * 传输节点
  */
 @Abstract()
-export abstract class TransportEndpoint<TInput extends TransportContext, TOutput> extends ConfigableEndpoint<TInput, TOutput> implements EndpointService {
+export abstract class TransportEndpoint<TInput extends TransportContext = TransportContext, TOutput = any> extends ConfigableEndpoint<TInput, TOutput> implements EndpointService {
 
 }
 

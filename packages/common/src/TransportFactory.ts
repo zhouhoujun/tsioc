@@ -53,7 +53,7 @@ export abstract class TransportFactory {
 
 
 @Abstract()
-export abstract class TransportSession<TSocket = any> {
+export abstract class TransportSession<TSocket = any>  {
     /**
      * socket.
      */
@@ -73,7 +73,7 @@ export abstract class TransportSession<TSocket = any> {
      * send.
      * @param packet 
      */
-    abstract send(packet: Packet): Observable<any>;
+    abstract send(packet: ResponsePacket): Observable<any>;
 
     /**
      * request.

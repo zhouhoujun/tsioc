@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { ENOENT, MessageExecption } from '@tsdi/common';
+import { AssetContext } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
-import { AssetContext } from '../AssetContext';
 
 
 @Injectable({ static: true })

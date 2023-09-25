@@ -69,7 +69,7 @@ export class WsTransportSessionFactory implements TransportSessionFactory<IDuple
 
     constructor(private factory: TransportFactory) { }
 
-    create(socket: IDuplexStream, options?: TransportOpts | undefined): TransportSession<IDuplexStream> {
+    create(socket: IDuplexStream, options?: TransportOpts | undefined): WsTransportSession {
         return new WsTransportSession(socket, this.factory.createSender(options), this.factory.createReceiver(options));
     }
 

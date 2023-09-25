@@ -1,10 +1,9 @@
 import { Interceptor, Handler } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
-import { Middleware } from '@tsdi/endpoints';
+import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
-import { AssetContext } from '../AssetContext';
 
 
 /**

@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 const _tyundef = 'undefined';
 
 /**
@@ -36,6 +38,9 @@ export function isUrlSearchParams(value: any): value is URLSearchParams {
     return typeof URLSearchParams !== _tyundef && value instanceof URLSearchParams
 }
 
+export function isBuffer(body: any): body is Buffer {
+    return Buffer.isBuffer(body)
+}
 
 
 const sta$ = /^\s*\//;

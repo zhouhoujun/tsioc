@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AssetContext, TransportExecptionHandlers } from '@tsdi/transport';
+import { AssetContext, TransportExecptionHandlers } from '@tsdi/endpoints';
 import { WS_SERV_OPTS } from './options';
 
 

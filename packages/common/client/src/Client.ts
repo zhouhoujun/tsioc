@@ -1,18 +1,21 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
-import { ConfigableHandler, Shutdown } from '@tsdi/core';
+import { Shutdown } from '@tsdi/core';
 import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, HeaderPacket, Packet, RequestPacket } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
+import { ClientHandler, MicroClientHandler } from './handler';
 
 
 /**
- * abstract client.
+ * mircoservice client.
  */
 @Abstract()
-export abstract class AbstractClient<TRequest extends RequestPacket = any> {
+export abstract class MicroClient<TRequest extends RequestPacket = any> {
+
     /**
-     * client handler
+     * mircoservice client handler
      */
-    abstract get handler(): ConfigableHandler<TRequest, any>
+    abstract get handler(): MicroClientHandler;
+
 
     send<TOutput, TInput = any>(pattern: Pattern, input: TInput, options?: HeaderPacket): Observable<TOutput> {
         if (isNil(input)) {
@@ -60,12 +63,12 @@ export abstract class AbstractClient<TRequest extends RequestPacket = any> {
  * transport client.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> extends AbstractClient {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> {
 
     /**
      * client handler
      */
-    abstract get handler(): ConfigableHandler<TRequest, TransportEvent<TStatus>>
+    abstract get handler(): ClientHandler;
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.

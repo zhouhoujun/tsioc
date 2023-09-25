@@ -1,8 +1,7 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { Middleware } from '@tsdi/endpoints';
+import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, finalize, from, mergeMap } from 'rxjs';
-import { AssetContext } from '../AssetContext';
 
 
 /**

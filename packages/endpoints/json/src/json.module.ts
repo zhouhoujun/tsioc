@@ -1,6 +1,7 @@
 import { Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
 import { Context, Packet, TransportFactory } from '@tsdi/common';
+import { EndpointModule } from '@tsdi/endpoints';
 import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend, JSON_ENCODER_INTERCEPTORS } from './encoder';
 import { JsonDecoder, SimpleJsonDecoderBackend, JsonInterceptingDecoder, JsonDecoderBackend, JSON_DECODER_INTERCEPTORS } from './decoder';
 import { JsonSender } from './sender';
@@ -9,6 +10,9 @@ import { JsonTransportFactory } from './factory';
 
 
 @Module({
+    imports: [
+        EndpointModule
+    ],
     providers: [
         SimpleJsonEncoderBackend,
         JsonInterceptingEncoder,

@@ -1,15 +1,17 @@
 import { Module, ProviderType, ModuleWithProviders } from '@tsdi/ioc';
-import { ExecptionFinalizeFilter, FinalizeFilter } from '@tsdi/endpoints';
+import { EndpointModule } from '@tsdi/endpoints';
 import { ASSET_SERVR_PROVIDERS } from './asset.pdr';
 import {
-    Bodyparser, Content, Json, Session, 
-    CorsMiddleware, CsrfMiddleware, HelmetMiddleware,
-    RespondAdapter, ErrorRespondAdapter
+    Bodyparser, Content, Json, Session,
+    CorsMiddleware, CsrfMiddleware, HelmetMiddleware
 } from './interceptors';
 
 
 
 @Module({
+    imports: [
+        EndpointModule
+    ],
     providers: [
         ...ASSET_SERVR_PROVIDERS,
 
@@ -22,14 +24,12 @@ import {
         CsrfMiddleware,
         HelmetMiddleware,
 
-        RespondAdapter,
-        ErrorRespondAdapter,
-        FinalizeFilter,
-        ExecptionFinalizeFilter
+        // RespondAdapter,
+        // ErrorRespondAdapter
     ]
 })
 export class AssetEndpointModule {
-    
+
     /**
      * import tcp micro service module with options.
      * @param options micro service module options.
@@ -41,7 +41,7 @@ export class AssetEndpointModule {
 
         const providers: ProviderType[] = options.providers ?? [];
 
-        return  {
+        return {
             module: AssetEndpointModule,
             providers
         }

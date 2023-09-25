@@ -1,33 +1,36 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportRequest, ServiceUnavailableExecption, ev, Pattern, IDuplexStream, RequestInitOpts, TransportSessionFactory, TransportSession } from '@tsdi/common';
-import { AbstractClient, Client } from '@tsdi/common/client';
+import { TransportRequest, ServiceUnavailableExecption, ev, Pattern, RequestInitOpts, TransportSessionFactory, TransportSession } from '@tsdi/common';
+import { MicroClient, Client } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
-import { WsHandler } from './handler';
+import { WsHandler, WsMicroHandler } from './handler';
 import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 
 
 @Injectable({ static: false })
-export class WsMicroClient extends AbstractClient {
+export class WsMicroClient extends MicroClient {
     private socket?: WebSocket | null;
-    private stream?: IDuplexStream | null;
+    private session?: TransportSession | null;
 
-    constructor(readonly handler: WsHandler, @Inject(WS_CLIENT_OPTS) private options: WsClientOpts) {
+    constructor(readonly handler: WsMicroHandler, @Inject(WS_CLIENT_OPTS) private options: WsClientOpts) {
         super()
     }
 
     protected connect(): Observable<any> | Promise<any> {
-        return new Observable<IDuplexStream>((observer) => {
+        return new Observable<TransportSession>((observer) => {
             if (!this.socket) {
+                this.session?.destroy();
                 this.socket = new WebSocket(this.options.url!, this.options.connectOpts);
+                this.session = null;
             }
 
             const onOpen = () => {
-                if (!this.stream) {
-                    this.stream = createWebSocketStream(this.socket!);
-
+                if (!this.session) {
+                    const socket = createWebSocketStream(this.socket!);
+                    const factory = this.handler.injector.get(TransportSessionFactory);
+                    this.session = factory.create(socket, this.options.transportOpts);
                 }
-                observer.next(this.stream);
+                observer.next(this.session);
                 observer.complete();
             }
             const onClose = (code: number, reason: Buffer) => {
@@ -65,7 +68,7 @@ export class WsMicroClient extends AbstractClient {
 
     protected async onShutdown(): Promise<void> {
         if (!this.socket) return;
-        this.stream?.destroy?.();
+        this.session?.destroy?.();
         this.socket.terminate();
         // this.socket.close();
         this.socket.removeAllListeners();
@@ -73,7 +76,7 @@ export class WsMicroClient extends AbstractClient {
     }
 
     protected initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
+        context.setValue(MicroClient, this);
     }
 
 }
@@ -99,9 +102,9 @@ export class WsClient extends Client<TransportRequest, number> {
             }
 
             const onOpen = () => {
-                const factory = this.handler.injector.get(TransportSessionFactory);
                 if (!this.session) {
                     const socket = createWebSocketStream(this.socket!);
+                    const factory = this.handler.injector.get(TransportSessionFactory);
                     this.session = factory.create(socket, this.options.transportOpts);
                 }
                 observer.next(this.session);

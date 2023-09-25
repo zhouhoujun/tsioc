@@ -2,12 +2,11 @@
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { HttpStatusCode, BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream  } from '@tsdi/common';
 import { Handler, Interceptor } from '@tsdi/core';
-import { Middleware } from '@tsdi/endpoints';
+import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { hdr } from '../consts';
 import { MimeTypes } from '../MimeAdapter';
-import { AssetContext } from '../AssetContext';
 
 
 @Abstract()

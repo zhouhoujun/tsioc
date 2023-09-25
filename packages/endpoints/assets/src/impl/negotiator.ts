@@ -1,9 +1,9 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
+import { identity } from '@tsdi/common';
+import { AssetContext } from '@tsdi/endpoints';
 import { hdr } from '../consts';
 import { Negotiator } from '../Negotiator';
-import { AssetContext } from '../AssetContext';
-import { identity } from '@tsdi/common';
 
 
 

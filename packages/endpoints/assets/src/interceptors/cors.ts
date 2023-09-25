@@ -3,7 +3,7 @@ import { RequestMethod, InternalServerExecption } from '@tsdi/common';
 import { Middleware } from '@tsdi/endpoints';
 import { hdr } from '../consts';
 import { append, vary } from '../utils';
-import { AssetContext } from '../AssetContext';
+import { StatusContext } from '../StatusContext';
 
 
 
@@ -17,7 +17,7 @@ export abstract class CorsOptions {
      *
      * @memberof CorsOptions
      */
-    origin?: string | ((ctx: AssetContext) => string | Promise<string>);
+    origin?: string | ((ctx: StatusContext) => string | Promise<string>);
     /**
      * enable Access-Control-Allow-Credentials
      *
@@ -64,7 +64,7 @@ export abstract class CorsOptions {
 
 
 @Injectable()
-export class CorsMiddleware implements Middleware<AssetContext> {
+export class CorsMiddleware implements Middleware<StatusContext> {
 
     private options: Options;
 
@@ -98,7 +98,7 @@ export class CorsMiddleware implements Middleware<AssetContext> {
         return options as Options
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: StatusContext, next: () => Promise<void>): Promise<void> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
@@ -203,7 +203,7 @@ interface Options {
     /**
      * origin `Access-Control-Allow-Origin`, default is request Origin header
      */
-    origin?: string | ((ctx: AssetContext) => any);
+    origin?: string | ((ctx: StatusContext) => any);
     /**
      * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
      */

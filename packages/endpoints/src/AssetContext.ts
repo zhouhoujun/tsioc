@@ -1,5 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
+import { StreamAdapter } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
+import { FileAdapter } from './FileAdapter';
+import { StatusVaildator } from './StatusVaildator';
 
 /**
  * abstract mime asset transport context.
@@ -10,6 +13,18 @@ import { TransportContext } from './TransportContext';
 export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any, TServOpts = any> extends TransportContext<TRequest, TResponse> {
 
     abstract get serverOptions(): TServOpts;
+    /**
+     * file adapter
+     */
+    abstract get fileAdapter(): FileAdapter;
+    /**
+     * stream adapter
+     */
+    abstract get streamAdapter(): StreamAdapter;
+    /**
+     * status vaildator
+     */
+    abstract get vaildator(): StatusVaildator<TStatus>;
 
     /**
      * Get request rul

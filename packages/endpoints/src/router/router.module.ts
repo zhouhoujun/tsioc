@@ -1,4 +1,4 @@
-import { InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
+import { EMPTY_OBJ, InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
 import { Transport, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
@@ -53,7 +53,7 @@ const factoryResolver = new RouteEndpointFactoryResolverImpl();
                 [ROUTES, InjectFlags.Optional, InjectFlags.Self]
             ]
         },
-        { provide: PatternFormatter, useValue: defaultFormatter },
+        { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true },
         { provide: Router, useExisting: HybridRouter },
         ControllerRouteReolver
     ]
@@ -152,34 +152,43 @@ export class MicroServRouterModule {
     }): ModuleWithProviders<MicroServRouterModule> {
         const protocol = isString(arg1) ? arg1 : arg1.protocol;
         const opts = { ...isString(arg1) ? options : arg1 };
-        const token = getMircServRouter(protocol);
 
         return {
             module: MicroServRouterModule,
-            providers: [
-                {
-                    provide: token,
-                    useFactory: (injector: Injector) => {
-                        return new MessageRouterImpl(protocol, injector,
-                            opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
-                            opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
-                            opts.prefix,
-                            opts.routes)
-                    },
-                    deps: [Injector]
-                },
-                {
-                    provide: MESSAGE_ROUTERS,
-                    useExisting: token,
-                    multi: true
-                }
-            ]
+            providers: createMicroRouteProviders(protocol, opts)
         }
     }
 
     static getToken(protocol: Transport): Token<MircoServRouter> {
         return getMircServRouter(protocol)
     }
+}
+
+export function createMicroRouteProviders(transport: Transport, opts: {
+    matcher?: TypeOf<RouteMatcher>;
+    formatter?: TypeOf<PatternFormatter>;
+    prefix?: string;
+    routes?: Routes;
+} = EMPTY_OBJ) {
+    const token = getMircServRouter(transport);
+    return [
+        {
+            provide: token,
+            useFactory: (injector: Injector) => {
+                return new MessageRouterImpl(transport, injector,
+                    opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
+                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                    opts.prefix,
+                    opts.routes)
+            },
+            deps: [Injector]
+        },
+        {
+            provide: MESSAGE_ROUTERS,
+            useExisting: token,
+            multi: true
+        }
+    ]
 }
 
 export function getMircServRouter(protocol: Transport): Token<MircoServRouter> {

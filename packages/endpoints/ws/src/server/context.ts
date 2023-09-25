@@ -1,5 +1,6 @@
-import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { EMPTY_OBJ } from '@tsdi/ioc';
+import { LOCALHOST } from '@tsdi/common';
+import { AbstractAssetContext } from '@tsdi/endpoints/assets';
 import * as tls from 'tls';
 import { WsIncoming } from './incoming';
 import { WsOutgoing } from './outgoing';

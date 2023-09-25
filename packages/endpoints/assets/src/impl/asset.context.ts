@@ -1,16 +1,14 @@
 import { EndpointInvokeOpts } from '@tsdi/core';
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter } from '@tsdi/common';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer } from '@tsdi/common';
+import { AssetContext, FileAdapter, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype, hdr } from '../consts';
 import { CONTENT_DISPOSITION_TOKEN } from '../content';
 import { MimeAdapter } from '../MimeAdapter';
 import { Negotiator } from '../Negotiator';
-import { encodeUrl, escapeHtml, isBuffer, xmlRegExp } from '../utils';
+import { encodeUrl, escapeHtml, xmlRegExp } from '../utils';
 import { ContentOptions } from '../interceptors/content';
-import { StatusVaildator } from '../StatusVaildator';
-import { FileAdapter } from '../FileAdapter';
-import { AssetContext } from '../AssetContext';
 
 
 export interface ProxyOpts {
@@ -43,7 +41,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
 
     constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
-        super(injector, { isDone: (ctx: AssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
+        super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
         this.vaildator = injector.get(StatusVaildator);
         this.streamAdapter = injector.get(StreamAdapter);
         this.fileAdapter = injector.get(FileAdapter);

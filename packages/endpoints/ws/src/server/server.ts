@@ -55,7 +55,7 @@ export class WsServer extends Server<TransportContext> {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const factory = this.endpoint.injector.get(WsTransportSessionFactory);
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = createWebSocketStream(socket);
             const session = factory.create(stream, this.options.transportOpts!);
@@ -93,12 +93,12 @@ export class WsServer extends Server<TransportContext> {
      * @param req 
      * @param res 
      */
-    protected requestHandler(session: TransportSession, packet: Packet): Subscription {
+    protected requestHandler(session: WsTransportSession, packet: Packet): Subscription {
         if (!packet.method) {
             packet.method = MESSAGE;
         }
         const req = new WsIncoming(session, packet);
-        const res = new WsOutgoing(session, packet.id);
+        const res = new WsOutgoing(session, packet.id, packet.topic!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

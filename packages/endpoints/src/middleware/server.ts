@@ -11,7 +11,7 @@ import { MiddlewareService } from './middleware.service';
  * Server with middleware
  */
 @Abstract()
-export abstract class MiddlewareServer<TInput extends AssetContext, TOutput = any> extends Server<TInput, TOutput> implements EndpointService, MiddlewareService {
+export abstract class MiddlewareServer<TInput extends AssetContext = AssetContext, TOutput = any> extends Server<TInput, TOutput> implements EndpointService, MiddlewareService {
 
     abstract get endpoint(): MiddlewareEndpoint<TInput, TOutput>;
 

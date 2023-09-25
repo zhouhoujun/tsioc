@@ -3,13 +3,13 @@ import { GET, HEAD, OPTIONS, ForbiddenExecption } from '@tsdi/common';
 import { Middleware } from '@tsdi/endpoints';
 import { hdr } from '../consts';
 import { SessionAdapter } from './session';
-import { AssetContext } from '../AssetContext';
+import { StatusContext } from '../StatusContext';
 
 
 
 @Abstract()
 export abstract class CsrfOptions {
-    invalidTokenMessage?: string | ((ctx: AssetContext) => string);
+    invalidTokenMessage?: string | ((ctx: StatusContext) => string);
     excludedMethods?: string[];
     disableQuery?: boolean;
     /**
@@ -74,7 +74,7 @@ export abstract class CsrfTokensFactory {
 }
 
 @Injectable()
-export class CsrfMiddleware implements Middleware<AssetContext> {
+export class CsrfMiddleware implements Middleware<StatusContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;
@@ -83,7 +83,7 @@ export class CsrfMiddleware implements Middleware<AssetContext> {
         this.tokens = factory.create(this.options);
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: StatusContext, next: () => Promise<void>): Promise<void> {
 
         ctx.injector.inject({
             provide: CSRF,
