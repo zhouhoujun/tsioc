@@ -1,15 +1,11 @@
-import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
-import { TransportSessionFactory } from '@tsdi/common';
+import { ExecptionHandlerFilter } from '@tsdi/core';
 import {
     MicroServRouterModule, ExecptionFinalizeFilter, LogInterceptor, FinalizeFilter, Session, MICROSERVICE_IMPL, StatusVaildator
 } from '@tsdi/endpoints';
 import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WS_SERV_INTERCEPTORS, WsServerOpts, WS_SERV_FILTERS, WS_SERV_OPTS, WS_SERV_GUARDS } from './options';
 import { WsServer } from './server';
 import { WsEndpoint } from './endpoint';
-import { WsExecptionHandlers } from './execption.handles';
 import { WsStatusVaildator } from '../status';
 import { WsTransportSessionFactory, defaultMaxSize } from '../factory';
 
@@ -32,7 +28,7 @@ const defMicroOpts = {
     interceptorsToken: WS_SERV_INTERCEPTORS,
     filtersToken: WS_SERV_FILTERS,
     guardsToken: WS_SERV_GUARDS,
-    backend: MicroServRouterModule.getToken('ws'),
+    responder: ,
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,

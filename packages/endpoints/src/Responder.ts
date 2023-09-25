@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Sender, MessageExecption } from '@tsdi/common';
+import { MessageExecption } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 
 
@@ -13,11 +13,6 @@ import { TransportContext } from './TransportContext';
 export abstract class Responder<T extends TransportContext = TransportContext> {
 
     /**
-     * packet sender
-     */
-    abstract get sender(): Sender;
-
-    /**
      * send response message.
      * @param ctx 
      * @param res response
@@ -25,8 +20,8 @@ export abstract class Responder<T extends TransportContext = TransportContext> {
     abstract send(ctx: T, res: any): Promise<any>;
     /**
      * send execption message.
-     * @param context 
+     * @param ctx 
      * @param err execption message
      */
-    abstract sendExecption(context: T, err: MessageExecption): Promise<any>;
+    abstract sendExecption(ctx: T, err: MessageExecption): Promise<any>;
 }

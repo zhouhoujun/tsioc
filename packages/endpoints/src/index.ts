@@ -3,6 +3,7 @@ export * from './middleware/middleware.endpoint';
 export * from './middleware/middleware.compose';
 export * from './middleware/middleware.service';
 export * from './middleware/session';
+export { Session as SessionMiddleware, Session as SessionInterceptor } from './middleware/session';
 export * from './router/route';
 export * from './router/router';
 export * from './router/router.micro';

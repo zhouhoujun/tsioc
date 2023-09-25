@@ -1,4 +1,5 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, toProvider } from '@tsdi/ioc';
+import { TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from '../endpoint.module';
 
@@ -11,6 +12,7 @@ import { RouteMatcher } from '../router/router';
 import { ROUTES, Routes } from '../router/route';
 import { HybridRouter } from '../router/router.hybrid';
 import { SHOW_DETAIL_ERROR } from '../execption.handlers';
+import { Responder } from '../Responder';
 
 
 
@@ -27,6 +29,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<Tra
      */
     transportOpts?: TransportOpts;
     server?: any;
+    responder?: ProvdierOf<Responder>;
     detailError?: boolean;
     routes?: {
         matcher?: ProvdierOf<RouteMatcher>;
@@ -108,6 +111,7 @@ export const SERVER_IMPL: ServerImpl = {
 
 @Module({
     imports: [
+        TransformModule,
         EndpointModule,
         RouterModule
     ]
@@ -142,6 +146,17 @@ function createServProviders(options: ServerModuleOpts & TransportRequired) {
         providers: [...defaultOpts?.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
     };
 
+    if(serverOpts.detailError) {
+        serverOpts.providers.push({
+            provide: SHOW_DETAIL_ERROR,
+            useValue: true
+        });
+    }
+
+    if (serverOpts.responder) {
+        serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+    }
+
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
         {
@@ -172,12 +187,6 @@ function createServProviders(options: ServerModuleOpts & TransportRequired) {
         providers.push(toProvider(RouteMatcher, serverOpts.routes?.matcher))
     }
 
-    if(serverOpts.detailError) {
-        providers.push({
-            provide: SHOW_DETAIL_ERROR,
-            useValue: true
-        });
-    }
 
     if (options.server) {
         providers.push(toProvider(serverType, options.server));

@@ -14,6 +14,8 @@ export * from './asset.pdr';
 export * from './results';
 
 export * from './interceptors';
+export * from './interceptors.module';
+export { InterceptorsModule as MiddewaresModule } from './interceptors.module';
 
 export * from './impl/mime';
 export * from './impl/mimedb';

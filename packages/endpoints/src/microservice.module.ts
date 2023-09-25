@@ -1,4 +1,5 @@
 import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, TypeOf, isArray, toProvider } from '@tsdi/ioc';
+import { TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from './endpoint.module';
 
@@ -10,6 +11,7 @@ import { MicroServRouterModule, createMicroRouteProviders } from './router/route
 import { RouteMatcher } from './router/router';
 import { Routes } from './router/route';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
+import { Responder } from './Responder';
 
 
 
@@ -26,6 +28,7 @@ export interface MicroServiceOpts<TSerOpts = any> extends TransportEndpointOptio
      */
     transportOpts?: TransportOpts;
     server?: any;
+    responder?: ProvdierOf<Responder>;
     detailError?: boolean;
     routes?: {
         matcher?: TypeOf<RouteMatcher>;
@@ -107,6 +110,7 @@ export const MICROSERVICE_IMPL: MicroServiceImpl = {
 
 @Module({
     imports: [
+        TransformModule,
         EndpointModule,
         MicroServRouterModule
     ]
@@ -148,6 +152,17 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
         providers: [...defaultOpts?.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
     };
 
+    if (serverOpts.detailError) {
+        serverOpts.providers.push({
+            provide: SHOW_DETAIL_ERROR,
+            useValue: true
+        });
+    }
+
+    if (serverOpts.responder) {
+        serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+    }
+
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
         {
@@ -159,15 +174,8 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
 
     if (options.server) {
         providers.push(toProvider(serverType, options.server));
-    } else if(serverType) {
+    } else if (serverType) {
         providers.push(serverType);
-    }
-
-    if(serverOpts.detailError) {
-        providers.push({
-            provide: SHOW_DETAIL_ERROR,
-            useValue: true
-        });
     }
 
     if (options.endpoint) {
@@ -185,7 +193,7 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
 
     if (options.sessionFactory) {
         providers.push(toProvider(sessionFactoryType ?? TransportSessionFactory, options.sessionFactory))
-    } else if(sessionFactoryType) {
+    } else if (sessionFactoryType) {
         providers.push(sessionFactoryType);
     }
 
