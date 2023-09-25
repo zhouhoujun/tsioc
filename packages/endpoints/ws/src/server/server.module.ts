@@ -2,9 +2,9 @@ import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
 import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
 import { TransportSessionFactory } from '@tsdi/common';
 import {
-    MicroServRouterModule, ExecptionFinalizeFilter, LogInterceptor, FinalizeFilter, Session, MICROSERVICE_IMPL
+    MicroServRouterModule, ExecptionFinalizeFilter, LogInterceptor, FinalizeFilter, Session, MICROSERVICE_IMPL, StatusVaildator
 } from '@tsdi/endpoints';
-import { Bodyparser, Content, Json, StatusVaildator } from '@tsdi/endpoints/assets';
+import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WS_SERV_INTERCEPTORS, WsServerOpts, WS_SERV_FILTERS, WS_SERV_OPTS, WS_SERV_GUARDS } from './options';
 import { WsServer } from './server';

@@ -10,6 +10,7 @@ import { RouterModule, ROUTER_PREFIX } from '../router/router.module';
 import { RouteMatcher } from '../router/router';
 import { ROUTES, Routes } from '../router/route';
 import { HybridRouter } from '../router/router.hybrid';
+import { SHOW_DETAIL_ERROR } from '../execption.handlers';
 
 
 
@@ -171,6 +172,12 @@ function createServProviders(options: ServerModuleOpts & TransportRequired) {
         providers.push(toProvider(RouteMatcher, serverOpts.routes?.matcher))
     }
 
+    if(serverOpts.detailError) {
+        providers.push({
+            provide: SHOW_DETAIL_ERROR,
+            useValue: true
+        });
+    }
 
     if (options.server) {
         providers.push(toProvider(serverType, options.server));

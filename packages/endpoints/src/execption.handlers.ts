@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, MissingParameterExecption } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, MissingParameterExecption, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler } from '@tsdi/core';
 import {
     HttpStatusCode, BadRequestExecption, ForbiddenExecption, InternalServerExecption,
@@ -11,9 +11,12 @@ import { Responder } from './Responder';
 import { TransportContext } from './TransportContext';
 
 
+export const SHOW_DETAIL_ERROR = tokenId<boolean>('SHOW_DETAIL_ERROR');
 
-@Abstract()
-export abstract class TransportExecptionHandlers {
+
+
+@Injectable()
+export class TransportExecptionHandlers {
 
     constructor() {}
 
@@ -125,6 +128,7 @@ export abstract class TransportExecptionHandlers {
         ctx.get(Responder).sendExecption(ctx, execption)
     }
 
-
-    protected abstract detailError(ctx: TransportContext): boolean;
+    protected detailError(ctx: TransportContext): boolean {
+        return ctx.get(SHOW_DETAIL_ERROR) === true;
+    }
 }

@@ -1,5 +1,5 @@
-import { Abstract, Arrayify, CtorType, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, TypeOf, isArray, toProvider } from '@tsdi/ioc';
-import { NotImplementedExecption, Outgoing, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, TypeOf, isArray, toProvider } from '@tsdi/ioc';
+import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from './endpoint.module';
 
 import { TransportEndpoint, TransportEndpointOptions, createTransportEndpoint } from './TransportEndpoint';
@@ -9,6 +9,7 @@ import { Server } from './Server';
 import { MicroServRouterModule, createMicroRouteProviders } from './router/router.module';
 import { RouteMatcher } from './router/router';
 import { Routes } from './router/route';
+import { SHOW_DETAIL_ERROR } from './execption.handlers';
 
 
 
@@ -162,6 +163,12 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
         providers.push(serverType);
     }
 
+    if(serverOpts.detailError) {
+        providers.push({
+            provide: SHOW_DETAIL_ERROR,
+            useValue: true
+        });
+    }
 
     if (options.endpoint) {
         providers.push(toProvider(endpointType, options.endpoint))
