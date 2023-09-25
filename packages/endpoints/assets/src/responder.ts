@@ -1,19 +1,15 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { HEAD, MessageExecption } from '@tsdi/common';
-import { hdr } from '../consts';
-import { isBuffer } from '../utils';
-import { Incoming, Outgoing } from '../socket';
-import { AssetContext } from '../AssetContext';
-import { IReadableStream } from '../stream';
+import { ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, isBuffer } from '@tsdi/common';
+import { AssetContext, Responder } from '@tsdi/endpoints';
+import { hdr } from './consts';
 
 
 @Injectable()
-export class RespondAdapter<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> {
+export class AssetResponder<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> implements Responder<AssetContext<TRequest, TResponse, TStatus>> {
 
     constructor() { }
 
-    async respond(ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<any> {
-
+    async send(ctx: AssetContext, res: any): Promise<any> {
         const vaildator = ctx.vaildator;
         if (ctx.destroyed || !ctx.writable) return;
 
@@ -38,6 +34,55 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         return await this.respondBody(body, response, ctx);
     }
 
+    async sendExecption(ctx: AssetContext, err: MessageExecption): Promise<any> {
+        //finllay defalt send error.
+        let headerSent = false;
+        if (ctx.sent || !ctx.response.writable) {
+            headerSent = err.headerSent = true
+        }
+
+        // nothing we can do here other
+        // than delegate to the app-level
+        // handler and log.
+        if (headerSent) {
+            return
+        }
+
+        const res = ctx.response;
+
+        // first unset all headers
+        ctx.removeHeaders();
+
+        // then set those specified
+        if (err.headers) ctx.setHeader(err.headers);
+
+        const vaildator = ctx.vaildator;
+        let status = err.status || err.statusCode;
+        // ENOENT support
+        if (ENOENT === err.code) status = vaildator.notFound;
+
+        // default to serverError
+        if (!vaildator.isStatus(status)) status = vaildator.serverError;
+
+        ctx.status = status;
+        // empty response.
+        if (vaildator.isEmptyExecption(status)) {
+            return res.end();
+        }
+
+        // respond
+        let msg: any;
+        msg = err.message;
+        
+        // force text/plain
+        ctx.type = 'text';
+        msg = Buffer.from(msg ?? ctx.statusMessage ?? '');
+        ctx.length = Buffer.byteLength(msg);
+        res.end(msg)
+
+        return res;
+
+    }
 
     protected isHeadMethod(ctx: AssetContext<TRequest, TResponse, TStatus>): boolean {
         return HEAD === ctx.method

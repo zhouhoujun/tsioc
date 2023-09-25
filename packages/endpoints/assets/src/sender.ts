@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { Context, Encoder, Packet, Sender } from '@tsdi/common';
+import { Context, Encoder, Packet, Sender, TransportOpts } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { AssetEncoder } from './encoder';
 
@@ -10,7 +10,8 @@ export class AssetSender implements Sender {
 
     constructor(
         private injector: Injector,
-        readonly encoder: AssetEncoder
+        readonly encoder: AssetEncoder,
+        private options: TransportOpts
     ) { }
 
     send(packet: Packet): Observable<any> {

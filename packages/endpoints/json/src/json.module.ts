@@ -36,9 +36,10 @@ export class JsonEndpointModule {
         encoderBacked?: ProvdierOf<JsonEncoderBackend>,
         encoderInterceptors?: ProvdierOf<Interceptor<Context, Buffer>>[],
         decoderBacked?: ProvdierOf<JsonDecoderBackend>,
-        decoderInterceptors?: ProvdierOf<Interceptor<Context, Packet>>[]
+        decoderInterceptors?: ProvdierOf<Interceptor<Context, Packet>>[],
+        providers: ProviderType[]
     }): ModuleWithProviders<JsonEndpointModule> {
-        const providers: ProviderType[] = [];
+        const providers: ProviderType[] = options.providers ?? [];
         if (options.encoderBacked) {
             providers.push(toProvider(JsonEncoderBackend, options.encoderBacked))
         }
@@ -58,8 +59,8 @@ export class JsonEndpointModule {
 
 
         return {
-            providers,
-            module: JsonEndpointModule
+            module: JsonEndpointModule,
+            providers
         }
     }
 
