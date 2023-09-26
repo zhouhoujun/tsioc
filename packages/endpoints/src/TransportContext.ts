@@ -16,7 +16,11 @@ export abstract class TransportContext<TInput = any, TOutput = any, TSocket = an
     /**
      * transport response.
      */
-    abstract get response(): TOutput
+    abstract get response(): TOutput;
+    /**
+     * transport response.
+     */
+    abstract set response(val: TOutput);
 
     /**
      * Get request rul

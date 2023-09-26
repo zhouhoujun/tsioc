@@ -21,7 +21,7 @@ export * from './impl/mime';
 export * from './impl/mimedb';
 export * from './impl/negotiator';
 export * from './impl/redirector';
-export * from './impl/typed.respond';
+export * from '../../json/src/typed.respond';
 export * from './impl/status';
 export * from './impl/asset.context';
 

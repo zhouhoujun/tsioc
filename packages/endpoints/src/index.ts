@@ -48,5 +48,7 @@ export * from './impl/route.endpoint';
 export * from './impl/transport.context';
 export * from './impl/transport.endpoint';
 
+export * from './impl/duplex.session';
+
 
 

@@ -1,12 +1,9 @@
-import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { createHandler } from '@tsdi/core';
-import { Transport, TransportSessionFactory } from '@tsdi/common';
-import { ClientModule, TransportBackend, CLIENT_IMPL} from '@tsdi/common/client';
-import { WsStatusVaildator } from '../status';
-import { WsClient } from './client';
-import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS, WsClientOpts } from './options';
-import { WsHandler } from './handler';
-import { WsTransportSessionFactory, defaultMaxSize } from '../factory';
+
+import { TransportBackend, CLIENT_IMPL} from '@tsdi/common/client';
+import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { WsClient, WsMicroClient } from './client';
+import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS, WS_MICRO_CLIENT_FILTERS, WS_MICRO_CLIENT_INTERCEPTORS, WS_MICRO_CLIENT_OPTS, WsClientOpts, WsMicroClientOpts } from './options';
+import { WsHandler, WsMicroHandler } from './handler';
 
 /**
  * WS client default options.
@@ -20,6 +17,7 @@ const defaultOpts = {
     interceptorsToken: WS_CLIENT_INTERCEPTORS,
     filtersToken: WS_CLIENT_FILTERS,
     backend: TransportBackend,
+    sessionFactory: DuplexTransportSessionFactory
 } as WsClientOpts;
 
 
@@ -27,9 +25,29 @@ CLIENT_IMPL.set('ws', {
     clientType: WsClient,
     clientOptsToken: WS_CLIENT_OPTS,
     hanlderType: WsHandler,
-    defaultOpts,
-    sessionFactoryType: WsTransportSessionFactory
+    defaultOpts
 });
+
+
+const microDefaultOpts = {
+    url: 'ws://localhost:3000',
+    transportOpts: {
+        delimiter: '#',
+        maxSize: defaultMaxSize,
+    },
+    interceptorsToken: WS_MICRO_CLIENT_INTERCEPTORS,
+    filtersToken: WS_MICRO_CLIENT_FILTERS,
+    backend: TransportBackend,
+    sessionFactory: DuplexTransportSessionFactory
+} as WsMicroClientOpts
+
+CLIENT_IMPL.setMicro('ws', {
+    clientType: WsMicroClient,
+    clientOptsToken: WS_MICRO_CLIENT_OPTS,
+    hanlderType: WsMicroHandler,
+    defaultOpts: microDefaultOpts
+});
+
 
 
 // /**

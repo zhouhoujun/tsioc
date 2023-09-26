@@ -1,5 +1,5 @@
 import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider } from '@tsdi/ioc';
-import { Interceptor } from '@tsdi/core';
+import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Packet, TransportFactory } from '@tsdi/common';
 import { Responder } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
@@ -9,6 +9,7 @@ import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInt
 import { AssetReceiver } from './receiver';
 import { AssetSender } from './sender';
 import { AssetTransportFactory } from './factory';
+import { AssetTransportTypedRespond } from './impl/typed.respond';
 
 
 
@@ -27,6 +28,10 @@ import { AssetTransportFactory } from './factory';
 
         { provide: AssetEncoder, useExisting: AssetInterceptingEncoder },
         { provide: AssetDecoder, useExisting: AssetInterceptingDecoder },
+
+        AssetTransportTypedRespond,
+        {provide: TypedRespond, useExisting: AssetTransportTypedRespond},
+        
         AssetReceiver,
         AssetSender,
         AssetResponder,

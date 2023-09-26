@@ -147,6 +147,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test endpoints",
+            "args": [
+                "${workspaceRoot}/packages/endpoints/ws/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test boot",
             "args": [
                 "${workspaceRoot}/packages/boot/unit.ts" 

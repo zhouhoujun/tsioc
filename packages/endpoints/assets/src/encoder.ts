@@ -27,7 +27,7 @@ export class AssetInterceptingEncoder implements Encoder {
 
     handle(ctx: Context): Observable<Buffer> {
         if (!this.chain) {
-            const interceptors = this.injector.get(ASSET_ENCODER_INTERCEPTORS);
+            const interceptors = this.injector.get(ASSET_ENCODER_INTERCEPTORS, []);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
         }

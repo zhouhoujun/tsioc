@@ -1,9 +1,9 @@
-import { TypedRespond } from '@tsdi/core';
 import { Injectable, isString } from '@tsdi/ioc';
-import { AssetContext } from '@tsdi/transport';
+import { TypedRespond } from '@tsdi/core';
+import { AssetContext } from '@tsdi/endpoints';
 
 @Injectable({ static: true })
-export class TransportTypedRespond extends TypedRespond {
+export class AssetTransportTypedRespond extends TypedRespond {
     respond(ctx: AssetContext, value: any, response: 'body' | 'header' | 'response'): void {
         if (response === 'body') {
             ctx.body = value

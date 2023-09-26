@@ -2,7 +2,6 @@ import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, Pro
 import { TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from './endpoint.module';
-
 import { TransportEndpoint, TransportEndpointOptions, createTransportEndpoint } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './middleware/session';
@@ -29,6 +28,10 @@ export interface MicroServiceOpts<TSerOpts = any> extends TransportEndpointOptio
     transportOpts?: TransportOpts;
     server?: any;
     responder?: ProvdierOf<Responder>;
+    /**
+     * micro service transport session factory.
+     */
+    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     detailError?: boolean;
     routes?: {
         matcher?: TypeOf<RouteMatcher>;
@@ -48,10 +51,6 @@ export interface MicroServiceModuleConfig {
      * micro service endpoint provider
      */
     endpoint?: ProvdierOf<TransportEndpoint>;
-    /**
-     * micro service transport session factory.
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     /**
      * micro service options
      */
@@ -79,10 +78,6 @@ export interface MicroServiceModuleOpts extends MicroServiceModuleConfig {
      * micro service endpoint type
      */
     endpointType: Type<TransportEndpoint>;
-    /**
-     * micro service transport session factory type.
-     */
-    sessionFactoryType?: Type<TransportSessionFactory>;
 }
 
 
@@ -144,13 +139,17 @@ export class MicroServiceModule {
 
 
 function createServiceProviders(options: MicroServiceModuleOpts & TransportRequired) {
-    const { transport, serverType, endpointType, serverOptsToken, defaultOpts, sessionFactoryType } = options;
+    const { transport, serverType, endpointType, serverOptsToken, defaultOpts } = options;
     const serverOpts = {
         backend: MicroServRouterModule.getToken(transport),
         ...defaultOpts,
         ...options.serverOpts,
         providers: [...defaultOpts?.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
     };
+
+    if (serverOpts.sessionFactory) {
+        serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+    }
 
     if (serverOpts.detailError) {
         serverOpts.providers.push({
@@ -189,12 +188,6 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
             asDefault: true,
             deps: [Injector, serverOptsToken]
         })
-    }
-
-    if (options.sessionFactory) {
-        providers.push(toProvider(sessionFactoryType ?? TransportSessionFactory, options.sessionFactory))
-    } else if (sessionFactoryType) {
-        providers.push(sessionFactoryType);
     }
 
     return providers

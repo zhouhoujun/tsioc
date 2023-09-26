@@ -1,10 +1,11 @@
-import { Token } from '@tsdi/ioc';
+import { ProvdierOf, Token, Type } from '@tsdi/ioc';
 import { ConfigableEndpointOptions } from '@tsdi/core';
-import { RequestPacket, TransportOpts, TransportRequest } from '@tsdi/common';
-import { Client } from './Client';
+import { RequestPacket, TransportOpts, TransportRequest, TransportSessionFactory } from '@tsdi/common';
+import { Client, MicroClient } from './Client';
 
 
 export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<TransportRequest> {
+    client?: Token<Client>;
     /**
      * url
      */
@@ -12,14 +13,15 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<T
     connectOpts?: TConnOpts;
     transportOpts?: TransportOpts;
     timeout?: number;
-}
-
-export interface ClientsOpts extends ClientOpts {
-    client: Token<Client>;
+    /**
+     * session factory
+     */
+    sessionFactory?: ProvdierOf<TransportSessionFactory>;
 }
 
 
 export interface MicroClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<RequestPacket> {
+    client?: Token<MicroClient>;
     /**
      * url
      */
@@ -27,8 +29,8 @@ export interface MicroClientOpts<TConnOpts = any> extends ConfigableEndpointOpti
     connectOpts?: TConnOpts;
     transportOpts?: TransportOpts;
     timeout?: number;
-}
-
-export interface MicroClientsOpts extends MicroClientOpts {
-    client: Token<Client>;
+    /**
+     * session factory
+     */
+    sessionFactory?: ProvdierOf<TransportSessionFactory>;
 }

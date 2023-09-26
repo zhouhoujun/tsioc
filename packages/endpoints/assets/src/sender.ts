@@ -8,11 +8,18 @@ import { AssetEncoder } from './encoder';
 @Injectable()
 export class AssetSender implements Sender {
 
+    private delimiter: Buffer;
+    private maxSize: number;
+
     constructor(
         private injector: Injector,
         readonly encoder: AssetEncoder,
-        private options: TransportOpts
-    ) { }
+        options: TransportOpts
+    ) {
+
+        this.delimiter = Buffer.from(options.delimiter ?? '#');
+        this.maxSize = options.maxSize ?? (256 * 1024);
+    }
 
     send(packet: Packet): Observable<any> {
         return this.encoder.handle(new Context(this.injector, packet))

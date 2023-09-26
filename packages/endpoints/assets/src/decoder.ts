@@ -27,7 +27,7 @@ export class AssetInterceptingDecoder implements Decoder {
 
     handle(ctx: Context): Observable<Packet> {
         if (!this.chain) {
-            const interceptors = this.injector.get(ASSET_DECODER_INTERCEPTORS);
+            const interceptors = this.injector.get(ASSET_DECODER_INTERCEPTORS, []);
             this.chain = interceptors.reduceRight(
                 (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
         }

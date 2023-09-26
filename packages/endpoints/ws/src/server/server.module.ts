@@ -1,13 +1,12 @@
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import {
-    MicroServRouterModule, ExecptionFinalizeFilter, LogInterceptor, FinalizeFilter, Session, MICROSERVICE_IMPL, StatusVaildator
+    ExecptionFinalizeFilter, LogInterceptor, FinalizeFilter, Session, MICROSERVICE_IMPL, StatusVaildator, defaultMaxSize, DuplexTransportSessionFactory
 } from '@tsdi/endpoints';
 import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { WS_SERV_INTERCEPTORS, WsServerOpts, WS_SERV_FILTERS, WS_SERV_OPTS, WS_SERV_GUARDS } from './options';
 import { WsServer } from './server';
 import { WsEndpoint } from './endpoint';
 import { WsStatusVaildator } from '../status';
-import { WsTransportSessionFactory, defaultMaxSize } from '../factory';
 
 
 
@@ -28,7 +27,7 @@ const defMicroOpts = {
     interceptorsToken: WS_SERV_INTERCEPTORS,
     filtersToken: WS_SERV_FILTERS,
     guardsToken: WS_SERV_GUARDS,
-    responder: ,
+    sessionFactory: DuplexTransportSessionFactory,
     filters: [
         LogInterceptor,
         ExecptionFinalizeFilter,
@@ -52,8 +51,7 @@ MICROSERVICE_IMPL.setMicroservice('ws', {
     serverType: WsServer,
     serverOptsToken: WS_SERV_OPTS,
     endpointType: WsEndpoint,
-    defaultOpts: defMicroOpts,
-    sessionFactoryType: WsTransportSessionFactory
+    defaultOpts: defMicroOpts
 });
 
 

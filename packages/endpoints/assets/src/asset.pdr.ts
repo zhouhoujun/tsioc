@@ -7,7 +7,7 @@ import { BasicMimeDb } from './impl/mimedb';
 import { MimeTypesImpl, TrasportMimeAdapter } from './impl/mime';
 import { TransportNegotiator } from './impl/negotiator';
 import { AssetRedirector } from './impl/redirector';
-import { TransportTypedRespond } from './impl/typed.respond';
+import { JsonTransportTypedRespond } from '../../json/src/typed.respond';
 import { Redirector } from './Redirector';
 
 
@@ -21,5 +21,5 @@ export const ASSET_ENDPOINT_PROVIDERS: ProviderType[] = [
     ...MIME_PROVIDERS,
     { provide: Redirector, useClass: AssetRedirector },
     { provide: Negotiator, useClass: TransportNegotiator },
-    { provide: TypedRespond, useClass: TransportTypedRespond }
+    { provide: TypedRespond, useClass: JsonTransportTypedRespond }
 ];

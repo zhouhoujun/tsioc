@@ -1,6 +1,6 @@
-import { Arrayify, CtorType, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toProvider } from '@tsdi/ioc';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toProvider } from '@tsdi/ioc';
 import { MicroTransportBackend, TransportBackend } from './backend';
-import { ClientOpts, ClientsOpts, MicroClientOpts, MicroClientsOpts } from './options';
+import { ClientOpts, MicroClientOpts } from './options';
 import { ClientHandler, MicroClientHandler } from './handler';
 import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { Client, MicroClient } from './Client';
@@ -11,7 +11,7 @@ export interface MicroClientModuleConfig {
     /**
      * microservice client options.
      */
-    clientOpts?: MicroClientOpts | MicroClientsOpts[];
+    clientOpts?: MicroClientOpts;
     /**
      * microservice client default options
      */
@@ -20,14 +20,6 @@ export interface MicroClientModuleConfig {
      * micro client handler provider
      */
     handler?: ProvdierOf<MicroClientHandler>;
-    /**
-     * transport session type.
-     */
-    sessionFactoryType?: Type<TransportSessionFactory>;
-    /**
-     * session factory
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     /**
      * custom provider with module.
      */
@@ -57,7 +49,7 @@ export interface ClientModuleConfig {
     /**
      * client options.
      */
-    clientOpts?: ClientOpts | ClientsOpts[];
+    clientOpts?: ClientOpts;
     /**
      * client default options
      */
@@ -66,14 +58,6 @@ export interface ClientModuleConfig {
      * client handler provider
      */
     handler?: ProvdierOf<ClientHandler>;
-    /**
-     * transport session type.
-     */
-    sessionFactoryType?: Type<TransportSessionFactory>;
-    /**
-     * session factory
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     /**
      * custom provider with module.
      */
@@ -237,18 +221,27 @@ export const CLIENT_IMPL: ClientImpl = {
 
 function mircoClientProviders(options: MicroClientModuleOpts) {
 
-    const { clientType, hanlderType, clientOptsToken, sessionFactoryType, defaultOpts } = options;
+    const { clientType, hanlderType, clientOptsToken, clientOpts, defaultOpts } = options;
+    const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+
+
+    if (opts.sessionFactory) {
+        opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+    }
+
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
-        ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
-            provide: opts.client,
+        clientOpts?.client ? {
+            provide: clientOpts.client,
             useFactory: (injector: Injector) => {
-                return injector.resolve(clientType, [{ provide: clientOptsToken, useValue: { ...defaultOpts, ...opts, providers: [...defaultOpts?.providers || EMPTY, ...opts.providers || EMPTY] } }]);
+                return injector.resolve(clientType, [{ provide: clientOptsToken, useValue: opts }]);
             },
             deps: [Injector]
-        }))
-            : [{ provide: clientOptsToken, useValue: { ...defaultOpts, ...options.clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
+        }
+            : { provide: clientOptsToken, useValue: opts }
     ];
+
+
 
     if (options.client) {
         providers.push(toProvider(clientType, options.client));
@@ -272,28 +265,31 @@ function mircoClientProviders(options: MicroClientModuleOpts) {
             deps: [Injector, clientOptsToken]
         })
     }
-    if (options.sessionFactory) {
-        providers.push(toProvider(sessionFactoryType ?? TransportSessionFactory, options.sessionFactory))
-    } else if (sessionFactoryType) {
-        providers.push(sessionFactoryType);
-    }
+
 
     return providers
 }
 
 
 function clientProviders(options: ClientModuleOpts) {
-    const { clientType, hanlderType, clientOptsToken, defaultOpts, sessionFactoryType } = options;
+    const { clientType, hanlderType, clientOptsToken, defaultOpts, clientOpts } = options;
+
+    const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+
+    if (opts.sessionFactory) {
+        opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+    } 
+
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
-        ...isArray(options.clientOpts) ? options.clientOpts.map(opts => ({
-            provide: opts.client,
+        clientOpts?.client ? {
+            provide: clientOpts.client,
             useFactory: (injector: Injector) => {
-                return injector.resolve(clientType, [{ provide: clientOptsToken, useValue: { ...defaultOpts, ...opts, providers: [...defaultOpts?.providers || EMPTY, ...opts.providers || EMPTY] } }]);
+                return injector.resolve(clientType, [{ provide: clientOptsToken, useValue: opts }]);
             },
             deps: [Injector]
-        }))
-            : [{ provide: clientOptsToken, useValue: { ...defaultOpts, ...options.clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...options.clientOpts?.providers || EMPTY] } }]
+        }
+            : { provide: clientOptsToken, useValue: opts }
     ];
 
     if (options.client) {
@@ -318,11 +314,12 @@ function clientProviders(options: ClientModuleOpts) {
             deps: [Injector, clientOptsToken]
         })
     }
-    if (options.sessionFactory) {
-        providers.push(toProvider(sessionFactoryType ?? TransportSessionFactory, options.sessionFactory))
-    } else if (sessionFactoryType) {
-        providers.push(sessionFactoryType);
-    }
+
+    // if (options.sessionFactory) {
+    //     providers.push(toProvider(sessionFactoryType ?? TransportSessionFactory, options.sessionFactory))
+    // } else if (sessionFactoryType) {
+    //     providers.push(sessionFactoryType);
+    // }
 
 
     return providers;

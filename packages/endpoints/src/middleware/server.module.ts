@@ -2,7 +2,6 @@ import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
 import { TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from '../endpoint.module';
-
 import { TransportEndpoint, TransportEndpointOptions, createTransportEndpoint } from '../TransportEndpoint';
 import { TransportContext } from '../TransportContext';
 import { SessionOptions } from './session';
@@ -29,7 +28,11 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<Tra
      */
     transportOpts?: TransportOpts;
     server?: any;
-    responder?: ProvdierOf<Responder>;
+    responder?: ProvdierOf<Responder>;    
+    /**
+     * server transport session factory.
+     */
+    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     detailError?: boolean;
     routes?: {
         matcher?: ProvdierOf<RouteMatcher>;
@@ -49,10 +52,6 @@ export interface ServerModuleConfig {
      * server endpoint provider
      */
     endpoint?: ProvdierOf<TransportEndpoint>;
-    /**
-     * server transport session factory.
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     /**
      * server options
      */
@@ -80,10 +79,6 @@ export interface ServerModuleOpts extends ServerModuleConfig {
      * server endpoint type
      */
     endpointType: Type<TransportEndpoint>;
-    /**
-     * server transport session factory type.
-     */
-    sessionFactoryType?: Type<TransportSessionFactory>;
 }
 
 
@@ -138,13 +133,17 @@ export class ServerModule {
 
 
 function createServProviders(options: ServerModuleOpts & TransportRequired) {
-    const { serverType, endpointType, serverOptsToken, defaultOpts, sessionFactoryType } = options;
+    const { serverType, endpointType, serverOptsToken, defaultOpts } = options;
     const serverOpts = {
         backend: HybridRouter,
         ...defaultOpts,
         ...options.serverOpts,
         providers: [...defaultOpts?.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
     };
+
+    if (serverOpts.sessionFactory) {
+        serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+    }
 
     if(serverOpts.detailError) {
         serverOpts.providers.push({
@@ -206,12 +205,6 @@ function createServProviders(options: ServerModuleOpts & TransportRequired) {
             asDefault: true,
             deps: [Injector, serverOptsToken]
         })
-    }
-
-    if (options.sessionFactory) {
-        providers.push(toProvider(sessionFactoryType ?? TransportSessionFactory, options.sessionFactory))
-    } else if (sessionFactoryType) {
-        providers.push(sessionFactoryType);
     }
 
     return providers

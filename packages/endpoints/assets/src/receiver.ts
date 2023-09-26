@@ -16,7 +16,7 @@ export class AssetReceiver implements Receiver {
     constructor(
         private injector: Injector,
         readonly decoder: AssetDecoder,
-        private options: TransportOpts
+        options: TransportOpts
     ) {
         this.delimiter = Buffer.from(options.delimiter ?? '#');
         this.maxSize = options.maxSize ?? (256 * 1024);
