@@ -3,7 +3,6 @@ import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runne
 import { TransportEndpoint } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 
-
 /**
  * Micro Service
  * 
@@ -11,7 +10,6 @@ import { TransportContext } from './TransportContext';
  */
 @Abstract()
 export abstract class Server<TInput extends TransportContext = TransportContext, TOutput = any> implements EndpointService {
-
     /**
      * micro service endpoint.
      */

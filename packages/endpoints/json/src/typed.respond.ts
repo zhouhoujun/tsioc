@@ -1,5 +1,5 @@
+import { Injectable } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
 import { TransportContext } from '@tsdi/endpoints';
 
 @Injectable({ static: true })

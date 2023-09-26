@@ -37,10 +37,10 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
             packet.id = this.getPacketId();
         }
         const id = packet.id;
-        return this.mergeClose(this.sender.send(packet)
+        return this.send(packet)
             .pipe(
                 mergeMap(r => this.receiver.packet.pipe(filter(p => p.id == id)))
-            ))
+            )
     }
 
 

@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, Encoder, EncoderBackend } from '@tsdi/common';
+import { Context, Encoder, EncoderBackend, RequestPacket } from '@tsdi/common';
 import { Observable, of } from 'rxjs';
 import { Buffer } from 'buffer';
 
@@ -15,7 +15,7 @@ export abstract class JsonEncoderBackend implements EncoderBackend {
 }
 
 
-export const JSON_ENCODER_INTERCEPTORS =  tokenId<Interceptor<Context, Buffer>[]>('JSON_ENCODER_INTERCEPTORS')
+export const JSON_ENCODER_INTERCEPTORS = tokenId<Interceptor<Context, Buffer>[]>('JSON_ENCODER_INTERCEPTORS')
 
 
 @Injectable()
@@ -42,7 +42,7 @@ export class SimpleJsonEncoderBackend implements JsonEncoderBackend {
     handle(ctx: Context): Observable<Buffer> {
         if (ctx.raw) return of(ctx.raw);
         if (!ctx || !ctx.packet) throw new ArgumentExecption('json decoding input empty');
-        const pkg = ctx.packet;
+        const { context, ...pkg } = ctx.packet as RequestPacket;
         ctx.raw = Buffer.from(JSON.stringify(pkg));
         return of(ctx.raw);
 
