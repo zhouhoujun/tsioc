@@ -1,9 +1,10 @@
 import { EMPTY_OBJ, Injector } from '@tsdi/ioc';
+import { RequestPacket } from '@tsdi/common';
 import { TransportContext, TransportContextOpts } from '../TransportContext';
 
 
 
-export class TransportContextIml<TInput = any, TOutput = any> extends TransportContext<TInput> {
+export class TransportContextIml<TInput extends RequestPacket = RequestPacket, TOutput = any> extends TransportContext<TInput, TOutput> {
 
     private _url: string;
     private _originalUrl: string;
@@ -18,8 +19,8 @@ export class TransportContextIml<TInput = any, TOutput = any> extends TransportC
         options: TransportContextOpts = EMPTY_OBJ
     ) {
         super(injector, { ...options, args: request });
-        this._url = this._originalUrl = options.url ?? '';
-        this._method = options.method ?? '';
+        this._url = this._originalUrl = request.url ?? request.topic ?? '';
+        this._method = request.method ?? '';
         this._socket = options.socket || null;
     }
 

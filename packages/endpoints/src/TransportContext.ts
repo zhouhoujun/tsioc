@@ -1,5 +1,6 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
+import { RequestPacket } from '@tsdi/common';
 
 /**
  * abstract transport context.
@@ -72,13 +73,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
  * Transport context options.
  */
 export interface TransportContextOpts<T = any, TSocket = any> extends EndpointInvokeOpts<T> {
-    url?: string;
-    method?: string;
     socket?: TSocket;
 }
 
 export const TRANSPORT_CONTEXT_IMPL = {
-    create<TInput, TOutput>(injector: Injector,  request: TInput, response: TOutput,options?: TransportContextOpts<TInput>): TransportContext<TInput, TOutput> {
+    create<TInput extends RequestPacket, TOutput>(injector: Injector,  request: TInput, response: TOutput,options?: TransportContextOpts<TInput>): TransportContext<TInput, TOutput> {
         throw new Execption('not implemented.')
     }
 }
@@ -89,7 +88,7 @@ export const TRANSPORT_CONTEXT_IMPL = {
  * @param options 
  * @returns 
  */
-export function createTransportContext<TInput, TOutput, TSocket>(injector: Injector, request: TInput, response: TOutput, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TOutput, TSocket> {
+export function createTransportContext<TInput extends RequestPacket, TOutput, TSocket>(injector: Injector, request: TInput, response: TOutput, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TOutput, TSocket> {
     return TRANSPORT_CONTEXT_IMPL.create(injector, request, response, options)
 }
 

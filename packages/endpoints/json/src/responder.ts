@@ -20,13 +20,19 @@ export class JsonResponder implements Responder {
         if (isBuffer(res)) {
             res = new TextDecoder().decode(res);
         }
-        if (isString(res)) {
-            try {
-                res = JSON.stringify(res);
-            } catch (err) {
-                throw new InvalidJsonException(err, res);
-            }
+        
+        const { url, topic, id, replyTo } = ctx.request as RequestPacket;
+        const pkg = {
+            id,
+            payload: res,
+        } as ResponsePacket;
+
+        if (replyTo ?? topic) {
+            pkg.topic = replyTo ?? topic;
+        } else if (url) {
+            pkg.url = url;
         }
+        ctx.response = pkg;
 
         await lastValueFrom(session.send(res));
     }
@@ -41,13 +47,13 @@ export class JsonResponder implements Responder {
             statusText: err.message
         } as ResponsePacket;
 
-        ctx.response = pkg;
-
         if (replyTo ?? topic) {
             pkg.topic = replyTo ?? topic;
         } else if (url) {
             pkg.url = url;
         }
+        ctx.response = pkg;
+
 
         await lastValueFrom(session.send(pkg));
 

@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver } from '@tsdi/common';
-import { BehaviorSubject, Observable, filter, finalize, map } from 'rxjs';
+import { BehaviorSubject, Observable, distinctUntilChanged, filter, finalize, map } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -96,8 +96,8 @@ export class JsonReceiver implements Receiver {
 
     get packet(): Observable<Packet> {
         return this._packets
-            .asObservable()
             .pipe(
+                distinctUntilChanged(),
                 filter(r => r !== null)
             ) as Observable<Packet>;
     }
