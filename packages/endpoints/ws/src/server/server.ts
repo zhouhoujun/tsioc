@@ -1,31 +1,32 @@
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { Packet, MESSAGE, InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory, TransportSession } from '@tsdi/common';
+import { ExecptionHandlerFilter } from '@tsdi/core';
+import { InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Server, TransportContext } from '@tsdi/endpoints';
+import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MICROSERVICE_IMPL, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import * as net from 'net';
 import * as tls from 'tls';
-import { Subscription, finalize } from 'rxjs';
-import { WS_SERV_OPTS, WsServerOpts } from './options';
+import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
-import { WsIncoming } from './incoming';
-import { WsOutgoing } from './outgoing';
-import { WsContext } from './context';
+import { Subscription } from 'rxjs';
 
 
 @Injectable()
-export class WsServer extends Server<TransportContext> {
+export class WsServer extends Server {
 
     private serv?: SocketServer | null;
 
     @InjectLog()
     private logger!: Logger;
 
+    private subs: Subscription;
 
     constructor(
         readonly endpoint: WsEndpoint,
         @Inject(WS_SERV_OPTS) private options: WsServerOpts) {
         super();
+
+        this.subs = new Subscription();
     }
 
 
@@ -54,11 +55,12 @@ export class WsServer extends Server<TransportContext> {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const factory = this.endpoint.injector.get(TransportSessionFactory);
+        const injector = this.endpoint.injector;
+        const factory = injector.get(TransportSessionFactory);
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = createWebSocketStream(socket);
             const session = factory.create(stream, this.options.transportOpts!);
-            session.receiver.packet.subscribe(p=> this.requestHandler(session, p));
+            this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
         })
 
         const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
@@ -72,7 +74,7 @@ export class WsServer extends Server<TransportContext> {
 
     protected async onShutdown(): Promise<any> {
         if (!this.serv) return;
-
+        this.subs?.unsubscribe();
         await promisify(this.serv.close, this.serv)()
             .catch(err => {
                 this.logger?.error(err);
@@ -86,42 +88,70 @@ export class WsServer extends Server<TransportContext> {
     }
 
 
-    /**
-     * request handler.
-     * @param observer 
-     * @param req 
-     * @param res 
-     */
-    protected requestHandler(session: TransportSession, packet: Packet): Subscription {
-        if (!packet.method) {
-            packet.method = MESSAGE;
-        }
-        const req = new WsIncoming(session, packet);
-        const res = new WsOutgoing(session, packet.id, packet.topic!);
+    // /**
+    //  * request handler.
+    //  * @param observer 
+    //  * @param req 
+    //  * @param res 
+    //  */
+    // protected requestHandler(session: TransportSession, packet: RequestPacket): Subscription {
+    //     if (!packet.method) {
+    //         packet.method = MESSAGE;
+    //     }
 
-        const ctx = this.createContext(req, res);
-        const cancel = this.endpoint.handle(ctx)
-            .pipe(finalize(() => {
-                ctx.destroy();
-            }))
-            .subscribe({
-                error: (err) => {
-                    this.logger.error(err)
-                }
-            });
-        const opts = this.options;
-        opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
-            req.emit?.(ev.TIMEOUT);
-            cancel?.unsubscribe()
-        });
-        req.once(ev.ABOUT, () => cancel?.unsubscribe())
-        return cancel;
-    }
-
-    protected createContext(req: WsIncoming, res: WsOutgoing): WsContext {
-        const injector = this.endpoint.injector;
-        return new WsContext(injector, req, res, this.options);
-    }
-
+    //     const ctx = this.createContext(session, packet);
+    //     const req = ctx.request;
+    //     const cancel = this.endpoint.handle(ctx)
+    //         .pipe(finalize(() => {
+    //             ctx.destroy();
+    //         }))
+    //         .subscribe({
+    //             error: (err) => {
+    //                 this.logger.error(err)
+    //             }
+    //         });
+    //     const opts = this.options;
+    //     opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
+    //         req.emit?.(ev.TIMEOUT);
+    //         cancel?.unsubscribe()
+    //     });
+    //     req.once?.(ev.ABOUT, () => cancel?.unsubscribe())
+    //     return cancel;
+    // }
 
 }
+
+
+/**
+ * ws default options.
+ */
+const defMicroOpts = {
+    transportOpts: {
+        delimiter: '#',
+        maxSize: defaultMaxSize
+    },
+    content: {
+        root: 'public',
+        prefix: 'content'
+    },
+    detailError: true,
+    interceptorsToken: WS_SERV_INTERCEPTORS,
+    filtersToken: WS_SERV_FILTERS,
+    guardsToken: WS_SERV_GUARDS,
+    sessionFactory: DuplexTransportSessionFactory,
+    filters: [
+        LogInterceptor,
+        ExecptionFinalizeFilter,
+        ExecptionHandlerFilter,
+        FinalizeFilter
+    ]
+
+} as WsServerOpts;
+
+
+MICROSERVICE_IMPL.setMicroservice('ws', {
+    serverType: WsServer,
+    serverOptsToken: WS_SERV_OPTS,
+    endpointType: WsEndpoint,
+    defaultOpts: defMicroOpts
+});

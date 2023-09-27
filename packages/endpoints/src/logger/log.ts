@@ -1,4 +1,4 @@
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, InjectFlags, Injectable, Nullable } from '@tsdi/ioc';
 import { Interceptor, Handler, Filter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
@@ -24,14 +24,16 @@ const defopts = {
 export class LogInterceptor implements Interceptor, Filter {
 
     private options: LogInterceptorOptions;
+
     @InjectLog()
     private logger!: Logger;
+
     constructor(private formatter: ResponseStatusFormater, @Nullable() options: LogInterceptorOptions) {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
     intercept(ctx: TransportContext, next: Handler): Observable<any> {
-        const logger = this.logger;
+        const logger = ctx.get(Logger, InjectFlags.Self) ?? this.logger;
 
         const level = this.options.level;
         if (!matchLevel(logger.level, level)) {

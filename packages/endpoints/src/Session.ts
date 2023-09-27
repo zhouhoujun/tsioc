@@ -1,8 +1,8 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, finalize, from, mergeMap } from 'rxjs';
-import { AssetContext } from '../AssetContext';
-import { Middleware } from './middleware';
+import { Middleware } from './middleware/middleware';
+import { TransportContext } from './TransportContext';
 
 
 /**
@@ -102,7 +102,7 @@ const defOpts = {
  * session.
  */
 @Injectable()
-export class Session implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class Session implements Middleware<TransportContext>, Interceptor<TransportContext> {
 
     private options: SessionOptions;
     constructor(@Nullable() options: SessionOptions) {
@@ -112,7 +112,7 @@ export class Session implements Middleware<AssetContext>, Interceptor<AssetConte
         }
     }
 
-    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(input: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
         input.setValue(SessionOptions, this.options);
         const se = input.get(SessionAdapter);
         if (!se) return next.handle(input);
@@ -127,7 +127,7 @@ export class Session implements Middleware<AssetContext>, Interceptor<AssetConte
             )
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         ctx.setValue(SessionOptions, this.options);
         const se = ctx.get(SessionAdapter);
         if (!se) return await next();

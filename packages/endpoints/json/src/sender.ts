@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Sender } from '@tsdi/common';
-import { Observable, map, throwError } from 'rxjs';
+import { Observable, finalize, map, throwError } from 'rxjs';
 import { JsonEncoder } from './encoder';
 
 
@@ -18,6 +18,7 @@ export class JsonSender implements Sender {
     }
 
     send(packet: Packet): Observable<any> {
+        const ctx = new Context(this.injector, packet);
         return this.encoder.handle(new Context(this.injector, packet))
             .pipe(
                 map(data => {
@@ -28,7 +29,8 @@ export class JsonSender implements Sender {
                         this.delimiter,
                         data
                     ])
-                })
+                }),
+                finalize(()=> ctx.destroy())
             )
     }
 

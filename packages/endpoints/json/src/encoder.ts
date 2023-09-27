@@ -42,8 +42,7 @@ export class SimpleJsonEncoderBackend implements JsonEncoderBackend {
     handle(ctx: Context): Observable<Buffer> {
         if (ctx.raw) return of(ctx.raw);
         if (!ctx || !ctx.packet) throw new ArgumentExecption('json decoding input empty');
-        const { context, ...pkg } = ctx.packet as RequestPacket;
-        ctx.raw = Buffer.from(JSON.stringify(pkg));
+        ctx.raw = Buffer.from(JSON.stringify(ctx.packet));
         return of(ctx.raw);
 
     }

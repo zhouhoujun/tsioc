@@ -7,7 +7,7 @@ import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS, createPayloadReso
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TInput = any, TOutput = any, TSocket = any> extends EndpointContext<TInput> {
+export abstract class TransportContext<TRequest = any, TResponse = any, TSocket = any> extends EndpointContext<TRequest> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -16,11 +16,31 @@ export abstract class TransportContext<TInput = any, TOutput = any, TSocket = an
     /**
      * transport response.
      */
-    abstract get response(): TOutput;
+    abstract get request(): TRequest;
+
     /**
      * transport response.
      */
-    abstract set response(val: TOutput);
+    abstract get response(): TResponse;
+    /**
+     * transport response.
+     */
+    abstract set response(val: TResponse);
+
+    /**
+     * Set Content-Length field to `n`.
+     *
+     * @param {Number} n
+     * @api public
+     */
+    abstract set length(n: number | undefined);
+    /**
+     * Return parsed response Content-Length when present.
+     *
+     * @return {Number}
+     * @api public
+     */
+    abstract get length(): number | undefined;
 
     /**
      * Get request rul

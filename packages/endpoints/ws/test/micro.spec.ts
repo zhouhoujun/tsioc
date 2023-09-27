@@ -3,9 +3,11 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { Handle, MicroServiceModule, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { Handle, MicroServiceModule, Payload, RequestPath, Session, Subscribe } from '@tsdi/endpoints';
 import { JsonEndpointModule } from '@tsdi/endpoints/json';
+import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { WS_SERV_INTERCEPTORS, WsClient, WsServer } from '../src';
@@ -62,27 +64,28 @@ export class WsService {
         LoggerModule,
         // WsClientModule,
         JsonEndpointModule,
-        ClientModule.forClient({
-            transport: 'ws',
-            clientOpts: {
-                // connectOpts: {
-                //     port: 6379
-                // },
-                // timeout: 200
+        ServerEndpointModule,
+        ClientModule.forClient([
+            {
+                transport: 'ws',
+                clientOpts: {
+                    // connectOpts: {
+                    //     port: 6379
+                    // },
+                    // timeout: 200
+                }
             }
-        }),
-        ClientModule.forMicroservice({
-            transport: 'ws',
-            clientOpts: {
-                // connectOpts: {
-                //     port: 6379
-                // },
-                // timeout: 200
-            }
-        }),
+        ]),
         MicroServiceModule.forMicroservice({
             transport: 'ws',
-            
+            serverOpts: {
+                interceptors: [
+                    Session,
+                    // Content,
+                    // Json,
+                    // Bodyparser
+                ]
+            }
         })
         // WsMicroServiceModule.withOption({
         //     serverOpts: {

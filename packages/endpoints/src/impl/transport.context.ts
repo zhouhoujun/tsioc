@@ -9,6 +9,8 @@ export class TransportContextIml<TInput = any, TOutput= any> extends TransportCo
     private _originalUrl: string;
     private _method: string;
     private _socket: any;
+    private _len?: number;
+
     constructor(
         injector: Injector,
         readonly request: TInput, 
@@ -36,6 +38,14 @@ export class TransportContextIml<TInput = any, TOutput= any> extends TransportCo
     
     get originalUrl(): string {
         return this._originalUrl;
+    }
+
+    set length(n: number | undefined) {
+        this._len = n;
+    }
+
+    get length(): number | undefined {
+        return this._len;
     }
 
     /**

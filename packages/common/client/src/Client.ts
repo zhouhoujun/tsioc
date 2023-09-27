@@ -1,66 +1,13 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, HeaderPacket, RequestPacket } from '@tsdi/common';
+import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, HeaderPacket, RequestPacket, ResponsePacket, patternToPath } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
-import { ClientHandler, MicroClientHandler } from './handler';
+import { ClientHandler } from './handler';
 
 
-/**
- * mircoservice client.
- */
-@Abstract()
-export abstract class MicroClient<TRequest extends RequestPacket = any> {
-
-    /**
-     * mircoservice client handler
-     */
-    abstract get handler(): MicroClientHandler;
-
-
-    send<TOutput, TInput = any>(pattern: Pattern, input: TInput, options?: HeaderPacket): Observable<TOutput> {
-        if (isNil(input)) {
-            return throwError(() => new ArgumentExecption('Invalid message'))
-        }
-        const connecting = this.connect();
-        return (isObservable(connecting) ? connecting : defer(() => connecting))
-            .pipe(
-                catchError((err, caught) => throwError(() => this.onError(err))),
-                mergeMap(() => this.request<TOutput>(pattern, input, options))
-            )
-    }
-
-    @Shutdown()
-    close(): Promise<void> {
-        return this.onShutdown();
-    }
-
-    /**
-     * connect service.
-     */
-    protected abstract connect(): Promise<any> | Observable<any>;
-
-    protected request<TOutput>(pattern: Pattern, payload: any, options?: HeaderPacket): Observable<TOutput> {
-        const req = this.createRequest(pattern, { ...options, payload });
-        const events$: Observable<any> =
-            of(req).pipe(
-                concatMap(() => this.handler.handle(req as TRequest)),
-                finalize(() => req.context?.destroy())
-            );
-
-        return events$;
-    }
-
-    protected abstract createRequest(pattern: Pattern, options: RequestInitOpts): TRequest;
-
-    protected abstract onShutdown(): Promise<void>;
-
-    protected onError(err: Error): Error {
-        return err;
-    }
-}
 
 /**
- * transport client.
+ * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
 export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> {

@@ -1,7 +1,7 @@
 import { Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Packet, TransportFactory } from '@tsdi/common';
-import { Responder } from '@tsdi/endpoints';
+import { RequestHandler, Responder } from '@tsdi/endpoints';
 import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend, JSON_ENCODER_INTERCEPTORS } from './encoder';
 import { JsonDecoder, SimpleJsonDecoderBackend, JsonInterceptingDecoder, JsonDecoderBackend, JSON_DECODER_INTERCEPTORS } from './decoder';
 import { JsonSender } from './sender';
@@ -9,6 +9,7 @@ import { JsonReceiver } from './receiver';
 import { JsonTransportFactory } from './factory';
 import { JsonResponder } from './responder';
 import { JsonTransportTypedRespond } from './typed.respond';
+import { JsonRequestHandler } from './handler';
 
 
 @Module({
@@ -26,6 +27,10 @@ import { JsonTransportTypedRespond } from './typed.respond';
 
         JsonTransportTypedRespond,
         { provide: TypedRespond, useExisting: JsonTransportTypedRespond },
+
+        JsonRequestHandler,
+        { provide: RequestHandler, useExisting: JsonRequestHandler },
+        
 
         JsonReceiver,
         JsonSender,

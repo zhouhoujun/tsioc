@@ -1,45 +1,14 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, TypeOf, isArray, toProvider } from '@tsdi/ioc';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toProvider } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
-import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from './endpoint.module';
-import { TransportEndpoint, TransportEndpointOptions, createTransportEndpoint } from './TransportEndpoint';
-import { TransportContext } from './TransportContext';
-import { SessionOptions } from './middleware/session';
-import { Server } from './Server';
+import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
+import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, createMicroRouteProviders } from './router/router.module';
-import { RouteMatcher } from './router/router';
-import { Routes } from './router/route';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
 import { Responder } from './Responder';
 
 
-
-
-export interface MicroServiceOpts<TSerOpts = any> extends TransportEndpointOptions<TransportContext> {
-    /**
-     * socket timeout.
-     */
-    timeout?: number;
-    session?: boolean | SessionOptions;
-    serverOpts?: TSerOpts;
-    /**
-     * transport session options.
-     */
-    transportOpts?: TransportOpts;
-    server?: any;
-    responder?: ProvdierOf<Responder>;
-    /**
-     * micro service transport session factory.
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
-    detailError?: boolean;
-    routes?: {
-        matcher?: TypeOf<RouteMatcher>;
-        formatter?: TypeOf<PatternFormatter>;
-        prefix?: string;
-        routes?: Routes;
-    }
-}
 
 
 export interface MicroServiceModuleConfig {
@@ -54,11 +23,11 @@ export interface MicroServiceModuleConfig {
     /**
      * micro service options
      */
-    serverOpts?: MicroServiceOpts;
+    serverOpts?: ServerOpts;
     /**
      * micro service default options.
      */
-    defaultOpts?: MicroServiceOpts;
+    defaultOpts?: ServerOpts;
     /**
      * custom provider with module.
      */
@@ -71,9 +40,9 @@ export interface MicroServiceModuleOpts extends MicroServiceModuleConfig {
      */
     serverType: Type<Server>;
     /**
-     * server options token.
+     * micro service options token.
      */
-    serverOptsToken: Token<MicroServiceOpts>;
+    serverOptsToken: Token<ServerOpts>;
     /**
      * micro service endpoint type
      */
@@ -182,7 +151,7 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
     } else {
         providers.push({
             provide: endpointType,
-            useFactory: (injector: Injector, opts: MicroServiceOpts) => {
+            useFactory: (injector: Injector, opts: ServerOpts) => {
                 return createTransportEndpoint(injector, opts)
             },
             asDefault: true,

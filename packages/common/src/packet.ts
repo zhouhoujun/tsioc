@@ -31,13 +31,13 @@ export interface Packet<T = any> extends HeaderPacket {
  */
 export interface RequestPacket<T = any> extends Packet<T> {
     headers?: IncomingHeaders;
-    context: InvocationContext
 }
 
 /**
  * response packet data.
  */
 export interface ResponsePacket<T = any> extends Packet<T> {
+    type?: number | string;
     headers?: OutgoingHeaders;
     status?: string | number;
     statusText?: string

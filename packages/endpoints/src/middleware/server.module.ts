@@ -1,46 +1,18 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, toProvider } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
-import { NotImplementedExecption, PatternFormatter, Transport, TransportOpts, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { NotImplementedExecption, PatternFormatter, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { EndpointModule } from '../endpoint.module';
-import { TransportEndpoint, TransportEndpointOptions, createTransportEndpoint } from '../TransportEndpoint';
-import { TransportContext } from '../TransportContext';
-import { SessionOptions } from './session';
+import { TransportEndpoint, createTransportEndpoint } from '../TransportEndpoint';
 import { MiddlewareServer } from './server';
 import { RouterModule, ROUTER_PREFIX } from '../router/router.module';
 import { RouteMatcher } from '../router/router';
-import { ROUTES, Routes } from '../router/route';
+import { ROUTES } from '../router/route';
 import { HybridRouter } from '../router/router.hybrid';
 import { SHOW_DETAIL_ERROR } from '../execption.handlers';
 import { Responder } from '../Responder';
+import { ServerOpts } from '../Server';
 
 
-
-
-export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<TransportContext> {
-    /**
-     * socket timeout.
-     */
-    timeout?: number;
-    session?: boolean | SessionOptions;
-    serverOpts?: TSerOpts;
-    /**
-     * transport session options.
-     */
-    transportOpts?: TransportOpts;
-    server?: any;
-    responder?: ProvdierOf<Responder>;    
-    /**
-     * server transport session factory.
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
-    detailError?: boolean;
-    routes?: {
-        matcher?: ProvdierOf<RouteMatcher>;
-        formatter?: ProvdierOf<PatternFormatter>;
-        prefix?: string;
-        routes?: Routes;
-    }
-}
 
 
 export interface ServerModuleConfig {

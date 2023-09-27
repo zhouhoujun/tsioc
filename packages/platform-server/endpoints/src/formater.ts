@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
-import { AssetContext, ResponseStatusFormater } from '@tsdi/transport';
+import { TransportContext, AssetContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
 import { hrtime } from 'process';
 
@@ -17,15 +17,15 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         return hrtime(time);
     }
 
-    format(logger: Logger, ctx: AssetContext, hrtime?: [number, number]): string[] {
+    format(logger: Logger, ctx: TransportContext, hrtime?: [number, number]): string[] {
         return this.formatWithColor(logger instanceof ConsoleLog, ctx, hrtime);
     }
 
-    protected formatWithColor(withColor: boolean, ctx: AssetContext, hrtime?: [number, number]) {
+    protected formatWithColor(withColor: boolean, ctx: TransportContext, hrtime?: [number, number]) {
         if (hrtime) {
-            const [status, message] = this.formatStatus(ctx, withColor);
+            const [status, message] = ctx instanceof AssetContext ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
             const hrtimeStr = this.formatHrtime(hrtime);
-            const sizeStr = this.formatSize(ctx.length);
+            const sizeStr = this.formatSize(ctx.length ?? 0);
             return [
                 withColor ? chalk.gray(this.outgoing) : this.outgoing,
                 withColor ? chalk.cyan(ctx.method) : ctx.method,
@@ -42,6 +42,18 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
                 ctx.url
             ]
         }
+    }
+
+    private formatState(ctx: TransportContext, withColor: boolean): [string, string] {
+        const status = ctx.response?.error ? 'error' : 'ok';
+        const statusMessage = ctx.response?.error?.message ?? '';
+
+        if (!withColor) return [status, statusMessage];
+
+        if (ctx.response?.error) {
+            return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
+        }
+        return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
     }
 
     private formatStatus(ctx: AssetContext, withColor: boolean): [string, string] {

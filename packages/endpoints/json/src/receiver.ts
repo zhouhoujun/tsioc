@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver } from '@tsdi/common';
-import { BehaviorSubject, Observable, filter } from 'rxjs';
+import { BehaviorSubject, Observable, filter, finalize, map } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -27,7 +27,7 @@ export class JsonReceiver implements Receiver {
             this.handleData(input);
         } catch (ev) {
             this._packets.next({
-               error: ev
+                error: ev
             });
         }
     }
@@ -83,7 +83,14 @@ export class JsonReceiver implements Receiver {
         this.contentLength = null;
         this.length = 0;
         this.buffers = [];
-        this.decoder.handle(new Context(this.injector, undefined, message)).subscribe(this._packets);
+        const ctx = new Context(this.injector, undefined, message);
+        this.decoder.handle(ctx)
+            .pipe(
+                finalize(() => {
+                    ctx.destroy();
+                })
+            )
+            .subscribe(this._packets);
     }
 
 

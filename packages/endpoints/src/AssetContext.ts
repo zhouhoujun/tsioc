@@ -10,7 +10,7 @@ import { StatusVaildator } from './StatusVaildator';
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any, TServOpts = any> extends TransportContext<TRequest, TResponse> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any, TServOpts = any> extends TransportContext<TRequest, TResponse, TStatus> {
 
     abstract get serverOptions(): TServOpts;
     /**
