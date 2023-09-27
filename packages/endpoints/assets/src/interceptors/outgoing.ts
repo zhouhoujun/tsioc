@@ -1,5 +1,5 @@
-import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
-import { IEventEmitter, Outgoing, OutgoingHeader, OutgoingHeaders, ResHeaders, TransportSession, ev } from '@tsdi/common';
+import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
+import { Outgoing, OutgoingHeader, OutgoingHeaders, ResHeaders, TransportSession, ev } from '@tsdi/common';
 import { Writable } from 'readable-stream';
 import { hdr } from '../consts';
 

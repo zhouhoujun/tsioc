@@ -90,7 +90,7 @@ export class JsonReceiver implements Receiver {
                     ctx.destroy();
                 })
             )
-            .subscribe(this._packets);
+            .subscribe(pkg => this._packets.next(pkg));
     }
 
 

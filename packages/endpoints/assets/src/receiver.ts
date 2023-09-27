@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver, TransportOpts } from '@tsdi/common';
-import { BehaviorSubject, Observable, filter } from 'rxjs';
+import { BehaviorSubject, Observable, filter, finalize } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
 
@@ -84,7 +84,14 @@ export class AssetReceiver implements Receiver {
         this.contentLength = null;
         this.length = 0;
         this.buffers = [];
-        this.decoder.handle(new Context(this.injector, undefined, message)).subscribe(this._packets);
+        const ctx = new Context(this.injector, undefined, message);
+        this.decoder.handle(ctx)
+            .pipe(
+                finalize(() => {
+                    ctx.destroy();
+                })
+            )
+            .subscribe(pkg => this._packets.next(pkg));
     }
 
 

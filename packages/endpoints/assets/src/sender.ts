@@ -1,7 +1,7 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { Context, Encoder, Packet, Sender, TransportOpts } from '@tsdi/common';
-import { Observable } from 'rxjs';
+import { Context, Encoder, Packet, PacketLengthException, Sender, TransportOpts } from '@tsdi/common';
+import { Observable, finalize, map, throwError } from 'rxjs';
 import { AssetEncoder } from './encoder';
 
 
@@ -22,7 +22,20 @@ export class AssetSender implements Sender {
     }
 
     send(packet: Packet): Observable<any> {
+        const ctx = new Context(this.injector, packet);
         return this.encoder.handle(new Context(this.injector, packet))
+            .pipe(
+                map(data => {
+                    const len = Buffer.byteLength(data);
+                    if (len > this.maxSize) return throwError(() => new PacketLengthException(len.toString()))
+                    return Buffer.concat([
+                        Buffer.from(String(len)),
+                        this.delimiter,
+                        data
+                    ])
+                }),
+                finalize(()=> ctx.destroy())
+            )
     }
 
 }
