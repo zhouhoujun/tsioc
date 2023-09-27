@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
 import { OutgoingHeaders, RequestPacket, ResHeaders, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 
 /**
  * transport client endpoint backend.
@@ -23,10 +23,13 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
         return session.request(pkg)
             .pipe(
                 map(p => {
+                    if(p.error){
+                        throw p.error;
+                    }
                     return this.createResponse(p as any);
                 }),
                 catchError((err, caught) => {
-                    return of(this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
+                    return throwError(()=> this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
                 })
             );
 

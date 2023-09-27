@@ -39,7 +39,9 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
         const id = packet.id;
         return this.send(packet)
             .pipe(
-                mergeMap(r => this.receiver.packet.pipe(filter(p => p.id == id)))
+                mergeMap(r => this.receiver.packet.pipe(
+                    filter(p => p.id == id)
+                ))
             )
     }
 

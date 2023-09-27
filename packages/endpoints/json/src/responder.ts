@@ -33,15 +33,15 @@ export class JsonResponder implements Responder {
 
     async sendExecption(ctx: TransportContext, err: MessageExecption): Promise<any> {
         const session = ctx.get(TransportSession);
-        const { url, topic, id, replyTo } = ctx.args as RequestPacket;
+        const { url, topic, id, replyTo } = ctx.request as RequestPacket;
         const pkg = {
+            id,
             error: err,
             status: err.status,
             statusText: err.message
         } as ResponsePacket;
-        if (id) {
-            pkg.id = id;
-        }
+
+        ctx.response = pkg;
 
         if (replyTo ?? topic) {
             pkg.topic = replyTo ?? topic;

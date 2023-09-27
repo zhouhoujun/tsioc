@@ -45,7 +45,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     }
 
     private formatState(ctx: TransportContext, withColor: boolean): [string, string] {
-        const status = ctx.response?.error ? 'error' : 'ok';
+        const status = ctx.response?.error ? 'failed' : 'ok';
         const statusMessage = ctx.response?.error?.message ?? '';
 
         if (!withColor) return [status, statusMessage];

@@ -3,7 +3,7 @@ import { TransportContext, TransportContextOpts } from '../TransportContext';
 
 
 
-export class TransportContextIml<TInput = any, TOutput= any> extends TransportContext<TInput> {
+export class TransportContextIml<TInput = any, TOutput = any> extends TransportContext<TInput> {
 
     private _url: string;
     private _originalUrl: string;
@@ -13,11 +13,11 @@ export class TransportContextIml<TInput = any, TOutput= any> extends TransportCo
 
     constructor(
         injector: Injector,
-        readonly request: TInput, 
-        readonly response: TOutput, 
+        readonly request: TInput,
+        readonly response: TOutput,
         options: TransportContextOpts = EMPTY_OBJ
     ) {
-        super(injector, options);
+        super(injector, { ...options, args: request });
         this._url = this._originalUrl = options.url ?? '';
         this._method = options.method ?? '';
         this._socket = options.socket || null;
@@ -26,7 +26,7 @@ export class TransportContextIml<TInput = any, TOutput= any> extends TransportCo
     /**
      * Get request rul
      */
-    get url(): string{
+    get url(): string {
         return this._url;
     }
     /**
@@ -35,7 +35,7 @@ export class TransportContextIml<TInput = any, TOutput= any> extends TransportCo
     set url(value: string) {
         this._url = value;
     }
-    
+
     get originalUrl(): string {
         return this._originalUrl;
     }
