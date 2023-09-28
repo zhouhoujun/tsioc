@@ -147,7 +147,7 @@ const defMicroOpts = {
 } as TcpServerOpts;
 
 
-ENDPOINTS.setMicroservice('tcp', {
+ENDPOINTS.registerMicroservice('tcp', {
     serverType: TcpServer,
     serverOptsToken: TCP_SERV_OPTS,
     endpointType: TcpEndpoint,
@@ -186,7 +186,7 @@ const defServerOpts = {
 } as TcpServerOpts;
 
 
-ENDPOINTS.setServer('tcp', {
+ENDPOINTS.registerServer('tcp', {
     serverType: TcpServer,
     serverOptsToken: TCP_SERV_OPTS,
     endpointType: TcpEndpoint,

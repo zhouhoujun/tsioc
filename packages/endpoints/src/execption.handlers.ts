@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Injectable, MissingParameterExecption, tokenId } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, MissingParameterExecption, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler } from '@tsdi/core';
 import {
     HttpStatusCode, BadRequestExecption, ForbiddenExecption, InternalServerExecption,

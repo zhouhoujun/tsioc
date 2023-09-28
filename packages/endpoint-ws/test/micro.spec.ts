@@ -3,7 +3,7 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { Handle, EndpintsModule, Payload, RequestPath, Session, Subscribe } from '@tsdi/endpoints';
+import { Handle, EndpointsModule, Payload, RequestPath, Session, Subscribe } from '@tsdi/endpoints';
 import { JsonEndpointModule } from '@tsdi/endpoints/json';
 import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
@@ -76,7 +76,7 @@ export class WsService {
                 }
             }
         ]),
-        EndpintsModule.forMicroservice({
+        EndpointsModule.forMicroservice({
             transport: 'ws',
             serverOpts: {
                 interceptors: [

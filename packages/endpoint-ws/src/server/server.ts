@@ -117,7 +117,7 @@ const defMicroOpts = {
 } as WsServerOpts;
 
 
-ENDPOINTS.setMicroservice('ws', {
+ENDPOINTS.registerMicroservice('ws', {
     serverType: WsServer,
     serverOptsToken: WS_SERV_OPTS,
     endpointType: WsEndpoint,

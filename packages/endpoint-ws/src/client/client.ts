@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { TransportRequest, ServiceUnavailableExecption, ev, TransportSessionFactory, TransportSession } from '@tsdi/common';
-import { CLIENT_IMPL, Client, TransportBackend } from '@tsdi/common/client';
+import { CLIENTS, Client, TransportBackend } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
@@ -98,7 +98,7 @@ const defaultOpts = {
 } as WsClientOpts;
 
 
-CLIENT_IMPL.register('ws', {
+CLIENTS.register('ws', {
     clientType: WsClient,
     clientOptsToken: WS_CLIENT_OPTS,
     hanlderType: WsHandler,

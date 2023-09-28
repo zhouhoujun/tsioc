@@ -108,27 +108,27 @@ const micros: Record<string, MicroServiceModuleOpts> = {};
  */
 export interface Endpoints {
     /**
-     * set Server client implement options.
+     * register Server implement options.
      * @param transport 
      * @param options 
      * @returns 
      */
-    setServer(transport: Transport, options: ServerModuleOpts): Endpoints;
+    registerServer(transport: Transport, options: ServerModuleOpts): Endpoints;
     /**
-     * set microservice client implement options.
+     * register microservice implement options.
      * @param transport 
      * @param options 
      * @returns 
      */
-    setMicroservice(transport: Transport, options: MicroServiceModuleOpts): Endpoints;
+    registerMicroservice(transport: Transport, options: MicroServiceModuleOpts): Endpoints;
 }
 
 export const ENDPOINTS: Endpoints = {
-    setServer(transport: Transport, options: ServerModuleOpts): Endpoints {
+    registerServer(transport: Transport, options: ServerModuleOpts): Endpoints {
         servs[transport] = options;
         return ENDPOINTS;
     },
-    setMicroservice(transport: Transport, options: MicroServiceModuleOpts): Endpoints {
+    registerMicroservice(transport: Transport, options: MicroServiceModuleOpts): Endpoints {
         micros[transport] = options;
         return ENDPOINTS;
     }
@@ -151,19 +151,19 @@ export const ENDPOINTS: Endpoints = {
         Session
     ]
 })
-export class EndpintsModule {
+export class EndpointsModule {
 
     /**
      * for microservice endpoint.
      * @param options 
      */
-    static forMicroservice(options: MicroServiceModuleConfig & TransportRequired): ModuleWithProviders<EndpintsModule>;
+    static forMicroservice(options: MicroServiceModuleConfig & TransportRequired): ModuleWithProviders<EndpointsModule>;
     /**
      * for microservice endpoint.
      * @param options 
      */
-    static forMicroservice(options: Array<MicroServiceModuleConfig & TransportRequired>): ModuleWithProviders<EndpintsModule>;
-    static forMicroservice(options: Arrayify<MicroServiceModuleConfig & TransportRequired>): ModuleWithProviders<EndpintsModule> {
+    static forMicroservice(options: Array<MicroServiceModuleConfig & TransportRequired>): ModuleWithProviders<EndpointsModule>;
+    static forMicroservice(options: Arrayify<MicroServiceModuleConfig & TransportRequired>): ModuleWithProviders<EndpointsModule> {
 
         let providers: ProviderType[];
         if (isArray(options)) {
@@ -181,7 +181,7 @@ export class EndpintsModule {
 
         return {
             providers,
-            module: EndpintsModule
+            module: EndpointsModule
         }
     }
 
@@ -190,7 +190,7 @@ export class EndpintsModule {
      * @param options 
      * @returns 
      */
-    static forServer(options: ServerModuleConfig & TransportRequired): ModuleWithProviders<EndpintsModule> {
+    static forServer(options: ServerModuleConfig & TransportRequired): ModuleWithProviders<EndpointsModule> {
 
         const opts = micros[options.transport];
         if (!opts) throw new NotImplementedExecption(options.transport + ' Server has not implemented');
@@ -198,7 +198,7 @@ export class EndpintsModule {
 
         return {
             providers,
-            module: EndpintsModule
+            module: EndpointsModule
         }
     }
 }

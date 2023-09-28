@@ -4,10 +4,12 @@ import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestExecption } from '@tsdi/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
-import { TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '../src';
+import { EndpointsModule, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
+import { TCP_SERV_INTERCEPTORS, TcpClient, TcpServer } from '../src';
 import { LoggerModule } from '@tsdi/logger';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { ClientModule } from '@tsdi/common/client';
+import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
 
 
 
@@ -90,7 +92,8 @@ export class DeviceController {
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule.withOptions({
+        ClientModule.forClient({
+            transport: 'tcp',
             clientOpts: {
                 connectOpts: {
                     port: 2000
@@ -99,14 +102,15 @@ export class DeviceController {
         }),
 
         MicroServRouterModule.forRoot('tcp'),
-        TcpServerModule.withOptions({
+        EndpointsModule.forServer({
+            transport:'tcp',
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000
                 },
                 interceptors: [
-                    // BigFileInterceptor,
+                    BigFileInterceptor,
                     Content,
                     Json,
                     Bodyparser,

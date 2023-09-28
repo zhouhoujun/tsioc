@@ -1,7 +1,7 @@
-import { Interceptor, ConfigableHandlerOptions, Filter } from '@tsdi/core';
+import { Interceptor, Filter } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { TransportRequest, TransportEvent } from '@tsdi/common';
-import { Client, TransportSessionOpts } from '@tsdi/transport';
+import { Client, ClientOpts } from '@tsdi/common/client';
 import { ConnectionOptions } from 'tls';
 import { SocketConstructorOpts, NetConnectOpts } from 'net';
 
@@ -10,34 +10,15 @@ import { SocketConstructorOpts, NetConnectOpts } from 'net';
 /**
  * tcp client options.
  */
-export interface TcpClientOpts extends ConfigableHandlerOptions<TransportRequest> {
-
+export interface TcpClientOpts extends ClientOpts<NetConnectOpts | ConnectionOptions> {
     /**
      * keep alive
      */
     keepalive?: number;
     /**
-     * transport session options.
-     */
-    transportOpts?: TransportSessionOpts;
-    /**
      * socket options.
      */
     socketOpts?: SocketConstructorOpts;
-    /**
-     * connect options.
-     */
-    connectOpts?: NetConnectOpts | ConnectionOptions;
-}
-
-/**
- * multi tcp client options.
- */
-export interface TcpClientsOpts extends TcpClientOpts {
-    /**
-     * client token.
-     */
-    client: Token<Client>;
 }
 
 

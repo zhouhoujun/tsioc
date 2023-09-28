@@ -1,13 +1,13 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest, Pattern, RequestInitOpts } from '@tsdi/common';
+import { TransportRequest, Pattern, RequestInitOpts, TransportSession, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common';
+import { CLIENTS, Client, TransportBackend } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Client, TransportSession, TRANSPORT_SESSION, LOCALHOST, ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
+import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
-import { TcpTransportSessionFactory } from '../transport';
+import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
 
 
 /**
@@ -80,7 +80,7 @@ export class TcpClient extends Client<TransportRequest, number> {
 
     protected override initContext(context: InvocationContext): void {
         context.setValue(Client, this);
-        context.setValue(TRANSPORT_SESSION, this._session);
+        context.setValue(TransportSession, this._session);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {
@@ -107,9 +107,30 @@ export class TcpClient extends Client<TransportRequest, number> {
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        this._session = this.handler.injector.get(TcpTransportSessionFactory).create(socket, opts.transportOpts);
+        this._session = this.handler.injector.get(TransportSessionFactory).create(socket, opts.transportOpts);
         return socket
     }
 
 }
 
+/**
+ * TCP client default options.
+ */
+const defaultOpts = {
+    transportOpts: {
+        delimiter: '#',
+        maxSize: defaultMaxSize,
+    },
+    interceptorsToken: TCP_CLIENT_INTERCEPTORS,
+    filtersToken: TCP_CLIENT_FILTERS,
+    // interceptors: [BodyContentInterceptor],
+    backend: TransportBackend,
+    sessionFactory: DuplexTransportSessionFactory
+} as TcpClientOpts;
+
+CLIENTS.register('tcp', {
+    clientType: TcpClient,
+    clientOptsToken: TCP_CLIENT_OPTS,
+    hanlderType: TcpHandler,
+    defaultOpts
+})

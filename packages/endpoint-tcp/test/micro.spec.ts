@@ -1,8 +1,9 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
-import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
-import { TCP_CLIENT_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule, TcpServer } from '../src';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -51,14 +52,16 @@ export class TcpService {
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule.withOptions({
+        ClientModule.forClient({
+            transport: 'tcp',
             clientOpts: {
                 connectOpts: {
                     port: 2000
                 }
             }
         }),
-        TcpMicroServModule.withOptions({
+        EndpointsModule.forMicroservice({
+            transport: 'tcp',
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
@@ -70,7 +73,7 @@ export class TcpService {
     declarations: [
         TcpService
     ],
-    bootstrap: TcpMicroService
+    bootstrap: TcpServer
 })
 export class MicroTcpTestModule {
 
@@ -87,7 +90,7 @@ describe('TCP Micro Service', () => {
     before(async () => {
         ctx = await Application.run(MicroTcpTestModule, {
             providers: [
-                { provide: TCP_MICRO_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+                { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 { provide: SENSORS, useValue: 'sensor01', multi: true },
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]

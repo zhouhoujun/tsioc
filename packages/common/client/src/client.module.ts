@@ -97,7 +97,7 @@ export class ClientModule {
 
 }
 
-export interface ClientImpl {
+export interface Clients {
 
     /**
      * set client implement options.
@@ -105,10 +105,10 @@ export interface ClientImpl {
      * @param options 
      * @returns 
      */
-    register(transport: Transport, options: ClientModuleOpts): ClientImpl;
+    register(transport: Transport, options: ClientModuleOpts): Clients;
 }
 
-export const CLIENT_IMPL: ClientImpl = {
+export const CLIENTS: Clients = {
     /**
      * set client implement options.
      * @param transport 
@@ -117,7 +117,7 @@ export const CLIENT_IMPL: ClientImpl = {
      */
     register(transport: Transport, options: ClientModuleOpts) {
         clients[transport] = options;
-        return CLIENT_IMPL;
+        return CLIENTS;
     }
 }
 
