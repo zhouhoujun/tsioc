@@ -147,9 +147,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoints",
+            "name": "test endpoint-ws",
             "args": [
-                "${workspaceRoot}/packages/endpoints/ws/unit.ts" 
+                "${workspaceRoot}/packages/endpoint-ws/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

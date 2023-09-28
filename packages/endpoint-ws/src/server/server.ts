@@ -1,14 +1,14 @@
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory } from '@tsdi/common';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MICROSERVICE_IMPL, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
+import { Subscription } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
-import { Subscription } from 'rxjs';
 
 
 @Injectable()
@@ -86,38 +86,6 @@ export class WsServer extends Server {
             });
 
     }
-
-
-    // /**
-    //  * request handler.
-    //  * @param observer 
-    //  * @param req 
-    //  * @param res 
-    //  */
-    // protected requestHandler(session: TransportSession, packet: RequestPacket): Subscription {
-    //     if (!packet.method) {
-    //         packet.method = MESSAGE;
-    //     }
-
-    //     const ctx = this.createContext(session, packet);
-    //     const req = ctx.request;
-    //     const cancel = this.endpoint.handle(ctx)
-    //         .pipe(finalize(() => {
-    //             ctx.destroy();
-    //         }))
-    //         .subscribe({
-    //             error: (err) => {
-    //                 this.logger.error(err)
-    //             }
-    //         });
-    //     const opts = this.options;
-    //     opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
-    //         req.emit?.(ev.TIMEOUT);
-    //         cancel?.unsubscribe()
-    //     });
-    //     req.once?.(ev.ABOUT, () => cancel?.unsubscribe())
-    //     return cancel;
-    // }
 
 }
 

@@ -1,6 +1,6 @@
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { IDuplexStream, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
-import { Observable, filter, first, fromEvent, map, merge, mergeMap } from 'rxjs';
+import { Observable, Subscription, filter, first, fromEvent, map, merge, mergeMap } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -13,7 +13,8 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
 
     allocator?: NumberAllocator;
     last?: number;
-    dataEvent: any;
+
+    subs: Subscription;
 
     constructor(
         readonly socket: IDuplexStream,
@@ -21,6 +22,7 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
         readonly receiver: Receiver,
         readonly options: TransportOpts = empt) {
 
+        this.subs = new Subscription();
         this.bindDataEvent();
 
     }
@@ -51,7 +53,7 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
 
 
     async destroy(): Promise<void> {
-        this.socket.off(ev.DATA, this.dataEvent);
+        this.subs?.unsubscribe();
         this.socket.destroy?.();
     }
 
@@ -65,8 +67,8 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
     }
 
     protected bindDataEvent() {
-        this.dataEvent = this.receiver.receive.bind(this.receiver);
-        this.socket.on(ev.DATA, this.dataEvent);
+        this.subs.add(fromEvent(this.socket, ev.DATA).subscribe(data => this.receiver.receive(data)))
+
     }
 
     protected getPacketId(): string | number {
