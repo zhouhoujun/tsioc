@@ -6,7 +6,7 @@ import { TransportContext } from '@tsdi/endpoints';
 export class JsonTransportTypedRespond extends TypedRespond {
     respond(ctx: TransportContext, value: any, response: 'body' | 'header' | 'response'): void {
         if (response === 'body') {
-            ctx.response.payload = value
+            ctx.body = value
         } else if (response === 'header') {
             ctx.response.headers = value;
         } else if (response === 'response') {

@@ -79,9 +79,10 @@ export class TransportResponse<T = any, TStatus = any> extends TransportHeaderRe
         statusText?: string;
         statusMessage?: string;
         body?: T;
+        payload?: T;
     }) {
         super(options);
-        this.body = options.body ?? null;
+        this.body = options.body ?? options.payload ?? null;
     }
 }
 

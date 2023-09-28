@@ -1,7 +1,7 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
 import { OutgoingHeaders, RequestPacket, ResHeaders, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
-import { Observable, catchError, first, map, of, throwError } from 'rxjs';
+import { Observable, catchError, first, map, throwError } from 'rxjs';
 
 /**
  * transport client endpoint backend.
@@ -24,13 +24,13 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
             .pipe(
                 first(),
                 map(p => {
-                    if(p.error){
+                    if (p.error) {
                         throw p.error;
                     }
                     return this.createResponse(p as any);
                 }),
                 catchError((err, caught) => {
-                    return throwError(()=> this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
+                    return throwError(() => this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
                 })
             );
 
@@ -42,7 +42,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
         return new TransportHeaderResponse(options) as TResponse;
     }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; }): TResponse {
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse {
         return new TransportResponse(options) as TResponse;
     }
 
@@ -52,11 +52,17 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
 
     protected toPacket(url: string, req: TRequest) {
         const pkg = {
-            method: req.method,
-            headers: req.headers.getHeaders(),
-            url,
-            payload: req.body
+            url
         } as RequestPacket;
+        if (req.method) {
+            pkg.method = req.method;
+        }
+        if (req.headers.size) {
+            pkg.headers = req.headers.getHeaders()
+        }
+        if (isDefined(req.body)) {
+            pkg.payload = req.body;
+        }
 
         return pkg;
     }

@@ -2,7 +2,6 @@ import { Class, Execption, Injectable, Injector, OperationInvoker, ReflectiveFac
 import { OperationEndpointImpl } from '@tsdi/core';
 import { ForbiddenExecption, normalize, patternToPath } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
-import { AssetContext } from '../AssetContext';
 import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../router/route.endpoint';
 
 
@@ -36,13 +35,13 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
                 }
             });
             if (has) {
-                ctx.args.path = restParams;
+                ctx.request.path = restParams;
             }
         }
     }
 
     protected override defaultRespond(ctx: TInput, res: any): void {
-        if (ctx instanceof AssetContext) {
+        if (ctx instanceof TransportContext) {
             ctx.body = res;
         }
     }

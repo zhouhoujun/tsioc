@@ -7,6 +7,8 @@ import { NumberAllocator } from 'number-allocator';
 export const defaultMaxSize = 1024 * 256;
 
 
+const empt = {} as TransportOpts;
+
 export class DuplexTransportSession implements TransportSession<IDuplexStream> {
 
     allocator?: NumberAllocator;
@@ -16,7 +18,8 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
     constructor(
         readonly socket: IDuplexStream,
         readonly sender: Sender,
-        readonly receiver: Receiver) {
+        readonly receiver: Receiver,
+        readonly options: TransportOpts = empt) {
 
         this.bindDataEvent();
 
@@ -85,8 +88,8 @@ export class DuplexTransportSessionFactory implements TransportSessionFactory<ID
 
     constructor(private factory: TransportFactory) { }
 
-    create(socket: IDuplexStream, options?: TransportOpts | undefined): DuplexTransportSession {
-        return new DuplexTransportSession(socket, this.factory.createSender(options), this.factory.createReceiver(options));
+    create(socket: IDuplexStream, options?: TransportOpts): DuplexTransportSession {
+        return new DuplexTransportSession(socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
     }
 
 }

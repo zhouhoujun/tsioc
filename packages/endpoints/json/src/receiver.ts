@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver } from '@tsdi/common';
-import { BehaviorSubject, Observable, distinctUntilChanged, filter, finalize, map } from 'rxjs';
+import { BehaviorSubject, Observable, distinctUntilChanged, filter, finalize } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -12,6 +12,8 @@ export class JsonReceiver implements Receiver {
 
     private _packets: BehaviorSubject<any>;
     private delimiter: Buffer;
+
+    readonly packet: Observable<Packet>;
     constructor(
         private injector: Injector,
         readonly decoder: JsonDecoder,
@@ -20,6 +22,11 @@ export class JsonReceiver implements Receiver {
     ) {
         this.delimiter = Buffer.from(delimiter);
         this._packets = new BehaviorSubject(null);
+        this.packet = this._packets
+            .pipe(
+                distinctUntilChanged(),
+                filter(r => r !== null)
+            ) as Observable<Packet>;
     }
 
     receive(input: Buffer): void {
@@ -90,16 +97,6 @@ export class JsonReceiver implements Receiver {
                     ctx.destroy();
                 })
             )
-            .subscribe(pkg => this._packets.next(pkg));
+            .subscribe(pkg => this._packets.next(pkg), err=> this._packets.error(err));
     }
-
-
-    get packet(): Observable<Packet> {
-        return this._packets
-            .pipe(
-                distinctUntilChanged(),
-                filter(r => r !== null)
-            ) as Observable<Packet>;
-    }
-
 }

@@ -134,8 +134,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage).toEqual('Not Found');
     })
 
     it('fetch big json', async () => {
@@ -146,8 +146,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage.indexOf('max size')).toBeGreaterThan(0);
     })
 
     it('fetch json 2', async () => {
@@ -158,15 +158,16 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(res.test).toEqual('ok');
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage).toEqual('Not Found');
     })
 
     it('cmd message', async () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
             payload: {
                 message: 'ble'
-            }
+            },
+            responseType: 'text'
         })
             .pipe(
                 catchError((err, ct) => {

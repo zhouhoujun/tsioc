@@ -80,6 +80,10 @@ export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
         }
     }
 
+    get size() {
+        return this._hdrs.size;
+    }
+
     getHeaderNames(): string[] {
         return Array.from(this._normal.keys())
     }

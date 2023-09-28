@@ -1,8 +1,7 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Receiver } from './Receiver';
 import { Sender } from './Sender';
-import { IEventEmitter } from './stream';
-import { Packet, RequestPacket, ResponsePacket } from './packet';
+import { RequestPacket, ResponsePacket } from './packet';
 import { Observable } from 'rxjs';
 
 
@@ -58,7 +57,10 @@ export abstract class TransportSession<TSocket = any>  {
      * socket.
      */
     abstract get socket(): TSocket;
-
+    /**
+     * transport options.
+     */
+    abstract get options(): TransportOpts;
     /**
      * packet sender
      */

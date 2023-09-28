@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { RequestPacket } from '@tsdi/common';
+import { RequestPacket, ResponsePacket } from '@tsdi/common';
 
 /**
  * abstract transport context.
@@ -44,6 +44,22 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract get length(): number | undefined;
 
     /**
+     * The request body, or `null` if one isn't set.
+     *
+     * Bodies are not enforced to be immutable, as they can include a reference to any
+     * user-defined data type. However, middlewares should take care to preserve
+     * idempotence by treating them as such.
+     */
+    abstract get body(): any;
+    /**
+     * Set response body.
+     *
+     * @param {any} value
+     * @api public
+     */
+    abstract set body(value: any);
+
+    /**
      * Get request rul
      */
     abstract get url(): string;
@@ -77,7 +93,7 @@ export interface TransportContextOpts<T = any, TSocket = any> extends EndpointIn
 }
 
 export const TRANSPORT_CONTEXT_IMPL = {
-    create<TInput extends RequestPacket, TOutput>(injector: Injector,  request: TInput, response: TOutput,options?: TransportContextOpts<TInput>): TransportContext<TInput, TOutput> {
+    create<TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector,  request: TInput, response: TOutput,options?: TransportContextOpts<TInput>): TransportContext<TInput, TOutput> {
         throw new Execption('not implemented.')
     }
 }
@@ -88,7 +104,7 @@ export const TRANSPORT_CONTEXT_IMPL = {
  * @param options 
  * @returns 
  */
-export function createTransportContext<TInput extends RequestPacket, TOutput, TSocket>(injector: Injector, request: TInput, response: TOutput, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TOutput, TSocket> {
+export function createTransportContext<TInput extends RequestPacket, TOutput extends ResponsePacket, TSocket>(injector: Injector, request: TInput, response: TOutput, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TOutput, TSocket> {
     return TRANSPORT_CONTEXT_IMPL.create(injector, request, response, options)
 }
 

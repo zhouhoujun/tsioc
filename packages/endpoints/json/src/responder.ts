@@ -1,5 +1,5 @@
-import { Injectable, isString } from '@tsdi/ioc';
-import { InvalidJsonException, MessageExecption, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
+import { Injectable, isNil } from '@tsdi/ioc';
+import { MessageExecption, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
 import { Responder, TransportContext } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
 
@@ -12,50 +12,38 @@ export class JsonResponder implements Responder {
     }
 
     async send(ctx: TransportContext, res: any): Promise<any> {
+        res = res ?? ctx.body;
+        if (isNil(res)) return;
+
         const session = ctx.get(TransportSession);
 
+        const len = ctx.length ?? 0;
+        if (session.options.maxSize && len > session.options.maxSize) {
+            throw new PacketLengthException(`packet length ${len} great than max size ${session.options.maxSize}`);
+        }
+
         if (ctx.get(StreamAdapter).isReadable(res)) {
-            res = toBuffer(res);
+            ctx.body = toBuffer(res);
         }
         if (isBuffer(res)) {
-            res = new TextDecoder().decode(res);
+            ctx.body = new TextDecoder().decode(res);
         }
-        
-        const { url, topic, id, replyTo } = ctx.request as RequestPacket;
-        const pkg = {
-            id,
-            payload: res,
-        } as ResponsePacket;
 
-        if (replyTo ?? topic) {
-            pkg.topic = replyTo ?? topic;
-        } else if (url) {
-            pkg.url = url;
-        }
-        ctx.response = pkg;
-
-        await lastValueFrom(session.send(res));
+        await lastValueFrom(session.send(ctx.response));
     }
 
     async sendExecption(ctx: TransportContext, err: MessageExecption): Promise<any> {
         const session = ctx.get(TransportSession);
-        const { url, topic, id, replyTo } = ctx.request as RequestPacket;
-        const pkg = {
-            id,
-            error: err,
-            status: err.status,
-            statusText: err.message
-        } as ResponsePacket;
-
-        if (replyTo ?? topic) {
-            pkg.topic = replyTo ?? topic;
-        } else if (url) {
-            pkg.url = url;
+        ctx.response.error = {
+            name: err.name,
+            message: err.message,
+            status: err.status ?? err.statusCode
         }
-        ctx.response = pkg;
+        if (!isNil(err.status)) ctx.response.status = err.status;
+        ctx.response.statusText = err.message
 
 
-        await lastValueFrom(session.send(pkg));
+        await lastValueFrom(session.send(ctx.response));
 
     }
 
