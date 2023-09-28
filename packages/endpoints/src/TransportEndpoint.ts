@@ -19,7 +19,7 @@ export abstract class TransportEndpoint<TInput extends TransportContext = Transp
  * 
  * 传输节点配置
  */
-export interface TransportEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T> {
+export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends EndpointOptions<T> {
     
     encoder?: ProvdierOf<Encoder>;
     decoder?: ProvdierOf<Decoder>;

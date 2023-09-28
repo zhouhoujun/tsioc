@@ -35,12 +35,25 @@ const defaultFormatter: PatternFormatter = {
 }
 
 const factoryResolver = new RouteEndpointFactoryResolverImpl();
+
+@Module({
+    providers: [
+        { provide: RouteEndpointFactoryResolver, useValue: factoryResolver },
+        { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true }
+    ]
+})
+export class RouteEndpointModule {
+
+}
+
 /*
  * Router module.
  */
 @Module({
+    imports:[
+        RouteEndpointModule
+    ],
     providers: [
-        { provide: RouteEndpointFactoryResolver, useValue: factoryResolver },
         {
             provide: HybridRouter,
             useFactory: (injector: Injector, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
@@ -53,7 +66,6 @@ const factoryResolver = new RouteEndpointFactoryResolverImpl();
                 [ROUTES, InjectFlags.Optional, InjectFlags.Self]
             ]
         },
-        { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true },
         { provide: Router, useExisting: HybridRouter },
         ControllerRouteReolver
     ]
@@ -99,9 +111,10 @@ export class RouterModule {
  * microservice router module.
  */
 @Module({
+    imports:[
+        RouteEndpointModule
+    ],
     providers: [
-        { provide: RouteEndpointFactoryResolver, useValue: factoryResolver },
-        { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true },
         { provide: MircoServRouters, useClass: MircoServiceRouterImpl },
     ]
 })

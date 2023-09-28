@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/endpoint-ws",
+  "name": "@tsdi/endpoint-tcp",
   "version": "6.0.31",
   "description": "Application endpoint. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {

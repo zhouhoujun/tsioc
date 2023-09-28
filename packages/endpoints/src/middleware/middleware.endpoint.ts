@@ -17,13 +17,20 @@ export abstract class MiddlewareEndpoint<TInput extends TransportContext, TOutpu
 }
 
 /**
+ * middleware options.
+ */
+export interface MiddlewareOpts<T extends TransportContext = TransportContext> {
+    middlewaresToken?: Token<MiddlewareLike<T>[]>;
+    middlewares?: ProvdierOf<MiddlewareLike<T>>[];
+}
+
+/**
  * transport middleware endpoint options.
  * 
  * 含中间件的传输节点配置
  */
-export interface MiddlewareEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T, TArg> {
-    middlewaresToken?: Token<MiddlewareLike<T>[]>;
-    middlewares?: ProvdierOf<MiddlewareLike<T>>[];
+export interface MiddlewareEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T, TArg>, MiddlewareOpts<T> {
+    
 }
 
 /**

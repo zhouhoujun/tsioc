@@ -1,25 +1,24 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
-import { ClientModule } from '@tsdi/common/client';
-import { Handle, EndpintsModule, Payload, RequestPath, Session, Subscribe } from '@tsdi/endpoints';
-import { JsonEndpointModule } from '@tsdi/endpoints/json';
-import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
+import { TCP_CLIENT_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { WS_SERV_INTERCEPTORS, WsClient, WsServer } from '../src';
+import path = require('path');
+import del = require('del');
 import { BigFileInterceptor } from './BigFileInterceptor';
+
 
 const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class WsService {
+export class TcpService {
 
-    constructor(private client: WsClient) {
+    constructor(private client: TcpClient) {
 
     }
 
@@ -29,22 +28,12 @@ export class WsService {
         return message;
     }
 
-    @Handle('sensor.message/*')
+    @Handle('sensor/message/**', 'tcp')
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Handle('sensor/message/*', 'ws')
-    async handleMessage2(@Payload() message: string) {
-        return message;
-    }
-
-    @Subscribe('sensor/submessage/*')
-    async subMessage2(@Payload() message: string) {
-        return message;
-    }
-
-    @Subscribe('sensor/:id/start', 'ws', {
+    @Subscribe('sensor/:id/start', 'tcp', {
         paths: {
             id: SENSORS
         }
@@ -62,67 +51,49 @@ export class WsService {
     imports: [
         ServerModule,
         LoggerModule,
-        // WsClientModule,
-        JsonEndpointModule,
-        ServerEndpointModule,
-        ClientModule.forClient([
-            {
-                transport: 'ws',
-                clientOpts: {
-                    // connectOpts: {
-                    //     port: 6379
-                    // },
-                    // timeout: 200
+        TcpClientModule.withOptions({
+            clientOpts: {
+                connectOpts: {
+                    port: 2000
                 }
             }
-        ]),
-        EndpintsModule.forMicroservice({
-            transport: 'ws',
+        }),
+        TcpMicroServModule.withOptions({
             serverOpts: {
-                interceptors: [
-                    Session,
-                    // Content,
-                    // Json,
-                    // Bodyparser
-                ]
+                // timeout: 1000,
+                listenOpts: {
+                    port: 2000
+                }
             }
         })
-        // WsMicroServiceModule.withOption({
-        //     serverOpts: {
-        //         // timeout: 1000,
-        //         // connectOpts: {
-        //         //     port: 2000
-        //         // }
-        //     }
-        // })
     ],
     declarations: [
-        WsService
+        TcpService
     ],
-    bootstrap: WsServer
+    bootstrap: TcpMicroService
 })
-export class MicroTestModule {
+export class MicroTcpTestModule {
 
 }
 
 
 
-describe('Ws Micro Service', () => {
+describe('TCP Micro Service', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: WsClient;
+    let client: TcpClient;
 
     before(async () => {
-        ctx = await Application.run(MicroTestModule, {
+        ctx = await Application.run(MicroTcpTestModule, {
             providers: [
-                { provide: WS_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+                { provide: TCP_MICRO_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 { provide: SENSORS, useValue: 'sensor01', multi: true },
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
         injector = ctx.injector;
-        client = injector.get(WsClient);
+        client = injector.get(TcpClient);
     });
 
 
@@ -134,8 +105,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
-        expect(res.statusMessage).toEqual('Not Found');
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
     })
 
     it('fetch big json', async () => {
@@ -146,57 +117,12 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
-        expect(res.statusMessage.indexOf('max size')).toBeGreaterThan(0);
-    })
-
-    it('fetch json 2', async () => {
-        const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(res instanceof TransportErrorResponse).toBeDefined();
-        expect(res.statusMessage).toEqual('Not Found');
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
     })
 
     it('cmd message', async () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
-            payload: {
-                message: 'ble'
-            },
-            responseType: 'text'
-        })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(isString(a)).toBeTruthy();
-        expect(a).toEqual('ble');
-    });
-
-    it('sensor.message not found', async () => {
-        const a = await lastValueFrom(client.send('sensor.message', {
-            payload: {
-                message: 'ble'
-            }
-        })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
-    });
-
-    it('sensor.message/+ message', async () => {
-        const a = await lastValueFrom(client.send('sensor.message/update', {
             payload: {
                 message: 'ble'
             }
@@ -227,24 +153,8 @@ describe('Ws Micro Service', () => {
         expect(a.status).toEqual(404);
     });
 
-    it('sensor/message/+ message', async () => {
+    it('sensor/message/** message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
-            payload: {
-                message: 'ble'
-            }
-        })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(isString(a)).toBeTruthy();
-        expect(a).toEqual('ble');
-    });
-
-    it('sensor/submessage/+ message', async () => {
-        const a = await lastValueFrom(client.send('sensor/submessage/update', {
             payload: {
                 message: 'ble'
             }

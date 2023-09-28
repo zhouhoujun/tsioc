@@ -28,10 +28,7 @@ export * from './Subscriber';
 
 
 export * from './Server';
-export * from './microservice.module';
-
 export * from './middleware/server';
-export * from './middleware/server.module';
 
 export * from './logger/log';
 export * from './logger/status.formater';
@@ -40,8 +37,6 @@ export * from './finalize.filter';
 
 export * from './execption.filter';
 export * from './execption.handlers';
-
-export * from './endpoint.module';
 
 
 export * from './impl/micro.router';
@@ -52,5 +47,6 @@ export * from './impl/transport.endpoint';
 
 export * from './impl/duplex.session';
 
+export * from './endpoints.module';
 
 

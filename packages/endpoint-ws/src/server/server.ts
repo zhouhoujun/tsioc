@@ -2,7 +2,7 @@ import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory } from '@tsdi/common';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MICROSERVICE_IMPL, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
+import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, ENDPOINTS, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription } from 'rxjs';
 import * as net from 'net';
@@ -117,7 +117,7 @@ const defMicroOpts = {
 } as WsServerOpts;
 
 
-MICROSERVICE_IMPL.setMicroservice('ws', {
+ENDPOINTS.setMicroservice('ws', {
     serverType: WsServer,
     serverOptsToken: WS_SERV_OPTS,
     endpointType: WsEndpoint,

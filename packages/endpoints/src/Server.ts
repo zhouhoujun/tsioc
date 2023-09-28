@@ -13,7 +13,7 @@ import { RequestHandler } from './RequestHandler';
 /**
  * server options
  */
-export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<TransportContext> {
+export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any> {
     /**
      * socket timeout.
      */
@@ -42,6 +42,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<Tra
      * send detail error message to client or not. 
      */
     detailError?: boolean;
+    listenOpts?: any;
     /**
      * routes config.
      */
