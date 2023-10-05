@@ -122,14 +122,14 @@ export const CLIENTS: Clients = {
 }
 
 
-function clientProviders(options: ClientModuleOpts) {
+function clientProviders(options: ClientModuleOpts & TransportRequired) {
     const { clientType, hanlderType, clientOptsToken, defaultOpts, clientOpts } = options;
 
     const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
 
     if (opts.sessionFactory) {
         opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
-    } 
+    }
 
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,

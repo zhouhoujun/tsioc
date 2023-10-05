@@ -3,6 +3,7 @@ import { Receiver } from './Receiver';
 import { Sender } from './Sender';
 import { RequestPacket, ResponsePacket } from './packet';
 import { Observable } from 'rxjs';
+import { Transport } from './protocols';
 
 
 
@@ -10,6 +11,10 @@ import { Observable } from 'rxjs';
  * transport options.
  */
 export interface TransportOpts {
+    /**
+     * transport type.
+     */
+    transport?: Transport;
     /**
      * server side or not.
      */
@@ -42,12 +47,12 @@ export abstract class TransportFactory {
      * create receiver.
      * @param options 
      */
-    abstract createReceiver(options?: TransportOpts): Receiver;
+    abstract createReceiver(transport: Transport, options?: TransportOpts): Receiver;
     /**
      * create sender.
      * @param options 
      */
-    abstract createSender(options?: TransportOpts): Sender;
+    abstract createSender(transport: Transport, options?: TransportOpts): Sender;
 }
 
 
@@ -97,5 +102,5 @@ export abstract class TransportSessionFactory<TSocket = any> {
      * create transport session.
      * @param options 
      */
-    abstract create(socket: TSocket, options?: TransportOpts): TransportSession<TSocket>;
+    abstract create(socket: TSocket, transport: Transport, options?: TransportOpts): TransportSession<TSocket>;
 }

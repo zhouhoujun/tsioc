@@ -1,13 +1,13 @@
-import { Inject, Injectable, ModuleRef, isNumber, isString, lang, promisify, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { ExecptionHandlerFilter } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ListenOpts, ListenService, Packet, MESSAGE, GET, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
+import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, ENDPOINTS, RequestHandler, Server, Session, defaultMaxSize } from '@tsdi/endpoints';
-import { Subscription, finalize } from 'rxjs';
+import { Subscription } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpEndpoint } from './endpoint';
-import { ExecptionHandlerFilter } from '@tsdi/core';
 
 
 
@@ -82,12 +82,12 @@ export class TcpServer extends Server implements ListenService {
         const factory = injector.get(TransportSessionFactory);
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const session = factory.create(socket, this.options.transportOpts);
+                const session = factory.create(socket, 'tcp', this.options.transportOpts);
                 this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const session = factory.create(socket, this.options.transportOpts);
+                const session = factory.create(socket, 'tcp', this.options.transportOpts);
                 this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
             })
         }

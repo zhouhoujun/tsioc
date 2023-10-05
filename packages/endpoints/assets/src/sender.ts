@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { Context, Encoder, Packet, PacketLengthException, Sender, TransportOpts } from '@tsdi/common';
+import { Context, Encoder, Packet, PacketLengthException, Sender, Transport, TransportOpts } from '@tsdi/common';
 import { Observable, finalize, map, throwError } from 'rxjs';
 import { AssetEncoder } from './encoder';
 
@@ -13,6 +13,7 @@ export class AssetSender implements Sender {
 
     constructor(
         private injector: Injector,
+        readonly transport: Transport,
         readonly encoder: AssetEncoder,
         options: TransportOpts
     ) {
@@ -22,8 +23,8 @@ export class AssetSender implements Sender {
     }
 
     send(packet: Packet): Observable<any> {
-        const ctx = new Context(this.injector, packet);
-        return this.encoder.handle(new Context(this.injector, packet))
+        const ctx = new Context(this.injector, this.transport, packet);
+        return this.encoder.handle(ctx)
             .pipe(
                 map(data => {
                     const len = Buffer.byteLength(data);

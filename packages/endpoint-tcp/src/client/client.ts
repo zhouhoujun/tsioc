@@ -107,7 +107,7 @@ export class TcpClient extends Client<TransportRequest, number> {
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        this._session = this.handler.injector.get(TransportSessionFactory).create(socket, opts.transportOpts);
+        this._session = this.handler.injector.get(TransportSessionFactory).create(socket, 'tcp', opts.transportOpts);
         return socket
     }
 

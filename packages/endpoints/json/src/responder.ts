@@ -2,6 +2,7 @@ import { Injectable, isNil } from '@tsdi/ioc';
 import { MessageExecption, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
 import { Responder, TransportContext } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
+import { PipeTransform } from '@tsdi/core';
 
 
 @Injectable()
@@ -19,7 +20,8 @@ export class JsonResponder implements Responder {
 
         const len = ctx.length ?? 0;
         if (session.options.maxSize && len > session.options.maxSize) {
-            throw new PacketLengthException(`packet length ${len} great than max size ${session.options.maxSize}`);
+            const btpipe = ctx.get<PipeTransform>('bytes-format');
+            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(session.options.maxSize)}`);
         }
 
         if (ctx.get(StreamAdapter).isReadable(res)) {

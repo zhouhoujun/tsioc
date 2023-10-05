@@ -1,5 +1,5 @@
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
-import { IDuplexStream, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
+import { IDuplexStream, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, Subscription, filter, first, fromEvent, map, merge, mergeMap } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -90,8 +90,8 @@ export class DuplexTransportSessionFactory implements TransportSessionFactory<ID
 
     constructor(private factory: TransportFactory) { }
 
-    create(socket: IDuplexStream, options?: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+    create(socket: IDuplexStream, transport: Transport, options?: TransportOpts): DuplexTransportSession {
+        return new DuplexTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), options);
     }
 
 }

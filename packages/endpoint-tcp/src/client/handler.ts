@@ -1,9 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
-import { AbstractGuardHandler } from '@tsdi/core';
-import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { ClientHandler } from '@tsdi/common/client';
 
 
 @Abstract()
-export abstract class TcpHandler extends AbstractGuardHandler<TransportRequest, TransportEvent> {
+export abstract class TcpHandler extends ClientHandler {
 
 }

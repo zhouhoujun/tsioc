@@ -2,6 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Packet } from './packet';
 import { Encoder } from './coding';
+import { Transport } from './protocols';
 
 
 
@@ -11,6 +12,11 @@ import { Encoder } from './coding';
  */
 @Abstract()
 export abstract class Sender {
+
+    /**
+     * transport type
+     */
+    abstract get transport(): Transport;
     /**
      * encoder.
      */

@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, Encoder, EncoderBackend } from '@tsdi/common';
+import { InterceptorHandler } from '@tsdi/core';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
 import { Observable, of } from 'rxjs';
 import { Buffer } from 'buffer';
 
@@ -14,8 +14,10 @@ export abstract class JsonEncoderBackend implements EncoderBackend {
     abstract handle(ctx: Context): Observable<Buffer>;
 }
 
-
-export const JSON_ENCODER_INTERCEPTORS = tokenId<Interceptor<Context, Buffer>[]>('JSON_ENCODER_INTERCEPTORS')
+/**
+ * json encoder interceptors token
+ */
+export const JSON_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('JSON_ENCODER_INTERCEPTORS')
 
 
 @Injectable()

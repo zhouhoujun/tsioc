@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend } from '@tsdi/common';
+import { InterceptorHandler } from '@tsdi/core';
+import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend, DecodeInterceptor } from '@tsdi/common';
 import { Observable, of } from 'rxjs';
 
 
@@ -16,8 +16,10 @@ export abstract class JsonDecoderBackend implements DecoderBackend {
     abstract handle(ctx: Context): Observable<Packet>;
 }
 
-
-export const JSON_DECODER_INTERCEPTORS = tokenId<Interceptor<Context, Packet>[]>('JSON_DECODER_INTERCEPTORS')
+/**
+ * json decoder interceptors token
+ */
+export const JSON_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('JSON_DECODER_INTERCEPTORS');
 
 @Injectable()
 export class JsonInterceptingDecoder implements Decoder {
