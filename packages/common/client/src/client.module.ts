@@ -155,7 +155,7 @@ function clientProviders(options: ClientModuleOpts & TransportRequired & ClientT
                         { provide: clientOptsToken, useExisting: token }
                     ]);
                 },
-                deps: [Injector, token]
+                deps: [Injector]
             }
         );
 
