@@ -19,7 +19,7 @@ const SENSORS = tokenId<string[]>('SENSORS');
 @Injectable()
 export class WsService {
 
-    constructor(private client: WsClient) {
+    constructor() {
 
     }
 
@@ -68,11 +68,18 @@ export class WsService {
         ClientModule.forClient([
             {
                 transport: 'ws',
+                client: 'ws1',
                 clientOpts: {
                     // connectOpts: {
                     //     port: 6379
                     // },
                     // timeout: 200
+                }
+            },
+            {
+                transport: 'ws',
+                client: 'ws2',
+                clientOpts: {
                 }
             }
         ]),
@@ -112,6 +119,7 @@ describe('Ws Micro Service', () => {
     let injector: Injector;
 
     let client: WsClient;
+    let client2: WsClient;
 
     before(async () => {
         ctx = await Application.run(MicroTestModule, {
@@ -122,7 +130,9 @@ describe('Ws Micro Service', () => {
             ]
         });
         injector = ctx.injector;
-        client = injector.get(WsClient);
+        // client = injector.get(WsClient);
+        client = injector.get('ws1');
+        client2 = injector.get('ws2');
     });
 
 
@@ -213,6 +223,38 @@ describe('Ws Micro Service', () => {
 
     it('sensor/message not found', async () => {
         const a = await lastValueFrom(client.send('sensor/message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a.status).toEqual(404);
+    });
+
+    it('client2 sensor.message/+ message', async () => {
+        const a = await lastValueFrom(client2.send('sensor.message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('client2 sensor/message not found', async () => {
+        const a = await lastValueFrom(client2.send('sensor/message', {
             payload: {
                 message: 'ble'
             }

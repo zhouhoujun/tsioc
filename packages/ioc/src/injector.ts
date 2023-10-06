@@ -382,6 +382,8 @@ export const INJECT_IMPL = {
  */
 export type Factory<T = any> = (...args: any[]) => T;
 
+export type InstanceOf<T> = T | ((injector: Injector)=> T);
+
 /**
  * register option
  */

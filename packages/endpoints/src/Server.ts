@@ -1,13 +1,12 @@
-import { Abstract, ProvdierOf, StaticProvider, TypeOf } from '@tsdi/ioc';
+import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, Startup } from '@tsdi/core';
-import { PatternFormatter, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
 import { Responder } from './Responder';
-import { RouteMatcher } from './router/router';
-import { Routes } from './router/route';
 import { RequestHandler } from './RequestHandler';
+import { RouteOpts } from './router/router.module';
 
 
 /**
@@ -46,14 +45,8 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     /**
      * routes config.
      */
-    routes?: {
-        matcher?: TypeOf<RouteMatcher>;
-        formatter?: TypeOf<PatternFormatter>;
-        prefix?: string;
-        routes?: Routes;
-    }
+    routes?: RouteOpts
 }
-
 
 
 /**

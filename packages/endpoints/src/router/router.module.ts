@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, InjectFlags, Injector, Module, ModuleWithProviders, Token, TypeOf, getToken, isString, isType, tokenId } from '@tsdi/ioc';
+import { EMPTY_OBJ, InjectFlags, Injector, InstanceOf, Module, ModuleWithProviders, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
 import { Transport, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
@@ -50,21 +50,23 @@ export class RouteEndpointModule {
  * Router module.
  */
 @Module({
-    imports:[
+    imports: [
         RouteEndpointModule
     ],
     providers: [
         {
             provide: HybridRouter,
-            useFactory: (injector: Injector, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
-                return new MappingRouter(injector, new DefaultRouteMatcher(), formatter, prefix, routes)
+            useFactory: (injector: Injector, matcher: RouteMatcher, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
+                return new MappingRouter(injector, matcher ?? new DefaultRouteMatcher(), formatter, prefix, routes)
             },
             deps: [
                 Injector,
+                [RouteMatcher, InjectFlags.Optional],
                 PatternFormatter,
                 [ROUTER_PREFIX, InjectFlags.Optional],
                 [ROUTES, InjectFlags.Optional, InjectFlags.Self]
-            ]
+            ],
+            asDefault: true
         },
         { provide: Router, useExisting: HybridRouter },
         ControllerRouteReolver
@@ -106,12 +108,30 @@ export class RouterModule {
     }
 }
 
+export function createRouteProviders(optsify: InstanceOf<RouteOpts>) {
+    return [
+        {
+            provide: HybridRouter,
+            useFactory: (injector: Injector) => {
+                const opts = isFunction(optsify) ? optsify(injector) : optsify;
+                return new MappingRouter(injector,
+                    opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
+                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                    opts.prefix,
+                    opts.routes)
+            },
+            deps: [Injector]
+        }
+    ]
+}
+
+
 
 /*
  * microservice router module.
  */
 @Module({
-    imports:[
+    imports: [
         RouteEndpointModule
     ],
     providers: [
@@ -177,17 +197,20 @@ export class MicroServRouterModule {
     }
 }
 
-export function createMicroRouteProviders(transport: Transport, opts: {
+export interface RouteOpts {
     matcher?: TypeOf<RouteMatcher>;
     formatter?: TypeOf<PatternFormatter>;
     prefix?: string;
     routes?: Routes;
-} = EMPTY_OBJ) {
+}
+
+export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>) {
     const token = getMircServRouter(transport);
     return [
         {
             provide: token,
             useFactory: (injector: Injector) => {
+                const opts = isFunction(optsify) ? optsify(injector) : optsify;
                 return new MessageRouterImpl(transport, injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),

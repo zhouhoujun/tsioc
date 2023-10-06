@@ -1,9 +1,9 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toProvider } from '@tsdi/ioc';
+import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toFactory, toProvider } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
-import { NotImplementedExecption, PatternFormatter, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
 import { Server, ServerOpts } from './Server';
-import { MicroServRouterModule, ROUTER_PREFIX, RouterModule, createMicroRouteProviders } from './router/router.module';
+import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
 import { Responder } from './Responder';
 import { LogInterceptor } from './logger/log';
@@ -13,8 +13,6 @@ import { TransportExecptionHandlers } from './execption.handlers';
 import { Session } from './Session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
-import { ROUTES } from './router/route';
-import { RouteMatcher } from './router/router';
 import { HybridRouter } from './router/router.hybrid';
 
 
@@ -32,11 +30,7 @@ export interface MicroServiceModuleConfig {
     /**
      * micro service options
      */
-    serverOpts?: ServerOpts;
-    /**
-     * micro service default options.
-     */
-    defaultOpts?: ServerOpts;
+    serverOpts?: ProvdierOf<ServerOpts>;
     /**
      * custom provider with module.
      */
@@ -56,6 +50,10 @@ export interface MicroServiceModuleOpts extends MicroServiceModuleConfig {
      * micro service endpoint type
      */
     endpointType: Type<TransportEndpoint>;
+    /**
+     * micro service default options.
+     */
+    defaultOpts?: ServerOpts;
 }
 
 export interface ServerModuleConfig {
@@ -70,11 +68,7 @@ export interface ServerModuleConfig {
     /**
      * server options
      */
-    serverOpts?: ServerOpts & MiddlewareOpts;
-    /**
-     * server default options.
-     */
-    defaultOpts?: ServerOpts;
+    serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
     /**
      * custom provider with module.
      */
@@ -94,12 +88,15 @@ export interface ServerModuleOpts extends ServerModuleConfig {
      * server endpoint type
      */
     endpointType: Type<TransportEndpoint>;
+    /**
+     * server default options.
+     */
+    defaultOpts?: ServerOpts & MiddlewareOpts;
 }
 
 
 
 const servs: Record<string, ServerModuleOpts> = {};
-
 const micros: Record<string, MicroServiceModuleOpts> = {};
 
 
@@ -192,7 +189,7 @@ export class EndpointsModule {
      */
     static forServer(options: ServerModuleConfig & TransportRequired): ModuleWithProviders<EndpointsModule> {
 
-        const opts = micros[options.transport];
+        const opts = servs[options.transport];
         if (!opts) throw new NotImplementedExecption(options.transport + ' Server has not implemented');
         const providers = createServProviders({ ...opts, ...options });
 
@@ -206,35 +203,37 @@ export class EndpointsModule {
 
 function createServiceProviders(options: MicroServiceModuleOpts & TransportRequired) {
     const { transport, serverType, endpointType, serverOptsToken, defaultOpts } = options;
-    const serverOpts = {
-        backend: MicroServRouterModule.getToken(transport),
-        ...defaultOpts,
-        ...options.serverOpts,
-        providers: [...defaultOpts?.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
-    };
 
-    if (serverOpts.sessionFactory) {
-        serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
-    }
+    const init = (opts: ServerOpts) => {
+        const serverOpts = {
+            backend: MicroServRouterModule.getToken(transport),
+            ...defaultOpts,
+            ...opts,
+            providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
+        };
 
-    if (serverOpts.detailError) {
-        serverOpts.providers.push({
-            provide: SHOW_DETAIL_ERROR,
-            useValue: true
-        });
-    }
+        if (serverOpts.sessionFactory) {
+            serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+        }
 
-    if (serverOpts.responder) {
-        serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+        if (serverOpts.detailError) {
+            serverOpts.providers.push({
+                provide: SHOW_DETAIL_ERROR,
+                useValue: true
+            });
+        }
+
+        if (serverOpts.responder) {
+            serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+        }
+
+        return serverOpts as ServerOpts;
     }
 
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
-        {
-            provide: serverOptsToken,
-            useValue: serverOpts
-        },
-        ...createMicroRouteProviders(transport, serverOpts.routes)
+        toFactory(serverOptsToken, options.serverOpts!, init),
+        ...createMicroRouteProviders(transport, (injector) => injector.get(serverOptsToken).routes || EMPTY_OBJ)
     ];
 
     if (options.server) {
@@ -263,57 +262,39 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
 
 function createServProviders(options: ServerModuleOpts & TransportRequired) {
     const { serverType, endpointType, serverOptsToken, defaultOpts } = options;
-    const serverOpts = {
-        backend: HybridRouter,
-        ...defaultOpts,
-        ...options.serverOpts,
-        providers: [...defaultOpts?.providers || EMPTY, ...options.serverOpts?.providers || EMPTY]
-    };
+    const init = (opts: ServerOpts) => {
+        const serverOpts = {
+            backend: HybridRouter,
+            ...defaultOpts,
+            ...opts,
+            providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
+        };
 
-    if (serverOpts.sessionFactory) {
-        serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
-    }
+        if (serverOpts.sessionFactory) {
+            serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+        }
 
-    if (serverOpts.detailError) {
-        serverOpts.providers.push({
-            provide: SHOW_DETAIL_ERROR,
-            useValue: true
-        });
-    }
+        if (serverOpts.detailError) {
+            serverOpts.providers.push({
+                provide: SHOW_DETAIL_ERROR,
+                useValue: true
+            });
+        }
 
-    if (serverOpts.responder) {
-        serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+        if (serverOpts.responder) {
+            serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+        }
+
+        return serverOpts as ServerOpts;
     }
 
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
-        {
-            provide: serverOptsToken,
-            useValue: serverOpts
-        }
+        toFactory(serverOptsToken, options.serverOpts!, init),
+        ...createRouteProviders(injector => injector.get(serverOptsToken).routes || EMPTY_OBJ),
     ];
 
-    if (serverOpts.routes?.routes) {
-        providers.push({
-            provide: ROUTES,
-            useValue: serverOpts.routes?.routes ?? []
-        })
-    }
 
-    if (serverOpts.routes?.prefix) {
-        providers.push({
-            provide: ROUTER_PREFIX,
-            useValue: serverOpts.routes?.prefix
-        })
-    }
-
-    if (serverOpts.routes?.formatter) {
-        providers.push(toProvider(PatternFormatter, serverOpts.routes?.formatter))
-    }
-
-    if (serverOpts.routes?.matcher) {
-        providers.push(toProvider(RouteMatcher, serverOpts.routes?.matcher))
-    }
 
 
     if (options.server) {

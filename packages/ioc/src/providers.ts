@@ -254,3 +254,74 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
 
     return { provide, useValue: useOf as T, multi, multiOrder }
 }
+
+/**
+ * convert to factory provider
+ * @param provide provide token
+ * @param useOf Provider
+ * @param init init factory result.
+ * @param multi 
+ * @param multiOrder 
+ * @param isClass 
+ * @returns 
+ */
+export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, init?: (val: T, injector: Injector) => T, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): FactoryProvider<T> {
+
+    const deps: any[] = [];
+    let useFactory: (...args: any[]) => T;
+
+    const isPlainObj = isPlainObject(useOf);
+    if (isPlainObj && isDefined((useOf as UseClass<T>).useClass)) {
+        const { deps: cdeps, useClass } = useOf as UseClass<T>;
+        if (cdeps && cdeps.length) {
+            deps.push(...cdeps, Injector);
+            useFactory = (...args: any[]) => {
+                const injector = args.pop() as Injector;
+                const val = new useClass(...args);
+                return init ? init(val, injector) : val;
+            }
+        } else {
+            deps.push(Injector);
+            useFactory = (injector: Injector) => {
+                const val = injector.get(useClass);
+                return init ? init(val, injector) : val;
+            }
+        }
+    } else if (isPlainObj && isDefined((useOf as UseValue<T>).useValue)) {
+        const { useValue } = useOf as UseValue<T>;
+        deps.push(Injector);
+        useFactory = (injector: Injector) => {
+            return init ? init(useValue, injector) : useValue;
+        }
+    } else if (isPlainObj && isDefined((useOf as UseFactory<T>).useFactory)) {
+        const { deps: cdeps, useFactory: factory } = useOf as UseFactory<T>;
+        cdeps && deps.push(...cdeps);
+        deps.push(Injector);
+        useFactory = (...args: any[]) => {
+            const injector = args.pop() as Injector;
+            const val = factory(...args);
+            return init ? init(val, injector) : val;
+        }
+    } else if (isPlainObj && isDefined((useOf as UseExisting<T>).useExisting)) {
+        const { useExisting } = useOf as UseExisting<T>;
+        deps.push(Injector);
+        useFactory = (injector: Injector) => {
+            const val = injector.get(useExisting);
+            return init ? init(val, injector) : val;
+        }
+    } else if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
+        deps.push(Injector);
+        useFactory = (injector: Injector) => {
+            const val = injector.get(useOf);
+            return init ? init(val, injector) : val;
+        }
+    } else {
+        deps.push(Injector);
+        useFactory = (injector: Injector) => {
+            return init ? init(useOf as T, injector) : useOf as T;
+        }
+    }
+
+
+    return { provide, useFactory, multi, multiOrder, deps: [] }
+}

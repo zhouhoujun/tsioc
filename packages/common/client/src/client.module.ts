@@ -1,4 +1,4 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toProvider } from '@tsdi/ioc';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { TransportBackend } from './backend';
@@ -11,7 +11,7 @@ export interface ClientModuleConfig {
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    clientOpts?: ProvdierOf<ClientOpts>;
     /**
      * client default options
      */
@@ -38,7 +38,7 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * client providers
      */
-    client?: ProvdierOf<Client>;
+    clientProvider?: ProvdierOf<Client>;
     /**
      * client handler type.
      */
@@ -48,7 +48,12 @@ export interface ClientModuleOpts extends ClientModuleConfig {
 
 const clients: Record<string, ClientModuleOpts> = {};
 
-
+export interface ClientTokenOpts {
+    /**
+     * client token.
+     */
+    client?: Token<Client>;
+}
 
 @Module({
     providers: [
@@ -62,19 +67,19 @@ export class ClientModule {
      * @param options module options.
      * @returns 
      */
-    static forClient(options: ClientModuleConfig & TransportRequired): ModuleWithProviders<ClientModule>;
+    static forClient(options: ClientModuleConfig & TransportRequired & ClientTokenOpts): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static forClient(options: Array<ClientModuleConfig & TransportRequired>): ModuleWithProviders<ClientModule>;
+    static forClient(options: Array<ClientModuleConfig & TransportRequired & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static forClient(options: Arrayify<ClientModuleConfig & TransportRequired>): ModuleWithProviders<ClientModule> {
+    static forClient(options: Arrayify<ClientModuleConfig & TransportRequired & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
         let providers: ProviderType[];
         if (isArray(options)) {
             providers = []
@@ -122,29 +127,53 @@ export const CLIENTS: Clients = {
 }
 
 
-function clientProviders(options: ClientModuleOpts & TransportRequired) {
-    const { clientType, hanlderType, clientOptsToken, defaultOpts, clientOpts } = options;
-
-    const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
-
-    if (opts.sessionFactory) {
-        opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
-    }
+function clientProviders(options: ClientModuleOpts & TransportRequired & ClientTokenOpts) {
+    const { client, transport, clientType, hanlderType, clientOptsToken, defaultOpts } = options;
 
     const providers: ProviderType[] = [
-        ...options.providers ?? EMPTY,
-        clientOpts?.client ? {
-            provide: clientOpts.client,
-            useFactory: (injector: Injector) => {
-                return injector.resolve(clientType, [{ provide: clientOptsToken, useValue: opts }]);
-            },
-            deps: [Injector]
-        }
-            : { provide: clientOptsToken, useValue: opts }
+        ...options.providers ?? EMPTY
     ];
 
-    if (options.client) {
-        providers.push(toProvider(clientType, options.client));
+    if (client) {
+        const token = getToken(client, 'options');
+        const init = (clientOpts: ClientOpts) => {
+            const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+
+            if (opts.sessionFactory) {
+                opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+            }
+            opts.providers.push({ provide: clientOptsToken, useExisting: token });
+            return opts as ClientOpts;
+        }
+
+        providers.push(
+            toFactory(token, options.clientOpts!, init),
+            {
+                provide: client,
+                useFactory: (injector: Injector) => {
+                    return injector.resolve(clientType, [
+                        { provide: clientOptsToken, useExisting: token }
+                    ]);
+                },
+                deps: [Injector, token]
+            }
+        );
+
+    } else {
+        const init = (clientOpts: ClientOpts) => {
+            const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+
+            if (opts.sessionFactory) {
+                opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+            }
+            return opts as ClientOpts;
+        }
+
+        providers.push(toFactory(clientOptsToken, options.clientOpts!, init))
+    }
+
+    if (options.clientProvider) {
+        providers.push(toProvider(clientType, options.clientProvider));
     } else if (clientType) {
         providers.push(clientType);
     }
@@ -155,10 +184,6 @@ function clientProviders(options: ClientModuleOpts & TransportRequired) {
         providers.push({
             provide: hanlderType,
             useFactory: (injector: Injector, opts: ClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
-                    Object.assign(opts, defaultOpts);
-                    injector.setValue(clientOptsToken, opts);
-                }
                 return createHandler(injector, opts);
             },
             asDefault: true,
