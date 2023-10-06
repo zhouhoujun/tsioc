@@ -31,30 +31,6 @@ export class JsonRequestHandler implements RequestHandler<RequestPacket, Respons
             },
         });
 
-        // return session.receiver.packet.subscribe({
-        //     next(req) {
-        //         if (!req.method && options?.defaultMethod) {
-        //             req.method = options?.defaultMethod;
-        //         }
-        //         const ctx = createTransportContext(endpoint.injector, req, {});
-        //         ctx.setValue(TransportSession, session);
-        //         ctx.setValue(Logger, logger);
-
-        //         return endpoint.handle(ctx)
-        //             .pipe(
-        //                 finalize(() => {
-        //                     ctx.destroy();
-        //                 })).subscribe({
-        //                     error(err) {
-        //                         logger.error(err)
-        //                     }
-        //                 })
-        //     },
-        //     error(err) {
-        //         logger.error(err);
-        //     },
-        // });
-
     }
 
 }

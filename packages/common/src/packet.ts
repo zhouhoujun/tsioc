@@ -1,4 +1,3 @@
-import { InvocationContext } from '@tsdi/ioc';
 import { IncomingHeaders, OutgoingHeaders } from './headers';
 
 

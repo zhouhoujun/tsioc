@@ -1,6 +1,6 @@
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { IDuplexStream, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
-import { Observable, Subscription, filter, first, fromEvent, map, merge, mergeMap } from 'rxjs';
+import { Observable, Subscription, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -42,7 +42,7 @@ export class DuplexTransportSession implements TransportSession<IDuplexStream> {
             packet.id = this.getPacketId();
         }
         const id = packet.id;
-        return this.send(packet)
+        return from(lastValueFrom(this.send(packet)))
             .pipe(
                 mergeMap(r => this.receiver.packet.pipe(
                     filter(p => p.id == id)

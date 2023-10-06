@@ -99,6 +99,7 @@ export class TcpServer extends Server implements ListenService {
 
     protected async onShutdown(): Promise<any> {
         if (!this.serv) return;
+        this.subs?.unsubscribe();
         // if (!this.micro) this.endpoint.injector.get(ModuleRef).unregister(HYBRID_HOST);
         await promisify(this.serv.close, this.serv)()
             .finally(() => {
