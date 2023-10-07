@@ -27,12 +27,12 @@ export class TopicTransportSession extends AbstractTransportSession<Client> {
     }
 
     protected bindDataEvent() {
-        this.subs.add(fromEvent(this.socket, this.getMessageEvent(), (topic: string, res) => {
-            return { topic, res };
+        this.subs.add(fromEvent(this.socket, this.getMessageEvent(), (topic: string, message) => {
+            return { topic, message };
         }).pipe(
             filter(res => this.options.serverSide ? !res.topic.endsWith('/reply') : true),
             map(res => {
-                return res.res
+                return res.message
             })
         ).subscribe(data => this.receiver.receive(data)))
     }
