@@ -6,7 +6,7 @@ import { finalize, mergeMap } from 'rxjs';
 
 
 @Injectable()
-export class JsonRequestHandler implements RequestHandler<RequestPacket, ResponsePacket> {
+export class AssetRequestHandler implements RequestHandler<RequestPacket, ResponsePacket> {
 
     handle(endpoint: TransportEndpoint, session: TransportSession<any>, logger: Logger, options: ServerOpts) {
 

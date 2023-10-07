@@ -1,7 +1,7 @@
 import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
-import { TransportBackend } from './backend';
+import { TopicTransportBackend, TransportBackend } from './backend';
 import { ClientOpts } from './options';
 import { ClientHandler } from './handler';
 import { Client } from './Client';
@@ -57,7 +57,8 @@ export interface ClientTokenOpts {
 
 @Module({
     providers: [
-        TransportBackend
+        TransportBackend,
+        TopicTransportBackend
     ]
 })
 export class ClientModule {
@@ -142,6 +143,13 @@ function clientProviders(options: ClientModuleOpts & TransportRequired & ClientT
             if (opts.sessionFactory) {
                 opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
             }
+            if (opts.timeout) {
+                if (opts.transportOpts) {
+                    opts.transportOpts.timeout = opts.timeout;
+                } else {
+                    opts.transportOpts = { timeout: opts.timeout };
+                }
+            }
             opts.providers.push({ provide: clientOptsToken, useExisting: token });
             return opts as ClientOpts;
         }
@@ -163,6 +171,13 @@ function clientProviders(options: ClientModuleOpts & TransportRequired & ClientT
         const init = (clientOpts: ClientOpts) => {
             const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
 
+            if (opts.timeout) {
+                if (opts.transportOpts) {
+                    opts.transportOpts.timeout = opts.timeout;
+                } else {
+                    opts.transportOpts = { timeout: opts.timeout };
+                }
+            }
             if (opts.sessionFactory) {
                 opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
             }

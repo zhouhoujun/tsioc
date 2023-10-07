@@ -1,5 +1,4 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { Interceptor } from '@tsdi/core';
 import { Context, Encoder, Packet, PacketLengthException, Sender, Transport, TransportOpts } from '@tsdi/common';
 import { Observable, finalize, map, throwError } from 'rxjs';
 import { AssetEncoder } from './encoder';
@@ -30,7 +29,6 @@ export class AssetSender implements Sender {
             .pipe(
                 map(data => {
                     const len = Buffer.byteLength(data);
-                    if (this.maxSize && len > this.maxSize) return throwError(() => new PacketLengthException(len.toString()))
                     return Buffer.concat([
                         Buffer.from(String(len)),
                         this.delimiter,

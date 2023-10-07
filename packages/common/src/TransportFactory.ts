@@ -23,6 +23,7 @@ export interface TransportOpts {
      * packet delimiter flag
      */
     delimiter?: string;
+    timeout?: number;
     /**
      * packet size limit.
      */

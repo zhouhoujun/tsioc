@@ -1,0 +1,131 @@
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { TransportRequest, DisconnectExecption, ev, OfflineExecption, TransportSession, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
+import { CLIENTS, Client, TopicTransportBackend, TransportBackend } from '@tsdi/common/client';
+import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { InjectLog, Logger } from '@tsdi/logger';
+import * as mqtt from 'mqtt';
+import { Observable } from 'rxjs';
+import { MqttHandler } from './handler';
+import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
+import { TopicTransportSessionFactory } from '../mqtt.session';
+
+
+/**
+ * mqtt client.
+ */
+@Injectable({ static: false })
+export class MqttClient extends Client<TransportRequest, number> {
+
+    @InjectLog()
+    private logger?: Logger;
+
+    private mqtt?: mqtt.Client | null;
+    private _session?: TransportSession<mqtt.Client>;
+
+    constructor(
+        readonly handler: MqttHandler,
+        @Inject(MQTT_CLIENT_OPTS) private options: MqttClientOpts) {
+        super()
+    }
+
+    protected connect(): Observable<any> {
+
+        return new Observable((sbscriber) => {
+            let hasConn: boolean;
+            if (!this.mqtt) {
+                hasConn = false;
+                this.mqtt = this.createConnection();
+            } else {
+                hasConn = true;
+            }
+            const client = this.mqtt;
+
+            const onError = (err: any) => {
+                this.logger?.error(err);
+                sbscriber.error(err);
+            }
+            const onConnect = (packet: mqtt.IConnackPacket) => {
+                sbscriber.next(client);
+                sbscriber.complete();
+            }
+
+            const onOffline = () => {
+                this.logger?.info('mqtt client offline!');
+                sbscriber.error(new OfflineExecption());
+            }
+            const onDisConnect = (packet: mqtt.IDisconnectPacket) => {
+                this.logger?.info('mqtt client disconnected!', packet.reasonCode);
+                sbscriber.error(new DisconnectExecption('mqtt client disconnected! ' + packet.reasonCode ?? ''));
+            };
+
+            client.on(ev.ERROR, onError);
+            client.on(ev.CONNECT, onConnect);
+            client.on(ev.OFFLINE, onOffline);
+            client.on(ev.DISCONNECT, onDisConnect);
+
+            if (hasConn) {
+                if (client.connected) {
+                    sbscriber.next(client);
+                    sbscriber.complete();
+                } else if (client.disconnected) {
+                    client.reconnect()
+                }
+            }
+
+            return () => {
+                client.off(ev.ERROR, onError);
+                client.off(ev.CONNECT, onConnect);
+                client.off(ev.OFFLINE, onOffline);
+                client.off(ev.DISCONNECT, onDisConnect);
+            }
+        })
+    }
+
+    protected createConnection() {
+        const opts = this.options.connectOpts ?? EMPTY_OBJ;
+        const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
+        this._session = this.handler.injector.get(TransportSessionFactory).create(conn, 'mqtt', this.options.transportOpts!);
+        return conn;
+    }
+
+    protected override initContext(context: InvocationContext<any>): void {
+        context.setValue(Client, this);
+        context.setValue(TransportSession, this._session);
+    }
+
+    protected override async onShutdown(): Promise<void> {
+        if (!this.mqtt) return;
+        this._session?.destroy();
+        await promisify(this.mqtt.end, this.mqtt)(true)
+            .catch(err => {
+                this.logger?.error(err);
+                return err;
+            });
+        this.mqtt = null;
+    }
+
+}
+
+
+const defaultOpts = {
+    connectOpts: {
+        host: LOCALHOST,
+        port: 1883
+    },
+    encoding: 'utf8',
+    interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
+    filtersToken: MQTT_CLIENT_FILTERS,
+    backend: TopicTransportBackend,
+    transportOpts: {
+        delimiter: '#',
+        maxSize: defaultMaxSize,
+    },
+    sessionFactory: TopicTransportSessionFactory
+} as MqttClientOpts;
+
+CLIENTS.register('mqtt', {
+    clientType: MqttClient,
+    clientOptsToken: MQTT_CLIENT_OPTS,
+    hanlderType: MqttHandler,
+    defaultOpts
+});

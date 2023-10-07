@@ -20,7 +20,7 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
         const pkg = this.toPacket(url, req);
         const session = req.context.get(TransportSession);
 
-        return session.request(pkg)
+        return (req.observe === 'emit'? session.send(pkg) : session.request(pkg))
             .pipe(
                 first(),
                 map(p => {
@@ -68,3 +68,27 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
     }
 }
 
+/**
+ * transport client endpoint backend.
+ */
+@Injectable()
+export class TopicTransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> extends TransportBackend<TRequest, TResponse> {
+
+    protected override getReqUrl(req: TRequest) {
+        return req.url;
+    }
+
+    protected override toPacket(url: string, req: TRequest) {
+        const pkg = {
+            topic: url
+        } as RequestPacket;
+        if (req.headers.size) {
+            pkg.headers = req.headers.getHeaders()
+        }
+        if (isDefined(req.body)) {
+            pkg.payload = req.body;
+        }
+
+        return pkg;
+    }
+}
