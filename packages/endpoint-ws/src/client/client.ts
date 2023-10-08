@@ -67,7 +67,7 @@ export class WsClient extends Client<TransportRequest, number> {
 
     protected async onShutdown(): Promise<void> {
         if (!this.socket) return;
-        this.session?.destroy?.();
+        await this.session?.destroy?.();
         this.socket.terminate();
         this.socket.removeAllListeners();
         this.socket = null;

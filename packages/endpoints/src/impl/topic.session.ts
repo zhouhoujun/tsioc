@@ -1,7 +1,7 @@
-import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { AbstractTransportSession } from '@tsdi/endpoints';
 import { Injectable, promisify } from '@tsdi/ioc';
-import { filter, fromEvent, map } from 'rxjs';
+import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { Observable, filter, fromEvent, map } from 'rxjs';
+import { AbstractTransportSession } from '../transport.session';
 
 
 export interface TopicClient extends IEventEmitter {
@@ -37,27 +37,21 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         }
     }
 
-    protected bindDataEvent() {
-        this.subs.add(fromEvent(this.socket, this.getMessageEvent(), (topic: string, message) => {
-            return { topic, message };
-        }).pipe(
+    protected override messageEvent(): Observable<any> {
+        return fromEvent(this.socket, ev.MESSAGE, (topic: string, message) => ({ topic, message })).pipe(
             filter(res => this.options.serverSide ? !res.topic.endsWith('/reply') : true),
             map(res => {
                 return res.message
             })
-        ).subscribe(data => this.receiver.receive(data)))
+        ) as Observable<any>;
     }
 
     protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
-        return this.getReply(req) == res.topic && req.id === res.id;
+        return req.topic == res.topic && req.id === res.id;
     }
 
     protected getReply(packet: Packet) {
         return packet.replyTo ?? packet.topic + '/reply';
-    }
-
-    protected override getMessageEvent(): string {
-        return ev.MESSAGE;
     }
 
     async destroy(): Promise<void> {

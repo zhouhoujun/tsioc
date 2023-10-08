@@ -22,7 +22,6 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
         readonly options: TransportOpts = empt) {
 
         this.subs = new Subscription();
-        this.bindDataEvent();
 
     }
 
@@ -35,18 +34,26 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
             ))
     }
 
-
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
         this.initRequest(packet);
         let obs$ = from(lastValueFrom(this.send(packet))).pipe(
-            mergeMap(r => this.receiver.packet.pipe(
-                filter(p => this.match(packet, p))
-            )));
+            mergeMap(r => this.receive()),
+            filter(p => this.match(packet, p)),
+            first()
+        );
 
         if (this.options.timeout) {
             obs$ = obs$.pipe(timeout(this.options.timeout))
         }
         return obs$;
+    }
+
+    receive(): Observable<ResponsePacket<any>> {
+        return this.receiver.receive(this.messageEvent())
+    }
+
+    protected messageEvent(): Observable<any> {
+        return fromEvent(this.socket, ev.DATA);
     }
 
     protected match(req: RequestPacket, res: ResponsePacket) {
@@ -69,15 +76,6 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
             }));
         return merge(source, close$).pipe(first());
     }
-
-    protected bindDataEvent() {
-        this.subs.add(fromEvent(this.socket, this.getMessageEvent()).subscribe(data => this.receiver.receive(data)))
-    }
-
-    protected getMessageEvent() {
-        return ev.DATA;
-    }
-
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 

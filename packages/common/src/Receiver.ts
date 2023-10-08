@@ -25,8 +25,7 @@ export abstract class Receiver {
      * receive message 
      * @param input 
      */
-    abstract receive(input: any): void;
+    abstract receive(source: Observable<any>): Observable<ResponsePacket>;
 
-    abstract get packet(): Observable<ResponsePacket>;
 
 }

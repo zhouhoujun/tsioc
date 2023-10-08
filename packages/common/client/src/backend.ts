@@ -22,7 +22,6 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
 
         return (req.observe === 'emit'? session.send(pkg) : session.request(pkg))
             .pipe(
-                first(),
                 map(p => {
                     if (p.error) {
                         throw p.error;

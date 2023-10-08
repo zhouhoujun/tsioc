@@ -10,7 +10,7 @@ export class AssetRequestHandler implements RequestHandler<RequestPacket, Respon
 
     handle(endpoint: TransportEndpoint, session: TransportSession<any>, logger: Logger, options: ServerOpts) {
 
-        return session.receiver.packet.pipe(
+        return session.receive().pipe(
             mergeMap(req => {
                 if (!req.method && options?.defaultMethod) {
                     req.method = options?.defaultMethod;

@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver, Transport } from '@tsdi/common';
-import { BehaviorSubject, Observable, distinctUntilChanged, filter, finalize } from 'rxjs';
+import { Observable, Subscriber, Subscription, finalize, mergeMap } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -10,10 +10,8 @@ export class JsonReceiver implements Receiver {
     private length = 0
     private contentLength: number | null = null;
 
-    private _packets: BehaviorSubject<any>;
     private delimiter: Buffer;
 
-    readonly packet: Observable<Packet>;
     constructor(
         private injector: Injector,
         readonly transport: Transport,
@@ -22,25 +20,22 @@ export class JsonReceiver implements Receiver {
         private maxSize: number
     ) {
         this.delimiter = Buffer.from(delimiter);
-        this._packets = new BehaviorSubject(null);
-        this.packet = this._packets
-            .pipe(
-                distinctUntilChanged(),
-                filter(r => r !== null)
-            ) as Observable<Packet>;
     }
 
-    receive(input: Buffer): void {
-        try {
-            this.handleData(input);
-        } catch (ev) {
-            this._packets.next({
-                error: ev
-            });
-        }
+    receive(source: Observable<Buffer>): Observable<Packet> {
+        return source.pipe(
+            mergeMap(buf => new Observable((subscriber: Subscriber<Packet>) => {
+                try {
+                    this.handleData(buf, subscriber);
+                } catch (err) {
+                    subscriber.error(err)
+                }
+            }))
+        )
+
     }
 
-    protected handleData(dataRaw: string | Buffer) {
+    protected handleData(dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -70,14 +65,14 @@ export class JsonReceiver implements Receiver {
 
         if (this.contentLength !== null) {
             if (this.length === this.contentLength) {
-                this.handleMessage(this.concatCaches());
+                this.handleMessage(this.concatCaches(), subscriber);
             } else if (this.length > this.contentLength) {
                 const buffer = this.concatCaches();
                 const message = buffer.subarray(0, this.contentLength);
                 const rest = buffer.subarray(this.contentLength);
-                this.handleMessage(message);
+                this.handleMessage(message, subscriber);
                 if (rest.length) {
-                    this.handleData(rest);
+                    this.handleData(rest, subscriber);
                 }
             }
         }
@@ -87,7 +82,7 @@ export class JsonReceiver implements Receiver {
         return this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0]
     }
 
-    protected handleMessage(message: Buffer) {
+    protected handleMessage(message: Buffer, subscriber: Subscriber<Packet>) {
         this.contentLength = null;
         this.length = 0;
         this.buffers = [];
@@ -98,9 +93,6 @@ export class JsonReceiver implements Receiver {
                     ctx.destroy();
                 })
             )
-            .subscribe({
-                next: pkg => this._packets.next(pkg),
-                error: err => this._packets.error(err)
-            });
+            .subscribe(subscriber);
     }
 }

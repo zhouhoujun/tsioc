@@ -7,7 +7,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
-import { Subscription, finalize } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 
 /**

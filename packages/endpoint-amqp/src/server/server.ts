@@ -94,7 +94,7 @@ export class AmqpServer extends Server {
 
 
     protected async onShutdown(): Promise<any> {
-        this._session?.destroy();
+        await this._session?.destroy();
         await this._channel?.close();
         await this._conn?.close();
         this._channel = this._conn = null;

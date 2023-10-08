@@ -90,6 +90,11 @@ export abstract class TransportSession<TSocket = any>  {
     abstract request(packet: RequestPacket): Observable<ResponsePacket>;
 
     /**
+     * receive
+     */
+    abstract receive(): Observable<ResponsePacket>;
+
+    /**
      * destroy.
      */
     abstract destroy():  Promise<void>;

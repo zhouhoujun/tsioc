@@ -22,8 +22,11 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         if (!response.id) {
             response.id = request.id;
         }
-        if (request.replyTo ?? request.topic) {
-            response.topic = request.replyTo ?? request.topic;
+        if(request.replyTo){
+            response.replyTo = request.replyTo;
+        }
+        if (request.topic) {
+            response.topic = request.topic;
         } else if (request.url) {
             response.url = request.url;
         }

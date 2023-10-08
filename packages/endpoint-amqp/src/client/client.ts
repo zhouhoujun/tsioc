@@ -97,7 +97,7 @@ export class AmqpClient extends Client<TransportRequest, number> {
     }
 
     protected async onShutdown(): Promise<void> {
-        this._session?.destroy();
+        await this._session?.destroy();
         await this._channel?.close();
         await this._conn?.close();
         this._channel = this._conn = null;

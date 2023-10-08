@@ -2,13 +2,12 @@ import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, Pattern, RequestInitOpts, TransportSession, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common';
 import { CLIENTS, Client, TransportBackend } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
-import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
-
 
 /**
  * TcpClient. client of  `tcp` or `ipc`. 
@@ -90,7 +89,7 @@ export class TcpClient extends Client<TransportRequest, number> {
 
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
-        this._session?.destroy();
+        await this._session?.destroy();
         await promisify(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);
