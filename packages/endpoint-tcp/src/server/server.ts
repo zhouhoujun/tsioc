@@ -117,7 +117,7 @@ export class TcpServer extends Server implements ListenService {
 
 
 /**
- * tcp default options.
+ * tcp microservice default options.
  */
 const defMicroOpts = {
     autoListen: true,

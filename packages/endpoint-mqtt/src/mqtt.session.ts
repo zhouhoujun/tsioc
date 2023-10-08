@@ -1,4 +1,4 @@
-import { BadRequestExecption, Packet, RequestPacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { Injectable, promisify } from '@tsdi/ioc';
 import { Client } from 'mqtt';
@@ -37,6 +37,9 @@ export class TopicTransportSession extends AbstractTransportSession<Client> {
         ).subscribe(data => this.receiver.receive(data)))
     }
 
+    protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+        return this.getReply(req) == res.topic && req.id === res.id;
+    }
 
     protected getReply(packet: Packet) {
         return packet.replyTo ?? packet.topic + '/reply';

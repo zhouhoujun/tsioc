@@ -1,9 +1,9 @@
-# packaged @tsdi/endpoint-tcp
+# packaged @tsdi/endpoint-amqp
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/endpoint-tcp`： application bootstrap TCP endpoint service.
+`@tsdi/endpoint-amqp`： application bootstrap amqp endpoint service`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -12,7 +12,7 @@ old packages:
 
 ```shell
 
-npm install @tsdi/endpoint-tcp
+npm install @tsdi/endpoint-amqp
 
 // in browser
 npm install @tsdi/platform-browser
@@ -272,13 +272,8 @@ class DeviceController {
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
-        let defer = lang.defer();
-
-        setTimeout(()=> {
-            defer.resolve(version);
-        }, 10);
-
-        return await defer.promise;
+        await lang.delay(50);
+        return version;
     }
 
 

@@ -38,16 +38,19 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
 
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
         this.initRequest(packet);
-        const id = packet.id;
         let obs$ = from(lastValueFrom(this.send(packet))).pipe(
             mergeMap(r => this.receiver.packet.pipe(
-                filter(p => p.id == id)
+                filter(p => this.match(packet, p))
             )));
 
         if (this.options.timeout) {
             obs$ = obs$.pipe(timeout(this.options.timeout))
         }
         return obs$;
+    }
+
+    protected match(req: RequestPacket, res: ResponsePacket) {
+        return res.id == req.id
     }
 
     protected initRequest(packet: RequestPacket<any>) {

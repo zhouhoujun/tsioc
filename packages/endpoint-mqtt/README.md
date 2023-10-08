@@ -1,9 +1,9 @@
-# packaged @tsdi/transport-mqtt
+# packaged @tsdi/endpoint-mqtt
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/transport-mqtt`： application bootstrap, via `@tsdi/core`.
+`@tsdi/endpoint-mqtt`： application bootstrap mqtt endpoint service`.
 
 old packages:
 [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
@@ -12,7 +12,7 @@ old packages:
 
 ```shell
 
-npm install @tsdi/transport-mqtt
+npm install @tsdi/endpoint-mqtt
 
 // in browser
 npm install @tsdi/platform-browser
@@ -444,17 +444,17 @@ Documentation is available on the
 * [@tsdi/logger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/logger).
 * [@tsdi/common document](https://github.com/zhouhoujun/tsioc/tree/master/packages/common).
 * [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
-* [@tsdi/transport document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport).
-* [@tsdi/transport-amqp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-amqp).
-* [@tsdi/transport-coap document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-coap).
-* [@tsdi/transport-http document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-http).
-* [@tsdi/transport-kafka document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-kafka).
-* [@tsdi/transport-mqtt document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-mqtt).
-* [@tsdi/transport-nats document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-nats).
-* [@tsdi/transport-redis document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-redis).
-* [@tsdi/transport-tcp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-tcp).
-* [@tsdi/transport-udp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-udp).
-* [@tsdi/transport-ws document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-ws).
+* [@tsdi/endpoints document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoints).
+* [@tsdi/endpoint-amqp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-amqp).
+* [@tsdi/endpoint-coap document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-coap).
+* [@tsdi/endpoint-http document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-http).
+* [@tsdi/endpoint-kafka document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-kafka).
+* [@tsdi/endpoint-mqtt document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-mqtt).
+* [@tsdi/endpoint-nats document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-nats).
+* [@tsdi/endpoint-redis document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-redis).
+* [@tsdi/endpoint-tcp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-tcp).
+* [@tsdi/endpoint-udp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-udp).
+* [@tsdi/endpoint-ws document](https://github.com/zhouhoujun/tsioc/tree/master/packages/endpoint-ws).
 * [@tsdi/swagger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/swagger).
 * [@tsdi/repository document](https://github.com/zhouhoujun/tsioc/tree/master/packages/repository).
 * [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
@@ -476,17 +476,17 @@ Documentation is available on the
 [@tsdi/logger](https://www.npmjs.com/package/@tsdi/logger)
 [@tsdi/common](https://www.npmjs.com/package/@tsdi/common)
 [@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
-[@tsdi/transport](https://www.npmjs.com/package/@tsdi/transport)
-[@tsdi/transport-amqp](https://www.npmjs.com/package/@tsdi/transport-amqp)
-[@tsdi/transport-coap](https://www.npmjs.com/package/@tsdi/transport-coap)
-[@tsdi/transport-http](https://www.npmjs.com/package/@tsdi/transport-http)
-[@tsdi/transport-kafka](https://www.npmjs.com/package/@tsdi/transport-kafka)
-[@tsdi/transport-mqtt](https://www.npmjs.com/package/@tsdi/transport-mqtt)
-[@tsdi/transport-nats](https://www.npmjs.com/package/@tsdi/transport-nats)
-[@tsdi/transport-redis](https://www.npmjs.com/package/@tsdi/transport-redis)
-[@tsdi/transport-tcp](https://www.npmjs.com/package/@tsdi/transport-tcp)
-[@tsdi/transport-udp](https://www.npmjs.com/package/@tsdi/transport-udp)
-[@tsdi/transport-ws](https://www.npmjs.com/package/@tsdi/transport-ws)
+[@tsdi/endpoints](https://www.npmjs.com/package/@tsdi/endpoints)
+[@tsdi/endpoint-amqp](https://www.npmjs.com/package/@tsdi/endpoint-amqp)
+[@tsdi/endpoint-coap](https://www.npmjs.com/package/@tsdi/endpoint-coap)
+[@tsdi/endpoint-http](https://www.npmjs.com/package/@tsdi/endpoint-http)
+[@tsdi/endpoint-kafka](https://www.npmjs.com/package/@tsdi/endpoint-kafka)
+[@tsdi/endpoint-mqtt](https://www.npmjs.com/package/@tsdi/endpoint-mqtt)
+[@tsdi/endpoint-nats](https://www.npmjs.com/package/@tsdi/endpoint-nats)
+[@tsdi/endpoint-redis](https://www.npmjs.com/package/@tsdi/endpoint-redis)
+[@tsdi/endpoint-tcp](https://www.npmjs.com/package/@tsdi/endpoint-tcp)
+[@tsdi/endpoint-udp](https://www.npmjs.com/package/@tsdi/endpoint-udp)
+[@tsdi/endpoint-ws](https://www.npmjs.com/package/@tsdi/endpoint-ws)
 [@tsdi/swagger](https://www.npmjs.com/package/@tsdi/swagger)
 [@tsdi/repository](https://www.npmjs.com/package/@tsdi/repository)
 [@tsdi/typeorm-adapter](https://www.npmjs.com/package/@tsdi/typeorm-adapter)
