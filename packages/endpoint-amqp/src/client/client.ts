@@ -69,7 +69,7 @@ export class AmqpClient extends Client<TransportRequest, number> {
 
         await this._channel.consume(transportOpts.replyQueue!, msg => {
             if (!msg || !this._channel) return;
-            this._channel.emit(ev.CUSTOM_MESSAGE, transportOpts.replyQueue, msg)
+            this._channel.emit(ev.MESSAGE, transportOpts.replyQueue, msg)
         }, {
             noAck: true,
             ...transportOpts.consumeOpts

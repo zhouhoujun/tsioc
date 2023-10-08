@@ -66,7 +66,7 @@ export class AmqpServer extends Server {
 
         await channel.consume(transportOpts.queue!, msg => {
             if (!msg) return;
-            channel.emit(ev.CUSTOM_MESSAGE, transportOpts.queue, msg)
+            channel.emit(ev.MESSAGE, transportOpts.queue, msg)
         }, {
             noAck: true,
             ...transportOpts.consumeOpts

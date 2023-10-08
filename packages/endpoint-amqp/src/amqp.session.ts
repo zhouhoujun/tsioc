@@ -3,8 +3,8 @@ import { AbstractTransportSession } from '@tsdi/endpoints';
 import { UuidGenerator } from '@tsdi/core';
 import { hdr } from '@tsdi/endpoints/assets';
 import { Injectable } from '@tsdi/ioc';
-import { Channel } from 'amqplib';
-import { fromEvent, map } from 'rxjs';
+import { Channel, ConsumeMessage } from 'amqplib';
+import { Observable, fromEvent, map } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
@@ -48,18 +48,13 @@ export class QueueTransportSession extends AbstractTransportSession<Channel> {
         return res.topic == req.replyTo && req.id == req.id
     }
 
-    protected bindDataEvent() {
-        this.subs.add(fromEvent(this.socket, this.getMessageEvent(), (queue: string, message) => {
-            return { queue, message };
-        }).pipe(
-            map(res => {
-                return res.message
-            })
-        ).subscribe(data => this.receiver.receive(data)))
-    }
-
-    protected override getMessageEvent(): string {
-        return ev.CUSTOM_MESSAGE;
+    protected override messageEvent(): Observable<any> {
+        return fromEvent(this.socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => ({ queue, message }))
+            .pipe(
+                map(res => {
+                    return res.message
+                })
+            );
     }
 
     protected override getPacketId(): string {
@@ -67,7 +62,7 @@ export class QueueTransportSession extends AbstractTransportSession<Channel> {
     }
 
     async destroy(): Promise<void> {
-        this.subs?.unsubscribe();
+        
     }
 }
 

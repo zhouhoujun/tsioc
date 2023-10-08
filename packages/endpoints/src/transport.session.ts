@@ -1,6 +1,6 @@
 import { Execption } from '@tsdi/ioc';
 import { IEventEmitter, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev } from '@tsdi/common';
-import { Observable, Subscription, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap, timeout } from 'rxjs';
+import { Observable, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -13,15 +13,11 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
     private allocator?: NumberAllocator;
     private last?: number;
 
-    protected subs: Subscription;
-
     constructor(
         readonly socket: TSocket,
         readonly sender: Sender,
         readonly receiver: Receiver,
         readonly options: TransportOpts = empt) {
-
-        this.subs = new Subscription();
 
     }
 

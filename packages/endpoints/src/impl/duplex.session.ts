@@ -11,7 +11,6 @@ export class DuplexTransportSession extends AbstractTransportSession<IDuplexStre
     }
 
     override async destroy(): Promise<void> {
-        this.subs?.unsubscribe();
         this.socket.destroy?.();
     }
 }

@@ -55,7 +55,6 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
     }
 
     async destroy(): Promise<void> {
-        this.subs?.unsubscribe();
         if (this.replys.size && this.socket.unsubscribe) {
             await promisify(this.socket.unsubscribe, this.socket)(Array.from(this.replys.values()));
             this.replys.clear();
