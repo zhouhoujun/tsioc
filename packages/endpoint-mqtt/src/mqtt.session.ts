@@ -51,6 +51,10 @@ export class TopicTransportSession extends AbstractTransportSession<Client> {
 
     async destroy(): Promise<void> {
         this.subs?.unsubscribe();
+        if(this.replys.size){
+            await promisify(this.socket.unsubscribe, this.socket)(Array.from(this.replys.values()));
+            this.replys.clear();
+        }
     }
 }
 
