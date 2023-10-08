@@ -1,11 +1,18 @@
-import { BadRequestExecption, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { Injectable, promisify } from '@tsdi/ioc';
-import { Client } from 'mqtt';
 import { filter, fromEvent, map } from 'rxjs';
 
 
-export class TopicTransportSession extends AbstractTransportSession<Client> {
+export interface TopicClient extends IEventEmitter {
+    subscribe(topics: string | string[]): void;
+    publish(topic: string, data: Buffer, callback?: (err: any, res: any) => void): void;
+    publish(topic: string, data: Buffer, opts: any, callback?: (err: any, res: any) => void): void;
+    unsubscribe?(topics: string | string[], callback: (err: any, res: any) => void): void
+}
+
+
+export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends AbstractTransportSession<TSocket> {
 
     private replys: Set<string> = new Set();
 
@@ -17,6 +24,10 @@ export class TopicTransportSession extends AbstractTransportSession<Client> {
 
     protected override initRequest(packet: RequestPacket<any>): void {
         super.initRequest(packet);
+        this.subscribeReply(packet);
+    }
+
+    protected subscribeReply(packet: RequestPacket<any>): void {
         if (!this.options.serverSide) {
             const rtopic = this.getReply(packet);
             if (!this.replys.has(rtopic)) {
@@ -51,7 +62,7 @@ export class TopicTransportSession extends AbstractTransportSession<Client> {
 
     async destroy(): Promise<void> {
         this.subs?.unsubscribe();
-        if(this.replys.size){
+        if (this.replys.size && this.socket.unsubscribe) {
             await promisify(this.socket.unsubscribe, this.socket)(Array.from(this.replys.values()));
             this.replys.clear();
         }
@@ -59,11 +70,11 @@ export class TopicTransportSession extends AbstractTransportSession<Client> {
 }
 
 @Injectable()
-export class TopicTransportSessionFactory implements TransportSessionFactory<Client> {
+export class TopicTransportSessionFactory implements TransportSessionFactory<TopicClient> {
 
     constructor(private factory: TransportFactory) { }
 
-    create(socket: Client, transport: Transport, options?: TransportOpts): TopicTransportSession {
+    create(socket: TopicClient, transport: Transport, options?: TransportOpts): TopicTransportSession {
         return new TopicTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), options);
     }
 

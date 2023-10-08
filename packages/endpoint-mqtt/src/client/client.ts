@@ -1,13 +1,12 @@
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, DisconnectExecption, ev, OfflineExecption, TransportSession, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
-import { CLIENTS, Client, TopicTransportBackend, TransportBackend } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { CLIENTS, Client, TopicTransportBackend } from '@tsdi/common/client';
+import { TopicTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
 import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
-import { TopicTransportSessionFactory } from '../mqtt.session';
 
 
 /**

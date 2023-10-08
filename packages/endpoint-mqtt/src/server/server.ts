@@ -1,14 +1,13 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { Packet, PatternFormatter, MESSAGE, TransportSessionFactory, TransportSession, LOCALHOST, ev } from '@tsdi/common';
-import { DuplexTransportSessionFactory, ENDPOINTS, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MircoServRouters, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
+import { PatternFormatter, TransportSessionFactory, TransportSession, LOCALHOST, ev } from '@tsdi/common';
+import { ENDPOINTS, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MircoServRouters, RequestHandler, Server, TopicTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
 import { Content } from '@tsdi/endpoints/assets';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
 import { Subscription, finalize } from 'rxjs';
-import { TopicTransportSessionFactory } from '../mqtt.session';
 
 
 /**

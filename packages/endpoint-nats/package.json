@@ -1,7 +1,7 @@
 {
-  "name": "@tsdi/endpoint-mqtt",
+  "name": "@tsdi/endpoint-nats",
   "version": "6.0.31",
-  "description": "Application mqtt endpoint service. base on AOP, Ioc container, via @tsdi/core.",
+  "description": "Application nats endpoint service. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
@@ -31,9 +31,7 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {
-    "mqtt": "^4.3.7"
-  },
+  "dependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"
