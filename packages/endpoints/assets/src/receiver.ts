@@ -31,15 +31,14 @@ export class AssetReceiver implements Receiver {
             ) as Observable<Packet>;
     }
 
-    receive(source: Observable<Buffer>): Observable<Packet> {
-        return source.pipe(
-            mergeMap(buf => new Observable((subscriber: Subscriber<Packet>) => {
-                try {
-                    this.handleData(buf, subscriber);
-                } catch (err) {
-                    subscriber.error(err)
-                }
-        })));
+    receive(source: string | Buffer): Observable<Packet> {
+        return new Observable((subscriber: Subscriber<Packet>) => {
+            try {
+                this.handleData(source, subscriber);
+            } catch (err) {
+                subscriber.error(err)
+            }
+        });
     }
 
     protected handleData(dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {

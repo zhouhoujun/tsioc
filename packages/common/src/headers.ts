@@ -9,8 +9,8 @@ export type IncomingHeader = string | readonly string[] | undefined | number;
  */
 export type OutgoingHeader = IncomingHeader;
 
-export interface IncomingHeaders extends Record<string, IncomingHeader> {
-    [x: string]: IncomingHeader | number;
+export interface IncomingHeaders {
+    [x: string]: IncomingHeader | number | any;
     'content-type'?: string;
     'Content-Type'?: string;
     'content-length'?: string | number;
@@ -31,8 +31,8 @@ export interface IncomingStatusHeaders {
     ':status'?: number | string;
 }
 
-export interface OutgoingHeaders extends Record<string, OutgoingHeader> {
-    [x: string]: OutgoingHeader;
+export interface OutgoingHeaders {
+    [x: string]: OutgoingHeader | any;
     'content-type'?: string;
     'Content-Type'?: string;
     'content-length'?: string | number;

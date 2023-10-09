@@ -1,5 +1,5 @@
-import { Execption } from '@tsdi/ioc';
-import { IEventEmitter, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev } from '@tsdi/common';
+import { Execption, isString } from '@tsdi/ioc';
+import { IEventEmitter, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
 import { Observable, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -8,7 +8,7 @@ export const defaultMaxSize = 1024 * 256;
 
 const empt = {} as TransportOpts;
 
-export abstract class AbstractTransportSession<TSocket extends IEventEmitter> implements TransportSession<TSocket> {
+export abstract class AbstractTransportSession<TSocket> implements TransportSession<TSocket> {
 
     private allocator?: NumberAllocator;
     private last?: number;
@@ -22,7 +22,7 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
     }
 
     send(packet: Packet<any>): Observable<any> {
-        return this.mergeClose(this.sender.send(packet)
+        return this.mergeClose(this.pack(packet)
             .pipe(
                 mergeMap(data => {
                     return this.write(data, packet);
@@ -45,12 +45,30 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
     }
 
     receive(): Observable<ResponsePacket<any>> {
-        return this.receiver.receive(this.messageEvent())
+        return this.message()
+            .pipe(
+                mergeMap(msg => {
+                    return this.unpack(msg);
+                })
+            )
     }
 
-    protected messageEvent(): Observable<any> {
-        return fromEvent(this.socket, ev.DATA);
+    protected pack(packet: Packet): Observable<Buffer> {
+        return this.sender.send(packet)
     }
+
+    protected unpack(msg: any): Observable<Packet<any>> {
+        return this.receiver.receive(msg);
+    }
+
+    abstract destroy(): Promise<void>;
+
+    protected abstract message(): Observable<any>;
+
+    protected abstract mergeClose(source: Observable<any>): Observable<any>;
+
+    protected abstract write(data: Buffer, packet: Packet): Promise<void>;
+
 
     protected match(req: RequestPacket, res: ResponsePacket) {
         return res.id == req.id
@@ -61,19 +79,6 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
             packet.id = this.getPacketId();
         }
     }
-
-    abstract destroy(): Promise<void>;
-
-
-    protected mergeClose(source: Observable<any>) {
-        const close$ = fromEvent(this.socket, ev.CLOSE).pipe(
-            map(err => {
-                throw err
-            }));
-        return merge(source, close$).pipe(first());
-    }
-
-    protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
     protected getPacketId(): string | number {
         if (!this.allocator) {
@@ -86,6 +91,29 @@ export abstract class AbstractTransportSession<TSocket extends IEventEmitter> im
         this.last = id;
         return id;
     }
+
+}
+
+
+export abstract class EventTransportSession<TSocket extends IEventEmitter> extends AbstractTransportSession<TSocket> implements TransportSession<TSocket> {
+
+
+    protected message(): Observable<any> {
+        return fromEvent(this.socket, ev.DATA) as Observable<any>;
+    }
+
+
+    abstract destroy(): Promise<void>;
+
+    protected mergeClose(source: Observable<any>) {
+        const close$ = fromEvent(this.socket, ev.CLOSE).pipe(
+            map(err => {
+                throw err
+            }));
+        return merge(source, close$).pipe(first());
+    }
+
+    protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
 }
 

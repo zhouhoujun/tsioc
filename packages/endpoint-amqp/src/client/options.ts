@@ -19,7 +19,7 @@ export interface AmqpClientOpts extends ClientOpts<string | amqp.Options.Connect
     /**
      * transport session options.
      */
-    transportOpts?: AmqpSessionOpts & { maxSize?: number};
+    transportOpts?: AmqpSessionOpts;
     /**
      * request timeout.
      */

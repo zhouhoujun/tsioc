@@ -1,7 +1,7 @@
-import { Interceptor, ConfigableHandlerOptions, Filter } from '@tsdi/core';
+import { Interceptor, Filter } from '@tsdi/core';
 import { Token, tokenId } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
-import { Client } from '@tsdi/transport';
+import { ClientOpts } from '@tsdi/common/client';
 import { ConnectionOptions, SubscriptionOptions } from 'nats';
 import { NatsSessionOpts } from '../options';
 
@@ -9,8 +9,7 @@ import { NatsSessionOpts } from '../options';
 /**
  * NATS client options.
  */
-export interface NatsClientOpts extends ConfigableHandlerOptions<TransportRequest> {
-
+export interface NatsClientOpts extends ClientOpts<ConnectionOptions> {
     /**
      * keep alive
      */
@@ -20,31 +19,14 @@ export interface NatsClientOpts extends ConfigableHandlerOptions<TransportReques
      */
     transportOpts?: NatsSessionOpts;
     /**
-     * connect options.
-     */
-    connectOpts?: ConnectionOptions;
-    /**
      * subscription options.
      */
     subscriptionOpts?: SubscriptionOptions;
-    /**
-     * request timeout.
-     */
-    timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
     debug?: boolean;
 }
 
-/**
- * multi NATS client options.
- */
-export interface NatsClientsOpts extends NatsClientOpts {
-    /**
-     * client token.
-     */
-    client: Token<Client>;
-}
 
 /**
  * NATS client opptions.

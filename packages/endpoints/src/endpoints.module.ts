@@ -1,6 +1,6 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, isArray, toFactory, toProvider } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
-import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { HeybirdRequired, NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -187,7 +187,7 @@ export class EndpointsModule {
      * @param options 
      * @returns 
      */
-    static forServer(options: ServerModuleConfig & TransportRequired): ModuleWithProviders<EndpointsModule> {
+    static forServer(options: ServerModuleConfig & HeybirdRequired): ModuleWithProviders<EndpointsModule> {
 
         const opts = servs[options.transport];
         if (!opts) throw new NotImplementedExecption(options.transport + ' Server has not implemented');
@@ -260,7 +260,7 @@ function createServiceProviders(options: MicroServiceModuleOpts & TransportRequi
 
 
 
-function createServProviders(options: ServerModuleOpts & TransportRequired) {
+function createServProviders(options: ServerModuleOpts & HeybirdRequired) {
     const { serverType, endpointType, serverOptsToken, defaultOpts } = options;
     const init = (opts: ServerOpts) => {
         const serverOpts = {

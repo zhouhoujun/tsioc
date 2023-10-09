@@ -1,14 +1,14 @@
-import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { AbstractTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { EventTransportSession } from '@tsdi/endpoints';
 import { UuidGenerator } from '@tsdi/core';
 import { hdr } from '@tsdi/endpoints/assets';
 import { Injectable } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
-import { Observable, fromEvent, map } from 'rxjs';
+import { Observable, fromEvent, map, of } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
-export class QueueTransportSession extends AbstractTransportSession<Channel> {
+export class QueueTransportSession extends EventTransportSession<Channel> {
 
     constructor(
         socket: Channel,
@@ -25,10 +25,11 @@ export class QueueTransportSession extends AbstractTransportSession<Channel> {
         const queue = options.serverSide ? packet.replyTo ?? options.replyQueue! : options.queue!;
         if (!queue) throw new BadRequestExecption();
         const replys = options.serverSide ? undefined : {
-            replyTo: packet.replyTo,
+            replyTo: packet.replyTo ?? options.replyQueue,
             persistent: options.persistent,
         };
-        const headers = packet.headers!;
+        const headers = { ...options.publishOpts?.headers, ...packet.headers };
+        headers[hdr.TOPIC] = packet.topic;
         this.socket.sendToQueue(queue, data ?? Buffer.alloc(0), {
             ...replys,
             ...options.publishOpts,
@@ -45,10 +46,10 @@ export class QueueTransportSession extends AbstractTransportSession<Channel> {
     }
 
     protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
-        return res.topic == req.replyTo && req.id == req.id
+        return res.topic == req.topic && req.id == req.id
     }
 
-    protected override messageEvent(): Observable<any> {
+    protected override message(): Observable<any> {
         return fromEvent(this.socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => ({ queue, message }))
             .pipe(
                 map(res => {
@@ -57,12 +58,37 @@ export class QueueTransportSession extends AbstractTransportSession<Channel> {
             );
     }
 
+    protected override pack(packet: Packet<any>): Observable<Buffer> {
+        const { replyTo, topic, id, headers, ...data} = packet;
+        return this.sender.send(data);
+    }
+
+    protected override unpack(msg: ConsumeMessage): Observable<Packet> {
+
+        const { correlationId, replyTo, contentType, contentEncoding } = msg.properties;
+        const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
+        headers[hdr.CONTENT_TYPE] = contentType;
+        headers[hdr.CONTENT_ENCODING] = contentEncoding;
+        return this.receiver.receive(msg.content)
+            .pipe(
+                map(payload => {
+                    return {
+                        id: correlationId,
+                        topic: headers[hdr.TOPIC],
+                        replyTo: replyTo,
+                        headers,
+                        ...payload
+                    } as Packet
+                })
+            )
+    }
+
     protected override getPacketId(): string {
         return this.uuidGenner.generate()
     }
 
     async destroy(): Promise<void> {
-        
+
     }
 }
 

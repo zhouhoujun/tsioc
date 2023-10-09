@@ -147,9 +147,49 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-ws",
+            "name": "test endpoint-amqp",
             "args": [
-                "${workspaceRoot}/packages/endpoint-ws/unit.ts" 
+                "${workspaceRoot}/packages/endpoint-amqp/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test endpoint-mqtt",
+            "args": [
+                "${workspaceRoot}/packages/endpoint-mqtt/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test endpoint-nats",
+            "args": [
+                "${workspaceRoot}/packages/endpoint-nats/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -187,9 +227,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-mqtt",
+            "name": "test endpoint-ws",
             "args": [
-                "${workspaceRoot}/packages/endpoint-mqtt/unit.ts" 
+                "${workspaceRoot}/packages/endpoint-ws/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

@@ -1,9 +1,12 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
-import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
-import { NATS_SERV_INTERCEPTORS, NatsClient, NatsClientModule, NatsMicroServModule, NatsServer } from '../src';
+import { ClientModule } from '@tsdi/common/client';
+import { Handle, Payload, RequestPath, Subscribe, EndpointsModule } from '@tsdi/endpoints';
+import { JsonEndpointModule } from '@tsdi/endpoints/json';
+import { NATS_SERV_INTERCEPTORS, NatsClient, NatsServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -58,9 +61,11 @@ export class NatsService {
     baseURL: __dirname,
     imports: [
         ServerModule,
-        LoggerModule,
-        // NatsClientModule,
-        NatsClientModule.withOption({
+        LoggerModule,        
+        JsonEndpointModule,
+        ServerEndpointModule,
+        ClientModule.forClient({
+            transport: 'nats',
             clientOpts: {
                 // connectOpts: {
                 //     port: 6379
@@ -68,15 +73,9 @@ export class NatsService {
                 timeout: 200
             }
         }),
-        NatsMicroServModule
-        // NatsMicroServiceModule.withOption({
-        //     serverOpts: {
-        //         // timeout: 1000,
-        //         // connectOpts: {
-        //         //     port: 2000
-        //         // }
-        //     }
-        // })
+        EndpointsModule.forMicroservice({
+            transport: 'nats'
+        })
     ],
     declarations: [
         NatsService

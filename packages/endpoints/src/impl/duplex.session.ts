@@ -1,10 +1,10 @@
 import { Injectable, promisify } from '@tsdi/ioc';
 import { IDuplexStream, Packet,Transport, TransportFactory, TransportOpts, TransportSessionFactory } from '@tsdi/common';
-import { AbstractTransportSession } from '../transport.session';
+import { EventTransportSession } from '../transport.session';
 
 
 
-export class DuplexTransportSession extends AbstractTransportSession<IDuplexStream> {
+export class DuplexTransportSession extends EventTransportSession<IDuplexStream> {
 
     protected override write(data: Buffer, packet: Packet): Promise<void> {
         return promisify<Buffer, void>(this.socket.write, this.socket)(data);

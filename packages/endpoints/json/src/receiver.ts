@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver, Transport } from '@tsdi/common';
-import { Observable, Subscriber, Subscription, finalize, mergeMap } from 'rxjs';
+import { Observable, Subscriber, finalize } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -22,17 +22,14 @@ export class JsonReceiver implements Receiver {
         this.delimiter = Buffer.from(delimiter);
     }
 
-    receive(source: Observable<Buffer>): Observable<Packet> {
-        return source.pipe(
-            mergeMap(buf => new Observable((subscriber: Subscriber<Packet>) => {
-                try {
-                    this.handleData(buf, subscriber);
-                } catch (err) {
-                    subscriber.error(err)
-                }
-            }))
-        )
-
+    receive(source: string | Buffer): Observable<Packet> {
+        return new Observable((subscriber: Subscriber<Packet>) => {
+            try {
+                this.handleData(source, subscriber);
+            } catch (err) {
+                subscriber.error(err)
+            }
+        })
     }
 
     protected handleData(dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {

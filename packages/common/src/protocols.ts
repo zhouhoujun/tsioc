@@ -24,6 +24,14 @@ export interface TransportRequired {
     transport: Transport;
 }
 
+export interface HeybirdRequired {
+    /**
+     * transport type.
+     */
+    transport: 'http' | 'grpc' | 'tcp' | 'coap';
+}
+
+
 
 //http
 /**

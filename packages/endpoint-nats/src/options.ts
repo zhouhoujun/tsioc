@@ -1,8 +1,12 @@
-import { TransportSessionOpts } from '@tsdi/transport';
-import { PublishOptions } from 'nats';
+import { TransportOpts } from '@tsdi/common';
+import { PublishOptions, SubscriptionOptions } from 'nats';
 
 
-export interface NatsSessionOpts extends TransportSessionOpts {
+export interface NatsSessionOpts extends TransportOpts {
     reply?: string;
-    publishOpts?: PublishOptions
+    publishOpts?: PublishOptions;
+    /**
+     * subscription options.
+     */
+    subscriptionOpts?: SubscriptionOptions;
 }

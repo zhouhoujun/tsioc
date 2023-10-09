@@ -1,20 +1,35 @@
-import { BadRequestExecption, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
-import { Injectable, promisify } from '@tsdi/ioc';
-import { Msg, MsgHdrs, NatsConnection, headers as createHeaders } from 'nats';
-import { filter, fromEvent, map } from 'rxjs';
+import { hdr } from '@tsdi/endpoints/assets';
+import { Injectable } from '@tsdi/ioc';
+import { EventEmitter } from 'events';
+import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
+import { Observable, filter, fromEvent, map, throwError } from 'rxjs';
 import { NatsSessionOpts } from './options';
+import { UuidGenerator } from '@tsdi/core';
 
 
-export class TopicTransportSession extends AbstractTransportSession<NatsConnection> {
+export class NatsTransportSession extends AbstractTransportSession<NatsConnection> {
 
-    private replys: Set<string> = new Set();
+
+    constructor(
+        socket: NatsConnection,
+        sender: Sender,
+        receiver: Receiver,
+        private uuidGenner: UuidGenerator,
+        options?: TransportOpts) {
+        super(socket, sender, receiver, options)
+    }
+
+    private subjects: Set<string> = new Set();
+    private events = new EventEmitter();
+    private subscribes: Subscription[] | null = [];
 
     protected async write(data: Buffer, packet: Packet & { natsheaders: MsgHdrs }): Promise<void> {
         const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
         const opts = this.options as NatsSessionOpts;
         if (!topic) throw new BadRequestExecption();
-        if(!packet.natsheaders){
+        if (!packet.natsheaders) {
             const headers = opts.publishOpts?.headers ?? createHeaders();
             packet.headers && Object.keys(packet.headers).forEach(k => {
                 headers.set(k, String(packet?.headers?.[k] ?? ''))
@@ -37,51 +52,95 @@ export class TopicTransportSession extends AbstractTransportSession<NatsConnecti
         super.initRequest(packet);
         if (!this.options.serverSide) {
             const rtopic = this.getReply(packet);
-            if (!this.replys.has(rtopic)) {
-                this.replys.add(rtopic);
-                this.socket.subscribe(rtopic);
-            }
+            this.subscribe(rtopic, (this.options as NatsSessionOpts).subscriptionOpts)
         }
     }
 
-    protected bindDataEvent() {
-        this.subs.add(fromEvent(this.socket, this.getMessageEvent(), (topic: string, message) => {
-            return { topic, message };
-        }).pipe(
-            filter(res => this.options.serverSide ? !res.topic.endsWith('/reply') : true),
-            map(res => {
-                return res.message
-            })
-        ).subscribe(data => this.receiver.receive(data)))
+
+    subscribe(subject: string, opts?: SubscriptionOptions) {
+        if (!this.subjects.has(subject)) {
+            const opts = this.options as NatsSessionOpts;
+            this.subjects.add(subject);
+            this.subscribes?.push(this.socket.subscribe(subject, {
+                ...opts,
+                callback: (err: any, msg: Msg) => {
+                    this.events.emit(ev.MESSAGE, err, msg);
+                }
+            }));
+        }
+    }
+
+    protected mergeClose(source: Observable<any>): Observable<any> {
+        return this.socket.isClosed() ? throwError(() => new OfflineExecption()) : source;
     }
 
     protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
-        return this.getReply(req) == res.topic && req.id === res.id;
+        return req.topic == res.topic && req.id === res.id;
+    }
+
+    protected override message() {
+        return fromEvent(this.events, ev.MESSAGE, (error: Error, msg: Msg) => {
+            return { error, msg }
+        }).pipe(
+            map(res => {
+                if (res.error) throw res.error;
+                return res.msg
+            }),
+            filter(msg => this.options.serverSide ? !msg.subject.endsWith('.reply') : true)
+        )
+    }
+
+    protected override pack(packet: Packet<any>): Observable<Buffer> {
+        const { replyTo, topic, id, headers, ...data } = packet;
+        return this.sender.send(data);
+    }
+
+    protected override unpack(msg: Msg): Observable<Packet> {
+        const headers = {} as OutgoingHeaders;
+        msg.headers?.keys().forEach(key => {
+            headers[key] = msg.headers?.get(key);
+        });
+        const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
+        return this.receiver.receive(Buffer.from(msg.data))
+            .pipe(
+                map(payload => {
+                    return {
+                        id,
+                        topic: headers[hdr.TOPIC],
+                        replyTo: msg.reply,
+                        headers,
+                        ...payload
+                    } as Packet
+                })
+            )
     }
 
     protected getReply(packet: Packet) {
-        return packet.replyTo ?? packet.topic + '/reply';
+        return packet.replyTo ?? packet.topic + '.reply';
     }
 
-    protected override getMessageEvent(): string {
-        return ev.MESSAGE;
+    protected override getPacketId(): string {
+        return this.uuidGenner.generate()
     }
 
     async destroy(): Promise<void> {
-        this.subs?.unsubscribe();
-        if(this.replys.size){
-            this.replys.clear();
+        if (this.subjects.size) {
+            this.subjects.clear();
         }
+        this.subscribes?.forEach(s => s?.unsubscribe());
+        this.subscribes = null;
+        this.events.removeAllListeners();
     }
 }
 
 @Injectable()
 export class NatsTransportSessionFactory implements TransportSessionFactory<NatsConnection> {
 
-    constructor(private factory: TransportFactory) { }
+    constructor(private factory: TransportFactory,
+        private uuidGenner: UuidGenerator) { }
 
-    create(socket: NatsConnection, transport: Transport, options?: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), options);
+    create(socket: NatsConnection, transport: Transport, options?: TransportOpts): NatsTransportSession {
+        return new NatsTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, options);
     }
 
 }

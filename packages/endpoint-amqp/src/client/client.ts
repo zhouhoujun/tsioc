@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
-import { TransportRequest, TransportSession, ev } from '@tsdi/common';
+import { TransportRequest, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
 import {  Client, CLIENTS, TopicTransportBackend } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as amqp from 'amqplib';
@@ -75,7 +75,7 @@ export class AmqpClient extends Client<TransportRequest, number> {
             ...transportOpts.consumeOpts
         });
 
-        this._session = this.handler.injector.get(AmqpTransportSessionFactory).create(this._channel, 'amqp', this.options.transportOpts!);
+        this._session = this.handler.injector.get(TransportSessionFactory).create(this._channel, 'amqp', this.options.transportOpts!);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
@@ -122,10 +122,11 @@ const defaultOpts = {
         prefetchCount: 0
     },
     backend: TopicTransportBackend,
+    sessionFactory: AmqpTransportSessionFactory
 } as AmqpClientOpts;
 
 
-CLIENTS.register('mqtt', {
+CLIENTS.register('amqp', {
     clientType: AmqpClient,
     clientOptsToken: AMQP_CLIENT_OPTS,
     hanlderType: AmqpHandler,

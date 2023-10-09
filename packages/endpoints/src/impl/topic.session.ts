@@ -1,7 +1,7 @@
 import { Injectable, promisify } from '@tsdi/ioc';
 import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent, map } from 'rxjs';
-import { AbstractTransportSession } from '../transport.session';
+import { EventTransportSession } from '../transport.session';
 
 
 export interface TopicClient extends IEventEmitter {
@@ -12,7 +12,7 @@ export interface TopicClient extends IEventEmitter {
 }
 
 
-export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends AbstractTransportSession<TSocket> {
+export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends EventTransportSession<TSocket> {
 
     private replys: Set<string> = new Set();
 
@@ -37,7 +37,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         }
     }
 
-    protected override messageEvent(): Observable<any> {
+    protected override message(): Observable<any> {
         return fromEvent(this.socket, ev.MESSAGE, (topic: string, message) => ({ topic, message })).pipe(
             filter(res => this.options.serverSide ? !res.topic.endsWith('/reply') : true),
             map(res => {

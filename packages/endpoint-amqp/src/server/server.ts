@@ -1,6 +1,6 @@
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { TransportSession, ev } from '@tsdi/common';
+import { TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
 import { Server, RequestHandler, defaultMaxSize, LogInterceptor, ExecptionFinalizeFilter, FinalizeFilter, ENDPOINTS } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
@@ -73,7 +73,7 @@ export class AmqpServer extends Server {
         });
 
         const injector = this.endpoint.injector;
-        const session = this._session = injector.get(AmqpTransportSessionFactory).create(channel, 'amqp', transportOpts);
+        const session = this._session = injector.get(TransportSessionFactory).create(channel, 'amqp', transportOpts);
         injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
         
     }
