@@ -1,6 +1,6 @@
 import { Execption, isString } from '@tsdi/ioc';
-import { IEventEmitter, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
-import { Observable, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap, timeout } from 'rxjs';
+import { IEventEmitter, NotSupportedExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
+import { Observable, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -8,7 +8,7 @@ export const defaultMaxSize = 1024 * 256;
 
 const empt = {} as TransportOpts;
 
-export abstract class AbstractTransportSession<TSocket> implements TransportSession<TSocket> {
+export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> implements TransportSession<TSocket, TMsg> {
 
     private allocator?: NumberAllocator;
     private last?: number;
@@ -33,8 +33,8 @@ export abstract class AbstractTransportSession<TSocket> implements TransportSess
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
         this.initRequest(packet);
         let obs$ = from(lastValueFrom(this.send(packet))).pipe(
-            mergeMap(r => this.receive()),
-            filter(p => this.match(packet, p)),
+            mergeMap(r => this.receive((msg) => this.reqMsgFilter(packet, msg))),
+            filter(p => this.reqResFilter(packet, p)),
             first()
         );
 
@@ -44,9 +44,10 @@ export abstract class AbstractTransportSession<TSocket> implements TransportSess
         return obs$;
     }
 
-    receive(): Observable<ResponsePacket<any>> {
+    receive(msgFilter?: (msg: TMsg) => boolean): Observable<ResponsePacket> {
         return this.message()
             .pipe(
+                filter(msg => msgFilter ? msgFilter(msg) : true),
                 mergeMap(msg => {
                     return this.unpack(msg);
                 })
@@ -57,20 +58,26 @@ export abstract class AbstractTransportSession<TSocket> implements TransportSess
         return this.sender.send(packet)
     }
 
-    protected unpack(msg: any): Observable<Packet<any>> {
+    protected unpack(msg: TMsg): Observable<Packet> {
+        if (!(isString(msg) || isBuffer(msg) || msg instanceof Uint8Array)) {
+            return throwError(() => new NotSupportedExecption())
+        }
         return this.receiver.receive(msg);
     }
 
     abstract destroy(): Promise<void>;
 
-    protected abstract message(): Observable<any>;
+    protected abstract message(): Observable<TMsg>;
 
     protected abstract mergeClose(source: Observable<any>): Observable<any>;
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
+    protected reqMsgFilter(req: RequestPacket, msg: TMsg) {
+        return true;
+    }
 
-    protected match(req: RequestPacket, res: ResponsePacket) {
+    protected reqResFilter(req: RequestPacket, res: ResponsePacket) {
         return res.id == req.id
     }
 
@@ -95,11 +102,12 @@ export abstract class AbstractTransportSession<TSocket> implements TransportSess
 }
 
 
-export abstract class EventTransportSession<TSocket extends IEventEmitter> extends AbstractTransportSession<TSocket> implements TransportSession<TSocket> {
+export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket, TMsg> {
 
 
-    protected message(): Observable<any> {
-        return fromEvent(this.socket, ev.DATA) as Observable<any>;
+    protected message(msgFilter?: (msg: TMsg) => boolean): Observable<TMsg> {
+        const src$ = fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
+        return msgFilter ? src$.pipe(filter(msgFilter)) : src$;
     }
 
 

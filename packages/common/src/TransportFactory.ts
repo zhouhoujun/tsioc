@@ -58,7 +58,7 @@ export abstract class TransportFactory {
 
 
 @Abstract()
-export abstract class TransportSession<TSocket = any>  {
+export abstract class TransportSession<TSocket = any, TMsg= any>  {
     /**
      * socket.
      */
@@ -93,7 +93,7 @@ export abstract class TransportSession<TSocket = any>  {
     /**
      * receive
      */
-    abstract receive(): Observable<ResponsePacket>;
+    abstract receive(filter?: (msg: TMsg) => boolean): Observable<ResponsePacket>;
 
     /**
      * destroy.

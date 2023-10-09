@@ -47,7 +47,7 @@ export class NatsServer extends Server {
         const session = this._session = injector.get(NatsTransportSessionFactory).create(conn, 'nats', { ... this.options.transportOpts, serverSide: true });
 
         subs.map(sub => {
-            session.subscribe(sub, this.options.subscriptionOpts)
+            session.subscribe(sub, this.options.transportOpts?.subscriptionOpts)
         });
 
         injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);

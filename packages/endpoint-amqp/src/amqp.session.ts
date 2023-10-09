@@ -4,11 +4,11 @@ import { UuidGenerator } from '@tsdi/core';
 import { hdr } from '@tsdi/endpoints/assets';
 import { Injectable } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
-import { Observable, fromEvent, map, of } from 'rxjs';
+import { Observable, filter, fromEvent, map, of } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
-export class QueueTransportSession extends EventTransportSession<Channel> {
+export class QueueTransportSession extends EventTransportSession<Channel, ConsumeMessage> {
 
     constructor(
         socket: Channel,
@@ -45,17 +45,16 @@ export class QueueTransportSession extends EventTransportSession<Channel> {
         packet.replyTo = (this.options as AmqpSessionOpts).replyQueue;
     }
 
-    protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+    protected reqMsgFilter(req: RequestPacket<any>, msg: ConsumeMessage): boolean {
+        return req.id == msg.properties.correlationId 
+    }
+    
+    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
         return res.topic == req.topic && req.id == req.id
     }
 
     protected override message(): Observable<any> {
-        return fromEvent(this.socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => ({ queue, message }))
-            .pipe(
-                map(res => {
-                    return res.message
-                })
-            );
+        return fromEvent(this.socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
     }
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {

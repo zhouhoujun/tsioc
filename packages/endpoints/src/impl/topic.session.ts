@@ -11,8 +11,12 @@ export interface TopicClient extends IEventEmitter {
     unsubscribe?(topics: string | string[], callback: (err: any, res: any) => void): void
 }
 
+export interface TopicMessage {
+    topic: string,
+    payload: string | Buffer | Uint8Array
+}
 
-export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends EventTransportSession<TSocket> {
+export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends EventTransportSession<TSocket, TopicMessage> {
 
     private replys: Set<string> = new Set();
 
@@ -37,17 +41,22 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         }
     }
 
+    protected override unpack(msg: TopicMessage): Observable<Packet<any>> {
+        return this.receiver.receive(msg.payload);
+    }
+
     protected override message(): Observable<any> {
-        return fromEvent(this.socket, ev.MESSAGE, (topic: string, message) => ({ topic, message })).pipe(
+        return fromEvent(this.socket, ev.MESSAGE, (topic: string, payload) => ({ topic, payload })).pipe(
             filter(res => this.options.serverSide ? !res.topic.endsWith('/reply') : true),
-            map(res => {
-                return res.message
-            })
         ) as Observable<any>;
     }
 
-    protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
-        return req.topic == res.topic && req.id === res.id;
+    protected override reqMsgFilter(req: RequestPacket<any>, msg: TopicMessage): boolean {
+        return this.getReply(req) == msg.topic;
+    }
+
+    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+        return req.id === res.id;
     }
 
     protected getReply(packet: Packet) {

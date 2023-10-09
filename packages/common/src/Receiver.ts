@@ -26,7 +26,7 @@ export abstract class Receiver {
      * receive message 
      * @param input 
      */
-    abstract receive(message: string | Buffer, topic?: string): Observable<ResponsePacket>;
+    abstract receive(message: string | Buffer | Uint8Array, topic?: string): Observable<ResponsePacket>;
 
 
 }

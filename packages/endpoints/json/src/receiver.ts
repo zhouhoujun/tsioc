@@ -90,6 +90,14 @@ export class JsonReceiver implements Receiver {
                     ctx.destroy();
                 })
             )
-            .subscribe(subscriber);
+            .subscribe({
+                next(vale) {
+                    subscriber.next(vale);
+                    subscriber.complete();
+                },
+                error(err){
+                    subscriber.error(err);
+                }
+            });
     }
 }

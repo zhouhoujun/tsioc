@@ -1,15 +1,15 @@
+import { Injectable } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { BadRequestExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { hdr } from '@tsdi/endpoints/assets';
-import { Injectable } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
 import { Observable, filter, fromEvent, map, throwError } from 'rxjs';
 import { NatsSessionOpts } from './options';
-import { UuidGenerator } from '@tsdi/core';
 
 
-export class NatsTransportSession extends AbstractTransportSession<NatsConnection> {
+export class NatsTransportSession extends AbstractTransportSession<NatsConnection, Msg> {
 
 
     constructor(
@@ -26,40 +26,48 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
     private subscribes: Subscription[] | null = [];
 
     protected async write(data: Buffer, packet: Packet & { natsheaders: MsgHdrs }): Promise<void> {
-        const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
-        const opts = this.options as NatsSessionOpts;
-        if (!topic) throw new BadRequestExecption();
-        if (!packet.natsheaders) {
-            const headers = opts.publishOpts?.headers ?? createHeaders();
-            packet.headers && Object.keys(packet.headers).forEach(k => {
-                headers.set(k, String(packet?.headers?.[k] ?? ''))
-            });
-            headers.set(hdr.IDENTITY, packet.id);
-            packet.natsheaders = headers;
-        }
 
-        const replys = this.options.serverSide ? undefined : {
+        const opts = this.options as NatsSessionOpts;
+        const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
+        if (!topic) throw new BadRequestExecption();
+        // if (!packet.natsheaders) {
+        const headers = createHeaders();
+        opts.publishOpts?.headers && opts.publishOpts.headers.keys().forEach(k => {
+            headers.set(k, opts.publishOpts?.headers?.get(k) ?? '')
+        })
+        packet.headers && Object.keys(packet.headers).forEach(k => {
+            headers.set(k, String(packet?.headers?.[k] ?? ''))
+        });
+
+        headers.set(hdr.IDENTITY, packet.id);
+        // packet.natsheaders = headers;
+        // }
+
+        const replys = opts.serverSide ? undefined : {
             reply: packet.replyTo
         };
-        this.socket.publish(topic, data, {
-            ...opts.publishOpts,
-            ...replys,
-            headers: packet.natsheaders
-        })
+
+        this.socket.publish(
+            topic,
+            data ?? Buffer.alloc(0),
+            {
+                ...opts.publishOpts,
+                ...replys,
+                headers
+            })
     }
 
     protected override initRequest(packet: RequestPacket<any>): void {
         super.initRequest(packet);
         if (!this.options.serverSide) {
-            const rtopic = this.getReply(packet);
+            const rtopic = packet.replyTo = this.getReply(packet);
             this.subscribe(rtopic, (this.options as NatsSessionOpts).subscriptionOpts)
         }
     }
 
 
     subscribe(subject: string, opts?: SubscriptionOptions) {
-        if (!this.subjects.has(subject)) {
-            const opts = this.options as NatsSessionOpts;
+        if (subject && !this.subjects.has(subject)) {
             this.subjects.add(subject);
             this.subscribes?.push(this.socket.subscribe(subject, {
                 ...opts,
@@ -74,8 +82,12 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         return this.socket.isClosed() ? throwError(() => new OfflineExecption()) : source;
     }
 
-    protected override match(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
-        return req.topic == res.topic && req.id === res.id;
+    protected reqMsgFilter(req: RequestPacket<any>, msg: Msg): boolean {
+        return req.replyTo === msg.subject
+    }
+
+    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+        return req.id === res.id;
     }
 
     protected override message() {
@@ -86,7 +98,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
                 if (res.error) throw res.error;
                 return res.msg
             }),
-            filter(msg => this.options.serverSide ? !msg.subject.endsWith('.reply') : true)
+            filter(msg => this.options.serverSide ? !(!msg.reply || msg.subject.endsWith('.reply')) : true)
         )
     }
 

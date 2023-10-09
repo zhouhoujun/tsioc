@@ -1,12 +1,12 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { PatternFormatter, TransportRequest, TransportSession } from '@tsdi/common';
 import { Client, CLIENTS, TopicTransportBackend } from '@tsdi/common/client';
+import { defaultMaxSize } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { NatsConnection, connect } from 'nats';
 import { NatsHandler } from './handler';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS, NatsClientOpts } from './options';
 import { NatsTransportSessionFactory } from '../nats.session';
-import { defaultMaxSize } from '@tsdi/endpoints';
 import { NatsPatternFormatter } from '../pattern';
 
 
@@ -38,6 +38,7 @@ export class NatsClient extends Client<TransportRequest, number> {
     }
 
     protected async onShutdown(): Promise<void> {
+        await this._session?.destroy();
         this.conn?.close();
     }
 
@@ -54,7 +55,7 @@ const defaultOpts = {
         maxSize: defaultMaxSize,
     },
     sessionFactory: NatsTransportSessionFactory,
-    providers: [{ provide: PatternFormatter, useClass: NatsPatternFormatter }]
+    providers: [{ provide: PatternFormatter, useExisting: NatsPatternFormatter }]
 } as NatsClientOpts;
 
 
@@ -63,7 +64,5 @@ CLIENTS.register('nats', {
     clientOptsToken: NATS_CLIENT_OPTS,
     hanlderType: NatsHandler,
     defaultOpts,
-    providers: [
-        NatsPatternFormatter
-    ]
+    providers: [ NatsPatternFormatter ]
 });
