@@ -107,41 +107,41 @@ describe('Mqtt Micro Service', () => {
     });
 
 
-    // it('fetch json', async () => {
-    //     const res: any = await lastValueFrom(client.send('/content/510100_full.json')
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch json', async () => {
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(isArray(res.features)).toBeTruthy();
-    // })
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage).toEqual('Not Found');
+    })
 
-    // it('fetch big json', async () => {
-    //     const res: any = await lastValueFrom(client.send('/content/big.json', { timeout: 5000 })
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('/content/big.json', { timeout: 5000 })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(isArray(res.features)).toBeTruthy();
-    // })
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage.indexOf('max size')).toBeGreaterThan(0);
+    })
 
-    // it('fetch json 2', async () => {
-    //     const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
-    //         .pipe(
-    //             catchError((err, ct) => {
-    //                 ctx.getLogger().error(err);
-    //                 return of(err);
-    //             })));
+    it('fetch json 2', async () => {
+        const res: any = await lastValueFrom(client.send('/content/test1/jsons/data1.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
 
-    //     expect(res).toBeDefined();
-    //     expect(res.test).toEqual('ok');
-    // })
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage).toEqual('Not Found');
+    })
 
     it('cmd message', async () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {

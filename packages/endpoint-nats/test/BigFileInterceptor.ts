@@ -14,7 +14,7 @@ import { join } from 'path';
 export class BigFileInterceptor implements Interceptor {
     intercept(input: AssetContext, next: Handler<any, any>): Observable<any> {
 
-        if (input.getRequestFilePath() == 'content/big.json') {
+        if (input.originalUrl == 'content/big.json') {
             return from(this.genedata(input))
         }
         return next.handle(input);

@@ -118,7 +118,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
                 map(payload => {
                     return {
                         id,
-                        topic: headers[hdr.TOPIC],
+                        topic: msg.subject,
                         replyTo: msg.reply,
                         headers,
                         ...payload

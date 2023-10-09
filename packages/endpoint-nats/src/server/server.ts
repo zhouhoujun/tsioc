@@ -66,8 +66,6 @@ export class NatsServer extends Server {
         this.logger.info(`Nats microservice closed!`);
         this.conn = null!;
     }
-
-
 }
 
 

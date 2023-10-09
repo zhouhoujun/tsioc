@@ -61,7 +61,7 @@ export class NatsService {
     baseURL: __dirname,
     imports: [
         ServerModule,
-        LoggerModule,        
+        LoggerModule,
         JsonEndpointModule,
         ServerEndpointModule,
         ClientModule.forClient({
@@ -115,8 +115,8 @@ describe('Nats Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage).toEqual('Not Found');
     })
 
     it('fetch big json', async () => {
@@ -127,8 +127,8 @@ describe('Nats Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage.indexOf('max size')).toBeGreaterThan(0);
     })
 
     it('fetch json 2', async () => {
@@ -139,8 +139,8 @@ describe('Nats Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(res.test).toEqual('ok');
+        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res.statusMessage).toEqual('Not Found');
     })
 
     it('cmd message', async () => {
@@ -268,7 +268,7 @@ describe('Nats Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
 
