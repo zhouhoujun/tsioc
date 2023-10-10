@@ -1,14 +1,12 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ENDPOINTS, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MircoServRouters, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
+import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
 import { Content } from '@tsdi/endpoints/assets';
 import { NatsConnection, connect } from 'nats';
 import { NatsEndpoint } from './endpoint';
-import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NATS_SERV_OPTS, NatsMicroServOpts } from './options';
-import { ExecptionHandlerFilter } from '@tsdi/core';
+import { NATS_SERV_OPTS, NatsMicroServOpts } from './options';
 import { NatsTransportSession, NatsTransportSessionFactory } from '../nats.session';
-import { NatsPatternFormatter } from '../pattern';
 
 
 
@@ -67,45 +65,3 @@ export class NatsServer extends Server {
         this.conn = null!;
     }
 }
-
-
-
-
-const defaultOpts = {
-    encoding: 'utf8',
-    transportOpts: {
-        serverSide: true,
-        delimiter: '#',
-        maxSize: defaultMaxSize,
-    },
-    content: {
-        root: 'public',
-        prefix: 'content'
-    },
-    detailError: true,
-    interceptorsToken: NATS_SERV_INTERCEPTORS,
-    filtersToken: NATS_SERV_FILTERS,
-    guardsToken: NATS_SERV_GUARDS,
-    filters: [
-        LogInterceptor,
-        ExecptionFinalizeFilter,
-        ExecptionHandlerFilter,
-        FinalizeFilter
-    ],
-    sessionFactory: NatsTransportSessionFactory,
-    routes: {
-        formatter: NatsPatternFormatter
-    }
-} as NatsMicroServOpts;
-
-
-
-ENDPOINTS.registerMicroservice('nats', {
-    serverType: NatsServer,
-    serverOptsToken: NATS_SERV_OPTS,
-    endpointType: NatsEndpoint,
-    defaultOpts,
-    providers: [
-        NatsPatternFormatter
-    ]
-});

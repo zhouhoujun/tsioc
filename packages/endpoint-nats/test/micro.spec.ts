@@ -11,6 +11,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { NatsEndpointModule } from '../src/nats.module';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -64,6 +65,7 @@ export class NatsService {
         LoggerModule,
         JsonEndpointModule,
         ServerEndpointModule,
+        NatsEndpointModule,
         ClientModule.forClient({
             transport: 'nats',
             clientOpts: {
@@ -172,7 +174,7 @@ describe('Nats Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.statusMessage).toEqual('Not Found');
     });
 
     it('sensor.message/+ message', async () => {
@@ -204,7 +206,7 @@ describe('Nats Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(504);
+        expect(a.statusMessage).toEqual('Not Found');
     });
 
     it('sensor/message/+ message', async () => {

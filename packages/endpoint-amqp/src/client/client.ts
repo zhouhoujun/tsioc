@@ -1,11 +1,10 @@
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { TransportRequest, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
-import {  Client, CLIENTS, TopicTransportBackend } from '@tsdi/common/client';
+import {  Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as amqp from 'amqplib';
-import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
-import { AmqpTransportSessionFactory } from '../amqp.session';
 
 
 
@@ -104,31 +103,3 @@ export class AmqpClient extends Client<TransportRequest, number> {
     }
 
 }
-
-
-/**
- * amqp client default options.
- */
-const defaultOpts = {
-    interceptorsToken: AMQP_CLIENT_INTERCEPTORS,
-    filtersToken: AMQP_CLIENT_FILTERS,
-    connectOpts: 'amqp://localhost',
-    transportOpts: {
-        queue: 'amqp.queue',
-        replyQueue: 'amqp.queue.reply',
-        persistent: false,
-        noAssert: false,
-        queueOpts: {},
-        prefetchCount: 0
-    },
-    backend: TopicTransportBackend,
-    sessionFactory: AmqpTransportSessionFactory
-} as AmqpClientOpts;
-
-
-CLIENTS.register('amqp', {
-    clientType: AmqpClient,
-    clientOptsToken: AMQP_CLIENT_OPTS,
-    hanlderType: AmqpHandler,
-    defaultOpts
-});

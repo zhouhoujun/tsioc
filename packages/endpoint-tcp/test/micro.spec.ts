@@ -4,7 +4,7 @@ import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { JsonEndpointModule } from '@tsdi/endpoints/json';
-import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpServer } from '../src';
+import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpEndpointModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
@@ -56,6 +56,7 @@ export class TcpService {
         LoggerModule,
         JsonEndpointModule,
         ServerEndpointModule,
+        TcpEndpointModule,
         ClientModule.forClient({
             transport: 'tcp',
             clientOpts: {

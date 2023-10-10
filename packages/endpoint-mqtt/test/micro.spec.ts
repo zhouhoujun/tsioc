@@ -4,7 +4,7 @@ import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { JsonEndpointModule } from '@tsdi/endpoints/json';
-import { MQTT_SERV_INTERCEPTORS, MqttClient, MqttServer } from '../src';
+import { MQTT_SERV_INTERCEPTORS, MqttClient, MqttEndpointModule, MqttServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
@@ -64,13 +64,14 @@ export class MqttService {
         LoggerModule,
         JsonEndpointModule,
         ServerEndpointModule,
+        MqttEndpointModule,
         ClientModule.forClient({
             transport: 'mqtt',
             clientOpts: {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 200
+                timeout: 500
             }
         }),
         EndpointsModule.forMicroservice({

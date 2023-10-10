@@ -1,12 +1,10 @@
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
-import { Server, RequestHandler, defaultMaxSize, LogInterceptor, ExecptionFinalizeFilter, FinalizeFilter, ENDPOINTS } from '@tsdi/endpoints';
+import { Server, RequestHandler } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
-import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
+import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpEndpoint } from './endpoint';
-import { AmqpTransportSessionFactory } from '../amqp.session';
-import { ExecptionHandlerFilter } from '@tsdi/core';
 
 
 
@@ -103,42 +101,42 @@ export class AmqpServer extends Server {
 }
 
 
-/**
- * amqp microservice default options.
- */
-const defaultOpts = {
-    serverOpts: 'amqp://localhost',
-    transportOpts: {
-        queue: 'amqp.queue',
-        replyQueue: 'amqp.queue.reply',
-        serverSide: true,
-        delimiter: '#',
-        maxSize: defaultMaxSize,
-        persistent: false,
-        noAssert: false,
-        queueOpts: {},
-        prefetchCount: 0
-    },
-    content: {
-        root: 'public',
-        prefix: 'content'
-    },
-    detailError: true,
-    interceptorsToken: AMQP_SERV_INTERCEPTORS,
-    filtersToken: AMQP_SERV_FILTERS,
-    guardsToken: AMQP_SERV_GUARDS,
-    sessionFactory: AmqpTransportSessionFactory,
-    filters: [
-        LogInterceptor,
-        ExecptionFinalizeFilter,
-        ExecptionHandlerFilter,
-        FinalizeFilter
-    ]
-} as AmqpMicroServiceOpts;
+// /**
+//  * amqp microservice default options.
+//  */
+// const defaultOpts = {
+//     serverOpts: 'amqp://localhost',
+//     transportOpts: {
+//         queue: 'amqp.queue',
+//         replyQueue: 'amqp.queue.reply',
+//         serverSide: true,
+//         delimiter: '#',
+//         maxSize: defaultMaxSize,
+//         persistent: false,
+//         noAssert: false,
+//         queueOpts: {},
+//         prefetchCount: 0
+//     },
+//     content: {
+//         root: 'public',
+//         prefix: 'content'
+//     },
+//     detailError: true,
+//     interceptorsToken: AMQP_SERV_INTERCEPTORS,
+//     filtersToken: AMQP_SERV_FILTERS,
+//     guardsToken: AMQP_SERV_GUARDS,
+//     sessionFactory: AmqpTransportSessionFactory,
+//     filters: [
+//         LogInterceptor,
+//         ExecptionFinalizeFilter,
+//         ExecptionHandlerFilter,
+//         FinalizeFilter
+//     ]
+// } as AmqpMicroServiceOpts;
 
-ENDPOINTS.registerMicroservice('amqp', {
-    serverType: AmqpServer,
-    serverOptsToken: AMQP_SERV_OPTS,
-    endpointType: AmqpEndpoint,
-    defaultOpts
-});
+// ENDPOINTS.registerMicroservice('amqp', {
+//     serverType: AmqpServer,
+//     serverOptsToken: AMQP_SERV_OPTS,
+//     endpointType: AmqpEndpoint,
+//     defaultOpts
+// });

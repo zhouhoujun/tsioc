@@ -1,11 +1,10 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { ExecptionHandlerFilter } from '@tsdi/core';
-import { PatternFormatter, TransportSessionFactory, TransportSession, LOCALHOST, ev } from '@tsdi/common';
-import { ENDPOINTS, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, MircoServRouters, RequestHandler, Server, TopicTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { PatternFormatter, TransportSessionFactory, TransportSession, ev } from '@tsdi/common';
+import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
 import { Content } from '@tsdi/endpoints/assets';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
-import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './options';
+import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
 import { Subscription } from 'rxjs';
 
@@ -110,38 +109,3 @@ export class MqttServer extends Server {
     }
 
 }
-
-const defaultOpts = {
-    encoding: 'utf8',
-    transportOpts: {
-        serverSide: true,
-        delimiter: '#',
-        maxSize: defaultMaxSize,
-    },
-    content: {
-        root: 'public',
-        prefix: 'content'
-    },
-    serverOpts: {
-        host: LOCALHOST,
-        port: 1883
-    },
-    detailError: true,
-    interceptorsToken: MQTT_SERV_INTERCEPTORS,
-    filtersToken: MQTT_SERV_FILTERS,
-    guardsToken: MQTT_SERV_GUARDS,
-    sessionFactory: TopicTransportSessionFactory,
-    filters: [
-        LogInterceptor,
-        ExecptionFinalizeFilter,
-        ExecptionHandlerFilter,
-        FinalizeFilter
-    ]
-} as MqttServiceOpts;
-
-ENDPOINTS.registerMicroservice('mqtt', {
-    serverType: MqttServer,
-    serverOptsToken: MQTT_SERV_OPTS,
-    endpointType: MqttEndpoint,
-    defaultOpts
-});

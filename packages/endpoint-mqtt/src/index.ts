@@ -6,3 +6,5 @@ export * from './client/client';
 export * from './server/options';
 export * from './server/endpoint';
 export * from './server/server';
+
+export * from './mqtt.module';

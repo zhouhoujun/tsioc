@@ -1,12 +1,11 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, Pattern, RequestInitOpts, TransportSession, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common';
-import { CLIENTS, Client, TransportBackend } from '@tsdi/common/client';
+import { Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TcpClientOpts } from './options';
+import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
 
 /**
@@ -111,25 +110,3 @@ export class TcpClient extends Client<TransportRequest, number> {
     }
 
 }
-
-/**
- * TCP client default options.
- */
-const defaultOpts = {
-    transportOpts: {
-        delimiter: '#',
-        maxSize: defaultMaxSize,
-    },
-    interceptorsToken: TCP_CLIENT_INTERCEPTORS,
-    filtersToken: TCP_CLIENT_FILTERS,
-    // interceptors: [BodyContentInterceptor],
-    backend: TransportBackend,
-    sessionFactory: DuplexTransportSessionFactory
-} as TcpClientOpts;
-
-CLIENTS.register('tcp', {
-    clientType: TcpClient,
-    clientOptsToken: TCP_CLIENT_OPTS,
-    hanlderType: TcpHandler,
-    defaultOpts
-})

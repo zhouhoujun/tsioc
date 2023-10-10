@@ -1,11 +1,10 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { TransportRequest, ServiceUnavailableExecption, ev, TransportSessionFactory, TransportSession } from '@tsdi/common';
-import { CLIENTS, Client, TransportBackend } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { Client } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
-import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS, WsClientOpts } from './options';
+import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 
 
 @Injectable({ static: false })
@@ -79,27 +78,3 @@ export class WsClient extends Client<TransportRequest, number> {
     }
 
 }
-
-
-/**
- * WS client default options.
- */
-const defaultOpts = {
-    url: 'ws://localhost:3000',
-    transportOpts: {
-        delimiter: '#',
-        maxSize: defaultMaxSize,
-    },
-    interceptorsToken: WS_CLIENT_INTERCEPTORS,
-    filtersToken: WS_CLIENT_FILTERS,
-    backend: TransportBackend,
-    sessionFactory: DuplexTransportSessionFactory
-} as WsClientOpts;
-
-
-CLIENTS.register('ws', {
-    clientType: WsClient,
-    clientOptsToken: WS_CLIENT_OPTS,
-    hanlderType: WsHandler,
-    defaultOpts
-});

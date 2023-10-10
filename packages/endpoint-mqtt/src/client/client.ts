@@ -1,12 +1,11 @@
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest, DisconnectExecption, ev, OfflineExecption, TransportSession, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
-import { CLIENTS, Client, TopicTransportBackend } from '@tsdi/common/client';
-import { TopicTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { TransportRequest, DisconnectExecption, ev, OfflineExecption, TransportSession, TransportSessionFactory } from '@tsdi/common';
+import { Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
 import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
-import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
+import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
 
 
 /**
@@ -105,26 +104,3 @@ export class MqttClient extends Client<TransportRequest, number> {
 
 }
 
-
-const defaultOpts = {
-    connectOpts: {
-        host: LOCALHOST,
-        port: 1883
-    },
-    encoding: 'utf8',
-    interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
-    filtersToken: MQTT_CLIENT_FILTERS,
-    backend: TopicTransportBackend,
-    transportOpts: {
-        delimiter: '#',
-        maxSize: defaultMaxSize,
-    },
-    sessionFactory: TopicTransportSessionFactory
-} as MqttClientOpts;
-
-CLIENTS.register('mqtt', {
-    clientType: MqttClient,
-    clientOptsToken: MQTT_CLIENT_OPTS,
-    hanlderType: MqttHandler,
-    defaultOpts
-});

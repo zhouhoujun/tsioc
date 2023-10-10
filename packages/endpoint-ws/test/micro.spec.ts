@@ -10,7 +10,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { WS_SERV_INTERCEPTORS, WsClient, WsServer } from '../src';
+import { WS_SERV_INTERCEPTORS, WsClient, WsEndpointModule, WsServer } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -62,9 +62,9 @@ export class WsService {
     imports: [
         ServerModule,
         LoggerModule,
-        // WsClientModule,
         JsonEndpointModule,
         ServerEndpointModule,
+        WsEndpointModule,
         ClientModule.forClient([
             {
                 transport: 'ws',
@@ -84,24 +84,8 @@ export class WsService {
             }
         ]),
         EndpointsModule.forMicroservice({
-            transport: 'ws',
-            serverOpts: {
-                interceptors: [
-                    Session,
-                    // Content,
-                    // Json,
-                    // Bodyparser
-                ]
-            }
+            transport: 'ws'
         })
-        // WsMicroServiceModule.withOption({
-        //     serverOpts: {
-        //         // timeout: 1000,
-        //         // connectOpts: {
-        //         //     port: 2000
-        //         // }
-        //     }
-        // })
     ],
     declarations: [
         WsService

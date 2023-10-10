@@ -9,7 +9,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { AMQP_SERV_INTERCEPTORS, AmqpClient, AmqpServer } from '../src';
+import { AmqpEndpointModule, AMQP_SERV_INTERCEPTORS, AmqpClient, AmqpServer } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -64,6 +64,7 @@ export class AmqpService {
         LoggerModule,
         JsonEndpointModule,
         ServerEndpointModule,
+        AmqpEndpointModule,
         ClientModule.forClient({
             transport: 'amqp'
         }),

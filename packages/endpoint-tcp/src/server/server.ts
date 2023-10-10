@@ -1,12 +1,11 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { ExecptionHandlerFilter } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, ENDPOINTS, RequestHandler, Server, Session, defaultMaxSize } from '@tsdi/endpoints';
+import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common';
+import { RequestHandler, Server } from '@tsdi/endpoints';
 import { Subscription } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
+import { TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpEndpoint } from './endpoint';
 
 
@@ -114,82 +113,3 @@ export class TcpServer extends Server implements ListenService {
     }
 
 }
-
-
-/**
- * tcp microservice default options.
- */
-const defMicroOpts = {
-    autoListen: true,
-    micro: true,
-    listenOpts: { port: 3000, host: LOCALHOST },
-    transportOpts: {
-        delimiter: '#',
-        maxSize: defaultMaxSize
-    },
-    content: {
-        root: 'public',
-        prefix: 'content'
-    },
-    detailError: true,
-    interceptorsToken: TCP_SERV_INTERCEPTORS,
-    filtersToken: TCP_SERV_FILTERS,
-    guardsToken: TCP_SERV_GUARDS,
-    sessionFactory: DuplexTransportSessionFactory,
-    filters: [
-        LogInterceptor,
-        ExecptionFinalizeFilter,
-        ExecptionHandlerFilter,
-        FinalizeFilter
-    ],
-    interceptors: [
-        Session
-    ],
-} as TcpServerOpts;
-
-
-ENDPOINTS.registerMicroservice('tcp', {
-    serverType: TcpServer,
-    serverOptsToken: TCP_SERV_OPTS,
-    endpointType: TcpEndpoint,
-    defaultOpts: defMicroOpts
-});
-
-
-
-/**
- * TCP server default options.
- */
-const defServerOpts = {
-    autoListen: true,
-    listenOpts: { port: 3000, host: LOCALHOST },
-    transportOpts: {
-        delimiter: '#',
-        maxSize: defaultMaxSize
-    },
-    content: {
-        root: 'public'
-    },
-    detailError: true,
-    interceptorsToken: TCP_SERV_INTERCEPTORS,
-    filtersToken: TCP_SERV_FILTERS,
-    guardsToken: TCP_SERV_GUARDS,
-    filters: [
-        LogInterceptor,
-        ExecptionFinalizeFilter,
-        ExecptionHandlerFilter,
-        FinalizeFilter
-    ],
-    interceptors: [
-        Session
-    ]
-
-} as TcpServerOpts;
-
-
-ENDPOINTS.registerServer('tcp', {
-    serverType: TcpServer,
-    serverOptsToken: TCP_SERV_OPTS,
-    endpointType: TcpEndpoint,
-    defaultOpts: defServerOpts
-})

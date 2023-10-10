@@ -1,8 +1,8 @@
-import { Type, CtorType, Modules, TypeOf } from './types';
+import { Type, CtorType, Modules, TypeOf, EMPTY_OBJ } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
-import { isArray, isDefined, isType } from './utils/chk';
+import { isArray, isBoolean, isDefined, isType } from './utils/chk';
 
 /**
  * provide for {@link Injector }.
@@ -40,6 +40,12 @@ export interface ProviderExts {
      * provide as default. if has exist the provide will not inject.
      */
     asDefault?: boolean;
+
+    /**
+     * the hooks raise after registered.
+     * @param injector 
+     */
+    onRegistered?(injector: Injector): void;
 }
 
 /**
@@ -193,6 +199,7 @@ export type TypeProvider<T = any> = Type<T>;
  */
 export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | TypeOf<T>;
 
+
 /**
  * static providers.
  */
@@ -242,30 +249,91 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
  * @param multiOrder 
  * @returns 
  */
-export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): StaticProvider<T> {
+export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean): StaticProvider<T>;
+export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
+    multi?: boolean,
+    multiOrder?: number,
+    isClass?: (type: Function) => boolean,
+    onRegistered?: (injector: Injector) => void
+}): StaticProvider<T>;
+
+export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean | {
+    multi?: boolean
+    multiOrder?: number,
+    isClass?: (type: Function) => boolean,
+    onRegistered?: (injector: Injector) => void
+}): StaticProvider<T> {
+    const { isClass, ...options } = (isBoolean(multi) ? { multi } : (multi ?? EMPTY_OBJ)) as {
+        multi?: boolean
+        multiOrder?: number,
+        isClass?: (type: Function) => boolean,
+        onRegistered?: (injector: Injector) => void
+    };
+
     if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
-        return { provide, useClass: useOf as CtorType, multi, multiOrder };
+        return { ...options, provide, useClass: useOf as CtorType };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)
         || isDefined((useOf as UseExisting<T>).useExisting))) {
-        return { multiOrder, multi, ...useOf, provide } as StaticProvider;
+        return { ...options, ...useOf, provide } as StaticProvider;
     }
 
-    return { provide, useValue: useOf as T, multi, multiOrder }
+    return { ...options, provide, useValue: useOf as T }
 }
+
+
 
 /**
  * convert to factory provider
  * @param provide provide token
  * @param useOf Provider
- * @param init init factory result.
  * @param multi 
- * @param multiOrder 
- * @param isClass 
  * @returns 
  */
-export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, init?: (val: T, injector: Injector) => T, multi?: boolean, multiOrder?: number, isClass?: (type: Function) => boolean): FactoryProvider<T> {
+export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean): FactoryProvider<T>;
+/**
+ * convert to factory provider
+ * @param provide provide token
+ * @param useOf Provider
+ * @param options 
+ * @returns 
+ */
+export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
+    multi?: boolean,
+    /**
+     * init factory result.
+     * @param val 
+     * @param injector 
+     * @returns 
+     */
+    init?: (val: T, injector: Injector) => T,
+    onRegistered?: (injector: Injector) => void,
+    multiOrder?: number,
+    isClass?: (type: Function) => boolean
+}): FactoryProvider<T>;
+
+export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean | {
+    multi?: boolean,
+    /**
+     * init factory result.
+     * @param val 
+     * @param injector 
+     * @returns 
+     */
+    init?: (val: T, injector: Injector) => T,
+    onRegistered?: (injector: Injector) => void,
+    multiOrder?: number,
+    isClass?: (type: Function) => boolean
+}): FactoryProvider<T> {
+
+    const { init, isClass, ...opts } = (isBoolean(multi) ? { multi } : (multi ?? EMPTY_OBJ)) as {
+        multi?: boolean,
+        init?: (val: T, injector: Injector) => T,
+        onRegistered?: (injector: Injector) => void,
+        multiOrder?: number,
+        isClass?: (type: Function) => boolean
+    }
 
     const deps: any[] = [];
     let useFactory: (...args: any[]) => T;
@@ -322,6 +390,5 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, init?: (val: 
         }
     }
 
-
-    return { provide, useFactory, multi, multiOrder, deps: [] }
+    return { ...opts, provide, useFactory, deps }
 }

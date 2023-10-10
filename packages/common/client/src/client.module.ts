@@ -1,4 +1,4 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
 import { TopicTransportBackend, TransportBackend } from './backend';
@@ -13,10 +13,6 @@ export interface ClientModuleConfig {
      */
     clientOpts?: ProvdierOf<ClientOpts>;
     /**
-     * client default options
-     */
-    defaultOpts?: ClientOpts;
-    /**
      * client handler provider
      */
     handler?: ProvdierOf<ClientHandler>;
@@ -26,7 +22,7 @@ export interface ClientModuleConfig {
     providers?: ProviderType[];
 }
 
-export interface ClientModuleOpts extends ClientModuleConfig {
+export interface ClientModuleOpts extends ClientModuleConfig, TransportRequired {
     /**
      * client type
      */
@@ -43,10 +39,12 @@ export interface ClientModuleOpts extends ClientModuleConfig {
      * client handler type.
      */
     hanlderType: Type<ClientHandler>;
+    /**
+     * client default options
+     */
+    defaultOpts?: ClientOpts;
 }
 
-
-const clients: Record<string, ClientModuleOpts> = {};
 
 export interface ClientTokenOpts {
     /**
@@ -85,14 +83,10 @@ export class ClientModule {
         if (isArray(options)) {
             providers = []
             options.forEach(op => {
-                const opts = clients[op.transport];
-                if (!opts) throw new NotImplementedExecption(op.transport + ' client has not implemented');
-                providers.push(...clientProviders({ ...opts, ...op }));
+                providers.push(...clientProviders(op));
             })
         } else {
-            const opts = clients[options.transport];
-            if (!opts) throw new NotImplementedExecption(options.transport + ' client has not implemented');
-            providers = clientProviders({ ...opts, ...options });
+            providers = clientProviders(options);
         }
 
         return {
@@ -103,107 +97,102 @@ export class ClientModule {
 
 }
 
-export interface Clients {
-
-    /**
-     * set client implement options.
-     * @param transport 
-     * @param options 
-     * @returns 
-     */
-    register(transport: Transport, options: ClientModuleOpts): Clients;
-}
-
-export const CLIENTS: Clients = {
-    /**
-     * set client implement options.
-     * @param transport 
-     * @param options 
-     * @returns 
-     */
-    register(transport: Transport, options: ClientModuleOpts) {
-        clients[transport] = options;
-        return CLIENTS;
-    }
-}
+export const CLIENT_MODULES = tokenId<(ClientModuleOpts & TransportRequired)[]>('CLIENT_MODULES')
 
 
-function clientProviders(options: ClientModuleOpts & TransportRequired & ClientTokenOpts) {
-    const { client, transport, clientType, hanlderType, clientOptsToken, defaultOpts } = options;
+function clientProviders(options: ClientModuleConfig & TransportRequired & ClientTokenOpts) {
+    const { client, transport } = options;
 
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY
     ];
+    const moduleOptsToken: Token<ClientModuleOpts> = getToken<any>(client ?? transport, 'client_module');
+
+    providers.push(toFactory(moduleOptsToken, options, {
+        init: (options, injector) => {
+            const defts = injector.get(CLIENT_MODULES).find(r => r.transport === transport);
+            if (!defts) throw new NotImplementedExecption(options.transport + ' client has not implemented');
+            return { ...defts, ...options } as ClientModuleOpts & TransportRequired;
+        },
+        onRegistered: (injector) => {
+            const { clientType, clientProvider, hanlderType, clientOptsToken, defaultOpts } = injector.get(moduleOptsToken);
+
+            const providers = [];
+            if (clientProvider) {
+                providers.push(toProvider(clientType, clientProvider));
+            } else if (clientType) {
+                providers.push(clientType);
+            }
+
+            if (options.handler) {
+                providers.push(toProvider(hanlderType, options.handler))
+            } else {
+                providers.push({
+                    provide: hanlderType,
+                    useFactory: (injector: Injector, opts: ClientOpts) => {
+                        return createHandler(injector, opts);
+                    },
+                    asDefault: true,
+                    deps: [Injector, clientOptsToken]
+                })
+            }
+            if (!client) {
+                providers.push(toFactory(clientOptsToken, options.clientOpts!, {
+                    init: (clientOpts: ClientOpts) => {
+                        const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+                        if (opts.sessionFactory) {
+                            opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                        }
+                        if (opts.timeout) {
+                            if (opts.transportOpts) {
+                                opts.transportOpts.timeout = opts.timeout;
+                            } else {
+                                opts.transportOpts = { timeout: opts.timeout };
+                            }
+                        }
+                        return opts as ClientOpts;
+                    }
+                }))
+            }
+            injector.inject(providers);
+        }
+    }));
+
+
 
     if (client) {
         const token = getToken(client, 'options');
-        const init = (clientOpts: ClientOpts) => {
-            const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
-
-            if (opts.sessionFactory) {
-                opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
-            }
-            if (opts.timeout) {
-                if (opts.transportOpts) {
-                    opts.transportOpts.timeout = opts.timeout;
-                } else {
-                    opts.transportOpts = { timeout: opts.timeout };
-                }
-            }
-            opts.providers.push({ provide: clientOptsToken, useExisting: token });
-            return opts as ClientOpts;
-        }
-
         providers.push(
-            toFactory(token, options.clientOpts!, init),
+            toFactory(token, options.clientOpts!, {
+                init: (clientOpts: ClientOpts, injector: Injector) => {
+                    const { defaultOpts, clientOptsToken } = injector.get(moduleOptsToken);
+                    const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+    
+                    if (opts.timeout) {
+                        if (opts.transportOpts) {
+                            opts.transportOpts.timeout = opts.timeout;
+                        } else {
+                            opts.transportOpts = { timeout: opts.timeout };
+                        }
+                    }
+                    if (opts.sessionFactory) {
+                        opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                    }
+                    opts.providers.push({ provide: clientOptsToken, useExisting: token });
+                    return opts as ClientOpts;
+                }
+            }),
             {
                 provide: client,
-                useFactory: (injector: Injector) => {
-                    return injector.resolve(clientType, [
-                        { provide: clientOptsToken, useExisting: token }
+                useFactory: (injector: Injector, moduleOpts: ClientModuleOpts) => {
+                    return injector.resolve(moduleOpts.clientType, [
+                        { provide: moduleOpts.clientOptsToken, useExisting: token }
                     ]);
                 },
-                deps: [Injector]
+                deps: [Injector, moduleOptsToken]
             }
         );
 
-    } else {
-        const init = (clientOpts: ClientOpts) => {
-            const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
-
-            if (opts.timeout) {
-                if (opts.transportOpts) {
-                    opts.transportOpts.timeout = opts.timeout;
-                } else {
-                    opts.transportOpts = { timeout: opts.timeout };
-                }
-            }
-            if (opts.sessionFactory) {
-                opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
-            }
-            return opts as ClientOpts;
-        }
-
-        providers.push(toFactory(clientOptsToken, options.clientOpts!, init))
-    }
-
-    if (options.clientProvider) {
-        providers.push(toProvider(clientType, options.clientProvider));
-    } else if (clientType) {
-        providers.push(clientType);
-    }
-
-    if (options.handler) {
-        providers.push(toProvider(hanlderType, options.handler))
-    } else {
-        providers.push({
-            provide: hanlderType,
-            useFactory: (injector: Injector, opts: ClientOpts) => {
-                return createHandler(injector, opts);
-            },
-            asDefault: true,
-            deps: [Injector, clientOptsToken]
-        })
     }
 
     return providers;

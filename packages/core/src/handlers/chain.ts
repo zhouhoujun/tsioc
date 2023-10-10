@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY, Injector, isArray, isNumber, ProvdierOf, Token, toProvider, getClassName } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY, Injector, isArray, ProvdierOf, Token, toProvider, getClassName } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Interceptor, InterceptorService } from '../Interceptor';
 import { Backend, Handler } from '../Handler';
@@ -95,13 +95,12 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
         return this.injector.get(this.token, EMPTY)
     }
 
-
-    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], order?: number, isClass?: (type: Function) => boolean) {
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
+        const multi = true;
         if (isArray(providers)) {
-            const hasOrder = isNumber(order);
-            this.injector.inject(providers.map((r, i) => toProvider(token, r, true, hasOrder ? order + i : undefined, isClass)))
+            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))
         } else {
-            this.injector.inject(toProvider(token, providers, true, order, isClass));
+            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass}));
         }
     }
 

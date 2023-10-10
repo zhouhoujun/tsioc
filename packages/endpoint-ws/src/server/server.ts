@@ -1,13 +1,12 @@
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { ExecptionHandlerFilter } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory } from '@tsdi/common';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, ENDPOINTS, RequestHandler, Server, defaultMaxSize } from '@tsdi/endpoints';
+import { RequestHandler, Server } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS, WsServerOpts } from './options';
+import { WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
 
 
@@ -88,38 +87,3 @@ export class WsServer extends Server {
     }
 
 }
-
-
-/**
- * ws default options.
- */
-const defMicroOpts = {
-    transportOpts: {
-        delimiter: '#',
-        maxSize: defaultMaxSize
-    },
-    content: {
-        root: 'public',
-        prefix: 'content'
-    },
-    detailError: true,
-    interceptorsToken: WS_SERV_INTERCEPTORS,
-    filtersToken: WS_SERV_FILTERS,
-    guardsToken: WS_SERV_GUARDS,
-    sessionFactory: DuplexTransportSessionFactory,
-    filters: [
-        LogInterceptor,
-        ExecptionFinalizeFilter,
-        ExecptionHandlerFilter,
-        FinalizeFilter
-    ]
-
-} as WsServerOpts;
-
-
-ENDPOINTS.registerMicroservice('ws', {
-    serverType: WsServer,
-    serverOptsToken: WS_SERV_OPTS,
-    endpointType: WsEndpoint,
-    defaultOpts: defMicroOpts
-});

@@ -250,6 +250,7 @@ export class DefaultInjector extends Injector {
         } else {
             this.records.set(provider.provide, generateRecord(platfrom, this, provider))
         }
+        provider.onRegistered?.(this);
     }
 
 
