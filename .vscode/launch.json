@@ -207,6 +207,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test endpoint-redis",
+            "args": [
+                "${workspaceRoot}/packages/endpoint-redis/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test endpoint-tcp",
             "args": [
                 "${workspaceRoot}/packages/endpoint-tcp/unit.ts" 

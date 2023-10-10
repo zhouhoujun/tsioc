@@ -113,7 +113,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             headers[key] = msg.headers?.get(key);
         });
         const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
-        return this.receiver.receive(Buffer.from(msg.data))
+        return this.receiver.receive(msg.data)
             .pipe(
                 map(payload => {
                     return {
