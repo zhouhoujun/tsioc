@@ -30,6 +30,7 @@ export interface Packet<T = any> extends HeaderPacket {
  */
 export interface RequestPacket<T = any> extends Packet<T> {
     headers?: IncomingHeaders;
+    originalUrl?: string;
 }
 
 /**

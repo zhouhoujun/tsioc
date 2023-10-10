@@ -174,7 +174,7 @@ describe('Nats Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.statusMessage).toEqual('Not Found');
+        expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
     it('sensor.message/+ message', async () => {
@@ -206,7 +206,7 @@ describe('Nats Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.statusMessage).toEqual('Not Found');
+        expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
     it('sensor/message/+ message', async () => {

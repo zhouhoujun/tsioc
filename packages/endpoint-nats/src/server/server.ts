@@ -2,7 +2,6 @@ import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
-import { Content } from '@tsdi/endpoints/assets';
 import { NatsConnection, connect } from 'nats';
 import { NatsEndpoint } from './endpoint';
 import { NATS_SERV_OPTS, NatsMicroServOpts } from './options';
@@ -34,7 +33,7 @@ export class NatsServer extends Server {
 
         const injector = this.endpoint.injector;
         const router = injector.get(MircoServRouters).get('nats');
-        if (this.options.content?.prefix &&  this.options.interceptors && this.options.interceptors.indexOf(Content) >= 0) {
+        if (this.options.content?.prefix) {
             const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}.>`);
             router.matcher.register(content, true);
         }

@@ -30,7 +30,8 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         } else if (request.url) {
             response.url = request.url;
         }
-        this._url = this._originalUrl = request.url ?? request.topic ?? '';
+        this._originalUrl  = request.headers?.['origin-path'] ?? request.url ?? request.topic ?? '';
+        this._url = request.url ?? request.topic ?? '';
         this._method = request.method ?? '';
         this._socket = options.socket || null;
     }
