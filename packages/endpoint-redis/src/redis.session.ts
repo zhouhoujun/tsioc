@@ -1,7 +1,7 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
 import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession, TopicMessage } from '@tsdi/endpoints';
-import { Observable, filter, first, fromEvent, map, merge, throwError } from 'rxjs';
+import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 import Redis from 'ioredis';
 
 
@@ -76,16 +76,17 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
             fromEvent(this.socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
                 return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
             }),
-            fromEvent(this.socket.subscriber, PATTERN_MSG_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
+            fromEvent(this.socket.subscriber, PATTERN_MSG_BUFFER, (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
                 return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
-            }),
+            })
         ).pipe(
             filter(msg => this.options.serverSide ? !msg.topic.endsWith('.reply') : true)
         )
     }
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
-        return this.sender.send(packet);
+        const { topic, ...data} = packet;
+        return this.sender.send(data);
     }
 
     protected override unpack(msg: TopicMessage): Observable<Packet> {
