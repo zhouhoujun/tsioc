@@ -31,7 +31,7 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
 
-        await promisify(this.socket.publisher.publish, this.socket.publisher)(topic, data ?? Buffer.alloc(0))
+        this.socket.publisher.publish(topic, data ?? Buffer.alloc(0))
     }
 
     protected override initRequest(packet: RequestPacket<any>): void {
