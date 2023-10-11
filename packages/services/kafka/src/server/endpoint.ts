@@ -1,9 +1,9 @@
-import { Packet } from '@tsdi/common';
-import { TransportContext, TransportEndpoint } from '@tsdi/transport';
 import { Abstract } from '@tsdi/ioc';
+import { TransportEndpoint } from '@tsdi/endpoints';
+
 
 
 @Abstract()
-export abstract class KafkaEndpoint extends TransportEndpoint<TransportContext, Packet> {
+export abstract class KafkaEndpoint extends TransportEndpoint {
 
 }

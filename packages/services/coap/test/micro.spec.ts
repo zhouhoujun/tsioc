@@ -1,15 +1,16 @@
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
-import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
-import { COAP_SERV_INTERCEPTORS, CoapClient, CoapModule } from '../src';
-import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logger';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import { COAP_SERV_INTERCEPTORS, CoapClient, CoapModule } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -57,6 +58,8 @@ export class CoapService {
         ServerModule,
         LoggerModule,
         CoapModule,
+        JsonTransportModule,
+        ServerEndpointModule,
         ClientModule.register({
             transport: 'coap',
             clientOpts: {

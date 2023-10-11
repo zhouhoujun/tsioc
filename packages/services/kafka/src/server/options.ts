@@ -1,16 +1,15 @@
 import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { TransportRequest } from '@tsdi/common';
-import { TransportEndpointOptions, ContentOptions } from '@tsdi/transport';
+import { ServerOpts } from '@tsdi/endpoints';
+import { ContentOptions } from '@tsdi/endpoints/assets';
 import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
 import { KafkaTransportOpts } from '../transport';
-import { KafkaContext } from './context';
 
 
 
-export interface KafkaServerOptions extends TransportEndpointOptions<KafkaContext> {
+export interface KafkaServerOptions extends ServerOpts<KafkaConfig> {
     postfixId?: string;
-    connectOpts?: KafkaConfig;
     consumer?: ConsumerConfig;
     producer?: ProducerConfig;
     keepBinary?: boolean;
