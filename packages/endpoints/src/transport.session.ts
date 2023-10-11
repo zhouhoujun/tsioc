@@ -1,6 +1,6 @@
 import { Execption, isString } from '@tsdi/ioc';
 import { IEventEmitter, NotSupportedExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
-import { Observable, defer, filter, first, fromEvent, last, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
+import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -33,9 +33,7 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
         let obs$ = defer(() => this.requesting(packet)).pipe(
             mergeMap(r => this.receive((msg) => this.reqMsgFilter(packet, msg))),
-            first(),
             filter(p => this.reqResFilter(packet, p))
-            // first()
         );
 
         if (this.options.timeout) {

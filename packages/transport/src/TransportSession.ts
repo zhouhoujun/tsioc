@@ -20,7 +20,7 @@ export interface SendOpts extends Record<string, any> {
     /**
      * request observe type.
      */
-    observe?: 'body' | 'events' | 'response' | 'emit';
+    observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
     /**
      * send from server side or not.
      */

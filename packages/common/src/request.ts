@@ -19,7 +19,7 @@ export class TransportRequest<T = any> {
     readonly context: InvocationContext;
 
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-    readonly observe: 'body' | 'events' | 'response' | 'emit';
+    readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly reportProgress: boolean;
     readonly withCredentials: boolean;
     readonly urlWithParams: string;
