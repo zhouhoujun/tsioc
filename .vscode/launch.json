@@ -147,9 +147,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-amqp",
+            "name": "test amqp service",
             "args": [
-                "${workspaceRoot}/packages/endpoint-amqp/unit.ts" 
+                "${workspaceRoot}/packages/services/amqp/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -167,9 +167,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-mqtt",
+            "name": "test mqtt service",
             "args": [
-                "${workspaceRoot}/packages/endpoint-mqtt/unit.ts" 
+                "${workspaceRoot}/packages/services/mqtt/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -187,9 +187,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-nats",
+            "name": "test nats service",
             "args": [
-                "${workspaceRoot}/packages/endpoint-nats/unit.ts" 
+                "${workspaceRoot}/packages/services/nats/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -207,9 +207,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-redis",
+            "name": "test redis service",
             "args": [
-                "${workspaceRoot}/packages/endpoint-redis/unit.ts" 
+                "${workspaceRoot}/packages/services/redis/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -227,9 +227,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-tcp",
+            "name": "test tcp service",
             "args": [
-                "${workspaceRoot}/packages/endpoint-tcp/unit.ts" 
+                "${workspaceRoot}/packages/services/tcp/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -247,9 +247,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoint-ws",
+            "name": "test ws service",
             "args": [
-                "${workspaceRoot}/packages/endpoint-ws/unit.ts" 
+                "${workspaceRoot}/packages/services/ws/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

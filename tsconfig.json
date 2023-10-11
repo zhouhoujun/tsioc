@@ -16,7 +16,8 @@
     "resolveJsonModule": true,
     "paths": {
       "@tsdi/*": [
-        "packages/*"
+        "packages/*",
+        "packages/services/*"
       ],
     },
     "lib": [
