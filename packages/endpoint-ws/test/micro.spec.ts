@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { Handle, EndpointsModule, Payload, RequestPath, Session, Subscribe } from '@tsdi/endpoints';
-import { JsonEndpointModule } from '@tsdi/endpoints/json';
+import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -62,10 +62,10 @@ export class WsService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonEndpointModule,
+        JsonTransportModule,
         ServerEndpointModule,
         WsEndpointModule,
-        ClientModule.forClient([
+        ClientModule.register([
             {
                 transport: 'ws',
                 client: 'ws1',
@@ -83,8 +83,9 @@ export class WsService {
                 }
             }
         ]),
-        EndpointsModule.forMicroservice({
-            transport: 'ws'
+        EndpointsModule.registerService({
+            transport: 'ws',
+            microservice: true
         })
     ],
     declarations: [

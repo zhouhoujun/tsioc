@@ -1,7 +1,6 @@
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { GET, HEAD, OPTIONS, ForbiddenExecption } from '@tsdi/common';
+import { GET, HEAD, OPTIONS, ForbiddenExecption, hdr } from '@tsdi/common';
 import { AssetContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
-import { hdr } from '../consts';
 
 
 

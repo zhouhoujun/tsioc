@@ -1,6 +1,6 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
-import { HeybirdRequired, NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -18,7 +18,7 @@ import { TopicTransportSessionFactory } from './impl/topic.session';
 
 
 
-export interface ServerModuleConfig {
+export interface ServerConfig {
     /**
      * server provdier.
      */
@@ -37,7 +37,23 @@ export interface ServerModuleConfig {
     providers?: ProviderType[];
 }
 
-export interface ServerModuleOpts extends ServerModuleConfig, TransportRequired {
+export interface MicroServiceOpts {
+    /**
+     * microservice or not.
+     */
+    microservice: true;
+    /**
+     * microservice transport.
+     */
+    transport: Transport;
+}
+
+export interface HeybirdServiceOpts {
+    microservice?: false;
+    transport: HybirdTransport;
+}
+
+export interface ServerModuleOpts extends ServerConfig {
     /**
      * microservice or not.
      */
@@ -60,8 +76,11 @@ export interface ServerModuleOpts extends ServerModuleConfig, TransportRequired 
     defaultOpts?: ServerOpts & MiddlewareOpts;
 }
 
+export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
 
-export const SERVER_MODULES = tokenId<ServerModuleOpts[]>('SERVER_MODULES');
+export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & MicroServiceOpts);
+
+export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
 @Module({
@@ -84,40 +103,27 @@ export const SERVER_MODULES = tokenId<ServerModuleOpts[]>('SERVER_MODULES');
 export class EndpointsModule {
 
     /**
-     * for microservice endpoint.
+     * for service.
      * @param options 
      */
-    static forMicroservice(options: ServerModuleConfig & TransportRequired): ModuleWithProviders<EndpointsModule>;
+    static registerService(options: ServiceOpts): ModuleWithProviders<EndpointsModule>;
     /**
-     * for microservice endpoint.
+     * register service.
      * @param options 
      */
-    static forMicroservice(options: Array<ServerModuleConfig & TransportRequired>): ModuleWithProviders<EndpointsModule>;
-    static forMicroservice(options: Arrayify<ServerModuleConfig & TransportRequired>): ModuleWithProviders<EndpointsModule> {
+    static registerService(options: Array<ServiceOpts>): ModuleWithProviders<EndpointsModule>;
+    static registerService(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointsModule> {
 
         let providers: ProviderType[];
         if (isArray(options)) {
             providers = []
             options.forEach(op => {
-                providers.push(...createServiceProviders(op, true));
+                providers.push(...createServiceProviders(op));
             })
         } else {
-            providers = createServiceProviders(options, true);
+            providers = createServiceProviders(options);
         }
 
-        return {
-            providers,
-            module: EndpointsModule
-        }
-    }
-
-    /**
-     * main server.
-     * @param options 
-     * @returns 
-     */
-    static forServer(options: ServerModuleConfig & HeybirdRequired): ModuleWithProviders<EndpointsModule> {
-        const providers = createServiceProviders(options);
         return {
             providers,
             module: EndpointsModule
@@ -126,8 +132,8 @@ export class EndpointsModule {
 }
 
 
-function createServiceProviders(options: ServerModuleConfig & { transport: string }, microservice?: boolean) {
-    const { transport } = options;
+function createServiceProviders(options: ServiceOpts) {
+    const { transport, microservice } = options;
 
     const moduleOptsToken: Token<ServerModuleOpts> = getToken<any>(transport, 'server_module');
 
@@ -138,7 +144,7 @@ function createServiceProviders(options: ServerModuleConfig & { transport: strin
             init: (options, injector) => {
                 const opts = injector.get(SERVER_MODULES).find(r => r.transport === transport && r.microservice === microservice);
                 if (!opts) throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice' : 'server'} has not implemented`);
-                return { ...opts, ...options } as ServerModuleOpts;
+                return { ...opts, ...options } as ServiceModuleOpts & ServiceOpts;
             },
             onRegistered: (injector) => {
                 const { serverType, endpointType, serverOptsToken, microservice } = injector.get(moduleOptsToken);

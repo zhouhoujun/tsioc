@@ -1,9 +1,9 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer } from '@tsdi/common';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr } from '@tsdi/common';
 import { AssetContext, FileAdapter, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
-import { ctype, hdr } from '../consts';
+import { ctype } from '../consts';
 import { CONTENT_DISPOSITION_TOKEN } from '../content';
 import { MimeAdapter } from '../MimeAdapter';
 import { Negotiator } from '../Negotiator';

@@ -1,7 +1,6 @@
-import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { EventTransportSession } from '@tsdi/endpoints';
 import { UuidGenerator } from '@tsdi/core';
-import { hdr } from '@tsdi/endpoints/assets';
 import { Injectable } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Observable, filter, fromEvent, map, of } from 'rxjs';

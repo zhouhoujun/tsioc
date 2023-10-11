@@ -1,7 +1,6 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
-import { RequestMethod, InternalServerExecption } from '@tsdi/common';
+import { RequestMethod, InternalServerExecption, hdr } from '@tsdi/common';
 import { Middleware, AssetContext } from '@tsdi/endpoints';
-import { hdr } from '../consts';
 import { append, vary } from '../utils';
 
 

@@ -1,10 +1,9 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { ReqHeaders, ResHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter } from '@tsdi/common';
+import { ReqHeaders, ResHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { hdr } from '../consts';
 import { Redirector } from '../Redirector';
 
 

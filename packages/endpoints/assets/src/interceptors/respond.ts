@@ -1,8 +1,6 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { HEAD, MessageExecption, Incoming, Outgoing, IReadableStream, isBuffer } from '@tsdi/common';
+import { HEAD, MessageExecption, Incoming, Outgoing, IReadableStream, isBuffer, hdr } from '@tsdi/common';
 import { AssetContext } from '@tsdi/endpoints';
-import { hdr } from '../consts';
-
 
 @Injectable()
 export class RespondAdapter<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> {

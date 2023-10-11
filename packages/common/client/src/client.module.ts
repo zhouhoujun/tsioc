@@ -1,6 +1,6 @@
 import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { NotImplementedExecption, Transport, TransportRequired, TransportSessionFactory } from '@tsdi/common';
+import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { TopicTransportBackend, TransportBackend } from './backend';
 import { ClientOpts } from './options';
 import { ClientHandler } from './handler';
@@ -22,7 +22,9 @@ export interface ClientModuleConfig {
     providers?: ProviderType[];
 }
 
-export interface ClientModuleOpts extends ClientModuleConfig, TransportRequired {
+export interface ClientModuleOpts extends ClientModuleConfig {
+    
+    transport: Transport | HybirdTransport;
     /**
      * client type
      */
@@ -47,6 +49,9 @@ export interface ClientModuleOpts extends ClientModuleConfig, TransportRequired 
 
 
 export interface ClientTokenOpts {
+    
+    transport: Transport | HybirdTransport;
+    
     /**
      * client token.
      */
@@ -66,19 +71,19 @@ export class ClientModule {
      * @param options module options.
      * @returns 
      */
-    static forClient(options: ClientModuleConfig & TransportRequired & ClientTokenOpts): ModuleWithProviders<ClientModule>;
+    static register(options: ClientModuleConfig & ClientTokenOpts): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static forClient(options: Array<ClientModuleConfig & TransportRequired & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
+    static register(options: Array<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static forClient(options: Arrayify<ClientModuleConfig & TransportRequired & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
+    static register(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
         let providers: ProviderType[];
         if (isArray(options)) {
             providers = []
@@ -97,10 +102,10 @@ export class ClientModule {
 
 }
 
-export const CLIENT_MODULES = tokenId<(ClientModuleOpts & TransportRequired)[]>('CLIENT_MODULES')
+export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES')
 
 
-function clientProviders(options: ClientModuleConfig & TransportRequired & ClientTokenOpts) {
+function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
     const { client, transport } = options;
 
     const providers: ProviderType[] = [
@@ -112,7 +117,7 @@ function clientProviders(options: ClientModuleConfig & TransportRequired & Clien
         init: (options, injector) => {
             const defts = injector.get(CLIENT_MODULES).find(r => r.transport === transport);
             if (!defts) throw new NotImplementedExecption(options.transport + ' client has not implemented');
-            return { ...defts, ...options } as ClientModuleOpts & TransportRequired;
+            return { ...defts, ...options } as ClientModuleOpts;
         },
         onRegistered: (injector) => {
             const { clientType, clientProvider, hanlderType, clientOptsToken, defaultOpts } = injector.get(moduleOptsToken);

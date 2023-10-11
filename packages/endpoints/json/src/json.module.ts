@@ -40,7 +40,7 @@ import { JsonRequestHandler } from './handler';
         { provide: Responder, useExisting: JsonResponder }
     ]
 })
-export class JsonEndpointModule {
+export class JsonTransportModule {
 
     static withOptions(options: {
         encoderBacked?: ProvdierOf<JsonEncoderBackend>,
@@ -48,7 +48,7 @@ export class JsonEndpointModule {
         decoderBacked?: ProvdierOf<JsonDecoderBackend>,
         decoderInterceptors?: ProvdierOf<Interceptor<Context, Packet>>[],
         providers: ProviderType[]
-    }): ModuleWithProviders<JsonEndpointModule> {
+    }): ModuleWithProviders<JsonTransportModule> {
         const providers: ProviderType[] = options.providers ?? [];
         if (options.encoderBacked) {
             providers.push(toProvider(JsonEncoderBackend, options.encoderBacked))
@@ -69,7 +69,7 @@ export class JsonEndpointModule {
 
 
         return {
-            module: JsonEndpointModule,
+            module: JsonTransportModule,
             providers
         }
     }

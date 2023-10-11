@@ -1,8 +1,6 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, isBuffer } from '@tsdi/common';
+import { ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, hdr, isBuffer } from '@tsdi/common';
 import { AssetContext, Responder } from '@tsdi/endpoints';
-import { hdr } from './consts';
-
 
 @Injectable()
 export class AssetResponder<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> implements Responder<AssetContext<TRequest, TResponse, TStatus>> {

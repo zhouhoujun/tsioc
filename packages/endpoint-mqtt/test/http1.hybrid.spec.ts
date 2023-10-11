@@ -19,12 +19,13 @@
 //         LoggerModule,
 //         HttpModule,
 //         HttpServerModule,
-//         ClientModule.forClient({
+//         ClientModule.register({
 //             transport: 'mqtt',
 //             clientOpts: {
 //             }
 //         }),
-//         EndpointsModule.forMicroservice({
+//         EndpointsModule.registerService({
+//             microservice: true,
 //             transport: 'mqtt',
 //             serverOpts: {
 //             }
