@@ -1,11 +1,13 @@
-import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { TcpClient, TcpModule, TcpServer, } from '@tsdi/tcp';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/tcp';
-import { KafkaClientModule, KafkaClient, KafkaMicroServModule, KafkaServer } from '../src';
+import { KafkaClient, KafkaServer, KafkaModule } from '../src';
 import { DeviceController } from './controller';
 
 
@@ -15,10 +17,15 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule,
-        TcpServerModule,
-        KafkaClientModule,
-        KafkaMicroServModule
+        TcpModule,
+        KafkaModule,
+        ClientModule.register({
+            transport: 'kafka'
+        }),
+        EndpointsModule.registerService({
+            microservice: true,
+            transport: 'kafka'
+        }),
     ],
     declarations: [
         DeviceController

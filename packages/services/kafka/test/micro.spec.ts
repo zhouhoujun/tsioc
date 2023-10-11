@@ -1,13 +1,14 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
-import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
+import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { KAFKA_SERV_INTERCEPTORS, KafkaClient, KafkaClientModule, KafkaMicroServModule, KafkaServer } from '../src';
+import { KAFKA_SERV_INTERCEPTORS, KafkaClient, KafkaModule, KafkaServer } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { ClientModule } from '@tsdi/common/client';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -59,7 +60,9 @@ export class KafkaService {
     imports: [
         ServerModule,
         LoggerModule,
-        KafkaClientModule.withOption({
+        KafkaModule,
+        ClientModule.register({
+            transport: 'kafka',
             clientOpts: {
                 // connectOpts: {
                 //     port: 6379
@@ -67,7 +70,10 @@ export class KafkaService {
                 timeout: 300
             }
         }),
-        KafkaMicroServModule
+        EndpointsModule.registerService({
+            microservice: true,
+            transport: 'kafka'
+        }),
         // KafkaMicroServiceModule.withOption({
         //     serverOpts: {
         //         // timeout: 1000,
