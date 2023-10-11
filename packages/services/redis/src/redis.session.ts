@@ -1,4 +1,4 @@
-import { Injectable, isString, promisify } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
 import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession, TopicMessage } from '@tsdi/endpoints';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
@@ -31,22 +31,21 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
 
-        this.socket.publisher.publish(topic, data ?? Buffer.alloc(0))
+        await this.socket.publisher.publish(topic, data ?? Buffer.alloc(0))
     }
 
-    protected override initRequest(packet: RequestPacket<any>): void {
-        super.initRequest(packet);
+    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         if (!this.options.serverSide) {
             const rtopic = packet.replyTo = this.getReply(packet);
-            this.subscribe(rtopic)
+            await this.subscribe(rtopic)
         }
     }
 
 
-    subscribe(topic: string) {
+    async subscribe(topic: string): Promise<void> {
         if (topic && !this.topics.has(topic)) {
             this.topics.add(topic);
-            this.socket.subscriber.subscribe(topic)
+            await this.socket.subscriber.subscribe(topic)
         }
     }
 
@@ -85,7 +84,7 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
     }
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
-        const { topic, ...data} = packet;
+        const { topic, ...data } = packet;
         return this.sender.send(data);
     }
 

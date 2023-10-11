@@ -26,12 +26,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         await promisify(this.socket.publish, this.socket)(topic, data)
     }
 
-    protected override initRequest(packet: RequestPacket<any>): void {
-        super.initRequest(packet);
-        this.subscribeReply(packet);
-    }
-
-    protected subscribeReply(packet: RequestPacket<any>): void {
+    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         if (!this.options.serverSide) {
             const rtopic = this.getReply(packet);
             if (!this.replys.has(rtopic)) {

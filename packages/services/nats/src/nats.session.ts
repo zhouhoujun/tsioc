@@ -56,8 +56,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             })
     }
 
-    protected override initRequest(packet: RequestPacket<any>): void {
-        super.initRequest(packet);
+    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         if (!this.options.serverSide) {
             const rtopic = packet.replyTo = this.getReply(packet);
             this.subscribe(rtopic, (this.options as NatsSessionOpts).subscriptionOpts)

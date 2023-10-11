@@ -1,6 +1,6 @@
 import { Execption, isString } from '@tsdi/ioc';
 import { IEventEmitter, NotSupportedExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
-import { Observable, filter, first, from, fromEvent, lastValueFrom, map, merge, mergeMap, throwError, timeout } from 'rxjs';
+import { Observable, defer, filter, first, fromEvent, last, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -31,11 +31,11 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     }
 
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
-        this.initRequest(packet);
-        let obs$ = from(lastValueFrom(this.send(packet))).pipe(
+        let obs$ = defer(() => this.requesting(packet)).pipe(
             mergeMap(r => this.receive((msg) => this.reqMsgFilter(packet, msg))),
-            filter(p => this.reqResFilter(packet, p)),
-            first()
+            first(),
+            filter(p => this.reqResFilter(packet, p))
+            // first()
         );
 
         if (this.options.timeout) {
@@ -50,7 +50,8 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
                 filter(msg => msgFilter ? msgFilter(msg) : true),
                 mergeMap(msg => {
                     return this.unpack(msg);
-                })
+                }),
+                share()
             )
     }
 
@@ -73,6 +74,14 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
+    protected abstract beforeRequest(packet: RequestPacket<any>): Promise<void>;
+
+    protected async requesting(packet: RequestPacket<any>): Promise<void> {
+        this.bindPacketId(packet);
+        await this.beforeRequest(packet);
+        await lastValueFrom(this.send(packet))
+    }
+
     protected reqMsgFilter(req: RequestPacket, msg: TMsg) {
         return true;
     }
@@ -81,11 +90,12 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         return res.id == req.id
     }
 
-    protected initRequest(packet: RequestPacket<any>) {
+    protected bindPacketId(packet: RequestPacket<any>): void {
         if (!packet.id) {
             packet.id = this.getPacketId();
         }
     }
+
 
     protected getPacketId(): string | number {
         if (!this.allocator) {

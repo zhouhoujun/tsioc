@@ -39,8 +39,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         })
     }
 
-    protected override initRequest(packet: RequestPacket<any>): void {
-        super.initRequest(packet);
+    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         packet.replyTo = (this.options as AmqpSessionOpts).replyQueue;
     }
 

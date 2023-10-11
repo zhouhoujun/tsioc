@@ -106,10 +106,9 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         return Buffer.from(`${head}`);
     }
 
-    protected override initRequest(packet: RequestPacket<any>): void {
-        super.initRequest(packet);
+    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         if (!this.options.serverSide) {
-            const rtopic = packet.replyTo = this.getReply(packet);
+            packet.replyTo = this.getReply(packet);
         }
     }
 
