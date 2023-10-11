@@ -1,15 +1,14 @@
 import { Token, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
+import { Filter, Interceptor } from '@tsdi/core';
 import { Pattern, TransportEvent, TransportRequest } from '@tsdi/common';
-import { Client, ContentOptions } from '@tsdi/transport';
+import { ClientOpts } from '@tsdi/common/client';
 import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
-import { KafkaTransportOpts } from '../transport';
+import { KafkaTransportOpts } from '../const';
 
 
-export interface KafkaClientOpts extends ConfigableHandlerOptions<TransportRequest> {
+export interface KafkaClientOpts extends ClientOpts<KafkaConfig> {
     postfixId?: string;
-    topics?: (Pattern | RegExp)[]
-    connectOpts?: KafkaConfig;
+    topics?: (Pattern | RegExp)[];
     consumer?: ConsumerConfig;
     producer?: ProducerConfig;
     keepBinary?: boolean;
@@ -19,15 +18,7 @@ export interface KafkaClientOpts extends ConfigableHandlerOptions<TransportReque
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
-    content?: ContentOptions;
     transportOpts?: KafkaTransportOpts;
-}
-
-export interface KafkaClientsOpts extends KafkaClientOpts {
-    /**
-     * client token.
-     */
-    client: Token<Client>;
 }
 
 /**

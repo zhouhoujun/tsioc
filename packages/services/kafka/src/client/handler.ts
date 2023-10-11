@@ -1,9 +1,8 @@
-import { TransportEvent, TransportRequest } from '@tsdi/common';
-import { ConfigableHandler } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { ClientHandler } from '@tsdi/common/client';
 
 
 @Abstract()
-export abstract class KafkaHandler extends ConfigableHandler<TransportRequest, TransportEvent> {
+export abstract class KafkaHandler extends ClientHandler {
 
 }

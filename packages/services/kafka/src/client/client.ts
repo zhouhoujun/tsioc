@@ -1,11 +1,12 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { Client, MircoServRouters, StatusVaildator, TRANSPORT_SESSION } from '@tsdi/transport';
-import { patternToPath } from '@tsdi/common';
+import { TransportSession, patternToPath } from '@tsdi/common';
+import { Client } from '@tsdi/common/client';
+import { MircoServRouters, StatusVaildator } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
-import { KafkaReplyPartitionAssigner, KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
+import { KafkaReplyPartitionAssigner, KafkaTransportSession, KafkaTransportSessionFactory } from '../kafka.session';
 import { DEFAULT_BROKERS } from '../const';
 
 
@@ -113,12 +114,12 @@ export class KafkaClient extends Client {
         this.producer = this.client.producer(this.options.producer);
         await this.producer.connect();
 
-        const vaildator = this.handler.injector.get(StatusVaildator);
+        const vaildator = this.handler.injector.get(StatusVaildator, null);
         this._session = this.handler.injector.get(KafkaTransportSessionFactory).create({
             producer: this.producer,
             vaildator,
             consumer: this.consumer!
-        }, transportOpts);
+        }, 'kafka' ,transportOpts);
 
         if (!this.options.producerOnlyMode) {
             const topics = this.options.topics ? this.options.topics.map(t => {
@@ -145,7 +146,7 @@ export class KafkaClient extends Client {
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(TRANSPORT_SESSION, this._session)
+        context.setValue(TransportSession, this._session)
     }
 
     protected async onShutdown(): Promise<void> {

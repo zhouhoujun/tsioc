@@ -1,17 +1,12 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { MESSAGE, Packet, PatternFormatter, ServiceUnavailableExecption } from '@tsdi/common';
-import { Server, MircoServRouters, TransportSession, StatusVaildator, Content, ev } from '@tsdi/transport';
-import { Subscription, finalize } from 'rxjs';
+import { PatternFormatter, ServiceUnavailableExecption } from '@tsdi/common';
+import { Server, MircoServRouters, StatusVaildator, RequestHandler } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
-import { KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
-import { DEFAULT_BROKERS, KafkaHeaders, KafkaTransport } from '../const';
+import { KafkaTransportSession, KafkaTransportSessionFactory } from '../kafka.session';
+import { DEFAULT_BROKERS } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
-import { KafkaContext } from './context';
-import { KafkaOutgoing } from './outgoing';
-import { KafkaIncoming } from './incoming';
-
 
 
 
@@ -19,7 +14,7 @@ import { KafkaIncoming } from './incoming';
  * Kafka server.
  */
 @Injectable()
-export class KafkaServer extends Server<KafkaContext> {
+export class KafkaServer extends Server {
 
     @InjectLog()
     private logger!: Logger;
@@ -69,7 +64,7 @@ export class KafkaServer extends Server<KafkaContext> {
             brokers: DEFAULT_BROKERS,
             logCreator,
             clientId: 'boot-consumer' + postfixId,
-            ...this.options.connectOpts
+            ...this.options.serverOpts
         };
 
         if (isFunction(connectOpts.brokers)) {
@@ -97,9 +92,10 @@ export class KafkaServer extends Server<KafkaContext> {
         if (!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
         const consumer = this.consumer;
         const producer = this.producer;
-        const router = this.endpoint.injector.get(MircoServRouters).get('kafka');
-        if (this.options.content?.prefix && this.options.interceptors!.indexOf(Content) >= 0) {
-            const content = this.endpoint.injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
+        const injector = this.endpoint.injector;
+        const router = injector.get(MircoServRouters).get('kafka');
+        if (this.options.content?.prefix) {
+            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
@@ -109,14 +105,12 @@ export class KafkaServer extends Server<KafkaContext> {
             serverSide: true
         };
 
-        const vaildator = this.endpoint.injector.get(StatusVaildator);
-        const session = this._session = this.endpoint.injector.get(KafkaTransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts);
+        const vaildator = injector.get(StatusVaildator, null);
+        const session = this._session = injector.get(KafkaTransportSessionFactory).create({ consumer, vaildator, producer }, 'kafka', transportOpts);
 
         await session.bindTopics(topics);
 
-        session.on(ev.MESSAGE, (topic: string, packet: Packet) => {
-            this.requestHandler(session, packet)
-        });
+        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
@@ -144,41 +138,6 @@ export class KafkaServer extends Server<KafkaContext> {
         this.producer = null!;
         this.client = null!;
     }
-
-    /**
-    * request handler.
-    * @param observer 
-    * @param req 
-    * @param res 
-    */
-    protected requestHandler(session: TransportSession<KafkaTransport>, packet: Packet): Subscription {
-        const req = new KafkaIncoming(session, packet, MESSAGE);
-        const res = new KafkaOutgoing(session, packet.id, packet.topic!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string);
-
-        const ctx = this.createContext(req, res);
-        const cancel = this.endpoint.handle(ctx)
-            .pipe(finalize(() => {
-                ctx.destroy();
-            }))
-            .subscribe({
-                error: (err) => {
-                    this.logger.error(err)
-                }
-            });
-        // const opts = this.options;
-        // opts.timeout && req.socket.consumer.setTimeout && req.socket.stream.setTimeout(opts.timeout, () => {
-        //     req.emit?.(ev.TIMEOUT);
-        //     cancel?.unsubscribe()
-        // });
-        req.once(ev.ABOUT, () => cancel?.unsubscribe())
-        return cancel;
-    }
-
-    protected createContext(req: KafkaIncoming, res: KafkaOutgoing): KafkaContext {
-        const injector = this.endpoint.injector;
-        return new KafkaContext(injector, req, res, this.options);
-    }
-
 
 
 }

@@ -1,6 +1,6 @@
+import { Injectable } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { DefaultRouteMatcher } from '@tsdi/transport';
-import { Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class KafkaPatternFormatter extends PatternFormatter {

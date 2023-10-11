@@ -1,12 +1,18 @@
-import { StatusVaildator } from '@tsdi/transport';
-import { Consumer, Producer } from 'kafkajs';
+import { TransportOpts } from '@tsdi/common';
+import { StatusVaildator } from '@tsdi/endpoints';
+import { Consumer, ConsumerRunConfig, ConsumerSubscribeTopics, Producer, ProducerRecord } from 'kafkajs';
 
-
+export interface KafkaTransportOpts extends TransportOpts, ConsumerRunConfig {
+    subscribe?: Omit<ConsumerSubscribeTopics, 'topic'>;
+    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
+    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
+    consumerAssignments?: { [key: string]: number };
+}
 
 
 export interface KafkaTransport {
     consumer: Consumer;
-    vaildator: StatusVaildator;
+    vaildator?: StatusVaildator|null;
     producer: Producer;
 }
 
