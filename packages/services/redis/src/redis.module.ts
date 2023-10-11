@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST, PatternFormatter } from '@tsdi/common';
+import { PatternFormatter } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
@@ -15,6 +15,8 @@ import { RedisTransportSessionFactory } from './redis.session';
 
 @Module({
     providers: [
+        RedisClient,
+        RedisServer,
         RedisPatternFormatter,
         RedisTransportSessionFactory,
         {

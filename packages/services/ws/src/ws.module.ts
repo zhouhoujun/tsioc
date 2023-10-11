@@ -12,6 +12,8 @@ import { WsEndpoint } from './server/endpoint';
 
 @Module({
     providers: [
+        WsClient,
+        WsServer,
         {
             provide: CLIENT_MODULES,
             useValue: {

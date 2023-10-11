@@ -103,7 +103,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 export class EndpointsModule {
 
     /**
-     * for service.
+     * register service.
      * @param options 
      */
     static registerService(options: ServiceOpts): ModuleWithProviders<EndpointsModule>;
@@ -151,8 +151,6 @@ function createServiceProviders(options: ServiceOpts) {
                 const providers = [];
                 if (options.server) {
                     providers.push(toProvider(serverType, options.server));
-                } else if (serverType) {
-                    providers.push(serverType);
                 }
 
                 if (options.endpoint) {

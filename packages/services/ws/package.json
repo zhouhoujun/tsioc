@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/ws",
   "version": "6.0.31",
-  "description": "Application ws endpoint service. base on AOP, Ioc container, via @tsdi/core.",
+  "description": "Application ws service. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },

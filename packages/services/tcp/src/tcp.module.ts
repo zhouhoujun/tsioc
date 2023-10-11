@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, Session, defaultMaxSize } from '@tsdi/endpoints';
+import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS } from './client/options';
 import { TcpHandler } from './client/handler';
@@ -13,6 +13,8 @@ import { TcpEndpoint } from './server/endpoint';
 
 @Module({
     providers: [
+        TcpClient,
+        TcpServer,
         {
             provide: CLIENT_MODULES,
             useValue: {

@@ -1,0 +1,42 @@
+
+import { ExecptionFilter, Interceptor, CanActivate } from '@tsdi/core';
+import { tokenId } from '@tsdi/ioc';
+import { ServerOpts } from '@tsdi/endpoints';
+import { ContentOptions } from '@tsdi/endpoints/assets';
+import { CoapServerOptions } from 'coap';
+
+
+/**
+ * Coap server options.
+ */
+export interface CoapServerOpts extends ServerOpts<CoapServerOptions> {
+    content?: ContentOptions;
+    listenOpts?: number | { host?: string, port?: number, listener?: () => void };
+    detailError?: boolean;
+}
+
+/**
+ * CoAP server options
+ */
+export const COAP_SERV_OPTS = tokenId<CoapServerOpts>('COAP_SERV_OPTS');
+/**
+ * CoAP micro server options
+ */
+export const COAP_MICRO_SERV_OPTS = tokenId<CoapServerOpts>('COAP_MICRO_SERV_OPTS');
+
+
+/**
+ * CoAP server interceptors.
+ */
+export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor[]>('COAP_SERV_INTERCEPTORS');
+/**
+ * CoAP server filters.
+ */
+export const COAP_SERV_FILTERS = tokenId<ExecptionFilter[]>('COAP_SERV_FILTERS');
+/**
+ * CoAP Guards.
+ */
+export const COAP_SERV_GUARDS = tokenId<CanActivate[]>('COAP_SERV_GUARDS');
+
+
+

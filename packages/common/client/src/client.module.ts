@@ -125,10 +125,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             const providers = [];
             if (clientProvider) {
                 providers.push(toProvider(clientType, clientProvider));
-            } else if (clientType) {
-                providers.push(clientType);
             }
-
             if (options.handler) {
                 providers.push(toProvider(hanlderType, options.handler))
             } else {

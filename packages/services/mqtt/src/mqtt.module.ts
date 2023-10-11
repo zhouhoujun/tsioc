@@ -13,6 +13,8 @@ import { MqttEndpoint } from './server/endpoint';
 
 @Module({
     providers: [
+        MqttClient,
+        MqttServer,
         {
             provide: CLIENT_MODULES,
             useValue: {

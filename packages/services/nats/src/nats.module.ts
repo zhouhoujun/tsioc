@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, PatternFormatter } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, TopicTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
 import { NatsClient } from './client/client';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS } from './client/options';
 import { NatsHandler } from './client/handler';
@@ -15,6 +15,8 @@ import { NatsTransportSessionFactory } from './nats.session';
 
 @Module({
     providers: [
+        NatsClient,
+        NatsServer,
         NatsPatternFormatter,
         NatsTransportSessionFactory,
         {

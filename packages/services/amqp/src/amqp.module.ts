@@ -15,6 +15,8 @@ import { AmqpEndpoint } from './server/endpoint';
 
 @Module({
     providers: [
+        AmqpClient,
+        AmqpServer,
         AmqpTransportSessionFactory,
         {
             provide: CLIENT_MODULES,
