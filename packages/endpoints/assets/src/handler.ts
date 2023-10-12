@@ -4,7 +4,6 @@ import { Logger } from '@tsdi/logger';
 import { RequestHandler, ServerOpts, TransportEndpoint, createTransportContext } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
 
-
 @Injectable()
 export class AssetRequestHandler implements RequestHandler<RequestPacket, ResponsePacket> {
 

@@ -44,7 +44,7 @@ import { AssetRequestHandler } from './handler';
         { provide: Responder, useExisting: AssetResponder }
     ]
 })
-export class AssetEndpointModule {
+export class AssetTransportModule {
 
     /**
      * import tcp micro service module with options.
@@ -57,7 +57,7 @@ export class AssetEndpointModule {
         decoderBacked?: ProvdierOf<AssetDecoderBackend>,
         decoderInterceptors?: ProvdierOf<Interceptor<Context, Packet>>[],
         providers: ProviderType[]
-    }): ModuleWithProviders<AssetEndpointModule> {
+    }): ModuleWithProviders<AssetTransportModule> {
         const providers: ProviderType[] = options.providers ?? [];
         if (options.encoderBacked) {
             providers.push(toProvider(AssetEncoderBackend, options.encoderBacked))
@@ -77,7 +77,7 @@ export class AssetEndpointModule {
         }
 
         return {
-            module: AssetEndpointModule,
+            module: AssetTransportModule,
             providers
         }
     }

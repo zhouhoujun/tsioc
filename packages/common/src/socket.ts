@@ -160,9 +160,14 @@ export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableSt
 }
 
 /**
+ * status code
+ */
+export type StatusCode = string | number;
+
+/**
  * server outgoing message stream.
  */
-export interface Outgoing<TSocket = any, TStatus = any> extends IEnd {
+export interface Outgoing<TSocket = any, TStatus extends StatusCode = StatusCode> extends IEnd {
 
     readonly socket?: TSocket;
     /**

@@ -178,6 +178,14 @@ function createServiceProviders(options: ServiceOpts) {
                                 providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
                             };
 
+                            if (microservice) {
+                                if (serverOpts.transportOpts) {
+                                    serverOpts.transportOpts.microservice = microservice;
+                                } else {
+                                    serverOpts.transportOpts = { microservice };
+                                }
+                            }
+
                             if (serverOpts.sessionFactory) {
                                 serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
                             }

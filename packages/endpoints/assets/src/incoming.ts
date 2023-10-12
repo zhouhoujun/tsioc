@@ -1,4 +1,4 @@
-import { Incoming, IncomingHeaders, Packet, TransportSession, ev, hdr } from '@tsdi/common';
+import { IncomingHeaders, Packet, hdr, Incoming, TransportSession, MESSAGE, GET } from '@tsdi/common';
 import { Readable } from 'readable-stream';
 
 export class MessageIncoming<T> extends Readable implements Incoming<T> {
@@ -15,7 +15,7 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
     readonly topic: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<T>, private packet: Packet<Buffer>, private defaultMethod = 'GET') {
+    constructor(readonly session: TransportSession<T>, private packet: Packet<Buffer>) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -23,14 +23,9 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
         this.url = packet.url ?? headers[hdr.PATH] ?? '';
         this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
         this.topic = packet.topic || packet.url || '';
-        this.method = packet.method ?? headers?.[hdr.METHOD] ?? this.defaultMethod;
+        this.method = packet.method ?? headers?.[hdr.METHOD] ?? session.options.microservice ? MESSAGE : GET;
 
         this._payloadIndex = 0
-        // session.on(ev.END, this.emit.bind(this, ev.END));
-        // session.on(ev.ERROR, this.emit.bind(this, ev.ERROR));
-        // session.on(ev.ABORTED, this.emit.bind(this, ev.ABORTED));
-        // session.on(ev.CLOSE, this.emit.bind(this, ev.CLOSE));
-        // session.on(ev.TIMEOUT, this.emit.bind(this, ev.TIMEOUT));
     }
 
     get socket() {

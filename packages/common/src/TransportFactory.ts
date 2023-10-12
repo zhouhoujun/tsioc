@@ -20,9 +20,14 @@ export interface TransportOpts {
      */
     serverSide?: boolean;
     /**
+     * is microservice or not.
+     */
+    microservice?: boolean;
+    /**
      * packet delimiter flag
      */
     delimiter?: string;
+    
     timeout?: number;
     /**
      * packet size limit.
@@ -67,17 +72,6 @@ export abstract class TransportSession<TSocket = any, TMsg= any>  {
      * transport options.
      */
     abstract get options(): TransportOpts;
-    
-    // /**
-    //  * packet sender
-    //  */
-    // abstract get sender(): Sender;
-
-    // /**
-    //  * packet receiver.
-    //  */
-    // abstract get receiver(): Receiver;
-
     /**
      * send.
      * @param packet 

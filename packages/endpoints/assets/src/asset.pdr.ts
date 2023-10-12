@@ -1,6 +1,5 @@
-
-import { TypedRespond } from '@tsdi/core';
 import { ProviderType } from '@tsdi/ioc';
+import { TypedRespond } from '@tsdi/core';
 import { MimeAdapter, MimeDb, MimeTypes } from './MimeAdapter';
 import { Negotiator } from './Negotiator';
 import { BasicMimeDb } from './impl/mimedb';
