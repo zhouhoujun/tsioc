@@ -1,7 +1,7 @@
 import { IncomingHeaders, Packet, hdr, Incoming, TransportSession, MESSAGE, GET, IReadableStream, isBuffer } from '@tsdi/common';
 import { Readable } from 'readable-stream';
 
-export class MessageIncoming<T> extends Readable implements Incoming<T> {
+export class IncomingMessage<T> extends Readable implements Incoming<T> {
 
     readonly headers: IncomingHeaders;
     body?: any;

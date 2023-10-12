@@ -1,7 +1,7 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts } from '@tsdi/core';
 import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr } from '@tsdi/common';
-import { AssetContext, FileAdapter, StatusVaildator } from '@tsdi/endpoints';
+import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
@@ -16,7 +16,7 @@ export interface ProxyOpts {
     maxIpsCount?: number;
 }
 
-export interface ServerOptions extends Record<string, any> {
+export interface ServerOptions extends ServerOpts {
     proxy?: ProxyOpts;
     content?: ContentOptions | boolean
 }

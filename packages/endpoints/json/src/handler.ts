@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
+import { GET, MESSAGE, RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
 import { Logger } from '@tsdi/logger';
 import { RequestHandler, ServerOpts, TransportEndpoint, createTransportContext } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
@@ -12,8 +12,8 @@ export class JsonRequestHandler implements RequestHandler<RequestPacket, Respons
 
         return session.receive().pipe(
             mergeMap(req => {
-                if (!req.method && options?.defaultMethod) {
-                    req.method = options?.defaultMethod;
+                if (!req.method) {
+                    req.method = options.transportOpts?.microservice ? MESSAGE : GET;
                 }
                 const ctx = createTransportContext(endpoint.injector, req, {});
                 ctx.setValue(TransportSession, session);

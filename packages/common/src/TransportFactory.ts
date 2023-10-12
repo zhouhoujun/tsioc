@@ -1,9 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Receiver } from './Receiver';
 import { Sender } from './Sender';
-import { RequestPacket, ResponsePacket } from './packet';
+import { Packet, RequestPacket, ResponsePacket } from './packet';
 import { Observable } from 'rxjs';
 import { Transport } from './protocols';
+import { Incoming, Outgoing } from './socket';
+import { IncomingHeaders } from './headers';
 
 
 
@@ -27,7 +29,7 @@ export interface TransportOpts {
      * packet delimiter flag
      */
     delimiter?: string;
-    
+
     timeout?: number;
     /**
      * packet size limit.
@@ -61,9 +63,18 @@ export abstract class TransportFactory {
     abstract createSender(transport: Transport, options?: TransportOpts): Sender;
 }
 
+/**
+ * incoming packet.
+ */
+export interface IncomingPacket<T = any> extends Packet<T> {
+    req?: Incoming;
+    res?: Outgoing;
+    headers?: IncomingHeaders;
+    originalUrl?: string;
+}
 
 @Abstract()
-export abstract class TransportSession<TSocket = any, TMsg= any>  {
+export abstract class TransportSession<TSocket = any, TMsg = any>  {
     /**
      * socket.
      */
@@ -76,7 +87,7 @@ export abstract class TransportSession<TSocket = any, TMsg= any>  {
      * send.
      * @param packet 
      */
-    abstract send(packet: ResponsePacket): Observable<any>;
+    abstract send(packet: RequestPacket | ResponsePacket): Observable<any>;
 
     /**
      * request.
@@ -87,12 +98,12 @@ export abstract class TransportSession<TSocket = any, TMsg= any>  {
     /**
      * receive
      */
-    abstract receive(filter?: (msg: TMsg) => boolean): Observable<ResponsePacket>;
+    abstract receive(filter?: (msg: TMsg) => boolean): Observable<IncomingPacket>;
 
     /**
      * destroy.
      */
-    abstract destroy():  Promise<void>;
+    abstract destroy(): Promise<void>;
 
 }
 

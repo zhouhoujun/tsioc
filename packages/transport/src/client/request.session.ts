@@ -132,7 +132,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected abstract bindMessageEvent(session: TransportSession<T>, packet: Packet, req: TransportRequest, observer: Observer<TransportEvent>, opts: Option): [string, (...args: any[]) => void]
 
-    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit' | 'observe'): string {
         switch (observe) {
             case 'emit':
                 return '';

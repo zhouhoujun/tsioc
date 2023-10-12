@@ -9,6 +9,11 @@ import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
 
 
+export interface ProxyOpts {
+    proxyIpHeader: string;
+    maxIpsCount?: number;
+}
+
 /**
  * server options
  */
@@ -34,10 +39,6 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
      */
     requestHanlder?: ProvdierOf<RequestHandler>;
     /**
-     * default method.
-     */
-    defaultMethod?: string;
-    /**
      * send detail error message to client or not. 
      */
     detailError?: boolean;
@@ -45,7 +46,13 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     /**
      * routes config.
      */
-    routes?: RouteOpts
+    routes?: RouteOpts;
+
+    proxy?: ProxyOpts;
+
+    protocol?: string;
+    
+    secure?: boolean;
 }
 
 

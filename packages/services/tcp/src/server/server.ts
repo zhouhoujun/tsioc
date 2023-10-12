@@ -46,14 +46,14 @@ export class TcpServer extends Server implements ListenService {
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
-                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!')
+                this.logger.info(lang.getClassName(this), 'access with url:', `${isSecure ? 'ssl' : 'tcp'}://${host}:${port}`, '!')
                 this.serv.listen(port, host, listeningListener);
             } else {
                 listeningListener = arg2;
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { port };
                 }
-                this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!')
+                this.logger.info(lang.getClassName(this), 'access with url:', `${isSecure ? 'ssl' : 'tcp'}://localhost:${port}`, '!')
                 this.serv.listen(port, listeningListener);
             }
         } else {
@@ -61,7 +61,7 @@ export class TcpServer extends Server implements ListenService {
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${isSecure ? 'ssl' : 'tcp'}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             this.serv.listen(opts, listeningListener);
         }
         return this;

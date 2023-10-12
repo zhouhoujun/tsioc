@@ -24,7 +24,6 @@ export interface Packet<T = any> extends HeaderPacket {
     payload?: T;
 }
 
-
 /**
  * request packet data.
  */

@@ -1,5 +1,5 @@
 import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
-import { Outgoing, OutgoingHeader, OutgoingHeaders, ResHeaders, ResponsePacket, StatusCode, TransportSession, hdr } from '@tsdi/common';
+import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, TransportSession, hdr } from '@tsdi/common';
 import { Writable } from 'readable-stream';
 
 
@@ -11,7 +11,7 @@ export interface SendPacket extends ResponsePacket {
 /**
  * outgoing message.
  */
-export class MessageOutgoing<T, TStatus extends StatusCode = StatusCode> extends Writable implements Outgoing<T, TStatus> {
+export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends Writable implements Outgoing<T, TStatus> {
 
     _closed = false;
     ending = false;
@@ -19,24 +19,25 @@ export class MessageOutgoing<T, TStatus extends StatusCode = StatusCode> extends
     destroyed = false;
     sendDate = true;
     private _sentpkt?: SendPacket;
+    readonly id: number;
+    readonly topic: string;
+    readonly replyTo: string;
 
     writable = true;
     constructor(
         readonly session: TransportSession<T>,
-        readonly id: number,
-        readonly topic: string,
-        readonly replyTo: string = '') {
+        packet: Packet
+    ) {
         super({ objectMode: true });
         this.setMaxListeners(0);
         this._hdr = new ResHeaders();
-        this.init();
+        this.id = packet.id;
+        this.topic = packet.topic ?? '';
+        this.replyTo = packet.replyTo ?? '';
     }
 
     get socket() {
         return this.session.socket;
-    }
-
-    protected init() {
     }
 
 
