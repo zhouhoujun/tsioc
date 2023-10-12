@@ -31,11 +31,11 @@ import { AssetRequestHandler } from './handler';
         { provide: AssetDecoder, useExisting: AssetInterceptingDecoder },
 
         AssetTransportTypedRespond,
-        {provide: TypedRespond, useExisting: AssetTransportTypedRespond},
+        { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
 
         AssetRequestHandler,
         { provide: RequestHandler, useExisting: AssetRequestHandler },
-        
+
         AssetReceiver,
         AssetSender,
         AssetResponder,

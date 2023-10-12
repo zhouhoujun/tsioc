@@ -33,13 +33,19 @@ export interface RequestPacket<T = any> extends Packet<T> {
     originalUrl?: string;
 }
 
+
+/**
+ * status code
+ */
+export type StatusCode = string | number;
+
 /**
  * response packet data.
  */
 export interface ResponsePacket<T = any> extends Packet<T> {
     type?: number | string;
     headers?: OutgoingHeaders;
-    status?: string | number;
+    status?: StatusCode;
     statusText?: string
 }
 

@@ -1,4 +1,4 @@
-import { IncomingHeaders, Packet, hdr, Incoming, TransportSession, MESSAGE, GET } from '@tsdi/common';
+import { IncomingHeaders, Packet, hdr, Incoming, TransportSession, MESSAGE, GET, IReadableStream, isBuffer } from '@tsdi/common';
 import { Readable } from 'readable-stream';
 
 export class MessageIncoming<T> extends Readable implements Incoming<T> {
@@ -15,7 +15,7 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
     readonly topic: string;
     readonly method: string;
 
-    constructor(readonly session: TransportSession<T>, private packet: Packet<Buffer>) {
+    constructor(readonly session: TransportSession<T>, private packet: Packet<Buffer | IReadableStream>) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -42,11 +42,15 @@ export class MessageIncoming<T> extends Readable implements Incoming<T> {
         const payload = this.packet.payload;
         let buf: any = null
 
-        if (payload != null && start < payload.length) {
+        if (payload != null) {
+            if(isBuffer(payload) && start < payload.length) {
             buf = payload.subarray(start, end)
+            } else {
+                buf = (payload as IReadableStream).read(size)
+            }
         }
 
-        this._payloadIndex = end
+        this._payloadIndex = end;
         this.push(buf)
     }
 

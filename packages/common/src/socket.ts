@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
-import { Packet } from './packet';
+import { Packet, StatusCode } from './packet';
 import { OutgoingHeader, OutgoingHeaders } from './headers';
 
 /**
@@ -159,10 +159,6 @@ export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableSt
     rawBody?: Uint8Array;
 }
 
-/**
- * status code
- */
-export type StatusCode = string | number;
 
 /**
  * server outgoing message stream.
