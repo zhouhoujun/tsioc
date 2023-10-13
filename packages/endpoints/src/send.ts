@@ -17,6 +17,15 @@ export interface SendOptions<TStats = any> {
     setHeaders?: (ctx: AssetContext, path: string, stats: TStats) => void;
 }
 
+
+/**
+ * Static Content options.
+ */
+
+export interface ContentOptions extends SendOptions {
+    defer?: boolean;
+}
+
 /**
  * Content send adapter.
  */

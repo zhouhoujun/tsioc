@@ -1,7 +1,6 @@
 import { Interceptor, Filter, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions } from '@tsdi/endpoints/assets';
 import { ConnectionOptions } from 'nats';
 import { NatsSessionOpts } from '../options';
 
@@ -16,7 +15,6 @@ export interface NatsMicroServOpts extends ServerOpts<ConnectionOptions> {
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
-    content?: ContentOptions;
     debug?: boolean;
 }
 

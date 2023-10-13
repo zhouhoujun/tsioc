@@ -1,14 +1,12 @@
 import { tokenId } from '@tsdi/ioc';
 import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions, MimeSource } from '@tsdi/endpoints/assets';
 import { MqttConnectOpts } from '../connect';
 
 
 
 export interface MqttServiceOpts extends ServerOpts<MqttConnectOpts> {
     detailError?: boolean;
-    content?: ContentOptions;
     retryDelay?: number;
 }
 

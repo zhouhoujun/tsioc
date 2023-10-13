@@ -2,7 +2,6 @@
 import { ExecptionFilter, Interceptor, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions } from '@tsdi/endpoints/assets';
 import { CoapServerOptions } from 'coap';
 
 
@@ -10,7 +9,6 @@ import { CoapServerOptions } from 'coap';
  * Coap server options.
  */
 export interface CoapServerOpts extends ServerOpts<CoapServerOptions> {
-    content?: ContentOptions;
     listenOpts?: number | { host?: string, port?: number, listener?: () => void };
     detailError?: boolean;
 }

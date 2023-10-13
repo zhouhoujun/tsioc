@@ -1,7 +1,6 @@
 import { Interceptor, Filter, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions } from '@tsdi/endpoints/assets';
 import * as amqp from 'amqplib';
 import { AmqpSessionOpts } from '../options';
 
@@ -14,7 +13,6 @@ export interface AmqpMicroServiceOpts extends ServerOpts<string | amqp.Options.C
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
-    content?: ContentOptions;
     transportOpts?: AmqpSessionOpts & { maxSize?: number};
 }
 

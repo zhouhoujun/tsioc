@@ -8,7 +8,7 @@ import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { MimeAdapter } from './MimeAdapter';
 import { Negotiator } from './Negotiator';
 import { encodeUrl, escapeHtml, xmlRegExp } from './utils';
-import { ContentOptions } from './interceptors/content';
+
 
 
 export interface ProxyOpts {
@@ -18,7 +18,6 @@ export interface ProxyOpts {
 
 export interface ServerOptions extends ServerOpts {
     proxy?: ProxyOpts;
-    content?: ContentOptions | boolean
 }
 
 /**

@@ -1,15 +1,13 @@
 import { tokenId } from '@tsdi/ioc';
 import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions, MimeSource } from '@tsdi/endpoints/assets';
 import { ServerOptions } from 'ws';
 
 
 
 
 export interface WsServerOpts extends ServerOpts<ServerOptions> {
-    mimeDb?: Record<string, MimeSource>;
-    content?: boolean | ContentOptions;
+
 }
 
 /**

@@ -1,7 +1,6 @@
 import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions } from '@tsdi/endpoints/assets';
 import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
 import { KafkaTransportOpts } from '../const';
 
@@ -16,7 +15,6 @@ export interface KafkaServerOptions extends ServerOpts<KafkaConfig> {
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
-    content?: ContentOptions;
     transportOpts?: KafkaTransportOpts;
 }
 

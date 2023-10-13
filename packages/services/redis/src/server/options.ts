@@ -1,13 +1,11 @@
 import { tokenId } from '@tsdi/ioc';
 import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ContentOptions } from '@tsdi/endpoints/assets';
 import { RedisOptions } from 'ioredis';
 
 
 export interface RedisServerOpts extends ServerOpts<RedisOptions> {
     detailError?: boolean;
-    content?: ContentOptions;
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;

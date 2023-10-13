@@ -7,6 +7,7 @@ import { SessionOptions } from './Session';
 import { Responder } from './Responder';
 import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
+import { ContentOptions } from './send';
 
 
 export interface ProxyOpts {
@@ -23,6 +24,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
      */
     timeout?: number;
     session?: boolean | SessionOptions;
+    content?: ContentOptions;
     serverOpts?: TSerOpts;
     /**
      * transport session options.
