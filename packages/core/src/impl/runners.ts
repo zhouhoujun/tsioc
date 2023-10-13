@@ -40,7 +40,7 @@ export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
     private _types: Type[];
     private _maps: Map<Type, Handler[]>;
-    private _refs: Map<Type, ReflectiveRef>;
+    private _refs: Map<Type, ReflectiveRef | ReflectiveRef[]>;
     private _handler: GuardHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
@@ -81,9 +81,9 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     attach<T, TArg>(type: Type<T> | Class<T>, options: EndpointOptions<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
-        if (this._maps.has(target.type)) {
-            return this._refs.get(target.type)!;
-        }
+        // if (this._maps.has(target.type)) {
+        //     return this._refs.get(target.type)!;
+        // }
 
 
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef || (r as StaticProviders).provide === RunnableFactory);
@@ -115,7 +115,16 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     protected attachRef(tagRef: ReflectiveRef, order?: number) {
-        this._refs.set(tagRef.type, tagRef);
+        const refs = this._refs.get(tagRef.type);
+        if (refs) {
+            if (isArray(refs)) {
+                refs.push(tagRef);
+            } else {
+                this._refs.set(tagRef.type, [refs, tagRef]);
+            }
+        } else {
+            this._refs.set(tagRef.type, tagRef);
+        }
         if (isNumber(order)) {
             this._types.splice(order, 0, tagRef.type)
         } else {
@@ -137,7 +146,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this._maps.has(type);
     }
 
-    getRef<T>(type: Type<T>): ReflectiveRef<T> {
+    getRef<T>(type: Type<T>): ReflectiveRef<T> | ReflectiveRef<T>[] {
         return this._refs.get(type) || null!;
     }
 

@@ -110,7 +110,7 @@ export class DeviceController {
                 transport: 'tcp',
                 serverOpts: {
                     listenOpts: {
-                        port: 2000
+                        port: 3000
                     }
                 }
             },
