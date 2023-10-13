@@ -28,7 +28,7 @@ export class RedisServer extends Server {
         super();
     }
 
-    protected async onStartup(): Promise<any> {
+    protected async connect(): Promise<any> {
         const opts = this.options;
         const retryStrategy = opts.serverOpts?.retryStrategy ?? this.createRetryStrategy(opts);
         const options = this.options.serverOpts = {
@@ -53,6 +53,7 @@ export class RedisServer extends Server {
     }
 
     protected async onStart(): Promise<any> {
+        await this.connect();
         if (!this.subscriber || !this.publisher) throw new Execption('Subscriber and Publisher cannot be null');
 
         const subscriber = this.subscriber;

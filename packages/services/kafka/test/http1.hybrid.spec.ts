@@ -30,8 +30,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: [HttpServer, KafkaServer]
+//     ]
 // })
 // export class KafkaHttpTestModule {
 

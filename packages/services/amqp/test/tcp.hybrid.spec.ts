@@ -27,8 +27,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: [TcpServer, AmqpServer]
+//     ]
 // })
 // export class AmqpTestModule {
 

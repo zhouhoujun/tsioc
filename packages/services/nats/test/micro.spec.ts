@@ -82,8 +82,7 @@ export class NatsService {
     ],
     declarations: [
         NatsService
-    ],
-    bootstrap: NatsServer
+    ]
 })
 export class MicroTestModule {
 

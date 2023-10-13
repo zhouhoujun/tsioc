@@ -82,8 +82,7 @@ export class RedisService {
     ],
     declarations: [
         RedisService
-    ],
-    bootstrap: RedisServer
+    ]
 })
 export class MicroTestModule {
 

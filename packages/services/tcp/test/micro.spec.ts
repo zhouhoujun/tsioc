@@ -78,8 +78,7 @@ export class TcpService {
     ],
     declarations: [
         TcpService
-    ],
-    bootstrap: TcpServer
+    ]
 })
 export class MicroTcpTestModule {
 

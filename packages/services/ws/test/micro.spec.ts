@@ -91,7 +91,7 @@ export class WsService {
     declarations: [
         WsService
     ],
-    bootstrap: WsServer
+    // bootstrap: WsServer
 })
 export class MicroTestModule {
 

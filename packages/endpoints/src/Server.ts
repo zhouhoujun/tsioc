@@ -91,10 +91,10 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
         return this;
     }
 
-    @Startup()
-    startup() {
-        return this.onStartup()
-    }
+    // @Startup()
+    // startup() {
+    //     return this.onStartup()
+    // }
 
     @Runner()
     start() {
@@ -106,7 +106,7 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
         return this.onShutdown()
     }
 
-    protected abstract onStartup(): Promise<any>;
+    // protected abstract onStartup(): Promise<any>;
 
     protected abstract onStart(): Promise<any>;
 

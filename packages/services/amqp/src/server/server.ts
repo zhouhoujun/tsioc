@@ -26,7 +26,7 @@ export class AmqpServer extends Server {
         super();
     }
 
-    protected async onStartup(): Promise<any> {
+    protected async connect(): Promise<any> {
 
         const conn = this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
         this._connected = true;
@@ -49,7 +49,7 @@ export class AmqpServer extends Server {
         });
     }
     protected async onStart(): Promise<any> {
-
+        await this.connect();
         if (!this._conn) throw new Execption('Amqp Connection has not connected.');
 
         const channel = this._channel = await this._conn.createChannel();

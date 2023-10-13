@@ -85,8 +85,7 @@ export class KafkaService {
     ],
     declarations: [
         KafkaService
-    ],
-    bootstrap: KafkaServer
+    ]
 })
 export class MicroTestModule {
 

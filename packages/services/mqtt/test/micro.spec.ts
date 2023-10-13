@@ -81,8 +81,7 @@ export class MqttService {
     ],
     declarations: [
         MqttService
-    ],
-    bootstrap: MqttServer
+    ]
 })
 export class MicroTestModule {
 

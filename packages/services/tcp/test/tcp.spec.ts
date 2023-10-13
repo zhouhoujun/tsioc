@@ -107,7 +107,12 @@ export class DeviceController {
         EndpointsModule.registerService([
             {
                 microservice: true,
-                transport: 'tcp'
+                transport: 'tcp',
+                serverOpts: {
+                    listenOpts: {
+                        port: 2000
+                    }
+                }
             },
             {
                 transport: 'tcp',
@@ -132,8 +137,7 @@ export class DeviceController {
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: TcpServer
+    ]
 })
 export class TcpTestModule {
 

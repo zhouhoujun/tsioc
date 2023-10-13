@@ -29,8 +29,7 @@ import { DeviceController } from './controller';
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: [TcpServer, KafkaServer]
+    ]
 })
 export class KafkaTcpTestModule {
 

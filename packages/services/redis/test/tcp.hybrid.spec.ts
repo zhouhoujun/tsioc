@@ -29,8 +29,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: [TcpServer, RedisServer]
+//     ]
 // })
 // export class RedisTestModule {
 

@@ -29,7 +29,7 @@ export class WsServer extends Server {
     }
 
 
-    protected async onStartup(): Promise<any> {
+    protected async setup(): Promise<any> {
         const serverOpts = {
             ...this.options.serverOpts
         };
@@ -48,6 +48,7 @@ export class WsServer extends Server {
     }
 
     protected async onStart(): Promise<any> {
+        await this.setup();
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info('WS server closed!'));

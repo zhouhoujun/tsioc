@@ -28,7 +28,7 @@ export class KafkaServer extends Server {
         super();
     }
 
-    protected async onStartup(): Promise<any> {
+    protected async connnect(): Promise<any> {
         const logCreator = (level: any) =>
             ({ namespace, level, label, log }: LogEntry) => {
                 let loggerMethod: Level;
@@ -89,6 +89,7 @@ export class KafkaServer extends Server {
 
 
     protected async onStart(): Promise<any> {
+        await this.connnect();
         if (!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
         const consumer = this.consumer;
         const producer = this.producer;

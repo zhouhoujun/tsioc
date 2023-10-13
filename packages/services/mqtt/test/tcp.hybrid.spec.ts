@@ -37,8 +37,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: [TcpServer, MqttServer]
+//     ]
 // })
 // export class MqttTestModule {
 

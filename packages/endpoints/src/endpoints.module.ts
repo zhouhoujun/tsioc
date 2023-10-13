@@ -15,72 +15,73 @@ import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
+import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
 
 
 
-export interface ServerConfig {
-    /**
-     * server provdier.
-     */
-    server?: ProvdierOf<Server>;
-    /**
-     * server endpoint provider
-     */
-    endpoint?: ProvdierOf<TransportEndpoint>;
-    /**
-     * server options
-     */
-    serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
-    /**
-     * custom provider with module.
-     */
-    providers?: ProviderType[];
-}
+// export interface ServerConfig {
+//     /**
+//      * server provdier.
+//      */
+//     server?: ProvdierOf<Server>;
+//     /**
+//      * server endpoint provider
+//      */
+//     endpoint?: ProvdierOf<TransportEndpoint>;
+//     /**
+//      * server options
+//      */
+//     serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
+//     /**
+//      * custom provider with module.
+//      */
+//     providers?: ProviderType[];
+// }
 
-export interface MicroServiceOpts {
-    /**
-     * microservice or not.
-     */
-    microservice: true;
-    /**
-     * microservice transport.
-     */
-    transport: Transport;
-}
+// export interface MicroServiceOpts {
+//     /**
+//      * microservice or not.
+//      */
+//     microservice: true;
+//     /**
+//      * microservice transport.
+//      */
+//     transport: Transport;
+// }
 
-export interface HeybirdServiceOpts {
-    microservice?: false;
-    transport: HybirdTransport;
-}
+// export interface HeybirdServiceOpts {
+//     microservice?: false;
+//     transport: HybirdTransport;
+// }
 
-export interface ServerModuleOpts extends ServerConfig {
-    /**
-     * microservice or not.
-     */
-    microservice?: boolean;
-    /**
-     * server type.
-     */
-    serverType: Type<Server>;
-    /**
-     * server options token.
-     */
-    serverOptsToken: Token<ServerOpts & MiddlewareOpts>;
-    /**
-     * server endpoint type
-     */
-    endpointType: Type<TransportEndpoint>;
-    /**
-     * server default options.
-     */
-    defaultOpts?: ServerOpts & MiddlewareOpts;
-}
+// export interface ServerModuleOpts extends ServerConfig {
+//     /**
+//      * microservice or not.
+//      */
+//     microservice?: boolean;
+//     /**
+//      * server type.
+//      */
+//     serverType: Type<Server>;
+//     /**
+//      * server options token.
+//      */
+//     serverOptsToken: Token<ServerOpts & MiddlewareOpts>;
+//     /**
+//      * server endpoint type
+//      */
+//     endpointType: Type<TransportEndpoint>;
+//     /**
+//      * server default options.
+//      */
+//     defaultOpts?: ServerOpts & MiddlewareOpts;
+// }
 
-export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
+// export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
 
-export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & MicroServiceOpts);
+// export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & MicroServiceOpts);
 
-export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
+// export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
 @Module({
@@ -105,23 +106,24 @@ export class EndpointsModule {
     /**
      * register service.
      * @param options 
+     * @param autoBootstrap default true 
      */
-    static registerService(options: ServiceOpts): ModuleWithProviders<EndpointsModule>;
+    static registerService(options: ServiceOpts, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
     /**
      * register service.
-     * @param options 
+     * @param options
+     * @param autoBootstrap default true 
      */
-    static registerService(options: Array<ServiceOpts>): ModuleWithProviders<EndpointsModule>;
-    static registerService(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointsModule> {
+    static registerService(options: Array<ServiceOpts>, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
+    static registerService(options: Arrayify<ServiceOpts>, autoBootstrap = true): ModuleWithProviders<EndpointsModule> {
 
-        let providers: ProviderType[];
+        const providers: ProviderType[] = autoBootstrap ? [ServerSetupService] : [];
         if (isArray(options)) {
-            providers = []
             options.forEach(op => {
                 providers.push(...createServiceProviders(op));
             })
         } else {
-            providers = createServiceProviders(options);
+            providers.push(...createServiceProviders(options));
         }
 
         return {
@@ -135,31 +137,33 @@ export class EndpointsModule {
 function createServiceProviders(options: ServiceOpts) {
     const { transport, microservice } = options;
 
-    const moduleOptsToken: Token<ServerModuleOpts> = getToken<any>(transport, 'server_module');
+    const moduleOptsToken: Token<ServerModuleOpts> = getToken<any>(transport, microservice ? 'microservice_module' : 'server_module');
 
+    const servOptsToken: Token<ServerOpts> = getToken<any>(transport, microservice ? 'microservice_opts' : 'server_opts');
 
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
         toFactory(moduleOptsToken, options, {
             init: (options, injector) => {
-                const opts = injector.get(SERVER_MODULES).find(r => r.transport === transport && r.microservice === microservice);
-                if (!opts) throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice' : 'server'} has not implemented`);
-                return { ...opts, ...options } as ServiceModuleOpts & ServiceOpts;
+                const mdopts = injector.get(SERVER_MODULES).find(r => r.transport === transport && r.microservice === microservice);
+                if (!mdopts) throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice' : 'server'} has not implemented`);
+                const moduleOpts = { ...mdopts, ...options } as ServiceModuleOpts & ServiceOpts;
+                return moduleOpts;
             },
             onRegistered: (injector) => {
-                const { serverType, endpointType, serverOptsToken, microservice } = injector.get(moduleOptsToken);
+                const { serverType, server, endpointType, endpoint, serverOptsToken, microservice } = injector.get(moduleOptsToken);
                 const providers = [];
-                if (options.server) {
-                    providers.push(toProvider(serverType, options.server));
+                if (server) {
+                    providers.push(toProvider(serverType, server));
                 }
 
-                if (options.endpoint) {
+                if (endpoint) {
                     providers.push(toProvider(endpointType, options.endpoint))
                 } else {
                     providers.push({
                         provide: endpointType,
                         useFactory: (injector: Injector, opts: ServerOpts) => {
-                            return microservice ? createTransportEndpoint(injector, opts) : createMiddlewareEndpoint(injector, options);
+                            return microservice ? createTransportEndpoint(injector, opts) : createMiddlewareEndpoint(injector, opts);
                         },
                         asDefault: true,
                         deps: [Injector, serverOptsToken]
@@ -167,16 +171,23 @@ function createServiceProviders(options: ServiceOpts) {
                 }
 
                 providers.push(
-                    toFactory(serverOptsToken, options.serverOpts!, {
+                    toFactory(servOptsToken, options.serverOpts!, {
                         init: (opts: ServerOpts, injector: Injector) => {
 
-                            const { defaultOpts, microservice } = injector.get(moduleOptsToken);
+                            const modulesOpts = injector.get(moduleOptsToken);
+                            const { defaultOpts, microservice } = modulesOpts;
                             const serverOpts = {
                                 backend: microservice ? MicroServRouterModule.getToken(transport as Transport) : HybridRouter,
                                 ...defaultOpts,
                                 ...opts,
+                                routes: {
+                                    ...defaultOpts?.routes,
+                                    ...opts?.routes
+                                },
                                 providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
                             };
+
+                            modulesOpts.serverOpts = serverOpts as any;
 
                             if (microservice) {
                                 if (serverOpts.transportOpts) {
@@ -204,14 +215,15 @@ function createServiceProviders(options: ServiceOpts) {
                             return serverOpts as ServerOpts;
                         }
                     }),
-                    ...microservice ? createMicroRouteProviders(transport as Transport, (injector) => injector.get(serverOptsToken).routes || EMPTY_OBJ)
-                        : createRouteProviders(injector => injector.get(serverOptsToken).routes || EMPTY_OBJ)
+                    ...microservice ? createMicroRouteProviders(transport as Transport, (injector) => injector.get(servOptsToken).routes || EMPTY_OBJ)
+                        : createRouteProviders(injector => injector.get(servOptsToken).routes || EMPTY_OBJ)
                 );
 
                 injector.inject(providers);
 
             }
-        })
+        }),
+        { provide: REGISTER_SERVICES, useExisting: moduleOptsToken, multi: true }
     ];
 
     return providers

@@ -30,7 +30,7 @@ export class MqttServer extends Server {
         this.subs = new Subscription();
     }
 
-    protected override async onStartup(): Promise<any> {
+    protected async connect(): Promise<any> {
 
         const opts = this.options.serverOpts ?? EMPTY_OBJ;
 
@@ -59,7 +59,9 @@ export class MqttServer extends Server {
     }
 
     protected override async onStart(): Promise<any> {
+        await this.connect();
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
+        
         const injector = this.endpoint.injector;
         const router = injector.get(MircoServRouters).get('mqtt');
         if (this.options.content?.prefix) {

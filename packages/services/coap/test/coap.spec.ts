@@ -40,8 +40,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: CoapServer
+    ]
 })
 export class CoapTestModule {
 

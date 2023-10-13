@@ -77,8 +77,7 @@ export class CoapService {
     ],
     declarations: [
         CoapService
-    ],
-    bootstrap: CoapService
+    ]
 })
 export class MicroTestModule {
 

@@ -24,11 +24,12 @@ export class NatsServer extends Server {
         super()
     }
 
-    protected async onStartup(): Promise<any> {
+    protected async connect(): Promise<any> {
         this.conn = await connect(this.options.serverOpts);
     }
 
     protected async onStart(): Promise<any> {
+        await this.connect();
         if (!this.conn) throw new Execption('Nats connection cannot be null');
 
         const injector = this.endpoint.injector;

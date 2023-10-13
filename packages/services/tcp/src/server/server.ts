@@ -67,12 +67,13 @@ export class TcpServer extends Server implements ListenService {
         return this;
     }
 
-    protected async onStartup(): Promise<any> {
+    protected async setup(): Promise<any> {
         const opts = this.options;
         this.serv = this.createServer(opts);
     }
 
     protected async onStart(): Promise<any> {
+        await this.setup();
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info('Tcp server closed!'));

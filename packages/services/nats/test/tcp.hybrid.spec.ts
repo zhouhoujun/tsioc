@@ -33,8 +33,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: [TcpServer, NatsServer]
+//     ]
 // })
 // export class NatsTestModule {
 

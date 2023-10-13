@@ -45,11 +45,12 @@ export class CoapServer extends Server implements BindListenning {
         return this;
     }
 
-    protected async onStartup(): Promise<any> {
+    protected async setup(): Promise<any> {
         this._server = createServer(this.options.serverOpts);
     }
 
     protected async onStart(): Promise<any> {
+        await this.setup();
         if (!this._server) throw new InternalServerExecption();
 
         this._server.on(ev.CLOSE, (err) => {

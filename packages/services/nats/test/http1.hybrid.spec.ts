@@ -28,8 +28,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: [HttpServer, NatsServer]
+//     ]
 // })
 // export class NatsTestModule {
 

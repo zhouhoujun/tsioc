@@ -75,8 +75,7 @@ export class AmqpService {
     ],
     declarations: [
         AmqpService
-    ],
-    bootstrap: AmqpServer
+    ]
 })
 export class MicroTestModule {
 
