@@ -40,7 +40,12 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
    * get reflectiveRef of type.
    * @param type 
    */
-  abstract getRef<T>(type: Type<T>): ReflectiveRef<T> | ReflectiveRef<T>[];
+  abstract getRef<T>(type: Type<T>, idx?: number): ReflectiveRef<T>;
+  /**
+   * get reflectiveRef of type.
+   * @param type 
+   */
+  abstract getRefs<T>(type: Type<T>): ReflectiveRef<T>[]
 
   /**
    * run all runners.
