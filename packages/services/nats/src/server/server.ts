@@ -9,7 +9,7 @@ import { NatsTransportSession, NatsTransportSessionFactory } from '../nats.sessi
 
 
 
-@Injectable()
+@Injectable({ static: false })
 export class NatsServer extends Server {
     private conn?: NatsConnection;
     private _session?: NatsTransportSession;

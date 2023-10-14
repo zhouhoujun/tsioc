@@ -11,7 +11,7 @@ import { Subscription } from 'rxjs';
 /**
  * Mqtt Server
  */
-@Injectable()
+@Injectable({ static: false })
 export class MqttServer extends Server {
 
     @InjectLog()
