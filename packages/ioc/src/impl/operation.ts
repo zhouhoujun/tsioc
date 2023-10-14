@@ -18,7 +18,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>,
     constructor(
         private _typeRef: ReflectiveRef<T>,
         readonly method: string,
-        private options: InvokerOptions = {}) {
+        private options?: InvokerOptions) {
         this.typeRef.onDestroy(this);
 
     }
@@ -85,7 +85,7 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>,
             if (arg && isTypeObject(arg)) {
                 instance = arg;
             } else {
-                if (this.options.instance) {
+                if (this.options?.instance) {
                     instance = isFunction(this.options.instance) ? this.options.instance() : this.options.instance;
                 }
             }

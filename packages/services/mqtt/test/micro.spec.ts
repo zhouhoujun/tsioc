@@ -71,7 +71,7 @@ export class MqttService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 500
+                timeout: 100
             }
         }),
         EndpointsModule.registerService({

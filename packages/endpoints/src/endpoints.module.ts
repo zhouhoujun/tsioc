@@ -119,11 +119,11 @@ export class EndpointsModule {
 
         const providers: ProviderType[] = autoBootstrap ? [ServerSetupService] : [];
         if (isArray(options)) {
-            options.forEach(op => {
-                providers.push(...createServiceProviders(op));
+            options.forEach((op, idx) => {
+                providers.push(...createServiceProviders(op, idx));
             })
         } else {
-            providers.push(...createServiceProviders(options));
+            providers.push(...createServiceProviders(options, 0));
         }
 
         return {
@@ -134,12 +134,12 @@ export class EndpointsModule {
 }
 
 
-function createServiceProviders(options: ServiceOpts) {
+function createServiceProviders(options: ServiceOpts, idx: number) {
     const { transport, microservice } = options;
 
-    const moduleOptsToken: Token<ServerModuleOpts> = getToken<any>(transport, microservice ? 'microservice_module' : 'server_module');
+    const moduleOptsToken: Token<ServerModuleOpts> = getToken<any>(transport, (microservice ? 'microservice_module' : 'server_module') + idx);
 
-    const servOptsToken: Token<ServerOpts> = getToken<any>(transport, microservice ? 'microservice_opts' : 'server_opts');
+    const servOptsToken: Token<ServerOpts> = getToken<any>(transport, (microservice ? 'microservice_opts' : 'server_opts') + idx);
 
     const providers: ProviderType[] = [
         ...options.providers ?? EMPTY,
@@ -151,7 +151,7 @@ function createServiceProviders(options: ServiceOpts) {
                 return moduleOpts;
             },
             onRegistered: (injector) => {
-                const { serverType, server, endpointType, endpoint, serverOptsToken, microservice } = injector.get(moduleOptsToken);
+                const { serverType, server, endpointType, endpoint, microservice } = injector.get(moduleOptsToken);
                 const providers = [];
                 if (server) {
                     providers.push(toProvider(serverType, server));
@@ -166,7 +166,7 @@ function createServiceProviders(options: ServiceOpts) {
                             return microservice ? createTransportEndpoint(injector, opts) : createMiddlewareEndpoint(injector, opts);
                         },
                         asDefault: true,
-                        deps: [Injector, serverOptsToken]
+                        deps: [Injector, servOptsToken]
                     })
                 }
 

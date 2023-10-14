@@ -81,17 +81,18 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     attach<T, TArg>(type: Type<T> | Class<T>, options: EndpointOptions<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
-        // if (this._maps.has(target.type)) {
-        //     return this._refs.get(target.type)!;
-        // }
-
-
+    
+        let ends = this._maps.get(target.type);
+        if(!ends) {
+            ends = [];
+            this._maps.set(target.type, ends);
+        }
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef || (r as StaticProviders).provide === RunnableFactory);
         if (hasAdapter) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const hasFactory = target.providers.some(r => (r as StaticProviders).provide === RunnableFactory);
             const endpoint = new FnHandler((ctx) => hasFactory ? targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : targetRef.resolve(RunnableRef).invoke(ctx));
-            this._maps.set(target.type, [endpoint]);
+            ends.push(endpoint);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
@@ -101,11 +102,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         if (runnables && runnables.length) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const facResolver = targetRef.resolve(EndpointFactoryResolver);
+            const factory = facResolver.resolve(targetRef);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                const factory = facResolver.resolve(targetRef);
                 return factory.create(runnable.method, options)
             });
-            this._maps.set(target.type, endpoints);
+            ends.push(...endpoints);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
@@ -124,12 +125,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             }
         } else {
             this._refs.set(tagRef.type, tagRef);
+            if (isNumber(order)) {
+                this._types.splice(order, 0, tagRef.type)
+            } else {
+                this._types.push(tagRef.type);
+            }
         }
-        if (isNumber(order)) {
-            this._types.splice(order, 0, tagRef.type)
-        } else {
-            this._types.push(tagRef.type);
-        }
+        
     }
 
     detach<T>(type: Type<T>): void {

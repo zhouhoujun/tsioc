@@ -1,7 +1,7 @@
 import { Type, CtorType } from '../types';
 import { Class } from '../metadata/type';
 import { isFunction, isPromise } from '../utils/chk';
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
@@ -51,7 +51,6 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         }
         return this._instance;
     }
-
 
     resolve<R>(token: Token<R>): R {
         this.assertNotDestroyed();

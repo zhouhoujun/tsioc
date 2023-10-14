@@ -13,7 +13,7 @@ import { TcpEndpoint } from './endpoint';
 /**
  * tcp server of `tcp` or `ipc`. 
  */
-@Injectable()
+@Injectable({ static: false })
 export class TcpServer extends Server implements ListenService {
 
     protected serv?: net.Server | tls.Server | null;

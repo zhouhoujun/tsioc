@@ -252,6 +252,7 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
 export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean): StaticProvider<T>;
 export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
     multi?: boolean,
+    static?: boolean,
     multiOrder?: number,
     isClass?: (type: Function) => boolean,
     onRegistered?: (injector: Injector) => void
@@ -301,6 +302,7 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boole
  */
 export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
     multi?: boolean,
+    static?: boolean,
     /**
      * init factory result.
      * @param val 

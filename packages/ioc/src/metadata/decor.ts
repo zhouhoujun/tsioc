@@ -649,7 +649,7 @@ export const Injectable: Injectable = createDecorator<InjectableMetadata>('Injec
         if (isString(arg2)) {
             return { provide: getToken(provide, arg2), ...arg3 }
         } else {
-            return { provide, ...arg2 }
+            return { provide, ...arg2}
         }
     }
 });
