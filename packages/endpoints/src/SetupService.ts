@@ -1,13 +1,10 @@
-import { EMPTY, EMPTY_OBJ, Injectable, Injector, ProvdierOf, ProviderType, Token, Type, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import { Injectable, ProvdierOf, ProviderType, Token, Type, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
-import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { HybirdTransport, Transport } from '@tsdi/common';
 import { Server, ServerOpts } from './Server';
-import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
-import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
-import { MicroServRouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
-import { HybridRouter } from './router/router.hybrid';
-import { SHOW_DETAIL_ERROR } from './execption.handlers';
-import { Responder } from './Responder';
+import { TransportEndpoint } from './TransportEndpoint';
+import { MiddlewareOpts } from './middleware/middleware.endpoint';
+
 
 
 
@@ -23,7 +20,7 @@ export interface ServerConfig {
     /**
      * server options
      */
-    serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
+    serverOpts?: ProvdierOf<ServerOpts>;
     /**
      * custom provider with module.
      */
@@ -45,6 +42,8 @@ export interface MicroServiceOpts {
 export interface HeybirdServiceOpts {
     microservice?: false;
     transport: HybirdTransport;
+    serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
+
 }
 
 export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & MicroServiceOpts);
@@ -66,7 +65,7 @@ export interface ServerModuleOpts extends ServerConfig {
     /**
      * server options token.
      */
-    serverOptsToken: Token<ServerOpts & MiddlewareOpts>;
+    serverOptsToken: Token<ServerOpts>;
     /**
      * server endpoint type
      */
@@ -74,7 +73,7 @@ export interface ServerModuleOpts extends ServerConfig {
     /**
      * server default options.
      */
-    defaultOpts?: ServerOpts & MiddlewareOpts;
+    defaultOpts?: ServerOpts;
 }
 export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
 

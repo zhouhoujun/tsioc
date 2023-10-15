@@ -7,7 +7,7 @@ import { TcpClient } from './client/client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS } from './client/options';
 import { TcpHandler } from './client/handler';
 import { TcpServer } from './server/server';
-import { TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS, TCP_SERV_OPTS } from './server/options';
+import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS, TCP_SERV_OPTS } from './server/options';
 import { TcpEndpoint } from './server/endpoint';
 
 
@@ -90,6 +90,7 @@ import { TcpEndpoint } from './server/endpoint';
                     interceptorsToken: TCP_SERV_INTERCEPTORS,
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
+                    middlewaresToken: TCP_MIDDLEWARES,
                     sessionFactory: { useExisting: DuplexTransportSessionFactory },
                     filters: [
                         LogInterceptor,

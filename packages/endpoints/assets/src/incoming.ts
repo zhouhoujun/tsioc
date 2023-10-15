@@ -23,7 +23,7 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         this.url = packet.url ?? headers[hdr.PATH] ?? '';
         this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
         this.topic = packet.topic || packet.url || '';
-        this.method = packet.method ?? headers?.[hdr.METHOD] ?? session.options.microservice ? MESSAGE : GET;
+        this.method = packet.method ?? headers?.[hdr.METHOD] ?? (session.options.microservice ? MESSAGE : GET);
 
         this._payloadIndex = 0
     }

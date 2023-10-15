@@ -1,8 +1,8 @@
-import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
-import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
-import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
-import { Server, ServerOpts } from './Server';
+import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { createTransportEndpoint } from './TransportEndpoint';
+import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
 import { Responder } from './Responder';
@@ -18,70 +18,6 @@ import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
 
 
-
-// export interface ServerConfig {
-//     /**
-//      * server provdier.
-//      */
-//     server?: ProvdierOf<Server>;
-//     /**
-//      * server endpoint provider
-//      */
-//     endpoint?: ProvdierOf<TransportEndpoint>;
-//     /**
-//      * server options
-//      */
-//     serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
-//     /**
-//      * custom provider with module.
-//      */
-//     providers?: ProviderType[];
-// }
-
-// export interface MicroServiceOpts {
-//     /**
-//      * microservice or not.
-//      */
-//     microservice: true;
-//     /**
-//      * microservice transport.
-//      */
-//     transport: Transport;
-// }
-
-// export interface HeybirdServiceOpts {
-//     microservice?: false;
-//     transport: HybirdTransport;
-// }
-
-// export interface ServerModuleOpts extends ServerConfig {
-//     /**
-//      * microservice or not.
-//      */
-//     microservice?: boolean;
-//     /**
-//      * server type.
-//      */
-//     serverType: Type<Server>;
-//     /**
-//      * server options token.
-//      */
-//     serverOptsToken: Token<ServerOpts & MiddlewareOpts>;
-//     /**
-//      * server endpoint type
-//      */
-//     endpointType: Type<TransportEndpoint>;
-//     /**
-//      * server default options.
-//      */
-//     defaultOpts?: ServerOpts & MiddlewareOpts;
-// }
-
-// export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
-
-// export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & MicroServiceOpts);
-
-// export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
 @Module({
@@ -162,8 +98,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 } else {
                     providers.push({
                         provide: endpointType,
-                        useFactory: (injector: Injector, opts: ServerOpts) => {
-                            return microservice ? createTransportEndpoint(injector, opts) : createMiddlewareEndpoint(injector, opts);
+                        useFactory: (injector: Injector, opts: ServerOpts & MiddlewareOpts) => {
+                            return (!microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createTransportEndpoint(injector, opts)
                         },
                         asDefault: true,
                         deps: [Injector, servOptsToken]

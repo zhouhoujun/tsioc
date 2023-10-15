@@ -1,6 +1,6 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common';
+import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
 import { RequestHandler, Server } from '@tsdi/endpoints';
 import { Subscription } from 'rxjs';
 import * as net from 'net';
@@ -38,7 +38,8 @@ export class TcpServer extends Server implements ListenService {
     listen(port: number, host?: string, listeningListener?: () => void): this;
     listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
         if (!this.serv) throw new InternalServerExecption();
-        const isSecure = this.isSecure;
+        const isSecure = this.options.secure = this.isSecure;
+        const protocol = this.options.protocol = this.options.protocol ?? (isSecure? 'ssl' : 'tcp');
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -46,14 +47,14 @@ export class TcpServer extends Server implements ListenService {
                 if (!this.options.listenOpts) {
                     this.options.listenOpts = { host, port };
                 }
-                this.logger.info(lang.getClassName(this), 'access with url:', `${isSecure ? 'ssl' : 'tcp'}://${host}:${port}`, '!')
+                this.logger.info(lang.getClassName(this), 'access with url:', `${protocol}://${host}:${port}`, '!')
                 this.serv.listen(port, host, listeningListener);
             } else {
                 listeningListener = arg2;
                 if (!this.options.listenOpts) {
-                    this.options.listenOpts = { port };
+                    this.options.listenOpts = { host: LOCALHOST, port };
                 }
-                this.logger.info(lang.getClassName(this), 'access with url:', `${isSecure ? 'ssl' : 'tcp'}://localhost:${port}`, '!')
+                this.logger.info(lang.getClassName(this), 'access with url:', `${protocol}://localhost:${port}`, '!')
                 this.serv.listen(port, listeningListener);
             }
         } else {
@@ -61,7 +62,7 @@ export class TcpServer extends Server implements ListenService {
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${isSecure ? 'ssl' : 'tcp'}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             this.serv.listen(opts, listeningListener);
         }
         return this;

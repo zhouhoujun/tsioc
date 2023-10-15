@@ -1,5 +1,5 @@
 import { Interceptor, Filter, CanActivate } from '@tsdi/core';
-import { ServerOpts } from '@tsdi/endpoints';
+import { MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
 import { tokenId } from '@tsdi/ioc';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -24,6 +24,12 @@ export const TCP_SERV_OPTS = tokenId<TcpServerOpts>('TCP_SERV_OPTS');
  * Tcp server interceptors.
  */
 export const TCP_SERV_INTERCEPTORS = tokenId<Interceptor[]>('TCP_SERV_INTERCEPTORS');
+
+
+/**
+ * tcp middlewares token.
+ */
+export const TCP_MIDDLEWARES = tokenId<MiddlewareLike[]>('TCP_MIDDLEWARES');
 
 /**
  * TCP filters.

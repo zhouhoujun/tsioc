@@ -1,4 +1,4 @@
-import { Incoming, Outgoing, StatusCode } from '@tsdi/common';
+import { Incoming, LOCALHOST, Outgoing, StatusCode } from '@tsdi/common';
 import { AbstractAssetContext } from '../asset.context';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 
@@ -16,7 +16,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming, Ou
         } else {
             const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
             const protocol = this.serverOptions.protocol;
-            const baseUrl = new URL(`${protocol}://${host}:${port ?? 3000}`, path);
+            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST }:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
             return uri;
         }
