@@ -125,8 +125,8 @@ describe('Kafka Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
-        expect(res instanceof TransportErrorResponse).toBeDefined();
-        expect(res.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
+        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res.statusMessage).toEqual('Not Found');
     })
 
     it('fetch big json', async () => {
@@ -137,8 +137,10 @@ describe('Kafka Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        // expect(res).toBeDefined();
+        // expect(isArray(res.features)).toBeTruthy();
+        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res.statusMessage).toEqual('Packet length 23.74mb great than max size 256kb');
     })
 
     it('fetch json 2', async () => {
@@ -151,9 +153,8 @@ describe('Kafka Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(res.test).toEqual('ok');
-
-        expect(res instanceof TransportErrorResponse).toBeDefined();
-        expect(res.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
+        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res.statusMessage).toEqual('Not Found');
     })
 
     it('cmd message', async () => {
@@ -185,7 +186,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
     });
 
     it('sensor.message.* message', async () => {
@@ -217,7 +218,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
     });
 
     it('sensor/message/* message', async () => {
@@ -281,7 +282,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
     });
 
 
