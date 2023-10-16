@@ -1,7 +1,6 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
-import { createTransportEndpoint } from './TransportEndpoint';
 import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
@@ -12,7 +11,6 @@ import { ExecptionFinalizeFilter } from './execption.filter';
 import { TransportExecptionHandlers } from './execption.handlers';
 import { Session } from './Session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
-import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
@@ -87,31 +85,12 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 return moduleOpts;
             },
             onRegistered: (injector) => {
-                const { serverType, server, endpointType, endpoint, microservice } = injector.get(moduleOptsToken);
-                const providers = [];
-                if (server) {
-                    providers.push(toProvider(serverType, server));
-                }
+                const moduleOpts = injector.get(moduleOptsToken);
+                const { defaultOpts, microservice } = moduleOpts;
 
-                if (endpoint) {
-                    providers.push(toProvider(endpointType, options.endpoint))
-                } else {
-                    providers.push({
-                        provide: endpointType,
-                        useFactory: (injector: Injector, opts: ServerOpts & MiddlewareOpts) => {
-                            return (!microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createTransportEndpoint(injector, opts)
-                        },
-                        asDefault: true,
-                        deps: [Injector, servOptsToken]
-                    })
-                }
-
-                providers.push(
+                const providers: ProviderType[] = [
                     toFactory(servOptsToken, options.serverOpts!, {
                         init: (opts: ServerOpts, injector: Injector) => {
-
-                            const modulesOpts = injector.get(moduleOptsToken);
-                            const { defaultOpts, microservice } = modulesOpts;
                             const serverOpts = {
                                 backend: microservice ? MicroServRouterModule.getToken(transport as Transport) : HybridRouter,
                                 ...defaultOpts,
@@ -123,7 +102,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                 providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
                             };
 
-                            modulesOpts.serverOpts = serverOpts as any;
+                            moduleOpts.serverOpts = serverOpts as any;
 
                             if (microservice) {
                                 if (serverOpts.transportOpts) {
@@ -153,7 +132,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     }),
                     ...microservice ? createMicroRouteProviders(transport as Transport, (injector) => injector.get(servOptsToken).routes || EMPTY_OBJ)
                         : createRouteProviders(injector => injector.get(servOptsToken).routes || EMPTY_OBJ)
-                );
+                ];
 
                 injector.inject(providers);
 

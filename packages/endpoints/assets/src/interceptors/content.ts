@@ -43,7 +43,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
     }
 
     intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
-        if (!!(input.method === HEAD || input.method === GET || input.method === MESSAGE)
+        if (!(input.method === HEAD || input.method === GET || input.method === MESSAGE)
             || !input.getRequestFilePath()) {
             return next.handle(input);
         }
@@ -83,14 +83,9 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
     protected async send(ctx: AssetContext, options: ContentOptions) {
         let file = '';
         if (!ctx.vaildator.isNotFound(ctx.status)) return file;
-        try {
-            const sender = ctx.injector.get(ContentSendAdapter);
-            file = await sender.send(ctx, options)
-        } catch (err) {
-            if (!ctx.vaildator.isNotFound((err as any).status)) {
-                throw err
-            }
-        }
+
+        const sender = ctx.injector.get(ContentSendAdapter);
+        file = await sender.send(ctx, options);
 
         return file;
     }

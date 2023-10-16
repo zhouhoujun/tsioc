@@ -9,9 +9,10 @@ import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInt
 import { AssetReceiver } from './receiver';
 import { AssetSender } from './sender';
 import { AssetTransportFactory } from './factory';
+import { HttpStatusVaildator } from './impl/status';
 import { AssetTransportTypedRespond } from './impl/typed.respond';
 import { AssetRequestHandler } from './handler';
-import { HttpStatusVaildator } from '@tsdi/transport';
+import { InterceptorsModule } from './interceptors.module';
 
 
 
@@ -32,13 +33,13 @@ import { HttpStatusVaildator } from '@tsdi/transport';
         { provide: AssetDecoder, useExisting: AssetInterceptingDecoder },
 
         AssetTransportTypedRespond,
-        { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
+        { provide: TypedRespond, useExisting: AssetTransportTypedRespond, asDefault: true },
 
         AssetRequestHandler,
-        { provide: RequestHandler, useExisting: AssetRequestHandler },
+        { provide: RequestHandler, useExisting: AssetRequestHandler, asDefault: true },
 
         HttpStatusVaildator,
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true },
 
         AssetReceiver,
         AssetSender,
@@ -46,6 +47,9 @@ import { HttpStatusVaildator } from '@tsdi/transport';
         AssetTransportFactory,
         { provide: TransportFactory, useExisting: AssetTransportFactory, asDefault: true },
         { provide: Responder, useExisting: AssetResponder }
+    ],
+    exports: [
+        InterceptorsModule
     ]
 })
 export class AssetTransportModule {

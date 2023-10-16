@@ -3,7 +3,7 @@ import { AbstractAssetContext } from '../asset.context';
 import { EMPTY_OBJ } from '@tsdi/ioc';
 
 
-export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming, Outgoing, StatusCode> {
+export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSocket>, Outgoing<TSocket>, StatusCode> {
 
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)

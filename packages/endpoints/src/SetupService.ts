@@ -1,9 +1,9 @@
-import { Injectable, ProvdierOf, ProviderType, Token, Type, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, ProvdierOf, ProviderType, Token, Type, toProvider, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
 import { Server, ServerOpts } from './Server';
-import { TransportEndpoint } from './TransportEndpoint';
-import { MiddlewareOpts } from './middleware/middleware.endpoint';
+import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
+import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 
 
 
@@ -93,9 +93,28 @@ export class ServerSetupService {
 
         services.forEach(s => {
 
+            const opts = s as (ServerModuleOpts & HeybirdServiceOpts) & (ServerModuleOpts & MicroServiceOpts);
+            const { serverType, server, endpointType, serverOpts, endpoint, microservice, middlewaresToken, middlewares } = opts;
             const providers: ProviderType[] = [
                 { provide: s.serverOptsToken, useValue: s.serverOpts }
             ];
+            if (server) {
+                providers.push(toProvider(serverType, server));
+            }
+
+            if (endpoint) {
+                providers.push(toProvider(endpointType, endpoint))
+            } else {
+                providers.push({
+                    provide: endpointType,
+                    useFactory: (injector: Injector) => {
+                        return (!microservice && middlewaresToken && middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createTransportEndpoint(injector, serverOpts)
+                    },
+                    asDefault: true,
+                    deps: [Injector]
+                })
+            }
+
 
             context.runners.attach(s.serverType, { providers })
         })
