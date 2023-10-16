@@ -33,19 +33,19 @@ import { InterceptorsModule } from './interceptors.module';
         { provide: AssetDecoder, useExisting: AssetInterceptingDecoder },
 
         AssetTransportTypedRespond,
-        { provide: TypedRespond, useExisting: AssetTransportTypedRespond, asDefault: true },
+        { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
 
         AssetRequestHandler,
-        { provide: RequestHandler, useExisting: AssetRequestHandler, asDefault: true },
+        { provide: RequestHandler, useExisting: AssetRequestHandler },
 
         HttpStatusVaildator,
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true },
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
 
         AssetReceiver,
         AssetSender,
         AssetResponder,
         AssetTransportFactory,
-        { provide: TransportFactory, useExisting: AssetTransportFactory, asDefault: true },
+        { provide: TransportFactory, useExisting: AssetTransportFactory },
         { provide: Responder, useExisting: AssetResponder }
     ],
     exports: [

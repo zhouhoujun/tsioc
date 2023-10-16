@@ -1,6 +1,7 @@
 import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
 import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, TransportSession, hdr } from '@tsdi/common';
 import { Writable } from 'readable-stream';
+import { finalize } from 'rxjs';
 
 
 export interface SendPacket extends ResponsePacket {
@@ -106,7 +107,31 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
             }
             return this;
         }
-        super.end(chunk, encoding, cb);
+        super.end(chunk, encoding);
+        if (!this._sentpkt) {
+            this._sentpkt = this.createSentPacket();
+        }
+        this.session.send({
+            ...this._sentpkt,
+            payload: this
+        })
+            // .pipe(
+            //     finalize(() => {
+            //         this.ending = true;
+            //         cb?.()
+            //     })
+            // )
+            .subscribe({
+                next: () => {
+                    this.ending = true;
+                    cb?.()
+                },
+                error: err => {
+                    this.ending = true;
+                    cb?.();
+                    throw err
+                }
+            })
 
         this.ending = true;
 
@@ -114,15 +139,15 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
 
     }
 
-    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        if (!this._sentpkt) {
-            this._sentpkt = this.createSentPacket();
-        }
-        this.session.send({ ...this._sentpkt, payload: chunk }).subscribe({
-            next: () => callback(),
-            error: err => callback(err)
-        });
-    }
+    // override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+    //     if (!this._sentpkt) {
+    //         this._sentpkt = this.createSentPacket();
+    //     }
+    //     this.session.send({ ...this._sentpkt, payload: chunk }).subscribe({
+    //         next: () => callback(),
+    //         error: err => callback(err)
+    //     });
+    // }
 
     createSentPacket(): SendPacket {
         return {
