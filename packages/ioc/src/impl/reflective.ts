@@ -25,14 +25,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _instance?: T;
     private _ctx: InvocationContext;
     private _mthCtx: Map<string, InvocationContext | null>;
-    private _newCtx = false;
+    private _isResolve = false;
     constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments<any>) {
         super()
         this._type = _class.type;
         this._typeName = getClassName(this._type);
         injector.register(this.type as CtorType);
-        this._newCtx = !!(options?.providers || options?.resolvers || options?.values)
-        this._ctx = this.createContext(injector, { isResolve: this._newCtx, ...options });
+        this._isResolve = hasContext(options);
+        this._ctx = this.createContext(injector, { isResolve: this._isResolve, ...options });
         this._mthCtx = new Map();
         this._ctx.setValue(ReflectiveRef, this);
         this._ctx.onDestroy(this)
@@ -49,7 +49,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     getInstance(): T {
         this.assertNotDestroyed();
         if (!this._instance) {
-            this._instance = this.resolve(this.type, this._newCtx ? InjectFlags.Resolve : undefined);
+            this._instance = this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined);
         }
         return this._instance;
     }
@@ -233,7 +233,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 }
 
-export function hasContext<TArg>(option: InvokeArguments<TArg>) {
+export function hasContext<TArg>(option?: InvokeArguments<TArg>) {
     return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.args)
 }
 

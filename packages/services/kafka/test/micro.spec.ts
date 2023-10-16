@@ -278,7 +278,7 @@ describe('Kafka Micro Service', () => {
 
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 
 });
