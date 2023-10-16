@@ -96,7 +96,7 @@ export class KafkaServer extends Server {
         const injector = this.endpoint.injector;
         const router = injector.get(MircoServRouters).get('kafka');
         if (this.options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
+            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}-**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();

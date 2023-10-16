@@ -53,10 +53,11 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         if (!topic) throw new BadRequestExecption();
 
         const headers: IHeaders = {};
-        Object.keys(packet.headers!).forEach(k => {
+        packet.headers && Object.keys(packet.headers).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
         });
         headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
+        
         if (!opts.serverSide) {
             const replyTopic = this.getReply(packet);
             headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
