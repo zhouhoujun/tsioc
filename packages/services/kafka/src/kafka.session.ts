@@ -72,7 +72,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             ...opts.send,
             topic,
             messages: [{
-                headers: packet.kafkaheaders,
+                headers,
                 value: data ?? Buffer.alloc(0),
                 partition: packet.partition
             }]
