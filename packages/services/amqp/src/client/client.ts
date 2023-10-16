@@ -8,7 +8,7 @@ import { AmqpHandler } from './handler';
 
 
 
-@Injectable({ static: false })
+@Injectable()
 export class AmqpClient extends Client<TransportRequest, number> {
 
     @InjectLog()

@@ -344,6 +344,7 @@ export class DefaultInjector extends Injector {
             return this.get(token);
         }
         let context: InvocationContext | undefined;
+        const isResolve = true;
         let isCtx = false;
         if (args.length === 1) {
             const arg1 = args[0];
@@ -351,17 +352,17 @@ export class DefaultInjector extends Injector {
                 context = arg1;
                 isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createContext(this, { providers: arg1 }) : undefined;
+                context = arg1.length ? createContext(this, { isResolve, providers: arg1 }) : undefined;
             } else if (arg1.provide) {
-                context = createContext(this, { providers: [arg1] });
+                context = createContext(this, { isResolve, providers: [arg1] });
             } else if (hasContext(arg1)) {
-                context = createContext(this, arg1);
+                context = createContext(this, { isResolve, ...arg1 });
             }
         } else {
-            context = createContext(this, { providers: args });
+            context = createContext(this, { isResolve, providers: args });
         }
 
-        const result = (context && !isCtx) ? context.resolve(token) : this.get(token, context);
+        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : this.get(token, context, InjectFlags.Resolve);
 
         if (context && !isCtx && !context.used) {
             immediate(() => context!.destroy());
@@ -753,7 +754,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         if (value === CIRCULAR) {
             throw new CircularDependencyExecption()
         }
-        if (isDefined(rd.value) && value !== EMPTY) return rd.value;
+        if (isDefined(rd.value) && value !== EMPTY && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
         const deps = [];
         if (rd.fn === MUTIL) {
             if (parent && !(flags & InjectFlags.Self)) {
@@ -810,7 +811,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, context, InjectFlags.Default, notFoundValue)
+        return parent.get(token, context, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, notFoundValue)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorExecption(token)

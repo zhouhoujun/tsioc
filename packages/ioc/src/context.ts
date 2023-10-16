@@ -17,6 +17,10 @@ import { OperationInvoker } from './operation';
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
     /**
+     * is resolve context or not.
+     */
+    abstract get isResolve(): boolean;
+    /**
      * is this context injected in object or not.
      */
     abstract get used(): boolean;
@@ -90,9 +94,10 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
-     * @param token 
+     * @param token
+     * @param flags InjectFalgs 
      */
-    abstract resolve<T>(token: Token<T>): T;
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
     /**
      * resolve the parameter value.
      * 
@@ -164,6 +169,10 @@ export type TokenValue<T = any> = [Token<T>, T];
  * 调用接口配置项
  */
 export interface InvokeOptions {
+    /**
+     * is resolve context or not.
+     */
+    isResolve?: boolean;
     /**
      * token values.
      * 

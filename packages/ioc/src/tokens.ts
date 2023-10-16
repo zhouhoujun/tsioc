@@ -119,9 +119,14 @@ export enum InjectFlags {
     HostOnly = 0b10000,
 
     /**
+     * Resolve value with new Context.
+     */
+    Resolve = 0b100000,
+
+    /**
      * Param provide with Request Context.
      */
-    Request = 0b100000
+    Request = 0b1000000
 }
 
 

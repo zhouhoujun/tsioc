@@ -8,7 +8,7 @@ import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
 import { NatsTransportSessionFactory } from '../nats.session';
 
 
-@Injectable({ static: false })
+@Injectable()
 export class NatsClient extends Client<TransportRequest, number> {
     private conn?: NatsConnection;
     private _session?: TransportSession<NatsConnection>;

@@ -11,7 +11,7 @@ import { DEFAULT_BROKERS } from '../const';
 
 
 
-@Injectable({ static: false })
+@Injectable()
 export class KafkaClient extends Client {
 
 

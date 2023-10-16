@@ -42,11 +42,15 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     readonly methodName: string | undefined;
 
+    readonly isResolve: boolean;
+
     constructor(
         injector: Injector,
-        options: InvocationOption<T> = EMPTY_OBJ) {
+        options: InvocationOption<T> = EMPTY_OBJ,
+        ) {
         super();
         this._refs = [];
+        this.isResolve = options.isResolve == true;
         this.injector = this.createInjector(injector, options.providers);
         options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => toProvider(this.getResolvesToken(), r)));
         if (options.parent && injector !== options.parent.injector) {
@@ -62,7 +66,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
                 this.injector.setValue(par[0], par[1]);
             })
         }
-        
+
         options.args && this.initArgs(options.args);
 
         getClassChain(getClass(this)).forEach(c => {
@@ -251,8 +255,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param token 
      * @returns 
      */
-    resolve<T>(token: Token<T>): T {
-        return this.resolveArgument({ provider: token }) as T;
+    resolve<T>(token: Token<T>, flags?: InjectFlags): T {
+        return this.resolveArgument({ provider: token, flags }) as T;
     }
 
     /**

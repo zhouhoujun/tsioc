@@ -25,12 +25,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _instance?: T;
     private _ctx: InvocationContext;
     private _mthCtx: Map<string, InvocationContext | null>;
+    private _newCtx = false;
     constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments<any>) {
         super()
         this._type = _class.type;
         this._typeName = getClassName(this._type);
         injector.register(this.type as CtorType);
-        this._ctx = this.createContext(injector, options);
+        this._newCtx = !!(options?.providers || options?.resolvers || options?.values)
+        this._ctx = this.createContext(injector, { isResolve: this._newCtx, ...options });
         this._mthCtx = new Map();
         this._ctx.setValue(ReflectiveRef, this);
         this._ctx.onDestroy(this)
@@ -47,14 +49,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     getInstance(): T {
         this.assertNotDestroyed();
         if (!this._instance) {
-            this._instance = this.resolve(this.type);
+            this._instance = this.resolve(this.type, this._newCtx ? InjectFlags.Resolve : undefined);
         }
         return this._instance;
     }
 
-    resolve<R>(token: Token<R>): R {
+    resolve<R>(token: Token<R>, flags?: InjectFlags): R {
         this.assertNotDestroyed();
-        return this._ctx.resolveArgument({ provider: token, nullable: true })!
+        return this._ctx.resolveArgument({ provider: token, flags, nullable: true })!
     }
 
     invoke<TArg>(method: MethodType<T>, option?: InvokeArguments<TArg> | InvocationContext, instance?: T) {

@@ -10,7 +10,7 @@ import { RedisTransportSession, RedisTransportSessionFactory } from '../redis.se
 /**
  * Redis Server.
  */
-@Injectable({ static: false })
+@Injectable()
 export class RedisServer extends Server {
 
     @InjectLog() logger!: Logger;

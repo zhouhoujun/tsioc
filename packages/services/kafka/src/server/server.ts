@@ -13,7 +13,7 @@ import { KafkaEndpoint } from './endpoint';
 /**
  * Kafka server.
  */
-@Injectable({ static: false })
+@Injectable()
 export class KafkaServer extends Server {
 
     @InjectLog()

@@ -9,7 +9,7 @@ import { AmqpEndpoint } from './endpoint';
 
 
 
-@Injectable({ static: false })
+@Injectable()
 export class AmqpServer extends Server {
 
     @InjectLog()

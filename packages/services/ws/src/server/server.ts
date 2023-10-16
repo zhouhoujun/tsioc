@@ -10,7 +10,7 @@ import { WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
 
 
-@Injectable({ static: false })
+@Injectable()
 export class WsServer extends Server {
 
     private serv?: SocketServer | null;

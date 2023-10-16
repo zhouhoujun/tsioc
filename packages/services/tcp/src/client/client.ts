@@ -11,7 +11,7 @@ import { TcpHandler } from './handler';
 /**
  * TcpClient. client of  `tcp` or `ipc`. 
  */
-@Injectable({ static: false })
+@Injectable()
 export class TcpClient extends Client<TransportRequest, number> {
 
     @InjectLog()

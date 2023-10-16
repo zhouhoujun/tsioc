@@ -10,7 +10,7 @@ import { CoapEndpoint } from './endpoint';
 /**
  * CoAP server.
  */
-@Injectable({ static: false })
+@Injectable()
 export class CoapServer extends Server implements BindListenning {
 
     @InjectLog() logger!: Logger;

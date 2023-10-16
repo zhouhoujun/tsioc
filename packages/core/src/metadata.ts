@@ -227,13 +227,13 @@ export interface EventHandler {
     <TArg>(event: Type<ApplicationEvent>, option?: EndpointOptions<TArg>): MethodDecorator;
 }
 
-function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string) {
+function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string, runtime?: boolean) {
     return createDecorator(name, {
         props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
-            method: (ctx, next) => {
+            method: runtime === true ? undefined : (ctx, next) => {
                 const typeRef = ctx.class;
-                if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
+                if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return next();
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
@@ -254,7 +254,8 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string)
         runtime: {
             method: (ctx, next) => {
                 const typeRef = ctx.class;
-                if (typeRef.getAnnotation().static !== false || typeRef.getAnnotation().singleton) return;
+                if (!runtime && typeRef.getAnnotation().static === true || typeRef.getAnnotation().singleton) return next();
+                if (!runtime && !ctx.context?.isResolve) return next();
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
@@ -279,7 +280,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string)
  * event hander.
  * @EventHandler
  */
-export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent, 'EventHandler');
+export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent, 'EventHandler', true);
 
 
 /**
@@ -379,7 +380,7 @@ export interface ShutdownEventHandler {
  * rasie after Application close invoked.
  * @Shutdown
  */
-export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown');
+export const Shutdown: ShutdownEventHandler = createEventHandler(ApplicationShutdownEvent, 'Shutdown', true);
 
 
 /**
@@ -402,7 +403,7 @@ export interface DisposeEventHandler {
  * rasie after `ApplicationShutdownEvent`
  * @Dispose
  */
-export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose');
+export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose', true);
 
 
 /**

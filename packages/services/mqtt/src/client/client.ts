@@ -11,7 +11,7 @@ import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
 /**
  * mqtt client.
  */
-@Injectable({ static: false })
+@Injectable()
 export class MqttClient extends Client<TransportRequest, number> {
 
     @InjectLog()

@@ -7,7 +7,7 @@ import { WsHandler } from './handler';
 import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 
 
-@Injectable({ static: false })
+@Injectable()
 export class WsClient extends Client<TransportRequest, number> {
     private socket?: WebSocket | null;
     private session?: TransportSession | null;
