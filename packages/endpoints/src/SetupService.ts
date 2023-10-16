@@ -86,7 +86,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Injectable()
 export class ServerSetupService {
 
-    @Startup({ order: 0 })
+    @Startup()
     async setup(context: ApplicationContext): Promise<any> {
 
         const services = context.injector.get(REGISTER_SERVICES);

@@ -96,15 +96,26 @@ export class DeviceController {
         AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
-        ClientModule.register({
-            transport: 'tcp',
-            clientOpts: {
-                connectOpts: {
-                    port: 2000
+        ClientModule.register([
+            {
+                transport: 'tcp',
+                clientOpts: {
+                    connectOpts: {
+                        port: 2000
+                    }
+                }
+            },
+            {
+                transport: 'tcp',
+                client: 'micro-client',
+                clientOpts: {
+                    connectOpts: {
+                        port: 3000
+                    }
                 }
             }
-        }),
-        EndpointsModule.registerService([
+        ]),
+        EndpointsModule.register([
             {
                 microservice: true,
                 transport: 'tcp',

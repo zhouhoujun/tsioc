@@ -75,7 +75,7 @@ export class NatsService {
                 timeout: 200
             }
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'nats'
         })

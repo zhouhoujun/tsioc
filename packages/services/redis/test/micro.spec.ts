@@ -74,7 +74,7 @@ export class RedisService {
                 timeout: 200
             }
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'redis'
             

@@ -83,7 +83,7 @@ export class WsService {
                 }
             }
         ]),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             transport: 'ws',
             microservice: true
         })

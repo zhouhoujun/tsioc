@@ -25,7 +25,7 @@
 //                 transport: 'mqtt'
 //             }
 //         ]),
-//         EndpointsModule.registerService([
+//         EndpointsModule.register([
 //             {
 //                 microservice: true,
 //                 transport: 'mqtt'

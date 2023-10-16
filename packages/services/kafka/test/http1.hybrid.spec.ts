@@ -21,7 +21,7 @@
 //         ClientModule.register({
 //             transport: 'kafka'
 //         }),
-//         EndpointsModule.registerService({
+//         EndpointsModule.register({
 //             microservice: true,
 //             transport: 'kafka'
 //         }),

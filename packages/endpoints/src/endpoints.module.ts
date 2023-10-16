@@ -17,7 +17,9 @@ import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService
 
 
 
-
+/**
+ * Endpoint services module.
+ */
 @Module({
     imports: [
         TransformModule,
@@ -42,14 +44,14 @@ export class EndpointsModule {
      * @param options 
      * @param autoBootstrap default true 
      */
-    static registerService(options: ServiceOpts, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
+    static register(options: ServiceOpts, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
     /**
      * register service.
      * @param options
      * @param autoBootstrap default true 
      */
-    static registerService(options: Array<ServiceOpts>, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
-    static registerService(options: Arrayify<ServiceOpts>, autoBootstrap = true): ModuleWithProviders<EndpointsModule> {
+    static register(options: Array<ServiceOpts>, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
+    static register(options: Arrayify<ServiceOpts>, autoBootstrap = true): ModuleWithProviders<EndpointsModule> {
 
         const providers: ProviderType[] = autoBootstrap ? [ServerSetupService] : [];
         if (isArray(options)) {

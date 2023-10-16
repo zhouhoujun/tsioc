@@ -65,7 +65,7 @@ export class TcpService {
                 }
             }
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             transport: 'tcp',
             microservice: true,
             serverOpts: {

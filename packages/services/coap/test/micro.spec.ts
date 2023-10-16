@@ -70,7 +70,7 @@ export class CoapService {
             }
         }),
         
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'coap'
         })

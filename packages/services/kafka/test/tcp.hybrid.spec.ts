@@ -22,7 +22,7 @@ import { DeviceController } from './controller';
         ClientModule.register({
             transport: 'kafka'
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'kafka'
         }),

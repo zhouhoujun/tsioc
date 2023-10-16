@@ -74,7 +74,7 @@ export class MqttService {
                 timeout: 100
             }
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'mqtt'
         })

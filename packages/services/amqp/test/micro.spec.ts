@@ -68,7 +68,7 @@ export class AmqpService {
         ClientModule.register({
             transport: 'amqp'
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'amqp'
         })

@@ -723,7 +723,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         }
         if (isDef && isStatic && rd?.fn !== MUTIL) {
             if (rd) {
-                if (isNil(rd.value) && rd?.stic !== false && (rd.stic || !(flags & InjectFlags.Resolve))) {
+                if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
                     rd.value = value
                 }
             } else {

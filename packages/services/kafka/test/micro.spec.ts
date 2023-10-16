@@ -70,7 +70,7 @@ export class KafkaService {
                 timeout: 300
             }
         }),
-        EndpointsModule.registerService({
+        EndpointsModule.register({
             microservice: true,
             transport: 'kafka'
         }),
