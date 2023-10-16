@@ -1,7 +1,9 @@
-
 import { isArray, isNumber, isString } from '@tsdi/ioc';
-import { ctype, hdr, isBuffer } from '@tsdi/transport';
+import { hdr, isBuffer } from '@tsdi/common';
+import { ctype } from '@tsdi/endpoints/assets';
 import { OptionName } from 'coap-packet';
+
+
 
 export const transforms: Record<string, OptionName> = {
     'Content-Type': 'Content-Format',
