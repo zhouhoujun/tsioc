@@ -269,6 +269,6 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
     })
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 });

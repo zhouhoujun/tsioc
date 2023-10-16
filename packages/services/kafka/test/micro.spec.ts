@@ -2,7 +2,9 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -60,6 +62,8 @@ export class KafkaService {
     imports: [
         ServerModule,
         LoggerModule,
+        JsonTransportModule,
+        ServerEndpointModule,
         KafkaModule,
         ClientModule.register({
             transport: 'kafka',
