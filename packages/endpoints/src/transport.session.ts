@@ -113,9 +113,8 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket, TMsg> {
 
 
-    protected message(msgFilter?: (msg: TMsg) => boolean): Observable<TMsg> {
-        const src$ = fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
-        return msgFilter ? src$.pipe(filter(msgFilter)) : src$;
+    protected message(): Observable<TMsg> {
+        return fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
     }
 
 

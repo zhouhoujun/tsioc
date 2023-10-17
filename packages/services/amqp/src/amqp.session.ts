@@ -3,7 +3,7 @@ import { EventTransportSession } from '@tsdi/endpoints';
 import { UuidGenerator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
-import { Observable, filter, fromEvent, map, of } from 'rxjs';
+import { Observable, fromEvent, map } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
@@ -85,7 +85,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
     }
 
     async destroy(): Promise<void> {
-
+        
     }
 }
 

@@ -1,12 +1,12 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { TransportSession, patternToPath } from '@tsdi/common';
+import { TransportSession, TransportSessionFactory, patternToPath } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { MircoServRouters, StatusVaildator } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
-import { KafkaReplyPartitionAssigner, KafkaTransportSession, KafkaTransportSessionFactory } from '../kafka.session';
+import { KafkaReplyPartitionAssigner, KafkaTransportSession } from '../kafka.session';
 import { DEFAULT_BROKERS } from '../const';
 
 
@@ -115,11 +115,11 @@ export class KafkaClient extends Client {
         await this.producer.connect();
 
         const vaildator = this.handler.injector.get(StatusVaildator, null);
-        this._session = this.handler.injector.get(KafkaTransportSessionFactory).create({
+        this._session = this.handler.injector.get(TransportSessionFactory).create({
             producer: this.producer,
             vaildator,
             consumer: this.consumer!
-        }, 'kafka' ,transportOpts);
+        }, 'kafka', transportOpts) as KafkaTransportSession
 
         if (!this.options.producerOnlyMode) {
             const topics = this.options.topics ? this.options.topics.map(t => {

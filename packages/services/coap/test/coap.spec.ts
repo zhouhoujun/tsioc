@@ -1,10 +1,10 @@
+import { Injector, Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
-import { AssetEndpointModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -19,7 +19,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetEndpointModule,
+        AssetTransportModule,
         ServerEndpointModule,
         CoapModule,
         ClientModule.register({

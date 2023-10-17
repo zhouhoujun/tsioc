@@ -1,9 +1,9 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { PatternFormatter, ServiceUnavailableExecption } from '@tsdi/common';
+import { PatternFormatter, ServiceUnavailableExecption, TransportSessionFactory } from '@tsdi/common';
 import { Server, MircoServRouters, StatusVaildator, RequestHandler } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
-import { KafkaTransportSession, KafkaTransportSessionFactory } from '../kafka.session';
+import { KafkaTransportSession } from '../kafka.session';
 import { DEFAULT_BROKERS } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
@@ -96,7 +96,7 @@ export class KafkaServer extends Server {
         const injector = this.endpoint.injector;
         const router = injector.get(MircoServRouters).get('kafka');
         if (this.options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
+            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}-**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
@@ -107,7 +107,7 @@ export class KafkaServer extends Server {
         };
 
         const vaildator = injector.get(StatusVaildator, null);
-        const session = this._session = injector.get(KafkaTransportSessionFactory).create({ consumer, vaildator, producer }, 'kafka', transportOpts);
+        const session = this._session = injector.get(TransportSessionFactory).create({ consumer, vaildator, producer }, 'kafka', transportOpts) as KafkaTransportSession;
 
         await session.bindTopics(topics);
 

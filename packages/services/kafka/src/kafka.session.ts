@@ -3,8 +3,8 @@ import { UuidGenerator } from '@tsdi/core';
 import { BadRequestExecption, IncomingHeaders, NotFoundExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr, isBuffer } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
-import { Observable, filter, fromEvent, map, throwError } from 'rxjs';
-import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
+import { Observable, filter, first, fromEvent, fromEventPattern, map, merge, throwError } from 'rxjs';
+import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
 import { KafkaHeaders, KafkaTransport, KafkaTransportOpts } from './const';
 
 
@@ -51,12 +51,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const opts = this.options as KafkaTransportOpts;
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
-        
+
         const headers: IHeaders = {};
-        Object.keys(packet.headers!).forEach(k => {
+        packet.headers && Object.keys(packet.headers).forEach(k => {
             headers[k] = this.generHead(packet.headers![k]);
         });
         headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
+        
         if (!opts.serverSide) {
             const replyTopic = this.getReply(packet);
             headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
@@ -71,16 +72,16 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             ...opts.send,
             topic,
             messages: [{
-                headers: packet.kafkaheaders,
+                headers,
                 value: data ?? Buffer.alloc(0),
                 partition: packet.partition
             }]
         })
-            // .then(() => callback?.())
-            // .catch(err => {
-            //     this.handleFailed(err);
-            //     callback?.(err)
-            // })
+        // .then(() => callback?.())
+        // .catch(err => {
+        //     this.handleFailed(err);
+        //     callback?.(err)
+        // })
     }
 
     protected getIncomingHeaders(msg: EachMessagePayload): IncomingHeaders {
@@ -115,8 +116,28 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
 
     protected mergeClose(source: Observable<any>): Observable<any> {
-        return source;
-        // return this.socket.isClosed() ? throwError(() => new OfflineExecption()) : source;
+
+        const err$ = new Observable(subscriber => {
+            const usubs: RemoveInstrumentationEventListener<any>[] = [];
+            usubs.push(this.socket.consumer.on('consumer.network.request_timeout', er => {
+                subscriber.error(er);
+            }));
+            usubs.push(this.socket.producer.on('producer.network.request_timeout', er => {
+                subscriber.error(er)
+            }));
+
+            usubs.push(this.socket.consumer.on('consumer.disconnect', (e) => {
+                subscriber.error(e);
+            }))
+            usubs.push(this.socket.producer.on('producer.disconnect', (e) => {
+                subscriber.error(e);
+            }))
+            return () => {
+                usubs.forEach(e => e?.())
+            }
+        })
+
+        return merge(source, err$).pipe(first());
     }
 
     protected reqMsgFilter(req: RequestPacket<any>, msg: EachMessagePayload): boolean {
@@ -166,6 +187,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     }
 
     async destroy(): Promise<void> {
+        this.events.removeAllListeners();
     }
 }
 
