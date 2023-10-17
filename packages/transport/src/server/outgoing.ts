@@ -1,4 +1,4 @@
-import { ArgumentExecption, isArray, isFunction, isNil, isString } from '@tsdi/ioc';
+import { ArgumentExecption, isArray, isFunction, isNil, isString, nextTick } from '@tsdi/ioc';
 import { OutgoingHeader, OutgoingHeaders, ResHeaders } from '@tsdi/common';
 import { Writable } from 'readable-stream';
 import { Outgoing } from '../socket';
@@ -107,7 +107,7 @@ export class MessageOutgoing<T, TStatus extends OutgoingHeader = number> extends
         }
         if (this._closed || this.ending) {
             if (isFunction(cb)) {
-                process.nextTick(cb);
+                nextTick(cb);
             }
             return this;
         }
@@ -274,7 +274,7 @@ export abstract class SocketOutgoing<T extends IEventEmitter, TStatus extends Ou
         }
         if (this._closed || this.ending) {
             if (isFunction(cb)) {
-                process.nextTick(cb);
+                nextTick(cb);
             }
             return this;
         }

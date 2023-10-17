@@ -368,6 +368,8 @@ export function delay(times: number, work?: (...args: any[]) => void, ...args: a
 
 export const immediate = typeof setImmediate !== 'undefined' ? setImmediate : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
 
+export const nextTick = typeof process !== 'undefined'? process.nextTick : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
+
 /**
  * run promise step by step.
  *

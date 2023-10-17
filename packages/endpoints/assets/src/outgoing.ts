@@ -1,7 +1,7 @@
-import { ArgumentExecption, isArray, isFunction, isString } from '@tsdi/ioc';
+import { ArgumentExecption, isArray, isFunction, isString, nextTick } from '@tsdi/ioc';
 import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, TransportSession, hdr } from '@tsdi/common';
 import { Writable } from 'readable-stream';
-import { finalize } from 'rxjs';
+
 
 
 export interface SendPacket extends ResponsePacket {
@@ -103,35 +103,11 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
         }
         if (this._closed || this.ending) {
             if (isFunction(cb)) {
-                process.nextTick(cb);
+                nextTick(cb);
             }
             return this;
         }
-        super.end(chunk, encoding);
-        if (!this._sentpkt) {
-            this._sentpkt = this.createSentPacket();
-        }
-        this.session.send({
-            ...this._sentpkt,
-            payload: this
-        })
-            // .pipe(
-            //     finalize(() => {
-            //         this.ending = true;
-            //         cb?.()
-            //     })
-            // )
-            .subscribe({
-                next: () => {
-                    this.ending = true;
-                    cb?.()
-                },
-                error: err => {
-                    this.ending = true;
-                    cb?.();
-                    throw err
-                }
-            })
+        super.end(chunk, encoding, cb);
 
         this.ending = true;
 
@@ -139,15 +115,16 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
 
     }
 
-    // override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-    //     if (!this._sentpkt) {
-    //         this._sentpkt = this.createSentPacket();
-    //     }
-    //     this.session.send({ ...this._sentpkt, payload: chunk }).subscribe({
-    //         next: () => callback(),
-    //         error: err => callback(err)
-    //     });
-    // }
+    override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
+        if (!this._sentpkt) {
+            this._sentpkt = this.createSentPacket();
+        }
+        this._sentpkt.payload = chunk;
+        this.session.send(this._sentpkt).subscribe({
+            next: () => callback(),
+            error: err => callback(err)
+        });
+    }
 
     createSentPacket(): SendPacket {
         return {
@@ -160,12 +137,14 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
         }
     }
 
-    writeHead(statusCode: TStatus, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    writeHead(statusCode: TStatus, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    writeHead(statusCode: TStatus, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: OutgoingHeaders | OutgoingHeader[]): this {
+    writeHead(statusCode: TStatus, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: TStatus, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: TStatus, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
+        if (this.headersSent) return this;
         if (isString(statusMessage)) {
             this.setHeader(hdr.STATUS_MESSAGE, statusMessage)
         } else {
+            callback = headers;
             headers = statusMessage
         }
         if (headers) {
@@ -184,6 +163,14 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
         this.setHeader(hdr.STATUS, statusCode);
         this.setHeader(hdr.STATUS2, statusCode);
 
+        if (!this._sentpkt) {
+            this._sentpkt = this.createSentPacket();
+        }
+
+        this.session.send(this._sentpkt).subscribe({
+            next: () => callback?.(),
+            error: err => callback?.(err)
+        });
 
         return this;
     }
