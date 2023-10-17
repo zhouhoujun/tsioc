@@ -66,7 +66,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
         headers[hdr.CONTENT_TYPE] = contentType;
         headers[hdr.CONTENT_ENCODING] = contentEncoding;
-        return this.receiver.receive(msg.content)
+        return this.receiver.receive(msg.content, headers[hdr.TOPIC] ?? correlationId)
             .pipe(
                 map(payload => {
                     return {

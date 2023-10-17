@@ -30,3 +30,10 @@ export abstract class Receiver {
 
 
 }
+
+export interface TopicBuffer {
+    topic: string;
+    buffers: Buffer[];
+    length: number;
+    contentLength: number | null;
+}

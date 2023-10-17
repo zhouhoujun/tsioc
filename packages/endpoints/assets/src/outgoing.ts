@@ -161,7 +161,6 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
             }
         }
         this.setHeader(hdr.STATUS, statusCode);
-        this.setHeader(hdr.STATUS2, statusCode);
 
         if (!this._sentpkt) {
             this._sentpkt = this.createSentPacket();

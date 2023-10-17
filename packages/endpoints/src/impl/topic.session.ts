@@ -37,7 +37,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
     }
 
     protected override unpack(msg: TopicMessage): Observable<Packet<any>> {
-        return this.receiver.receive(msg.payload);
+        return this.receiver.receive(msg.payload, msg.topic);
     }
 
     protected override message(): Observable<any> {

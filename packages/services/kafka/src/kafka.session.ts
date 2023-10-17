@@ -77,11 +77,6 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
                 partition: packet.partition
             }]
         })
-        // .then(() => callback?.())
-        // .catch(err => {
-        //     this.handleFailed(err);
-        //     callback?.(err)
-        // })
     }
 
     protected getIncomingHeaders(msg: EachMessagePayload): IncomingHeaders {
@@ -164,7 +159,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     protected override unpack(msg: EachMessagePayload): Observable<Packet> {
         const headers = this.getIncomingHeaders(msg);
         const id = headers[KafkaHeaders.CORRELATION_ID];
-        return this.receiver.receive(msg.message.value ?? Buffer.alloc(0))
+        return this.receiver.receive(msg.message.value ?? Buffer.alloc(0), msg.topic)
             .pipe(
                 map(payload => {
                     return {

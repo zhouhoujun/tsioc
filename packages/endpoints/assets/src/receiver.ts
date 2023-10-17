@@ -1,20 +1,16 @@
 import { Injector } from '@tsdi/ioc';
-import { Context, Packet, PacketLengthException, Receiver, Transport, TransportOpts } from '@tsdi/common';
-import { BehaviorSubject, Observable, Subscriber, distinctUntilChanged, filter, finalize, mergeMap } from 'rxjs';
+import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport, TransportOpts } from '@tsdi/common';
+import { Observable, Subscriber, finalize } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
 
 export class AssetReceiver implements Receiver {
 
-    private buffers: Buffer[] = [];
-    private length = 0
-    private contentLength: number | null = null;
+    protected topics: Map<string, TopicBuffer>;
 
-    private maxSize: number;
-    private _packets: BehaviorSubject<any>;
     private delimiter: Buffer;
+    private maxSize: number;
 
-    readonly packet: Observable<Packet>;
     constructor(
         private injector: Injector,
         readonly transport: Transport,
@@ -23,75 +19,81 @@ export class AssetReceiver implements Receiver {
     ) {
         this.delimiter = Buffer.from(options.delimiter ?? '#');
         this.maxSize = options.maxSize ?? (256 * 1024);
-        this._packets = new BehaviorSubject(null);
-        this.packet = this._packets
-            .pipe(
-                distinctUntilChanged(),
-                filter(r => r !== null)
-            ) as Observable<Packet>;
+        this.topics = new Map();
     }
 
-    receive(source: string | Buffer): Observable<Packet> {
+    
+    receive(source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
         return new Observable((subscriber: Subscriber<Packet>) => {
             try {
-                this.handleData(source, subscriber);
+                let chl = this.topics.get(topic);
+                if (!chl) {
+                    chl = {
+                        topic,
+                        buffers: [],
+                        length: 0,
+                        contentLength: null
+                    }
+                    this.topics.set(topic, chl)
+                }
+                this.handleData(chl, source, subscriber);
             } catch (err) {
                 subscriber.error(err)
             }
-        });
+        })
     }
 
-    protected handleData(dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
+    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
 
 
-        this.buffers.push(data);
-        this.length += Buffer.byteLength(data);
+        chl.buffers.push(data);
+        chl.length += Buffer.byteLength(data);
 
-        if (this.contentLength == null) {
+        if (chl.contentLength == null) {
             const i = data.indexOf(this.delimiter);
             if (i !== -1) {
-                const buffer = this.concatCaches();
-                const idx = this.length - Buffer.byteLength(data) + i;
+                const buffer = this.concatCaches(chl);
+                const idx = chl.length - Buffer.byteLength(data) + i;
                 const rawContentLength = buffer.subarray(0, idx).toString();
-                this.contentLength = parseInt(rawContentLength, 10);
+                chl.contentLength = parseInt(rawContentLength, 10);
 
-                if (isNaN(this.contentLength) || this.contentLength > this.maxSize) {
-                    this.contentLength = null;
-                    this.length = 0;
-                    this.buffers = [];
+                if (isNaN(chl.contentLength) || chl.contentLength > this.maxSize) {
+                    chl.contentLength = null;
+                    chl.length = 0;
+                    chl.buffers = [];
                     throw new PacketLengthException(rawContentLength);
                 }
-                this.buffers = [buffer.subarray(idx + 1)];
-                this.length -= idx + 1;
+                chl.buffers = [buffer.subarray(idx + 1)];
+                chl.length -= idx + 1;
             }
         }
 
-        if (this.contentLength !== null) {
-            if (this.length === this.contentLength) {
-                this.handleMessage(this.concatCaches(), subscriber);
-            } else if (this.length > this.contentLength) {
-                const buffer = this.concatCaches();
-                const message = buffer.subarray(0, this.contentLength);
-                const rest = buffer.subarray(this.contentLength);
-                this.handleMessage(message, subscriber);
+        if (chl.contentLength !== null) {
+            if (chl.length === chl.contentLength) {
+                this.handleMessage(chl, this.concatCaches(chl), subscriber);
+            } else if (chl.length > chl.contentLength) {
+                const buffer = this.concatCaches(chl);
+                const message = buffer.subarray(0, chl.contentLength);
+                const rest = buffer.subarray(chl.contentLength);
+                this.handleMessage(chl, message, subscriber);
                 if (rest.length) {
-                    this.handleData(rest, subscriber);
+                    this.handleData(chl, rest, subscriber);
                 }
             }
         }
     }
 
-    protected concatCaches() {
-        return this.buffers.length > 1 ? Buffer.concat(this.buffers) : this.buffers[0]
+    protected concatCaches(chl: TopicBuffer) {
+        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
     }
 
-    protected handleMessage(message: Buffer, subscriber: Subscriber<Packet>) {
-        this.contentLength = null;
-        this.length = 0;
-        this.buffers = [];
+    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Packet>) {
+        chl.contentLength = null;
+        chl.length = 0;
+        chl.buffers = [];
         const ctx = new Context(this.injector, this.transport, undefined, message);
         this.decoder.handle(ctx)
             .pipe(
@@ -99,7 +101,15 @@ export class AssetReceiver implements Receiver {
                     ctx.destroy();
                 })
             )
-            .subscribe(subscriber);
+            .subscribe({
+                next(vale) {
+                    subscriber.next(vale);
+                    subscriber.complete();
+                },
+                error(err) {
+                    subscriber.error(err);
+                }
+            });
     }
 
 }

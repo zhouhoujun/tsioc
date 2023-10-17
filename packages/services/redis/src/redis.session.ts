@@ -90,7 +90,7 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
 
     protected override unpack(msg: TopicMessage): Observable<Packet> {
         const { topic, payload } = msg;
-        return this.receiver.receive(payload)
+        return this.receiver.receive(payload, topic)
             .pipe(
                 map(payload => {
                     return {
