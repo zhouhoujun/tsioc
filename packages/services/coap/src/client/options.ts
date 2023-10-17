@@ -6,7 +6,9 @@ import { Agent, OptionValue } from 'coap';
 import { OptionName } from 'coap-packet';
 
 
-
+/**
+ * client options.
+ */
 export interface CoapClientOpts extends ClientOpts  {
     /**
      * transport session options.
@@ -31,15 +33,17 @@ export interface CoapClientOpts extends ClientOpts  {
     
 }
 
-
+/**
+ * Coap clinet options token.
+ */
 export const COAP_CLIENT_OPTS = tokenId<CoapClientOpts>('COAP_CLIENT_OPTS');
 
 /**
- * Coap client interceptors.
+ * Coap client interceptors token.
  */
 export const COAP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('COAP_INTERCEPTORS');
 
 /**
- * Coap client filters.
+ * Coap client filters token.
  */
 export const COAP_CLIENT_FILTERS = tokenId<ExecptionFilter[]>('COAP_FILTERS');

@@ -3,7 +3,7 @@ import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InternalServerExecption, BindListenning, LOCALHOST, ev } from '@tsdi/common';
 import { Server } from '@tsdi/endpoints';
-import { createServer, Server as CoServer } from 'coap';
+import { Socket, createSocket } from 'dgram';
 import { COAP_MICRO_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapEndpoint } from './endpoint';
 
@@ -22,7 +22,7 @@ export class CoapServer extends Server implements BindListenning {
         super()
     }
 
-    private _server?: CoServer;
+    private _server?: Socket;
 
     listen(listenOpts?: { port?: number, listener?: () => void }): this;
     listen(listeningListener?: () => void): this;
@@ -30,23 +30,23 @@ export class CoapServer extends Server implements BindListenning {
     listen(arg1: any, listeningListener?: () => void): this {
         if (!this._server) throw new InternalServerExecption();
         if (isNumber(arg1)) {
-            this._server.listen(arg1, listeningListener);
+            this._server.bind(arg1, listeningListener);
             this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
         } else if (isFunction(arg1)) {
-            this._server.listen(listeningListener);
+            this._server.bind(listeningListener);
             this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
         } else if (arg1) {
-            this._server.listen(arg1.port, arg1.listener);
+            this._server.bind(arg1.port ?? 5683, arg1.listener);
             this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1.port}`, '!')
         } else {
             this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
-            this._server.listen();
+            this._server.bind(5683);
         }
         return this;
     }
 
     protected async setup(): Promise<any> {
-        this._server = createServer(this.options.serverOpts);
+        this._server = createSocket(this.options.serverOpts?.type ?? 'udp4');
     }
 
     protected async onStart(): Promise<any> {
