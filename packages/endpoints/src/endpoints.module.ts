@@ -1,5 +1,5 @@
-import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
-import { TransformModule } from '@tsdi/core';
+import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
+import { CanActivate, Filter, TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -14,6 +14,7 @@ import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
+import { TransportContext } from './TransportContext';
 
 
 
@@ -69,6 +70,18 @@ export class EndpointsModule {
     }
 }
 
+/**
+ * Global filters for all server
+ */
+export const GLOBAL_SERVER_FILTERS = tokenId<Filter<TransportContext>[]>('GLOBAL_SERVER_FILTERS');
+/**
+ * Global guards for all server
+ */
+export const GLOBAL_SERVER_GRAUDS = tokenId<CanActivate<TransportContext>>('GLOBAL_SERVER_GRAUDS');
+/**
+ * Global interceptors for all server
+ */
+export const GLOBAL_SERVER_INTERCEPTORS = tokenId<Filter<TransportContext>[]>('GLOBAL_SERVER_INTERCEPTORS');
 
 function createServiceProviders(options: ServiceOpts, idx: number) {
     const { transport, microservice } = options;
@@ -95,6 +108,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         init: (opts: ServerOpts, injector: Injector) => {
                             const serverOpts = {
                                 backend: microservice ? MicroServRouterModule.getToken(transport as Transport) : HybridRouter,
+                                globalFiltersToken: GLOBAL_SERVER_FILTERS,
+                                globalGuardsToken: GLOBAL_SERVER_GRAUDS,
+                                globalInterceptorsToken: GLOBAL_SERVER_INTERCEPTORS,
                                 ...defaultOpts,
                                 ...opts,
                                 routes: {
@@ -102,7 +118,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                     ...opts?.routes
                                 },
                                 providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
-                            };
+                            } as ServerOpts;
 
                             moduleOpts.serverOpts = serverOpts as any;
 
@@ -115,21 +131,21 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             }
 
                             if (serverOpts.sessionFactory) {
-                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+                                serverOpts.providers?.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
                             }
 
                             if (serverOpts.detailError) {
-                                serverOpts.providers.push({
+                                serverOpts.providers?.push({
                                     provide: SHOW_DETAIL_ERROR,
                                     useValue: true
                                 });
                             }
 
                             if (serverOpts.responder) {
-                                serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+                                serverOpts.providers?.push(toProvider(Responder, serverOpts.responder))
                             }
 
-                            return serverOpts as ServerOpts;
+                            return serverOpts;
                         }
                     }),
                     ...microservice ? createMicroRouteProviders(transport as Transport, (injector) => injector.get(servOptsToken).routes || EMPTY_OBJ)

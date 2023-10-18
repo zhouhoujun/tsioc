@@ -1,6 +1,7 @@
 import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider } from '@tsdi/ioc';
 import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Packet, TransportFactory } from '@tsdi/common';
+import { BodyContentInterceptor, GLOBAL_CLIENT_INTERCEPTORS } from '@tsdi/common/client';
 import { RequestHandler, Responder, StatusVaildator } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { AssetResponder } from './responder';
@@ -21,6 +22,7 @@ import { InterceptorsModule } from './interceptors.module';
 @Module({
     providers: [
         ...ASSET_ENDPOINT_PROVIDERS,
+        { provide: GLOBAL_CLIENT_INTERCEPTORS, useExisting: BodyContentInterceptor, multi: true },
         SimpleAssetEncoderBackend,
         AssetInterceptingEncoder,
         { provide: AssetEncoderBackend, useExisting: SimpleAssetEncoderBackend, asDefault: true },

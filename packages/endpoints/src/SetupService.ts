@@ -77,7 +77,9 @@ export interface ServerModuleOpts extends ServerConfig {
 }
 export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
 
-
+/**
+ * global registered server modules
+ */
 export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 /**

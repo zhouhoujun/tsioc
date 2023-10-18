@@ -32,15 +32,51 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
 }
 
 /**
+ * handler token config options.
+ */
+export interface HandlerTokenConfigable<TInput = any> {
+    /**
+     * global interceptors  token.
+     */
+    globalInterceptorsToken?: Token<Interceptor<TInput>[]>;
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<Interceptor<TInput>[]>;
+
+    /**
+     * global filter tokens.
+     */
+    globalFiltersToken?: Token<Filter<TInput>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<Filter<TInput>[]>;
+
+    /**
+     * global guards tokens.
+     */
+    globalGuardsToken?: Token<CanActivate<TInput>[]>;
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<CanActivate<TInput>[]>;
+}
+
+/**
+ * handler backend config options.
+ */
+export interface BackendConfigable {
+    /**
+     * handler backend.
+     */
+    backend?: Token<Backend> | Backend;
+}
+
+/**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg> {
-    backend?: Token<Backend> | Backend;
-
-    interceptorsToken?: Token<Interceptor<TInput>[]>;
-    guardsToken?: Token<CanActivate<TInput>[]>;
-    filtersToken?: Token<Filter<TInput>[]>;
-}
+export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, HandlerTokenConfigable<TInput>, BackendConfigable { }
 
 /**
  * handler service.
@@ -56,9 +92,9 @@ export interface HandlerService extends FilterService, PipeService, InterceptorS
 */
 @Abstract()
 export abstract class ConfigableHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput>, HandlerService {
-    
+
     abstract handle(input: TInput): Observable<TOutput>;
-    
+
     abstract get injector(): Injector;
 
     abstract useGuards(guards: ProvdierOf<CanActivate<TInput>> | ProvdierOf<CanActivate<TInput>>[], order?: number): this;

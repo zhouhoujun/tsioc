@@ -1,5 +1,5 @@
-import { Abstract } from '@tsdi/ioc';
-import { ConfigableHandler } from '@tsdi/core';
+import { Abstract, tokenId } from '@tsdi/ioc';
+import { ConfigableHandler, Interceptor } from '@tsdi/core';
 import { TransportRequest, TransportEvent } from '@tsdi/common';
 
 
@@ -8,3 +8,8 @@ import { TransportRequest, TransportEvent } from '@tsdi/common';
 export abstract class ClientHandler extends ConfigableHandler<TransportRequest, TransportEvent> {
 
 }
+
+/**
+ * global client interceptors
+ */
+export const GLOBAL_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('GLOBAL_CLIENT_INTERCEPTORS');

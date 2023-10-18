@@ -1,5 +1,5 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { Context, Encoder, Packet, PacketLengthException, Sender, Transport, TransportOpts, hdr } from '@tsdi/common';
+import { Context, Packet, PacketLengthException, Sender, Transport, TransportOpts, hdr } from '@tsdi/common';
 import { Observable, finalize, map, throwError } from 'rxjs';
 import { AssetEncoder } from './encoder';
 

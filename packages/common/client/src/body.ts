@@ -1,18 +1,15 @@
-import { Handler, Interceptor } from '@tsdi/core';
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, TransportEvent, TransportParams, TransportRequest } from '@tsdi/common';
 import { Injectable, isString } from '@tsdi/ioc';
+import { Handler, Interceptor } from '@tsdi/core';
+import { hdr, isArrayBuffer, isBlob, isBuffer, isFormData, IStream, isUrlSearchParams, StreamAdapter, TransportEvent, TransportParams, TransportRequest } from '@tsdi/common';
+
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
-import { hdr } from '../consts';
-import { isBuffer } from '../utils';
-import { StreamAdapter } from '../StreamAdapter';
-import { IStream } from '../stream';
 
 
 /**
- * body content interceptor.
+ * request body content interceptor.
  */
-@Injectable({ static: true })
+@Injectable()
 export class BodyContentInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Interceptor<TRequest, TResponse> {
 
     constructor(private adapter: StreamAdapter) { }

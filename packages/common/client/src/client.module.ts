@@ -3,8 +3,9 @@ import { createHandler } from '@tsdi/core';
 import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { TopicTransportBackend, TransportBackend } from './backend';
 import { ClientOpts } from './options';
-import { ClientHandler } from './handler';
+import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
+import { BodyContentInterceptor } from './body';
 
 
 export interface ClientModuleConfig {
@@ -23,7 +24,7 @@ export interface ClientModuleConfig {
 }
 
 export interface ClientModuleOpts extends ClientModuleConfig {
-    
+
     transport: Transport | HybirdTransport;
     /**
      * client type
@@ -49,17 +50,19 @@ export interface ClientModuleOpts extends ClientModuleConfig {
 
 
 export interface ClientTokenOpts {
-    
+
     transport: Transport | HybirdTransport;
-    
+
     /**
      * client token.
      */
     client?: Token<Client>;
 }
 
+
 @Module({
     providers: [
+        BodyContentInterceptor,
         TransportBackend,
         TopicTransportBackend
     ]
@@ -102,6 +105,9 @@ export class ClientModule {
 
 }
 
+/**
+ * global register client modules.
+ */
 export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES')
 
 
@@ -141,9 +147,9 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             if (!client) {
                 providers.push(toFactory(clientOptsToken, options.clientOpts!, {
                     init: (clientOpts: ClientOpts) => {
-                        const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+                        const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts;
                         if (opts.sessionFactory) {
-                            opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                            opts.providers?.push(toProvider(TransportSessionFactory, opts.sessionFactory))
                         }
                         if (opts.timeout) {
                             if (opts.transportOpts) {
@@ -152,7 +158,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                                 opts.transportOpts = { timeout: opts.timeout };
                             }
                         }
-                        return opts as ClientOpts;
+                        return opts;
                     }
                 }))
             }
@@ -169,7 +175,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                 init: (clientOpts: ClientOpts, injector: Injector) => {
                     const { defaultOpts, clientOptsToken } = injector.get(moduleOptsToken);
                     const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
-    
+
                     if (opts.timeout) {
                         if (opts.transportOpts) {
                             opts.transportOpts.timeout = opts.timeout;
