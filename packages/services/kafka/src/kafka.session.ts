@@ -1,10 +1,10 @@
 import { Execption, Injectable, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, IncomingHeaders, NotFoundExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr, isBuffer } from '@tsdi/common';
+import { PipeTransform, UuidGenerator } from '@tsdi/core';
+import { BadRequestExecption, IncomingHeaders, NotFoundExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
-import { Observable, filter, first, fromEvent, fromEventPattern, map, merge, throwError } from 'rxjs';
-import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
+import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
+import { AssignerProtocol, Cluster, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
 import { KafkaHeaders, KafkaTransport, KafkaTransportOpts } from './const';
 
 
@@ -19,8 +19,9 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         sender: Sender,
         receiver: Receiver,
         private uuidGenner: UuidGenerator,
+        bytesTransform: PipeTransform,
         options?: KafkaTransportOpts) {
-        super(socket, sender, receiver, options)
+        super(socket, sender, receiver, bytesTransform, options)
     }
 
 
@@ -57,7 +58,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             headers[k] = this.generHead(packet.headers![k]);
         });
         headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
-        
+
         if (!opts.serverSide) {
             const replyTopic = this.getReply(packet);
             headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
@@ -193,7 +194,7 @@ export class KafkaTransportSessionFactory implements TransportSessionFactory<Kaf
         private uuidGenner: UuidGenerator) { }
 
     create(socket: KafkaTransport, transport: Transport, options?: TransportOpts): KafkaTransportSession {
-        return new KafkaTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, options);
+        return new KafkaTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

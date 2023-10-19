@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { PatternFormatter } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS } from './client/options';
 import { RedisHandler } from './client/handler';
@@ -12,6 +12,8 @@ import { RedisEndpoint } from './server/endpoint';
 import { RedisPatternFormatter } from './pattern';
 import { RedisTransportSessionFactory } from './redis.session';
 
+
+const defaultMaxSize = 1024 * 256;
 
 @Module({
     providers: [

@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, TopicTransportSessionFactory, defaultMaxSize } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, TopicTransportSessionFactory } from '@tsdi/endpoints';
 import { MqttClient } from './client/client';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS } from './client/options';
 import { MqttHandler } from './client/handler';
@@ -10,6 +10,8 @@ import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS } from './server/options';
 import { MqttEndpoint } from './server/endpoint';
 
+
+const defaultMaxSize = 1024 * 256;
 
 @Module({
     providers: [

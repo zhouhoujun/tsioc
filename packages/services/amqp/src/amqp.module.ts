@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { AmqpClient } from './client/client';
 import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS } from './client/options';
 import { AmqpHandler } from './client/handler';
@@ -12,6 +12,7 @@ import { AmqpEndpoint } from './server/endpoint';
 
 
 
+const defaultMaxSize = 1024 * 256;
 
 @Module({
     providers: [

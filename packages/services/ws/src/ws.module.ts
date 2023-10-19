@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, Session, defaultMaxSize } from '@tsdi/endpoints';
+import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS } from './client/options';
 import { WsHandler } from './client/handler';
@@ -9,6 +9,8 @@ import { WsServer } from './server/server';
 import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS } from './server/options';
 import { WsEndpoint } from './server/endpoint';
 
+
+const defaultMaxSize = 1024 * 256;
 
 @Module({
     providers: [

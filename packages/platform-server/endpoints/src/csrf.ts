@@ -1,4 +1,4 @@
-import { CsrfOptions, CsrfTokensFactory } from '@tsdi/transport';
+import { CsrfOptions, CsrfTokensFactory } from '@tsdi/endpoints/assets';
 import * as Tokens from 'csrf';
 
 /**

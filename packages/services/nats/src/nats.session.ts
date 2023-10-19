@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { UuidGenerator } from '@tsdi/core';
+import { PipeTransform, UuidGenerator } from '@tsdi/core';
 import { BadRequestExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
@@ -16,8 +16,9 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         sender: Sender,
         receiver: Receiver,
         private uuidGenner: UuidGenerator,
+        bytesTransform: PipeTransform,
         options?: TransportOpts) {
-        super(socket, sender, receiver, options)
+        super(socket, sender, receiver, bytesTransform, options)
     }
 
     private subjects: Set<string> = new Set();
@@ -150,7 +151,7 @@ export class NatsTransportSessionFactory implements TransportSessionFactory<Nats
         private uuidGenner: UuidGenerator) { }
 
     create(socket: NatsConnection, transport: Transport, options?: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, options);
+        return new NatsTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

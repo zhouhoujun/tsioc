@@ -1,8 +1,8 @@
 import { Injectable, isNil } from '@tsdi/ioc';
-import { MessageExecption, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
+import { PipeTransform } from '@tsdi/core';
+import { MessageExecption, PacketLengthException, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
 import { Responder, TransportContext } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
-import { PipeTransform } from '@tsdi/core';
 
 
 @Injectable()
@@ -25,9 +25,8 @@ export class JsonResponder implements Responder {
         }
 
         if (ctx.get(StreamAdapter).isReadable(res)) {
-            ctx.body = toBuffer(res);
-        }
-        if (isBuffer(res)) {
+            ctx.body = new TextDecoder().decode(await toBuffer(res));
+        } else if (isBuffer(res)) {
             ctx.body = new TextDecoder().decode(res);
         }
 
@@ -36,14 +35,7 @@ export class JsonResponder implements Responder {
 
     async sendExecption(ctx: TransportContext, err: MessageExecption): Promise<any> {
         const session = ctx.get(TransportSession);
-        ctx.response.error = {
-            name: err.name,
-            message: err.message,
-            status: err.status ?? err.statusCode
-        }
-        if (!isNil(err.status)) ctx.response.status = err.status;
-        ctx.response.statusText = err.message
-
+        ctx.execption = err;
 
         await lastValueFrom(session.send(ctx.response));
 

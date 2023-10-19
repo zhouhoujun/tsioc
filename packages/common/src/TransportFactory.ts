@@ -32,11 +32,11 @@ export interface TransportOpts {
 
     timeout?: number;
     /**
-     * packet size limit.
-     */
-    limit?: number;
-    /**
      * payload max size limit.
+     */
+    payloadMaxSize?: number;
+    /**
+     * packet max size limit.
      */
     maxSize?: number;
     /**

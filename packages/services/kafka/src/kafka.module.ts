@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, PatternFormatter } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { KafkaClient } from './client/client';
 import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KAFKA_CLIENT_OPTS } from './client/options';
 import { KafkaHandler } from './client/handler';
@@ -12,6 +12,8 @@ import { KafkaEndpoint } from './server/endpoint';
 import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
 import { KafkaTransportSessionFactory } from './kafka.session';
 
+
+const defaultMaxSize = 1024 * 256;
 
 @Module({
     providers: [

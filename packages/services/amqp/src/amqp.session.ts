@@ -1,6 +1,6 @@
 import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { EventTransportSession } from '@tsdi/endpoints';
-import { UuidGenerator } from '@tsdi/core';
+import { PipeTransform, UuidGenerator } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Observable, fromEvent, map } from 'rxjs';
@@ -14,8 +14,9 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         sender: Sender,
         receiver: Receiver,
         private uuidGenner: UuidGenerator,
+        bytesTransform: PipeTransform,
         options?: TransportOpts) {
-        super(socket, sender, receiver, options)
+        super(socket, sender, receiver, bytesTransform, options)
     }
 
 
@@ -97,7 +98,7 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
         private uuidGenner: UuidGenerator) { }
 
     create(socket: Channel, transport: Transport, options?: TransportOpts): QueueTransportSession {
-        return new QueueTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, options);
+        return new QueueTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

@@ -3,6 +3,7 @@ import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, S
 import { AbstractTransportSession, TopicMessage } from '@tsdi/endpoints';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 import Redis from 'ioredis';
+import { PipeTransform } from '@tsdi/core';
 
 
 export interface ReidsTransport {
@@ -14,13 +15,13 @@ const PATTERN_MSG_BUFFER = 'pmessageBuffer';
 
 export class RedisTransportSession extends AbstractTransportSession<ReidsTransport, TopicMessage> {
 
-
     constructor(
         socket: ReidsTransport,
         sender: Sender,
         receiver: Receiver,
+        bytesTransform: PipeTransform,
         options?: TransportOpts) {
-        super(socket, sender, receiver, options)
+        super(socket, sender, receiver, bytesTransform, options)
     }
 
     private topics: Set<string> = new Set();
@@ -124,7 +125,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
     constructor(private factory: TransportFactory) { }
 
     create(socket: ReidsTransport, transport: Transport, options?: TransportOpts): RedisTransportSession {
-        return new RedisTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), options);
+        return new RedisTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.factory.injector.get('bytes-format'), options);
     }
 
 }

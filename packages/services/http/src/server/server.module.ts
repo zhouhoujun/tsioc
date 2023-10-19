@@ -1,10 +1,7 @@
 import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import {
-    RouterModule, createMiddlewareEndpoint, StatusVaildator, HybridRouter,
-    BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, ExecptionFinalizeFilter, HttpStatusVaildator,
-    HelmetMiddleware, LOCALHOST, LogInterceptor, RespondAdapter, ServerFinalizeFilter, SessionMiddleware, TransportModule
-} from '@tsdi/transport';
+import { RouterModule, createMiddlewareEndpoint, StatusVaildator, HybridRouter, ExecptionFinalizeFilter, LogInterceptor, SessionMiddleware, FinalizeFilter } from '@tsdi/endpoints';
+import  { BodyparserMiddleware, ContentMiddleware, CorsMiddleware, CsrfMiddleware, JsonMiddleware, HelmetMiddleware } from '@tsdi/endpoints/assets'
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { ListenOptions } from 'net';
 import { HttpServer } from './server';
@@ -12,6 +9,7 @@ import { HttpServerOpts, HTTP_SERV_OPTS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_FILTE
 import { HttpRespondAdapter } from './respond';
 import { HttpEndpoint } from './endpoint';
 import { HTTP_MIDDLEWARES } from './context';
+import { LOCALHOST } from '@tsdi/common';
 
 
 
@@ -37,7 +35,7 @@ const defServerOpts = {
         LogInterceptor,
         ExecptionFinalizeFilter,
         ExecptionHandlerFilter,
-        ServerFinalizeFilter
+        FinalizeFilter
     ],
     middlewares: [
         HelmetMiddleware,
@@ -50,8 +48,8 @@ const defServerOpts = {
         HybridRouter
     ],
     providers: [
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
-        { provide: RespondAdapter, useExisting: HttpRespondAdapter },
+        // { provide: StatusVaildator, useExisting: HttpStatusVaildator },
+        // { provide: RespondAdapter, useExisting: HttpRespondAdapter },
     ]
 
 } as HttpServerOpts;

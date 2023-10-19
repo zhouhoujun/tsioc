@@ -374,7 +374,7 @@ export abstract class SocketTransportSession<T extends EventEmitter, TOpts exten
                 } else {
                     const len = this.getPayloadLength(message);
                     let plen;
-                    if (isString(message) || isBuffer(message)) {
+                    if (isString(message.payload) || isBuffer(message.payload)) {
                         plen = Buffer.byteLength(message.payload);
                     } else {
                         plen = Buffer.byteLength(JSON.stringify(message.payload));
@@ -527,7 +527,7 @@ export abstract class TopicTransportSession<T, TOpts extends TransportSessionOpt
                 } else {
                     const len = this.getPayloadLength(message);
                     let plen;
-                    if (isString(message) || isBuffer(message)) {
+                    if (isString(message.payload) || isBuffer(message.payload)) {
                         plen = Buffer.byteLength(message.payload);
                     } else {
                         plen = Buffer.byteLength(JSON.stringify(message.payload));

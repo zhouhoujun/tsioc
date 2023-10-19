@@ -17,15 +17,12 @@ export interface UdpMsg {
 @Injectable()
 export class CoapTransportSessionFactoryImpl implements TransportSessionFactory<Socket> {
 
-    constructor(
-        private factory: TransportFactory,
-        @Optional() private encoder: Encoder,
-        @Optional() private decoder: Decoder) {
+    constructor(private factory: TransportFactory) {
 
     }
 
     create(socket: Socket, transport: Transport, options: TransportOpts): CoapTransportSession {
-        return new CoapTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), options);
+        return new CoapTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.factory.injector.get('bytes-format'), options);
     }
 
 }

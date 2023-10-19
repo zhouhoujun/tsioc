@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, defaultMaxSize } from '@tsdi/endpoints';
+import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { CoapClient } from './client/client';
 import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, COAP_CLIENT_OPTS } from './client/options';
 import { CoapHandler } from './client/handler';
@@ -11,6 +11,8 @@ import { COAP_MICRO_SERV_OPTS, COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_IN
 import { CoapEndpoint } from './server/endpoint';
 import { CoapStatusVaildator } from './status';
 
+
+const defaultMaxSize = 1024 * 256;
 
 @Module({
     providers: [

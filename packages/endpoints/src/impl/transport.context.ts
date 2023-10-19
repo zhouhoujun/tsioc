@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injector, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injector, isNil, isString } from '@tsdi/ioc';
 import { RequestPacket, ResponsePacket, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextOpts } from '../TransportContext';
 
@@ -10,7 +10,6 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
     private _originalUrl: string;
     private _method: string;
     private _socket: any;
-    private _len?: number;
 
     constructor(
         injector: Injector,
@@ -22,7 +21,7 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         if (!response.id) {
             response.id = request.id;
         }
-        if(request.replyTo){
+        if (request.replyTo) {
             response.replyTo = request.replyTo;
         }
         if (request.topic) {
@@ -30,7 +29,7 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         } else if (request.url) {
             response.url = request.url;
         }
-        this._originalUrl  = request.headers?.['origin-path'] ?? request.url ?? request.topic ?? '';
+        this._originalUrl = request.headers?.['origin-path'] ?? request.url ?? request.topic ?? '';
         this._url = request.url ?? request.topic ?? '';
         this._method = request.method ?? '';
         this._socket = options.socket || null;
@@ -54,25 +53,44 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
     }
 
     set length(n: number | undefined) {
-        this._len = n;
+        this.response.length = n;
     }
 
     get length(): number | undefined {
-        return this._len;
+        return this.response.length;
     }
 
     get body(): any {
         return this.response.payload;
     }
     set body(value: any) {
-        if (isString(value)) {
+        if (value === null) {
+            this.length = 0;
+        } else if (isString(value)) {
             this.length = Buffer.byteLength(value);
-        }
-        if (isBuffer(value)) {
+        } else if (isBuffer(value)) {
             this.length = value.length;
-
         }
+
         this.response.payload = value;
+    }
+
+    private _err: any;
+    get execption() {
+        return this._err;
+    }
+
+    set execption(err: any) {
+        this._err = err;
+        if (!err) return;
+        this.body = null;
+        this.response.error = {
+            name: err.name,
+            message: err.message,
+            status: err.status ?? err.statusCode
+        };
+        if (!isNil(err.status)) this.response.status = err.status;
+        this.response.statusText = err.message;
     }
 
     /**

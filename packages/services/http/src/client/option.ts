@@ -2,7 +2,7 @@ import * as http2 from 'http2';
 import { Token, tokenId } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
-import { Client } from '@tsdi/transport';
+import { Client } from '@tsdi/common/client';
 
 
 /**

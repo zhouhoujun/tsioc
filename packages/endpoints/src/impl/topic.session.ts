@@ -1,6 +1,6 @@
 import { Injectable, promisify } from '@tsdi/ioc';
 import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { Observable, filter, fromEvent, map } from 'rxjs';
+import { Observable, filter, fromEvent } from 'rxjs';
 import { EventTransportSession } from '../transport.session';
 
 
@@ -72,7 +72,7 @@ export class TopicTransportSessionFactory implements TransportSessionFactory<Top
     constructor(private factory: TransportFactory) { }
 
     create(socket: TopicClient, transport: Transport, options?: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), options);
+        return new TopicTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.factory.injector.get('bytes-format'), options);
     }
 
 }
