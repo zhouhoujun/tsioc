@@ -1,13 +1,14 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, hdr, isBuffer } from '@tsdi/common';
-import { AssetContext, Responder } from '@tsdi/endpoints';
+import { PipeTransform } from '@tsdi/core';
+import { ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, hdr, isBuffer } from '@tsdi/common';
+import { AssetContext, Responder, ServerOpts } from '@tsdi/endpoints';
 
 @Injectable()
 export class AssetResponder<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> implements Responder<AssetContext<TRequest, TResponse, TStatus>> {
 
     constructor() { }
 
-    async send(ctx: AssetContext, res: any): Promise<any> {
+    async send(ctx: AssetContext, res: TResponse): Promise<any> {
         const vaildator = ctx.vaildator;
         if (ctx.destroyed || !ctx.writable) return;
 
@@ -27,6 +28,13 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         // status body
         if (null == body) {
             return this.respondNoBody(status, response, ctx);
+        }
+
+        const len = ctx.length ?? 0;
+        const opts = ctx.serverOptions;
+        if (opts.transportOpts?.payloadMaxSize && len > opts.transportOpts.payloadMaxSize) {
+            const btpipe = ctx.get<PipeTransform>('bytes-format');
+            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.transportOpts.payloadMaxSize)}`);
         }
 
         return await this.respondBody(body, response, ctx);
