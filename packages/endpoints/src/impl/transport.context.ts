@@ -52,12 +52,13 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         return this._originalUrl;
     }
 
+    private _len?: number;
     set length(n: number | undefined) {
-        this.response.length = n;
+        this._len = n;
     }
 
     get length(): number | undefined {
-        return this.response.length;
+        return this._len;
     }
 
     get body(): any {

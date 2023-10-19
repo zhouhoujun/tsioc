@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, Encoder, EncoderBackend } from '@tsdi/common';
+import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
 import { Observable, of } from 'rxjs';
 
 
@@ -16,7 +16,7 @@ export abstract class AssetEncoderBackend implements EncoderBackend {
 
 
 
-export const ASSET_ENCODER_INTERCEPTORS =  tokenId<Interceptor<Context, Buffer>[]>('ASSET_ENCODER_INTERCEPTORS')
+export const ASSET_ENCODER_INTERCEPTORS = tokenId<Interceptor<Context, Buffer>[]>('ASSET_ENCODER_INTERCEPTORS')
 
 
 @Injectable()
@@ -36,6 +36,22 @@ export class AssetInterceptingEncoder implements Encoder {
 }
 
 
+@Injectable()
+export class HeaderEncodeInterceptor implements EncodeInterceptor {
+
+    intercept(input: Context, next: Handler<Context, Buffer>): Observable<Buffer> {
+
+        if (input.packet && !input.packet.headerSent) {
+            const headBuf = Buffer.from(JSON.stringify(input.packet));
+            if (input.raw) {
+                input.raw = Buffer.concat([headBuf, input.raw]);
+            }
+        }
+
+        return next.handle(input);
+    }
+
+}
 
 @Injectable()
 export class SimpleAssetEncoderBackend implements AssetEncoderBackend {

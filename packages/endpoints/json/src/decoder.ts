@@ -43,7 +43,7 @@ export class SimpleJsonDecoderBackend implements JsonDecoderBackend {
 
     handle(ctx: Context): Observable<Packet> {
         if (ctx.packet) return of(ctx.packet);
-        if (!ctx.raw) throw new ArgumentExecption('json decoding input empty');
+        if (!ctx.raw || !ctx.raw.length) throw new ArgumentExecption('json decoding input empty');
         const jsonStr = isString(ctx.raw) ? ctx.raw : new TextDecoder().decode(ctx.raw);
         try {
             ctx.packet = JSON.parse(jsonStr);
