@@ -36,7 +36,15 @@ export class JsonResponder implements Responder {
     async sendExecption(ctx: TransportContext, err: MessageExecption): Promise<any> {
         const session = ctx.get(TransportSession);
         ctx.execption = err;
-
+        ctx.body = null;
+        ctx.response.error = {
+            name: err.name,
+            message: err.message,
+            status: err.status ?? err.statusCode
+        };
+        if (!isNil(err.status)) ctx.response.status = err.status;
+        ctx.response.statusText = err.message;
+    
         await lastValueFrom(session.send(ctx.response));
 
     }

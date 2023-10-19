@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injector, isNil, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injector, isString } from '@tsdi/ioc';
 import { RequestPacket, ResponsePacket, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextOpts } from '../TransportContext';
 
@@ -73,24 +73,6 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         }
 
         this.response.payload = value;
-    }
-
-    private _err: any;
-    get execption() {
-        return this._err;
-    }
-
-    set execption(err: any) {
-        this._err = err;
-        if (!err) return;
-        this.body = null;
-        this.response.error = {
-            name: err.name,
-            message: err.message,
-            status: err.status ?? err.statusCode
-        };
-        if (!isNil(err.status)) this.response.status = err.status;
-        this.response.statusText = err.message;
     }
 
     /**
