@@ -87,11 +87,16 @@ export function joinPath(...paths: (string | undefined)[]) {
  * @param route 
  * @returns 
  */
-export function normalize(route: string, prefix?: string): string {
+export function normalize(route: string, prefix?: string, noSearch?: boolean): string {
     if (!route) return '';
 
     let path = route.replace(trim$, '');
-
+    if (noSearch) {
+        const idx = path.indexOf('?');
+        if (idx >= 0) {
+            path = path.slice(0, idx);
+        }
+    }
     if (prefix) {
         prefix = prefix.replace(sta$, '');
         if (path.startsWith(prefix)) {

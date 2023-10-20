@@ -55,8 +55,8 @@ export class TransportHeaderResponse<TStatus = any> {
         statusMessage?: string;
     }) {
         this.url = options.url ?? '';
-        this.status = options.status;
-        this.ok = options.ok ?? false;
+        this.status = options.status ?? 200 as TStatus;
+        this.ok = options.ok ?? true;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.headers = new ResHeaders(options.headers);
     }

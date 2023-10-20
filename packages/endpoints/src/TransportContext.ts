@@ -1,6 +1,7 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
-import { EndpointContext, EndpointInvokeOpts, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
+import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { RequestPacket, ResponsePacket } from '@tsdi/common';
+import { ServerOpts } from './Server';
 
 /**
  * abstract transport context.
@@ -85,15 +86,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
 
 }
 
-/**
- * Transport context options.
- */
-export interface TransportContextOpts<T = any, TSocket = any> extends EndpointInvokeOpts<T> {
-    socket?: TSocket;
-}
 
 export const TRANSPORT_CONTEXT_IMPL = {
-    create<TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector,  request: TInput, response: TOutput,options?: TransportContextOpts<TInput>): TransportContext<TInput, TOutput> {
+    create<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, socket: TSocket, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket> {
         throw new Execption('not implemented.')
     }
 }
@@ -104,10 +99,13 @@ export const TRANSPORT_CONTEXT_IMPL = {
  * @param options 
  * @returns 
  */
-export function createTransportContext<TInput extends RequestPacket, TOutput extends ResponsePacket, TSocket>(injector: Injector, request: TInput, response: TOutput, options?: TransportContextOpts<TInput, TSocket>): TransportContext<TInput, TOutput, TSocket> {
-    return TRANSPORT_CONTEXT_IMPL.create(injector, request, response, options)
+export function createTransportContext<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, socket: TSocket, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket> {
+    return TRANSPORT_CONTEXT_IMPL.create(injector, socket, request, response, options)
 }
 
+export function getScopeValue(payload: any, scope: string) {
+    return payload[scope] ?? (scope == 'body' ? payload['payload'] : undefined);
+}
 
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
@@ -117,14 +115,14 @@ const primitiveResolvers = createPayloadResolver(
             scope = 'query'
         }
         if (scope) {
-            data = data[scope];
+            data = getScopeValue(data, scope);
             if (field) {
                 data = isDefined(data) ? data[field] : null;
             }
         }
         return data;
     },
-    (param, payload) => payload && isDefined(payload[param.scope ?? 'query']));
+    (param, payload) => payload && isDefined(getScopeValue(payload, param.scope ?? 'query')));
 
 
 /**

@@ -1,24 +1,27 @@
 import { EMPTY_OBJ, Injector, isNil, isString } from '@tsdi/ioc';
-import { RequestPacket, ResponsePacket, StreamAdapter, isBuffer } from '@tsdi/common';
-import { TransportContext, TransportContextOpts } from '../TransportContext';
+import { LOCALHOST, RequestPacket, ResponsePacket, StreamAdapter, isBuffer } from '@tsdi/common';
+import { TransportContext } from '../TransportContext';
+import { ServerOpts } from '../Server';
 
 
 
-export class TransportContextIml<TInput extends RequestPacket = RequestPacket, TOutput extends ResponsePacket = ResponsePacket> extends TransportContext<TInput, TOutput> {
+export class TransportContextIml<TRequest extends RequestPacket = RequestPacket, TResponse extends ResponsePacket = ResponsePacket, TSocket = any> extends TransportContext<TRequest, TResponse, TSocket> {
 
     private _url: string;
     private _originalUrl: string;
     private _method: string;
-    private _socket: any;
+    private _URL?: URL;
+
     readonly streamAdapter: StreamAdapter;
 
     constructor(
         injector: Injector,
-        readonly request: TInput,
-        readonly response: TOutput,
-        options: TransportContextOpts = EMPTY_OBJ
+        readonly socket: TSocket,
+        readonly request: TRequest,
+        readonly response: TResponse,
+        private serverOptions: ServerOpts = EMPTY_OBJ
     ) {
-        super(injector, { ...options, args: request });
+        super(injector, { ...serverOptions, args: request });
         this.streamAdapter = injector.get(StreamAdapter);
         if (!response.id) {
             response.id = request.id;
@@ -31,11 +34,17 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         } else if (request.url) {
             response.url = request.url;
         }
-        this._originalUrl = request.headers?.['origin-path'] ?? request.url ?? request.topic ?? '';
-        this._url = request.url ?? request.topic ?? '';
+
         this._method = request.method ?? '';
-        this._socket = options.socket || null;
+
+        this._url = request.url ?? request.topic ?? '';
+        this._originalUrl = request.headers?.['origin-path'] ?? this._url;
+        const searhIdx = this._url.indexOf('?');
+        if (searhIdx >= 0) {
+            (this.request as any)['query'] = this.query;
+        }
     }
+
 
     /**
      * Get request rul
@@ -52,6 +61,53 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
 
     get originalUrl(): string {
         return this._originalUrl;
+    }
+
+    private _query?: Record<string, any>;
+    get query(): Record<string, any> {
+        if (!this._query) {
+            const qs = this._query = { } as Record<string, any>;
+            this.URL?.searchParams?.forEach((v, k) => {
+                qs[k] = v;
+            });
+        }
+        return this._query;
+    }
+
+     /**
+     * Get WHATWG parsed URL.
+     * Lazily memoized.
+     *
+     * @return {URL|Object}
+     * @api public
+     */
+    get URL(): URL {
+        /* istanbul ignore else */
+        if (!this._URL) {
+            this._URL = this.createURL();
+        }
+        return this._URL!;
+    }
+
+    protected createURL() {
+        try {
+            return this.parseURL(this.request);
+        } catch (err) {
+            return Object.create(null);
+        }
+    }
+    
+    protected parseURL(req: RequestPacket): URL {
+        const url = req.url ?? req.topic ?? '';
+        if (abstl.test(url)) {
+            return new URL(url);
+        } else {
+            const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
+            const protocol = this.serverOptions.protocol;
+            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST }:${port ?? 3000}`, path);
+            const uri = new URL(url, baseUrl);
+            return uri;
+        }
     }
 
 
@@ -105,7 +161,6 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         return this._method;
     }
 
-    get socket(): any {
-        return this._socket;
-    }
 }
+
+const abstl = /^\w+:\/\//i;

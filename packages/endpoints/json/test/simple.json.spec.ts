@@ -1,16 +1,19 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
-import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestExecption } from '@tsdi/common';
+import { ClientModule } from '@tsdi/common/client';
+import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
-import { RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
-import { LoggerModule } from '@tsdi/logger';
+import { EndpointsModule, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
+import { TcpClient, TcpModule } from '@tsdi/tcp';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { JsonTransportModule } from '../src';
 
 
 
-@RouteMapping('/device')
+@RouteMapping('device')
 export class DeviceController {
 
     @RouteMapping('/', 'GET')
@@ -53,7 +56,7 @@ export class DeviceController {
         const defer = lang.defer();
 
         setTimeout(() => {
-            defer.resolve({ version });
+            defer.resolve(version);
         }, 10);
 
         return await defer.promise;
@@ -65,14 +68,19 @@ export class DeviceController {
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule.withOptions({
+        JsonTransportModule,
+        ServerEndpointModule,
+        TcpModule,
+        ClientModule.register({
+            transport: 'tcp',
             clientOpts: {
                 connectOpts: {
                     port: 2000
                 }
             }
         }),
-        TcpServerModule.withOptions({
+        EndpointsModule.register({
+            transport: 'tcp',
             serverOpts: {
                 // timeout: 1000,
                 listenOpts: {
@@ -83,8 +91,7 @@ export class DeviceController {
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: TcpServer
+    ]
 })
 export class TcpTestModule {
 

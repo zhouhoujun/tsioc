@@ -15,7 +15,7 @@ export class JsonRequestHandler implements RequestHandler<RequestPacket, Respons
                 if (!req.method) {
                     req.method = options.transportOpts?.microservice ? MESSAGE : GET;
                 }
-                const ctx = createTransportContext(endpoint.injector, req, {});
+                const ctx = createTransportContext(endpoint.injector, session.socket, req, {}, options);
                 ctx.setValue(TransportSession, session);
                 ctx.setValue(Logger, logger);
 

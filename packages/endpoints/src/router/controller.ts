@@ -33,7 +33,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
         this.routes = new Map();
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
-        prefix = this.prefix = joinPath(prefix, mapping.prefix, mapping.version, mapping.route);
+        this.prefix = joinPath(prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
         this.sortRoutes = factory.typeRef.class.defs
             .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
@@ -81,7 +81,7 @@ export class ControllerRoute<T> extends AbstractGuardHandler implements Middlewa
     }
 
     protected getRouteMetaData(ctx: TransportContext) {
-        const subRoute = normalize(ctx.url, this.prefix);
+        const subRoute = normalize(ctx.url, this.prefix, true);
 
         return this.sortRoutes.find(m => m
             && m.metadata.method === ctx.method
