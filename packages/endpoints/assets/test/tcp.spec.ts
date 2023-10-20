@@ -4,119 +4,58 @@ import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestExecption } from '@tsdi/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { TcpClient, TcpClientModule, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
-import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult  } from '@tsdi/transport';
+import { MicroServRouterModule } from '@tsdi/endpoints';
+import { TcpClient } from '@tsdi/tcp';
 import { LoggerModule } from '@tsdi/logger';
+import { DeviceController } from './demo';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule } from '@tsdi/endpoints/src';
+import { Bodyparser, Content, Json } from '../src';
 
-
-
-@RouteMapping('/device')
-export class DeviceController {
-
-    @RouteMapping('/', 'GET')
-    list(@RequestParam({ nullable: true }) name: string) {
-        return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
-    }
-
-    @RouteMapping('/init', 'POST')
-    req(name: string) {
-        console.log('DeviceController init:', name);
-        return { name };
-    }
-
-    @RouteMapping('/usage', 'POST')
-    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
-        console.log('usage:', id, year, createAt);
-        return { id, year, createAt };
-    }
-
-    @RouteMapping('/usege/find', 'GET')
-    agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
-        console.log('limit:', limit);
-        return limit;
-    }
-
-    @RouteMapping('/:age/used', 'GET')
-    resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
-        console.log('age1:', age1);
-        if (age1 <= 0) {
-            throw new BadRequestExecption();
-        }
-        return age1;
-    }
-
-
-    @RouteMapping('/update', 'POST')
-    async update(version: string) {
-        // do smth.
-        console.log('update version:', version);
-        const defer = lang.defer();
-
-        setTimeout(() => {
-            defer.resolve(version);
-        }, 10);
-
-        return await defer.promise;
-    }
-
-    @RouteMapping('/status', 'GET')
-    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
-        if (redirect === 'reload') {
-            return new RedirectResult('/device/reload');
-        }
-        return of('working');
-    }
-
-    @RouteMapping('/reload', 'GET')
-    redirect() {
-        return 'reload';
-    }
-
-    @Handle({ cmd: 'xxx' }, 'tcp')
-    async subMessage(@Payload() message: string) {
-        return message;
-    }
-
-    @Handle('dd/*')
-    async subMessage1(@Payload() message: string) {
-        return message;
-    }
-
-}
 
 @Module({
     baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
-        TcpClientModule.withOptions({
+        ClientModule.register({
+            transport: 'tcp',
             clientOpts: {
                 connectOpts: {
                     port: 2000
                 }
             }
         }),
-
-        MicroServRouterModule.forRoot('tcp'),
-        TcpServerModule.withOptions({
-            serverOpts: {
-                // timeout: 1000,
-                listenOpts: {
-                    port: 2000
-                },
-                interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
-                    { useExisting: MicroServRouterModule.getToken('tcp') }
-                ]
+        EndpointsModule.register([
+            {
+                transport: 'tcp',
+                serverOpts: {
+                    // timeout: 1000,
+                    listenOpts: {
+                        port: 2000
+                    },
+                    interceptors: [
+                        Content,
+                        Json,
+                        Bodyparser,
+                        { useExisting: MicroServRouterModule.getToken('tcp') }
+                    ]
+                }
+            },
+            {
+                microservice: true,
+                transport: 'tcp',
+                serverOpts: {
+                    listenOpts: {
+                        port: 5000
+                    }
+                }
             }
-        })
+        ])
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: TcpServer
+    ]
 })
 export class TcpTestModule {
 
