@@ -13,7 +13,7 @@ import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
 import { KafkaTransportSessionFactory } from './kafka.session';
 
 
-const defaultMaxSize = 1024 * 256;
+const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 
 @Module({
     providers: [

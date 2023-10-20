@@ -13,7 +13,7 @@ import { RedisPatternFormatter } from './pattern';
 import { RedisTransportSessionFactory } from './redis.session';
 
 
-const defaultMaxSize = 1024 * 256;
+const defaultMaxSize = 1048576; //1024 * 1024;
 
 @Module({
     providers: [

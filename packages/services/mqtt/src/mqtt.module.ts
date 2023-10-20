@@ -11,7 +11,7 @@ import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_
 import { MqttEndpoint } from './server/endpoint';
 
 
-const defaultMaxSize = 1024 * 256;
+const defaultMaxSize = 524288; //1024 * 512;
 
 @Module({
     providers: [
