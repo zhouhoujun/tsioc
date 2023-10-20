@@ -1,5 +1,5 @@
 import { Injector } from '@tsdi/ioc';
-import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport, TransportOpts } from '@tsdi/common';
+import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport, AssetTransportOpts } from '@tsdi/common';
 import { Observable, Subscriber, finalize } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
@@ -9,16 +9,16 @@ export class AssetReceiver implements Receiver {
     protected topics: Map<string, TopicBuffer>;
 
     private delimiter: Buffer;
-    private maxSize: number;
+    private headDelimiter: Buffer;
 
     constructor(
         private injector: Injector,
         readonly transport: Transport,
         readonly decoder: AssetDecoder,
-        options: TransportOpts
+        private options: AssetTransportOpts
     ) {
         this.delimiter = Buffer.from(options.delimiter ?? '#');
-        this.maxSize = options.maxSize ?? (256 * 1024);
+        this.headDelimiter = Buffer.from(options.headDelimiter ?? '$');
         this.topics = new Map();
     }
 
@@ -60,7 +60,7 @@ export class AssetReceiver implements Receiver {
                 const rawContentLength = buffer.subarray(0, idx).toString();
                 chl.contentLength = parseInt(rawContentLength, 10);
 
-                if (isNaN(chl.contentLength) || chl.contentLength > this.maxSize) {
+                if (isNaN(chl.contentLength) || (this.options.maxSize && chl.contentLength > this.options.maxSize)) {
                     chl.contentLength = null;
                     chl.length = 0;
                     chl.buffers = [];
@@ -94,7 +94,7 @@ export class AssetReceiver implements Receiver {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        const ctx = new Context(this.injector, this.transport, undefined, message);
+        const ctx = new Context(this.injector, this.transport, this.options, message, this.headDelimiter);
         this.decoder.handle(ctx)
             .pipe(
                 finalize(() => {

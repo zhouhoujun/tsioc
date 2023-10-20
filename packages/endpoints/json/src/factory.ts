@@ -13,10 +13,10 @@ export class JsonTransportFactory implements TransportFactory {
     constructor(readonly injector: Injector, readonly encoder: JsonEncoder, readonly decorder: JsonDecoder) { }
 
     createReceiver(transport: Transport, options?: TransportOpts): Receiver {
-        return new JsonReceiver(this.injector, transport, this.decorder, options?.delimiter ?? '#', options?.maxSize ?? 1024 * 256)
+        return new JsonReceiver(this.injector, transport, this.decorder, options ?? {})
     }
     createSender(transport: Transport, options?: TransportOpts): Sender {
-        return new JsonSender(this.injector, transport, this.encoder, options?.delimiter ?? '#', options?.maxSize ?? 1024 * 256)
+        return new JsonSender(this.injector, transport, this.encoder, options ?? {})
     }
 
 }

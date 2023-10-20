@@ -1,5 +1,5 @@
-import { EMPTY_OBJ, Injector, isString } from '@tsdi/ioc';
-import { RequestPacket, ResponsePacket, isBuffer } from '@tsdi/common';
+import { EMPTY_OBJ, Injector, isNil, isString } from '@tsdi/ioc';
+import { RequestPacket, ResponsePacket, StreamAdapter, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextOpts } from '../TransportContext';
 
 
@@ -10,6 +10,7 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
     private _originalUrl: string;
     private _method: string;
     private _socket: any;
+    readonly streamAdapter: StreamAdapter;
 
     constructor(
         injector: Injector,
@@ -18,6 +19,7 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         options: TransportContextOpts = EMPTY_OBJ
     ) {
         super(injector, { ...options, args: request });
+        this.streamAdapter = injector.get(StreamAdapter);
         if (!response.id) {
             response.id = request.id;
         }
@@ -52,28 +54,48 @@ export class TransportContextIml<TInput extends RequestPacket = RequestPacket, T
         return this._originalUrl;
     }
 
-    private _len?: number;
-    set length(n: number | undefined) {
-        this._len = n;
-    }
-
-    get length(): number | undefined {
-        return this._len;
-    }
 
     get body(): any {
         return this.response.payload;
     }
-    set body(value: any) {
-        if (value === null) {
-            this.length = 0;
-        } else if (isString(value)) {
-            this.length = Buffer.byteLength(value);
-        } else if (isBuffer(value)) {
-            this.length = value.length;
-        }
 
+    set body(value: any) {
+        this._len = undefined;
         this.response.payload = value;
+    }
+
+    private _len?: number;
+    /**
+     * Set Content-Length field to `n`.
+     *
+     * @param {Number} n
+     * @api public
+     */
+    set length(n: number | undefined) {
+        this._len = n;
+    }
+
+    /**
+     * Return parsed response Content-Length when present.
+     *
+     * @return {Number}
+     * @api public
+     */
+    get length(): number | undefined {
+        if (isNil(this._len)) {
+            if (isNil(this.body)) {
+                this._len = 0;
+            } else if (this.streamAdapter.isStream(this.body)) {
+                this._len = undefined;
+            } else if (isString(this.body)) {
+                this._len = Buffer.byteLength(this.body);
+            } else if (isBuffer(this.body)) {
+                this._len = this.body.length;
+            } else {
+                this._len = Buffer.byteLength(JSON.stringify(this.body))
+            }
+        }
+        return this._len;
     }
 
     /**

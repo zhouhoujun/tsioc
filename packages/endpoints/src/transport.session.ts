@@ -1,6 +1,6 @@
 import { Execption, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { IEventEmitter, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, IEventEmitter, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -22,10 +22,12 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     }
 
     send(packet: Packet<any>): Observable<any> {
-
-        const len = packet.length ?? 0;
-        if (this.options.payloadMaxSize && len > this.options.payloadMaxSize) {
-            return throwError(() => new PacketLengthException(`Payload length ${this.bytesTransform.transform(len)} great than max size ${this.bytesTransform.transform(this.options.payloadMaxSize)}`));
+        if (packet.length) {
+            const len = packet.length;
+            const opts = this.options as AssetTransportOpts;
+            if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
+                return throwError(() => new PacketLengthException(`Payload length ${this.bytesTransform.transform(len)} great than max size ${this.bytesTransform.transform(opts.payloadMaxSize)}`));
+            }
         }
         return this.mergeClose(this.pack(packet)
             .pipe(

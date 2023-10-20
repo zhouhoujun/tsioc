@@ -1,5 +1,5 @@
 import { Injector } from '@tsdi/ioc';
-import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport } from '@tsdi/common';
+import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport, TransportOpts } from '@tsdi/common';
 import { Observable, Subscriber, finalize } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
@@ -17,10 +17,9 @@ export class JsonReceiver implements Receiver {
         private injector: Injector,
         readonly transport: Transport,
         readonly decoder: JsonDecoder,
-        delimiter: string,
-        private maxSize: number
+        private options: TransportOpts
     ) {
-        this.delimiter = Buffer.from(delimiter);
+        this.delimiter = Buffer.from(this.options.delimiter ?? '#');
         this.topics = new Map();
     }
 
@@ -61,7 +60,7 @@ export class JsonReceiver implements Receiver {
                 const rawContentLength = buffer.subarray(0, idx).toString();
                 chl.contentLength = parseInt(rawContentLength, 10);
 
-                if (isNaN(chl.contentLength) || chl.contentLength > this.maxSize) {
+                if (isNaN(chl.contentLength) || (this.options.maxSize && chl.contentLength > this.options.maxSize)) {
                     chl.contentLength = null;
                     chl.length = 0;
                     chl.buffers = [];
@@ -95,7 +94,7 @@ export class JsonReceiver implements Receiver {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        const ctx = new Context(this.injector, this.transport, undefined, message);
+        const ctx = new Context(this.injector, this.transport, this.options, message);
         this.decoder.handle(ctx)
             .pipe(
                 finalize(() => {

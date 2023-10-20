@@ -635,7 +635,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         const { body } = this;
-        if (!body || this.streamAdapter.isStream(body)) return undefined;
+        if (isNil(this.body) || this.streamAdapter.isStream(body)) return undefined;
         if (isString(body)) return Buffer.byteLength(body);
         if (Buffer.isBuffer(body)) return body.length;
         return Buffer.byteLength(JSON.stringify(body))

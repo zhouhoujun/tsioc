@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { Context, Packet, PacketLengthException, Sender, Transport } from '@tsdi/common';
+import { Context, Packet, PacketLengthException, Sender, Transport, TransportOpts } from '@tsdi/common';
 import { Observable, finalize, map, throwError } from 'rxjs';
 import { JsonEncoder } from './encoder';
 
@@ -13,20 +13,19 @@ export class JsonSender implements Sender {
         private injector: Injector,
         readonly transport: Transport,
         readonly encoder: JsonEncoder,
-        delimiter: string,
-        private maxSize: number
+        private options: TransportOpts
     ) {
-        this.delimiter = Buffer.from(delimiter);
+        this.delimiter = Buffer.from(this.options.delimiter ?? '#');
     }
 
     send(packet: Packet): Observable<any> {
         const len = packet.length ?? 0;
-        if (len > this.maxSize) {
+        if (this.options.maxSize && len > this.options.maxSize) {
             const btpipe = this.injector.get<PipeTransform>('bytes-format');
-            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(this.maxSize)}`));
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(this.options.maxSize)}`));
         }
 
-        const ctx = new Context(this.injector, this.transport, packet);
+        const ctx = new Context(this.injector, this.transport, this.options, packet);
         return this.encoder.handle(ctx)
             .pipe(
                 map(data => {

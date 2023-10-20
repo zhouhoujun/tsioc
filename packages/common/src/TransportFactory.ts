@@ -32,10 +32,6 @@ export interface TransportOpts {
 
     timeout?: number;
     /**
-     * payload max size limit.
-     */
-    payloadMaxSize?: number;
-    /**
      * packet max size limit.
      */
     maxSize?: number;
@@ -43,6 +39,20 @@ export interface TransportOpts {
      * packet buffer encoding.
      */
     encoding?: BufferEncoding;
+}
+
+/**
+ * asset transport options.
+ */
+export interface AssetTransportOpts extends TransportOpts {
+    /**
+     * head delimiter flag
+     */
+    headDelimiter?: string;
+    /**
+     * payload max size limit.
+     */
+    payloadMaxSize?: number;
 }
 
 @Abstract()

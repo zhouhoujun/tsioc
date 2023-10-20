@@ -1,6 +1,6 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, hdr, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, hdr, isBuffer } from '@tsdi/common';
 import { AssetContext, Responder } from '@tsdi/endpoints';
 
 @Injectable()
@@ -31,10 +31,10 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         }
 
         const len = ctx.length ?? 0;
-        const opts = ctx.serverOptions;
-        if (opts.transportOpts?.payloadMaxSize && len > opts.transportOpts.payloadMaxSize) {
+        const opts = ctx.serverOptions.transportOpts as AssetTransportOpts;
+        if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
             const btpipe = ctx.get<PipeTransform>('bytes-format');
-            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.transportOpts.payloadMaxSize)}`);
+            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.payloadMaxSize)}`);
         }
 
         return await this.respondBody(body, response, ctx);
@@ -79,7 +79,7 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         // respond
         let msg: any;
         msg = err.message;
-        
+
         // force text/plain
         ctx.type = 'text';
         msg = Buffer.from(msg ?? ctx.statusMessage ?? '');

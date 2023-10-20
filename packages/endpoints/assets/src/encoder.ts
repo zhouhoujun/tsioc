@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet } from '@tsdi/common';
 import { Observable, of } from 'rxjs';
 
 
@@ -35,17 +35,21 @@ export class AssetInterceptingEncoder implements Encoder {
     }
 }
 
+interface SendPacket extends Packet {
+    __sent?: boolean
+}
 
 @Injectable()
 export class HeaderEncodeInterceptor implements EncodeInterceptor {
 
     intercept(input: Context, next: Handler<Context, Buffer>): Observable<Buffer> {
 
-        if (input.packet && !input.packet.headerSent) {
+        if (input.packet && !(input.packet as SendPacket).__sent) {
             const headBuf = Buffer.from(JSON.stringify(input.packet));
             if (input.raw) {
-                input.raw = Buffer.concat([headBuf, input.raw]);
+                input.raw = Buffer.concat([headBuf, input.headerDelimiter!, input.raw]);
             }
+            (input.packet as SendPacket).__sent = true;
         }
 
         return next.handle(input);
