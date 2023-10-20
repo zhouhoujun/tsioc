@@ -1,6 +1,6 @@
 import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import { StatusVaildator } from '@tsdi/endpoints';
-import { Redirector, MimeAdapter, MimeTypes, StatusPacket, StreamRequestAdapter, ctype } from '@tsdi/endpoints/assets';
+import { Redirector, MimeAdapter, MimeTypes, StatusPacket, ctype } from '@tsdi/endpoints/assets';
 import { Decoder, Encoder, IWritableStream, StreamAdapter, ev, hdr, ResHeaders, IncomingHeaders } from '@tsdi/common';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 

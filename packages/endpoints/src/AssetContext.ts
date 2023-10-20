@@ -19,10 +19,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
      */
     abstract get fileAdapter(): FileAdapter;
     /**
-     * stream adapter
-     */
-    abstract get streamAdapter(): StreamAdapter;
-    /**
      * status vaildator
      */
     abstract get vaildator(): StatusVaildator<TStatus>;

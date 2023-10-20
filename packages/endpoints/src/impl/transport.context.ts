@@ -66,7 +66,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
         if (!this._query) {
-            const qs = this._query = { } as Record<string, any>;
+            const qs = this._query = {} as Record<string, any>;
             this.URL?.searchParams?.forEach((v, k) => {
                 qs[k] = v;
             });
@@ -74,13 +74,13 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         return this._query;
     }
 
-     /**
-     * Get WHATWG parsed URL.
-     * Lazily memoized.
-     *
-     * @return {URL|Object}
-     * @api public
-     */
+    /**
+    * Get WHATWG parsed URL.
+    * Lazily memoized.
+    *
+    * @return {URL|Object}
+    * @api public
+    */
     get URL(): URL {
         /* istanbul ignore else */
         if (!this._URL) {
@@ -96,7 +96,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
             return Object.create(null);
         }
     }
-    
+
     protected parseURL(req: RequestPacket): URL {
         const url = req.url ?? req.topic ?? '';
         if (abstl.test(url)) {
@@ -104,7 +104,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         } else {
             const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
             const protocol = this.serverOptions.protocol;
-            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST }:${port ?? 3000}`, path);
+            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -116,7 +116,9 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
     }
 
     set body(value: any) {
-        this._len = undefined;
+        if (!this.streamAdapter.isStream(value)) {
+            this._len = undefined;
+        }
         this.response.payload = value;
     }
 

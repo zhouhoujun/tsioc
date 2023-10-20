@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { RequestPacket, ResponsePacket } from '@tsdi/common';
+import { RequestPacket, ResponsePacket, StreamAdapter } from '@tsdi/common';
 import { ServerOpts } from './Server';
 
 /**
@@ -14,6 +14,12 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
+
+    
+    /**
+     * stream adapter
+     */
+    abstract get streamAdapter(): StreamAdapter;
 
     /**
      * transport response.
