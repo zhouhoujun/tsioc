@@ -10,7 +10,7 @@ import { isBuffer } from './utils';
 /**
  * coding context.
  */
-export class Context extends DefaultInvocationContext {
+export class Context<TPacket extends Packet = Packet> extends DefaultInvocationContext {
 
     readonly transport: Transport;
     readonly transportOpts: TransportOpts;
@@ -22,7 +22,7 @@ export class Context extends DefaultInvocationContext {
         injector: Injector,
         transport: Transport,
         transportOpts: TransportOpts,
-        packet: Packet,
+        packet: TPacket,
         headerDelimiter?: Buffer,
         options?: InvokeArguments);
     constructor(
@@ -36,7 +36,7 @@ export class Context extends DefaultInvocationContext {
         injector: Injector,
         transport: Transport,
         transportOpts: TransportOpts,
-        packBuff: Packet | Buffer,
+        packBuff: TPacket | Buffer,
         headerDelimiter?: Buffer,
         options?: InvokeArguments) {
         super(injector, options);
@@ -74,18 +74,15 @@ export abstract class EncoderBackend implements Backend<Context, Buffer> {
  * 
  * 解密拦截器。
  */
-export interface DecodeInterceptor extends Interceptor<Context, Packet> { }
+export interface DecodeInterceptor<T extends Packet = Packet> extends Interceptor<Context, T> { }
 
 @Abstract()
-export abstract class Decoder implements Handler<Context, Packet> {
-    abstract handle(ctx: Context): Observable<Packet>;
+export abstract class Decoder<T extends Packet = Packet> implements Handler<Context, T> {
+    abstract handle(ctx: Context<T>): Observable<T>;
 }
 
 @Abstract()
-export abstract class DecoderBackend implements Backend<Context, Packet> {
-    abstract handle(ctx: Context): Observable<Packet>;
+export abstract class DecoderBackend<T extends Packet = Packet> implements Backend<Context, T> {
+    abstract handle(ctx: Context<T>): Observable<T>;
 }
-
-
-
 

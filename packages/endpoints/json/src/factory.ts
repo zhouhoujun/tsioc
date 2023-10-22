@@ -12,11 +12,11 @@ export class JsonTransportFactory implements TransportFactory {
 
     constructor(readonly injector: Injector, readonly encoder: JsonEncoder, readonly decorder: JsonDecoder) { }
 
-    createReceiver(transport: Transport, options?: TransportOpts): Receiver {
-        return new JsonReceiver(this.injector, transport, this.decorder, options ?? {})
+    createReceiver<TSocket>(socket: TSocket, transport: Transport, options?: TransportOpts): Receiver<TSocket> {
+        return new JsonReceiver(this.injector, socket, transport, this.decorder, options ?? {})
     }
-    createSender(transport: Transport, options?: TransportOpts): Sender {
-        return new JsonSender(this.injector, transport, this.encoder, options ?? {})
+    createSender<TSocket>(socket: TSocket, transport: Transport, options?: TransportOpts): Sender<TSocket> {
+        return new JsonSender(this.injector, socket, transport, this.encoder, options ?? {})
     }
 
 }

@@ -15,7 +15,9 @@ export abstract class AssetEncoderBackend implements EncoderBackend {
 }
 
 
-
+/**
+ * asset encode interceptors
+ */
 export const ASSET_ENCODER_INTERCEPTORS = tokenId<Interceptor<Context, Buffer>[]>('ASSET_ENCODER_INTERCEPTORS')
 
 

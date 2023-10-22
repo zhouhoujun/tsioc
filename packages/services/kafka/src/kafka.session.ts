@@ -194,7 +194,7 @@ export class KafkaTransportSessionFactory implements TransportSessionFactory<Kaf
         private uuidGenner: UuidGenerator) { }
 
     create(socket: KafkaTransport, transport: Transport, options?: TransportOpts): KafkaTransportSession {
-        return new KafkaTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+        return new KafkaTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

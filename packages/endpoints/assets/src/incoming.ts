@@ -43,8 +43,8 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         let buf: any = null
 
         if (payload != null) {
-            if(isBuffer(payload) && start < payload.length) {
-            buf = payload.subarray(start, end)
+            if (isBuffer(payload) && start < payload.length) {
+                buf = payload.subarray(start, end)
             } else {
                 buf = (payload as IReadableStream).read(size)
             }

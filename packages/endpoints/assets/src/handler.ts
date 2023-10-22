@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { GET, IncomingPacket, MESSAGE, RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
 import { Logger } from '@tsdi/logger';
+import { GET, IncomingPacket, MESSAGE, RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
 import { AssetContext, RequestHandler, ServerOpts, TransportEndpoint } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
 import { AssetContextImpl } from './impl/context';
@@ -8,7 +8,9 @@ import { IncomingMessage } from './incoming';
 import { OutgoingMessage } from './outgoing';
 
 
-
+/**
+ * Asset request handler.
+ */
 @Injectable()
 export class AssetRequestHandler implements RequestHandler<RequestPacket, ResponsePacket> {
 

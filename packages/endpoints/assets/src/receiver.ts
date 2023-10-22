@@ -1,10 +1,10 @@
 import { Injector } from '@tsdi/ioc';
-import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport, AssetTransportOpts } from '@tsdi/common';
+import { Context, PacketLengthException, Receiver, TopicBuffer, Transport, AssetTransportOpts, IncomingPacket } from '@tsdi/common';
 import { Observable, Subscriber, finalize } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
 
-export class AssetReceiver implements Receiver {
+export class AssetReceiver<TSocket = any> implements Receiver<TSocket> {
 
     protected topics: Map<string, TopicBuffer>;
 
@@ -13,6 +13,7 @@ export class AssetReceiver implements Receiver {
 
     constructor(
         private injector: Injector,
+        readonly socket: TSocket,
         readonly transport: Transport,
         readonly decoder: AssetDecoder,
         private options: AssetTransportOpts
@@ -23,8 +24,8 @@ export class AssetReceiver implements Receiver {
     }
 
     
-    receive(source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
-        return new Observable((subscriber: Subscriber<Packet>) => {
+    receive(source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<IncomingPacket> {
+        return new Observable((subscriber: Subscriber<IncomingPacket>) => {
             try {
                 let chl = this.topics.get(topic);
                 if (!chl) {
@@ -43,7 +44,7 @@ export class AssetReceiver implements Receiver {
         })
     }
 
-    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
+    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<IncomingPacket>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -90,7 +91,7 @@ export class AssetReceiver implements Receiver {
         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
     }
 
-    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Packet>) {
+    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<IncomingPacket>) {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];

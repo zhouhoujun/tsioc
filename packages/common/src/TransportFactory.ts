@@ -1,11 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Receiver } from './Receiver';
 import { Sender } from './Sender';
-import { Packet, RequestPacket, ResponsePacket } from './packet';
+import { RequestPacket, ResponsePacket } from './packet';
 import { Observable } from 'rxjs';
 import { Transport } from './protocols';
-import { Incoming, Outgoing } from './socket';
-import { IncomingHeaders } from './headers';
+import { IncomingPacket } from './socket';
+
 
 
 
@@ -65,23 +65,15 @@ export abstract class TransportFactory {
      * create receiver.
      * @param options 
      */
-    abstract createReceiver(transport: Transport, options?: TransportOpts): Receiver;
+    abstract createReceiver<TSocket>(socket: TSocket, transport: Transport, options?: TransportOpts): Receiver<TSocket>;
     /**
      * create sender.
      * @param options 
      */
-    abstract createSender(transport: Transport, options?: TransportOpts): Sender;
+    abstract createSender<TSocket>(socket: TSocket, transport: Transport, options?: TransportOpts): Sender<TSocket>;
 }
 
-/**
- * incoming packet.
- */
-export interface IncomingPacket<T = any> extends Packet<T> {
-    req?: Incoming;
-    res?: Outgoing;
-    headers?: IncomingHeaders;
-    originalUrl?: string;
-}
+
 
 @Abstract()
 export abstract class TransportSession<TSocket = any, TMsg = any>  {
@@ -117,7 +109,9 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
 
 }
 
-
+/**
+ * transport session factory.
+ */
 @Abstract()
 export abstract class TransportSessionFactory<TSocket = any> {
     /**

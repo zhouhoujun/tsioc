@@ -72,7 +72,7 @@ export class TopicTransportSessionFactory implements TransportSessionFactory<Top
     constructor(private factory: TransportFactory) { }
 
     create(socket: TopicClient, transport: Transport, options?: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.factory.injector.get('bytes-format'), options);
+        return new TopicTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.factory.injector.get('bytes-format'), options);
     }
 
 }

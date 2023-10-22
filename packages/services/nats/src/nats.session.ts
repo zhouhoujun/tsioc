@@ -151,7 +151,7 @@ export class NatsTransportSessionFactory implements TransportSessionFactory<Nats
         private uuidGenner: UuidGenerator) { }
 
     create(socket: NatsConnection, transport: Transport, options?: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+        return new NatsTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

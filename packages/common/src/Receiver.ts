@@ -1,16 +1,21 @@
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Buffer } from 'buffer';
-import { ResponsePacket } from './packet';
 import { Decoder } from './coding';
 import { Transport } from './protocols';
+import { IncomingPacket } from './socket';
 
 
 /**
  * Packet receiver.
  */
 @Abstract()
-export abstract class Receiver {
+export abstract class Receiver<TSocket = any> {
+
+    /**
+     * socket
+     */
+    abstract get socket(): TSocket;
 
     /**
      * transport type
@@ -26,7 +31,7 @@ export abstract class Receiver {
      * receive message 
      * @param input 
      */
-    abstract receive(message: string | Buffer | Uint8Array, topic?: string): Observable<ResponsePacket>;
+    abstract receive(message: string | Buffer | Uint8Array, topic?: string): Observable<IncomingPacket>;
 
 
 }

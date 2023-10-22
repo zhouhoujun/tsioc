@@ -1,7 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
 import { Packet, StatusCode } from './packet';
-import { OutgoingHeader, OutgoingHeaders } from './headers';
+import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
 
 /**
  * Socket interface.
@@ -269,4 +269,15 @@ export interface Outgoing<TSocket = any, TStatus extends StatusCode = StatusCode
     //  */
     // writeHead?(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
 
+}
+
+
+/**
+ * incoming packet.
+ */
+export interface IncomingPacket<T = any> extends Packet<T> {
+    req?: Incoming;
+    res?: Outgoing;
+    headers?: IncomingHeaders;
+    originalUrl?: string;
 }

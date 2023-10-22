@@ -25,7 +25,7 @@ export class DuplexTransportSessionFactory implements TransportSessionFactory<ID
     constructor(private factory: TransportFactory) { }
 
     create(socket: IDuplexStream, transport: Transport, options?: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.factory.injector.get('bytes-format'), options);
+        return new DuplexTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.factory.injector.get('bytes-format'), options);
     }
 
 }

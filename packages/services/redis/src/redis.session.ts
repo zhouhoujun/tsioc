@@ -125,7 +125,7 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
     constructor(private factory: TransportFactory) { }
 
     create(socket: ReidsTransport, transport: Transport, options?: TransportOpts): RedisTransportSession {
-        return new RedisTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.factory.injector.get('bytes-format'), options);
+        return new RedisTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.factory.injector.get('bytes-format'), options);
     }
 
 }

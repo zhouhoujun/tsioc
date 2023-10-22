@@ -6,11 +6,12 @@ import { JsonEncoder } from './encoder';
 
 
 
-export class JsonSender implements Sender {
+export class JsonSender<TSocket> implements Sender<TSocket> {
 
     private delimiter: Buffer;
     constructor(
         private injector: Injector,
+        readonly socket: TSocket,
         readonly transport: Transport,
         readonly encoder: JsonEncoder,
         private options: TransportOpts

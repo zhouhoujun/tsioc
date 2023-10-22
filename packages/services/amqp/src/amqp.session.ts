@@ -98,7 +98,7 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
         private uuidGenner: UuidGenerator) { }
 
     create(socket: Channel, transport: Transport, options?: TransportOpts): QueueTransportSession {
-        return new QueueTransportSession(socket, this.factory.createSender(transport, options), this.factory.createReceiver(transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+        return new QueueTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

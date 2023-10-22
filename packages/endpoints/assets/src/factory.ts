@@ -12,11 +12,11 @@ export class AssetTransportFactory implements TransportFactory {
 
     constructor(readonly injector: Injector, readonly encoder: AssetEncoder, readonly decorder: AssetDecoder) { }
 
-    createReceiver(transport: Transport, options?: TransportOpts): Receiver {
-        return new AssetReceiver(this.injector, transport, this.decorder, options ?? {})
+    createReceiver<TSocket>(socket: TSocket, transport: Transport, options?: TransportOpts): Receiver<TSocket> {
+        return new AssetReceiver(this.injector, socket, transport, this.decorder, options ?? {})
     }
-    createSender(transport: Transport, options?: TransportOpts): Sender {
-        return new AssetSender(this.injector, transport, this.encoder, options ?? {})
+    createSender<TSocket>(socket: TSocket, transport: Transport, options?: TransportOpts): Sender<TSocket> {
+        return new AssetSender(this.injector, socket, transport, this.encoder, options ?? {})
     }
 
 }

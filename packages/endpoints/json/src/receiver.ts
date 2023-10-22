@@ -6,7 +6,7 @@ import { JsonDecoder } from './decoder';
 
 
 
-export class JsonReceiver implements Receiver {
+export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
 
 
     protected topics: Map<string, TopicBuffer>;
@@ -15,6 +15,7 @@ export class JsonReceiver implements Receiver {
 
     constructor(
         private injector: Injector,
+        readonly socket: TSocket,
         readonly transport: Transport,
         readonly decoder: JsonDecoder,
         private options: TransportOpts

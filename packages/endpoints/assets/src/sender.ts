@@ -6,13 +6,14 @@ import { AssetEncoder } from './encoder';
 
 
 @Injectable()
-export class AssetSender implements Sender {
+export class AssetSender<TSocket = any> implements Sender<TSocket> {
 
     private delimiter: Buffer;
     private headDelimiter: Buffer;
 
     constructor(
         private injector: Injector,
+        readonly socket: TSocket,
         readonly transport: Transport,
         readonly encoder: AssetEncoder,
         private options: AssetTransportOpts

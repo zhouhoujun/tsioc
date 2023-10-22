@@ -11,7 +11,12 @@ import { Transport } from './protocols';
  * Packet sender.
  */
 @Abstract()
-export abstract class Sender {
+export abstract class Sender<TSocket = any> {
+
+    /**
+     * socket
+     */
+    abstract get socket(): TSocket;
 
     /**
      * transport type
