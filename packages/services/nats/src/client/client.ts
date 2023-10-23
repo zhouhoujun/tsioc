@@ -27,7 +27,11 @@ export class NatsClient extends Client<TransportRequest, number> {
         if (this.conn) return this.conn;
 
         const conn = this.conn = await connect(this.options.connectOpts);
-        this._session = this.handler.injector.get(NatsTransportSessionFactory).create(conn, 'nats', { ...this.options.transportOpts });
+        const transportOpts = this.options.transportOpts!;
+        if(!transportOpts.transport) {
+            transportOpts.transport = 'nats';
+        }
+        this._session = this.handler.injector.get(NatsTransportSessionFactory).create(conn, transportOpts);
     }
 
     protected initContext(context: InvocationContext<any>): void {

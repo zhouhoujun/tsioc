@@ -1,12 +1,11 @@
-import { Injector } from '@tsdi/ioc';
-import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, Transport, TransportOpts } from '@tsdi/common';
+import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, TransportOpts } from '@tsdi/common';
 import { Observable, Subscriber, finalize } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
 
 
-export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
+export class JsonReceiver implements Receiver {
 
 
     protected topics: Map<string, TopicBuffer>;
@@ -14,9 +13,6 @@ export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
     private delimiter: Buffer;
 
     constructor(
-        private injector: Injector,
-        readonly socket: TSocket,
-        readonly transport: Transport,
         readonly decoder: JsonDecoder,
         private options: TransportOpts
     ) {
@@ -24,7 +20,7 @@ export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
         this.topics = new Map();
     }
 
-    receive(source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
+    receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
         return new Observable((subscriber: Subscriber<Packet>) => {
             try {
                 let chl = this.topics.get(topic);
@@ -37,14 +33,14 @@ export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
                     }
                     this.topics.set(topic, chl)
                 }
-                this.handleData(chl, source, subscriber);
+                this.handleData(factory, chl, source, subscriber);
             } catch (err) {
                 subscriber.error(err)
             }
         })
     }
 
-    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
+    protected handleData(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -74,14 +70,14 @@ export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
 
         if (chl.contentLength !== null) {
             if (chl.length === chl.contentLength) {
-                this.handleMessage(chl, this.concatCaches(chl), subscriber);
+                this.handleMessage(factory, chl, this.concatCaches(chl), subscriber);
             } else if (chl.length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message, subscriber);
+                this.handleMessage(factory, chl, message, subscriber);
                 if (rest.length) {
-                    this.handleData(chl, rest, subscriber);
+                    this.handleData(factory, chl, rest, subscriber);
                 }
             }
         }
@@ -91,11 +87,11 @@ export class JsonReceiver<TSocket = any> implements Receiver<TSocket> {
         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
     }
 
-    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Packet>) {
+    protected handleMessage(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Packet>) {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        const ctx = new Context(this.injector, this.transport, this.options, message);
+        const ctx = factory(message);
         this.decoder.handle(ctx)
             .pipe(
                 finalize(() => {

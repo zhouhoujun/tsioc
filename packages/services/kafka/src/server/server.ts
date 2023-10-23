@@ -4,7 +4,7 @@ import { PatternFormatter, ServiceUnavailableExecption, TransportSessionFactory 
 import { Server, MircoServRouters, StatusVaildator, RequestHandler } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from '../kafka.session';
-import { DEFAULT_BROKERS } from '../const';
+import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpoint } from './endpoint';
 
@@ -102,12 +102,13 @@ export class KafkaServer extends Server {
         const topics = router.matcher.getPatterns<string | RegExp>();
 
         const transportOpts = {
+            transport: 'kafka',
             ...this.options.transportOpts,
             serverSide: true
-        };
+        } as KafkaTransportOpts;
 
         const vaildator = injector.get(StatusVaildator, null);
-        const session = this._session = injector.get(TransportSessionFactory).create({ consumer, vaildator, producer }, 'kafka', transportOpts) as KafkaTransportSession;
+        const session = this._session = injector.get(TransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts) as KafkaTransportSession;
 
         await session.bindTopics(topics);
 

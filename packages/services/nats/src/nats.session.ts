@@ -1,5 +1,5 @@
-import { Injectable } from '@tsdi/ioc';
-import { PipeTransform, UuidGenerator } from '@tsdi/core';
+import { Injectable, Injector } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { BadRequestExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
@@ -10,15 +10,14 @@ import { NatsSessionOpts } from './options';
 
 export class NatsTransportSession extends AbstractTransportSession<NatsConnection, Msg> {
 
-
     constructor(
+        injector: Injector,
         socket: NatsConnection,
         sender: Sender,
         receiver: Receiver,
         private uuidGenner: UuidGenerator,
-        bytesTransform: PipeTransform,
-        options?: TransportOpts) {
-        super(socket, sender, receiver, bytesTransform, options)
+        options: TransportOpts) {
+        super(injector, socket, sender, receiver, options)
     }
 
     private subjects: Set<string> = new Set();
@@ -147,11 +146,13 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
 @Injectable()
 export class NatsTransportSessionFactory implements TransportSessionFactory<NatsConnection> {
 
-    constructor(private factory: TransportFactory,
+    constructor(
+        readonly injector: Injector,
+        private factory: TransportFactory,
         private uuidGenner: UuidGenerator) { }
 
-    create(socket: NatsConnection, transport: Transport, options?: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+    create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
+        return new NatsTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
     }
 
 }

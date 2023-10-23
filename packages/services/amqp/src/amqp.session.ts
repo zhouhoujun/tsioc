@@ -1,7 +1,7 @@
-import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { BadRequestExecption, Context, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { EventTransportSession } from '@tsdi/endpoints';
-import { PipeTransform, UuidGenerator } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
+import { Injectable, Injector } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Observable, fromEvent, map } from 'rxjs';
 import { AmqpSessionOpts } from './options';
@@ -10,13 +10,13 @@ import { AmqpSessionOpts } from './options';
 export class QueueTransportSession extends EventTransportSession<Channel, ConsumeMessage> {
 
     constructor(
+        injector: Injector,
         socket: Channel,
         sender: Sender,
         receiver: Receiver,
         private uuidGenner: UuidGenerator,
-        bytesTransform: PipeTransform,
-        options?: TransportOpts) {
-        super(socket, sender, receiver, bytesTransform, options)
+        options: TransportOpts) {
+        super(injector, socket, sender, receiver, options)
     }
 
 
@@ -45,9 +45,9 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
     }
 
     protected reqMsgFilter(req: RequestPacket<any>, msg: ConsumeMessage): boolean {
-        return req.id == msg.properties.correlationId 
+        return req.id == msg.properties.correlationId
     }
-    
+
     protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
         return res.topic == req.topic && req.id == req.id
     }
@@ -57,8 +57,8 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
     }
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
-        const { replyTo, topic, id, headers, ...data} = packet;
-        return this.sender.send(data);
+        const { replyTo, topic, id, headers, ...data } = packet;
+        return this.sender.send((pkg, head) => new Context(this.injector, this, pkg, head), data);
     }
 
     protected override unpack(msg: ConsumeMessage): Observable<Packet> {
@@ -67,7 +67,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
         headers[hdr.CONTENT_TYPE] = contentType;
         headers[hdr.CONTENT_ENCODING] = contentEncoding;
-        return this.receiver.receive(msg.content, headers[hdr.TOPIC] ?? correlationId)
+        return this.receiver.receive((msg, headDelimiter) => new Context(this.injector, this, msg, headDelimiter), msg.content, headers[hdr.TOPIC] ?? correlationId)
             .pipe(
                 map(payload => {
                     return {
@@ -86,7 +86,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
     }
 
     async destroy(): Promise<void> {
-        
+
     }
 }
 
@@ -94,11 +94,12 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
 export class AmqpTransportSessionFactory implements TransportSessionFactory<Channel> {
 
     constructor(
+        readonly injector: Injector,
         private factory: TransportFactory,
         private uuidGenner: UuidGenerator) { }
 
-    create(socket: Channel, transport: Transport, options?: TransportOpts): QueueTransportSession {
-        return new QueueTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+    create(socket: Channel, options: TransportOpts): QueueTransportSession {
+        return new QueueTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, options);
     }
 
 }

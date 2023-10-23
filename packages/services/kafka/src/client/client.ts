@@ -7,7 +7,7 @@ import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAs
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaReplyPartitionAssigner, KafkaTransportSession } from '../kafka.session';
-import { DEFAULT_BROKERS } from '../const';
+import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 
 
 
@@ -79,7 +79,7 @@ export class KafkaClient extends Client {
         }
         this.client = new Kafka(connectOpts);
 
-        const transportOpts = { ...this.options.transportOpts };
+        const transportOpts = { transport: 'kafka', ...this.options.transportOpts } as KafkaTransportOpts;
 
         if (!this.options.producerOnlyMode) {
             const partitionAssigners = [
@@ -119,7 +119,7 @@ export class KafkaClient extends Client {
             producer: this.producer,
             vaildator,
             consumer: this.consumer!
-        }, 'kafka', transportOpts) as KafkaTransportSession
+        }, transportOpts) as KafkaTransportSession
 
         if (!this.options.producerOnlyMode) {
             const topics = this.options.topics ? this.options.topics.map(t => {

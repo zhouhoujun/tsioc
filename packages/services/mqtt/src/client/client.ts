@@ -82,7 +82,11 @@ export class MqttClient extends Client<TransportRequest, number> {
     protected createConnection() {
         const opts = this.options.connectOpts ?? EMPTY_OBJ;
         const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
-        this._session = this.handler.injector.get(TransportSessionFactory).create(conn, 'mqtt', this.options.transportOpts!);
+        const transportOpts = this.options.transportOpts!;
+        if(!transportOpts.transport) {
+            transportOpts.transport = 'mqtt';
+        }
+        this._session = this.handler.injector.get(TransportSessionFactory).create(conn, transportOpts);
         return conn;
     }
 

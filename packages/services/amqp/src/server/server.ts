@@ -18,7 +18,7 @@ export class AmqpServer extends Server {
     private _connected = false;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
-    private _session?:TransportSession<amqp.Channel>;
+    private _session?: TransportSession<amqp.Channel>;
 
     constructor(
         readonly endpoint: AmqpEndpoint,
@@ -55,6 +55,9 @@ export class AmqpServer extends Server {
         const channel = this._channel = await this._conn.createChannel();
 
         const transportOpts = this.options.transportOpts!;
+        if (transportOpts.transport) {
+            transportOpts.transport = 'amqp';
+        }
         transportOpts.serverSide = true;
 
         if (!transportOpts.noAssert) {
@@ -71,9 +74,9 @@ export class AmqpServer extends Server {
         });
 
         const injector = this.endpoint.injector;
-        const session = this._session = injector.get(TransportSessionFactory).create(channel, 'amqp', transportOpts);
+        const session = this._session = injector.get(TransportSessionFactory).create(channel, transportOpts);
         injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
-        
+
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {

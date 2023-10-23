@@ -1,6 +1,6 @@
-import { Execption, Injectable, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { PipeTransform, UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, IncomingHeaders, NotFoundExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
+import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
+import { BadRequestExecption, Context, IncomingHeaders, NotFoundExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
@@ -15,13 +15,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     private events = new EventEmitter();
 
     constructor(
+        injector: Injector,
         socket: KafkaTransport,
         sender: Sender,
         receiver: Receiver,
         private uuidGenner: UuidGenerator,
-        bytesTransform: PipeTransform,
-        options?: KafkaTransportOpts) {
-        super(socket, sender, receiver, bytesTransform, options)
+        options: KafkaTransportOpts) {
+        super(injector, socket, sender, receiver, options)
     }
 
 
@@ -154,13 +154,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
-        return this.sender.send(data);
+        return this.sender.send((pkg, headDelimiter) => new Context(this.injector, this, pkg, headDelimiter), data);
     }
 
     protected override unpack(msg: EachMessagePayload): Observable<Packet> {
         const headers = this.getIncomingHeaders(msg);
         const id = headers[KafkaHeaders.CORRELATION_ID];
-        return this.receiver.receive(msg.message.value ?? Buffer.alloc(0), msg.topic)
+        return this.receiver.receive((msg, headDelimiter) => new Context(this.injector, this, msg, headDelimiter), msg.message.value ?? Buffer.alloc(0), msg.topic)
             .pipe(
                 map(payload => {
                     return {
@@ -190,11 +190,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 @Injectable()
 export class KafkaTransportSessionFactory implements TransportSessionFactory<KafkaTransport> {
 
-    constructor(private factory: TransportFactory,
+    constructor(
+        readonly injector: Injector,
+        private factory: TransportFactory,
         private uuidGenner: UuidGenerator) { }
 
-    create(socket: KafkaTransport, transport: Transport, options?: TransportOpts): KafkaTransportSession {
-        return new KafkaTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+    create(socket: KafkaTransport, options: TransportOpts): KafkaTransportSession {
+        return new KafkaTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, options);
     }
 
 }

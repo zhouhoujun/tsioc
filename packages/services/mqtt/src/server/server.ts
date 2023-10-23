@@ -61,7 +61,7 @@ export class MqttServer extends Server {
     protected override async onStart(): Promise<any> {
         await this.connect();
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
-        
+
         const injector = this.endpoint.injector;
         const router = injector.get(MircoServRouters).get('mqtt');
         if (this.options.content?.prefix) {
@@ -80,8 +80,12 @@ export class MqttServer extends Server {
             });
 
 
+        const transportOpts = this.options.transportOpts!;
+        if (!transportOpts.transport) {
+            transportOpts.transport = 'mqtt';
+        }
         const factory = injector.get(TransportSessionFactory);
-        const session = this._session = factory.create(this.mqtt, 'mqtt', this.options.transportOpts);
+        const session = this._session = factory.create(this.mqtt, transportOpts);
 
         this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
 

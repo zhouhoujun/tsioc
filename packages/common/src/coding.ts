@@ -3,7 +3,7 @@ import { Abstract, DefaultInvocationContext, Injector, InvokeArguments } from '@
 import { Observable } from 'rxjs';
 import { Packet } from './packet';
 import { Transport } from './protocols';
-import { TransportOpts } from './TransportFactory';
+import { TransportSession } from './TransportFactory';
 import { isBuffer } from './utils';
 
 
@@ -13,35 +13,32 @@ import { isBuffer } from './utils';
 export class Context<TPacket extends Packet = Packet> extends DefaultInvocationContext {
 
     readonly transport: Transport;
-    readonly transportOpts: TransportOpts;
+    readonly session: TransportSession;
     public packet?: Packet;
     public raw?: Buffer;
     readonly headerDelimiter?: Buffer;
 
     constructor(
         injector: Injector,
-        transport: Transport,
-        transportOpts: TransportOpts,
+        session: TransportSession,
         packet: TPacket,
         headerDelimiter?: Buffer,
         options?: InvokeArguments);
     constructor(
         injector: Injector,
-        transport: Transport,
-        transportOpts: TransportOpts,
+        transportOpts: TransportSession,
         raw: Buffer,
         headerDelimiter?: Buffer,
         options?: InvokeArguments);
     constructor(
         injector: Injector,
-        transport: Transport,
-        transportOpts: TransportOpts,
+        session: TransportSession,
         packBuff: TPacket | Buffer,
         headerDelimiter?: Buffer,
         options?: InvokeArguments) {
         super(injector, options);
-        this.transport = transport;
-        this.transportOpts = transportOpts;
+        this.transport = session.options.transport!;
+        this.session = session;
         if (isBuffer(packBuff)) {
             this.raw = packBuff;
         } else {

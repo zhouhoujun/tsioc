@@ -1,11 +1,8 @@
-import { Execption, isString } from '@tsdi/ioc';
+import { Execption, Injector, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, IEventEmitter, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, Context, IEventEmitter, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
-
-
-const empt = {} as TransportOpts;
 
 export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> implements TransportSession<TSocket, TMsg> {
 
@@ -13,32 +10,39 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     private last?: number;
 
     constructor(
+        readonly injector: Injector,
         readonly socket: TSocket,
         readonly sender: Sender,
         readonly receiver: Receiver,
-        private bytesTransform: PipeTransform,
-        readonly options: TransportOpts = empt) {
+        readonly options: TransportOpts) {
 
     }
 
-    send(packet: Packet<any>): Observable<any> {
-        if (packet.length) {
-            const len = packet.length;
+    send(packet: Packet): Observable<any> {
+        const len = this.getPayloadLen(packet);
+        if (len) {
             const opts = this.options as AssetTransportOpts;
             if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
-                return throwError(() => new PacketLengthException(`Payload length ${this.bytesTransform.transform(len)} great than max size ${this.bytesTransform.transform(opts.payloadMaxSize)}`));
+                const byfmt = this.injector.get<PipeTransform>('bytes-format');
+                return throwError(() => new PacketLengthException(`Payload length ${byfmt.transform(len)} great than max size ${byfmt.transform(opts.payloadMaxSize)}`));
             }
         }
+
         return this.mergeClose(this.pack(packet)
             .pipe(
                 mergeMap(data => {
                     const bufLen = data.length;
                     if (this.options.maxSize && bufLen > this.options.maxSize) {
-                        return throwError(() => new PacketLengthException(`Packet length ${this.bytesTransform.transform(bufLen)} great than max size ${this.bytesTransform.transform(this.options.maxSize)}`));
+                        const byfmt = this.injector.get<PipeTransform>('bytes-format');
+                        return throwError(() => new PacketLengthException(`Packet length ${byfmt.transform(bufLen)} great than max size ${byfmt.transform(this.options.maxSize)}`));
                     }
                     return this.write(data, packet);
                 })
             ))
+    }
+
+    protected getPayloadLen(packet: Packet) {
+        return packet.length ?? (~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0'))
     }
 
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
@@ -65,14 +69,14 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     }
 
     protected pack(packet: Packet): Observable<Buffer> {
-        return this.sender.send(packet)
+        return this.sender.send((pkg, hdliter) => new Context(this.injector, this, pkg, hdliter), packet)
     }
 
     protected unpack(msg: TMsg): Observable<Packet> {
         if (!(isString(msg) || isBuffer(msg) || msg instanceof Uint8Array)) {
             return throwError(() => new NotSupportedExecption())
         }
-        return this.receiver.receive(msg);
+        return this.receiver.receive((msg, hdliter) => new Context(this.injector, this, msg, hdliter), msg);
     }
 
     abstract destroy(): Promise<void>;

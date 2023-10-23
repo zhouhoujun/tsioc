@@ -1,8 +1,7 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, InvokeArguments } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Packet } from './packet';
-import { Encoder } from './coding';
-import { Transport } from './protocols';
+import { Context, Encoder } from './coding';
 
 
 
@@ -11,17 +10,7 @@ import { Transport } from './protocols';
  * Packet sender.
  */
 @Abstract()
-export abstract class Sender<TSocket = any> {
-
-    /**
-     * socket
-     */
-    abstract get socket(): TSocket;
-
-    /**
-     * transport type
-     */
-    abstract get transport(): Transport;
+export abstract class Sender {
     /**
      * encoder.
      */
@@ -29,8 +18,9 @@ export abstract class Sender<TSocket = any> {
 
     /**
      * send packet
+     * @param factory  context factory
      * @param packet 
      */
-    abstract send(packet: Packet): Observable<any>;
- 
+    abstract send(factory: (pkg: Packet, headDelimiter?: Buffer, options?: InvokeArguments) => Context, packet: Packet): Observable<any>;
+
 }

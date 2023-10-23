@@ -59,6 +59,9 @@ export class AmqpClient extends Client<TransportRequest, number> {
     protected async setupChancel(conn: amqp.Connection) {
         this._channel = await conn.createChannel();
         const transportOpts = this.options.transportOpts!;
+        if(transportOpts.transport){
+            transportOpts.transport = 'amqp';
+        }
 
         if (!transportOpts.noAssert) {
             // await chl.assertQueue(transportOpts.queue, transportOpts.queueOpts);
@@ -74,7 +77,7 @@ export class AmqpClient extends Client<TransportRequest, number> {
             ...transportOpts.consumeOpts
         });
 
-        this._session = this.handler.injector.get(TransportSessionFactory).create(this._channel, 'amqp', this.options.transportOpts!);
+        this._session = this.handler.injector.get(TransportSessionFactory).create(this._channel, transportOpts);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {

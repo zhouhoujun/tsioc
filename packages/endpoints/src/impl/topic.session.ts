@@ -1,5 +1,5 @@
-import { Injectable, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { Injectable, Injector, promisify } from '@tsdi/ioc';
+import { BadRequestExecption, Context, IEventEmitter, Packet, RequestPacket, ResponsePacket, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { EventTransportSession } from '../transport.session';
 
@@ -37,7 +37,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
     }
 
     protected override unpack(msg: TopicMessage): Observable<Packet<any>> {
-        return this.receiver.receive(msg.payload, msg.topic);
+        return this.receiver.receive((msg, headDelimiter) => new Context(this.injector, this, msg, headDelimiter), msg.payload, msg.topic);
     }
 
     protected override message(): Observable<any> {
@@ -69,10 +69,10 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
 @Injectable()
 export class TopicTransportSessionFactory implements TransportSessionFactory<TopicClient> {
 
-    constructor(private factory: TransportFactory) { }
+    constructor(readonly injector: Injector, private factory: TransportFactory) { }
 
-    create(socket: TopicClient, transport: Transport, options?: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.factory.injector.get('bytes-format'), options);
+    create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
+        return new TopicTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
     }
 
 }
