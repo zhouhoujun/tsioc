@@ -1,6 +1,8 @@
+import { promisify } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, TransportOpts } from '@tsdi/common';
-import { Observable, Subscriber, finalize } from 'rxjs';
+import { Observable, defer, finalize, mergeMap } from 'rxjs';
 import { JsonDecoder } from './decoder';
+
 
 
 
@@ -21,26 +23,33 @@ export class JsonReceiver implements Receiver {
     }
 
     receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
-        return new Observable((subscriber: Subscriber<Packet>) => {
-            try {
-                let chl = this.topics.get(topic);
-                if (!chl) {
-                    chl = {
-                        topic,
-                        buffers: [],
-                        length: 0,
-                        contentLength: null
-                    }
-                    this.topics.set(topic, chl)
+        return defer(async () => {
+            let chl = this.topics.get(topic);
+            if (!chl) {
+                chl = {
+                    topic,
+                    buffers: [],
+                    length: 0,
+                    contentLength: null
                 }
-                this.handleData(factory, chl, source, subscriber);
-            } catch (err) {
-                subscriber.error(err)
+                this.topics.set(topic, chl)
             }
+            const msg = await promisify(this.handleData, this)(chl, source);
+            return msg;
+
         })
+            .pipe(mergeMap(msg => {
+                const ctx = factory(msg);
+                return this.decoder.handle(ctx)
+                    .pipe(
+                        finalize(() => {
+                            ctx.destroy();
+                        })
+                    )
+            }))
     }
 
-    protected handleData(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Packet>) {
+    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, callback: (err: any, msg: Buffer) => void) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -70,14 +79,14 @@ export class JsonReceiver implements Receiver {
 
         if (chl.contentLength !== null) {
             if (chl.length === chl.contentLength) {
-                this.handleMessage(factory, chl, this.concatCaches(chl), subscriber);
+                this.handleMessage(chl, this.concatCaches(chl), callback);
             } else if (chl.length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(factory, chl, message, subscriber);
+                this.handleMessage(chl, message, callback);
                 if (rest.length) {
-                    this.handleData(factory, chl, rest, subscriber);
+                    this.handleData(chl, rest, callback);
                 }
             }
         }
@@ -87,25 +96,10 @@ export class JsonReceiver implements Receiver {
         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
     }
 
-    protected handleMessage(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Packet>) {
+    protected handleMessage(chl: TopicBuffer, message: Buffer, callback: (err: any, msg: Buffer) => void) {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        const ctx = factory(message);
-        this.decoder.handle(ctx)
-            .pipe(
-                finalize(() => {
-                    ctx.destroy();
-                })
-            )
-            .subscribe({
-                next(vale) {
-                    subscriber.next(vale);
-                    subscriber.complete();
-                },
-                error(err) {
-                    subscriber.error(err);
-                }
-            });
+        callback(null, message);
     }
 }

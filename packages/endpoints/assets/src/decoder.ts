@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Packet, Context, Decoder, DecoderBackend, DecodeInterceptor, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
-import { Observable, Subscriber, map, of } from 'rxjs';
+import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
+import { Observable, Subscriber } from 'rxjs';
 
 
 @Abstract()
@@ -33,42 +33,6 @@ export class AssetInterceptingDecoder implements Decoder {
         }
         return this.chain.handle(ctx)
     }
-}
-
-@Injectable()
-export class HeaderDecodeInterceptor implements DecodeInterceptor<IncomingPacket> {
-
-    packs: Map<string | number, IncomingPacket>;
-    constructor() {
-        this.packs = new Map();
-    }
-
-    intercept(ctx: Context, next: Handler<Context, IncomingPacket>): Observable<IncomingPacket> {
-        if (!ctx.raw || !ctx.raw.length) throw new ArgumentExecption('asset decoding input empty');
-        const id = ctx.raw!.readInt16BE(1);
-        ctx.raw = ctx.raw.subarray(1);
-        ctx.packet = this.packs.get(id);
-        if (!ctx.packet) {
-            const packet = ctx.packet = JSON.parse(new TextDecoder().decode(ctx.raw));
-            if (!packet.length) {
-                return of(packet);
-            } else {
-                this.packs.set(id, packet);
-                return of(null as any);
-            }
-        } else {
-            return next.handle(ctx)
-                .pipe(
-                    map(pkg => {
-                        if (pkg.length == pkg.payload?.length) {
-                            this.packs.delete(pkg.id);
-                        }
-                        return pkg;
-                    })
-                );
-        }
-    }
-
 }
 
 

@@ -49,8 +49,10 @@ export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
         if (ctx.packet && !(ctx.packet as SendPacket).__sent) {
             const { length, payload, ...data } = ctx.packet;
             const headBuf = Buffer.from(JSON.stringify(data));
-            ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
+            ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, payload ?? ctx.raw ?? Buffer.alloc(0)]);
             (ctx.packet as SendPacket).__sent = true;
+        } else {
+            ctx.raw = ctx.packet?.payload;
         }
         if (!ctx.raw) throwError(() => new ArgumentExecption('asset decoding input empty'));
         return of(ctx.raw!);
