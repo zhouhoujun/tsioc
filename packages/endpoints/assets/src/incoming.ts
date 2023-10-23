@@ -1,4 +1,4 @@
-import { IncomingHeaders, Packet, hdr, Incoming, TransportSession, MESSAGE, GET, IReadableStream, isBuffer } from '@tsdi/common';
+import { IncomingHeaders, Packet, hdr, Incoming, TransportSession, MESSAGE, GET, IReadableStream, isBuffer, StreamAdapter } from '@tsdi/common';
 import { Readable } from 'readable-stream';
 
 export class IncomingMessage<T> extends Readable implements Incoming<T> {
@@ -14,8 +14,9 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
     readonly originalUrl: string;
     readonly topic: string;
     readonly method: string;
+    private streamAdapter: StreamAdapter
 
-    constructor(readonly session: TransportSession<T>, private packet: Packet<Buffer | IReadableStream>) {
+    constructor(readonly session: TransportSession<T>, private packet: Packet) {
         super({ objectMode: true })
         this.id = packet.id;
         this.setMaxListeners(0);
@@ -24,7 +25,7 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
         this.topic = packet.topic || packet.url || '';
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? (session.options.microservice ? MESSAGE : GET);
-
+        this.streamAdapter = session.injector.get(StreamAdapter);
         this._payloadIndex = 0
     }
 
@@ -45,8 +46,11 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         if (payload != null) {
             if (isBuffer(payload) && start < payload.length) {
                 buf = payload.subarray(start, end)
+            } else if (this.streamAdapter.isReadable(payload)) {
+                buf = payload.read(size)
             } else {
-                buf = (payload as IReadableStream).read(size)
+                const bffs = this.packet.payload = Buffer.from(JSON.stringify(payload));
+                buf = bffs.subarray(start, end)
             }
         }
 

@@ -19,15 +19,19 @@ export class AssetSender implements Sender {
         this.headDelimiter = Buffer.from(options.headDelimiter ?? '$');
     }
 
-    send(contextFactory: (pkg: Packet, headDelimiter?: Buffer) => Context, packet: Packet): Observable<any> {
+    send(factory: (pkg: Packet, headDelimiter?: Buffer) => Context, packet: Packet): Observable<any> {
 
-        const ctx = contextFactory(packet, this.headDelimiter);
+        const ctx = factory(packet, this.headDelimiter);
         return this.encoder.handle(ctx)
             .pipe(
                 map(data => {
+                    const bufId = Buffer.alloc(2);
+                    bufId.writeUInt16BE(packet.id);
+
                     return Buffer.concat([
-                        Buffer.from(String(data.length)),
+                        Buffer.from(String(data.length + bufId.length)),
                         this.delimiter,
+                        bufId,
                         data
                     ])
                 }),

@@ -1,10 +1,10 @@
-import { ArgumentExecption, Injectable, MissingParameterExecption, tokenId } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, MissingParameterExecption, isNil, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler } from '@tsdi/core';
 import {
     HttpStatusCode, BadRequestExecption, ForbiddenExecption, InternalServerExecption,
     MethodNotAllowedExecption, NotAcceptableExecption, NotImplementedExecption, BadGatewayExecption,
     ServiceUnavailableExecption, GatewayTimeoutExecption, NotSupportedExecption, RequestTimeoutExecption,
-    NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption
+    NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, InvalidJsonException, MessageExecption
 } from '@tsdi/common';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { Responder } from './Responder';
@@ -18,7 +18,19 @@ export const SHOW_DETAIL_ERROR = tokenId<boolean>('SHOW_DETAIL_ERROR');
 @Injectable()
 export class TransportExecptionHandlers {
 
-    constructor() {}
+    constructor() { }
+
+
+    @ExecptionHandler(InvalidJsonException)
+    badJsonExecption(ctx: TransportContext, execption: InvalidJsonException) {
+        let exp: MessageExecption;
+        if (isNil(ctx.body)) {
+            exp = new InternalServerExecption(execption.message, HttpStatusCode.InternalServerError);
+        } else {
+            exp = new BadRequestExecption(execption.message, HttpStatusCode.BadRequest);
+        }
+        ctx.get(Responder).sendExecption(ctx, exp)
+    }
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: TransportContext, execption: BadRequestExecption) {

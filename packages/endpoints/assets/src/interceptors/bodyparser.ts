@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { HttpStatusCode, BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream, hdr  } from '@tsdi/common';
+import { BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream, hdr, InvalidJsonException  } from '@tsdi/common';
 import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -129,9 +129,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
                 body
             }
         } catch (err) {
-            (err as any).status = HttpStatusCode.BadRequest; //ctx.statusFactory.getStatusCode('BadRequest');
-            (err as any).body = str;
-            throw err
+            throw new InvalidJsonException(err, str);
         }
     }
 

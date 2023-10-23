@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet } from '@tsdi/common';
-import { Observable, of } from 'rxjs';
+import { Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Context, Encoder, EncoderBackend, Packet } from '@tsdi/common';
+import { Observable, of, throwError } from 'rxjs';
 
 
 @Abstract()
@@ -41,34 +41,19 @@ interface SendPacket extends Packet {
     __sent?: boolean
 }
 
-@Injectable()
-export class HeaderEncodeInterceptor implements EncodeInterceptor {
-
-    intercept(input: Context, next: Handler<Context, Buffer>): Observable<Buffer> {
-
-        if (input.packet && !(input.packet as SendPacket).__sent) {
-            const headBuf = Buffer.from(JSON.stringify(input.packet));
-            if (input.raw) {
-                input.raw = Buffer.concat([headBuf, input.headerDelimiter!, input.raw]);
-            }
-            (input.packet as SendPacket).__sent = true;
-        }
-
-        return next.handle(input);
-    }
-
-}
 
 @Injectable()
 export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
 
     handle(ctx: Context): Observable<Buffer> {
-        if (ctx.raw) return of(ctx.raw);
-        if (!ctx || !ctx.packet) throw new ArgumentExecption('asset decoding input empty');
-        const pkg = ctx.packet;
-        ctx.raw = Buffer.from(JSON.stringify(pkg));
-        return of(ctx.raw);
-
+        if (ctx.packet && !(ctx.packet as SendPacket).__sent) {
+            const { length, payload, ...data } = ctx.packet;
+            const headBuf = Buffer.from(JSON.stringify(data));
+            ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
+            (ctx.packet as SendPacket).__sent = true;
+        }
+        if (!ctx.raw) throwError(() => new ArgumentExecption('asset decoding input empty'));
+        return of(ctx.raw!);
     }
 
 }

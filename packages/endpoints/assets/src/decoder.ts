@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend, DecodeInterceptor, IncomingPacket } from '@tsdi/common';
-import { Observable, map, of } from 'rxjs';
+import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend, DecodeInterceptor, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
+import { Observable, Subscriber, map, of } from 'rxjs';
 
 
 @Abstract()
@@ -72,18 +72,63 @@ export class HeaderDecodeInterceptor implements DecodeInterceptor<IncomingPacket
 }
 
 
+interface CachePacket extends IncomingPacket {
+    cacheSize: number;
+}
+
 @Injectable()
 export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
 
+    packs: Map<string | number, CachePacket>;
+    constructor() {
+        this.packs = new Map();
+    }
+
     handle(ctx: Context): Observable<IncomingPacket> {
-        if (ctx.packet) return of(ctx.packet);
-        const jsonStr = isString(ctx.raw) ? ctx.raw : new TextDecoder().decode(ctx.raw);
-        try {
-            ctx.packet = JSON.parse(jsonStr);
-            return of(ctx.packet ?? {});
-        } catch (err) {
-            throw new InvalidJsonException(err, jsonStr);
-        }
+        return new Observable((subscriber: Subscriber<IncomingPacket>) => {
+
+            if (!ctx.raw || !ctx.raw.length) {
+                subscriber.error(new ArgumentExecption('asset decoding input empty'));
+                return;
+            }
+            const id = ctx.raw!.readInt16BE(0);
+            let raw = ctx.raw.subarray(2);
+            let packet = (ctx.packet as CachePacket) ?? this.packs.get(id);
+            if (!packet) {
+                const hidx = raw.indexOf(ctx.headerDelimiter!);
+                if (hidx >= 0) {
+                    packet = JSON.parse(new TextDecoder().decode(raw.subarray(0, hidx))) as CachePacket;
+                    raw = raw.subarray(hidx);
+                    const len = packet?.length ?? (~~(packet?.headers?.[hdr.CONTENT_LENGTH] ?? '0'));
+                    if (!len) {
+                        packet.payload = Buffer.alloc(0);
+                        subscriber.next(packet);
+                        subscriber.complete();
+                    } else {
+                        packet.length = len;
+                        packet.cacheSize = raw.length;
+                        const stream = packet.payload = ctx.get(StreamAdapter).createPassThrough();
+                        stream.write(raw);
+                        this.packs.set(id, packet);
+                        subscriber.next(packet);
+                        subscriber.complete();
+                    }
+                }
+            } else {
+                packet.cacheSize += raw.length;
+                (packet.payload as IDuplexStream).write(raw);
+                if (packet.cacheSize >= (packet.length || 0)) {
+                    (packet.payload as IDuplexStream).end();
+                    this.packs.delete(packet.id);
+                    // subscriber.next(packet);
+                    // subscriber.complete();
+                }
+            }
+
+            return () => {
+
+            }
+        });
     }
 
 }
