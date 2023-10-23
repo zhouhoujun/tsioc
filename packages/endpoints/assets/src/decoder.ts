@@ -1,6 +1,6 @@
-import { Abstract, ArgumentExecption, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend, DecodeInterceptor, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
+import { Packet, Context, Decoder, DecoderBackend, DecodeInterceptor, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
 import { Observable, Subscriber, map, of } from 'rxjs';
 
 
@@ -98,10 +98,10 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                 const hidx = raw.indexOf(ctx.headerDelimiter!);
                 if (hidx >= 0) {
                     packet = JSON.parse(new TextDecoder().decode(raw.subarray(0, hidx))) as CachePacket;
-                    raw = raw.subarray(hidx);
+                    raw = raw.subarray(hidx + 1);
                     const len = packet?.length ?? (~~(packet?.headers?.[hdr.CONTENT_LENGTH] ?? '0'));
                     if (!len) {
-                        packet.payload = Buffer.alloc(0);
+                        packet.payload = raw;
                         subscriber.next(packet);
                         subscriber.complete();
                     } else {
