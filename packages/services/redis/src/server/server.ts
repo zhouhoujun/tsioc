@@ -15,7 +15,7 @@ export class RedisServer extends Server {
 
     @InjectLog() logger!: Logger;
 
-    
+
     private _session?: RedisTransportSession;
 
     private subscriber: Redis | null = null;
@@ -59,21 +59,21 @@ export class RedisServer extends Server {
         const subscriber = this.subscriber;
         const publisher = this.publisher;
 
-
         const injector = this.endpoint.injector;
 
+        const transportOpts = this.options.transportOpts!;
+        if (!transportOpts.serverSide) {
+            transportOpts.serverSide = true;
+        }
+        if (!transportOpts.transport) {
+            transportOpts.transport = 'redis';
+        }
+
         const factory = injector.get(RedisTransportSessionFactory);
-        const session =  this._session = factory.create({
+        const session = this._session = factory.create({
             subscriber,
             publisher
-        }, 'redis', { ...this.options.transportOpts, serverSide: true });
-
-        // session.on(ev.MESSAGE, (channel: string, packet: Packet) => {
-        //     this.requestHandler(session, packet)
-        // });
-
-        
-
+        }, transportOpts);
 
         const router = injector.get(MircoServRouters).get('redis');
         if (this.options.content?.prefix) {

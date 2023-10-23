@@ -58,7 +58,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
-        return this.sender.send((pkg, head) => new Context(this.injector, this, pkg, head), data);
+        return this.sender.send(this.contextFactory, data);
     }
 
     protected override unpack(msg: ConsumeMessage): Observable<Packet> {
@@ -67,7 +67,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
         headers[hdr.CONTENT_TYPE] = contentType;
         headers[hdr.CONTENT_ENCODING] = contentEncoding;
-        return this.receiver.receive((msg, headDelimiter) => new Context(this.injector, this, msg, headDelimiter), msg.content, headers[hdr.TOPIC] ?? correlationId)
+        return this.receiver.receive(this.contextFactory, msg.content, headers[hdr.TOPIC] ?? correlationId)
             .pipe(
                 map(payload => {
                     return {

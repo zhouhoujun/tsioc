@@ -59,7 +59,10 @@ export class WsServer extends Server {
         const factory = injector.get(TransportSessionFactory);
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = createWebSocketStream(socket);
-            const session = factory.create(stream, 'ws', this.options.transportOpts!);
+            const transportOpts = this.options.transportOpts!;
+            if (!transportOpts.transport) transportOpts.transport = 'ws';
+            if (!transportOpts.serverSide) transportOpts.serverSide = true;
+            const session = factory.create(stream, transportOpts!);
             this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
         })
 

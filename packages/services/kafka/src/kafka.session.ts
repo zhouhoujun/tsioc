@@ -154,13 +154,13 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
-        return this.sender.send((pkg, headDelimiter) => new Context(this.injector, this, pkg, headDelimiter), data);
+        return this.sender.send(this.contextFactory, data);
     }
 
     protected override unpack(msg: EachMessagePayload): Observable<Packet> {
         const headers = this.getIncomingHeaders(msg);
         const id = headers[KafkaHeaders.CORRELATION_ID];
-        return this.receiver.receive((msg, headDelimiter) => new Context(this.injector, this, msg, headDelimiter), msg.message.value ?? Buffer.alloc(0), msg.topic)
+        return this.receiver.receive(this.contextFactory, msg.message.value ?? Buffer.alloc(0), msg.topic)
             .pipe(
                 map(payload => {
                     return {

@@ -1,9 +1,8 @@
-import { Injectable, isString } from '@tsdi/ioc';
-import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { Injectable, Injector, isString } from '@tsdi/ioc';
+import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { AbstractTransportSession, TopicMessage } from '@tsdi/endpoints';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 import Redis from 'ioredis';
-import { PipeTransform } from '@tsdi/core';
 
 
 export interface ReidsTransport {
@@ -16,12 +15,12 @@ const PATTERN_MSG_BUFFER = 'pmessageBuffer';
 export class RedisTransportSession extends AbstractTransportSession<ReidsTransport, TopicMessage> {
 
     constructor(
+        injector: Injector,
         socket: ReidsTransport,
         sender: Sender,
         receiver: Receiver,
-        bytesTransform: PipeTransform,
-        options?: TransportOpts) {
-        super(socket, sender, receiver, bytesTransform, options)
+        options: TransportOpts) {
+        super(injector, socket, sender, receiver, options)
     }
 
     private topics: Set<string> = new Set();
@@ -86,12 +85,12 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { topic, ...data } = packet;
-        return this.sender.send(data);
+        return this.sender.send(this.contextFactory, data);
     }
 
     protected override unpack(msg: TopicMessage): Observable<Packet> {
         const { topic, payload } = msg;
-        return this.receiver.receive(payload, topic)
+        return this.receiver.receive(this.contextFactory, payload, topic)
             .pipe(
                 map(payload => {
                     return {
@@ -122,10 +121,13 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
 @Injectable()
 export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsTransport> {
 
-    constructor(private factory: TransportFactory) { }
+    constructor(
+        readonly injector: Injector,
+        private factory: TransportFactory
+    ) { }
 
-    create(socket: ReidsTransport, transport: Transport, options?: TransportOpts): RedisTransportSession {
-        return new RedisTransportSession(socket, this.factory.createSender(socket, transport, options), this.factory.createReceiver(socket, transport, options), this.factory.injector.get('bytes-format'), options);
+    create(socket: ReidsTransport, options: TransportOpts): RedisTransportSession {
+        return new RedisTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
     }
 
 }

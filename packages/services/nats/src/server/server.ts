@@ -42,7 +42,11 @@ export class NatsServer extends Server {
 
         const conn = this.conn;
         const subs = router.matcher.getPatterns();
-        const session = this._session = injector.get(NatsTransportSessionFactory).create(conn, 'nats', { ... this.options.transportOpts, serverSide: true });
+        const transportOpts = this.options.transportOpts!;
+        if(!transportOpts.serverSide)  transportOpts.serverSide = true;
+        if(!transportOpts.transport)  transportOpts.transport = 'nats';
+        
+        const session = this._session = injector.get(NatsTransportSessionFactory).create(conn, transportOpts);
 
         subs.map(sub => {
             session.subscribe(sub, this.options.transportOpts?.subscriptionOpts)

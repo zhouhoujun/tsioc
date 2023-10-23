@@ -81,14 +81,18 @@ export class TcpServer extends Server implements ListenService {
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);
+        const transportOpts = this.options.transportOpts!;
+        if(!transportOpts.serverSide) transportOpts.serverSide = true;
+        if(!transportOpts.transport) transportOpts.transport = 'tcp';
+
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const session = factory.create(socket, 'tcp', this.options.transportOpts);
+                const session = factory.create(socket,transportOpts);
                 this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const session = factory.create(socket, 'tcp', this.options.transportOpts);
+                const session = factory.create(socket,transportOpts);
                 this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
             })
         }

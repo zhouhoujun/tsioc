@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, Transport, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { BadRequestExecption, Context, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
@@ -102,7 +102,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
-        return this.sender.send(data);
+        return this.sender.send(this.contextFactory, data);
     }
 
     protected override unpack(msg: Msg): Observable<Packet> {
@@ -111,7 +111,7 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             headers[key] = msg.headers?.get(key);
         });
         const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
-        return this.receiver.receive(msg.data, msg.subject)
+        return this.receiver.receive(this.contextFactory, msg.data, msg.subject)
             .pipe(
                 map(payload => {
                     return {
@@ -152,7 +152,7 @@ export class NatsTransportSessionFactory implements TransportSessionFactory<Nats
         private uuidGenner: UuidGenerator) { }
 
     create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, this.factory.injector.get('bytes-format'), options);
+        return new NatsTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, options);
     }
 
 }

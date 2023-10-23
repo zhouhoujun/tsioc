@@ -54,10 +54,15 @@ export class RedisClient extends Client<TransportRequest, number> {
             this.publisher.connect()
         ]);
 
+        const transportOpts =  opts.transportOpts!;
+        if(!transportOpts.transport) {
+            transportOpts.transport = 'redis';
+        }
+
         this._session = this.handler.injector.get(RedisTransportSessionFactory).create({
             subscriber: this.subscriber,
             publisher: this.publisher
-        }, 'redis', opts.transportOpts!)
+        }, transportOpts)
 
     }
 
