@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, StreamAdapter, isBuffer } from '@tsdi/common';
-import { Observable, mergeMap, of, throwError } from 'rxjs';
+import { Observable, mergeMap, of, throwError, bufferWhen, bufferCount, buffer, bufferTime } from 'rxjs';
 
 
 @Abstract()
@@ -41,14 +41,32 @@ interface SendPacket extends Packet {
     __sent?: boolean
 }
 
+
+@Injectable()
+export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
+
+    handle(ctx: Context): Observable<Buffer> {
+        if (ctx.packet && !(ctx.packet as SendPacket).__sent) {
+            const { length, payload, ...data } = ctx.packet;
+            const headBuf = Buffer.from(JSON.stringify(data));
+            ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
+            (ctx.packet as SendPacket).__sent = true;
+        }
+        if (!ctx.raw) throwError(() => new ArgumentExecption('asset decoding input empty'));
+        return of(ctx.raw!);
+    }
+
+}
+
+
 @Injectable()
 export class BufferifyEncodeInterceptor implements EncodeInterceptor {
-    constructor(private streamAdapter: StreamAdapter) {
 
-    }
+    constructor(private streamAdapter: StreamAdapter) { }
+
     intercept(input: Context<Packet<any>>, next: Handler<Context<Packet<any>>, Buffer>): Observable<Buffer> {
         const payload = input.packet?.payload;
-        if(isNil(payload)) return next.handle(input);
+        if (isNil(payload)) return next.handle(input);
 
         if (isBuffer(payload)) {
             input.raw = payload;
@@ -88,18 +106,21 @@ export class BufferifyEncodeInterceptor implements EncodeInterceptor {
 
 }
 
-@Injectable()
-export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
 
-    handle(ctx: Context): Observable<Buffer> {
-        if (ctx.packet && !(ctx.packet as SendPacket).__sent) {
-            const { length, payload, ...data } = ctx.packet;
-            const headBuf = Buffer.from(JSON.stringify(data));
-            ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
-            (ctx.packet as SendPacket).__sent = true;
-        }
-        if (!ctx.raw) throwError(() => new ArgumentExecption('asset decoding input empty'));
-        return of(ctx.raw!);
+@Injectable()
+export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
+
+    intercept(input: Context<Packet>, next: Handler<Context<Packet<any>>, Buffer>): Observable<Buffer> {
+    
+
+        return next.handle(input)
+            .pipe(
+                // bufferWhen(cn=> {
+                    
+                //     return [cn];
+                // })
+            )
+
     }
 
 }
