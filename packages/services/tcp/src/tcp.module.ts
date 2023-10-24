@@ -11,8 +11,8 @@ import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTO
 import { TcpEndpoint } from './server/endpoint';
 
 
-// const defaultMaxSize = 65515; //1024 * 64 - 20; 
-const defaultMaxSize = 1048576; //1024 * 1024;
+const defaultMaxSize = 65515; //1024 * 64 - 20; 
+// const defaultMaxSize = 1048576; //1024 * 1024;
 
 @Module({
     providers: [

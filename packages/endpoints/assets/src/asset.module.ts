@@ -5,7 +5,7 @@ import { BodyContentInterceptor, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform }
 import { RequestHandler, Responder, StatusVaildator } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { AssetResponder } from './responder';
-import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, SimpleAssetEncoderBackend } from './encoder';
+import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
 import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInterceptingDecoder, SimpleAssetDecoderBackend } from './decoder';
 import { AssetReceiver } from './receiver';
 import { AssetSender } from './sender';
@@ -27,9 +27,11 @@ import { AssetResponseTransform } from './impl/resp.transform';
         { provide: ResponseTransform, useClass: AssetResponseTransform },
         SimpleAssetEncoderBackend,
         AssetInterceptingEncoder,
-        BufferifyEncodeInterceptor,
         { provide: AssetEncoderBackend, useExisting: SimpleAssetEncoderBackend, asDefault: true },
+        BufferifyEncodeInterceptor,
+        SubpacketBufferEncodeInterceptor,
         { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: BufferifyEncodeInterceptor, multi: true, multiOrder: 0 },
+        { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: SubpacketBufferEncodeInterceptor, multi: true },
 
         SimpleAssetDecoderBackend,
         AssetInterceptingDecoder,
