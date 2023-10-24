@@ -48,9 +48,6 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
                 buf = payload.subarray(start, end)
             } else if (this.streamAdapter.isReadable(payload)) {
                 buf = payload.read(size)
-            } else {
-                const bffs = this.packet.payload = Buffer.from(JSON.stringify(payload));
-                buf = bffs.subarray(start, end)
             }
         }
 

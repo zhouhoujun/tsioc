@@ -1,5 +1,5 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
-import { Incoming, LOCALHOST, Outgoing, StatusCode } from '@tsdi/common';
+import { Incoming, InternalServerExecption, LOCALHOST, Outgoing, StatusCode } from '@tsdi/common';
 import { AbstractAssetContext } from '../asset.context';
 
 
@@ -17,7 +17,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
         } else {
             const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
             const protocol = this.serverOptions.protocol;
-            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST }:${port ?? 3000}`, path);
+            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
             const uri = new URL(url, baseUrl);
             return uri;
         }
@@ -30,8 +30,13 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     get status(): StatusCode {
         return this.response.statusCode;
     }
-    set status(status: StatusCode) {
-        this.response.statusCode = status;
+    set status(code: StatusCode) {
+        if (this.sent) return;
+
+        if (!this.vaildator.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
+        this._explicitStatus = true;
+        this.response.statusCode = code;
+        if (this.body && this.vaildator.isEmpty(code)) this.body = null;
     }
 
     get statusMessage(): string {
@@ -44,7 +49,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     get secure(): boolean {
         return this.serverOptions.secure == true;
     }
-    
+
 }
 
 const abstl = /^\w+:\/\//i;
