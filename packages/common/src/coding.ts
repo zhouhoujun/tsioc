@@ -17,6 +17,7 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     public packet?: Packet;
     public raw?: Buffer;
     readonly headerDelimiter?: Buffer;
+    readonly serverSide: boolean;
 
     constructor(
         injector: Injector,
@@ -38,6 +39,7 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
         options?: InvokeArguments) {
         super(injector, options);
         this.transport = session.options.transport!;
+        this.serverSide = session.options.serverSide == true;
         this.session = session;
         if (isBuffer(packBuff)) {
             this.raw = packBuff;

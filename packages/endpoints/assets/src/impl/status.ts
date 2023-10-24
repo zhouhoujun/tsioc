@@ -3,7 +3,7 @@ import { GET, POST, HttpStatusCode, statusMessage } from '@tsdi/common';
 import { StatusVaildator } from '@tsdi/endpoints';
 
 @Injectable({ static: true })
-export class HttpStatusVaildator implements StatusVaildator<number> {
+export class HttpStatusVaildator implements StatusVaildator {
     get ok(): number {
         return HttpStatusCode.Ok
     }

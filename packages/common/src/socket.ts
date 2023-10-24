@@ -163,17 +163,17 @@ export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableSt
 /**
  * server outgoing message stream.
  */
-export interface Outgoing<TSocket = any, TStatus extends StatusCode = StatusCode> extends IEnd {
+export interface Outgoing<TSocket = any> extends IEnd {
 
     readonly socket?: TSocket;
     /**
      * Get response status code.
      */
-    get statusCode(): TStatus;
+    get statusCode(): StatusCode;
     /**
      * Set response status code.
      */
-    set statusCode(status: TStatus);
+    set statusCode(status: StatusCode);
     /**
      * Textual description of response status code, defaults to OK.
      *

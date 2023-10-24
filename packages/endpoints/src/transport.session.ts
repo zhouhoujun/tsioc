@@ -1,6 +1,6 @@
 import { Execption, Injector, InvokeArguments, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, Context, IEventEmitter, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, Context, IEventEmitter, IncomingPacket, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -53,7 +53,7 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         return obs$;
     }
 
-    receive(msgFilter?: (msg: TMsg) => boolean): Observable<ResponsePacket> {
+    receive(msgFilter?: (msg: TMsg) => boolean): Observable<Packet> {
         return this.message()
             .pipe(
                 filter(msg => msgFilter ? msgFilter(msg) : true),

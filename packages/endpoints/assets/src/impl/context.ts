@@ -4,7 +4,7 @@ import { AbstractAssetContext } from '../asset.context';
 
 
 
-export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSocket>, Outgoing<TSocket>, StatusCode> {
+export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSocket>, Outgoing<TSocket>> {
 
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)

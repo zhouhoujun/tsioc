@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { ReqHeaders, ResHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr } from '@tsdi/common';
+import { ReqHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr, StatusCode, OutgoingHeaders } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -8,19 +8,18 @@ import { Redirector } from '../Redirector';
 
 
 @Injectable()
-export class AssetRedirector<TStatus = number> extends Redirector<TStatus> {
+export class AssetRedirector implements Redirector {
 
     constructor() {
-        super();
     }
 
-    redirect<T>(req: TransportRequest, status: TStatus, headers: ResHeaders): Observable<T> {
+    redirect<T>(req: TransportRequest, status: StatusCode, headers: OutgoingHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            const validator =  req.context.get(StatusVaildator<TStatus>);
+            const validator = req.context.get(StatusVaildator);
             const adapter = req.context.get(StreamAdapter);
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
-            const location = headers.get(hdr.LOCATION) as string;
+            const location = headers[hdr.LOCATION] as string;
 
 
             // HTTP fetch step 5.3
@@ -144,8 +143,8 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: ResHeaders) {
-    const policyTokens = (headers.get(hdr.REFERRER_POLICY) as string || '').split(splitReg);
+export function parseReferrerPolicyFromHeader(headers: OutgoingHeaders) {
+    const policyTokens = (headers[hdr.REFERRER_POLICY] as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {
         if (token && referPolicys.has(token)) {

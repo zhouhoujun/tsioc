@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { StreamAdapter } from '@tsdi/common';
+import { StatusCode, StreamAdapter } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 import { FileAdapter } from './FileAdapter';
 import { StatusVaildator } from './StatusVaildator';
@@ -11,7 +11,7 @@ import { ServerOpts } from './Server';
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse> {
 
     abstract get serverOptions(): TServOpts;
     /**
@@ -21,7 +21,7 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
     /**
      * status vaildator
      */
-    abstract get vaildator(): StatusVaildator<TStatus>;
+    abstract get vaildator(): StatusVaildator;
 
     /**
      * Get request rul
@@ -63,11 +63,11 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TStatus = an
     /**
      * Get response status.
      */
-    abstract get status(): TStatus;
+    abstract get status(): StatusCode;
     /**
      * Set response status, defaults to OK.
      */
-    abstract set status(status: TStatus);
+    abstract set status(status: StatusCode);
 
     /**
      * Get response status message.

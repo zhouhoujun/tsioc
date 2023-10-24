@@ -12,7 +12,7 @@ export interface SendPacket extends ResponsePacket {
 /**
  * outgoing message.
  */
-export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends Writable implements Outgoing<T, TStatus> {
+export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
 
     _closed = false;
     ending = false;
@@ -46,11 +46,11 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
         return this._hdr.getHeaderNames();
     }
 
-    get statusCode(): TStatus {
-        return this.getHeader(hdr.STATUS) as TStatus;
+    get statusCode(): StatusCode {
+        return this.getHeader(hdr.STATUS) as StatusCode;
     }
 
-    set statusCode(val: TStatus) {
+    set statusCode(val: StatusCode) {
         this.setHeader(hdr.STATUS, val as string);
     }
 
@@ -137,9 +137,9 @@ export class OutgoingMessage<T, TStatus extends StatusCode = StatusCode> extends
         }
     }
 
-    writeHead(statusCode: TStatus, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
-    writeHead(statusCode: TStatus, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
-    writeHead(statusCode: TStatus, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
+    writeHead(statusCode: StatusCode, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: StatusCode, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: StatusCode, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
         if (this.headersSent) return this;
         if (isString(statusMessage)) {
             this.setHeader(hdr.STATUS_MESSAGE, statusMessage)

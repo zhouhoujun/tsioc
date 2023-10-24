@@ -1,10 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Receiver } from './Receiver';
 import { Sender } from './Sender';
-import { RequestPacket, ResponsePacket } from './packet';
+import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
 import { Observable } from 'rxjs';
 import { Transport } from './protocols';
-import { IncomingPacket } from './socket';
+import { TransportEvent } from './response';
+import { OutgoingHeaders, ResHeaders } from './headers';
 
 
 
@@ -72,6 +73,16 @@ export abstract class TransportFactory {
     abstract createSender(options: TransportOpts): Sender;
 }
 
+/**
+ * response factory.
+ */
+export interface ResponseFactory<TResponse = TransportEvent> {
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse
+    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse
+}
+
+
 
 
 @Abstract()
@@ -103,7 +114,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
     /**
      * receive
      */
-    abstract receive(filter?: (msg: TMsg) => boolean): Observable<IncomingPacket>;
+    abstract receive(filter?: (msg: TMsg) => boolean): Observable<Packet>;
 
     /**
      * destroy.

@@ -18,7 +18,8 @@ export const MIME_PROVIDERS: ProviderType[] = [
 
 export const ASSET_ENDPOINT_PROVIDERS: ProviderType[] = [
     ...MIME_PROVIDERS,
-    { provide: Redirector, useClass: AssetRedirector },
+    AssetRedirector,
+    { provide: Redirector, useExisting: AssetRedirector },
     { provide: Negotiator, useClass: TransportNegotiator },
     { provide: TypedRespond, useClass: JsonTransportTypedRespond }
 ];

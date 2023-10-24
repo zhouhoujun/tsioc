@@ -1,10 +1,10 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, hdr, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, StatusCode, hdr, isBuffer } from '@tsdi/common';
 import { AssetContext, Responder } from '@tsdi/endpoints';
 
 @Injectable()
-export class AssetResponder<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> implements Responder<AssetContext<TRequest, TResponse, TStatus>> {
+export class AssetResponder<TRequest extends Incoming = any, TResponse extends Outgoing = any> implements Responder<AssetContext<TRequest, TResponse>> {
 
     constructor() { }
 
@@ -90,11 +90,11 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
 
     }
 
-    protected isHeadMethod(ctx: AssetContext<TRequest, TResponse, TStatus>): boolean {
+    protected isHeadMethod(ctx: AssetContext<TRequest, TResponse>): boolean {
         return HEAD === ctx.method
     }
 
-    protected respondHead(res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>) {
+    protected respondHead(res: TResponse, ctx: AssetContext<TRequest, TResponse>) {
         if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
             const length = ctx.length;
             if (Number.isInteger(length)) ctx.length = length
@@ -102,7 +102,7 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         return res.end()
     }
 
-    protected respondNoBody(status: TStatus, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>) {
+    protected respondNoBody(status: StatusCode, res: TResponse, ctx: AssetContext<TRequest, TResponse>) {
         if (ctx._explicitNullBody) {
             res.removeHeader(hdr.CONTENT_TYPE);
             res.removeHeader(hdr.CONTENT_LENGTH);
@@ -118,7 +118,7 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         return res.end(body)
     }
 
-    protected async respondBody(body: any, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>) {
+    protected async respondBody(body: any, res: TResponse, ctx: AssetContext<TRequest, TResponse>) {
         // responses
         if (isBuffer(body)) return await promisify<any, void>(res.end, res)(body);
         if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
@@ -137,13 +137,13 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         return res
     }
 
-    protected async respondStream(body: IReadableStream, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<void> {
+    protected async respondStream(body: IReadableStream, res: TResponse, ctx: AssetContext<TRequest, TResponse>): Promise<void> {
         const streamAdapter = ctx.streamAdapter;
         if (!streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
         return await streamAdapter.pipeTo(body, res);
     }
 
-    protected statusMessage(ctx: AssetContext<TRequest, TResponse, TStatus>, status: TStatus): string {
+    protected statusMessage(ctx: AssetContext<TRequest, TResponse>, status: StatusCode): string {
         return ctx.statusMessage ?? String(status);
     }
 

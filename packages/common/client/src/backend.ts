@@ -1,27 +1,47 @@
-import { Injectable, isDefined } from '@tsdi/ioc';
+import { Abstract, Injectable, InvocationContext, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, RequestPacket, ResHeaders, ResponsePacket, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
-import { Observable, catchError, map, take, throwError } from 'rxjs';
+import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseFactory, ResponsePacket, StatusCode, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
+import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
+
+@Abstract()
+export abstract class ResponseTransform<T = TransportEvent> {
+    /**
+     * transform response packet to <T = TransportEvent>
+     * @param packet 
+     * @param factory 
+     */
+    abstract transform(req: TransportRequest, packet: ResponsePacket, factory: ResponseFactory<T>): Observable<T>;
+}
+
+const defaultTransform = {
+    transform(req, packet, factory): Observable<TransportEvent> {
+        if (packet.error) {
+            return throwError(() => factory.createErrorResponse(packet));
+        }
+        return of(factory.createResponse(packet));
+    },
+} as ResponseTransform;
 
 /**
  * transport client endpoint backend.
  */
 @Injectable()
-export class TransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Backend<TRequest, TResponse>  {
+export class TransportBackend implements Backend<TransportRequest, TransportEvent>, ResponseFactory<TransportEvent>  {
 
     /**
      * handle client request
      * @param req 
      */
-    handle(req: TRequest): Observable<TResponse> {
+    handle(req: TransportRequest): Observable<TransportEvent> {
 
         const url = this.getReqUrl(req);
 
         const pkg = this.toPacket(url, req);
         const session = req.context.get(TransportSession);
+        const transform = req.context.get(ResponseTransform) ?? defaultTransform;
 
         let obs$: Observable<ResponsePacket>;
-        switch(req.observe) {
+        switch (req.observe) {
             case 'emit':
                 obs$ = session.send(pkg).pipe(take(1));
                 break;
@@ -33,34 +53,29 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
                 break;
         }
         return obs$.pipe(
-                map(p => {
-                    if (p.error) {
-                        throw p.error;
-                    }
-                    return this.createResponse(p as any);
-                }),
-                catchError((err, caught) => {
-                    return throwError(() => this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
-                })
-            );
+            catchError((err, caught) => {
+                return throwError(() => this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
+            }),
+            mergeMap(p => transform.transform(req, p, this))
+        );
 
     }
 
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
-        return new TransportErrorResponse(options) as TResponse;
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
+        return new TransportErrorResponse(options) as TransportEvent;
     }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
-        return new TransportHeaderResponse(options) as TResponse;
+    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
+        return new TransportHeaderResponse(options) as TransportEvent;
     }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse {
-        return new TransportResponse(options) as TResponse;
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TransportEvent {
+        return new TransportResponse(options) as TransportEvent;
     }
 
-    protected getReqUrl(req: TRequest) {
+    protected getReqUrl(req: TransportRequest) {
         return req.urlWithParams;
     }
 
-    protected toPacket(url: string, req: TRequest) {
+    protected toPacket(url: string, req: TransportRequest) {
         const pkg = {
             url
         } as RequestPacket;
@@ -82,13 +97,13 @@ export class TransportBackend<TRequest extends TransportRequest = TransportReque
  * transport client endpoint backend.
  */
 @Injectable()
-export class TopicTransportBackend<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> extends TransportBackend<TRequest, TResponse> {
+export class TopicTransportBackend extends TransportBackend {
 
-    protected override getReqUrl(req: TRequest) {
+    protected override getReqUrl(req: TransportRequest) {
         return req.url;
     }
 
-    protected override toPacket(url: string, req: TRequest) {
+    protected override toPacket(url: string, req: TransportRequest) {
         const pkg = {
             topic: url
         } as RequestPacket;

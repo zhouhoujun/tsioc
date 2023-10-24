@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
-import { Observable, Subscriber } from 'rxjs';
+import { Observable, Subscriber, of, throwError } from 'rxjs';
 
 
 @Abstract()
@@ -49,6 +49,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
     }
 
     handle(ctx: Context): Observable<IncomingPacket> {
+
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
             if (!ctx.raw || !ctx.raw.length) {
@@ -71,11 +72,15 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                     } else {
                         packet.length = len;
                         packet.cacheSize = raw.length;
-                        const stream = packet.payload = ctx.get(StreamAdapter).createPassThrough();
-                        stream.write(raw);
-                        this.packs.set(id, packet);
-                        subscriber.next(packet);
-                        subscriber.complete();
+                        if (packet.cacheSize >= packet.length) {
+                            packet.payload = raw;
+                            subscriber.next(packet);
+                            subscriber.complete();
+                        } else {
+                            const stream = packet.payload = ctx.get(StreamAdapter).createPassThrough();
+                            stream.write(raw);
+                            this.packs.set(id, packet);
+                        }
                     }
                 }
             } else {
@@ -84,14 +89,14 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                 if (packet.cacheSize >= (packet.length || 0)) {
                     (packet.payload as IDuplexStream).end();
                     this.packs.delete(packet.id);
-                    // subscriber.next(packet);
-                    // subscriber.complete();
+                    subscriber.next(packet);
+                    subscriber.complete();
                 }
             }
 
             return () => {
-
-            }
+                subscriber.unsubscribe()
+            };
         });
     }
 

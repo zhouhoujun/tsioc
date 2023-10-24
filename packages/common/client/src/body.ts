@@ -10,7 +10,7 @@ import { Buffer } from 'buffer';
  * request body content interceptor.
  */
 @Injectable()
-export class BodyContentInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent, TStatus = number> implements Interceptor<TRequest, TResponse> {
+export class BodyContentInterceptor<TRequest extends TransportRequest = TransportRequest, TResponse = TransportEvent> implements Interceptor<TRequest, TResponse> {
 
     constructor(private adapter: StreamAdapter) { }
 

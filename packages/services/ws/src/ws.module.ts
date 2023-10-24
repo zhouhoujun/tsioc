@@ -10,7 +10,8 @@ import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS } f
 import { WsEndpoint } from './server/endpoint';
 
 
-const defaultMaxSize = 65515; //1024 * 64 - 20; //1048576; //1024 * 1024;
+// const defaultMaxSize = 65515; //1024 * 64 - 20;
+const defaultMaxSize = 1048576; //1024 * 1024;
 
 @Module({
     providers: [

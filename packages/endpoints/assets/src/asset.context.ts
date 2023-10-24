@@ -26,13 +26,13 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TStatus = any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TStatus, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TServOpts> {
     public _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
 
-    readonly vaildator: StatusVaildator<TStatus>;
+    readonly vaildator: StatusVaildator;
     readonly streamAdapter: StreamAdapter;
     readonly fileAdapter: FileAdapter;
     readonly negotiator: Negotiator;

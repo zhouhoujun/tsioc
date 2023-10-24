@@ -18,13 +18,13 @@ export class TransportErrorResponse<TStatus = any> {
     constructor(options: {
         url?: string,
         headers?: ResHeadersLike;
-        status: TStatus;
+        status?: TStatus;
         error?: any;
         statusText?: string;
         statusMessage?: string;
     }) {
         this.url = options.url ?? '';
-        this.status = options.status;
+        this.status = options.status ?? 0 as TStatus;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.error = options.error;
         this.headers = new ResHeaders(options.headers);
@@ -50,7 +50,7 @@ export class TransportHeaderResponse<TStatus = any> {
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
-        status: TStatus;
+        status?: TStatus;
         statusText?: string;
         statusMessage?: string;
     }) {
@@ -75,7 +75,7 @@ export class TransportResponse<T = any, TStatus = any> extends TransportHeaderRe
         url?: string,
         ok?: boolean;
         headers?: ResHeadersLike;
-        status: TStatus
+        status?: TStatus
         statusText?: string;
         statusMessage?: string;
         body?: T;
