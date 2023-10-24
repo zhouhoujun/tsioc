@@ -1,16 +1,15 @@
+import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Injector, Module, getToken, isArray, lang } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
+import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestExecption } from '@tsdi/common';
+import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
+import { TcpClient, TcpModule } from '@tsdi/tcp';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { MicroServRouterModule } from '@tsdi/endpoints';
-import { TcpClient } from '@tsdi/tcp';
-import { LoggerModule } from '@tsdi/logger';
 import { DeviceController } from './demo';
-import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints/src';
-import { Bodyparser, Content, Json } from '../src';
+import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
 
 
 @Module({
@@ -18,6 +17,9 @@ import { Bodyparser, Content, Json } from '../src';
     imports: [
         ServerModule,
         LoggerModule,
+        AssetTransportModule,
+        ServerEndpointModule,
+        TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {

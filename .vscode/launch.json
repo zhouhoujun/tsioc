@@ -167,9 +167,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoints asset",
+            "name": "test endpoints assets",
             "args": [
-                "${workspaceRoot}/packages/endpoints/asset/unit.ts" 
+                "${workspaceRoot}/packages/endpoints/assets/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
