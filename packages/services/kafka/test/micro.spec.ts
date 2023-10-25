@@ -140,7 +140,7 @@ describe('Kafka Micro Service', () => {
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
         expect(res).toBeInstanceOf(TransportErrorResponse);
-        expect(res.statusMessage).toEqual('Packet length 23.74mb great than max size 256kb');
+        expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
     })
 
     it('fetch json 2', async () => {

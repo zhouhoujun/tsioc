@@ -9,7 +9,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { AmqpModule, AMQP_SERV_INTERCEPTORS, AmqpClient, AmqpServer } from '../src';
+import { AmqpModule, AMQP_SERV_INTERCEPTORS, AmqpClient } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -270,7 +270,7 @@ describe('Amqp Micro Service', () => {
 
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 
 });

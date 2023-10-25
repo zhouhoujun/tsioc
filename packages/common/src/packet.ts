@@ -28,6 +28,15 @@ export interface Packet<T = any> extends HeaderPacket {
     payload?: T;
 }
 
+export interface SendPacket extends Packet {
+    __sent?: boolean;
+    /**
+     * payload with extends message headers
+     */
+    __headMsg?: boolean
+}
+
+
 
 /**
  * request packet data.

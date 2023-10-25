@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isNil, isString, lang, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, StreamAdapter, isBuffer } from '@tsdi/common';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, SendPacket, StreamAdapter, isBuffer } from '@tsdi/common';
 import { Observable, mergeMap, of, throwError, map, range } from 'rxjs';
 
 
@@ -37,10 +37,6 @@ export class AssetInterceptingEncoder implements Encoder {
     }
 }
 
-interface SendPacket extends Packet {
-    __sent?: boolean;
-    headerSize: number;
-}
 
 
 @Injectable()
@@ -51,7 +47,6 @@ export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
         if (pkg && !pkg.__sent) {
             const { length, payload, ...data } = pkg;
             const headBuf = Buffer.from(JSON.stringify(data));
-            pkg.headerSize = headBuf.length + ctx.headerDelimiter!.length;
             ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
             pkg.__sent = true;
         }
@@ -122,7 +117,7 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
                 mergeMap(buf => {
                     if (input.session.options.maxSize) {
                         let maxSize = input.session.options.maxSize;
-                        maxSize = maxSize - (Buffer.byteLength(maxSize.toString()) + Buffer.byteLength(input.session.options.delimiter ?? '#')) - 2 // 2 packet id;
+                        maxSize = maxSize - (Buffer.byteLength(maxSize.toString()) + Buffer.byteLength(input.session.options.delimiter ?? '#')) - ((input.packet as SendPacket)?.__headMsg ? 0 : 2) // 2 packet id;
                         if (buf.length <= maxSize) {
                             return of(buf);
                         } else {

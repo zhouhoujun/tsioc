@@ -101,7 +101,7 @@ export class KafkaServer extends Server {
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
 
-        const transportOpts = {
+        const transportOpts = this.options.transportOpts = {
             transport: 'kafka',
             ...this.options.transportOpts,
             serverSide: true

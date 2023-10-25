@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { Context, Packet, Sender, AssetTransportOpts } from '@tsdi/common';
+import { Context, Packet, Sender, AssetTransportOpts, SendPacket } from '@tsdi/common';
 import { Observable, finalize, map } from 'rxjs';
 import { AssetEncoder } from './encoder';
 
@@ -25,6 +25,15 @@ export class AssetSender implements Sender {
         return this.encoder.handle(ctx)
             .pipe(
                 map(data => {
+                    if ((packet as SendPacket).__headMsg) {
+                        data = data ?? Buffer.alloc(0);
+                        return Buffer.concat([
+                            Buffer.from(String(data.length)),
+                            this.delimiter,
+                            data
+                        ])
+                    }
+
                     const bufId = Buffer.alloc(2);
                     bufId.writeUInt16BE(packet.id);
 

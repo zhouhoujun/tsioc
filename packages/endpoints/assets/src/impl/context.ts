@@ -1,23 +1,23 @@
 import { EMPTY_OBJ } from '@tsdi/ioc';
 import { Incoming, InternalServerExecption, LOCALHOST, Outgoing, StatusCode } from '@tsdi/common';
-import { AbstractAssetContext } from '../asset.context';
+import { AbstractAssetContext, ServerOptions } from '../asset.context';
 
 
 
-export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSocket>, Outgoing<TSocket>> {
+export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSocket>, Outgoing<TSocket>, ServerOptions> {
 
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)
     }
 
     protected parseURL(req: Incoming<TSocket>, proxy?: boolean | undefined): URL {
-        const url = req.url ?? '';
+        const url = req.url || req.topic ||  '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
             const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
-            const protocol = this.serverOptions.protocol;
-            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, (path && (host || port)) ? path : undefined);
+            const protocol = this.serverOptions.protocol ?? this.serverOptions.transportOpts?.transport;
+            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}${port ? ':' + port : ''}`, (path && (host || port)) ? path : undefined);
             const uri = new URL(url, baseUrl);
             return uri;
         }

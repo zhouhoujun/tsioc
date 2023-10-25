@@ -78,7 +78,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     getRequestFilePath() {
-        const pathname = this.pathname;
+        const pathname = this.pathname || this.url;
         this.mimeAdapter.lookup(pathname);
         return this.mimeAdapter.lookup(pathname) ? pathname : null;
     }

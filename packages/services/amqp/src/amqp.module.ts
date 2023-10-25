@@ -12,7 +12,8 @@ import { AmqpEndpoint } from './server/endpoint';
 
 
 
-const defaultMaxSize = 1048576; // 1024 * 1024;
+// const defaultMaxSize = 1048576; // 1024 * 1024;
+const defaultMaxSize = 1024 * 256; // 1024 * 1024;
 
 @Module({
     providers: [

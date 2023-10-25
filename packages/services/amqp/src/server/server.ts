@@ -55,7 +55,7 @@ export class AmqpServer extends Server {
         const channel = this._channel = await this._conn.createChannel();
 
         const transportOpts = this.options.transportOpts!;
-        if (transportOpts.transport) {
+        if (!transportOpts.transport) {
             transportOpts.transport = 'amqp';
         }
         transportOpts.serverSide = true;

@@ -1,9 +1,9 @@
-import { BadRequestExecption, Context, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, SendPacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { EventTransportSession } from '@tsdi/endpoints';
 import { UuidGenerator } from '@tsdi/core';
-import { Injectable, Injector } from '@tsdi/ioc';
+import { Injectable, Injector, isNil } from '@tsdi/ioc';
 import { Channel, ConsumeMessage } from 'amqplib';
-import { Observable, fromEvent, map } from 'rxjs';
+import { Observable, fromEvent, map, of } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
@@ -58,6 +58,8 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
+        (data as SendPacket).__sent = true;
+        (data as SendPacket).__headMsg = true;
         return this.sender.send(this.contextFactory, data);
     }
 
@@ -67,14 +69,24 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
         headers[hdr.CONTENT_TYPE] = contentType;
         headers[hdr.CONTENT_ENCODING] = contentEncoding;
-        return this.receiver.receive(this.contextFactory, msg.content, headers[hdr.TOPIC] ?? correlationId)
+
+        const pkg = {
+            id: correlationId,
+            topic: headers[hdr.TOPIC],
+            replyTo: replyTo,
+            headers,
+            __headMsg: true
+        } as SendPacket;
+
+        return this.receiver.receive((msg, headDelimiter) => {
+            const ctx = this.contextFactory(msg, headDelimiter);
+            ctx.packet = pkg;
+            return ctx;
+        }, msg.content, headers[hdr.TOPIC] ?? correlationId)
             .pipe(
                 map(payload => {
                     return {
-                        id: correlationId,
-                        topic: headers[hdr.TOPIC],
-                        replyTo: replyTo,
-                        headers,
+                        ...pkg,
                         ...payload
                     } as Packet
                 })

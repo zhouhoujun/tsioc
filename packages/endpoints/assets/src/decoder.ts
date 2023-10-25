@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
+import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, StreamAdapter, IDuplexStream, hdr, SendPacket } from '@tsdi/common';
 import { Observable, Subscriber } from 'rxjs';
 
 
@@ -52,19 +52,39 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
 
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
-            if (!ctx.raw || !ctx.raw.length) {
+            if (!ctx.raw) {
                 subscriber.error(new ArgumentExecption('asset decoding input empty'));
                 return;
             }
-            const id = ctx.raw!.readInt16BE(0);
-            let raw = ctx.raw.subarray(2);
-            let packet = this.packs.get(id);
+            let raw = ctx.raw;
+            let packet: CachePacket | undefined;
+            let id: string | number;
+            if (!ctx.packet) {
+                id = raw.readInt16BE(0);
+                raw = raw.subarray(2);
+                packet = this.packs.get(id);
+            } else {
+                if ((ctx.packet as SendPacket).__headMsg) {
+                    id = ctx.packet.id;
+                } else {
+                    id = raw.readInt16BE(0);
+                    raw = raw.subarray(2);
+                }
+                packet = this.packs.get(id);
+            }
+
             if (!packet) {
-                const hidx = raw.indexOf(ctx.headerDelimiter!);
-                if (hidx >= 0) {
-                    packet = JSON.parse(new TextDecoder().decode(raw.subarray(0, hidx))) as CachePacket;
-                    raw = raw.subarray(hidx + 1);
-                    const len = packet?.length ?? (~~(packet?.headers?.[hdr.CONTENT_LENGTH] ?? '0'));
+                if (ctx.packet) {
+                    packet = ctx.packet as CachePacket;
+                } else {
+                    const hidx = raw.indexOf(ctx.headerDelimiter!);
+                    if (hidx >= 0) {
+                        packet = JSON.parse(new TextDecoder().decode(raw.subarray(0, hidx))) as CachePacket;
+                        raw = raw.subarray(hidx + 1);
+                    }
+                }
+                if (packet) {
+                    const len = packet.length ?? (~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0'));
                     if (!len) {
                         packet.payload = raw;
                         subscriber.next(packet);
@@ -83,6 +103,8 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                             subscriber.complete();
                         }
                     }
+                } else {
+                    subscriber.complete();
                 }
             } else {
                 packet.cacheSize += raw.length;
