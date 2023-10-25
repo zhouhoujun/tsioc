@@ -1,4 +1,5 @@
 import { Execption, isArray } from '@tsdi/ioc';
+import { StatusCode } from './packet';
 
 
 /**
@@ -80,7 +81,7 @@ export class InvalidJsonException extends Execption {
  * @extends {MessageExecption}
  */
 export class BadRequestExecption extends MessageExecption {
-    constructor(message = 'Bad Request', status?: number | string) {
+    constructor(message = 'Bad Request', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -93,7 +94,7 @@ export class BadRequestExecption extends MessageExecption {
  * @extends {MessageExecption}
  */
 export class UnauthorizedExecption extends MessageExecption {
-    constructor(message = 'Unauthorized', status?: number | string) {
+    constructor(message = 'Unauthorized', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -106,7 +107,7 @@ export class UnauthorizedExecption extends MessageExecption {
  * @extends {MessageExecption}
  */
 export class ForbiddenExecption extends MessageExecption {
-    constructor(message = 'Forbidden', status?: number) {
+    constructor(message = 'Forbidden', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -119,7 +120,7 @@ export class ForbiddenExecption extends MessageExecption {
  * @extends {MessageExecption}
  */
 export class NotFoundExecption extends MessageExecption {
-    constructor(message = 'Not Found', status?: number) {
+    constructor(message = 'Not Found', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -133,7 +134,7 @@ export class NotFoundExecption extends MessageExecption {
  * @extends {MessageExecption}
  */
 export class MethodNotAllowedExecption extends MessageExecption {
-    constructor(message = 'Method Not Allowed', status?: number | string) {
+    constructor(message = 'Method Not Allowed', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -146,7 +147,7 @@ export class MethodNotAllowedExecption extends MessageExecption {
  * @extends {MessageExecption}
  */
 export class NotAcceptableExecption extends MessageExecption {
-    constructor(message = 'Not Acceptable', status?: number) {
+    constructor(message = 'Not Acceptable', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -155,7 +156,7 @@ export class NotAcceptableExecption extends MessageExecption {
  * unsupported media type execption.
  */
 export class UnsupportedMediaTypeExecption extends MessageExecption {
-    constructor(message = 'Unsupported Media Type', status?: number) {
+    constructor(message = 'Unsupported Media Type', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -168,7 +169,7 @@ export class UnsupportedMediaTypeExecption extends MessageExecption {
  * @extends {MessageExecption}
  */
 export class RequestTimeoutExecption extends MessageExecption {
-    constructor(message = 'Request Timeout', status?: number | string) {
+    constructor(message = 'Request Timeout', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -180,7 +181,7 @@ export class RequestTimeoutExecption extends MessageExecption {
  * server side exception.
  */
 export class InternalServerExecption extends MessageExecption {
-    constructor(message = 'Internal Server Error', status?: number | string) {
+    constructor(message = 'Internal Server Error', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -191,7 +192,7 @@ export class InternalServerExecption extends MessageExecption {
  * server side exception.
  */
 export class NotImplementedExecption extends MessageExecption {
-    constructor(message = 'Not Implemented', status?: number | string) {
+    constructor(message = 'Not Implemented', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -202,7 +203,7 @@ export class NotImplementedExecption extends MessageExecption {
  * server side exception.
  */
 export class BadGatewayExecption extends MessageExecption {
-    constructor(message = 'Bad Gateway', status?: number | string) {
+    constructor(message = 'Bad Gateway', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -213,7 +214,7 @@ export class BadGatewayExecption extends MessageExecption {
  * server side exception.
  */
 export class ServiceUnavailableExecption extends MessageExecption {
-    constructor(message = 'Service Unavailable', status?: number | string) {
+    constructor(message = 'Service Unavailable', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -224,7 +225,7 @@ export class ServiceUnavailableExecption extends MessageExecption {
  * server side exception.
  */
 export class GatewayTimeoutExecption extends MessageExecption {
-    constructor(message = 'Gateway Timeout', status?: number | string) {
+    constructor(message = 'Gateway Timeout', status?: StatusCode) {
         super(message, status)
     }
 }
@@ -308,7 +309,7 @@ export class DisconnectExecption extends Execption {
  * server side exception.
  */
 export class NotSupportedExecption extends MessageExecption {
-    constructor(message = 'Not Supported', status?: number | string) {
+    constructor(message = 'Not Supported', status?: StatusCode) {
         super(message, status)
     }
 }

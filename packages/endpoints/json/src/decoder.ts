@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
 import { InterceptorHandler } from '@tsdi/core';
 import { InvalidJsonException, Packet, Context, Decoder, DecoderBackend, DecodeInterceptor } from '@tsdi/common';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 
 
 @Abstract()
@@ -43,13 +43,13 @@ export class SimpleJsonDecoderBackend implements JsonDecoderBackend {
 
     handle(ctx: Context): Observable<Packet> {
         if (ctx.packet) return of(ctx.packet);
-        if (!ctx.raw || !ctx.raw.length) throw new ArgumentExecption('json decoding input empty');
+        if (!ctx.raw || !ctx.raw.length) return throwError(() => new ArgumentExecption('json decoding input empty'));
         const jsonStr = isString(ctx.raw) ? ctx.raw : new TextDecoder().decode(ctx.raw);
         try {
             ctx.packet = JSON.parse(jsonStr);
             return of(ctx.packet ?? {});
         } catch (err) {
-            throw new InvalidJsonException(err, jsonStr);
+            return throwError(() => new InvalidJsonException(err, jsonStr));
         }
     }
 

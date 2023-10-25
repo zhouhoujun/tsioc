@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, StreamAdapter, IDuplexStream, hdr } from '@tsdi/common';
-import { Observable, Subscriber, of, throwError } from 'rxjs';
+import { Observable, Subscriber } from 'rxjs';
 
 
 @Abstract()
@@ -58,7 +58,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
             }
             const id = ctx.raw!.readInt16BE(0);
             let raw = ctx.raw.subarray(2);
-            let packet = (ctx.packet as CachePacket) ?? this.packs.get(id);
+            let packet = this.packs.get(id);
             if (!packet) {
                 const hidx = raw.indexOf(ctx.headerDelimiter!);
                 if (hidx >= 0) {
@@ -80,6 +80,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                             const stream = packet.payload = ctx.get(StreamAdapter).createPassThrough();
                             stream.write(raw);
                             this.packs.set(id, packet);
+                            subscriber.complete();
                         }
                     }
                 }
@@ -91,12 +92,12 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                     this.packs.delete(packet.id);
                     subscriber.next(packet);
                     subscriber.complete();
+                } else {
+                    subscriber.complete();
                 }
             }
 
-            return () => {
-                subscriber.unsubscribe()
-            };
+            return subscriber;
         });
     }
 

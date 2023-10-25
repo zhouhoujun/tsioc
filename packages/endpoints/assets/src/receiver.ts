@@ -1,6 +1,6 @@
 import { promisify } from '@tsdi/ioc';
 import { Context, PacketLengthException, Receiver, TopicBuffer, AssetTransportOpts, IncomingPacket } from '@tsdi/common';
-import { Observable, defer, finalize, mergeMap } from 'rxjs';
+import { Observable, Subscriber, defer, filter, finalize, mergeMap } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
 
@@ -23,7 +23,7 @@ export class AssetReceiver implements Receiver {
 
 
     receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<IncomingPacket> {
-        return defer(async () => {
+        return new Observable((subscriber: Subscriber<Buffer>) => {
             let chl = this.topics.get(topic);
             if (!chl) {
                 chl = {
@@ -34,22 +34,24 @@ export class AssetReceiver implements Receiver {
                 }
                 this.topics.set(topic, chl)
             }
-            const msg = await promisify(this.handleData, this)(chl, source);
-            return msg;
+            this.handleData(chl, source, subscriber);
+            
+            return subscriber;
 
         })
-            .pipe(mergeMap(msg => {
-                const ctx = factory(msg, this.headDelimiter);
-                return this.decoder.handle(ctx)
-                    .pipe(
-                        finalize(() => {
-                            ctx.destroy();
-                        })
-                    )
-            }))
+            .pipe(
+                mergeMap(msg => {
+                    const ctx = factory(msg!, this.headDelimiter);
+                    return this.decoder.handle(ctx)
+                        .pipe(
+                            finalize(() => {
+                                ctx.destroy();
+                            })
+                        )
+                }))
     }
 
-    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, callback: (err: any, msg: Buffer) => void) {
+    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Buffer>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -73,22 +75,27 @@ export class AssetReceiver implements Receiver {
                     throw new PacketLengthException(rawContentLength);
                 }
                 chl.buffers = [buffer.subarray(idx + 1)];
-                chl.length -= idx + 1;
+                chl.length -= (idx + 1);
             }
         }
 
         if (chl.contentLength !== null) {
             if (chl.length === chl.contentLength) {
-                this.handleMessage(chl, this.concatCaches(chl), callback);
+                this.handleMessage(chl, this.concatCaches(chl), subscriber);
+                subscriber.complete();
             } else if (chl.length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message, callback);
+                this.handleMessage(chl, message, subscriber);
                 if (rest.length) {
-                    this.handleData(chl, rest, callback);
+                    this.handleData(chl, rest, subscriber);
                 }
+            } else {
+                subscriber.complete();
             }
+        } else {
+            subscriber.complete();
         }
     }
 
@@ -96,22 +103,11 @@ export class AssetReceiver implements Receiver {
         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
     }
 
-    protected handleMessage(chl: TopicBuffer, message: Buffer, callback: (err: any, msg: Buffer) => void) {
+    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        callback(null, message);
-
-
-        // .subscribe({
-        //     next(vale) {
-        //         subscriber.next(vale);
-        //         subscriber.complete();
-        //     },
-        //     error(err) {
-        //         subscriber.error(err);
-        //     }
-        // });
+        subscriber.next(message);
     }
 
 }

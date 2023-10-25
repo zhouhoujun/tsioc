@@ -128,6 +128,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             usubs.push(this.socket.producer.on('producer.disconnect', (e) => {
                 subscriber.error(e);
             }))
+
             return () => {
                 usubs.forEach(e => e?.())
             }

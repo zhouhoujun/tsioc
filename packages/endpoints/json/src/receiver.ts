@@ -1,6 +1,6 @@
 import { promisify } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, TransportOpts } from '@tsdi/common';
-import { Observable, defer, finalize, mergeMap } from 'rxjs';
+import { Observable, Subscriber, defer, finalize, mergeMap } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -23,7 +23,7 @@ export class JsonReceiver implements Receiver {
     }
 
     receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
-        return defer(async () => {
+        return new Observable((subscriber: Subscriber<Buffer>) => {
             let chl = this.topics.get(topic);
             if (!chl) {
                 chl = {
@@ -34,8 +34,9 @@ export class JsonReceiver implements Receiver {
                 }
                 this.topics.set(topic, chl)
             }
-            const msg = await promisify(this.handleData, this)(chl, source);
-            return msg;
+            this.handleData(chl, source, subscriber);
+            
+            return subscriber;
 
         })
             .pipe(mergeMap(msg => {
@@ -49,7 +50,7 @@ export class JsonReceiver implements Receiver {
             }))
     }
 
-    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, callback: (err: any, msg: Buffer) => void) {
+    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Buffer>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -73,22 +74,27 @@ export class JsonReceiver implements Receiver {
                     throw new PacketLengthException(rawContentLength);
                 }
                 chl.buffers = [buffer.subarray(idx + 1)];
-                chl.length -= idx + 1;
+                chl.length -= (idx + 1);
             }
         }
 
         if (chl.contentLength !== null) {
             if (chl.length === chl.contentLength) {
-                this.handleMessage(chl, this.concatCaches(chl), callback);
+                this.handleMessage(chl, this.concatCaches(chl), subscriber);
+                subscriber.complete();
             } else if (chl.length > chl.contentLength) {
                 const buffer = this.concatCaches(chl);
                 const message = buffer.subarray(0, chl.contentLength);
                 const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message, callback);
+                this.handleMessage(chl, message, subscriber);
                 if (rest.length) {
-                    this.handleData(chl, rest, callback);
+                    this.handleData(chl, rest, subscriber);
                 }
+            } else {
+                subscriber.complete();
             }
+        } else {
+            subscriber.complete();
         }
     }
 
@@ -96,10 +102,10 @@ export class JsonReceiver implements Receiver {
         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
     }
 
-    protected handleMessage(chl: TopicBuffer, message: Buffer, callback: (err: any, msg: Buffer) => void) {
+    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
         chl.contentLength = null;
         chl.length = 0;
         chl.buffers = [];
-        callback(null, message);
+        subscriber.next(message);
     }
 }

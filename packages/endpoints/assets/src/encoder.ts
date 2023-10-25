@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isNil, isString, lang, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, StreamAdapter, isBuffer } from '@tsdi/common';
-import { Observable, mergeMap, of, throwError, map, range, interval, take } from 'rxjs';
+import { Observable, mergeMap, of, throwError, map, range } from 'rxjs';
 
 
 @Abstract()
@@ -112,12 +112,6 @@ export class BufferifyEncodeInterceptor implements EncodeInterceptor {
 }
 
 
-// interface Subpackage extends SendPacket {
-//     caches: Buffer[];
-//     cacheSize: number;
-//     residueSize: number;
-// }
-
 @Injectable()
 export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
 
@@ -128,7 +122,7 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
                 mergeMap(buf => {
                     if (input.session.options.maxSize) {
                         let maxSize = input.session.options.maxSize;
-                        maxSize = maxSize - (Buffer.byteLength(maxSize.toString()) + Buffer.byteLength(input.session.options.delimiter ?? '#')) - 2;
+                        maxSize = maxSize - (Buffer.byteLength(maxSize.toString()) + Buffer.byteLength(input.session.options.delimiter ?? '#')) - 2 // 2 packet id;
                         if (buf.length <= maxSize) {
                             return of(buf);
                         } else {
@@ -138,7 +132,6 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
 
                             return range(1, count)
                                 .pipe(
-                                    // take(count),
                                     map(i => {
                                         const end = i * maxSize;
                                         return buf.subarray(end - maxSize, end > len ? len : end)
