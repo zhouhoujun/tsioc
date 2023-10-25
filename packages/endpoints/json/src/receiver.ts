@@ -1,6 +1,5 @@
-import { promisify } from '@tsdi/ioc';
 import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, TransportOpts } from '@tsdi/common';
-import { Observable, Subscriber, defer, finalize, mergeMap } from 'rxjs';
+import { Observable, Subscriber, finalize, mergeMap, share } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
 
@@ -35,19 +34,22 @@ export class JsonReceiver implements Receiver {
                 this.topics.set(topic, chl)
             }
             this.handleData(chl, source, subscriber);
-            
+
             return subscriber;
 
         })
-            .pipe(mergeMap(msg => {
-                const ctx = factory(msg);
-                return this.decoder.handle(ctx)
-                    .pipe(
-                        finalize(() => {
-                            ctx.destroy();
-                        })
-                    )
-            }))
+            .pipe(
+                mergeMap(msg => {
+                    const ctx = factory(msg);
+                    return this.decoder.handle(ctx)
+                        .pipe(
+                            finalize(() => {
+                                ctx.destroy();
+                            })
+                        )
+                }),
+                share()
+            )
     }
 
     protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Buffer>) {

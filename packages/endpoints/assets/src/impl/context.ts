@@ -10,14 +10,14 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
         return abstl.test(url)
     }
 
-    protected parseURL(req: Incoming<any>, proxy?: boolean | undefined): URL {
+    protected parseURL(req: Incoming<TSocket>, proxy?: boolean | undefined): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
             const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
             const protocol = this.serverOptions.protocol;
-            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
+            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, (path && (host || port)) ? path : undefined);
             const uri = new URL(url, baseUrl);
             return uri;
         }

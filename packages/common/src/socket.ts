@@ -141,6 +141,8 @@ export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableSt
      * Outgoing URL
      */
     readonly url?: string;
+
+    readonly originalUrl?: string;
     /**
      * Outgoing URL parameters.
      */

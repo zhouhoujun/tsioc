@@ -21,6 +21,7 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
     sendDate = true;
     private _sentpkt?: SendPacket;
     readonly id: number;
+    readonly url: string;
     readonly topic: string;
     readonly replyTo: string;
 
@@ -33,6 +34,7 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
         this.setMaxListeners(0);
         this._hdr = new ResHeaders();
         this.id = packet.id;
+        this.url = packet.url ?? '';
         this.topic = packet.topic ?? '';
         this.replyTo = packet.replyTo ?? '';
     }

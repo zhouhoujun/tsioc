@@ -1,6 +1,6 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr } from '@tsdi/common';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
@@ -59,13 +59,12 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     protected getOriginalUrl(request: TRequest) {
-        return normalize(request.url?.toString() ?? '');
+        return normalize(request.originalUrl || request.topic || '');
     }
 
     protected init(request: TRequest) {
         this.status = this.vaildator.notFound;
-        this._url = request.url ?? '';
-
+        this._url = request.url || request.topic || '';
         if (this.isAbsoluteUrl(this._url)) {
             this._url = normalize(this.URL.pathname);
         } else {
@@ -73,7 +72,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
             if (sidx > 0) {
                 this._url = this._url.slice(0, sidx);
             }
-            this.url = normalize(this._url);
+            this._url = normalize(this._url);
         }
         (this.request as any)['query'] = this.query;
     }
@@ -140,8 +139,8 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     protected createURL() {
         try {
             return this.parseURL(this.request, !!this.serverOptions.proxy);
-        } catch (err) {
-            return Object.create(null);
+        } catch (err: any) {
+            throw new InternalServerExecption(err.message);
         }
     }
 

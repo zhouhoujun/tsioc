@@ -39,7 +39,7 @@ export class TcpServer extends Server implements ListenService {
     listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
         if (!this.serv) throw new InternalServerExecption();
         const isSecure = this.options.secure = this.isSecure;
-        const protocol = this.options.protocol = this.options.protocol ?? (isSecure? 'ssl' : 'tcp');
+        const protocol = this.options.protocol = this.options.protocol ?? (isSecure ? 'ssl' : 'tcp');
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -62,7 +62,11 @@ export class TcpServer extends Server implements ListenService {
             if (!this.options.listenOpts) {
                 this.options.listenOpts = opts;
             }
-            this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+            if (opts.host || opts.port) {
+                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+            } else {
+                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with IPC address:', opts.path, '!');
+            }
             this.serv.listen(opts, listeningListener);
         }
         return this;
@@ -82,17 +86,17 @@ export class TcpServer extends Server implements ListenService {
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
-        if(!transportOpts.serverSide) transportOpts.serverSide = true;
-        if(!transportOpts.transport) transportOpts.transport = 'tcp';
+        if (!transportOpts.serverSide) transportOpts.serverSide = true;
+        if (!transportOpts.transport) transportOpts.transport = 'tcp';
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const session = factory.create(socket,transportOpts);
+                const session = factory.create(socket, transportOpts);
                 this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const session = factory.create(socket,transportOpts);
+                const session = factory.create(socket, transportOpts);
                 this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
             })
         }

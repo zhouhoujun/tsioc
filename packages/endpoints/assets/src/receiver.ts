@@ -1,6 +1,5 @@
-import { promisify } from '@tsdi/ioc';
 import { Context, PacketLengthException, Receiver, TopicBuffer, AssetTransportOpts, IncomingPacket } from '@tsdi/common';
-import { Observable, Subscriber, defer, filter, finalize, mergeMap } from 'rxjs';
+import { Observable, Subscriber, finalize, mergeMap, share } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
 
@@ -48,7 +47,9 @@ export class AssetReceiver implements Receiver {
                                 ctx.destroy();
                             })
                         )
-                }))
+                }),
+                share()
+            )
     }
 
     protected handleData(chl: TopicBuffer, dataRaw: string | Buffer, subscriber: Subscriber<Buffer>) {
