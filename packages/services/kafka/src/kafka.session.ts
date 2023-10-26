@@ -55,7 +55,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
         const headers: IHeaders = packet.kafkaheaders;
 
-        this.socket.producer.send({
+        await this.socket.producer.send({
             ...opts.send,
             topic,
             messages: [{
