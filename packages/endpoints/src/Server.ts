@@ -1,5 +1,5 @@
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown } from '@tsdi/core';
+import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
 import { TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
@@ -53,7 +53,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     proxy?: ProxyOpts;
 
     protocol?: string;
-    
+
     secure?: boolean;
 }
 
@@ -111,5 +111,16 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
     protected abstract onStart(): Promise<any>;
 
     protected abstract onShutdown(): Promise<any>;
+
+}
+
+/**
+ *  bind Server event.
+ */
+export class BindServerEvent<T> extends ApplicationEvent {
+
+    constructor(readonly server: T, target: any) {
+        super(target)
+    }
 
 }

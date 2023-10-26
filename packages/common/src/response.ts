@@ -97,7 +97,7 @@ export interface ResponseEvent {
  * transport event.
  * response for `TransportClient`.
  */
-export type TransportEvent<T = any, TStatus = any> = TransportErrorResponse<TStatus> | TransportHeaderResponse<TStatus> | TransportResponse<T, TStatus> | ResponseEvent;
+export type TransportEvent<T = any, TStatus = any> = TransportHeaderResponse<TStatus> | TransportResponse<T, TStatus> | ResponseEvent;
 
 /**
  * An error that represents a failed attempt to JSON.parse text coming back

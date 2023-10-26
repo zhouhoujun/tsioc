@@ -234,7 +234,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
     }
 
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: TStatus; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
-        return new TransportErrorResponse(options) as TResponse;
+        return new TransportErrorResponse(options) as any;
     }
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: TStatus; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
         return new TransportHeaderResponse(options) as TResponse;

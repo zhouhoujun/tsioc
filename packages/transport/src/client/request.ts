@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { TransportEvent, TransportRequest, ResHeaders, ResponseJsonParseError, IncomingHeaders, OutgoingHeaders } from '@tsdi/common';
+import { TransportEvent, TransportRequest, ResHeaders, ResponseJsonParseError, IncomingHeaders, OutgoingHeaders, TransportErrorResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { MimeAdapter, MimeTypes } from '../MimeAdapter';
 import { hdr } from '../consts';

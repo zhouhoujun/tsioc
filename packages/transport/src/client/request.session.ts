@@ -91,7 +91,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportErrorResponse(options);
+        return new TransportErrorResponse(options) as any;
     }
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
         return new TransportHeaderResponse(options);
@@ -168,7 +168,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         const [ok, result] = await this.parseResponse(url, body, headers, status, statusText, req.responseType);
 
         if (ok) {
-            observer.next(result);
+            observer.next(result as TransportEvent);
             observer.complete();
         } else {
             observer.error(result);

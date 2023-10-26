@@ -2,7 +2,7 @@ import { Backend, Handler, Interceptor } from '@tsdi/core';
 import { Abstract, DefaultInvocationContext, Injector, InvokeArguments } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Packet } from './packet';
-import { Transport } from './protocols';
+import { HybirdTransport, Transport } from './protocols';
 import { TransportSession } from './TransportFactory';
 import { isBuffer } from './utils';
 
@@ -12,7 +12,7 @@ import { isBuffer } from './utils';
  */
 export class Context<TPacket extends Packet = Packet> extends DefaultInvocationContext {
 
-    readonly transport: Transport;
+    readonly transport: Transport | HybirdTransport;
     readonly session: TransportSession;
     public packet?: Packet;
     public raw?: Buffer;

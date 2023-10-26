@@ -1,4 +1,4 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr } from '@tsdi/common';
 import { isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { append, parseTokenList, AbstractAssetContext } from '@tsdi/endpoints/assets';
 import * as assert from 'assert';
@@ -6,7 +6,7 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { Throwable } from '@tsdi/endpoints';
+import { MiddlewareLike, Throwable } from '@tsdi/endpoints';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -16,7 +16,7 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, number, HttpServerOpts> implements Throwable {
+export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServResponse, HttpServerOpts> implements Throwable {
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;

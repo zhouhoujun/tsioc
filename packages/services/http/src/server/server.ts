@@ -1,16 +1,16 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
-import { ModuleLoader } from '@tsdi/core';
-import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption, HYBRID_HOST, ev } from '@tsdi/common';
+import { ApplicationContext, ApplicationEventMulticaster, ModuleLoader, Startup } from '@tsdi/core';
+import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption, TransportSessionFactory } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { MiddlewareServer } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareServer, RequestHandler, Server } from '@tsdi/endpoints';
 import { CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints/assets';
-import { Subscription, finalize } from 'rxjs';
+import { Subscription, finalize, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { HttpContext, HttpServRequest, HttpServResponse } from './context';
+import { HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
 import { HttpEndpoint } from './endpoint';
 
@@ -19,7 +19,7 @@ import { HttpEndpoint } from './endpoint';
  * http server.
  */
 @Injectable()
-export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> implements ListenService<ListenOptions>  {
+export class HttpServer extends Server<HttpServRequest, HttpServResponse> implements ListenService<ListenOptions>  {
 
     @InjectLog() logger!: Logger;
 
@@ -74,8 +74,7 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
         return this;
     }
 
-
-    protected async onStartup(): Promise<http2.Http2Server | http.Server | https.Server> {
+    async onStartup(): Promise<http2.Http2Server | http.Server | https.Server> {
         const opts = this.options;
         const injector = this.endpoint.injector;
 
@@ -101,11 +100,15 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
             this._server = isSecure ? https.createServer(option as http.ServerOptions)
                 : http.createServer(option as https.ServerOptions);
         }
-        injector.get(ModuleRef).setValue(HYBRID_HOST, this._server);
+        
+        // notify hybrid service to bind http server.
+        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, this)));
+
         return this._server;
     }
 
     protected override async onStart(): Promise<any> {
+        await this.onStartup();
         if (!this._server) throw new InternalServerExecption();
         const opts = this.options;
         // const injector = this.endpoint.injector;
@@ -118,10 +121,19 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
         //         return runners.run(sr);
         //     }))
         // }
+        
+        const injector = this.endpoint.injector;
+        const factory = injector.get(TransportSessionFactory);
+        const transportOpts = this.options.transportOpts!;
+        if (!transportOpts.serverSide) transportOpts.serverSide = true;
+        if (!transportOpts.transport) transportOpts.transport = this._secure? 'https' : 'http';
 
-        this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
-        this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
-        this._server.on(ev.ERROR, (err) => this.logger.error(err));
+        const session = factory.create(this._server, transportOpts);
+        injector.get(RequestHandler).handle(this.endpoint, session,  this.logger, this.options);
+
+        // this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
+        // this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
+        // this._server.on(ev.ERROR, (err) => this.logger.error(err));
 
         if (opts.listenOpts && opts.autoListen) {
             this.listen(opts.listenOpts);
@@ -130,7 +142,6 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
 
     protected override async onShutdown(): Promise<void> {
         if (!this._server) return;
-        this.endpoint.injector.get(ModuleRef).unregister(HYBRID_HOST);
         await promisify(this._server.close, this._server)()
             .then(() => {
                 this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
@@ -144,41 +155,10 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
             })
     }
 
-    /**
-     * request handler.
-     * @param observer 
-     * @param req 
-     * @param res 
-     */
-    protected requestHandler(req: HttpServRequest, res: HttpServResponse): Subscription {
-        const ctx = this.createContext(req, res);
-        const cancel = this.endpoint.handle(ctx)
-            .pipe(finalize(() => ctx.destroy()))
-            .subscribe({
-                error: (err) => {
-                    this.logger.error(err)
-                }
-            });
-        const opts = this.options;
-        opts.timeout && req.setTimeout && req.setTimeout(opts.timeout, () => {
-            req.emit?.(ev.TIMEOUT);
-            cancel?.unsubscribe()
-        });
-        req.once(ev.ABOUT, () => cancel?.unsubscribe())
-        return cancel;
-    }
-
-
     protected validOptions(opts: HttpServerOpts) {
         const withCredentials = this._secure = opts.protocol !== 'http' && !!(opts.serverOpts as any).cert;
         opts.listenOpts = { ...opts.listenOpts!, withCredentials, majorVersion: opts.majorVersion } as ListenOptions;
     }
-
-    protected createContext(req: HttpServRequest, res: HttpServResponse): HttpContext {
-        return new HttpContext(this.endpoint.injector, req, res, this.options);
-    }
-
-
 
 }
 

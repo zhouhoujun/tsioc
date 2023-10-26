@@ -1,4 +1,4 @@
-import { ResHeaders, TransportHeaderResponse, TransportResponse, HttpStatusCode } from '@tsdi/common';
+import { ResHeaders, TransportHeaderResponse, TransportResponse, HttpStatusCode, OutgoingHeaders } from '@tsdi/common';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -188,7 +188,7 @@ export abstract class HttpResponseBase implements TransportHeaderResponse {
      */
     constructor(
         init: {
-            headers?: ResHeaders,
+            headers?: ResHeaders | OutgoingHeaders,
             status?: number,
             statusText?: string,
             url?: string,
@@ -196,7 +196,7 @@ export abstract class HttpResponseBase implements TransportHeaderResponse {
         defaultStatus: number = HttpStatusCode.Ok, defaultStatusText = 'OK') {
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
-        this.headers = init.headers || new ResHeaders();
+        this.headers = init.headers instanceof ResHeaders ? init.headers : new ResHeaders(init.headers);
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
         this.url = init.url || null!
@@ -219,7 +219,7 @@ export class HttpHeaderResponse extends HttpResponseBase implements TransportHea
      * Create a new `HttpHeaderResponse` with the given parameters.
      */
     constructor(init: {
-        headers?: ResHeaders,
+        headers?: ResHeaders | OutgoingHeaders,
         status?: number,
         statusText?: string,
         url?: string,
@@ -266,7 +266,7 @@ export class HttpResponse<T = any> extends HttpResponseBase implements Transport
      */
     constructor(init: {
         body?: T | null,
-        headers?: ResHeaders;
+        headers?: ResHeaders | OutgoingHeaders;
         status?: number;
         statusText?: string;
         url?: string;
@@ -282,14 +282,14 @@ export class HttpResponse<T = any> extends HttpResponseBase implements Transport
         HttpResponse<T>;
     clone<V>(update: {
         body?: V | null,
-        headers?: ResHeaders;
+        headers?: ResHeaders | OutgoingHeaders;
         status?: number;
         statusText?: string;
         url?: string;
     }): HttpResponse<V>;
     clone(update: {
         body?: any | null;
-        headers?: ResHeaders;
+        headers?: ResHeaders | OutgoingHeaders;
         status?: number;
         statusText?: string;
         url?: string;
@@ -325,7 +325,7 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
 
     constructor(init: {
         error?: any;
-        headers?: ResHeaders;
+        headers?: ResHeaders | OutgoingHeaders;
         status?: number;
         statusText?: string;
         url?: string;

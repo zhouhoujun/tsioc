@@ -1,13 +1,14 @@
 import { EMPTY_OBJ, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { InternalServerExecption, ev, LOCALHOST, HYBRID_HOST, TransportSessionFactory } from '@tsdi/common';
-import { RequestHandler, Server } from '@tsdi/endpoints';
+import { InternalServerExecption, ev, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
+import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpoint } from './endpoint';
+import { EventHandler } from '@tsdi/core';
 
 
 @Injectable()
@@ -28,27 +29,27 @@ export class WsServer extends Server {
         this.subs = new Subscription();
     }
 
+    @EventHandler(BindServerEvent)
+    async bind(event: BindServerEvent<any>) {
+        if (this.serv) return;
+        await this.onStart(event.server);
+    }
 
-    protected async setup(): Promise<any> {
+    protected async setup(server?: any): Promise<any> {
         const serverOpts = {
             ...this.options.serverOpts
         };
-        if (!serverOpts.server && !serverOpts.port) {
-            const hostServer = this.endpoint.injector.get(HYBRID_HOST, null);
-            if (hostServer && (
-                hostServer instanceof net.Server
-                || hostServer instanceof tls.Server
-            )) {
-                serverOpts.server = hostServer as any;
-            } else {
-                serverOpts.port = 3000;
-            }
+        if (serverOpts.noServer) return;
+        if (server) {
+            serverOpts.server = server;
+        } else if (!serverOpts.server && !serverOpts.port) {
+            serverOpts.port = 3000;
         }
         this.serv = serverOpts?.noServer ? new WebSocketServer(serverOpts) : new SocketServer(serverOpts);
     }
 
-    protected async onStart(): Promise<any> {
-        await this.setup();
+    protected async onStart(bindServer?: any): Promise<any> {
+        await this.setup(bindServer);
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info('WS server closed!'));

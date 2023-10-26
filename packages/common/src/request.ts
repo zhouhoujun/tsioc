@@ -189,7 +189,7 @@ export interface ResponseAs {
     /**
      * response observe type
      */
-    observe?: 'body' | 'events' | 'response' | 'emit';
+    observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
     /**
      * response data type.
      */

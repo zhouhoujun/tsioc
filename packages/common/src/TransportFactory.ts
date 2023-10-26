@@ -3,8 +3,8 @@ import { Receiver } from './Receiver';
 import { Sender } from './Sender';
 import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
 import { Observable } from 'rxjs';
-import { Transport } from './protocols';
-import { TransportEvent } from './response';
+import { HybirdTransport, Transport } from './protocols';
+import { TransportErrorResponse, TransportEvent } from './response';
 import { OutgoingHeaders, ResHeaders } from './headers';
 
 
@@ -17,7 +17,7 @@ export interface TransportOpts {
     /**
      * transport type.
      */
-    transport?: Transport;
+    transport?: Transport | HybirdTransport;
     /**
      * server side or not.
      */
@@ -76,8 +76,8 @@ export abstract class TransportFactory {
 /**
  * response factory.
  */
-export interface ResponseFactory<TResponse = TransportEvent> {
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse
+export interface ResponseFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TErrorResponse
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse
     createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse
 }

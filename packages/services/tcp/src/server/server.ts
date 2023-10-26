@@ -1,12 +1,13 @@
 import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
-import { RequestHandler, Server } from '@tsdi/endpoints';
-import { Subscription } from 'rxjs';
+import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
+import { Subscription, lastValueFrom } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpEndpoint } from './endpoint';
+import { ApplicationEventMulticaster } from '@tsdi/core';
 
 
 
@@ -75,6 +76,10 @@ export class TcpServer extends Server implements ListenService {
     protected async setup(): Promise<any> {
         const opts = this.options;
         this.serv = this.createServer(opts);
+        
+        const injector = this.endpoint.injector;
+        // notify hybrid service to bind http server.
+        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this)));
     }
 
     protected async onStart(): Promise<any> {

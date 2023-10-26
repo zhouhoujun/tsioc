@@ -17,5 +17,5 @@ export type RequestMethod = HttpRequestMethod | GrpcRequestMethod | 'EVENT' | 'M
  */
 export type Transport = 'tcp' | 'udp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 'redis' | 'nats' | 'grpc' | 'modbus' | 'ws';
 
-export type HybirdTransport = 'http' | 'grpc' | 'tcp' | 'coap';
+export type HybirdTransport = 'http' | 'https' | 'grpc' | 'tcp' | 'coap';
 

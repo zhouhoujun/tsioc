@@ -4,14 +4,14 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { ListenOptions } from 'net';
-import { ContentOptions, SessionOptions, ProxyOpts, MiddlewareEndpointOptions } from '@tsdi/endpoints';
+import { ContentOptions, SessionOptions, ProxyOpts, ServerOpts } from '@tsdi/endpoints';
 import { CorsOptions, MimeSource, CsrfOptions, } from '@tsdi/endpoints/assets';
 import { HttpServRequest, HttpServResponse } from './context';
 
 /**
  * http options.
  */
-export interface HttpOpts extends MiddlewareEndpointOptions {
+export interface HttpOpts extends ServerOpts {
     majorVersion?: number;
     proxy?: ProxyOpts;
     /**
@@ -21,7 +21,7 @@ export interface HttpOpts extends MiddlewareEndpointOptions {
     detailError?: boolean;
     cors?: boolean | CorsOptions;
     mimeDb?: Record<string, MimeSource>;
-    content?: boolean | ContentOptions;
+    content?: ContentOptions;
     session?: boolean | SessionOptions;
     controllers?: string[] | Type[];
     autoListen?: boolean;

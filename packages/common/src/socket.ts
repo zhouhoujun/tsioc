@@ -73,8 +73,6 @@ export interface Socket extends IDuplexStream {
     setKeepAlive?(enable?: boolean, initialDelay?: number): this;
 }
 
-export const HYBRID_HOST = tokenId<IEventEmitter>('HYBRID_HOST');
-
 
 /**
  * Connection interface.
