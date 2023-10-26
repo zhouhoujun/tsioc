@@ -57,10 +57,9 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
     }
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
-        const { replyTo, topic, id, headers, ...data } = packet;
-        (data as SendPacket).__sent = true;
-        (data as SendPacket).__headMsg = true;
-        return this.sender.send(this.contextFactory, data);
+        (packet as SendPacket).__sent = true;
+        (packet as SendPacket).__headMsg = true;
+        return this.sender.send(this.contextFactory, packet);
     }
 
     protected override unpack(msg: ConsumeMessage): Observable<Packet> {

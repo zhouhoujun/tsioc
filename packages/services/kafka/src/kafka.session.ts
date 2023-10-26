@@ -53,21 +53,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
 
-        const headers: IHeaders = {};
-        packet.headers && Object.keys(packet.headers).forEach(k => {
-            headers[k] = this.generHead(packet.headers![k]);
-        });
-        headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
-
-        if (!opts.serverSide) {
-            const replyTopic = this.getReply(packet);
-            headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
-            if (opts.consumerAssignments && !isNil(opts.consumerAssignments[replyTopic])) {
-                headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[replyTopic].toString());
-            } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
-                throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator?.notFound);
-            }
-        }
+        const headers: IHeaders = packet.kafkaheaders;
 
         this.socket.producer.send({
             ...opts.send,
@@ -153,11 +139,31 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         )
     }
 
-    protected override pack(packet: Packet<any>): Observable<Buffer> {
-        const { replyTo, topic, id, headers, ...data } = packet;
-        (data as SendPacket).__sent = true;
-        (data as SendPacket).__headMsg = true;
-        return this.sender.send(this.contextFactory, data);
+    protected override pack(packet: Packet<any> & { partition: number, kafkaheaders: IHeaders }): Observable<Buffer> {
+        (packet as SendPacket).__sent = true;
+        (packet as SendPacket).__headMsg = true;
+        if (!packet.kafkaheaders) {
+            const headers = packet.kafkaheaders = {} as IHeaders;
+            packet.headers && Object.keys(packet.headers).forEach(k => {
+                headers[k] = this.generHead(packet.headers![k]);
+            });
+            headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
+            if (this.options.serverSide) {
+                packet.partition = packet.headers?.[KafkaHeaders.REPLY_PARTITION]
+            } else {
+                const opts = this.options as KafkaTransportOpts;
+                const replyTopic = this.getReply(packet);
+                headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
+                if (opts.consumerAssignments && !isNil(opts.consumerAssignments[replyTopic])) {
+                    headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[replyTopic].toString());
+                } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
+                    throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator?.notFound);
+                }
+            }
+        }
+
+
+        return this.sender.send(this.contextFactory, packet);
     }
 
     protected override unpack(msg: EachMessagePayload): Observable<Packet> {
@@ -167,7 +173,6 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const pkg = {
             id,
             topic: msg.topic,
-            replyTo: String(msg.partition),
             headers,
             __headMsg: true
         } as SendPacket;
@@ -188,7 +193,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     }
 
     protected getReply(packet: Packet) {
-        return packet.replyTo ?? packet.topic + '.reply';
+        return packet.replyTo || packet.topic + '.reply';
     }
 
     protected override getPacketId(): string {
