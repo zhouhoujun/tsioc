@@ -1,4 +1,4 @@
-import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider } from '@tsdi/ioc';
+import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { ServerOpts } from './Server';
@@ -111,7 +111,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                 globalFiltersToken: GLOBAL_SERVER_FILTERS,
                                 globalGuardsToken: GLOBAL_SERVER_GRAUDS,
                                 globalInterceptorsToken: GLOBAL_SERVER_INTERCEPTORS,
-                                ...defaultOpts,
+                                ...lang.deepClone(defaultOpts),
                                 ...opts,
                                 routes: {
                                     ...defaultOpts?.routes,

@@ -1,4 +1,4 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { TopicTransportBackend, TransportBackend } from './backend';
@@ -147,7 +147,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             if (!client) {
                 providers.push(toFactory(clientOptsToken, options.clientOpts!, {
                     init: (clientOpts: ClientOpts) => {
-                        const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts;
+
+                        const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts;
                         if (opts.sessionFactory) {
                             opts.providers?.push(toProvider(TransportSessionFactory, opts.sessionFactory))
                         }
@@ -174,7 +175,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             toFactory(token, options.clientOpts!, {
                 init: (clientOpts: ClientOpts, injector: Injector) => {
                     const { defaultOpts, clientOptsToken } = injector.get(moduleOptsToken);
-                    const opts = { ...defaultOpts, ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
+                    const opts = { ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
 
                     if (opts.timeout) {
                         if (opts.transportOpts) {

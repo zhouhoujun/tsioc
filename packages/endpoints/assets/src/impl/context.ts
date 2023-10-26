@@ -11,7 +11,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     }
 
     protected parseURL(req: Incoming<TSocket>, proxy?: boolean | undefined): URL {
-        const url = req.url || req.topic ||  '';
+        const url = req.url || req.originalUrl || req.topic ||  '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {

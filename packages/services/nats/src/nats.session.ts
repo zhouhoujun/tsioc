@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { BadRequestExecption, Context, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, SendPacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
@@ -102,6 +102,8 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
+        (data as SendPacket).__sent = true;
+        (data as SendPacket).__headMsg = true;
         return this.sender.send(this.contextFactory, data);
     }
 
@@ -111,14 +113,22 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             headers[key] = msg.headers?.get(key);
         });
         const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
-        return this.receiver.receive(this.contextFactory, msg.data, msg.subject)
+        const pkg =  {
+            id,
+            topic: msg.subject,
+            replyTo: msg.reply,
+            headers,
+            __headMsg: true
+        } as SendPacket;
+        return this.receiver.receive((msg, headDelimiter) => {
+            const ctx = this.contextFactory(msg, headDelimiter);
+            ctx.packet = pkg;
+            return ctx;
+        }, msg.data, msg.subject)
             .pipe(
                 map(payload => {
                     return {
-                        id,
-                        topic: msg.subject,
-                        replyTo: msg.reply,
-                        headers,
+                        ...pkg,
                         ...payload
                     } as Packet
                 })

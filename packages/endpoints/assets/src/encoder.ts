@@ -115,6 +115,9 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
         return next.handle(input)
             .pipe(
                 mergeMap(buf => {
+                    if(!buf) {
+                        buf =  Buffer.alloc(0);
+                    }
                     if (input.session.options.maxSize) {
                         let maxSize = input.session.options.maxSize;
                         maxSize = maxSize - (Buffer.byteLength(maxSize.toString()) + Buffer.byteLength(input.session.options.delimiter ?? '#')) - ((input.packet as SendPacket)?.__headMsg ? 0 : 2) // 2 packet id;

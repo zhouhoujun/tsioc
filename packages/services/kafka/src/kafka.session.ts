@@ -1,6 +1,6 @@
 import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, IncomingHeaders, NotFoundExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
+import { BadRequestExecption, IncomingHeaders, NotFoundExecption, Packet, Receiver, RequestPacket, ResponsePacket, SendPacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
 import { AbstractTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
@@ -155,20 +155,32 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
 
     protected override pack(packet: Packet<any>): Observable<Buffer> {
         const { replyTo, topic, id, headers, ...data } = packet;
+        (data as SendPacket).__sent = true;
+        (data as SendPacket).__headMsg = true;
         return this.sender.send(this.contextFactory, data);
     }
 
     protected override unpack(msg: EachMessagePayload): Observable<Packet> {
         const headers = this.getIncomingHeaders(msg);
         const id = headers[KafkaHeaders.CORRELATION_ID];
-        return this.receiver.receive(this.contextFactory, msg.message.value ?? Buffer.alloc(0), msg.topic)
+
+        const pkg = {
+            id,
+            topic: msg.topic,
+            replyTo: String(msg.partition),
+            headers,
+            __headMsg: true
+        } as SendPacket;
+
+        return this.receiver.receive((msg, headDelimiter) => {
+            const ctx = this.contextFactory(msg, headDelimiter);
+            ctx.packet = pkg;
+            return ctx;
+        }, msg.message.value ?? Buffer.alloc(0), msg.topic)
             .pipe(
                 map(payload => {
                     return {
-                        id,
-                        topic: msg.topic,
-                        replyTo: msg.partition,
-                        headers,
+                        ...pkg,
                         ...payload
                     } as Packet
                 })

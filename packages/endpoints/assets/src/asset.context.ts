@@ -1,4 +1,4 @@
-import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, lang } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts } from '@tsdi/core';
 import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
@@ -77,10 +77,14 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         (this.request as any)['query'] = this.query;
     }
 
+    private _filepath?: string | null;
     getRequestFilePath() {
-        const pathname = this.pathname || this.url;
-        this.mimeAdapter.lookup(pathname);
-        return this.mimeAdapter.lookup(pathname) ? pathname : null;
+        if (isUndefined(this._filepath)) {
+            const pathname = this.pathname || this.url;
+            this.mimeAdapter.lookup(pathname);
+            this._filepath = this.mimeAdapter.lookup(pathname) ? pathname : null;
+        }
+        return this._filepath;
     }
 
     /**

@@ -4,14 +4,13 @@ import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { Handle, Payload, RequestPath, Subscribe, EndpointsModule } from '@tsdi/endpoints';
 import { JsonTransportModule } from '@tsdi/endpoints/json';
-import { NATS_SERV_INTERCEPTORS, NatsClient, NatsServer } from '../src';
+import { NATS_SERV_INTERCEPTORS, NatsClient, NatsModule } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { NatsModule } from '../src/nats.module';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');

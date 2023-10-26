@@ -94,7 +94,7 @@ describe('Amqp hybrid Tcp Server & Amqp Client & TcpClient', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
-    it('amqp fetch json', async () => {
+    it('amqp client fetch json', async () => {
         const res: any = await lastValueFrom(amqpClient.send('content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
@@ -106,7 +106,7 @@ describe('Amqp hybrid Tcp Server & Amqp Client & TcpClient', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
-    it('fetch big json', async () => {
+    it('amqp client fetch big json', async () => {
         const res: any = await lastValueFrom(amqpClient.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {

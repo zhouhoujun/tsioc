@@ -105,6 +105,19 @@ export function deepForEach<T>(
     })
 }
 
+export function deepClone<T>(input: T): T {
+    if (!isObject(input)) return null!;
+    return Object.entries(input).reduce((result, [key, value]) => {
+        if (isPlainObject(value)) {
+            result[key] = deepClone(value);
+        } else {
+            result[key] = value;
+        }
+        return result;
+    }, {} as any);
+
+}
+
 /**
  * deep in object.
  * @param input 
@@ -115,7 +128,7 @@ export function deepForEach<T>(
 export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
     if (isObject(input) == false) return;
     Object.keys(input).forEach(name => {
-        const chpth = path ? name : `${path}.${name}`;
+        const chpth = path ? `${path}.${name}` : name;
         const val = input[name];
         if (isNil(val) || fn(chpth, val) === false) return;
         deepIn(val, fn, chpth);
@@ -368,7 +381,7 @@ export function delay(times: number, work?: (...args: any[]) => void, ...args: a
 
 export const immediate = typeof setImmediate !== 'undefined' ? setImmediate : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
 
-export const nextTick = typeof process !== 'undefined'? process.nextTick : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
+export const nextTick = typeof process !== 'undefined' ? process.nextTick : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
 
 /**
  * run promise step by step.
