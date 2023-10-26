@@ -10,8 +10,8 @@ import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS } from './server/options';
 import { MqttEndpoint } from './server/endpoint';
 
-
-const defaultMaxSize = 524288; //1024 * 512;
+const defaultMaxSize = 1048576; // 1024 * 1024;
+// const defaultMaxSize = 524288; //1024 * 512;
 
 @Module({
     providers: [

@@ -3,7 +3,7 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
+import { EndpointsModule } from '@tsdi/endpoints';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';

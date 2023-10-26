@@ -55,7 +55,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
     }
 
     protected getReply(packet: Packet) {
-        return packet.replyTo ?? packet.topic + '/reply';
+        return packet.replyTo || packet.topic + '/reply';
     }
 
     async destroy(): Promise<void> {
