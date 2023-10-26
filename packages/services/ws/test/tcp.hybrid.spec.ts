@@ -1,18 +1,17 @@
-import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
+import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
+import { ServerModule } from '@tsdi/platform-server';
 import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { TcpClient, TcpModule, TcpServer, } from '@tsdi/tcp';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { KafkaClient, KafkaServer, KafkaModule } from '../src';
+import { TcpClient, TcpModule } from '@tsdi/tcp';
+import { WsModule, WsClient, WsServer } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
-
 
 
 @Module({
@@ -23,19 +22,27 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
-        KafkaModule,
+        WsModule,
         ClientModule.register([
             {
-                transport: 'kafka'
+                transport: 'ws'
             },
             {
-                transport: 'tcp'
+                transport: 'tcp',
+                clientOpts: {
+                    connectOpts: {
+                        port: 2000
+                    }
+                }
             }
         ]),
         EndpointsModule.register([
             {
                 transport: 'tcp',
                 serverOpts: {
+                    listenOpts: {
+                        port: 2000
+                    },
                     interceptors: [
                         BigFileInterceptor,
                         Content,
@@ -46,7 +53,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 microservice: true,
-                transport: 'kafka',
+                transport: 'ws',
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
@@ -62,27 +69,27 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         DeviceController
     ]
 })
-export class KafkaTcpTestModule {
+export class WsTestModule {
 
 }
 
 
-describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
+describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
     let client: TcpClient;
-    let kafkaClient: KafkaClient
+    let wsClient: WsClient
 
     before(async () => {
-        ctx = await Application.run(KafkaTcpTestModule);
+        ctx = await Application.run(WsTestModule);
         injector = ctx.injector;
-        kafkaClient = injector.get(KafkaClient);
+        wsClient = injector.get(WsClient);
         client = injector.get(TcpClient);
     });
 
 
-
+    
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(
@@ -95,8 +102,8 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
-    it('kafka client fetch json', async () => {
-        const res: any = await lastValueFrom(kafkaClient.send('content/510100_full.json')
+    it('ws client fetch json', async () => {
+        const res: any = await lastValueFrom(wsClient.send('content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -107,8 +114,8 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
         expect(isArray(res.features)).toBeTruthy();
     })
 
-    it('kafka client fetch big json', async () => {
-        const res: any = await lastValueFrom(kafkaClient.send('content/big.json')
+    it('ws client fetch big json', async () => {
+        const res: any = await lastValueFrom(wsClient.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -292,18 +299,7 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(kafkaClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual(result);
-    })
-
-    it('Subscribe message', async () => {
-        const result = 'load';
-        const r = await lastValueFrom(kafkaClient.send('topic-device', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(wsClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -314,7 +310,7 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(kafkaClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(wsClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -324,6 +320,6 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
     })
 
     after(() => {
-        return ctx?.destroy();
+        return ctx.destroy();
     })
 });
