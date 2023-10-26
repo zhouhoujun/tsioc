@@ -105,6 +105,10 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
      */
     abstract send(packet: RequestPacket | ResponsePacket): Observable<any>;
 
+    abstract serialize(packet: Packet, withPayload?: boolean): Buffer;
+
+    abstract deserialize(raw: Buffer): Packet;
+
     /**
      * request.
      * @param packet 

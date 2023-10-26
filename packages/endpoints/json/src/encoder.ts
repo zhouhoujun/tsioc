@@ -45,10 +45,10 @@ export class SimpleJsonEncoderBackend implements JsonEncoderBackend {
         if (ctx.raw) return of(ctx.raw);
         if (!ctx || !ctx.packet) return throwError(() => new ArgumentExecption('json decoding input empty'));
         try {
-            ctx.raw = Buffer.from(JSON.stringify(ctx.packet));
+            ctx.raw = ctx.session.serialize(ctx.packet, true);
             return of(ctx.raw);
         } catch (err) {
-            return throwError(() => new InvalidJsonException(err, String(ctx.packet!)));
+            return throwError(() => err);
         }
 
     }

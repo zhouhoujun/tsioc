@@ -29,9 +29,9 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
 
         const opts = this.options;
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
-        if (!topic) throw new BadRequestExecption();
+        if (!topic || !data) throw new BadRequestExecption();
 
-        await this.socket.publisher.publish(topic, data ?? Buffer.alloc(0))
+        await this.socket.publisher.publish(topic, data)
     }
 
     protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
@@ -83,9 +83,13 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
         )
     }
 
-    protected override pack(packet: Packet<any>): Observable<Buffer> {
+    protected override serialable(packet: Packet<any>): Packet<any> {
         const { topic, ...data } = packet;
-        return this.sender.send(this.contextFactory, data);
+        return data;
+    }
+
+    protected override pack(packet: Packet<any>): Observable<Buffer> {
+        return this.sender.send(this.contextFactory, packet);
     }
 
     protected override unpack(msg: TopicMessage): Observable<Packet> {

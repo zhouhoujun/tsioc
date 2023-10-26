@@ -79,7 +79,11 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                 } else {
                     const hidx = raw.indexOf(ctx.headerDelimiter!);
                     if (hidx >= 0) {
-                        packet = JSON.parse(new TextDecoder().decode(raw.subarray(0, hidx))) as CachePacket;
+                        try {
+                            packet = ctx.session.deserialize(raw.subarray(0, hidx)) as CachePacket;
+                        } catch (err) {
+                            subscriber.error(err);
+                        }
                         raw = raw.subarray(hidx + 1);
                     }
                 }

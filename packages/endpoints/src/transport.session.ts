@@ -1,6 +1,6 @@
 import { Execption, Injector, InvokeArguments, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, Context, IEventEmitter, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, Context, IEventEmitter, InvalidJsonException, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -16,6 +16,36 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         readonly receiver: Receiver,
         readonly options: TransportOpts) {
         this.contextFactory = this.contextFactory.bind(this);
+    }
+
+    serialize(packet: Packet, withPayload?: boolean): Buffer {
+        let pkg: Packet;
+        if (withPayload) {
+            const { length, ...data } = packet;
+            pkg = data;
+        } else {
+            const { payload, ...headers } = packet;
+            pkg = headers;
+        }
+        try {
+            pkg = this.serialable(pkg);
+            return Buffer.from(JSON.stringify(pkg))
+        } catch (err) {
+            throw new InvalidJsonException(err, String(pkg))
+        }
+    }
+
+    protected serialable(packet: Packet): Packet {
+        return packet
+    }
+
+    deserialize(raw: Buffer): Packet<any> {
+        const jsonStr = new TextDecoder().decode(raw);
+        try {
+            return JSON.parse(jsonStr);
+        } catch (err) {
+            throw new InvalidJsonException(err, jsonStr);
+        }
     }
 
     send(packet: Packet): Observable<any> {
@@ -85,8 +115,8 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
     protected abstract beforeRequest(packet: RequestPacket<any>): Promise<void>;
-    
-    protected contextFactory(msgOrPkg: Packet| string| Buffer|Uint8Array, headDelimiter?: Buffer, options?: InvokeArguments) {
+
+    protected contextFactory(msgOrPkg: Packet | string | Buffer | Uint8Array, headDelimiter?: Buffer, options?: InvokeArguments) {
         return new Context(this.injector, this, msgOrPkg, headDelimiter, options)
     }
 

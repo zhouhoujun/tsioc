@@ -45,8 +45,7 @@ export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
     handle(ctx: Context): Observable<Buffer> {
         const pkg = ctx.packet as SendPacket;
         if (pkg && !pkg.__sent) {
-            const { length, payload, ...data } = pkg;
-            const headBuf = Buffer.from(JSON.stringify(data));
+            const headBuf = ctx.session.serialize(pkg, false);
             ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
             pkg.__sent = true;
         }
