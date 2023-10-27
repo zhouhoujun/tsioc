@@ -1,14 +1,16 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
-import { HttpClient } from './client/client';
+import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
-import { HttpServer } from './server/server';
+import { HttpTransportBackend } from './client/backend';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_OPTS } from './server/options';
 import { HttpEndpoint } from './server/endpoint';
+import { HttpRespondAdapter } from './server/respond';
+import { HttpServer } from './server/server';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -17,19 +19,21 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
 
 @Module({
     providers: [
-        HttpClient,
+        Http,
         HttpServer,
+        HttpTransportBackend,
+        HttpRespondAdapter,
         {
             provide: CLIENT_MODULES,
             useValue: {
                 transport: 'tcp',
-                clientType: HttpClient,
+                clientType: Http,
                 clientOptsToken: HTTP_CLIENT_OPTS,
                 hanlderType: HttpHandler,
                 defaultOpts: {
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
-                    backend: TransportBackend,
+                    backend: HttpTransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,

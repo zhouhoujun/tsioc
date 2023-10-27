@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { Responder } from '@tsdi/endpoints';
+import { AssetResponder } from '@tsdi/endpoints/assets';
 import { HttpContext } from './context';
 
 @Injectable()
-export class HttpRespondAdapter extends RespondAdapter {
+export class HttpRespondAdapter extends AssetResponder {
 
     protected override statusMessage(ctx: HttpContext, status: number): string {
         if (ctx.request.httpVersionMajor >= 2) {

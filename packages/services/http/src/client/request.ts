@@ -1,13 +1,13 @@
 import { InjectFlags, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import { StatusVaildator } from '@tsdi/endpoints';
-import { Redirector, MimeAdapter, MimeTypes, StatusPacket, ctype } from '@tsdi/endpoints/assets';
+import { Redirector, MimeAdapter, MimeTypes, ctype } from '@tsdi/endpoints/assets';
 import { Decoder, Encoder, IWritableStream, StreamAdapter, ev, hdr, ResHeaders, IncomingHeaders } from '@tsdi/common';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
-import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './option';
+import { CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS, HttpClientOpts } from './options';
 
 
 @Injectable()

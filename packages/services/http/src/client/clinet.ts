@@ -10,7 +10,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { HttpHandler } from './handler';
-import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './option';
+import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './options';
 
 
 
