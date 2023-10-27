@@ -88,7 +88,7 @@ export class TcpServer extends Server implements ListenService {
         await this.setup();
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info('Tcp server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);

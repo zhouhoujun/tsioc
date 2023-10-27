@@ -36,7 +36,7 @@ export class UdpServer extends Server {
         await this.onStartup();
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info('UDP server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info('UDP microservice closed!'));
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });

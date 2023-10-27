@@ -15,7 +15,6 @@ export class CoapServer extends Server implements BindListenning {
 
     @InjectLog() logger!: Logger;
     protected isSecure = false;
-    protected micro = true;
     constructor(
         readonly endpoint: CoapEndpoint,
         @Inject(COAP_MICRO_SERV_OPTS) protected options: CoapServerOpts) {
@@ -54,7 +53,7 @@ export class CoapServer extends Server implements BindListenning {
         if (!this._server) throw new InternalServerExecption();
 
         this._server.on(ev.CLOSE, (err?: any) => {
-            this.logger.info(`Coap ${this.micro ? 'microservice' : 'server'} closed!`);
+            this.logger.info(`Coap ${this.options.transportOpts?.microservice ? 'microservice' : 'server'} closed!`);
             if (err) this.logger.error(err);
         });
         this._server.on(ev.ERROR, (err) => this.logger.error(err));

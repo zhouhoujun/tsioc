@@ -58,7 +58,7 @@ export class WsServer extends Server {
         await this.setup(bindServer);
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info('WS server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info('WS microservice closed!'));
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
