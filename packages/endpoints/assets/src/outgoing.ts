@@ -21,9 +21,9 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
     sendDate = true;
     private _sentpkt?: SendPacket;
     readonly id: number;
-    readonly url: string;
-    readonly topic: string;
-    readonly replyTo: string;
+    readonly url?: string;
+    readonly topic?: string;
+    readonly replyTo?: string;
 
     writable = true;
     constructor(
@@ -34,9 +34,9 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
         this.setMaxListeners(0);
         this._hdr = new ResHeaders();
         this.id = packet.id;
-        this.url = packet.url ?? '';
-        this.topic = packet.topic ?? '';
-        this.replyTo = packet.replyTo ?? '';
+        this.url = packet.url;
+        this.topic = packet.topic;
+        this.replyTo = packet.replyTo;
     }
 
     get socket() {
@@ -129,14 +129,17 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
     }
 
     createSentPacket(): SendPacket {
-        return {
+        const pkg = {
             id: this.id,
-            topic: this.topic,
-            replyTo: this.replyTo,
             headers: this.getHeaders(),
             status: this.statusCode,
             statusText: this.statusMessage
-        }
+        } as SendPacket;
+        if (this.url) pkg.url = this.url;
+        if (this.topic) pkg.topic = this.topic;
+        if (this.replyTo) pkg.replyTo = this.replyTo;
+
+        return pkg;
     }
 
     writeHead(statusCode: StatusCode, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;

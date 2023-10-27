@@ -76,10 +76,12 @@ export class TcpServer extends Server implements ListenService {
     protected async setup(): Promise<any> {
         const opts = this.options;
         this.serv = this.createServer(opts);
-        
+
         const injector = this.endpoint.injector;
-        // notify hybrid service to bind http server.
-        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this)));
+        if (!this.options.transportOpts?.microservice) {
+            // notify hybrid service to bind http server.
+            await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this)));
+        }
     }
 
     protected async onStart(): Promise<any> {

@@ -117,7 +117,7 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
 /**
  *  bind Server event.
  */
-export class BindServerEvent<T> extends ApplicationEvent {
+export class BindServerEvent<T = any> extends ApplicationEvent {
 
     constructor(readonly server: T, target: any) {
         super(target)

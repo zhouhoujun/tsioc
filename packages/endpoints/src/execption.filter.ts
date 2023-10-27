@@ -10,7 +10,8 @@ import { TransportContext } from './TransportContext';
 export class ExecptionFinalizeFilter<TCtx extends TransportContext> extends ExecptionFilter<TCtx> {
 
     catchError(context: TCtx, err: any, caught: Observable<any>): any {
-        context.get(Logger)?.error(err);
+        const logger = context.get(Logger)?? console;
+        logger.error(err);
         return context.get(Responder).sendExecption(context, err);
     }
 

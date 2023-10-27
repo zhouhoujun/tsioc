@@ -308,13 +308,3 @@ function parseStamp(date?: string | number): number {
 }
 
 
-/**
- * http middleware.
- */
-export type HttpMiddleware = MiddlewareLike<HttpContext>;
-
-/**
- * http middlewares token.
- */
-export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('HTTP_MIDDLEWARES');
-

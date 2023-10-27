@@ -46,10 +46,6 @@ const defServerOpts = {
         JsonMiddleware,
         BodyparserMiddleware,
         HybridRouter
-    ],
-    providers: [
-        // { provide: StatusVaildator, useExisting: HttpStatusVaildator },
-        // { provide: RespondAdapter, useExisting: HttpRespondAdapter },
     ]
 
 } as HttpServerOpts;

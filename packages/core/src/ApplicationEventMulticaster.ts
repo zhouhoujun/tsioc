@@ -14,7 +14,7 @@ import { EndpointService } from './endpoints/endpoint.service';
 /**
  * Application event context.
  */
-export class ApplicationEventContext extends EndpointContext<ApplicationEvent> {
+export class ApplicationEventContext<T extends ApplicationEvent = ApplicationEvent> extends EndpointContext<T> {
 
 }
 

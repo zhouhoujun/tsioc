@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { RespondAdapter } from '@tsdi/endpoints';
+import { Responder } from '@tsdi/endpoints';
 import { HttpContext } from './context';
 
 @Injectable()

@@ -175,7 +175,8 @@ export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg 
             map(err => {
                 throw err
             }));
-        return merge(source, close$).pipe(first());
+        const error$ = fromEvent(this.socket, ev.ERROR);
+        return merge(source, error$, close$).pipe(first());
     }
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;

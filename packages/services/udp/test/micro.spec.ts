@@ -1,24 +1,25 @@
-import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { Handle, EndpointsModule, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { UDP_SERV_INTERCEPTORS, UdpClient, UdpModule, UdpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { WS_SERV_INTERCEPTORS, WsClient, WsModule, WsServer } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
+
 
 const SENSORS = tokenId<string[]>('SENSORS');
 
 
 @Injectable()
-export class WsService {
+export class UdpService {
 
-    constructor() {
+    constructor(private client: UdpClient) {
 
     }
 
@@ -33,7 +34,7 @@ export class WsService {
         return message;
     }
 
-    @Handle('sensor/message/*', 'ws')
+    @Handle('sensor/message/*', 'udp')
     async handleMessage2(@Payload() message: string) {
         return message;
     }
@@ -43,7 +44,7 @@ export class WsService {
         return message;
     }
 
-    @Subscribe('sensor/:id/start', 'ws', {
+    @Subscribe('sensor/:id/start', 'udp', {
         paths: {
             id: SENSORS
         }
@@ -63,34 +64,24 @@ export class WsService {
         LoggerModule,
         JsonTransportModule,
         ServerEndpointModule,
-        WsModule,
-        ClientModule.register([
-            {
-                transport: 'ws',
-                client: 'ws1',
-                clientOpts: {
-                    // connectOpts: {
-                    //     port: 6379
-                    // },
-                    // timeout: 200
-                }
-            },
-            {
-                transport: 'ws',
-                client: 'ws2',
-                clientOpts: {
-                }
+        UdpModule,
+        ClientModule.register({
+            transport: 'udp',
+            clientOpts: {
+                // connectOpts: {
+                //     port: 6379
+                // },
+                // timeout: 200
             }
-        ]),
+        }),
         EndpointsModule.register({
-            transport: 'ws',
-            microservice: true
+            microservice: true,
+            transport: 'udp'
         })
     ],
     declarations: [
-        WsService
-    ],
-    // bootstrap: WsServer
+        UdpService
+    ]
 })
 export class MicroTestModule {
 
@@ -98,25 +89,22 @@ export class MicroTestModule {
 
 
 
-describe('Ws Micro Service', () => {
+describe('Udp Micro Service', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
-    let client: WsClient;
-    let client2: WsClient;
+    let client: UdpClient;
 
     before(async () => {
         ctx = await Application.run(MicroTestModule, {
             providers: [
-                { provide: WS_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+                { provide: UDP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 { provide: SENSORS, useValue: 'sensor01', multi: true },
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
         injector = ctx.injector;
-        // client = injector.get(WsClient);
-        client = injector.get('ws1');
-        client2 = injector.get('ws2');
+        client = injector.get(UdpClient);
     });
 
 
@@ -127,6 +115,7 @@ describe('Ws Micro Service', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
+
 
         expect(res).toBeInstanceOf(TransportErrorResponse);
         expect(res.statusMessage).toEqual('Not Found');
@@ -139,6 +128,7 @@ describe('Ws Micro Service', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
+
 
         expect(res).toBeInstanceOf(TransportErrorResponse);
         expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
@@ -160,8 +150,7 @@ describe('Ws Micro Service', () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
             payload: {
                 message: 'ble'
-            },
-            responseType: 'text'
+            }
         })
             .pipe(
                 catchError((err, ct) => {
@@ -207,38 +196,6 @@ describe('Ws Micro Service', () => {
 
     it('sensor/message not found', async () => {
         const a = await lastValueFrom(client.send('sensor/message', {
-            payload: {
-                message: 'ble'
-            }
-        })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
-    });
-
-    it('client2 sensor.message/+ message', async () => {
-        const a = await lastValueFrom(client2.send('sensor.message/update', {
-            payload: {
-                message: 'ble'
-            }
-        })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(isString(a)).toBeTruthy();
-        expect(a).toEqual('ble');
-    });
-
-    it('client2 sensor/message not found', async () => {
-        const a = await lastValueFrom(client2.send('sensor/message', {
             payload: {
                 message: 'ble'
             }

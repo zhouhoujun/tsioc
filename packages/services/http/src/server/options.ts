@@ -4,9 +4,9 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { ListenOptions } from 'net';
-import { ContentOptions, SessionOptions, ProxyOpts, ServerOpts } from '@tsdi/endpoints';
+import { ContentOptions, SessionOptions, ProxyOpts, ServerOpts, MiddlewareLike } from '@tsdi/endpoints';
 import { CorsOptions, MimeSource, CsrfOptions, } from '@tsdi/endpoints/assets';
-import { HttpServRequest, HttpServResponse } from './context';
+import { HttpContext, HttpServResponse } from './context';
 
 /**
  * http options.
@@ -56,9 +56,19 @@ export const HTTP_SERV_FILTERS = tokenId<Filter[]>('HTTP_SERV_FILTERS');
 /**
  * http server Interceptor tokens for {@link HttpServer}.
  */
-export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpServRequest, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+export const HTTP_SERV_INTERCEPTORS = tokenId<Interceptor<HttpContext, HttpServResponse>[]>('HTTP_SERV_INTERCEPTORS');
+
+/**
+ * http middleware.
+ */
+export type HttpMiddleware = MiddlewareLike<HttpContext>;
+
+/**
+ * http middlewares token.
+ */
+export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('HTTP_MIDDLEWARES');
 
 /**
  * HTTP Guards.
  */
-export const HTTP_SERV_GUARDS = tokenId<CanActivate[]>('HTTP_SERV_GUARDS');
+export const HTTP_SERV_GUARDS = tokenId<CanActivate<HttpContext>[]>('HTTP_SERV_GUARDS');
