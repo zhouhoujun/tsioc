@@ -4,7 +4,7 @@ import { StatusVaildator } from '@tsdi/endpoints';
 
 
 @Injectable({ static: true })
-export class CoapStatusVaildator implements StatusVaildator<string>{
+export class CoapStatusVaildator implements StatusVaildator {
     get ok(): string {
         return CoapStatuCode.Content
     }

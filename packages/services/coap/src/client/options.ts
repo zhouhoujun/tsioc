@@ -1,10 +1,28 @@
 import { tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { TransportEvent, TransportRequest, TransportOpts } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
-import { Agent, OptionValue } from 'coap';
 import { OptionName } from 'coap-packet';
+import { OptionValue } from 'coap';
 
+
+export interface CoapTransportOpts extends TransportOpts {
+    host?: string;
+    hostname?: string;
+    port?: number;
+    confirmable?: boolean;
+    observe?: 0 | 1 | boolean | string;
+    options?: Partial<Record<OptionName, OptionValue>>;
+    headers?: Partial<Record<OptionName, OptionValue>>;
+    proxyUri?: string;
+    multicast?: boolean;
+    multicastTimeout?: number;
+    retrySend?: number;
+    token?: Buffer;
+    contentFormat?: string | number;
+    accept?: string | number;
+    maxSize?: number;
+}
 
 /**
  * client options.
@@ -13,23 +31,7 @@ export interface CoapClientOpts extends ClientOpts  {
     /**
      * transport session options.
      */
-    transportOpts?: {
-        hostname?: string;
-        port?: number;
-        confirmable?: boolean;
-        observe?: 0 | 1 | boolean | string;
-        options?: Partial<Record<OptionName, OptionValue>>;
-        headers?: Partial<Record<OptionName, OptionValue>>;
-        agent?: Agent | false;
-        proxyUri?: string;
-        multicast?: boolean;
-        multicastTimeout?: number;
-        retrySend?: number;
-        token?: Buffer;
-        contentFormat?: string | number;
-        accept?: string | number;
-        maxSize?: number;
-    };
+    transportOpts?: CoapTransportOpts;
     
 }
 

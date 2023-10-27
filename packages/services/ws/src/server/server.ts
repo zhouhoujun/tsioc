@@ -10,6 +10,9 @@ import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WS_SERV_OPTS, Ws
 import { WsEndpoint } from './endpoint';
 
 
+/**
+ * ws server.
+ */
 @Injectable()
 export class WsServer extends Server {
 
@@ -61,6 +64,12 @@ export class WsServer extends Server {
         });
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);
+        const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
+        const isSecure = server instanceof tls.Server;
+        if (this.options.protocol) {
+            this.options.protocol = isSecure ? 'wss' : 'ws';
+        }
+
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = createWebSocketStream(socket);
             const transportOpts = this.options.transportOpts!;
@@ -70,8 +79,7 @@ export class WsServer extends Server {
             this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
         })
 
-        const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
-        const isSecure = server instanceof tls.Server;
+
         if (port) {
             this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host ?? LOCALHOST}:${port}`, '!');
         } else {

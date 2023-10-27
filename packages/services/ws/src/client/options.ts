@@ -4,6 +4,9 @@ import { TransportRequest, TransportEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
 import { ClientOptions } from 'ws';
 
+/**
+ * ws client options.
+ */
 export interface WsClientOpts extends ClientOpts<ClientOptions> {
     /**
      * url

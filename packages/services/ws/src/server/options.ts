@@ -5,7 +5,9 @@ import { ServerOptions } from 'ws';
 
 
 
-
+/**
+ * ws server options.
+ */
 export interface WsServerOpts extends ServerOpts<ServerOptions> {
 
 }

@@ -6,7 +6,9 @@ import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
 import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 
-
+/**
+ * ws client.
+ */
 @Injectable()
 export class WsClient extends Client<TransportRequest, number> {
     private socket?: WebSocket | null;

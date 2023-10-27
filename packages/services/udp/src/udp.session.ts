@@ -41,14 +41,6 @@ export class UdpTransportSession extends AbstractTransportSession<Socket, UdpMes
             );
     }
 
-    protected override serialable(packet: UdpPacket<any>): Packet<any> {
-        if (packet.rinfo) {
-            const { rinfo, ...data } = packet;
-            return data;
-        }
-        return packet;
-    }
-
     protected async write(data: Buffer, packet: Packet<any>): Promise<void> {
         if (!packet.topic) throw new ArgumentExecption('topic can not be empty.')
         const idx = packet.topic.lastIndexOf(':');
@@ -73,7 +65,7 @@ export class UdpTransportSession extends AbstractTransportSession<Socket, UdpMes
     }
 }
 
-export const udptl = /^(udp|udps):\/\//i;
+const udptl = /^udp(s)?:\/\//i;
 
 
 @Injectable()

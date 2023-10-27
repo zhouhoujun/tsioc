@@ -1,8 +1,8 @@
 
 import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { InternalServerExecption, BindListenning, LOCALHOST, ev } from '@tsdi/common';
-import { Server } from '@tsdi/endpoints';
+import { InternalServerExecption, BindListenning, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common';
+import { RequestHandler, Server } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
 import { COAP_MICRO_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapEndpoint } from './endpoint';
@@ -22,7 +22,7 @@ export class CoapServer extends Server implements BindListenning {
         super()
     }
 
-    private _server?: Socket;
+    private _server?: Socket | null;
 
     listen(listenOpts?: { port?: number, listener?: () => void }): this;
     listen(listeningListener?: () => void): this;
@@ -53,20 +53,40 @@ export class CoapServer extends Server implements BindListenning {
         await this.setup();
         if (!this._server) throw new InternalServerExecption();
 
-        this._server.on(ev.CLOSE, (err) => {
+        this._server.on(ev.CLOSE, (err?: any) => {
             this.logger.info(`Coap ${this.micro ? 'microservice' : 'server'} closed!`);
             if (err) this.logger.error(err);
         });
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
 
-        this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res))
+        const injector = this.endpoint.injector;
+        const factory = injector.get(TransportSessionFactory);
+
+        const isSecure = false;
+        if (!this.options.protocol) {
+            this.options.protocol = isSecure ? 'udps' : 'udp';
+        }
+        const transportOpts = this.options.transportOpts!;
+        if (!transportOpts.transport) transportOpts.transport = 'udp';
+        if (!transportOpts.serverSide) transportOpts.serverSide = true;
+        const session = factory.create(this._server, this.options.transportOpts!);
+
+        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
 
         this.listen(this.options.listenOpts as any);
 
     }
     protected async onShutdown(): Promise<any> {
         if (!this._server) return;
-        await promisify(this._server.close, this._server)();
+        await promisify(this._server.close, this._server)()
+            .catch(err => {
+                this.logger?.error(err);
+                return err;
+            })
+            .finally(() => {
+                this._server?.removeAllListeners();
+                this._server = null;
+            });
     }
 
 }

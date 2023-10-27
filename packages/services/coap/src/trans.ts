@@ -4,6 +4,10 @@ import { ctype } from '@tsdi/endpoints/assets';
 import { OptionName } from 'coap-packet';
 
 
+export const defaultMaxSize = 61440; //1024 * 60;
+
+export type OptionValue = null | string | number | Buffer | Buffer[];
+
 
 export const transforms: Record<string, OptionName> = {
     'Content-Type': 'Content-Format',
@@ -19,7 +23,7 @@ export const ignores = [
     return p;
 }, {} as Record<string, boolean>)
 
-export const $coapurl = /^coap(s)?:\/\//i;
+export const coapurl$ = /^coap(s)?:\/\//i;
 
 const maxage$ = /max-age=\d+/;
 
