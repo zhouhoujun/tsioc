@@ -77,11 +77,7 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
             __headMsg: true
         } as SendPacket;
 
-        return this.receiver.receive((msg, headDelimiter) => {
-            const ctx = this.contextFactory(msg, headDelimiter);
-            ctx.packet = pkg;
-            return ctx;
-        }, msg.content, headers[hdr.TOPIC] ?? correlationId)
+        return this.receiver.receive(this.contextFactory, msg.content, headers[hdr.TOPIC] ?? correlationId, pkg)
             .pipe(
                 map(payload => {
                     return {

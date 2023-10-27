@@ -120,11 +120,8 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
             headers,
             __headMsg: true
         } as SendPacket;
-        return this.receiver.receive((msg, headDelimiter) => {
-            const ctx = this.contextFactory(msg, headDelimiter);
-            ctx.packet = pkg;
-            return ctx;
-        }, msg.data, msg.subject)
+        
+        return this.receiver.receive(this.contextFactory, msg.data, msg.subject, pkg)
             .pipe(
                 map(payload => {
                     return {

@@ -1,4 +1,4 @@
-import { Context, PacketLengthException, Receiver, TopicBuffer, AssetTransportOpts, IncomingPacket } from '@tsdi/common';
+import { Context, PacketLengthException, Receiver, TopicBuffer, AssetTransportOpts, IncomingPacket, Packet, SendPacket, isBuffer } from '@tsdi/common';
 import { Observable, Subscriber, finalize, mergeMap, share } from 'rxjs';
 import { AssetDecoder } from './decoder';
 
@@ -21,26 +21,34 @@ export class AssetReceiver implements Receiver {
     }
 
 
-    receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<IncomingPacket> {
+    receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__', headers?: Packet): Observable<IncomingPacket> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
-            let chl = this.topics.get(topic);
-            if (!chl) {
-                chl = {
-                    topic,
-                    buffers: [],
-                    length: 0,
-                    contentLength: null
+            if ((headers as SendPacket)?.__headMsg && (!source || !source.length)) {
+                subscriber.next(isBuffer(source)? source : Buffer.alloc(0));
+                subscriber.complete();
+            } else {
+                let chl = this.topics.get(topic);
+                if (!chl) {
+                    chl = {
+                        topic,
+                        buffers: [],
+                        length: 0,
+                        contentLength: null
+                    }
+                    this.topics.set(topic, chl)
                 }
-                this.topics.set(topic, chl)
+                this.handleData(chl, source, subscriber);
             }
-            this.handleData(chl, source, subscriber);
-            
+
             return subscriber;
 
         })
             .pipe(
                 mergeMap(msg => {
                     const ctx = factory(msg!, this.headDelimiter);
+                    if(headers){
+                        ctx.packet = headers;
+                    }
                     return this.decoder.handle(ctx)
                         .pipe(
                             finalize(() => {

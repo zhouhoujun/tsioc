@@ -1,4 +1,4 @@
-import { Context, Packet, PacketLengthException, Receiver, TopicBuffer, TransportOpts } from '@tsdi/common';
+import { Context, Packet, PacketLengthException, Receiver, SendPacket, TopicBuffer, TransportOpts, isBuffer } from '@tsdi/common';
 import { Observable, Subscriber, finalize, mergeMap, share } from 'rxjs';
 import { JsonDecoder } from './decoder';
 
@@ -21,19 +21,24 @@ export class JsonReceiver implements Receiver {
         this.topics = new Map();
     }
 
-    receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__'): Observable<Packet> {
+    receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer) => Context, source: string | Buffer, topic = '__DEFALUT_TOPIC__', headers?: Packet): Observable<Packet> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
-            let chl = this.topics.get(topic);
-            if (!chl) {
-                chl = {
-                    topic,
-                    buffers: [],
-                    length: 0,
-                    contentLength: null
+            if ((headers as SendPacket)?.__headMsg && (!source || !source.length)) {
+                subscriber.next(isBuffer(source)? source : Buffer.alloc(0));
+                subscriber.complete();
+            } else {
+                let chl = this.topics.get(topic);
+                if (!chl) {
+                    chl = {
+                        topic,
+                        buffers: [],
+                        length: 0,
+                        contentLength: null
+                    }
+                    this.topics.set(topic, chl)
                 }
-                this.topics.set(topic, chl)
+                this.handleData(chl, source, subscriber);
             }
-            this.handleData(chl, source, subscriber);
 
             return subscriber;
 
@@ -41,6 +46,9 @@ export class JsonReceiver implements Receiver {
             .pipe(
                 mergeMap(msg => {
                     const ctx = factory(msg);
+                    if (headers) {
+                        ctx.packet = headers;
+                    }
                     return this.decoder.handle(ctx)
                         .pipe(
                             finalize(() => {

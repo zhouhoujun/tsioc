@@ -26,8 +26,8 @@ export class AssetSender implements Sender {
             .pipe(
                 map(data => {
                     if ((packet as SendPacket).__headMsg) {
-                        if (!data) {
-                            data = Buffer.alloc(0);
+                        if (!data || !data.length) {
+                            return data ?? Buffer.alloc(0);
                         }
                         return Buffer.concat([
                             Buffer.from(String(data.length)),

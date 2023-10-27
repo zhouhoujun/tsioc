@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { Context, Decoder } from './coding';
 import { IncomingPacket } from './socket';
+import { Packet } from './packet';
 
 
 /**
@@ -22,7 +23,7 @@ export abstract class Receiver {
      * @param message message buffer.
      * @param topic message topic.
      */
-    abstract receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer, options?: InvokeArguments) => Context, message: string | Buffer | Uint8Array, topic?: string): Observable<IncomingPacket>;
+    abstract receive(factory: (msg: string | Buffer | Uint8Array, headDelimiter?: Buffer, options?: InvokeArguments) => Context, message: string | Buffer | Uint8Array, topic?: string, headers?: Packet): Observable<IncomingPacket>;
 
 
 }

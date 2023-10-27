@@ -177,11 +177,7 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             __headMsg: true
         } as SendPacket;
 
-        return this.receiver.receive((msg, headDelimiter) => {
-            const ctx = this.contextFactory(msg, headDelimiter);
-            ctx.packet = pkg;
-            return ctx;
-        }, msg.message.value ?? Buffer.alloc(0), msg.topic)
+        return this.receiver.receive(this.contextFactory, msg.message.value ?? Buffer.alloc(0), msg.topic, pkg)
             .pipe(
                 map(payload => {
                     return {

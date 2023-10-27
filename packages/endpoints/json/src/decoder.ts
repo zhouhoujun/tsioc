@@ -42,7 +42,7 @@ export class JsonInterceptingDecoder implements Decoder {
 export class SimpleJsonDecoderBackend implements JsonDecoderBackend {
 
     handle(ctx: Context): Observable<Packet> {
-        if (!ctx.raw || !ctx.raw.length) return throwError(() => new ArgumentExecption('json decoding input empty'));
+        if (!ctx.raw || !ctx.raw.length) return of({});
         try {
             ctx.packet = ctx.session.deserialize(ctx.raw);
             return of(ctx.packet ?? {});
