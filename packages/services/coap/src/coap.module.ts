@@ -2,15 +2,16 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, StatusVaildator } from '@tsdi/endpoints';
 import { CoapClient } from './client/client';
 import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, COAP_CLIENT_OPTS } from './client/options';
 import { CoapHandler } from './client/handler';
 import { CoapServer } from './server/server';
-import { COAP_MICRO_SERV_OPTS, COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_OPTS } from './server/options';
+import { COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_OPTS } from './server/options';
 import { CoapEndpoint } from './server/endpoint';
 import { CoapStatusVaildator } from './status';
 import { CoapTransportSessionFactory } from './coap.session';
+import { CoapExecptionHandlers } from './server/execption.handles';
 
 
 const defaultMaxSize = 1024 * 256;
@@ -29,6 +30,7 @@ const defaultMaxSize = 1024 * 256;
                 clientOptsToken: COAP_CLIENT_OPTS,
                 hanlderType: CoapHandler,
                 defaultOpts: {
+                    url: 'coap://localhost:5683',
                     interceptorsToken: COAP_CLIENT_INTERCEPTORS,
                     filtersToken: COAP_CLIENT_FILTERS,
                     backend: TransportBackend,
@@ -37,6 +39,9 @@ const defaultMaxSize = 1024 * 256;
                         maxSize: defaultMaxSize,
                     },
                     sessionFactory: { useExisting: CoapTransportSessionFactory },
+                    providers: [
+                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
+                    ]
                 } as ClientOpts
             },
             multi: true
@@ -47,11 +52,12 @@ const defaultMaxSize = 1024 * 256;
                 transport: 'coap',
                 microservice: true,
                 serverType: CoapServer,
-                serverOptsToken: COAP_MICRO_SERV_OPTS,
+                serverOptsToken: COAP_SERV_OPTS,
                 endpointType: CoapEndpoint,
+                
                 defaultOpts: {
                     autoListen: true,
-                    listenOpts: { port: 3000, host: LOCALHOST },
+                    listenOpts: { port: 5683, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize
@@ -64,12 +70,16 @@ const defaultMaxSize = 1024 * 256;
                     interceptorsToken: COAP_SERV_INTERCEPTORS,
                     filtersToken: COAP_SERV_FILTERS,
                     guardsToken: COAP_SERV_GUARDS,
+                    execptionHandlers: CoapExecptionHandlers,
                     sessionFactory: { useExisting: CoapTransportSessionFactory },
                     filters: [
                         LogInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
+                    ],
+                    providers: [
+                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
                     ]
                 }
             } as ServerModuleOpts,
@@ -84,7 +94,7 @@ const defaultMaxSize = 1024 * 256;
                 endpointType: CoapEndpoint,
                 defaultOpts: {
                     autoListen: true,
-                    listenOpts: { port: 3000, host: LOCALHOST },
+                    listenOpts: { port: 5683, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize
@@ -96,12 +106,16 @@ const defaultMaxSize = 1024 * 256;
                     interceptorsToken: COAP_SERV_INTERCEPTORS,
                     filtersToken: COAP_SERV_FILTERS,
                     guardsToken: COAP_SERV_GUARDS,
+                    execptionHandlers: CoapExecptionHandlers,
                     sessionFactory: { useExisting: CoapTransportSessionFactory },
                     filters: [
                         LogInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
+                    ],
+                    providers: [
+                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
                     ]
                 }
             } as ServerModuleOpts,

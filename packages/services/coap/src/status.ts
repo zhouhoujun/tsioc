@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { GET, MESSAGE, POST, NotSupportedExecption } from '@tsdi/common';
+import { NotSupportedExecption } from '@tsdi/common';
 import { StatusVaildator } from '@tsdi/endpoints';
 
 
@@ -72,14 +72,6 @@ export class CoapStatusVaildator implements StatusVaildator {
         // return GET;
     }
 
-}
-
-@Injectable({ static: true })
-export class CoapMicroStatusVaildator extends CoapStatusVaildator {
-
-    override redirectDefaultMethod(): string {
-        return MESSAGE;
-    }
 }
 
 const isStausOk = /^2\.0(1|2|3|5)$/;

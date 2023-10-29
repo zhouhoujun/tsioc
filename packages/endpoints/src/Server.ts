@@ -1,4 +1,4 @@
-import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
+import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
 import { TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
@@ -32,6 +32,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     transportOpts?: TransportOpts;
     server?: any;
     responder?: ProvdierOf<Responder>;
+    execptionHandlers?: Type<any> | Type[];
     /**
      * micro service transport session factory.
      */

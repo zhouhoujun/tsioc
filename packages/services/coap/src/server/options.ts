@@ -16,11 +16,6 @@ export interface CoapServerOpts extends ServerOpts<CoapServerOptions> {
  * CoAP server options
  */
 export const COAP_SERV_OPTS = tokenId<CoapServerOpts>('COAP_SERV_OPTS');
-/**
- * CoAP micro server options
- */
-export const COAP_MICRO_SERV_OPTS = tokenId<CoapServerOpts>('COAP_MICRO_SERV_OPTS');
-
 
 /**
  * CoAP server interceptors.

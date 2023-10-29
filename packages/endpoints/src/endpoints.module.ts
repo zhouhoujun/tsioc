@@ -32,7 +32,7 @@ import { TransportContext } from './TransportContext';
         TopicTransportSessionFactory,
 
         LogInterceptor,
-        TransportExecptionHandlers,
+        // TransportExecptionHandlers,
         FinalizeFilter,
         ExecptionFinalizeFilter,
         Session
@@ -118,7 +118,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                     ...opts?.routes
                                 },
                                 providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
-                            } as ServerOpts;
+                            } as ServerOpts & { providers: ProviderType[] };
 
                             moduleOpts.serverOpts = serverOpts as any;
 
@@ -131,18 +131,23 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             }
 
                             if (serverOpts.sessionFactory) {
-                                serverOpts.providers?.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
                             }
 
                             if (serverOpts.detailError) {
-                                serverOpts.providers?.push({
+                                serverOpts.providers.push({
                                     provide: SHOW_DETAIL_ERROR,
                                     useValue: true
                                 });
                             }
 
                             if (serverOpts.responder) {
-                                serverOpts.providers?.push(toProvider(Responder, serverOpts.responder))
+                                serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
+                            }
+                            if (isArray(serverOpts.execptionHandlers)) {
+                                serverOpts.providers.push(...serverOpts.execptionHandlers)
+                            } else {
+                                serverOpts.providers.push(serverOpts.execptionHandlers ?? TransportExecptionHandlers)
                             }
 
                             return serverOpts;
