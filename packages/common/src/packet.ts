@@ -29,6 +29,9 @@ export interface Packet<T = any> extends HeaderPacket {
 }
 
 export interface SendPacket extends Packet {
+    /**
+     * sent.
+     */
     __sent?: boolean;
     /**
      * payload with extends message headers

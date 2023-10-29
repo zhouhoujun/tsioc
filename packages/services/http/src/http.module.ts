@@ -11,6 +11,7 @@ import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERC
 import { HttpEndpoint } from './server/endpoint';
 import { HttpRespondAdapter } from './server/respond';
 import { HttpServer } from './server/server';
+import { HttpPathInterceptor } from './client/path';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -23,6 +24,8 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
         HttpServer,
         HttpTransportBackend,
         HttpRespondAdapter,
+        HttpPathInterceptor,
+        { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {
             provide: CLIENT_MODULES,
             useValue: {
