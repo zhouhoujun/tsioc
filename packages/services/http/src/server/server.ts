@@ -92,6 +92,9 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
 
         const option = opts.serverOpts ?? EMPTY_OBJ;
         const isSecure = this.isSecure;
+        if (!opts.protocol) {
+            opts.protocol = this._secure ? 'https' : 'http';
+        }
         if (opts.majorVersion === 2) {
             this._server = isSecure ? http2.createSecureServer(option as http2.SecureServerOptions)
                 : http2.createServer(option as http2.ServerOptions);
@@ -100,7 +103,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
             this._server = isSecure ? https.createServer(option as http.ServerOptions)
                 : http.createServer(option as https.ServerOptions);
         }
-        
+
         // notify hybrid service to bind http server.
         await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, this)));
 
@@ -121,15 +124,14 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         //         return runners.run(sr);
         //     }))
         // }
-        
+
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
-        if (!transportOpts.transport) transportOpts.transport = this._secure? 'https' : 'http';
-
+        if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(this._server, transportOpts);
-        injector.get(RequestHandler).handle(this.endpoint, session,  this.logger, this.options);
+        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
 
         // this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
         // this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));

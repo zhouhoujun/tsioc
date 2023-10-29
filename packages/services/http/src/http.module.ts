@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -12,6 +12,7 @@ import { HttpEndpoint } from './server/endpoint';
 import { HttpRespondAdapter } from './server/respond';
 import { HttpServer } from './server/server';
 import { HttpPathInterceptor } from './client/path';
+import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -25,11 +26,13 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
         HttpTransportBackend,
         HttpRespondAdapter,
         HttpPathInterceptor,
+        HttpClientSessionFactory,
+        HttpServerSessionFactory,
         { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {
             provide: CLIENT_MODULES,
             useValue: {
-                transport: 'tcp',
+                transport: 'http',
                 clientType: Http,
                 clientOptsToken: HTTP_CLIENT_OPTS,
                 hanlderType: HttpHandler,
@@ -41,7 +44,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: DuplexTransportSessionFactory },
+                    sessionFactory: { useExisting: HttpClientSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -49,7 +52,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
         {
             provide: SERVER_MODULES,
             useValue: {
-                transport: 'tcp',
+                transport: 'http',
                 microservice: true,
                 serverType: HttpServer,
                 serverOptsToken: HTTP_SERV_OPTS,
@@ -69,7 +72,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
-                    sessionFactory: { useExisting: DuplexTransportSessionFactory },
+                    sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LogInterceptor,
                         ExecptionFinalizeFilter,
@@ -83,7 +86,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
         {
             provide: SERVER_MODULES,
             useValue: {
-                transport: 'tcp',
+                transport: 'http',
                 serverType: HttpServer,
                 serverOptsToken: HTTP_SERV_OPTS,
                 endpointType: HttpEndpoint,
@@ -102,7 +105,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
                     middlewaresToken: HTTP_MIDDLEWARES,
-                    sessionFactory: { useExisting: DuplexTransportSessionFactory },
+                    sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LogInterceptor,
                         ExecptionFinalizeFilter,
