@@ -25,6 +25,8 @@ export class AssetSender implements Sender {
         return this.encoder.handle(ctx)
             .pipe(
                 map(data => {
+                    if(ctx.payloadOnly) return data;
+                    
                     if ((packet as SendPacket).__headMsg) {
                         if (!data || !data.length) {
                             return data ?? Buffer.alloc(0);

@@ -1,13 +1,10 @@
-import { Execption, Injector, InvokeArguments, isString } from '@tsdi/ioc';
+import { Execption, Injector, InvokeArguments, isNil, isString, isUndefined } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { AssetTransportOpts, Context, IEventEmitter, IncomingHeaders, InvalidJsonException, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
 export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> implements TransportSession<TSocket, TMsg> {
-
-    private allocator?: NumberAllocator;
-    private last?: number;
 
     constructor(
         readonly injector: Injector,
@@ -18,35 +15,10 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         this.contextFactory = this.contextFactory.bind(this);
     }
 
-    serialize(packet: Packet, withPayload?: boolean): Buffer {
-        let pkg: Packet;
-        if (withPayload) {
-            const { length, ...data } = packet;
-            pkg = data;
-        } else {
-            const { payload, ...headers } = packet;
-            pkg = headers;
-        }
-        try {
-            pkg = this.serialable(pkg);
-            return Buffer.from(JSON.stringify(pkg))
-        } catch (err) {
-            throw new InvalidJsonException(err, String(pkg))
-        }
-    }
+    abstract serialize(packet: Packet): Buffer;
 
-    protected serialable(packet: Packet): Packet {
-        return packet
-    }
+    abstract deserialize(raw: Buffer): Packet<any>;
 
-    deserialize(raw: Buffer): Packet<any> {
-        const jsonStr = new TextDecoder().decode(raw);
-        try {
-            return JSON.parse(jsonStr);
-        } catch (err) {
-            throw new InvalidJsonException(err, jsonStr);
-        }
-    }
 
     send(packet: Packet): Observable<any> {
         const len = this.getPayloadLen(packet);
@@ -73,9 +45,9 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
         let obs$ = defer(() => this.requesting(packet)).pipe(
-            mergeMap(r => this.receive((msg) => this.responseFilter(packet, msg))),
-            filter(p => this.responsePacketFilter(packet, p))
-        );
+            mergeMap(r => this.receive(packet)),
+                filter(p => this.responsePacketFilter(packet, p))
+            );
 
         if (this.options.timeout) {
             obs$ = obs$.pipe(timeout(this.options.timeout))
@@ -83,10 +55,10 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         return obs$;
     }
 
-    receive(msgFilter?: (msg: TMsg) => boolean): Observable<Packet> {
+    receive(packet?: Packet): Observable<Packet> {
         return this.message()
             .pipe(
-                filter(msg => msgFilter ? msgFilter(msg) : true),
+                filter(msg => packet ? this.responseFilter(packet, msg) : true),
                 mergeMap(msg => {
                     return this.unpack(msg);
                 }),
@@ -117,7 +89,7 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     protected abstract beforeRequest(packet: RequestPacket<any>): Promise<void>;
 
     protected contextFactory(msgOrPkg: Packet | string | Buffer | Uint8Array, headDelimiter?: Buffer, options?: InvokeArguments) {
-        return new Context(this.injector, this, msgOrPkg, headDelimiter, options)
+        return new Context(this.injector, this, msgOrPkg, headDelimiter, false, options)
     }
 
     protected getPayloadLen(packet: Packet) {
@@ -144,27 +116,54 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         }
     }
 
-
-    protected getPacketId(): string | number {
-        if (!this.allocator) {
-            this.allocator = new NumberAllocator(1, 65536)
-        }
-        const id = this.allocator.alloc();
-        if (!id) {
-            throw new Execption('alloc stream id failed');
-        }
-        this.last = id;
-        return id;
-    }
+    protected abstract getPacketId(): string | number;
 
 }
 
 
 export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket, TMsg> {
 
+    private allocator?: NumberAllocator;
+    private last?: number;
 
     protected message(): Observable<TMsg> {
         return fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
+    }
+
+    serialize(packet: Packet): Buffer {
+        let pkg: Packet;
+        if (isUndefined(packet.length)) {
+            pkg = packet;
+        } else {
+            const { length, ...data } = packet;
+            pkg = data;
+        }
+        // if (withPayload) {
+        //    const { length, ...data } = packet;
+        //    pkg = data;
+        // } else {
+        //     const { payload, ...headers } = packet;
+        //     pkg = headers;
+        // }
+        try {
+            pkg = this.serialable(pkg);
+            return Buffer.from(JSON.stringify(pkg))
+        } catch (err) {
+            throw new InvalidJsonException(err, String(pkg))
+        }
+    }
+
+    protected serialable(packet: Packet): Packet {
+        return packet
+    }
+
+    deserialize(raw: Buffer): Packet<any> {
+        const jsonStr = new TextDecoder().decode(raw);
+        try {
+            return JSON.parse(jsonStr);
+        } catch (err) {
+            throw new InvalidJsonException(err, jsonStr);
+        }
     }
 
 
@@ -179,6 +178,18 @@ export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg 
         return merge(source, error$, close$).pipe(first());
     }
 
+    protected getPacketId(): string | number {
+        if (!this.allocator) {
+            this.allocator = new NumberAllocator(1, 65536)
+        }
+        const id = this.allocator.alloc();
+        if (!id) {
+            throw new Execption('alloc stream id failed');
+        }
+        this.last = id;
+        return id;
+    }
+
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
 }
@@ -186,25 +197,19 @@ export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg 
 
 export abstract class PayloadTransportSession<TSocket extends IEventEmitter, THeaders = IncomingHeaders, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> {
 
-    serialize(packet: Packet, withPayload?: boolean): Buffer {
-        let pkg: Packet;
-        if (withPayload) {
-            const { length, ...data } = packet;
-            pkg = data;
-        } else {
-            const { payload, ...headers } = packet;
-            pkg = headers;
-        }
-        try {
-            pkg = this.serialable(pkg);
-            return Buffer.from(JSON.stringify(pkg))
-        } catch (err) {
-            throw new InvalidJsonException(err, String(pkg))
-        }
-    }
 
-    protected serialable(packet: Packet): Packet {
-        return packet
+
+
+    serialize(packet: Packet): Buffer {
+        const payload = packet.payload;
+        if (isNil(payload)) return Buffer.alloc(0);
+        if (isBuffer(payload)) return payload;
+        if (isString(payload)) return Buffer.from(payload);
+        try {
+            return Buffer.from(JSON.stringify(payload))
+        } catch (err) {
+            throw new InvalidJsonException(err, String(payload))
+        }
     }
 
     deserialize(raw: Buffer): Packet<any> {

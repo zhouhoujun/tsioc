@@ -1,6 +1,6 @@
 import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseFactory, ResponsePacket, StatusCode, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
+import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, StatusCode, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
 import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
 
 @Abstract()
@@ -10,7 +10,7 @@ export abstract class ResponseTransform<T = TransportEvent> {
      * @param packet 
      * @param factory 
      */
-    abstract transform(req: TransportRequest, packet: ResponsePacket, factory: ResponseFactory<T>): Observable<T>;
+    abstract transform(req: TransportRequest, packet: ResponsePacket, factory: ResponseEventFactory<T>): Observable<T>;
 }
 
 const defaultTransform = {
@@ -26,7 +26,7 @@ const defaultTransform = {
  * transport client endpoint backend.
  */
 @Injectable()
-export class TransportBackend implements Backend<TransportRequest, TransportEvent>, ResponseFactory<TransportEvent>  {
+export class TransportBackend implements Backend<TransportRequest, TransportEvent>, ResponseEventFactory<TransportEvent>  {
 
     /**
      * handle client request

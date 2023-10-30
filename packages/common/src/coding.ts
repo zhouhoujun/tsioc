@@ -18,28 +18,33 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     public raw?: Buffer;
     readonly headerDelimiter?: Buffer;
     readonly serverSide: boolean;
+    readonly payloadOnly: boolean;
 
     constructor(
         injector: Injector,
         session: TransportSession,
         packet: TPacket,
         headerDelimiter?: Buffer,
+        payloadOnly?: boolean,
         options?: InvokeArguments);
     constructor(
         injector: Injector,
         transportOpts: TransportSession,
         raw: Buffer,
         headerDelimiter?: Buffer,
+        payloadOnly?: boolean,
         options?: InvokeArguments);
     constructor(
         injector: Injector,
         session: TransportSession,
         packBuff: TPacket | Buffer,
         headerDelimiter?: Buffer,
+        payloadOnly?: boolean,
         options?: InvokeArguments) {
         super(injector, options);
         this.transport = session.options.transport!;
         this.serverSide = session.options.serverSide == true;
+        this.payloadOnly = payloadOnly == true;
         this.session = session;
         if (isBuffer(packBuff)) {
             this.raw = packBuff;

@@ -76,7 +76,7 @@ export abstract class TransportFactory {
 /**
  * response factory.
  */
-export interface ResponseFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
+export interface ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TErrorResponse;
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse;
     createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse;
@@ -114,10 +114,9 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
 
     /**
      * serialize packet.
-     * @param packet 
-     * @param withPayload 
+     * @param packet
      */
-    abstract serialize(packet: Packet, withPayload?: boolean): Buffer;
+    abstract serialize(packet: Packet): Buffer;
     /**
      * deserialize packet.
      * @param raw 
@@ -133,7 +132,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
     /**
      * receive
      */
-    abstract receive(filter?: (msg: TMsg) => boolean): Observable<Packet>;
+    abstract receive(packet?: Packet): Observable<Packet>;
 
     /**
      * destroy.
