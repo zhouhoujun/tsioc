@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { MessageExecption } from '@tsdi/common';
+import { MessageExecption, StatusCode } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 
 
@@ -24,4 +24,14 @@ export abstract class Responder<T extends TransportContext = TransportContext> {
      * @param err execption message
      */
     abstract sendExecption(ctx: T, err: MessageExecption): Promise<any>;
+}
+
+
+@Abstract()
+export abstract class StatusMessageFormatter {
+    /**
+     * format status message.
+     * @param ctx 
+     */
+    abstract format(ctx: TransportContext, statusCode: StatusCode): string;
 }

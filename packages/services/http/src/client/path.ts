@@ -12,7 +12,7 @@ export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> 
 
     constructor() { }
 
-    intercept(req: HttpRequest<any>, next: Handler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest, next: Handler<HttpRequest, HttpEvent>): Observable<HttpEvent> {
         let url = req.url.trim();
         if (!abstUrlExp.test(url)) {
             const context = req.context;

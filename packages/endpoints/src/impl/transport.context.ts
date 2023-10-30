@@ -1,6 +1,6 @@
-import { EMPTY_OBJ, Injector, isNil, isString } from '@tsdi/ioc';
-import { LOCALHOST, RequestPacket, ResponsePacket, StreamAdapter, isBuffer } from '@tsdi/common';
-import { TransportContext } from '../TransportContext';
+import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
+import { LOCALHOST, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
+import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 
 
@@ -16,12 +16,14 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
 
     constructor(
         injector: Injector,
-        readonly socket: TSocket,
+        readonly session: TransportSession,
         readonly request: TRequest,
         readonly response: TResponse,
         private serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
+
+        this.setValue(TransportSession, session);
         this.streamAdapter = injector.get(StreamAdapter);
         if (!response.id) {
             response.id = request.id;
@@ -166,3 +168,12 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
 }
 
 const abstl = /^\w+:\/\//i;
+
+
+@Injectable()
+export class TransportContextFactoryImpl implements TransportContextFactory {
+    create<TSocket, TInput extends RequestPacket<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: TransportSession<any, any>, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): TransportContext<TInput, TOutput, TSocket> {
+        return new TransportContextIml(injector, session, request, response, options);
+    }
+
+}

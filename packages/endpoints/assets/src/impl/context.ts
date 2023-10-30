@@ -1,6 +1,9 @@
-import { EMPTY_OBJ } from '@tsdi/ioc';
-import { Incoming, InternalServerExecption, LOCALHOST, Outgoing, StatusCode } from '@tsdi/common';
+import { EMPTY_OBJ, Injectable, Injector } from '@tsdi/ioc';
+import { Incoming, IncomingPacket, InternalServerExecption, LOCALHOST, Outgoing, StatusCode, TransportSession } from '@tsdi/common';
+import { AssetContext, AssetContextFactory, ServerOpts } from '@tsdi/endpoints';
 import { AbstractAssetContext, ServerOptions } from '../asset.context';
+import { IncomingMessage } from '../incoming';
+import { OutgoingMessage } from '../outgoing';
 
 
 
@@ -11,7 +14,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     }
 
     protected parseURL(req: Incoming<TSocket>, proxy?: boolean | undefined): URL {
-        const url = req.url || req.originalUrl || req.topic ||  '';
+        const url = req.url || req.originalUrl || req.topic || '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);
         } else {
@@ -53,3 +56,11 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
 }
 
 const abstl = /^\w+:\/\//i;
+
+@Injectable()
+export class AssetContextFactoryImpl implements AssetContextFactory {
+    create(injector: Injector, session: TransportSession<any, any>, incoming: IncomingPacket<any>, options: ServerOpts<any>): AssetContext<any, any, ServerOpts<any>> {
+        return new AssetContextImpl(injector, session, incoming.req ?? new IncomingMessage(session, incoming), incoming.res ?? new OutgoingMessage(session, incoming), options);
+    }
+
+}

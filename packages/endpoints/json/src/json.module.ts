@@ -50,8 +50,8 @@ export class JsonTransportModule {
         providers: ProviderType[]
     }): ModuleWithProviders<JsonTransportModule> {
         const providers: ProviderType[] = options.providers ?? [];
-        if (options.encoderBacked) {
-            providers.push(toProvider(JsonEncoderBackend, options.encoderBacked))
+        if (options.decoderBacked) {
+            providers.push(toProvider(JsonEncoderBackend, options.decoderBacked))
         }
         if (options.encoderInterceptors) {
             options.encoderInterceptors.forEach(p => {

@@ -46,11 +46,11 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         ) as Observable<any>;
     }
 
-    protected override reqMsgFilter(req: RequestPacket<any>, msg: TopicMessage): boolean {
+    protected override responseFilter(req: RequestPacket<any>, msg: TopicMessage): boolean {
         return this.getReply(req) == msg.topic;
     }
 
-    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+    protected override responsePacketFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
         return req.id === res.id;
     }
 

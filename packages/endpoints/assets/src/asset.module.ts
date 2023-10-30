@@ -2,7 +2,7 @@ import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider } fro
 import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Packet, TransportFactory } from '@tsdi/common';
 import { BodyContentInterceptor, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
-import { RequestHandler, Responder, StatusVaildator } from '@tsdi/endpoints';
+import { AssetContextFactory, RequestHandler, Responder, StatusVaildator } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { AssetResponder } from './responder';
 import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
@@ -15,6 +15,7 @@ import { AssetTransportTypedRespond } from './impl/typed.respond';
 import { AssetRequestHandler } from './handler';
 import { InterceptorsModule } from './interceptors.module';
 import { AssetResponseTransform } from './impl/resp.transform';
+import { AssetContextFactoryImpl } from './impl/context';
 
 
 
@@ -42,6 +43,9 @@ import { AssetResponseTransform } from './impl/resp.transform';
 
         AssetTransportTypedRespond,
         { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
+
+        AssetContextFactoryImpl,
+        { provide: AssetContextFactory, useExisting: AssetContextFactoryImpl },
 
         AssetRequestHandler,
         { provide: RequestHandler, useExisting: AssetRequestHandler },
@@ -75,8 +79,8 @@ export class AssetTransportModule {
         providers: ProviderType[]
     }): ModuleWithProviders<AssetTransportModule> {
         const providers: ProviderType[] = options.providers ?? [];
-        if (options.encoderBacked) {
-            providers.push(toProvider(AssetEncoderBackend, options.encoderBacked))
+        if (options.decoderBacked) {
+            providers.push(toProvider(AssetEncoderBackend, options.decoderBacked))
         }
         if (options.encoderInterceptors) {
             options.encoderInterceptors.forEach(p => {

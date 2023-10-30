@@ -1,13 +1,13 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption } from '@tsdi/common';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { MimeAdapter } from './MimeAdapter';
 import { Negotiator } from './Negotiator';
-import { encodeUrl, escapeHtml, xmlRegExp } from './utils';
+import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
 
 
 
@@ -39,8 +39,9 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly mimeAdapter: MimeAdapter;
 
 
-    constructor(injector: Injector, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
+    constructor(injector: Injector, readonly session: TransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
+        this.setValue(TransportSession, session);
         this.vaildator = injector.get(StatusVaildator);
         this.streamAdapter = injector.get(StreamAdapter);
         this.fileAdapter = injector.get(FileAdapter);
@@ -610,6 +611,11 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      */
     protected onNullBody() {
         this._explicitNullBody = true;
+    }
+
+    vary(field: string) {
+        if (this.sent) return;
+        vary(this.response, field);
     }
 
     /**

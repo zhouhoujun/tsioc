@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
 import { AssetContext, Middleware, ContentSendAdapter, ContentOptions } from '@tsdi/endpoints';

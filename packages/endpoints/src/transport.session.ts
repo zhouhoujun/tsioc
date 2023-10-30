@@ -73,8 +73,8 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 
     request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
         let obs$ = defer(() => this.requesting(packet)).pipe(
-            mergeMap(r => this.receive((msg) => this.reqMsgFilter(packet, msg))),
-            filter(p => this.reqResFilter(packet, p))
+            mergeMap(r => this.receive((msg) => this.responseFilter(packet, msg))),
+            filter(p => this.responsePacketFilter(packet, p))
         );
 
         if (this.options.timeout) {
@@ -130,11 +130,11 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         await lastValueFrom(this.send(packet))
     }
 
-    protected reqMsgFilter(req: RequestPacket, msg: TMsg) {
+    protected responseFilter(req: RequestPacket, msg: TMsg) {
         return true;
     }
 
-    protected reqResFilter(req: RequestPacket, res: ResponsePacket) {
+    protected responsePacketFilter(req: RequestPacket, res: ResponsePacket) {
         return res.id == req.id
     }
 

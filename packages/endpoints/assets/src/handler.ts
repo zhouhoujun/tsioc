@@ -1,11 +1,8 @@
-import { Injectable, Injector } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
-import { GET, IncomingPacket, MESSAGE, RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
-import { AssetContext, RequestHandler, ServerOpts, TransportEndpoint } from '@tsdi/endpoints';
+import { GET, MESSAGE, RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
+import { AssetContextFactory, RequestHandler, ServerOpts, TransportEndpoint } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
-import { AssetContextImpl } from './impl/context';
-import { IncomingMessage } from './incoming';
-import { OutgoingMessage } from './outgoing';
 
 
 /**
@@ -21,8 +18,9 @@ export class AssetRequestHandler implements RequestHandler<RequestPacket, Respon
                 if (!incoming.method) {
                     incoming.method = options.transportOpts?.microservice ? MESSAGE : GET;
                 }
-                const ctx = this.createContext(endpoint.injector, session, incoming, options);
-                ctx.setValue(TransportSession, session);
+                
+                const injector = endpoint.injector;
+                const ctx = injector.get(AssetContextFactory).create(injector, session, incoming, options);
                 ctx.setValue(Logger, logger);
 
                 return endpoint.handle(ctx)
@@ -37,10 +35,6 @@ export class AssetRequestHandler implements RequestHandler<RequestPacket, Respon
             },
         });
 
-    }
-
-    createContext(injector: Injector, session: TransportSession, incoming: IncomingPacket, options: ServerOpts): AssetContext {
-        return new AssetContextImpl(injector, incoming.req ?? new IncomingMessage(session, incoming), incoming.res ?? new OutgoingMessage(session, incoming), options);
     }
 
 }

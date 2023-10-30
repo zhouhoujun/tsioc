@@ -1,12 +1,12 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr } from '@tsdi/common';
-import { isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession } from '@tsdi/common';
+import { Injectable, Injector, isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { append, parseTokenList, AbstractAssetContext } from '@tsdi/endpoints/assets';
 import * as assert from 'assert';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { MiddlewareLike, Throwable } from '@tsdi/endpoints';
+import { AssetContextFactory, ServerOpts, Throwable } from '@tsdi/endpoints';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -288,6 +288,15 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         return new MessageExecption(status.message ?? statusMessage[(status as MessageExecption).statusCode as HttpStatusCode ?? 500], (status as MessageExecption).statusCode ?? HttpStatusCode.InternalServerError);
     }
 
+
+}
+
+@Injectable()
+export class HttpAssetContextFactory implements AssetContextFactory {
+
+    create(injector: Injector, session: TransportSession<any, any>, incoming: IncomingPacket<any>, options: HttpServerOpts): HttpContext {
+        return new HttpContext(injector, session, incoming.req as HttpServRequest, incoming.res as HttpServResponse, options);
+    }
 
 }
 

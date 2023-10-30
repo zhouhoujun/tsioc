@@ -2,17 +2,17 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
 import { HttpTransportBackend } from './client/backend';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_OPTS } from './server/options';
 import { HttpEndpoint } from './server/endpoint';
-import { HttpRespondAdapter } from './server/respond';
 import { HttpServer } from './server/server';
 import { HttpPathInterceptor } from './client/path';
 import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
+import { HttpAssetContextFactory } from './server/context';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -24,10 +24,10 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
         Http,
         HttpServer,
         HttpTransportBackend,
-        HttpRespondAdapter,
         HttpPathInterceptor,
         HttpClientSessionFactory,
         HttpServerSessionFactory,
+        HttpAssetContextFactory,
         { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {
             provide: CLIENT_MODULES,
@@ -78,6 +78,9 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
+                    ],
+                    providers: [
+                        { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,
@@ -112,7 +115,10 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         ExecptionHandlerFilter,
                         FinalizeFilter
                     ]
-                }
+                },
+                providers: [
+                    { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
+                ]
             } as ServerModuleOpts,
             multi: true
         }

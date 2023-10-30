@@ -1,6 +1,7 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule } from '@tsdi/core';
 import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
@@ -13,8 +14,8 @@ import { Session } from './Session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
+import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
-import { TransportContext } from './TransportContext';
 
 
 
@@ -30,6 +31,9 @@ import { TransportContext } from './TransportContext';
     providers: [
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
+
+        TransportContextFactoryImpl,
+        { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },
 
         LogInterceptor,
         // TransportExecptionHandlers,

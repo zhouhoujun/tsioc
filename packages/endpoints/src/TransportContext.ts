@@ -1,6 +1,6 @@
-import { Abstract, EMPTY, Execption, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { RequestPacket, ResponsePacket, StreamAdapter } from '@tsdi/common';
+import { RequestPacket, ResponsePacket, StreamAdapter, TransportSession } from '@tsdi/common';
 import { ServerOpts } from './Server';
 
 /**
@@ -15,7 +15,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
 
-    
+    /**
+     * transport session
+     */
+    abstract get session(): TransportSession<TSocket>;
+
     /**
      * stream adapter
      */
@@ -85,29 +89,25 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      */
     abstract get method(): string;
 
-    /**
-     * socket.
-     */
-    abstract get socket(): TSocket;
-
 }
 
-
-export const TRANSPORT_CONTEXT_IMPL = {
-    create<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, socket: TSocket, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket> {
-        throw new Execption('not implemented.')
-    }
-}
 
 /**
- * create transport context
- * @param injector 
- * @param options 
- * @returns 
+ * transport context factory.
  */
-export function createTransportContext<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, socket: TSocket, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket> {
-    return TRANSPORT_CONTEXT_IMPL.create(injector, socket, request, response, options)
+@Abstract()
+export abstract class TransportContextFactory {
+    /**
+     * create transport context.
+     * @param injector 
+     * @param session 
+     * @param request 
+     * @param response 
+     * @param options 
+     */
+    abstract create<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket>
 }
+
 
 export function getScopeValue(payload: any, scope: string) {
     return payload[scope] ?? (scope == 'body' ? payload['payload'] : undefined);
