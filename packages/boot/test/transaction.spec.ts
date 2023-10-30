@@ -1,4 +1,4 @@
-import { HttpClient } from '@tsdi/common';
+import { HttpClient } from '@tsdi/common/http';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');

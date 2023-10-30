@@ -1,6 +1,6 @@
-import { AssetContext, Handler, Interceptor } from '@tsdi/core';
+import { Handler, Interceptor } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
-import { ctype } from '@tsdi/transport';
+import { AssetContext, ctype } from '@tsdi/transport';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -13,7 +13,7 @@ import { join } from 'path';
 export class BigFileInterceptor implements Interceptor {
     intercept(input: AssetContext, next: Handler<any, any>): Observable<any> {
 
-        if (input.url == 'content/big.json') {
+        if (input.originalUrl == 'content/big.json') {
             return from(this.genedata(input))
         }
         return next.handle(input);

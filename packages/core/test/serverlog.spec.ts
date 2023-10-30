@@ -1,5 +1,5 @@
 import { isString, lang } from '@tsdi/ioc';
-import { LoggerManagers, LOG_CONFIGURES } from '@tsdi/logs';
+import { LoggerManagers, LOG_CONFIGURES } from '@tsdi/logger';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';

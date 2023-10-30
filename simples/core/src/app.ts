@@ -1,10 +1,11 @@
 import { Module } from '@tsdi/ioc';
-import { LoggerModule, LogConfigure } from '@tsdi/logs';
-import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
+import { LoggerModule, LogConfigure } from '@tsdi/logger';
+import { HttpServer, HttpServerModule } from '@tsdi/transport-http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
-import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerLog4Module } from '@tsdi/platform-server/log4js'
 import { SwaggerModule } from '@tsdi/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -94,7 +95,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
     imports: [
         LoggerModule.withOptions(logconfig),
         ServerModule,
-        ServerLogsModule,
+        ServerLog4Module,
         TransactionModule,
         TypeOrmModule.withConnection(connections),
         HttpServerModule.withOption({
@@ -108,7 +109,10 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
             }
         }),
         SwaggerModule.withOptions({
-            title: ''
+            title: 'api document',
+            description: 'platform basic api',
+            version: 'v1',
+            prefix: 'api-doc'
         })
     ],
     declarations: [

@@ -1,10 +1,10 @@
-import { MESSAGE, MircoServRouters, Outgoing, Packet, PatternFormatter, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { Packet, PatternFormatter, MESSAGE } from '@tsdi/common';
+import { InjectLog, Logger } from '@tsdi/logger';
+import { MircoServRouters, Outgoing, Server, TransportContext, TransportSession, Content, LOCALHOST, ev } from '@tsdi/transport';
 import { Client, connect } from 'mqtt';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
 import { MqttEndpoint } from './endpoint';
-import { Content, LOCALHOST, ev } from '@tsdi/transport';
 import { MqttIncoming } from './incoming';
 import { MqttOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
@@ -104,7 +104,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
         if (!this.mqtt) return;
         this._session?.destroy();
         if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
-        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
+        await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;
@@ -124,7 +124,7 @@ export class MqttServer extends Server<TransportContext, Outgoing> {
             packet.method = MESSAGE;
         }
         const req = new MqttIncoming(session, packet);
-        const res = new MqttOutgoing(session, packet.url!, packet.id);
+        const res = new MqttOutgoing(session, packet.id, packet.topic || packet.url!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

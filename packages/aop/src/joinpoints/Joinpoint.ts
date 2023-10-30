@@ -1,6 +1,6 @@
 import {
     tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
-    ParameterMetadata, lang, Type, DecorDefine, Defer, InvocationOption
+    ParameterMetadata, lang, Type, DecorDefine, Defer, InvocationOption, ProvdierOf, isArray, CONTEXT_ARGUMENTS
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -33,7 +33,7 @@ export interface ReturnDefer {
 /**
  * Joinpoint of aop.
  */
-export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements IocContext {
+export class Joinpoint extends DefaultInvocationContext<any[]> implements IocContext {
     invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) => any;
 
     /**
@@ -55,7 +55,6 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
     readonly advices: Advices;
     readonly originMethod?: Function;
     readonly params?: ParameterMetadata[];
-    readonly args?: any[];
     readonly annotations?: DecorDefine[];
 
     public state: JoinpointState;
@@ -67,9 +66,17 @@ export class Joinpoint<T = any> extends DefaultInvocationContext<T> implements I
         this.advices = options.advices;
         this.originMethod = options.originMethod;
         this.params = options.params;
-        this.args = options.args;
         this.annotations = options.annotations;
         this.state = options.state ?? JoinpointState.Before;
+    }
+    
+    protected override initArgs(args: ProvdierOf<any[]>): void {
+        if(isArray(args)) {
+            this._args = args;
+            this.injector.setValue(CONTEXT_ARGUMENTS, args);
+        } else {
+            super.initArgs(args);
+        }
     }
 
     get fullName(): string {

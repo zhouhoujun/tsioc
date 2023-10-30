@@ -1,5 +1,5 @@
 import { Type } from './types';
-import { Token } from './tokens';
+import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
@@ -39,7 +39,7 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * 
      * 根据当前类的上下文环境解析该标记令牌的实例对象
      */
-    abstract resolve<R>(token: Token<R>): R;
+    abstract resolve<R>(token: Token<R>, flags?: InjectFlags): R;
     /**
      * target type.
      * 

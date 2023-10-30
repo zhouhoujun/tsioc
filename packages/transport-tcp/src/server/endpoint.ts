@@ -1,4 +1,4 @@
-import { Outgoing, TransportEndpoint } from '@tsdi/core';
+import { Outgoing, TransportEndpoint } from '@tsdi/transport';
 import { Abstract } from '@tsdi/ioc';
 import { TcpContext } from './context';
 

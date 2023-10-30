@@ -105,6 +105,19 @@ export function deepForEach<T>(
     })
 }
 
+export function deepClone<T>(input: T): T {
+    if (!isObject(input)) return null!;
+    return Object.entries(input).reduce((result, [key, value]) => {
+        if (isPlainObject(value)) {
+            result[key] = deepClone(value);
+        } else {
+            result[key] = value;
+        }
+        return result;
+    }, {} as any);
+
+}
+
 /**
  * deep in object.
  * @param input 
@@ -115,7 +128,7 @@ export function deepForEach<T>(
 export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
     if (isObject(input) == false) return;
     Object.keys(input).forEach(name => {
-        const chpth = path ? name : `${path}.${name}`;
+        const chpth = path ? `${path}.${name}` : name;
         const val = input[name];
         if (isNil(val) || fn(chpth, val) === false) return;
         deepIn(val, fn, chpth);
@@ -368,6 +381,8 @@ export function delay(times: number, work?: (...args: any[]) => void, ...args: a
 
 export const immediate = typeof setImmediate !== 'undefined' ? setImmediate : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
 
+export const nextTick = typeof process !== 'undefined' ? process.nextTick : (callback: (...args: any[]) => void, ...args: any[]) => delay(0, callback, ...args);
+
 /**
  * run promise step by step.
  *
@@ -420,13 +435,26 @@ export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> 
     return Promise.resolve(target)
 }
 
-export function promisify(func: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
-export function promisify<T>(func: (callback: (err: any, result?: T) => void) => void, owner?: any): () => Promise<T>;
-export function promisify<T, A1>(func: (arg1: A1, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1) => Promise<T>;
-export function promisify<T, A1, A2>(func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2) => Promise<T>;
-export function promisify<T, A1, A2, A3>(func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
-export function promisify<T, A1, A2, A3, A4>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Promise<T>;
-export function promisify<T, A1, A2, A3, A4, A5>(func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void, owner?: any): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Promise<T>;
+
+
+export function promisify<TResult>(fn: (callback: (err: any, result: TResult) => void) => void, owner?: any): () => Promise<TResult>;
+export function promisify(fn: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
+export function promisify<T1, TResult>(fn: (arg1: T1, callback: (err: any, result: TResult) => void) => void, owner?: any): (arg1: T1) => Promise<TResult>;
+export function promisify<T1>(fn: (arg1: T1, callback: (err?: any) => void) => void, owner?: any): (arg1: T1) => Promise<void>;
+export function promisify<T1, T2, TResult>(fn: (arg1: T1, arg2: T2, callback: (err: any, result: TResult) => void) => void, owner?: any): (arg1: T1, arg2: T2) => Promise<TResult>;
+export function promisify<T1, T2>(fn: (arg1: T1, arg2: T2, callback: (err?: any) => void) => void, owner?: any): (arg1: T1, arg2: T2) => Promise<void>;
+export function promisify<T1, T2, T3, TResult>(fn: (arg1: T1, arg2: T2, arg3: T3, callback: (err: any, result: TResult) => void) => void, owner?: any): (arg1: T1, arg2: T2, arg3: T3) => Promise<TResult>;
+export function promisify<T1, T2, T3>(fn: (arg1: T1, arg2: T2, arg3: T3, callback: (err?: any) => void) => void, owner?: any): (arg1: T1, arg2: T2, arg3: T3) => Promise<void>;
+export function promisify<T1, T2, T3, T4, TResult>(
+    fn: (arg1: T1, arg2: T2, arg3: T3, arg4: T4, callback: (err: any, result: TResult) => void) => void, owner?: any
+): (arg1: T1, arg2: T2, arg3: T3, arg4: T4) => Promise<TResult>;
+export function promisify<T1, T2, T3, T4>(fn: (arg1: T1, arg2: T2, arg3: T3, arg4: T4, callback: (err?: any) => void) => void): (arg1: T1, arg2: T2, arg3: T3, arg4: T4) => Promise<void>;
+export function promisify<T1, T2, T3, T4, T5, TResult>(
+    fn: (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, callback: (err: any, result: TResult) => void) => void, owner?: any
+): (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5) => Promise<TResult>;
+export function promisify<T1, T2, T3, T4, T5>(
+    fn: (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, callback: (err?: any) => void) => void, owner?: any
+): (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5) => Promise<void>;
 export function promisify(nodeFunction: (...args: any[]) => void, owner?: any): (...args: any[]) => Promise<any> {
     if (owner) {
         nodeFunction = nodeFunction.bind(owner);

@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/httpclient",
+  "name": "@tsdi/common",
   "version": "6.0.31",
   "description": "Application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {

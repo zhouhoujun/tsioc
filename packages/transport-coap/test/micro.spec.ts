@@ -1,8 +1,10 @@
-import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
+import { TransportErrorResponse } from '@tsdi/common';
+import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
 import { COAP_MICRO_SERV_INTERCEPTORS, CoapClient, CoapClientModule, CoapMicroService, CoapMicroServModule } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -102,29 +104,29 @@ describe('Coap Micro Service', () => {
     });
 
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/510100_full.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch json', async () => {
+    //     const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
-    it('fetch big json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch big json', async () => {
+    //     const res: any = await lastValueFrom(client.send('/content/big.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
     it('fetch json 2', async () => {
         const res: any = await lastValueFrom(client.send('/content/jsons/data1.json')

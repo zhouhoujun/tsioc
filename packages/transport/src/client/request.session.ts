@@ -1,12 +1,14 @@
-import {
-    TransportEvent,TransportErrorResponse, Packet, Incoming,  TransportHeaderResponse, TransportRequest, TransportResponse,
-     ResHeaders, RequestTimeoutExecption, TransportSession, TRANSPORT_SESSION, IncomingHeaders, OutgoingHeaders
-} from '@tsdi/core';
 import { Execption, Abstract, isString, InvocationContext, InjectFlags } from '@tsdi/ioc';
+import {
+    TransportEvent, TransportErrorResponse, Packet, TransportHeaderResponse, TransportRequest, TransportResponse,
+    IncomingHeaders, OutgoingHeaders, ResHeaders, InvalidJsonException, RequestTimeoutExecption
+} from '@tsdi/common';
 import { Observable, Observer } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { RequestAdapter, StatusPacket } from './request';
 import { ctype, ev, hdr } from '../consts';
+import { Incoming } from '../socket';
+import { TRANSPORT_SESSION, TransportSession } from '../TransportSession';
 
 @Abstract()
 export abstract class SessionRequestAdapter<T = any, Option = any> extends RequestAdapter<TransportRequest, TransportEvent, number | string> {
@@ -41,7 +43,6 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
             request.on(ev.ABOUT, onError);
             request.on(ev.ABORTED, onError);
 
-
             let timeout: any;
             const observe = req.observe;
             request.send(packet, { observe })
@@ -54,8 +55,9 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                             body: true
                         }));
                         observer.complete();
-                    } else if (opts.timeout) {
+                    } else if (req.timeout || opts.timeout) {
                         timeout = setTimeout(() => {
+                            clearTimeout(timeout);
                             const error = new RequestTimeoutExecption();
                             const res = this.createErrorResponse({
                                 url,
@@ -64,7 +66,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                                 status: this.vaildator.gatewayTimeout
                             });
                             observer.error(res);
-                        }, opts.timeout)
+                        }, req.timeout || opts.timeout)
                     }
                 })
                 .catch(err => {
@@ -84,13 +86,12 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 request.off(ev.CLOSE, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
-                // request.destroy?.();
             }
         });
     }
 
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: number | string; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-        return new TransportErrorResponse(options);
+        return new TransportErrorResponse(options) as any;
     }
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: number | string; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
         return new TransportHeaderResponse(options);
@@ -104,7 +105,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     protected toPacket(id: number | string, url: string, req: TransportRequest) {
-        return {
+        const pkg = {
             id,
             method: req.method,
             headers: {
@@ -112,10 +113,15 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
                 ...req.headers.getHeaders()
             },
             url,
-            topic: url,
-            payload: req.body,
-            replyTo: this.getReply(url, req.observe)
+            payload: req.body
         } as Packet;
+
+        const replyTo = this.getReply(url, req.observe);
+        if (replyTo) {
+            pkg.replyTo = replyTo;
+        }
+
+        return pkg;
     }
 
     protected getSession(context: InvocationContext): TransportSession<T> {
@@ -126,7 +132,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
 
     protected abstract bindMessageEvent(session: TransportSession<T>, packet: Packet, req: TransportRequest, observer: Observer<TransportEvent>, opts: Option): [string, (...args: any[]) => void]
 
-    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit'): string {
+    protected getReply(url: string, observe: 'body' | 'events' | 'response' | 'emit' | 'observe'): string {
         switch (observe) {
             case 'emit':
                 return '';
@@ -136,7 +142,7 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
     }
 
     protected async handleMessage(id: number | string, url: string, req: TransportRequest, observer: Observer<TransportEvent>, res: any) {
-        res = isString(res) ? JSON.parse(res) : res;
+        res = isString(res) ? this.deserialize(res) : res;
         if (res.id != id) return;
         const { status, headers: inHeaders, statusText, body: resbody, payload } = this.parseStatusPacket(res);
         const headers = this.parseHeaders(inHeaders, res);
@@ -162,12 +168,21 @@ export abstract class SessionRequestAdapter<T = any, Option = any> extends Reque
         const [ok, result] = await this.parseResponse(url, body, headers, status, statusText, req.responseType);
 
         if (ok) {
-            observer.next(result);
+            observer.next(result as TransportEvent);
             observer.complete();
         } else {
             observer.error(result);
         }
 
+    }
+
+    protected deserialize(msg: string) {
+        try {
+            return JSON.parse(msg);
+        } catch (err) {
+            throw new InvalidJsonException(err, msg);
+
+        }
     }
 
     protected parseHeaders(headers: IncomingHeaders | OutgoingHeaders, incoming?: Incoming): ResHeaders {

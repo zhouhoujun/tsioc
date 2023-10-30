@@ -1,6 +1,6 @@
-import { TransportEvent, Encoder, Decoder, Redirector, StreamAdapter, StatusVaildator, TransportRequest, TransportSession, Packet } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
+import { Packet, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Encoder, Decoder, Redirector, StreamAdapter, StatusVaildator, TransportSession, ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { Client } from 'mqtt';
 import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
@@ -36,7 +36,7 @@ export class MqttRequestAdapter extends SessionRequestAdapter<Client, MqttClient
             session.socket.subscribe(reply);
         }
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (channel: string, res: any) => {
             if (channel !== reply) return;
             this.handleMessage(id, url, req, observer, res)

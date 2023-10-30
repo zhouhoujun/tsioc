@@ -1,12 +1,15 @@
-import { ExecptionHandlerFilter, StatusVaildator, MicroServRouterModule, TransformModule, createTransportEndpoint, PatternFormatter } from '@tsdi/core';
+import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { PatternFormatter } from '@tsdi/common';
+import {
+    TransportModule, MicroServRouterModule, StatusVaildator, createTransportEndpoint, Bodyparser,
+    Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter,
+} from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { NatsServer } from './server';
 import { NatsEndpoint } from './endpoint';
-// import { NatsExecptionHandlers } from './execption.handles';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NATS_SERV_OPTS, NatsMicroServOpts } from './options';
-import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl } from '../transport';
+import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { NatsStatusVaildator } from '../status';
 import { NatsPatternFormatter } from '../pattern';
 import { NatsExecptionHandlers } from './execption.handles';
@@ -17,6 +20,7 @@ import { NatsExecptionHandlers } from './execption.handles';
 
 const defaultServOpts = {
     transportOpts: {
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

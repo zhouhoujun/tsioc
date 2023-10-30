@@ -1,6 +1,6 @@
 import { Workflow, Task } from '@tsdi/activities';
 import { TsBuildOption, PackModule, AssetActivityOption } from '@tsdi/pack';
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
 
 @Task({
     deps: [

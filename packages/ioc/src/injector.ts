@@ -75,7 +75,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>,  flags?: InjectFlags): T;
+    abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
      * get token factory resolve instace in current.
      *
@@ -347,7 +347,17 @@ export abstract class Container extends Injector { }
 
 @Abstract()
 export abstract class InjectorEvent {
-    abstract emit(event: 'register' | 'registered' | 'resolved', ...data: any[]): any;
+    abstract on(eventName: 'register', listener: (def: Class) => void): this;
+    abstract on(eventName: 'registered', listener: (def: Class) => void): this;
+    abstract on(eventName: 'resolved', listener: (value: any, token?: Token) => void): this;
+
+    abstract off(eventName: 'register', listener: (def: Class) => void): this;
+    abstract off(eventName: 'registered', listener: (def: Class) => void): this;
+    abstract off(eventName: 'resolved', listener: (value: any, token?: Token) => void): this;
+
+    abstract emit(event: 'register', def: Class): any;
+    abstract emit(event: 'registered', def: Class): any;
+    abstract emit(event: 'resolved', value: any, token?: Token): any;
 }
 
 
@@ -371,6 +381,8 @@ export const INJECT_IMPL = {
  * instance factory.
  */
 export type Factory<T = any> = (...args: any[]) => T;
+
+export type InstanceOf<T> = T | ((injector: Injector)=> T);
 
 /**
  * register option

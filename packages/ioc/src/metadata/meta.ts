@@ -39,7 +39,6 @@ export interface ProvideMetadata {
      */
     multi?: boolean;
 
-
     /**
      * inject flags.
      */

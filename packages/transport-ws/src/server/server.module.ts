@@ -1,24 +1,27 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, StatusVaildator, TransformModule, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
-import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
+import {
+    MicroServRouterModule, TransportModule, StatusVaildator, createTransportEndpoint,
+    Bodyparser, Content, Json, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, Session
+} from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { WS_SERV_INTERCEPTORS, WsServerOpts, WS_SERV_FILTERS, WS_SERV_OPTS, WS_SERV_GUARDS } from './options';
 import { WsServer } from './server';
 import { WsEndpoint } from './endpoint';
 import { WsExecptionHandlers } from './execption.handles';
 import { WsStatusVaildator } from '../status';
-import { WsTransportSessionFactory, WsTransportSessionFactoryImpl } from '../transport';
+import { WsTransportSessionFactory, WsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 
 
 
 
 /**
- * tcp microservice default options.
+ * ws microservice default options.
  */
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

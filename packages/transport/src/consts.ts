@@ -242,6 +242,11 @@ export namespace ctype {
      * application json.
      */
     export const APPL_JSON_UTF8 = 'application/json; charset=utf-8';
+    
+    /**
+     * application javascript.
+     */
+    export const APPL_JAVASCRIPT = 'application/javascript';
     /**
      * text html.
      */

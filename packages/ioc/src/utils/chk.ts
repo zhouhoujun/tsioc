@@ -90,8 +90,20 @@ export function isBoolean(target: any): target is boolean {
  */
 export function isNumber(target: any): target is number {
     const type = typeof target;
-    return type === _tynum || type === _tybigint
+    return type === _tynum;
 }
+
+/**
+ * check target is bigint or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is bigint}
+ */
+export function isBigInt(target: any): target is bigint {
+    return typeof target == _tybigint;
+}
+
 
 /**
  * check target is undefined or not.
@@ -250,17 +262,18 @@ function isPrimit(target: Function): boolean {
  * @param target 
  * @returns 
  */
-export function isBasic(target: any) : boolean {
+export function isBasic(target: any): boolean {
     return isBasicType(getClass(target))
 }
-function isBasicType(target: Function) : boolean {
+function isBasicType(target: Function): boolean {
     return target === Function
-    || target === String
-    || target === Number
-    || target === Boolean
-    || target === Array
-    || target === Date
-    || target === Symbol
+        || target === String
+        || target === Number
+        || target === BigInt
+        || target === Boolean
+        || target === Array
+        || target === Date
+        || target === Symbol
 }
 
 export function isAnnotation(target: any): target is AnnotationType {

@@ -1,7 +1,7 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
-import { Server, Packet, MircoServRouters, ServiceUnavailableExecption, TransportSession, MESSAGE, StatusVaildator, PatternFormatter } from '@tsdi/core';
-import { InjectLog, Level, Logger } from '@tsdi/logs';
-import { Content, ev } from '@tsdi/transport';
+import { InjectLog, Level, Logger } from '@tsdi/logger';
+import { MESSAGE, Packet, PatternFormatter, ServiceUnavailableExecption } from '@tsdi/common';
+import { Server, MircoServRouters, TransportSession, StatusVaildator, Content, ev } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession, KafkaTransportSessionFactory } from '../transport';
@@ -104,7 +104,7 @@ export class KafkaServer extends Server<KafkaContext> {
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
 
-        const transportOpts  = {
+        const transportOpts = {
             ...this.options.transportOpts,
             serverSide: true
         };
@@ -138,7 +138,7 @@ export class KafkaServer extends Server<KafkaContext> {
         if (this.producer) {
             await this.producer.disconnect();
         }
-        
+
         this.logger.info(`Kafka microservice closed!`);
         this.consumer = null!;
         this.producer = null!;
@@ -152,11 +152,8 @@ export class KafkaServer extends Server<KafkaContext> {
     * @param res 
     */
     protected requestHandler(session: TransportSession<KafkaTransport>, packet: Packet): Subscription {
-        if (!packet.method) {
-            packet.method = MESSAGE;
-        }
-        const req = new KafkaIncoming(session, packet);
-        const res = new KafkaOutgoing(session, packet.topic!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string, packet.id);
+        const req = new KafkaIncoming(session, packet, MESSAGE);
+        const res = new KafkaOutgoing(session, packet.id, packet.topic!, packet.headers?.[KafkaHeaders.REPLY_TOPIC] as string, packet.headers?.[KafkaHeaders.REPLY_PARTITION] as string);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

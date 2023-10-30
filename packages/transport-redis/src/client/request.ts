@@ -1,6 +1,6 @@
-import { TransportEvent, Encoder, Decoder, TransportRequest, Redirector, StreamAdapter, StatusVaildator, TransportSession, Packet } from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
+import { TransportRequest, TransportEvent, Packet } from '@tsdi/common';
+import { Encoder, Decoder, Redirector, StreamAdapter, StatusVaildator, TransportSession, ev, MimeTypes, MimeAdapter, SessionRequestAdapter } from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 import { ReidsTransport } from '../transport';
@@ -47,7 +47,7 @@ export class RedisRequestAdapter extends SessionRequestAdapter<ReidsTransport, R
             session.socket.subscriber.subscribe(reply);
         }
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (channel: string, res: any) => {
             if (channel !== reply) return;
             this.handleMessage(id, url, req, observer, res)

@@ -1,6 +1,7 @@
-import { Controller, Delete, Get, InternalServerExecption, Post, Put, RequestParam } from '@tsdi/core';
+import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/transport';
 import { lang } from '@tsdi/ioc';
-import { Log, Logger } from '@tsdi/logs';
+import { Log, Logger } from '@tsdi/logger';
+import { InternalServerExecption } from '@tsdi/common';
 import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
@@ -9,7 +10,7 @@ import { UserRepository } from '../repositories/UserRepository';
 export class UserController {
 
     // @Inject() injector!: Injector;
-    // @Log() logger!: ILogger;
+    // @Log() logger!: Logger;
 
     constructor(private usrRep: UserRepository, @Log() private logger: Logger) {
 

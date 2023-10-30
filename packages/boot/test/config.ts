@@ -29,7 +29,7 @@ export default {
         logging: false  // 日志
     },
     boot: {
-        protocol: 'http2',
+        transport: 'http2',
         // default load controllers from.
         controllers: ['./controllers/**/*.(ts|js)'],
     }

@@ -1,7 +1,11 @@
-import { Middleware, AssetContext, HEAD, GET, Interceptor, Handler, MESSAGE, NotFoundExecption } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Interceptor, Handler } from '@tsdi/core';
+import { Injectable, Optional } from '@tsdi/ioc';
+import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
 import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 import { ContentSendAdapter, SendOptions } from './send';
+import { Middleware } from '../middleware/middleware';
+import { AssetContext } from '../AssetContext';
+
 
 /**
  * Static Content options.
@@ -17,8 +21,8 @@ export interface ContentOptions extends SendOptions {
 @Injectable()
 export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
-    constructor() {
-    }
+    private options?: ContentOptions;
+    constructor() { }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.vaildator.isNotFound(ctx.status)
@@ -26,7 +30,11 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
             || !ctx.getRequestFilePath()) {
             return next();
         }
-        const options = { ...defOpts, ...ctx.serverOptions.content };
+
+        if (!this.options) {
+            this.options = { ...defOpts, ...ctx.serverOptions.content };
+        }
+        const options = this.options!;
         if (options.defer) {
             try {
                 await next()
@@ -50,7 +58,10 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
             || !input.getRequestFilePath()) {
             return next.handle(input);
         }
-        const options = { ...defOpts, ...input.serverOptions.content };
+        if (!this.options) {
+            this.options = { ...defOpts, ...input.serverOptions.content };
+        }
+        const options = this.options!;
         if (options.defer) {
             return next.handle(input)
                 .pipe(
@@ -94,6 +105,14 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
 
         return file;
     }
+
+
+    static create(options?: ContentOptions): Content {
+        const ct = new Content();
+        ct.options = options;
+        return ct;
+    }
+
 }
 
 export const defOpts: ContentOptions = {

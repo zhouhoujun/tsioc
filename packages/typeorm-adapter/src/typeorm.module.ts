@@ -6,6 +6,9 @@ import { TypeormAdapter } from './TypeormAdapter';
 import { TypeormTransactionManager } from './transaction';
 import { TypeormRepositoryArgumentResolver, TypeormTransactionResolver } from './resolvers';
 
+/**
+ * Typeorm options.
+ */
 export interface TypeormOptions extends ConnectionOptions {
     initDb?(connection: DataSource): Promise<void>;
     /**

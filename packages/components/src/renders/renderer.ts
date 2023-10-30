@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
 import { ViewContainerRef } from '../refs/container';
 import { ViewContainerRefImpl } from './container';
 

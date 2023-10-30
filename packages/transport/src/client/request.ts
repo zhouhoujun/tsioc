@@ -1,20 +1,18 @@
-import { TransportEvent, TransportRequest, ResHeaders, Redirector, ResponseJsonParseError,
-     Encoder, Decoder, IncomingHeaders, OutgoingHeaders, StatusVaildator, StreamAdapter } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest, ResHeaders, ResponseJsonParseError, IncomingHeaders, OutgoingHeaders, TransportErrorResponse } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { MimeAdapter, MimeTypes } from '../mime';
+import { MimeAdapter, MimeTypes } from '../MimeAdapter';
 import { hdr } from '../consts';
 import { XSSI_PREFIX, isBuffer, toBuffer } from '../utils';
+import { StatusVaildator } from '../StatusVaildator';
+import { StreamAdapter } from '../StreamAdapter';
+import { Redirector } from '../Redirector';
 
 
 /**
  * Packet with status
  */
 export interface StatusPacket<TStatus> {
-    // id?: any;
-    // url?: string;
-    // topic?: string;
-    // method?: string;
     type?: number;
     headers: IncomingHeaders | OutgoingHeaders;
     error?: any;
@@ -34,8 +32,6 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
     abstract get mimeAdapter(): MimeAdapter;
     abstract get vaildator(): StatusVaildator<TStatus>;
     abstract get streamAdapter(): StreamAdapter;
-    abstract get encoder(): Encoder | null;
-    abstract get decoder(): Decoder | null;
     abstract get redirector(): Redirector<TStatus> | null;
 
     /**
@@ -114,7 +110,6 @@ export abstract class RequestAdapter<TRequest = TransportRequest, TResponse = Tr
             }
         }
         body = responseType !== 'stream' && this.streamAdapter.isReadable(body) ? await toBuffer(body) : body;
-        body = this.decoder ? this.decoder.decode(body) : body;
         switch (responseType) {
             case 'json':
                 // Save the original body, before attempting XSSI prefix stripping.

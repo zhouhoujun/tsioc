@@ -1,4 +1,4 @@
-import { TransportSessionOpts } from '@tsdi/core';
+import { TransportSessionOpts } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 
 

@@ -5,7 +5,7 @@ import {
 import { RunnableFactory } from '@tsdi/core';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
-    HostListenerMetadata, QueryMetadata, VaildateMetadata
+    HostListenerMetadata, QueryMetadata
 } from './meta';
 import { AnnotationDef, ComponentDef, DirectiveDef } from '../type';
 import { CompilerFacade } from '../compile/facade';
@@ -675,42 +675,36 @@ export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
         ({ selector, first: true, isViewQuery: true, descendants: true, ...data }),
 });
 
-/**
- * RefChild decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`RefChildLifecycle`]
- *
- * @RefChild
- */
-export const RefChild = ViewChild;
 
 
-/**
- * Vaildate decorator.
- *
- * @export
- * @interface VaildatePropertyDecorator
- */
-export interface VaildatePropertyDecorator {
-    /**
-     * define Vaildate property is required or not.
-     *
-     * @param {boolean} required property is required or not.
-     * @param {string} message error message of required.
-     */
-    (required: boolean, message?: string): PropertyDecorator;
-    /**
-     * define Vaildate property decorator.
-     *
-     * @param {((value: any, target?: any) => boolean | Promise<boolean>)} vaild vaild func for property.
-     * @param {string} message error message of required.
-     */
-    (vaild: (value: any, target?: any) => boolean | Promise<boolean>, message?: string): PropertyDecorator;
-    /**
-     * define Vaildate property decorator with metadata.
-     *
-     * @param {string} bindingName binding property name
-     */
-    (metadata: VaildateMetadata): PropertyDecorator;
-}
+// /**
+//  * Vaildate decorator.
+//  *
+//  * @export
+//  * @interface VaildatePropertyDecorator
+//  */
+// export interface VaildatePropertyDecorator {
+//     /**
+//      * define Vaildate property is required or not.
+//      *
+//      * @param {boolean} required property is required or not.
+//      * @param {string} message error message of required.
+//      */
+//     (required: boolean, message?: string): PropertyDecorator;
+//     /**
+//      * define Vaildate property decorator.
+//      *
+//      * @param {((value: any, target?: any) => boolean | Promise<boolean>)} vaild vaild func for property.
+//      * @param {string} message error message of required.
+//      */
+//     (vaild: (value: any, target?: any) => boolean | Promise<boolean>, message?: string): PropertyDecorator;
+//     /**
+//      * define Vaildate property decorator with metadata.
+//      *
+//      * @param {string} bindingName binding property name
+//      */
+//     (metadata: VaildateMetadata): PropertyDecorator;
+// }
 
 // /**
 //  * Vaildate decorator.

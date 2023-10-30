@@ -17,6 +17,10 @@ import { OperationInvoker } from './operation';
 @Abstract()
 export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
     /**
+     * is resolve context or not.
+     */
+    abstract get isResolve(): boolean;
+    /**
      * is this context injected in object or not.
      */
     abstract get used(): boolean;
@@ -48,9 +52,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract hasRef(ctx: InvocationContext): boolean;
     /**
-     * the invocation payload.
+     * the invocation arguments.
      */
-    abstract get payload(): T;
+    abstract get args(): T;
     /**
      * get value ify create by factory and register the value for the token.
      * 
@@ -90,9 +94,10 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
-     * @param token 
+     * @param token
+     * @param flags InjectFalgs 
      */
-    abstract resolve<T>(token: Token<T>): T;
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
     /**
      * resolve the parameter value.
      * 
@@ -165,6 +170,10 @@ export type TokenValue<T = any> = [Token<T>, T];
  */
 export interface InvokeOptions {
     /**
+     * is resolve context or not.
+     */
+    isResolve?: boolean;
+    /**
      * token values.
      * 
      * 调用接口的标记值键值对
@@ -192,18 +201,11 @@ export interface InvokeOptions {
  */
 export interface InvokeArguments<TArg = any> extends InvokeOptions {
     /**
-     * invocation payload data.
+     * invocation arguments.
      * 
      * 调用接口负载对象
      */
-    payload?: ProvdierOf<TArg>;
-    /**
-     * invocation payload data.
-     * 
-     * 调用接口负载对象
-     * @deprecated use `payload` instead.
-     */
-    arguments?: ProvdierOf<TArg>;
+    args?: ProvdierOf<TArg>;
     /**
      * parent InvocationContext,
      * 

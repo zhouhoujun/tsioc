@@ -1,6 +1,6 @@
-import { RouteMapping } from '@tsdi/core';
 import { Inject, Injector, lang } from '@tsdi/ioc';
-import { ApiOperation } from '@tsdi/swagger';
+import { RouteMapping } from '@tsdi/transport';
+import { ApiOperation, ApiParam } from '@tsdi/swagger';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -15,7 +15,7 @@ export class UserController {
 
     @ApiOperation('get users.')
     @RouteMapping('/:name', 'GET')
-    getUser(name: string) {
+    getUser(@ApiParam({ name: 'name', required: true}) name: string) {
         console.log('name:', name);
         return this.usrRep.findByAccount(name);
     }

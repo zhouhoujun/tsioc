@@ -1,4 +1,3 @@
-import { Token } from '../tokens';
 import { Platform } from '../platform';
 import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
@@ -11,7 +10,7 @@ import { isArray, isType } from '../utils/chk';
 import { deepForEach } from '../utils/lang';
 import { isPlainObject } from '../utils/obj';
 import { DefaultInjector, processInjectorType } from './injector';
-import { ReflectiveResolverImpl } from './reflective';
+import { ReflectiveFactoryImpl } from './reflective';
 
 
 /**
@@ -22,7 +21,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _type: Type;
     private _typeRefl: Class;
 
-    reflectiveFactory = new ReflectiveResolverImpl();
+    reflectiveFactory = new ReflectiveFactoryImpl();
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
@@ -34,7 +33,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.inject(
             { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
         );
-        // this.onDestroy(this.reflectiveResolver);
         this.setValue(ModuleRef, this);
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
@@ -94,14 +92,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             (tyref, type) => {
                 this.registerReflect(platform, tyref)
             }, moduleRefl)
-    }
-
-    protected override onRegistered(def: Class): void {
-
-    }
-
-    protected override onResolved(value: any, token?: Token): void {
-
     }
 
     protected override clear() {

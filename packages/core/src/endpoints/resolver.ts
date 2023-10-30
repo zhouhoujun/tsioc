@@ -32,7 +32,7 @@ export interface TransportParameter<T = any> extends TransportParameterOptions<T
     /**
      * field scope.
      */
-    scope?: 'body' | 'query' | 'param' | 'path' | 'payload' | 'topic';
+    scope?: 'headers' | 'query' | 'path' | 'payload' | 'body' | 'topic';
 }
 
 /**

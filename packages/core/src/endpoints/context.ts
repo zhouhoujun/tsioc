@@ -12,12 +12,11 @@ export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
  * endpoint context.
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
-
     private doneFn?: (ctx: EndpointContext<TInput>) => boolean
     constructor(
         injector: Injector,
         options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
-        super(injector, options)
+        super(injector, options);
         this.doneFn = options.isDone;
         this.setValue(getClass(this), this);
     }
@@ -43,8 +42,8 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
     }
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
-        if (!this.payload) return EMPTY;
-        return this.injector.get(getResolversToken(this.payload), this.playloadDefaultResolvers());
+        if (!this.args) return EMPTY;
+        return this.injector.get(getResolversToken(this.args), this.playloadDefaultResolvers());
     }
 
     protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] {

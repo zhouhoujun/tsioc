@@ -1,12 +1,12 @@
-import { StatusVaildator, createHandler } from '@tsdi/core';
+import { createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, TransportBackend, TransportModule, RequestAdapter } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { TransportModule, BodyContentInterceptor, TransportBackend, StatusVaildator, RequestAdapter } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { MqttClient } from './client';
 import { MqttHandler } from './handler';
 import { MqttRequestAdapter } from './request';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS, MqttClientOpts, MqttClientsOpts } from './options';
-import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl } from '../transport';
+import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { MqttStatusVaildator } from '../status';
 
 
@@ -20,7 +20,7 @@ const defClientOpts = {
     interceptors: [BodyContentInterceptor],
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: defaultMaxSize,
     },
     providers: [
         { provide: StatusVaildator, useExisting: MqttStatusVaildator },

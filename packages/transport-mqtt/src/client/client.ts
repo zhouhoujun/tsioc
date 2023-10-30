@@ -1,9 +1,9 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, TRANSPORT_SESSION, TransportRequest, TransportSession } from '@tsdi/core';
-import { DisconnectExecption, LOCALHOST, OfflineExecption, ev } from '@tsdi/transport';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { TransportRequest, DisconnectExecption, OfflineExecption } from '@tsdi/common';
+import { Client, TRANSPORT_SESSION, TransportSession, LOCALHOST, ev } from '@tsdi/transport';
+import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
 import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
 import { MqttTransportSessionFactory } from '../transport';
@@ -99,7 +99,7 @@ export class MqttClient extends Client<TransportRequest, number> {
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;
         this._session?.destroy();
-        await promisify<void, boolean | undefined>(this.mqtt.end, this.mqtt)(true)
+        await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);
                 return err;

@@ -1,13 +1,14 @@
-import { Application, ApplicationContext, BadRequestExecption, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, TransportErrorResponse, TransportResponse } from '@tsdi/core';
+import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logs';
+import { TransportResponse, BadRequestExecption } from '@tsdi/common';
+import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
+import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/transport';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
-import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
+import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -112,15 +113,16 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                     path: ipcpath
                 },
                 interceptors: [
+                    BigFileInterceptor,
                     Content,
                     Json,
                     Bodyparser,
                     { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
             },
-            providers:[
-                { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-            ]
+            // providers:[
+            //     { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            // ]
         })
     ],
     declarations: [

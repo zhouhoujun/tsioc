@@ -1,9 +1,9 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
-import { Interceptor, Handler, TransportContext, Filter } from '@tsdi/core';
-import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logs';
-import * as chalk from 'chalk';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Interceptor, Handler, Filter } from '@tsdi/core';
+import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
+import { Observable, map } from 'rxjs';
 import { ResponseStatusFormater } from './status.formater';
+import { TransportContext } from '../TransportContext';
 
 
 
@@ -40,13 +40,11 @@ export class LogInterceptor implements Interceptor, Filter {
 
         //todo console log and other. need to refactor formater.
         const start = this.formatter.hrtime();
-        const method = chalk.cyan(ctx.method);
-        const url = ctx.url;
-        logger[level](this.formatter.incoming, method, url);
+        logger[level](...this.formatter.format(logger, ctx));
         return next.handle(ctx)
             .pipe(
                 map(res => {
-                    logger[level](this.formatter.outgoing, method, url, ...this.formatter.format(ctx, this.formatter.hrtime(start)));
+                    logger[level](...this.formatter.format(logger, ctx, this.formatter.hrtime(start)));
                     return res
                 })
             )

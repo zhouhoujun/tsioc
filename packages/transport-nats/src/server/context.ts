@@ -1,9 +1,9 @@
+import { EMPTY_OBJ, isString } from '@tsdi/ioc';
+import { normalize } from '@tsdi/common';
 import { AbstractAssetContext } from '@tsdi/transport';
 import { NatsMicroServOpts } from './options';
-import { EMPTY_OBJ, isString } from '@tsdi/ioc';
 import { NatsIncoming } from './incoming';
 import { NatsOutgoing } from './outgoing';
-import { normalize } from '@tsdi/core';
 
 
 export class NatsContext extends AbstractAssetContext<NatsIncoming, NatsOutgoing, number, NatsMicroServOpts> {

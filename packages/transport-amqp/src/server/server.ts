@@ -1,7 +1,6 @@
-import { MESSAGE, Server, Packet, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
-import { InjectLog, Logger } from '@tsdi/logs';
-import { ev } from '@tsdi/transport';
+import { InjectLog, Logger } from '@tsdi/logger';
+import { Server, TransportSession, ev } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
 import { AmqpContext } from './context';
@@ -10,6 +9,7 @@ import { AmqpIncoming } from './incoming';
 import { AmqpOutgoing } from './outgoing';
 import { Subscription, finalize } from 'rxjs';
 import { AmqpTransportSessionFactory } from '../transport';
+import { MESSAGE, Packet } from '@tsdi/common';
 
 
 
@@ -108,11 +108,8 @@ export class AmqpServer extends Server<AmqpContext> {
      * @param res 
      */
     protected requestHandler(session: TransportSession<amqp.Channel>, queue: string, packet: Packet): Subscription {
-        if (!packet.method) {
-            packet.method = MESSAGE;
-        }
-        const req = new AmqpIncoming(session, packet);
-        const res = new AmqpOutgoing(session, packet.replyTo!, packet.url!, packet.id);
+        const req = new AmqpIncoming(session, packet, MESSAGE);
+        const res = new AmqpOutgoing(session, packet.id, packet.url!, packet.replyTo!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

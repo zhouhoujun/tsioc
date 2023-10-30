@@ -1,8 +1,10 @@
-import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
+import { TransportErrorResponse } from '@tsdi/common';
+import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
 import { MQTT_SERV_INTERCEPTORS, MqttClient, MqttClientModule, MqttMicroServModule, MqttServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -63,7 +65,7 @@ export class MqttService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 2000
+                timeout: 200
             }
         }),
         MqttMicroServModule
@@ -119,7 +121,7 @@ describe('Mqtt Micro Service', () => {
     })
 
     it('fetch big json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json')
+        const res: any = await lastValueFrom(client.send('/content/big.json', { timeout: 5000 })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

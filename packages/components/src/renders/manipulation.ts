@@ -207,7 +207,7 @@ export function destroyViewTree(rootView: LView): void {
             if (isLView(lViewOrLContainer)) {
                 cleanUpView(lViewOrLContainer[TVIEW], lViewOrLContainer);
             }
-            next = lViewOrLContainer && lViewOrLContainer![NEXT];
+            next = lViewOrLContainer?.[NEXT] || null;
         }
         lViewOrLContainer = next;
     }
@@ -750,8 +750,7 @@ export function getProjectionNodes(lView: LView, tNode: TNode | null): TNode | I
     return null;
 }
 
-export function getBeforeNodeForView(viewIndexInContainer: number, lContainer: LContainer): INode |
-    null {
+export function getBeforeNodeForView(viewIndexInContainer: number, lContainer: LContainer): INode | null {
     const nextViewIndex = CONTAINER_HEADER_OFFSET + viewIndexInContainer + 1;
     if (nextViewIndex < lContainer.length) {
         const lView = lContainer[nextViewIndex] as LView;

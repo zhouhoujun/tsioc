@@ -1,13 +1,14 @@
-import { RequestParam, Controller, Post, Put, Get, Delete, InternalServerExecption } from '@tsdi/core';
-import { Log, Logger } from '@tsdi/logs';
-import { DBRepository, Transactional } from '@tsdi/repository';
+import { InternalServerExecption } from '@tsdi/common';
+import { RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/transport';
+import { Log, Logger } from '@tsdi/logger';
+import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';
 
 @Controller('/roles')
 export class RoleController {
 
-    constructor(@DBRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
+    constructor(@InjectRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
 
     }
 
@@ -26,7 +27,7 @@ export class RoleController {
     @Transactional()
     @Post('/save2')
     @Put('/save2')
-    async save2(role: Role, @DBRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+    async save2(role: Role, @InjectRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);

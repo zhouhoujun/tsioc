@@ -14,7 +14,7 @@ import { EndpointContext } from '../endpoints/context';
 export class ExecptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
 
     constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
-        super(injector, { ...options, payload: execption })
+        super(injector, { ...options, args: execption })
 
         this.setValue(getClass(execption), execption);
         const tokens = lang.getClassChain(getClass(host));

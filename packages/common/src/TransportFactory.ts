@@ -1,0 +1,158 @@
+import { Abstract, Injector } from '@tsdi/ioc';
+import { Receiver } from './Receiver';
+import { Sender } from './Sender';
+import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
+import { Observable } from 'rxjs';
+import { HybirdTransport, Transport } from './protocols';
+import { TransportErrorResponse, TransportEvent } from './response';
+import { OutgoingHeaders, ResHeaders } from './headers';
+
+
+
+
+/**
+ * transport options.
+ */
+export interface TransportOpts {
+    /**
+     * transport type.
+     */
+    transport?: Transport | HybirdTransport;
+    /**
+     * server side or not.
+     */
+    serverSide?: boolean;
+    /**
+     * is microservice or not.
+     */
+    microservice?: boolean;
+    /**
+     * packet delimiter flag
+     */
+    delimiter?: string;
+
+    timeout?: number;
+    /**
+     * packet max size limit.
+     */
+    maxSize?: number;
+    /**
+     * packet buffer encoding.
+     */
+    encoding?: BufferEncoding;
+}
+
+/**
+ * asset transport options.
+ */
+export interface AssetTransportOpts extends TransportOpts {
+    /**
+     * head delimiter flag
+     */
+    headDelimiter?: string;
+    /**
+     * payload max size limit.
+     */
+    payloadMaxSize?: number;
+}
+
+/**
+ * Transport Factory.
+ */
+@Abstract()
+export abstract class TransportFactory {
+    /**
+     * create receiver.
+     * @param options 
+     */
+    abstract createReceiver(options: TransportOpts): Receiver
+    /**
+     * create sender.
+     * @param options 
+     */
+    abstract createSender(options: TransportOpts): Sender;
+}
+
+/**
+ * response factory.
+ */
+export interface ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TErrorResponse;
+    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse;
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse;
+}
+
+
+
+/**
+ * transport session.
+ */
+@Abstract()
+export abstract class TransportSession<TSocket = any, TMsg = any>  {
+    /**
+     * injector.
+     */
+    abstract get injector(): Injector;
+    /**
+     * socket.
+     */
+    abstract get socket(): TSocket;
+    /**
+     * transport options.
+     */
+    abstract get options(): TransportOpts;
+    /**
+     * send.
+     * @param packet 
+     */
+    abstract send(packet: RequestPacket): Observable<any>;
+    /**
+     * send.
+     * @param packet 
+     */
+    abstract send(packet: ResponsePacket): Observable<any>;
+
+    /**
+     * serialize packet.
+     * @param packet
+     */
+    abstract serialize(packet: Packet): Buffer;
+    /**
+     * deserialize packet.
+     * @param raw 
+     */
+    abstract deserialize(raw: Buffer): Packet;
+
+    /**
+     * request.
+     * @param packet 
+     */
+    abstract request(packet: RequestPacket): Observable<ResponsePacket>;
+
+    /**
+     * receive
+     */
+    abstract receive(packet?: Packet): Observable<Packet>;
+
+    /**
+     * destroy.
+     */
+    abstract destroy(): Promise<void>;
+
+}
+
+/**
+ * transport session factory.
+ */
+@Abstract()
+export abstract class TransportSessionFactory<TSocket = any> {
+    /**
+     * injector.
+     */
+    abstract get injector(): Injector;
+    /**
+     * create transport session.
+     * @param options 
+     */
+    abstract create(socket: TSocket, options: TransportOpts): TransportSession<TSocket>;
+}

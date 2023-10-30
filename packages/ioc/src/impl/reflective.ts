@@ -1,7 +1,7 @@
 import { Type, CtorType } from '../types';
 import { Class } from '../metadata/type';
 import { isFunction, isPromise } from '../utils/chk';
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
@@ -25,12 +25,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _instance?: T;
     private _ctx: InvocationContext;
     private _mthCtx: Map<string, InvocationContext | null>;
+    private _isResolve = false;
     constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments<any>) {
         super()
         this._type = _class.type;
         this._typeName = getClassName(this._type);
         injector.register(this.type as CtorType);
-        this._ctx = this.createContext(injector, options);
+        this._isResolve = hasContext(options);
+        this._ctx = this.createContext(injector, { isResolve: this._isResolve, ...options });
         this._mthCtx = new Map();
         this._ctx.setValue(ReflectiveRef, this);
         this._ctx.onDestroy(this)
@@ -47,15 +49,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     getInstance(): T {
         this.assertNotDestroyed();
         if (!this._instance) {
-            this._instance = this.resolve(this.type);
+            this._instance = this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined);
         }
         return this._instance;
     }
 
-
-    resolve<R>(token: Token<R>): R {
+    resolve<R>(token: Token<R>, flags?: InjectFlags): R {
         this.assertNotDestroyed();
-        return this._ctx.resolveArgument({ provider: token, nullable: true })!
+        return this._ctx.resolveArgument({ provider: token, flags, nullable: true })!
     }
 
     invoke<TArg>(method: MethodType<T>, option?: InvokeArguments<TArg> | InvocationContext, instance?: T) {
@@ -232,11 +233,11 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 }
 
-export function hasContext<TArg>(option: InvokeArguments<TArg>) {
-    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.payload)
+export function hasContext<TArg>(option?: InvokeArguments<TArg>) {
+    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.args)
 }
 
-export class ReflectiveResolverImpl extends ReflectiveFactory {
+export class ReflectiveFactoryImpl extends ReflectiveFactory {
 
     create<T, TArg>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
         return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);

@@ -1,4 +1,4 @@
-import { Incoming, NotSupportedExecption } from '@tsdi/core';
+import { NotSupportedExecption } from '@tsdi/common';
 import { EMPTY_OBJ, isNumber } from '@tsdi/ioc';
 import { AbstractAssetContext, LOCALHOST } from '@tsdi/transport';
 import { IncomingMessage } from 'coap';
@@ -15,7 +15,7 @@ export class CoapContext extends AbstractAssetContext<IncomingMessage, CoapOutgo
         return $coapurl.test(url.trim())
     }
 
-    protected parseURL(req: Incoming<any, any>, proxy?: boolean): URL {
+    protected parseURL(req: IncomingMessage, proxy?: boolean): URL {
         const url = req.url ?? '';
         if (this.isAbsoluteUrl(url)) {
             return new URL(url);

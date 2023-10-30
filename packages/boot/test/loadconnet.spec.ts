@@ -1,5 +1,5 @@
 import { ApplicationContext, Application } from '@tsdi/core';
-import { HttpClient } from '@tsdi/common';
+import { HttpClient } from '@tsdi/common/http';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import * as expect from 'expect';
 import { lastValueFrom } from 'rxjs';

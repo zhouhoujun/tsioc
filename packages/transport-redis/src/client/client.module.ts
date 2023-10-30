@@ -1,14 +1,15 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { PatternFormatter, StatusVaildator, createHandler } from '@tsdi/core';
-import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
+import { createHandler } from '@tsdi/core';
+import { TransportModule, BodyContentInterceptor, RequestAdapter, TransportBackend, StatusVaildator } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
+import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { RedisStatusVaildator } from '../status';
 import { RedisRequestAdapter } from './request';
 import { RedisHandler } from './handler';
 import { RedisClient } from './client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS, RedisClientOpts, RedisClientsOpts } from './options';
 import { RedisPatternFormatter } from '../pattern';
+import { PatternFormatter } from '@tsdi/common';
 
 
 /**
@@ -18,7 +19,7 @@ const defClientOpts = {
     interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: defaultMaxSize,
     },
     retryAttempts: 3,
     interceptors: [BodyContentInterceptor],

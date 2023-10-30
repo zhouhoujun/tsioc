@@ -1,10 +1,15 @@
 /* eslint-disable no-control-regex */
-import { HttpStatusCode, AssetContext, Middleware, UnsupportedMediaTypeExecption, IReadableStream, BadRequestExecption, Interceptor, Handler } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
+import { HttpStatusCode, BadRequestExecption, UnsupportedMediaTypeExecption  } from '@tsdi/common';
+import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { hdr, identity } from '../consts';
-import { MimeTypes } from '../mime';
+import { MimeTypes } from '../MimeAdapter';
+import { Middleware } from '../middleware/middleware';
+import { AssetContext } from '../AssetContext';
+import { IReadableStream } from '../stream';
+
 
 @Abstract()
 export class PayloadOptions {
@@ -69,22 +74,22 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
     }
 
     intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
-        if (!isUndefined(input.payload.body)) return next.handle(input);
+        if (!isUndefined(input.args.body)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.payload.payload = input.payload.body = res.body ?? {};
-                    if (isUndefined(input.payload.rawBody)) input.payload.rawBody = res.raw;
+                    input.args.payload = input.args.body = res.body ?? {};
+                    if (isUndefined(input.args.rawBody)) input.args.rawBody = res.raw;
                     return next.handle(input)
                 })
             )
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
-        if (!isUndefined(ctx.payload.body)) return await next();
+        if (!isUndefined(ctx.args.body)) return await next();
         const res = await this.parseBody(ctx);
-        ctx.payload.payload = ctx.payload.body = res.body ?? {};
-        if (isUndefined(ctx.payload.rawBody)) ctx.payload.rawBody = res.raw;
+        ctx.args.payload = ctx.args.body = res.body ?? {};
+        if (isUndefined(ctx.args.rawBody)) ctx.args.rawBody = res.raw;
         await next()
     }
 
@@ -146,14 +151,14 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
                 if (ctx.streamAdapter.isReadable(ctx.request)) {
                     return ctx.request
                 } else if (ctx.streamAdapter.isStream(ctx.request)) {
-                    return ctx.request.pipe(ctx.streamAdapter.passThrough());
+                    return ctx.request.pipe(ctx.streamAdapter.createPassThrough());
                 }
                 throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
         if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
-            return ctx.request.pipe(ctx.streamAdapter.gunzip());
+            return ctx.request.pipe(ctx.streamAdapter.createGunzip());
         }
         throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
     }

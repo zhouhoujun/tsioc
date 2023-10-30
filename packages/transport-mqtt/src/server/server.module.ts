@@ -1,12 +1,15 @@
-import { ExecptionHandlerFilter, StatusVaildator, MicroServRouterModule, TransformModule, createTransportEndpoint } from '@tsdi/core';
+import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { Bodyparser, Content, Json, Session, ExecptionFinalizeFilter, LogInterceptor, ServerFinalizeFilter, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import {
+    TransportModule, MicroServRouterModule, Bodyparser, Content, Json, Session, ExecptionFinalizeFilter,
+    createTransportEndpoint, StatusVaildator, LogInterceptor, ServerFinalizeFilter, 
+} from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { MqttServer } from './server';
 import { MqttEndpoint } from './endpoint';
 import { MqttExecptionHandlers } from './execption.handles';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS, MqttServiceOpts } from './options';
-import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl } from '../transport';
+import { MqttTransportSessionFactory, MqttTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { MqttStatusVaildator } from '../status';
 
 
@@ -17,7 +20,7 @@ const defaultServOpts = {
     encoding: 'utf8',
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: defaultMaxSize,
     },
     content: {
         root: 'public',
@@ -51,10 +54,10 @@ const defaultServOpts = {
  */
 @Module({
     imports: [
-        TransformModule,
         MicroServRouterModule.forRoot('mqtt'),
+        TransformModule,
         TransportModule,
-        ServerTransportModule
+        ServerTransportModule,
     ],
     providers: [
         { provide: MqttTransportSessionFactory, useClass: MqttTransportSessionFactoryImpl, asDefault: true },

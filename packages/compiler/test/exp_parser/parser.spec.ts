@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -1215,11 +1216,11 @@ describe('parser', () => {
     return new IvyParser(new Lexer());
   }
   
-  function parseAction(text: string, location: any = null, offset: number = 0): ASTWithSource {
+  function parseAction(text: string, location: any = null, offset = 0): ASTWithSource {
     return createParser().parseAction(text, location, offset);
   }
   
-  function parseBinding(text: string, location: any = null, offset: number = 0): ASTWithSource {
+  function parseBinding(text: string, location: any = null, offset = 0): ASTWithSource {
     return createParser().parseBinding(text, location, offset);
   }
   
@@ -1245,7 +1246,7 @@ describe('parser', () => {
     return parser.parseTemplateBindings(key, value, templateUrl, absKeyOffset, absValueOffset);
   }
   
-  function parseInterpolation(text: string, location: any = null, offset: number = 0): ASTWithSource|
+  function parseInterpolation(text: string, location: any = null, offset = 0): ASTWithSource|
       null {
     return createParser().parseInterpolation(text, location, offset);
   }
@@ -1254,12 +1255,12 @@ describe('parser', () => {
     return createParser().splitInterpolation(text, location);
   }
   
-  function parseSimpleBinding(text: string, location: any = null, offset: number = 0): ASTWithSource {
+  function parseSimpleBinding(text: string, location: any = null, offset = 0): ASTWithSource {
     return createParser().parseSimpleBinding(text, location, offset);
   }
   
   function parseSimpleBindingIvy(
-      text: string, location: any = null, offset: number = 0): ASTWithSource {
+      text: string, location: any = null, offset = 0): ASTWithSource {
     return createIvyParser().parseSimpleBinding(text, location, offset);
   }
   

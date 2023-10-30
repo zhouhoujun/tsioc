@@ -1,12 +1,12 @@
-import { MESSAGE, MircoServRouters, Packet, PatternFormatter, Server, TransportSession } from '@tsdi/core';
-import { Execption, Inject, Injectable, isPlainObject } from '@tsdi/ioc';
+import { Execption, Inject, Injectable } from '@tsdi/ioc';
+import { Packet, PatternFormatter, MESSAGE } from '@tsdi/common';
+import { MircoServRouters, Server, TransportSession, Content, ev } from '@tsdi/transport';
 import { NatsConnection, connect, Subscription as NatsSubs } from 'nats';
 import { Subscription, finalize } from 'rxjs';
 import { NatsContext } from './context';
 import { NatsEndpoint } from './endpoint';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { NATS_SERV_OPTS, NatsMicroServOpts } from './options';
-import { Content, ev, hdr } from '@tsdi/transport';
 import { NatsTransportSessionFactory } from '../transport';
 import { NatsIncoming } from './incoming';
 import { NatsOutgoing } from './outgoing';
@@ -92,11 +92,8 @@ export class NatsServer extends Server<NatsContext> {
      * @param res 
      */
     protected requestHandler(session: TransportSession<NatsConnection>, packet: Packet): Subscription {
-        if (!packet.method) {
-            packet.method = MESSAGE;
-        }
-        const req = new NatsIncoming(session, packet);
-        const res = new NatsOutgoing(session, packet.replyTo!, packet.url!, packet.id);
+        const req = new NatsIncoming(session, packet, MESSAGE);
+        const res = new NatsOutgoing(session, packet.id, packet.url!, packet.replyTo!);
 
         const ctx = this.createContext(req, res);
         if (packet.error) {

@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.

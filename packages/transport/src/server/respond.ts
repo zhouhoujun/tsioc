@@ -1,17 +1,18 @@
-import { AssetContext, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing } from '@tsdi/core';
-import { Injectable, isString } from '@tsdi/ioc';
+import { Injectable, isString, promisify } from '@tsdi/ioc';
+import { HEAD, MessageExecption } from '@tsdi/common';
 import { hdr } from '../consts';
 import { isBuffer } from '../utils';
+import { Incoming, Outgoing } from '../socket';
+import { AssetContext } from '../AssetContext';
+import { IReadableStream } from '../stream';
 
 
 @Injectable()
 export class RespondAdapter<TRequest extends Incoming = any, TResponse extends Outgoing = any, TStatus = number> {
 
-    constructor() {
-    }
+    constructor() { }
 
     async respond(ctx: AssetContext<TRequest, TResponse, TStatus>): Promise<any> {
-
 
         const vaildator = ctx.vaildator;
         if (ctx.destroyed || !ctx.writable) return;
@@ -68,8 +69,8 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
 
     protected async respondBody(body: any, res: TResponse, ctx: AssetContext<TRequest, TResponse, TStatus>) {
         // responses
-        if (isBuffer(body)) return res.end(body);
-        if (isString(body)) return res.end(Buffer.from(body));
+        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(body);
+        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
 
         if (ctx.streamAdapter.isReadable(body)) {
             return await this.respondStream(body, res, ctx);
@@ -80,8 +81,8 @@ export class RespondAdapter<TRequest extends Incoming = any, TResponse extends O
         if (!res.headersSent) {
             ctx.length = Buffer.byteLength(body)
         }
-        res.end(body);
 
+        await promisify<any, void>(res.end, res)(body);
         return res
     }
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { AssetContext, HttpStatusCode, statusMessage } from '@tsdi/core';
-import { RespondAdapter } from '@tsdi/transport';
+import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { AssetContext, RespondAdapter } from '@tsdi/transport';
 import { TcpIncoming } from './incoming';
 import { TcpOutgoing } from './outgoing';
 

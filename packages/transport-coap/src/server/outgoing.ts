@@ -1,5 +1,6 @@
-import { IncomingHeader, Outgoing } from '@tsdi/core';
 import { isNumber } from '@tsdi/ioc';
+import { IncomingHeader } from '@tsdi/common';
+import { Outgoing } from '@tsdi/transport';
 import { OutgoingMessage } from 'coap';
 import { OptionName } from 'coap-packet';
 import { ignores, transHead, transforms } from '../trans';

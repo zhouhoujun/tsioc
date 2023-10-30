@@ -1,11 +1,12 @@
-import { AssetContext } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { AssetContext } from '../AssetContext';
 
 
 export interface SendOptions<TStats = any> {
     root: string | string[];
     prefix?: string;
-    index?: string;
+    baseUrl?: string | boolean;
+    index?: string | boolean;
     maxAge?: number;
     immutable?: boolean;
     hidden?: boolean;

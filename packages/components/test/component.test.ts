@@ -84,7 +84,7 @@
 //     }
 // }
 
-// @DIModule({
+// @Module({
 //     providers: [
 //         CustomeService
 //     ],
@@ -149,7 +149,7 @@
 //     @RefChild('cmps') cmps: Components;
 // }
 
-// @DIModule({
+// @Module({
 //     imports: [
 //         Component1,
 //         Component2,
@@ -163,7 +163,7 @@
 // }
 
 
-// @DIModule({
+// @Module({
 //     imports: [
 //         ComponentsModule,
 //         SubModule
@@ -183,7 +183,7 @@
 // }
 
 
-// @DIModule({
+// @Module({
 //     imports: [
 //         ComponentsModule,
 //         Component1,
@@ -200,7 +200,7 @@
 
 // }
 
-// @DIModule({
+// @Module({
 //     imports: [
 //         SubModule2
 //     ],
@@ -237,7 +237,7 @@
 //     @ViewChildren(ColumnDef) defs: ColumnDef[];
 // }
 
-// @DIModule({
+// @Module({
 //     regIn: 'root',
 //     imports: [
 //         ComponentsModule,

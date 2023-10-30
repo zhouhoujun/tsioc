@@ -3,9 +3,10 @@ import {
 } from '../src';
 import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
-import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logs';
+import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logger';
 import * as net from 'net';
-import { ServerModule, ServerLogsModule } from '@tsdi/platform-server';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerLog4Module } from '@tsdi/platform-server/log4js';
 
 export class TestService {
     testFiled = 'test';
@@ -151,7 +152,7 @@ export class StatupModule { }
     imports: [
         SharedModule,
         ServerModule,
-        ServerLogsModule,
+        ServerLog4Module,
         StatupModule,
     ],
     providers: [

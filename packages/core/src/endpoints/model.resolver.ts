@@ -1,4 +1,4 @@
-import { Parameter, tokenId, OperationInvoker } from '@tsdi/ioc';
+import { Parameter, tokenId, OperationInvoker, Type, PropertyMetadata } from '@tsdi/ioc';
 import { EndpointContext } from './context';
 
 
@@ -18,6 +18,15 @@ import { EndpointContext } from './context';
      * @param ctx InvocationContext
      */
     resolve<T>(parameter: Parameter<T>, ctx: EndpointContext<TInput>): T;
+
+    /**
+     * has the model type or not.
+     * @param type model type.
+     * @returns boolean.
+     */
+    hasModel(type: Type | undefined): boolean;
+    
+    getPropertyMeta(type: Type): PropertyMetadata[];
 }
 
 /**

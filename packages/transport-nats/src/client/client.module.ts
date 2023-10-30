@@ -1,12 +1,13 @@
-import { PatternFormatter, StatusVaildator, createHandler } from '@tsdi/core';
+import { createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { BodyContentInterceptor, TransportBackend, TransportModule, RequestAdapter } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { PatternFormatter } from '@tsdi/common';
+import { TransportModule, BodyContentInterceptor, TransportBackend, StatusVaildator, RequestAdapter } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import { NatsClient } from './client';
 import { NatsHandler } from './handler';
 import { NatsRequestAdapter } from './request';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS, NatsClientOpts, NatsClientsOpts } from './options';
-import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl } from '../transport';
+import { NatsTransportSessionFactory, NatsTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { NatsStatusVaildator } from '../status';
 import { NatsPatternFormatter } from '../pattern';
 
@@ -20,6 +21,7 @@ const defClientOpts = {
     backend: TransportBackend,
     interceptors: [BodyContentInterceptor],
     transportOpts: {
+        maxSize: defaultMaxSize
     },
     providers: [
         { provide: StatusVaildator, useExisting: NatsStatusVaildator },

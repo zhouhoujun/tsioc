@@ -54,18 +54,18 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs',
+                    '@tsdi/logger',
                     '@tsdi/boot',
                     '@tsdi/activities'
                 ];
                 if (options.browser) {
                     cmds.push('@tsdi/platform-browser');
                     cmds.push('@tsdi/platform-browser-boot');
-                    cmds.push('@tsdi/platform-browser-activities');
+                    cmds.push('@tsdi/platform-browser/activities');
                 } else {
                     cmds.push('@tsdi/platform-server');
                     cmds.push('@tsdi/platform-server-boot');
-                    cmds.push('@tsdi/platform-server-activities');
+                    cmds.push('@tsdi/platform-server/activities');
                 }
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);
@@ -78,11 +78,11 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs',
+                    '@tsdi/logger',
                     '@tsdi/boot',
                     '@tsdi/platform-server',
                     '@tsdi/activities',
-                    '@tsdi/platform-server-activities',
+                    '@tsdi/platform-server/activities',
                     '@tsdi/pack',
                     '@tsdi/unit',
                     '@tsdi/unit-console'
@@ -98,7 +98,7 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs',
+                    '@tsdi/logger',
                     '@tsdi/boot'
                 ];
                 if (options.browser) {
@@ -117,7 +117,7 @@ program
                     '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logs'
+                    '@tsdi/logger'
                 ];
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);

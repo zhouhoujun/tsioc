@@ -1,8 +1,8 @@
-import { ServerLogsModule, ServerModule } from '@tsdi/platform-server';
-import { ServerHttpClientModule } from '@tsdi/platform-server-common';
-// import { HttpModule, HttpServer } from '@tsdi/transport-http';
-import { HttpClient, HttpClientModule } from '@tsdi/common';
-import { LoggerModule } from '@tsdi/logs';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerLog4Module } from '@tsdi/platform-server/log4js';
+import { ServerHttpClientModule } from '@tsdi/platform-server/http';
+import { HttpClient, HttpClientModule } from '@tsdi/common/http';
+import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
@@ -138,7 +138,7 @@ describe('di module', () => {
                 LoggerModule
             ],
             deps: [
-                ServerLogsModule
+                ServerLog4Module
             ]
         });
         const ser = ctx.injector.get(SocketService);

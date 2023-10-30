@@ -1,7 +1,8 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
-import { MiddlewareServer, ModuleLoader, ListenService, InternalServerExecption, HTTP_LISTEN_OPTS, HYBRID_HOST } from '@tsdi/core';
-import { InjectLog, Logger } from '@tsdi/logs';
-import { CONTENT_DISPOSITION, ev } from '@tsdi/transport';
+import { ModuleLoader } from '@tsdi/core';
+import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption } from '@tsdi/common';
+import { InjectLog, Logger } from '@tsdi/logger';
+import { MiddlewareServer, CONTENT_DISPOSITION_TOKEN, ev, HYBRID_HOST } from '@tsdi/transport';
 import { Subscription, finalize } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -79,10 +80,10 @@ export class HttpServer extends MiddlewareServer<HttpContext, HttpServResponse> 
 
         injector.setValue(HttpServer, this);
         const loader = injector.get(ModuleLoader);
-        if (injector.has(CONTENT_DISPOSITION)) {
+        if (injector.has(CONTENT_DISPOSITION_TOKEN)) {
             const func = await loader.require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
-            injector.setValue(CONTENT_DISPOSITION, func)
+            injector.setValue(CONTENT_DISPOSITION_TOKEN, func)
         }
 
         if (opts.controllers) {

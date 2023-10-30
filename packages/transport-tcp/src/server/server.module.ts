@@ -1,7 +1,10 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, HybridRouter, StatusVaildator, RouterModule, TransformModule, createTransportEndpoint, MicroServRouterModule } from '@tsdi/core';
-import { Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, TransportModule, RespondAdapter } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
+import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
+import {
+    MicroServRouterModule, TransportModule, HybridRouter, StatusVaildator, RouterModule, createTransportEndpoint,
+    Bodyparser, Content, Json, ExecptionFinalizeFilter, LOCALHOST, LogInterceptor, ServerFinalizeFilter, Session, RespondAdapter
+} from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import {
     TCP_SERV_INTERCEPTORS, TcpServerOpts, TCP_SERV_FILTERS, TCP_SERV_OPTS, TCP_SERV_GUARDS,
     TCP_MICRO_SERV_OPTS, TCP_MICRO_SERV_INTERCEPTORS, TCP_MICRO_SERV_FILTERS, TCP_MICRO_SERV_GUARDS
@@ -11,7 +14,7 @@ import { TcpEndpoint, TcpMicroEndpoint } from './endpoint';
 import { TcpExecptionHandlers } from './execption.handles';
 import { TcpRespondAdapter } from './respond';
 import { TcpMicroStatusVaildator, TcpStatusVaildator } from '../status';
-import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
+import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 
 
 
@@ -25,7 +28,7 @@ const defMicroOpts = {
     listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',
@@ -142,7 +145,7 @@ const defServerOpts = {
     listenOpts: { port: 3000, host: LOCALHOST },
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: 1024 * 256 - 6
     },
     content: {
         root: 'public'

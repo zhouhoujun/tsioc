@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
+    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, EMPTY
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
@@ -40,7 +40,7 @@ export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
     private _types: Type[];
     private _maps: Map<Type, Handler[]>;
-    private _refs: Map<Type, ReflectiveRef>;
+    private _refs: Map<Type, ReflectiveRef[]>;
     private _handler: GuardHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
@@ -81,17 +81,18 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     attach<T, TArg>(type: Type<T> | Class<T>, options: EndpointOptions<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
-        if (this._maps.has(target.type)) {
-            return this._refs.get(target.type)!;
+
+        let ends = this._maps.get(target.type);
+        if (!ends) {
+            ends = [];
+            this._maps.set(target.type, ends);
         }
-
-
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef || (r as StaticProviders).provide === RunnableFactory);
         if (hasAdapter) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const hasFactory = target.providers.some(r => (r as StaticProviders).provide === RunnableFactory);
             const endpoint = new FnHandler((ctx) => hasFactory ? targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : targetRef.resolve(RunnableRef).invoke(ctx));
-            this._maps.set(target.type, [endpoint]);
+            ends.push(endpoint);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
@@ -101,11 +102,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         if (runnables && runnables.length) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
             const facResolver = targetRef.resolve(EndpointFactoryResolver);
+            const factory = facResolver.resolve(targetRef);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                const factory = facResolver.resolve(targetRef);
                 return factory.create(runnable.method, options)
             });
-            this._maps.set(target.type, endpoints);
+            ends.push(...endpoints);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));
             return targetRef;
@@ -115,12 +116,18 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     protected attachRef(tagRef: ReflectiveRef, order?: number) {
-        this._refs.set(tagRef.type, tagRef);
-        if (isNumber(order)) {
-            this._types.splice(order, 0, tagRef.type)
+        const refs = this._refs.get(tagRef.type);
+        if (refs) {
+            refs.push(tagRef);
         } else {
-            this._types.push(tagRef.type);
+            this._refs.set(tagRef.type, [tagRef]);
+            if (isNumber(order)) {
+                this._types.splice(order, 0, tagRef.type)
+            } else {
+                this._types.push(tagRef.type);
+            }
         }
+
     }
 
     detach<T>(type: Type<T>): void {
@@ -137,19 +144,23 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this._maps.has(type);
     }
 
-    getRef<T>(type: Type<T>): ReflectiveRef<T> {
-        return this._refs.get(type) || null!;
+    getRef<T>(type: Type<T>, idx = 0): ReflectiveRef<T> {
+        return this._refs.get(type)?.[idx] ?? null!;
+    }
+
+    getRefs<T>(type: Type<T>): ReflectiveRef<T>[] {
+        return this._refs.get(type) ?? EMPTY;
     }
 
     run(type?: Type): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { args: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { payload: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { args: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -175,12 +186,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     handle(context: EndpointContext<any>): Observable<any> {
-        if (isFunction(context.payload)) {
-            return runHandlers(this._maps.get(context.payload), context, v => v.isDone() === true)
+        if (isFunction(context.args)) {
+            return runHandlers(this._maps.get(context.args), context, v => v.isDone() === true)
         }
-        if (isArray(context.payload)) {
+        if (isArray(context.args)) {
             const handlers: Handler[] = [];
-            context.payload.forEach(type => {
+            context.args.forEach(type => {
                 handlers.push(...this._maps.get(type) || []);
             })
             return runHandlers(handlers, context, v => v.isDone() === true)

@@ -8,7 +8,7 @@ import { BoolPipe } from './parses/bool';
 import { DatePipe } from './parses/date';
 import { EnumPipe } from './parses/enum';
 import { FloatPipe } from './parses/float';
-import { IntPipe } from './parses/int';
+import { BigintPipe, IntPipe } from './parses/int';
 import { JsonPipe } from './parses/json';
 import { NumberPipe } from './parses/number';
 import { StringPipe } from './parses/string';
@@ -23,7 +23,7 @@ import { SortPipe } from './sort';
         LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe,
         DateFormatPipe, JsonFormatPipe, BytesFormatPipe, TimeFormatPipe,
         JsonPipe, DatePipe, StringPipe, BoolPipe, EnumPipe,
-        FloatPipe, IntPipe, NumberPipe
+        FloatPipe, IntPipe, BigintPipe, NumberPipe
     ]
 })
 export class TransformModule {

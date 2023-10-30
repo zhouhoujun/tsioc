@@ -1,6 +1,6 @@
-import { StatusVaildator, createHandler } from '@tsdi/core';
+import { createHandler } from '@tsdi/core';
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { TransportModule, RequestAdapter, TransportBackend, BodyContentInterceptor } from '@tsdi/transport';
+import { TransportModule, RequestAdapter, StatusVaildator, TransportBackend, BodyContentInterceptor } from '@tsdi/transport';
 import { CoapHandler } from './handler';
 import { CoapClient } from './client';
 import { CoapRequestAdapter } from './request';
@@ -33,7 +33,7 @@ const defClientOpts = {
         {
             provide: CoapHandler,
             useFactory: (injector: Injector, opts: CoapClientOpts) => {
-                if (!opts.interceptors || !opts.interceptorsToken|| !opts.providers) {
+                if (!opts.interceptors || !opts.interceptorsToken || !opts.providers) {
                     Object.assign(opts, defClientOpts);
                     injector.setValue(COAP_CLIENT_OPTS, opts);
                 }

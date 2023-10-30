@@ -1,6 +1,7 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { Client, MircoServRouters, StatusVaildator, TRANSPORT_SESSION, patternToPath } from '@tsdi/core';
-import { InjectLog, Level, Logger } from '@tsdi/logs';
+import { Client, MircoServRouters, StatusVaildator, TRANSPORT_SESSION } from '@tsdi/transport';
+import { patternToPath } from '@tsdi/common';
+import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';

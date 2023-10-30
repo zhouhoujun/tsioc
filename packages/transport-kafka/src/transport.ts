@@ -1,7 +1,7 @@
 import { AssignerProtocol, Cluster, ConsumerRunConfig, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, ConsumerSubscribeTopics, ProducerRecord, IHeaders } from 'kafkajs';
 import { Abstract, EMPTY, Execption, Injectable, Optional, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { Decoder, Encoder, IncomingHeaders, NotFoundExecption, Packet, StreamAdapter, TransportSessionFactory, TransportSessionOpts } from '@tsdi/core';
-import { AbstractTransportSession, TopicBuffer, ev, hdr, isBuffer, toBuffer } from '@tsdi/transport';
+import { HeaderPacket, IncomingHeaders, NotFoundExecption } from '@tsdi/common';
+import { Decoder, Encoder, StreamAdapter, TransportSessionFactory, TransportSessionOpts, MessageTransportSession, Subpackage, ev, hdr, isBuffer } from '@tsdi/transport';
 import { KafkaHeaders, KafkaTransport } from './const';
 
 
@@ -34,20 +34,17 @@ export class KafkaTransportSessionFactoryImpl implements KafkaTransportSessionFa
 
 }
 
-export class KafkaTransportSession extends AbstractTransportSession<KafkaTransport, KafkaTransportOpts> {
-
-    protected topics: Map<string, TopicBuffer> = new Map();
+export class KafkaTransportSession extends MessageTransportSession<KafkaTransport, EachMessagePayload, KafkaTransportOpts> {
 
     private regTopics?: RegExp[];
 
+    maxSize = 1024 * 256;
 
     protected override getBindEvents(): string[] {
         return EMPTY
     }
 
-    protected override bindMessageEvent() {
-
-    }
+    protected override bindMessageEvent() { }
 
     async bindTopics(topics: (string | RegExp)[]) {
         const consumer = this.socket.consumer;
@@ -64,110 +61,138 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
             // autoCommitInterval: 5000,
             // autoCommitThreshold: 100,
             ...this.options.run,
-            eachMessage: (payload) => this.onData(payload)
+            eachMessage: async (payload) => {
+                if (this.options.serverSide && payload.topic.endsWith('.reply')) return;
+                this.onData(payload, payload.topic)
+            }
         })
     }
 
-    protected async onData(msg: EachMessagePayload): Promise<void> {
-        try {
-            const topic = msg.topic;
-            if (this.options.serverSide && topic.endsWith('.reply')) return;
-            let chl = this.topics.get(topic);
 
-            if (!chl) {
-                chl = {
-                    topic,
-                    buffer: null,
-                    contentLength: ~~(msg.message.headers?.[hdr.CONTENT_LENGTH]?.toString() ?? '0'),
-                    pkgs: new Map()
+    write(subpkg: Subpackage & { partition?: number, kafkaheaders: IHeaders }, chunk: Buffer | null, callback: (err?: any) => void) {
+        if (!subpkg.headerSent) {
+            const headers: IHeaders = {};
+            Object.keys(subpkg.packet.headers!).forEach(k => {
+                headers[k] = this.generHead(subpkg.packet.headers![k]);
+            });
+            headers[KafkaHeaders.CORRELATION_ID] = `${subpkg.packet.id}`;
+            const topic = subpkg.packet.topic || subpkg.packet.url!;
+            if (!this.options.serverSide) {
+                const replyTopic = subpkg.packet.replyTo ?? this.getReplyTopic(topic);
+                headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
+                if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
+                    headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
+                } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
+                    throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
                 }
-                this.topics.set(topic, chl)
             }
-            const id = msg.message.headers?.[KafkaHeaders.CORRELATION_ID]?.toString() as string;
-            if (!chl.pkgs.has(id)) {
-                const headers: IncomingHeaders = {};
-                if (msg.message.headers) {
-                    Object.keys(msg.message.headers).forEach(k => {
-                        headers[k] = this.parseHead(msg.message.headers![k])
-                    })
-                }
-                chl.pkgs.set(id, {
-                    id,
-                    headers,
-                    topic,
-                    url: topic
-                })
+            subpkg.kafkaheaders = headers;
+            subpkg.headerSent = true;
+            subpkg.caches = [];
+            subpkg.cacheSize = 0;
+            subpkg.residueSize = this.getPayloadLength(subpkg.packet);
+            if (!subpkg.residueSize) {
+                this.writing(subpkg, null, callback);
+                return;
             }
-            this.handleData(chl, id, msg.message.value!);
-        } catch (ev) {
-            const e = ev as any;
-            this.emit(e.ERROR, e.message);
-        }
-    }
-
-
-    protected async generate(data: Packet<any>): Promise<Buffer> {
-        const { payload, ...headers } = data;
-        if (!headers.headers) {
-            headers.headers = {};
         }
 
-        let body: Buffer;
-        if (isString(payload)) {
-            body = Buffer.from(payload);
-        } else if (Buffer.isBuffer(payload)) {
-            body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
+        if (!chunk) return callback?.();
+
+        const bufSize = Buffer.byteLength(chunk);
+        const maxSize = this.options.maxSize || this.maxSize;
+
+        const tol = subpkg.cacheSize + bufSize;
+        if (tol == maxSize) {
+            subpkg.caches.push(chunk);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= bufSize;
+            this.writing(subpkg, data, callback);
+        } else if (tol > maxSize) {
+            const idx = bufSize - (tol - maxSize);
+            const message = chunk.subarray(0, idx);
+            const rest = chunk.subarray(idx);
+            subpkg.caches.push(message);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.writing(subpkg, data, (err) => {
+                if (err) return callback?.(err);
+                if (rest.length) {
+                    this.write(subpkg, rest, callback)
+                }
+            })
         } else {
-            body = Buffer.from(JSON.stringify(payload));
-        }
-
-        if (!headers.headers[hdr.CONTENT_LENGTH]) {
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        if (this.encoder) {
-            body = this.encoder.encode(body);
-            if (isString(body)) body = Buffer.from(body);
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        return body;
-    }
-
-    protected async generateNoPayload(data: Packet<any>): Promise<Buffer> {
-        return Buffer.alloc(0);
-    }
-
-    protected writeBuffer(buffer: Buffer, packet: Packet<any> & { partition?: number }) {
-
-        const headers: IHeaders = {};
-        Object.keys(packet.headers!).forEach(k => {
-            headers[k] = this.generHead(packet.headers![k]);
-        });
-        headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
-        const topic = packet.topic ?? packet.url!;
-        if (!this.options.serverSide) {
-            const replyTopic = packet.replyTo ?? this.getReplyTopic(topic);
-            headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
-            if (this.options.consumerAssignments && !isNil(this.options.consumerAssignments[replyTopic])) {
-                headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(this.options.consumerAssignments[replyTopic].toString());
-            } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
-                throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator.notFound);
+            subpkg.caches.push(chunk);
+            subpkg.cacheSize += bufSize;
+            subpkg.residueSize -= bufSize;
+            if (subpkg.residueSize <= 0) {
+                const data = this.getSendBuffer(subpkg, subpkg.cacheSize);
+                this.writing(subpkg, data, callback);
+            } else if (callback) {
+                callback()
             }
         }
+
+
+    }
+
+    writing(packet: Subpackage & { partition?: number, kafkaheaders: IHeaders }, chunk: Buffer | null, callback?: (err?: any) => void) {
+        const topic = packet.packet.topic || packet.packet.url!;
 
         this.socket.producer.send({
             ...this.options.send,
             topic,
             messages: [{
-                headers,
-                value: buffer,
+                headers: packet.kafkaheaders,
+                value: chunk ?? Buffer.alloc(0),
                 partition: packet.partition
             }]
         })
+            .then(() => callback?.())
+            .catch(err => {
+                this.handleFailed(err);
+                callback?.(err)
+            })
     }
+
+    protected createPackage(id: string | number, topic: string, replyTo: string, headers: IncomingHeaders, msg: EachMessagePayload, error?: any): HeaderPacket {
+        return {
+            id,
+            headers,
+            topic,
+            replyTo,
+            url: topic
+        }
+    }
+
+    protected getIncomingHeaders(msg: EachMessagePayload): IncomingHeaders {
+        const headers: IncomingHeaders = {};
+        if (msg.message.headers) {
+            Object.keys(msg.message.headers).forEach(k => {
+                headers[k] = this.parseHead(msg.message.headers![k])
+            })
+        }
+        return headers;
+    }
+    protected getIncomingPacketId(msg: EachMessagePayload): string | number {
+        return msg.message.headers?.[KafkaHeaders.CORRELATION_ID]?.toString() as string;
+    }
+    protected getIncomingReplyTo(msg: EachMessagePayload): string {
+        return this.getReplyTopic(msg.topic);
+    }
+    protected getIncomingContentType(msg: EachMessagePayload): string | undefined {
+        return;
+    }
+    protected getIncomingContentEncoding(msg: EachMessagePayload): string | undefined {
+        return;
+    }
+    protected getIncomingContentLength(msg: EachMessagePayload): number {
+        return ~~(msg.message.headers?.[hdr.CONTENT_LENGTH]?.toString() ?? '0')
+    }
+    protected getIncomingPayload(msg: EachMessagePayload): string | Buffer | Uint8Array {
+        return msg.message.value!;
+    }
+
 
     protected getReplyTopic(topic: string) {
         return `${topic}.reply`
@@ -187,53 +212,12 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         return Buffer.from(`${head}`);
     }
 
-    protected handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message)
-    }
-
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         throw new Error('Method not implemented.');
     }
     protected offSocket(name: string, event: (...args: any[]) => void): void {
         throw new Error('Method not implemented.');
     }
-
-    protected handleData(chl: TopicBuffer, id: string, dataRaw: string | Buffer) {
-
-        const data = Buffer.isBuffer(dataRaw)
-            ? dataRaw
-            : Buffer.from(dataRaw);
-        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
-
-        if (chl.contentLength !== null) {
-            const length = buffer.length;
-            if (length === chl.contentLength) {
-                this.handleMessage(chl, id, chl.buffer);
-            } else if (length > chl.contentLength) {
-                const message = chl.buffer.subarray(0, chl.contentLength);
-                const rest = chl.buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, id, message);
-                this.handleData(chl, id, rest);
-            }
-        }
-    }
-
-    protected handleMessage(chl: TopicBuffer, id: string, message: any) {
-        chl.contentLength = null;
-        chl.buffer = null;
-        this.emitMessage(chl, id, message);
-    }
-
-    protected emitMessage(chl: TopicBuffer, id: string, chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
-        const pkg = chl.pkgs.get(id);
-        if (pkg) {
-            pkg.payload = data.length ? data : null;
-            chl.pkgs.delete(id);
-            this.emit(ev.MESSAGE, chl.topic, pkg);
-        }
-    }
-
 }
 
 

@@ -1,10 +1,14 @@
-import { TransportEvent, TransportRequest, Incoming, HEAD, IDuplexStream, ResHeaders, TransportErrorResponse, TransportHeaderResponse, TransportResponse, IEndable, IncomingHeaders, OutgoingHeaders, IReadableStream } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, isNil, lang } from '@tsdi/ioc';
+import {
+    TransportEvent, TransportErrorResponse, TransportHeaderResponse, TransportRequest, TransportResponse,
+    IncomingHeaders, OutgoingHeaders, ResHeaders, HEAD, RequestTimeoutExecption
+} from '@tsdi/common';
 import { Observable, Observer } from 'rxjs';
 import { isBuffer, toBuffer } from '../utils';
 import { ev, hdr } from '../consts';
 import { RequestAdapter } from './request';
-
+import { IDuplexStream, IEnd, IEndable, IReadableStream } from '../stream';
+import { Incoming } from '../socket';
 
 /**
  * stream request adapter.
@@ -122,24 +126,24 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
 
                     try {
                         if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
-                            const unzip = this.streamAdapter.gunzip(zlibOptions);
+                            const unzip = this.streamAdapter.createGunzip(zlibOptions);
                             await this.streamAdapter.pipeTo(body, unzip);
                             body = unzip;
                         } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
                             // Handle the infamous raw deflate response from old servers
                             // a hack for old IIS and Apache servers
-                            const raw = this.streamAdapter.passThrough();
+                            const raw = this.streamAdapter.createPassThrough();
                             await this.streamAdapter.pipeTo(body, raw);
                             const defer = lang.defer();
                             raw.on(ev.DATA, chunk => {
                                 if ((chunk[0] & 0x0F) === 0x08) {
-                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.inflate(), err => {
+                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.createInflate(), err => {
                                         if (err) {
                                             defer.reject(err);
                                         }
                                     });
                                 } else {
-                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.inflateRaw(), err => {
+                                    body = this.streamAdapter.pipeline(body, this.streamAdapter.createInflateRaw(), err => {
                                         if (err) {
                                             defer.reject(err);
                                         }
@@ -152,7 +156,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                             await defer.promise;
 
                         } else if (codings === 'br') { // For br
-                            const unBr = this.streamAdapter.brotliDecompress();
+                            const unBr = this.streamAdapter.createBrotliDecompress();
                             await this.streamAdapter.pipeTo(body, unBr);
                             body = unBr;
                         }
@@ -180,6 +184,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             request.on(ev.ABORTED, onError);
             request.on(ev.TIMEOUT, onError);
 
+            let timeout: any;
             this.write(request, req, (err) => {
                 if (err) {
                     onError(err);
@@ -191,22 +196,37 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
                         body: true
                     }))
                     observer.complete();
+                } else if (req.timeout) {
+                    timeout = setTimeout(() => {
+                        clearTimeout(timeout);
+                        const error = new RequestTimeoutExecption();
+                        const res = this.createErrorResponse({
+                            url,
+                            error,
+                            statusText: error.message,
+                            status: this.vaildator.gatewayTimeout
+                        });
+                        observer.error(res);
+                    }, req.timeout)
                 }
             });
 
-
             return () => {
+                timeout && clearTimeout(timeout);
                 onResponse && request.off(respEventName, onResponse);
                 request.off(ev.ERROR, onError);
                 request.off(ev.ABOUT, onError);
                 request.off(ev.ABORTED, onError);
                 request.off(ev.TIMEOUT, onError);
+                this.destoryRequest(request);
             }
         });
     }
 
+    protected destoryRequest(request: IEnd) { }
+
     protected pipeline(stream: IReadableStream, err: (err: any) => void) {
-        return this.streamAdapter.pipeline(stream, this.streamAdapter.passThrough(), err);
+        return this.streamAdapter.pipeline(stream, this.streamAdapter.createPassThrough(), err);
     }
 
     hasResponse(req: TRequest) {
@@ -214,7 +234,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
     }
 
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | undefined; status: TStatus; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
-        return new TransportErrorResponse(options) as TResponse;
+        return new TransportErrorResponse(options) as any;
     }
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | undefined; status: TStatus; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse {
         return new TransportHeaderResponse(options) as TResponse;
@@ -248,7 +268,7 @@ export abstract class StreamRequestAdapter<TRequest extends TransportRequest = T
             request.end(callback);
         } else {
             this.streamAdapter.sendbody(
-                this.encoder ? this.encoder.encode(data) : data,
+                data,
                 request,
                 (err?) => callback(err),
                 req.headers.get(hdr.CONTENT_ENCODING) as string);

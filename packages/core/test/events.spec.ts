@@ -6,7 +6,7 @@ import { Application, ApplicationArguments, ApplicationContext, Dispose, GuardHa
 @Injectable()
 export class StringFilter implements Filter  {
     intercept(context: EndpointContext<PayloadApplicationEvent>, next: GuardHandler<any, any>): Observable<any> {
-        if(isString(context.payload.payload)){
+        if(isString(context.args.payload)){
             return next.handle(context);
         }
         return of(context);
@@ -17,7 +17,7 @@ export class StringFilter implements Filter  {
 export class JsonFilter implements Filter  {
 
     intercept(context: EndpointContext<PayloadApplicationEvent>, next: GuardHandler<any, any>): Observable<any> {
-        if(isPlainObject(context.payload.payload)){
+        if(isPlainObject(context.args.payload)){
             return next.handle(context);
         }
         return of(context);
@@ -30,8 +30,8 @@ export class JsonFilter implements Filter  {
 @Injectable()
 export class PayloadInterceptor implements Interceptor {
     intercept(context: InvocationContext<PayloadApplicationEvent>, next: GuardHandler<any, any>): Observable<any> {
-        if (isString(context.payload.payload)) {
-            context.payload.payload = 'hi ' + context.payload.payload;
+        if (isString(context.args.payload)) {
+            context.args.payload = 'hi ' + context.args.payload;
         }
         return next.handle(context);
     }

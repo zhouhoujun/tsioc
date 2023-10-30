@@ -1,9 +1,8 @@
-import { Abstract, ArgumentExecption, createContext, EMPTY, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, isType, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, createContext, EMPTY, Execption, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, isType, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
-import { ForbiddenExecption } from '../execptions';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { DynamicHandler } from './chain';
@@ -74,11 +73,14 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
         }).pipe(
             mergeMap(r => {
                 if (r === true) return this.getChain().handle(input);
-                return throwError(() => new ForbiddenExecption())
+                return throwError(() => this.forbiddenError())
             })
         )
     }
 
+    protected forbiddenError(): Execption {
+        return new Execption('Forbidden')
+    }
 
     private _destroyed = false;
     onDestroy(): void {

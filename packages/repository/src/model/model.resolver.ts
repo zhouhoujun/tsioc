@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, Type, CtorType, Parameter, OperationInvoker } from '@tsdi/ioc';
-import { ModelArgumentResolver, EndpointContext, PUT, TransportContext } from '@tsdi/core';
+import { ModelArgumentResolver, EndpointContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
@@ -13,7 +13,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     abstract get resolvers(): ModelFieldResolver[];
 
     canResolve(parameter: Parameter, ctx: EndpointContext): boolean {
-        return this.isModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
+        return this.hasModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
     resolve<T>(parameter: Parameter<T>, ctx: EndpointContext): T {
@@ -30,7 +30,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 
     canResolveModel(modelType: Type, ctx: EndpointContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
-            if (this.isModel(p.provider ?? p.type)) {
+            if (this.hasModel(p.provider ?? p.type)) {
                 return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
             }
             return !this.fieldResolver.canResolve(p, ctx, args, modelType)
@@ -46,7 +46,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         }
 
         const props = this.getPropertyMeta(modelType);
-        const missings = props.filter(p => !(this.isModel(p.provider ?? p.type) ?
+        const missings = props.filter(p => !(this.hasModel(p.provider ?? p.type) ?
             this.canResolveModel(p.provider ?? p.type, ctx, fields[p.name], p.nullable)
             : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
         if (missings.length) {
@@ -56,7 +56,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         const model = this.createInstance(modelType as CtorType);
         props.forEach(prop => {
             let val: any;
-            if (this.isModel(prop.provider ?? prop.type)) {
+            if (this.hasModel(prop.provider ?? prop.type)) {
                 val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.name], prop.nullable)
             } else {
                 val = this.fieldResolver.resolve(prop, ctx, fields, modelType)
@@ -78,7 +78,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this._resolver = composeFieldResolver(
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.name] ?? p.default))
-                    || ((ctx as TransportContext).method?.toUpperCase() !== PUT && p.primary === true),
+                    || ((ctx as any).method?.toUpperCase() !== 'PUT' && p.primary === true),
                 ...this.resolvers ?? EMPTY,
                 ...MODEL_FIELD_RESOLVERS)
         }
@@ -90,11 +90,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
      * @param type class type.
      * @returns boolean.
      */
-    protected abstract isModel(type: Type | undefined): boolean;
+    abstract hasModel(type: Type | undefined): boolean;
     /**
      * get db property metadatas.
      */
-    protected abstract getPropertyMeta(type: Type): DBPropertyMetadata[];
+    abstract getPropertyMeta(type: Type): DBPropertyMetadata[];
     /**
      * has model fields in context or not.
      */
@@ -123,10 +123,10 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
     get resolvers(): ModelFieldResolver<C>[] {
         return this.option.fieldResolvers ?? EMPTY
     }
-    protected isModel(type: Type<any>): boolean {
+    hasModel(type: Type<any>): boolean {
         return this.option.isModel(type)
     }
-    protected getPropertyMeta(type: Type<any>): DBPropertyMetadata<any>[] {
+    getPropertyMeta(type: Type<any>): DBPropertyMetadata<any>[] {
         return this.option.getPropertyMeta(type)
     }
 

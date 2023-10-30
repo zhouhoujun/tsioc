@@ -1,9 +1,9 @@
 import { AbstractAssetContext } from '@tsdi/transport';
 import { isString } from '@tsdi/ioc';
+import { normalize } from '@tsdi/common';
 import { KafkaIncoming } from './incoming';
 import { KafkaOutgoing } from './outgoing';
 import { KafkaServerOptions } from './options';
-import { normalize } from '@tsdi/core';
 
 /**
  * Kafka server context

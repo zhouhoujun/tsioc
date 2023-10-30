@@ -1,6 +1,7 @@
-import { Interceptor, TransportRequest, TransportEndpointOptions, Filter, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, CanActivate } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { ContentOptions } from '@tsdi/transport';
+import { TransportRequest } from '@tsdi/common';
+import { TransportEndpointOptions, ContentOptions } from '@tsdi/transport';
 import * as amqp from 'amqplib';
 import { AmqpContext } from './context';
 import { AmqpSessionOpts } from '../options';
@@ -18,7 +19,7 @@ export interface AmqpMicroServiceOpts extends TransportEndpointOptions<AmqpConte
     retryAttempts?: number;
     retryDelay?: number;
     content?: ContentOptions;
-    transportOpts?: AmqpSessionOpts;
+    transportOpts?: AmqpSessionOpts & { maxSize?: number};
 }
 
 

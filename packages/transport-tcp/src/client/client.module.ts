@@ -1,8 +1,8 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, isArray, toProvider } from '@tsdi/ioc';
-import { TransportSessionFactory, StatusVaildator, createHandler } from '@tsdi/core';
-import { BodyContentInterceptor, RequestAdapter, TransportBackend, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl } from '../transport';
+import { createHandler } from '@tsdi/core';
+import { TransportModule, TransportSessionFactory, StatusVaildator, BodyContentInterceptor, RequestAdapter, TransportBackend } from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
+import { TcpTransportSessionFactory, TcpTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { TcpStatusVaildator } from '../status';
 import { TcpRequestAdapter } from './request';
 import { TcpClient } from './client';
@@ -17,7 +17,7 @@ import { TcpHandler } from './handler';
 const defClientOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024,
+        maxSize: defaultMaxSize,
     },
     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
     filtersToken: TCP_CLIENT_FILTERS,

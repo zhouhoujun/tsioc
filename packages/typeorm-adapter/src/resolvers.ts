@@ -67,7 +67,7 @@ export class TypeormTransactionResolver extends TransactionResolver {
     constructor() {
         super();
         this.resolver = composeResolver(
-            (param, ctx) => ctx instanceof Joinpoint && isArray(ctx.payload['annotation']) && ctx.payload['annotation'].length > 0,
+            (param, ctx) => ctx instanceof Joinpoint && isArray(ctx.annotations) && ctx.annotations.length > 0,
             {
                 canResolve: (param, ctx: Joinpoint) => {
                     return param.provider === TransactionManager || param.type === TransactionManager

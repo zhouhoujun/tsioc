@@ -37,7 +37,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     return this._type;
   }
 
-  override setInput(name: string, value: unknown): void {
+  override setInput(name: string, value: any): void {
     const inputData = this._tNode.inputs;
     let dataValue: PropertyAliasValue | undefined;
     if (inputData !== null && (dataValue = inputData[name])) {

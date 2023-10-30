@@ -1,7 +1,7 @@
-import { MESSAGE, MircoServRouters, Outgoing, Packet, PatternFormatter, Server, TransportContext, TransportSession } from '@tsdi/core';
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
-import { Content, LOCALHOST, ev } from '@tsdi/transport';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { Packet, PatternFormatter, MESSAGE } from '@tsdi/common';
+import { MircoServRouters, Outgoing, Server, TransportContext, TransportSession, Content, LOCALHOST, ev } from '@tsdi/transport';
+import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { Subscription, finalize } from 'rxjs';
 import { RedisEndpoint } from './endpoint';
@@ -108,7 +108,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
             }
         });
 
-    
+
         router.matcher.eachPattern((topic, pattern) => {
             if (topic !== pattern) {
                 this.logger.info('Transform pattern', pattern, 'to topic', topic)
@@ -146,7 +146,7 @@ export class RedisServer extends Server<TransportContext, Outgoing> {
             packet.method = MESSAGE;
         }
         const req = new RedisIncoming(session, packet);
-        const res = new RedisOutgoing(session, packet.url!, packet.id);
+        const res = new RedisOutgoing(session, packet.id, packet.url!);
 
         const ctx = this.createContext(req, res);
         const cancel = this.endpoint.handle(ctx)

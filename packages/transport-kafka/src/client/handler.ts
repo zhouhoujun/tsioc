@@ -1,4 +1,5 @@
-import { ConfigableHandler, TransportEvent, TransportRequest } from '@tsdi/core';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { ConfigableHandler } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 
 

@@ -1,6 +1,6 @@
-import { Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
+import { CtorType, Modules, ProviderType, StaticProviders, Type } from '@tsdi/ioc';
 import { Application, ApplicationArguments, ApplicationFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT, ROOT_DEFAULT_PROVIDERS } from '@tsdi/core';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
 import { BootApplicationContext, BootApplicationOption, BootEnvironmentOption } from './context';
@@ -18,7 +18,7 @@ import { MvcModule } from './mvc/mvc.module';
  */
 export class BootApplication<T = any, TArg = ApplicationArguments> extends Application<T, TArg> {
 
-    constructor(protected target: Type | BootApplicationOption, protected loader?: ModuleLoader) {
+    constructor(protected target: CtorType<T> | BootApplicationOption<T>, protected loader?: ModuleLoader) {
         super(target, loader)
     }
 
@@ -86,8 +86,8 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
      * @returns {Promise<IBootContext>}
      */
     static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>>;
-    static override run<T, TArg extends ApplicationArguments>(target: Type<T> | BootApplicationOption<T, TArg>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>> {
-        return new BootApplication<T, TArg>(option ? { module: target, ...option } as BootApplicationOption : target).run() as Promise<BootApplicationContext<T, TArg>>
+    static run<T, TArg extends ApplicationArguments>(target: any, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>> {
+        return new BootApplication<T, TArg>(option ? { module: target, ...option } as BootApplicationOption<T, TArg> : target).run() as Promise<BootApplicationContext<T, TArg>>
     }
 }
 

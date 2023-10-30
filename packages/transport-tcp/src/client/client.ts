@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Client, Pattern, TransportRequest, RequestInitOpts, TransportSession, TRANSPORT_SESSION } from '@tsdi/core';
-import { InjectLog, Logger } from '@tsdi/logs';
-import { LOCALHOST, ev } from '@tsdi/transport';
+import { TransportRequest, Pattern, RequestInitOpts } from '@tsdi/common';
+import { InjectLog, Logger } from '@tsdi/logger';
+import { Client, TransportSession, TRANSPORT_SESSION, LOCALHOST, ev } from '@tsdi/transport';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -26,7 +26,7 @@ export class TcpClient extends Client<TransportRequest, number> {
         readonly handler: TcpHandler,
         @Inject(TCP_CLIENT_OPTS) private options: TcpClientOpts) {
         super();
-        if(!options.connectOpts) {
+        if (!options.connectOpts) {
             options.connectOpts = {
                 port: 3000,
                 host: LOCALHOST
@@ -91,7 +91,7 @@ export class TcpClient extends Client<TransportRequest, number> {
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
         this._session?.destroy();
-        await promisify<void, Error>(this.connection.destroy, this.connection)(null!)
+        await promisify(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);
                 return err;

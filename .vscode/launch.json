@@ -87,9 +87,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test logs",
+            "name": "test logger",
             "args": [
-                "${workspaceRoot}/packages/logs/unit.ts" 
+                "${workspaceRoot}/packages/logger/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -127,9 +127,229 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test common",
+            "name": "test common http",
             "args": [
-                "${workspaceRoot}/packages/common/unit.ts" 
+                "${workspaceRoot}/packages/common/http/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test endpoints json",
+            "args": [
+                "${workspaceRoot}/packages/endpoints/json/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test endpoints assets",
+            "args": [
+                "${workspaceRoot}/packages/endpoints/assets/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test amqp service",
+            "args": [
+                "${workspaceRoot}/packages/services/amqp/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test coap service",
+            "args": [
+                "${workspaceRoot}/packages/services/coap/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test kafka service",
+            "args": [
+                "${workspaceRoot}/packages/services/kafka/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test mqtt service",
+            "args": [
+                "${workspaceRoot}/packages/services/mqtt/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test nats service",
+            "args": [
+                "${workspaceRoot}/packages/services/nats/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test redis service",
+            "args": [
+                "${workspaceRoot}/packages/services/redis/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test tcp service",
+            "args": [
+                "${workspaceRoot}/packages/services/tcp/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test udp service",
+            "args": [
+                "${workspaceRoot}/packages/services/udp/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test ws service",
+            "args": [
+                "${workspaceRoot}/packages/services/ws/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -327,6 +547,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test transport-udp",
+            "args": [
+                "${workspaceRoot}/packages/transport-udp/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test transport-coap",
             "args": [
                 "${workspaceRoot}/packages/transport-coap/unit.ts" 
@@ -490,6 +730,26 @@
             "name": "test transport-ws",
             "args": [
                 "${workspaceRoot}/packages/transport-ws/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test swagger",
+            "args": [
+                "${workspaceRoot}/packages/swagger/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

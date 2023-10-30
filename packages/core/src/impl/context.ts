@@ -1,8 +1,8 @@
 import {
-    Type, Injector, ProviderType, InvokeArguments, EMPTY_OBJ,
-    Class, ModuleDef, ModuleRef, DefaultInvocationContext, ReflectiveRef, ProvdierOf
+    Type, Injector, ProviderType, InvokeArguments, DefaultInvocationContext,
+    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf, EMPTY_OBJ
 } from '@tsdi/ioc';
-import { Logger, LoggerManagers } from '@tsdi/logs';
+import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
@@ -121,8 +121,8 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         if (!option) {
             option = {};
         }
-        if (!option.payload) {
-            option.payload = ApplicationArguments as ProvdierOf<TArg>;
+        if (!option.args) {
+            option.args = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);
         return ctx

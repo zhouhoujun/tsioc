@@ -10,7 +10,7 @@ import { Injector, isInjector, Scopes } from '../injector';
 import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
-import { ProviderType, toProvider } from '../providers';
+import { ProvdierOf, ProviderType, toProvider } from '../providers';
 import { OperationInvoker } from '../operation';
 
 
@@ -42,11 +42,15 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     readonly methodName: string | undefined;
 
+    readonly isResolve: boolean;
+
     constructor(
         injector: Injector,
-        options: InvocationOption<T> = EMPTY_OBJ) {
+        options: InvocationOption<T> = EMPTY_OBJ,
+        ) {
         super();
         this._refs = [];
+        this.isResolve = options.isResolve == true;
         this.injector = this.createInjector(injector, options.providers);
         options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => toProvider(this.getResolvesToken(), r)));
         if (options.parent && injector !== options.parent.injector) {
@@ -63,14 +67,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        const payload = options.payload || options.arguments;
-        if (payload) {
-            this.injector.inject(toProvider(CONTEXT_PAYLOAD, payload));
-            if (!isFunction(payload)) {
-                const argType = getClass(payload);
-                this.injector.setValue(argType, payload);
-            }
-        }
+        options.args && this.initArgs(options.args);
 
         getClassChain(getClass(this)).forEach(c => {
             this.setValue(c, this);
@@ -79,6 +76,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         this.targetType = options.targetType;
         this.methodName = options.methodName;
         injector.onDestroy(this);
+    }
+
+    protected initArgs(args: ProvdierOf<T>): void {
+        this.injector.inject(toProvider(CONTEXT_ARGUMENTS, args));
+        if (!isFunction(args)) {
+            const argType = getClass(args);
+            this.injector.setValue(argType, args);
+        }
     }
 
     /**
@@ -144,26 +149,19 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected _payload?: T;
+    protected _args?: T;
     /**
-     * the invocation context payload.
+     * the invocation context arguments.
      * 
-     * 上下文负载对象
+     * 上下文负载参数
      */
-    get payload(): T {
-        if (!this._payload) {
-            this._payload = this.injector.get(CONTEXT_PAYLOAD);
+    get args(): T {
+        if (!this._args) {
+            this._args = this.injector.get(CONTEXT_ARGUMENTS);
         }
-        return this._payload!;
+        return this._args!;
     }
 
-    /**
-     * the invocation arguments.
-     * @deprecated use `payload` instead.
-     */
-    get arguments() {
-        return this.payload;
-    }
 
     get used(): boolean {
         return this._injected
@@ -257,8 +255,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @param token 
      * @returns 
      */
-    resolve<T>(token: Token<T>): T {
-        return this.resolveArgument({ provider: token }) as T;
+    resolve<T>(token: Token<T>, flags?: InjectFlags): T {
+        return this.resolveArgument({ provider: token, flags }) as T;
     }
 
     /**
@@ -352,9 +350,9 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 }
 
 /**
- * context payload token.
+ * context arguments token.
  */
-export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
+export const CONTEXT_ARGUMENTS = tokenId('CONTEXT_ARGUMENTS');
 
 /**
  * Missing argument execption.

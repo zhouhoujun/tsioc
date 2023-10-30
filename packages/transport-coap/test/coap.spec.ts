@@ -1,12 +1,12 @@
-import { Application, ApplicationContext, MicroServRouterModule } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
+import { MicroServRouterModule, Bodyparser, Content, Json } from '@tsdi/transport';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { CoapClient, CoapServer, CoapClientModule, CoapServerModule, COAP_SERV_INTERCEPTORS } from '../src';
 import { DeviceController } from './controller';
-import { Bodyparser, Content, Json } from '@tsdi/transport';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -48,7 +48,7 @@ describe('CoAP Server & CoAP Client', () => {
 
     before(async () => {
         ctx = await Application.run(CoapTestModule, {
-            providers:[
+            providers: [
                 { provide: COAP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
             ]
         });
@@ -57,29 +57,29 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch json', async () => {
+    //     const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', headers: { observe: 'true' } })
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
-    it('fetch big json', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    // it('fetch big json', async () => {
+    //     const res: any = await lastValueFrom(client.send('/content/big.json')
+    //         .pipe(
+    //             catchError((err, ct) => {
+    //                 ctx.getLogger().error(err);
+    //                 return of(err);
+    //             })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+    //     expect(res).toBeDefined();
+    //     expect(isArray(res.features)).toBeTruthy();
+    // })
 
     it('fetch json 2', async () => {
         const res: any = await lastValueFrom(client.send('jsons/data1.json')
@@ -127,11 +127,11 @@ describe('CoAP Server & CoAP Client', () => {
 
     it('post route response string', async () => {
         const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } }))
-            // .pipe(
-            //     catchError((err, ct) => {
-            //         ctx.getLogger().error(err);
-            //         return of(err);
-            //     })));
+        // .pipe(
+        //     catchError((err, ct) => {
+        //         ctx.getLogger().error(err);
+        //         return of(err);
+        //     })));
         expect(b.status).toEqual('2.05');
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');

@@ -1,4 +1,5 @@
-import { Pattern, PatternFormatter, patternToPath, DefaultRouteMatcher, normalize } from '@tsdi/core';
+import { Pattern, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
+import { DefaultRouteMatcher } from '@tsdi/transport';
 import { Injectable } from '@tsdi/ioc';
 
 @Injectable()

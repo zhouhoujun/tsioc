@@ -1,7 +1,7 @@
 import { Type, ctorName, Injectable, lang, refl } from '@tsdi/ioc';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { Joinpoint } from '@tsdi/aop';
-import { InjectLog, Logger } from '@tsdi/logs';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { TypeormAdapter } from './TypeormAdapter';
 

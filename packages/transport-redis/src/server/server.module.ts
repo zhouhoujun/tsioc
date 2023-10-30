@@ -1,8 +1,11 @@
 import { EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, MicroServRouterModule, TransformModule, StatusVaildator, createTransportEndpoint } from '@tsdi/core';
-import { Bodyparser, Content, ExecptionFinalizeFilter, Json, LogInterceptor, ServerFinalizeFilter, Session, TransportModule } from '@tsdi/transport';
-import { ServerTransportModule } from '@tsdi/platform-server-transport';
-import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl } from '../transport';
+import { ExecptionHandlerFilter, TransformModule } from '@tsdi/core';
+import {
+    TransportModule, MicroServRouterModule, StatusVaildator, createTransportEndpoint, Bodyparser,
+    Content, Json, LogInterceptor, ServerFinalizeFilter, Session, ExecptionFinalizeFilter
+} from '@tsdi/transport';
+import { ServerTransportModule } from '@tsdi/platform-server/transport';
+import { RedisTransportSessionFactory, RedisTransportSessionFactoryImpl, defaultMaxSize } from '../transport';
 import { RedisServer } from './server';
 import { RedisStatusVaildator } from '../status';
 import { RedisExecptionHandlers } from './execption.handles';
@@ -18,7 +21,7 @@ import { RedisPatternFormatter } from '../pattern';
 const defMicroOpts = {
     transportOpts: {
         delimiter: '#',
-        maxSize: 10 * 1024 * 1024
+        maxSize: defaultMaxSize
     },
     content: {
         root: 'public',

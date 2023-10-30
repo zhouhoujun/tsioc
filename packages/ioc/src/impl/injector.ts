@@ -18,7 +18,7 @@ import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ReflectiveFactory } from '../reflective';
-import { ReflectiveResolverImpl, hasContext } from './reflective';
+import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
@@ -250,6 +250,7 @@ export class DefaultInjector extends Injector {
         } else {
             this.records.set(provider.provide, generateRecord(platfrom, this, provider))
         }
+        provider.onRegistered?.(this);
     }
 
 
@@ -343,6 +344,7 @@ export class DefaultInjector extends Injector {
             return this.get(token);
         }
         let context: InvocationContext | undefined;
+        const isResolve = true;
         let isCtx = false;
         if (args.length === 1) {
             const arg1 = args[0];
@@ -350,17 +352,17 @@ export class DefaultInjector extends Injector {
                 context = arg1;
                 isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createContext(this, { providers: arg1 }) : undefined;
+                context = arg1.length ? createContext(this, { isResolve, providers: arg1 }) : undefined;
             } else if (arg1.provide) {
-                context = createContext(this, { providers: [arg1] });
+                context = createContext(this, { isResolve, providers: [arg1] });
             } else if (hasContext(arg1)) {
-                context = createContext(this, arg1);
+                context = createContext(this, { isResolve, ...arg1 });
             }
         } else {
-            context = createContext(this, { providers: args });
+            context = createContext(this, { isResolve, providers: args });
         }
 
-        const result = (context && !isCtx) ? context.resolve(token) : this.get(token, context);
+        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : this.get(token, context, InjectFlags.Resolve);
 
         if (context && !isCtx && !context.used) {
             immediate(() => context!.destroy());
@@ -548,22 +550,37 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean) {
-    const type = isType(typeOrDef) ? typeOrDef : typeOrDef.module;
-    if (!isFunction(typeOrDef)) {
+    let type: Type;
+    if (isType(typeOrDef)) {
+        type = typeOrDef;
+    } else {
+        type = typeOrDef.module;
         deepForEach(
             typeOrDef.providers,
             pdr => processProvider(pdr, typeOrDef.providers),
-            v => isPlainObject(v) && !v.provide //&& !(isFunction(v.module) && isArray(v.providers))
+            v => isPlainObject(v) && !v.provide
         )
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
+    if (isDuplicate) {
+        return;
+    }
+
+    dedupStack.push(type);
     const typeRef = moduleRefl ?? get<ModuleDef>(type);
     const annotation = typeRef.getAnnotation<ModuleDef>();
-    if (annotation.module && !isDuplicate) {
-        dedupStack.push(type);
+    if (annotation.module) {
         annotation.imports?.forEach(imp => {
             processInjectorType(imp, dedupStack, processProvider, regType, undefined, true)
         });
+
+        if (annotation.providers) {
+            deepForEach(
+                annotation.providers,
+                pdr => processProvider(pdr, annotation.providers),
+                v => isPlainObject(v) && !v.provide
+            )
+        }
 
         if (imported && !(annotation.providedIn === Scopes.root || annotation.providedIn === Scopes.platform)) {
             annotation.exports?.forEach(d => {
@@ -577,25 +594,9 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
                 processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
             })
         }
-
-        if (annotation.providers) {
-            deepForEach(
-                annotation.providers,
-                pdr => processProvider(pdr, annotation.providers),
-                v => isPlainObject(v) && !v.provide // && !(isFunction(v.module) && isArray(v.providers))
-            )
-        }
     }
-    // // private providers.
-    // if (typeRef.class.providers && !isDuplicate) {
-    //     deepForEach(
-    //         typeRef.class.providers,
-    //         pdr => processProvider(pdr, typeRef.class.providers),
-    //         v => isPlainObject(v) && !v.provide
-    //     );
-    // }
-
     regType(typeRef, type)
+
 }
 
 
@@ -722,7 +723,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         }
         if (isDef && isStatic && rd?.fn !== MUTIL) {
             if (rd) {
-                if (isNil(rd.value)) {
+                if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
                     rd.value = value
                 }
             } else {
@@ -753,7 +754,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         if (value === CIRCULAR) {
             throw new CircularDependencyExecption()
         }
-        if (isDefined(rd.value) && value !== EMPTY) return rd.value;
+        if (isDefined(rd.value) && value !== EMPTY && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
         const deps = [];
         if (rd.fn === MUTIL) {
             if (parent && !(flags & InjectFlags.Self)) {
@@ -810,7 +811,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, context, InjectFlags.Default, notFoundValue)
+        return parent.get(token, context, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, notFoundValue)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorExecption(token)
@@ -833,7 +834,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Container) {
-    const factory = new ReflectiveResolverImpl();
+    const factory = new ReflectiveFactoryImpl();
     container.setValue(ReflectiveFactory, factory);
     // container.onDestroy(factory)
     // bing action.

@@ -1,11 +1,14 @@
-import {
-    TransportEvent, Encoder, Decoder, TransportRequest, Redirector, TransportSession, Packet, StreamAdapter, StatusVaildator, UuidGenerator, ResHeaders, Incoming
-} from '@tsdi/core';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { MimeTypes, MimeAdapter, SessionRequestAdapter, ev, StatusPacket, hdr } from '@tsdi/transport';
+import { UuidGenerator } from '@tsdi/core';
+import { Packet, TransportEvent, TransportRequest } from '@tsdi/common';
+import {
+    Encoder, Decoder, Redirector, TransportSession, StreamAdapter, StatusVaildator, Incoming,
+    MimeTypes, MimeAdapter, SessionRequestAdapter, ev, StatusPacket, hdr
+} from '@tsdi/transport';
 import { Observer } from 'rxjs';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
 import { KafkaTransport } from '../const';
+
 
 /**
  * kafka request adapter.
@@ -41,7 +44,7 @@ export class KafkaRequestAdapter extends SessionRequestAdapter<KafkaTransport, K
     protected bindMessageEvent(session: TransportSession<KafkaTransport>, packet: Packet, req: TransportRequest<any>, observer: Observer<TransportEvent>, opts: KafkaClientOpts): [string, (...args: any[]) => void] {
         const replyTopic = packet.replyTo;
         const id = packet.id!;
-        const url = packet.topic ?? packet.url!;
+        const url = packet.topic || packet.url!;
         const onMessage = (topic: string, res: Packet) => {
             if (topic !== replyTopic) return;
             this.handleMessage(id, url, req, observer, res);

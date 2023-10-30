@@ -1,9 +1,9 @@
-import { Decoder, Encoder, Packet, StreamAdapter, TransportSession, TransportSessionFactory } from '@tsdi/core';
-import { Abstract, Injectable, Optional, isString } from '@tsdi/ioc';
-import { AbstractTransportSession, ev, hdr, toBuffer } from '@tsdi/transport';
+import { Abstract, Injectable, Optional } from '@tsdi/ioc';
+import { Decoder, Encoder, StreamAdapter, TransportSession, TransportSessionFactory, MessageTransportSession, Subpackage, ev, hdr } from '@tsdi/transport';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Buffer } from 'buffer';
 import { AmqpSessionOpts } from './options';
+import { HeaderPacket, IncomingHeaders } from '@tsdi/common';
 
 
 @Abstract()
@@ -27,47 +27,20 @@ export class AmqpTransportSessionFactoryImpl implements TransportSessionFactory<
 
 }
 
-export interface QueueBuffer {
-    queue: string;
-    buffer: Buffer | null;
-    contentLength: number | null;
-    pkgs: Map<number | string, Packet>;
+export const defaultMaxSize = 1024 * 256;
 
-}
+export class AmqpTransportSession extends MessageTransportSession<Channel, ConsumeMessage, AmqpSessionOpts> {
 
-export class AmqpTransportSession extends AbstractTransportSession<Channel, AmqpSessionOpts> {
-    protected queues: Map<string, QueueBuffer> = new Map();
+    maxSize = defaultMaxSize;
 
     protected override bindMessageEvent(options: AmqpSessionOpts): void {
-        const onRespond = this.onData.bind(this);
+        const onRespond = (queue: string, msg: ConsumeMessage) => {
+            this.onData(msg, queue);
+        }
         this.onSocket(ev.CUSTOM_MESSAGE, onRespond);
         this._evs.push([ev.CUSTOM_MESSAGE, onRespond]);
     }
 
-    protected writeBuffer(buffer: Buffer, packet: Packet) {
-        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
-        const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...packet.headers } : packet.headers;
-        headers[hdr.PATH] = packet.url ?? packet.topic;
-        const replys = this.options.serverSide ? undefined : {
-            replyTo: packet.replyTo,
-            persistent: this.options.persistent,
-        };
-        this.socket.sendToQueue(
-            queue,
-            buffer,
-            {
-                ...replys,
-                ...this.options.publishOpts,
-                headers,
-                contentType: headers[hdr.CONTENT_TYPE],
-                contentEncoding: headers[hdr.CONTENT_ENCODING],
-                correlationId: packet.id,
-            }
-        )
-    }
-    protected handleFailed(error: any): void {
-        this.emit(ev.ERROR, error.message)
-    }
     protected onSocket(name: string, event: (...args: any[]) => void): void {
         this.socket.on(name, event)
     }
@@ -75,117 +48,114 @@ export class AmqpTransportSession extends AbstractTransportSession<Channel, Amqp
         this.socket.off(name, event)
     }
 
-    protected override async generate(data: Packet): Promise<Buffer> {
-        const { payload, ...headers } = data;
-        if (!headers.headers) {
-            headers.headers = {};
+    write(subpkg: Subpackage, chunk: Buffer | null, callback?: (err?: any) => void): void {
+        if (!subpkg.headerSent) {
+            const headers = this.options.publishOpts?.headers ? { ...this.options.publishOpts.headers, ...subpkg.packet.headers } : subpkg.packet.headers;
+            headers[hdr.PATH] = subpkg.packet.url ?? subpkg.packet.topic;
+            subpkg.packet.headers = headers;
+            subpkg.headerSent = true;
+            subpkg.caches = [];
+            subpkg.cacheSize = 0;
+            subpkg.residueSize = this.getPayloadLength(subpkg.packet);
+            if (!subpkg.residueSize) {
+                this.writing(subpkg.packet, null, callback);
+                return;
+            }
         }
 
-        let body: Buffer;
-        if (isString(payload)) {
-            body = Buffer.from(payload);
-        } else if (Buffer.isBuffer(payload)) {
-            body = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
-            body = await toBuffer(payload);
+        if (!chunk) return callback?.();
+
+        const bufSize = Buffer.byteLength(chunk);
+        const maxSize = this.options.maxSize || this.maxSize;
+
+        const tol = subpkg.cacheSize + bufSize;
+        if (tol == maxSize) {
+            subpkg.caches.push(chunk);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= bufSize;
+            this.writing(subpkg.packet, data, callback);
+        } else if (tol > maxSize) {
+            const idx = bufSize - (tol - maxSize);
+            const message = chunk.subarray(0, idx);
+            const rest = chunk.subarray(idx);
+            subpkg.caches.push(message);
+            const data = this.getSendBuffer(subpkg, maxSize);
+            subpkg.residueSize -= (bufSize - Buffer.byteLength(rest));
+            this.writing(subpkg.packet, data, (err) => {
+                if (err) return callback?.(err);
+                if (rest.length) {
+                    this.write(subpkg, rest, callback)
+                }
+            })
         } else {
-            body = Buffer.from(JSON.stringify(payload));
+            subpkg.caches.push(chunk);
+            subpkg.cacheSize += bufSize;
+            subpkg.residueSize -= bufSize;
+            if (subpkg.residueSize <= 0) {
+                const data = this.getSendBuffer(subpkg, subpkg.cacheSize);
+                this.writing(subpkg.packet, data, callback);
+            } else if (callback) {
+                callback()
+            }
         }
-
-        if (!headers.headers[hdr.CONTENT_LENGTH]) {
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        if (this.encoder) {
-            body = this.encoder.encode(body);
-            if (isString(body)) body = Buffer.from(body);
-            headers.headers[hdr.CONTENT_LENGTH] = Buffer.byteLength(body);
-        }
-
-        return body;
-
     }
 
-    protected override async generateNoPayload(data: Packet<any>): Promise<Buffer> {
-        if (!data.headers) {
-            data.headers = {};
-        }
-        data.headers[hdr.CONTENT_LENGTH] = 0;
-
-        return Buffer.alloc(0);
-    }
-
-
-    protected onData(queue: string, msg: ConsumeMessage): void {
+    writing(packet: HeaderPacket, chunk: Buffer | null, callback?: (err?: any) => void): void {
+        const queue = this.options.serverSide ? this.options.replyQueue! : this.options.queue!;
+        const replys = this.options.serverSide ? undefined : {
+            replyTo: packet.replyTo,
+            persistent: this.options.persistent,
+        };
+        const headers = packet.headers!;
         try {
-            let chl = this.queues.get(queue);
-            if (!chl) {
-                chl = {
-                    queue,
-                    buffer: null,
-                    contentLength: ~~msg.properties.headers[hdr.CONTENT_LENGTH],
-                    pkgs: new Map()
+            const succeeded = this.socket.sendToQueue(
+                queue,
+                chunk ?? Buffer.alloc(0),
+                {
+                    ...replys,
+                    ...this.options.publishOpts,
+                    headers,
+                    contentType: headers[hdr.CONTENT_TYPE],
+                    contentEncoding: headers[hdr.CONTENT_ENCODING],
+                    correlationId: packet.id,
                 }
-                this.queues.set(queue, chl)
-            } else if (chl.contentLength === null) {
-                chl.buffer = null;
-                chl.contentLength = ~~msg.properties.headers[hdr.CONTENT_LENGTH];
-            }
-            if (!chl.pkgs.has(msg.properties.correlationId)) {
-                const headers = { ...msg.properties.headers };
-                if (!headers[hdr.CONTENT_TYPE]) {
-                    headers[hdr.CONTENT_TYPE] = msg.properties.contentType;
-                }
-                if (!headers[hdr.CONTENT_ENCODING]) {
-                    headers[hdr.CONTENT_ENCODING] = msg.properties.contentEncoding;
-                }
-                chl.pkgs.set(msg.properties.correlationId, {
-                    id: msg.properties.correlationId,
-                    url: headers[hdr.PATH],
-                    replyTo: msg.properties.replyTo,
-                    headers
-                })
-            }
-            this.handleData(chl, msg.properties.correlationId, msg.content);
-        } catch (ev) {
-            const e = ev as any;
-            this.emit(e.ERROR, e.message);
+            );
+            callback && callback(succeeded ? undefined : 'sendToQueue failed.');
+        } catch (err) {
+            this.handleFailed(err);
+            return callback?.(err);
+
         }
     }
 
-    protected handleData(chl: QueueBuffer, id: string, dataRaw: string | Buffer) {
-
-        const data = Buffer.isBuffer(dataRaw)
-            ? dataRaw
-            : Buffer.from(dataRaw);
-        const buffer = chl.buffer = chl.buffer ? Buffer.concat([chl.buffer, data], chl.buffer.length + data.length) : Buffer.from(data);
-
-        if (chl.contentLength !== null) {
-            const length = buffer.length;
-            if (length === chl.contentLength) {
-                this.handleMessage(chl, id, chl.buffer);
-            } else if (length > chl.contentLength) {
-                const message = chl.buffer.subarray(0, chl.contentLength);
-                const rest = chl.buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, id, message);
-                this.handleData(chl, id, rest);
-            }
+    protected createPackage(id: string | number, topic: string, replyTo: string, headers: IncomingHeaders, msg: ConsumeMessage, error?: any): HeaderPacket {
+        return {
+            id,
+            url: headers[hdr.PATH],
+            replyTo,
+            headers
         }
     }
-
-    protected handleMessage(chl: QueueBuffer, id: string, message: any) {
-        chl.contentLength = null;
-        chl.buffer = null;
-        this.emitMessage(chl, id, message);
+    protected getIncomingHeaders(msg: ConsumeMessage): IncomingHeaders {
+        return { ...msg.properties.headers };
+    }
+    protected getIncomingPacketId(msg: ConsumeMessage): string | number {
+        return msg.properties.correlationId
+    }
+    protected getIncomingReplyTo(msg: ConsumeMessage): string {
+        return msg.properties.replyTo
+    }
+    protected getIncomingContentType(msg: ConsumeMessage): string | undefined {
+        return msg.properties.contentType
+    }
+    protected getIncomingContentEncoding(msg: ConsumeMessage): string | undefined {
+        return msg.properties.contentEncoding
+    }
+    protected getIncomingContentLength(msg: ConsumeMessage): number {
+        return ~~msg.properties.headers[hdr.CONTENT_LENGTH]
+    }
+    protected getIncomingPayload(msg: ConsumeMessage): string | Buffer | Uint8Array {
+        return msg.content
     }
 
-    protected emitMessage(chl: QueueBuffer, id: string, chunk: Buffer) {
-        const data = this.decoder ? this.decoder.decode(chunk) as Buffer : chunk;
-        const pkg = chl.pkgs.get(id);
-        if (pkg) {
-            pkg.payload = data.length ? data : null;
-            chl.pkgs.delete(id);
-            this.emit(ev.MESSAGE, chl.queue, pkg);
-        }
-    }
 }

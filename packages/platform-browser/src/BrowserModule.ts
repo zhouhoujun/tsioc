@@ -1,7 +1,8 @@
 import { Module } from '@tsdi/ioc';
-import { PROCESS_ROOT, global } from '@tsdi/core';
+import { PROCESS_ROOT } from '@tsdi/core';
+import { PLATFORM_ID, PLATFORM_BROWSER_ID, DOCUMENT, global } from '@tsdi/common';
+import { XhrFactory } from '@tsdi/common/http';
 import { BrowserXhr } from './xhr';
-import { XhrFactory, PLATFORM_ID, PLATFORM_BROWSER_ID, DOCUMENT } from '@tsdi/common';
 
 
 

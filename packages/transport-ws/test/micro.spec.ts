@@ -1,10 +1,13 @@
-import { Application, ApplicationContext, Handle, Payload, RequestPath, Subscribe, TransportErrorResponse } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { WsClient, WsClientModule, WsMicroServModule, WsServer } from '../src';
+import { TransportErrorResponse } from '@tsdi/common';
+import { Handle, Payload, RequestPath, Subscribe } from '@tsdi/transport';
+import { WS_SERV_INTERCEPTORS, WsClient, WsClientModule, WsMicroServModule, WsServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { LoggerModule } from '@tsdi/logs';
+import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import { BigFileInterceptor } from './BigFileInterceptor';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -62,7 +65,7 @@ export class WsService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                timeout: 500
+                // timeout: 200
             }
         }),
         WsMicroServModule
@@ -95,6 +98,7 @@ describe('Ws Micro Service', () => {
     before(async () => {
         ctx = await Application.run(MicroTestModule, {
             providers: [
+                { provide: WS_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 { provide: SENSORS, useValue: 'sensor01', multi: true },
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
@@ -106,6 +110,18 @@ describe('Ws Micro Service', () => {
 
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('/content/510100_full.json')
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(res).toBeDefined();
+        expect(isArray(res.features)).toBeTruthy();
+    })
+
+    it('fetch big json', async () => {
+        const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

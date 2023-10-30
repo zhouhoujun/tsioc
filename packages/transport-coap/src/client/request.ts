@@ -1,6 +1,9 @@
 import { Injectable, Optional, isArray, isNil } from '@tsdi/ioc';
-import { Decoder, Encoder, IEndable, IncomingHeader, Redirector, StatusVaildator, StreamAdapter, TransportEvent, TransportRequest, Incoming } from '@tsdi/core';
-import { MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer, ctype } from '@tsdi/transport';
+import { IncomingHeader, TransportEvent, TransportRequest } from '@tsdi/common';
+import {
+    Decoder, Encoder, IEndable, Redirector, StatusVaildator, StreamAdapter, Incoming,
+    MimeAdapter, MimeTypes, StatusPacket, hdr, StreamRequestAdapter, ev, isBuffer, ctype
+} from '@tsdi/transport';
 import { request } from 'coap';
 import { CoapMethod, OptionName } from 'coap-packet';
 import { COAP_CLIENT_OPTS } from './options';
@@ -33,7 +36,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
         }
 
         const options = {
-            // observe: true,
+            observe: req.headers.get('observe') === 'true',
             confirmable: true,
             accept: ctype.APPL_JSON,
             ...opts.transportOpts,
@@ -116,7 +119,7 @@ export class CoapRequestAdapter extends StreamRequestAdapter<TransportRequest, T
             request.end(callback);
         } else {
             this.streamAdapter.sendbody(
-                this.encoder ? this.encoder.encode(data) : data,
+                data,
                 request,
                 callback,
                 req.headers.get(hdr.CONTENT_ENCODING) as string);

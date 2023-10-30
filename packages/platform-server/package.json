@@ -31,6 +31,17 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "chalk": "^4.0.0",
+    "csrf": "^3.1.0",
+    "form-data": "^4.0.0",
+    "log4js": "^6.3.0",
+    "raw-body": "^2.5.1",
+    
+    "minimatch": "^3.0.4",
+    "minimist": "^1.2.5",
+    "interpret": "^2.0.0",
+    "pretty-hrtime": "^1.0.3",
+    "time-stamp": "^2.2.0"
   },
   "directories": {
     "lib": "lib",

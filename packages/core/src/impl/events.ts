@@ -88,7 +88,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     emit(value: ApplicationEvent): Observable<any> {
-        const ctx = new ApplicationEventContext(this.injector, { payload: value });
+        const ctx = new ApplicationEventContext(this.injector, { args: value });
         ctx.setValue(getClass(value), value);
         return this.handler.handle(ctx)
             .pipe(
@@ -134,7 +134,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     handle(context: ApplicationEventContext): Observable<any> {
-        const endpoints = this.maps.get(getClass(context.payload));
+        const endpoints = this.maps.get(getClass(context.args));
         return runHandlers(endpoints, context, v => v.isDone() === true);
     }
 
