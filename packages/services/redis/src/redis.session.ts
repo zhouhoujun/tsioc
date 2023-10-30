@@ -1,6 +1,6 @@
 import { Injectable, Injector, isString } from '@tsdi/ioc';
-import { BadRequestExecption, Packet, Receiver, RequestPacket, ResponsePacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { AbstractTransportSession, TopicMessage } from '@tsdi/endpoints';
+import { BadRequestExecption, Context, Decoder, Encoder, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BufferTransportSession, TopicMessage } from '@tsdi/endpoints';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 import Redis from 'ioredis';
 
@@ -12,18 +12,18 @@ export interface ReidsTransport {
 
 const PATTERN_MSG_BUFFER = 'pmessageBuffer';
 
-export class RedisTransportSession extends AbstractTransportSession<ReidsTransport, TopicMessage> {
+export class RedisTransportSession extends BufferTransportSession<ReidsTransport, TopicMessage> {
 
     constructor(
         injector: Injector,
         socket: ReidsTransport,
-        sender: Sender,
-        receiver: Receiver,
+        encoder: Encoder,
+        decoder: Decoder,
         options: TransportOpts) {
-        super(injector, socket, sender, receiver, options)
+        super(injector, socket, encoder, decoder, options)
     }
 
-    private topics: Set<string> = new Set();
+    private regTopics: Set<string> = new Set();
 
     protected async write(data: Buffer, packet: Packet): Promise<void> {
 
@@ -43,8 +43,8 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
 
 
     async subscribe(topic: string): Promise<void> {
-        if (topic && !this.topics.has(topic)) {
-            this.topics.add(topic);
+        if (topic && !this.regTopics.has(topic)) {
+            this.regTopics.add(topic);
             await this.socket.subscriber.subscribe(topic)
         }
     }
@@ -88,32 +88,49 @@ export class RedisTransportSession extends AbstractTransportSession<ReidsTranspo
         return data;
     }
 
-    protected override pack(packet: Packet<any>): Observable<Buffer> {
-        return this.sender.send(this.contextFactory, packet);
+
+    protected override getTopic(msg: TopicMessage): string {
+        return msg.topic
+    }
+    protected override getPayload(msg: TopicMessage): string | Buffer | Uint8Array {
+        return msg.payload
     }
 
-    protected override unpack(msg: TopicMessage): Observable<Packet> {
-        const { topic, payload } = msg;
-        return this.receiver.receive(this.contextFactory, payload, topic)
-            .pipe(
-                map(payload => {
-                    return {
-                        topic,
-                        ...payload
-                    } as Packet
-                })
-            )
+    
+    protected override afterDecode(ctx: Context<Packet<any>>, pkg: Packet<any>, msg: TopicMessage): Packet<any> {
+        return {
+            topic: msg.topic,
+            ...pkg
+        }
     }
+
+    // protected override encode(packet: Packet<any>): Observable<Buffer> {
+    //     return this.sender.send(this.createContext, packet);
+    // }
+
+    // protected override decode(msg: TopicMessage): Observable<Packet> {
+    //     const { topic, payload } = msg;
+    //     return this.receiver.receive(this.createContext, payload, topic)
+    //         .pipe(
+    //             map(payload => {
+    //                 return {
+    //                     topic,
+    //                     ...payload
+    //                 } as Packet
+    //             })
+    //         )
+    // }
 
     protected getReply(packet: Packet) {
         return packet.replyTo ?? packet.topic + '.reply';
     }
 
     async destroy(): Promise<void> {
-        if (this.topics.size) {
-            await this.socket.subscriber.unsubscribe(...Array.from(this.topics.values()))
-            this.topics.clear();
+        if (this.regTopics.size) {
+            await this.socket.subscriber.unsubscribe(...Array.from(this.regTopics.values()))
+            this.regTopics.clear();
         }
+        this.topics.clear();
         this.socket.subscriber?.removeAllListeners();
         await this.socket.subscriber?.quit();
         this.socket.publisher?.removeAllListeners();
@@ -127,11 +144,12 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
 
     constructor(
         readonly injector: Injector,
-        private factory: TransportFactory
+        private encoder: Encoder,
+        private decoder: Decoder
     ) { }
 
     create(socket: ReidsTransport, options: TransportOpts): RedisTransportSession {
-        return new RedisTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+        return new RedisTransportSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }

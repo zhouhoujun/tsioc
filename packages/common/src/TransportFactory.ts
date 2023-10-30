@@ -1,6 +1,4 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { Receiver } from './Receiver';
-import { Sender } from './Sender';
 import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
@@ -31,6 +29,8 @@ export interface TransportOpts {
      */
     delimiter?: string;
 
+    headDelimiter?: string;
+
     timeout?: number;
     /**
      * packet max size limit.
@@ -57,26 +57,9 @@ export interface AssetTransportOpts extends TransportOpts {
 }
 
 /**
- * Transport Factory.
- */
-@Abstract()
-export abstract class TransportFactory {
-    /**
-     * create receiver.
-     * @param options 
-     */
-    abstract createReceiver(options: TransportOpts): Receiver
-    /**
-     * create sender.
-     * @param options 
-     */
-    abstract createSender(options: TransportOpts): Sender;
-}
-
-/**
  * response factory.
  */
-export interface ResponseFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
+export interface ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TErrorResponse;
     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse;
     createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse;
@@ -114,8 +97,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
 
     /**
      * serialize packet.
-     * @param packet 
-     * @param withPayload 
+     * @param packet
      */
     abstract serialize(packet: Packet, withPayload?: boolean): Buffer;
     /**
@@ -133,7 +115,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
     /**
      * receive
      */
-    abstract receive(filter?: (msg: TMsg) => boolean): Observable<Packet>;
+    abstract receive(packet?: Packet): Observable<Packet>;
 
     /**
      * destroy.

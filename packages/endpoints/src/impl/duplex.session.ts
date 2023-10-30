@@ -1,10 +1,17 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { IDuplexStream, Packet, RequestPacket, TransportFactory, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, IDuplexStream, Packet, RequestPacket, TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { EventTransportSession } from '../transport.session';
 
 
 
 export class DuplexTransportSession extends EventTransportSession<IDuplexStream> {
+
+    protected getTopic(msg: string | Buffer | Uint8Array): string {
+        return '__DEFALUT_TOPIC__'
+    }
+    protected getPayload(msg: string | Buffer | Uint8Array): string | Buffer | Uint8Array {
+        return msg;
+    }
 
     protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         // do nothing
@@ -22,10 +29,10 @@ export class DuplexTransportSession extends EventTransportSession<IDuplexStream>
 @Injectable()
 export class DuplexTransportSessionFactory implements TransportSessionFactory<IDuplexStream> {
 
-    constructor(readonly injector: Injector, private factory: TransportFactory) { }
+    constructor(readonly injector: Injector, private encoder: Encoder, private decoder: Decoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+        return new DuplexTransportSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }

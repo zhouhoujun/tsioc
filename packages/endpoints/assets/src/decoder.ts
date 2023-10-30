@@ -59,13 +59,13 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
             let raw = ctx.raw;
             let packet: CachePacket | undefined;
             let id: string | number;
-            if (!ctx.packet) {
+            if (!ctx.headers) {
                 id = raw.readInt16BE(0);
                 raw = raw.subarray(2);
                 packet = this.packs.get(id);
             } else {
-                if ((ctx.packet as SendPacket).__headMsg) {
-                    id = ctx.packet.id;
+                if (ctx.headers.id) {
+                    id = ctx.headers.id;
                 } else {
                     id = raw.readInt16BE(0);
                     raw = raw.subarray(2);
@@ -74,8 +74,8 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
             }
 
             if (!packet) {
-                if (ctx.packet) {
-                    packet = ctx.packet as CachePacket;
+                if (ctx.headers) {
+                    packet = ctx.headers as CachePacket;
                 } else {
                     const hidx = raw.indexOf(ctx.headerDelimiter!);
                     if (hidx >= 0) {

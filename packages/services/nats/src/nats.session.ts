@@ -1,23 +1,23 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, OfflineExecption, OutgoingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, SendPacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
-import { AbstractTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, OfflineExecption, OutgoingHeaders, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { PayloadTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
-import { Observable, filter, fromEvent, map, throwError } from 'rxjs';
+import { Observable, filter, fromEvent, map, of, throwError } from 'rxjs';
 import { NatsSessionOpts } from './options';
 
 
-export class NatsTransportSession extends AbstractTransportSession<NatsConnection, Msg> {
+export class NatsTransportSession extends PayloadTransportSession<NatsConnection, Msg> {
 
     constructor(
         injector: Injector,
         socket: NatsConnection,
-        sender: Sender,
-        receiver: Receiver,
+        encoder: Encoder,
+        decoder: Decoder,
         private uuidGenner: UuidGenerator,
         options: TransportOpts) {
-        super(injector, socket, sender, receiver, options)
+        super(injector, socket, encoder, decoder, options)
     }
 
     private subjects: Set<string> = new Set();
@@ -100,36 +100,30 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         )
     }
 
-    protected override pack(packet: Packet<any>): Observable<Buffer> {
-        const { replyTo, topic, id, headers, ...data } = packet;
-        (data as SendPacket).__sent = true;
-        (data as SendPacket).__headMsg = true;
-        return this.sender.send(this.contextFactory, data);
-    }
 
-    protected override unpack(msg: Msg): Observable<Packet> {
+    protected getHeaders(msg: Msg): HeaderPacket | undefined {
         const headers = {} as OutgoingHeaders;
         msg.headers?.keys().forEach(key => {
             headers[key] = msg.headers?.get(key);
         });
         const id = msg.headers?.get(hdr.IDENTITY) ?? msg.sid;
-        const pkg =  {
+        return {
             id,
             topic: msg.subject,
             replyTo: msg.reply,
-            headers,
-            __headMsg: true
-        } as SendPacket;
-        
-        return this.receiver.receive(this.contextFactory, msg.data, msg.subject, pkg)
-            .pipe(
-                map(payload => {
-                    return {
-                        ...pkg,
-                        ...payload
-                    } as Packet
-                })
-            )
+            headers
+        };
+    }
+    
+    protected concat(msg: Msg): Observable<Buffer> {
+        return of(Buffer.from(msg.data))
+    }
+
+    protected override afterDecode(ctx: Context<Packet<any>>, pkg: Packet<any>, msg: Msg): Packet<any> {
+        return {
+            ...ctx.headers,
+            ...pkg
+        }
     }
 
     protected getReply(packet: Packet) {
@@ -155,11 +149,12 @@ export class NatsTransportSessionFactory implements TransportSessionFactory<Nats
 
     constructor(
         readonly injector: Injector,
-        private factory: TransportFactory,
+        private encoder: Encoder,
+        private decoder: Decoder,
         private uuidGenner: UuidGenerator) { }
 
     create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, options);
+        return new NatsTransportSession(this.injector, socket, this.encoder, this.decoder, this.uuidGenner, options);
     }
 
 }

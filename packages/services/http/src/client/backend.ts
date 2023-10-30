@@ -1,6 +1,6 @@
 import { Injectable, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseFactory, ResponsePacket, TransportSession } from '@tsdi/common';
+import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession } from '@tsdi/common';
 import { ResponseTransform } from '@tsdi/common/client';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
@@ -18,7 +18,7 @@ const defaultTransform = {
  * transport http client endpoint backend.
  */
 @Injectable()
-export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, ResponseFactory<HttpEvent>  {
+export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, ResponseEventFactory<HttpEvent>  {
 
     /**
      * handle client request

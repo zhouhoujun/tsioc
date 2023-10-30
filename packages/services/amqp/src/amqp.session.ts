@@ -1,24 +1,51 @@
-import { BadRequestExecption, IncomingHeaders, Packet, Receiver, RequestPacket, ResponsePacket, SendPacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
-import { EventTransportSession } from '@tsdi/endpoints';
+import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { Injectable, Injector, isNil } from '@tsdi/ioc';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { PayloadTransportSession } from '@tsdi/endpoints';
 import { Channel, ConsumeMessage } from 'amqplib';
-import { Observable, fromEvent, map, of } from 'rxjs';
+import { Observable, first, fromEvent, map, merge, of } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
-export class QueueTransportSession extends EventTransportSession<Channel, ConsumeMessage> {
+export class QueueTransportSession extends PayloadTransportSession<Channel, ConsumeMessage> {
 
     constructor(
         injector: Injector,
         socket: Channel,
-        sender: Sender,
-        receiver: Receiver,
+        encoder: Encoder,
+        decoder: Decoder,
         private uuidGenner: UuidGenerator,
         options: TransportOpts) {
-        super(injector, socket, sender, receiver, options)
+        super(injector, socket, encoder, decoder, options)
     }
 
+
+    protected concat(msg: ConsumeMessage): Observable<Buffer> {
+        return of(msg.content);
+    }
+    protected mergeClose(source: Observable<any>): Observable<any> {
+        const close$ = fromEvent(this.socket, ev.CLOSE).pipe(
+            map(err => {
+                throw err
+            }));
+        const error$ = fromEvent(this.socket, ev.ERROR);
+        return merge(source, error$, close$).pipe(first());
+
+    }
+
+    protected override getHeaders(msg: ConsumeMessage): HeaderPacket | undefined {
+        const { correlationId, replyTo, contentType, contentEncoding } = msg.properties;
+        const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
+        headers[hdr.CONTENT_TYPE] = contentType;
+        headers[hdr.CONTENT_ENCODING] = contentEncoding;
+
+        return {
+            id: correlationId,
+            topic: headers[hdr.TOPIC],
+            replyTo: replyTo,
+            headers,
+        };
+    }
 
     protected async write(data: Buffer, packet: Packet<any>): Promise<void> {
         const options = this.options as AmqpSessionOpts;
@@ -56,36 +83,13 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         return fromEvent(this.socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
     }
 
-    protected override pack(packet: Packet<any>): Observable<Buffer> {
-        (packet as SendPacket).__sent = true;
-        (packet as SendPacket).__headMsg = true;
-        return this.sender.send(this.contextFactory, packet);
-    }
+    protected override afterDecode(ctx: Context, pkg: Packet<any>, msg: ConsumeMessage): Packet<any> {
 
-    protected override unpack(msg: ConsumeMessage): Observable<Packet> {
+        return {
+            ...ctx.headers,
+            ...pkg
+        }
 
-        const { correlationId, replyTo, contentType, contentEncoding } = msg.properties;
-        const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
-        headers[hdr.CONTENT_TYPE] = contentType;
-        headers[hdr.CONTENT_ENCODING] = contentEncoding;
-
-        const pkg = {
-            id: correlationId,
-            topic: headers[hdr.TOPIC],
-            replyTo: replyTo,
-            headers,
-            __headMsg: true
-        } as SendPacket;
-
-        return this.receiver.receive(this.contextFactory, msg.content, headers[hdr.TOPIC] ?? correlationId, pkg)
-            .pipe(
-                map(payload => {
-                    return {
-                        ...pkg,
-                        ...payload
-                    } as Packet
-                })
-            )
     }
 
     protected override getPacketId(): string {
@@ -102,11 +106,12 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
 
     constructor(
         readonly injector: Injector,
-        private factory: TransportFactory,
+        private encoder: Encoder,
+        private decoder: Decoder,
         private uuidGenner: UuidGenerator) { }
 
     create(socket: Channel, options: TransportOpts): QueueTransportSession {
-        return new QueueTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, options);
+        return new QueueTransportSession(this.injector, socket, this.encoder, this.decoder, this.uuidGenner, options);
     }
 
 }

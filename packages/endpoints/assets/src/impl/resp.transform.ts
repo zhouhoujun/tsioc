@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
-import { ResponsePacket, ResponseFactory, TransportEvent, StreamAdapter, TransportRequest, toBuffer, isBuffer, hdr, HEAD, ev, ResHeaders, OutgoingHeaders, StatusCode, ResponseJsonParseError } from '@tsdi/common';
+import { ResponsePacket, ResponseEventFactory, TransportEvent, StreamAdapter, TransportRequest, toBuffer, isBuffer, hdr, HEAD, ev, ResHeaders, OutgoingHeaders, StatusCode, ResponseJsonParseError } from '@tsdi/common';
 import { ResponseTransform } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, defer, of } from 'rxjs';
@@ -18,7 +18,7 @@ export class AssetResponseTransform implements ResponseTransform {
         private redirector: Redirector
     ) { }
 
-    transform(req: TransportRequest, packet: ResponsePacket<any>, factory: ResponseFactory<TransportEvent>): Observable<TransportEvent> {
+    transform(req: TransportRequest, packet: ResponsePacket<any>, factory: ResponseEventFactory<TransportEvent>): Observable<TransportEvent> {
         if (!packet.headers) {
             packet.headers = {};
         }

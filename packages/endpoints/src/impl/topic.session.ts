@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, Context, IEventEmitter, Packet, RequestPacket, ResponsePacket, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { EventTransportSession } from '../transport.session';
 
@@ -17,6 +17,13 @@ export interface TopicMessage {
 }
 
 export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends EventTransportSession<TSocket, TopicMessage> {
+    
+    protected getTopic(msg: TopicMessage): string {
+        return msg.topic
+    }
+    protected getPayload(msg: TopicMessage): string | Buffer | Uint8Array {
+        return msg.payload
+    }
 
     private replys: Set<string> = new Set();
 
@@ -34,10 +41,6 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
                 this.socket.subscribe(rtopic);
             }
         }
-    }
-
-    protected override unpack(msg: TopicMessage): Observable<Packet<any>> {
-        return this.receiver.receive(this.contextFactory, msg.payload, msg.topic);
     }
 
     protected override message(): Observable<any> {
@@ -69,10 +72,10 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
 @Injectable()
 export class TopicTransportSessionFactory implements TransportSessionFactory<TopicClient> {
 
-    constructor(readonly injector: Injector, private factory: TransportFactory) { }
+    constructor(readonly injector: Injector, private encoder: Encoder, private decoder: Decoder) { }
 
     create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+        return new TopicTransportSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }

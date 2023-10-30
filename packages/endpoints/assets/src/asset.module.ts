@@ -1,15 +1,12 @@
 import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider } from '@tsdi/ioc';
 import { Interceptor, TypedRespond } from '@tsdi/core';
-import { Context, Packet, TransportFactory } from '@tsdi/common';
+import { Context, Decoder, Encoder, Packet } from '@tsdi/common';
 import { BodyContentInterceptor, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
 import { AssetContextFactory, RequestHandler, Responder, StatusVaildator } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { AssetResponder } from './responder';
-import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
+import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, FinalizeAssetEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
 import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInterceptingDecoder, SimpleAssetDecoderBackend } from './decoder';
-import { AssetReceiver } from './receiver';
-import { AssetSender } from './sender';
-import { AssetTransportFactory } from './factory';
 import { HttpStatusVaildator } from './impl/status';
 import { AssetTransportTypedRespond } from './impl/typed.respond';
 import { AssetRequestHandler } from './handler';
@@ -29,8 +26,10 @@ import { AssetContextFactoryImpl } from './impl/context';
         SimpleAssetEncoderBackend,
         AssetInterceptingEncoder,
         { provide: AssetEncoderBackend, useExisting: SimpleAssetEncoderBackend, asDefault: true },
+        FinalizeAssetEncodeInterceptor,
         BufferifyEncodeInterceptor,
         SubpacketBufferEncodeInterceptor,
+        { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: FinalizeAssetEncodeInterceptor, multi: true, multiOrder: 0},
         { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: BufferifyEncodeInterceptor, multi: true, multiOrder: 0 },
         { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: SubpacketBufferEncodeInterceptor, multi: true },
 
@@ -40,6 +39,9 @@ import { AssetContextFactoryImpl } from './impl/context';
 
         { provide: AssetEncoder, useExisting: AssetInterceptingEncoder },
         { provide: AssetDecoder, useExisting: AssetInterceptingDecoder },
+
+        { provide: Encoder, useExisting: AssetEncoder, asDefault: true },
+        { provide: Decoder, useExisting: AssetDecoder, asDefault: true },
 
         AssetTransportTypedRespond,
         { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
@@ -53,11 +55,7 @@ import { AssetContextFactoryImpl } from './impl/context';
         HttpStatusVaildator,
         { provide: StatusVaildator, useExisting: HttpStatusVaildator },
 
-        AssetReceiver,
-        AssetSender,
         AssetResponder,
-        AssetTransportFactory,
-        { provide: TransportFactory, useExisting: AssetTransportFactory },
         { provide: Responder, useExisting: AssetResponder }
     ],
     exports: [

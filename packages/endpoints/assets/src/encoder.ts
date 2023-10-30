@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Injectable, Injector, isNil, isString, lang, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, Injector, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, SendPacket, StreamAdapter, isBuffer } from '@tsdi/common';
 import { Observable, mergeMap, of, throwError, map, range } from 'rxjs';
@@ -43,11 +43,13 @@ export class AssetInterceptingEncoder implements Encoder {
 export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
 
     handle(ctx: Context): Observable<Buffer> {
-        const pkg = ctx.packet as SendPacket;
-        if (pkg && !pkg.__sent) {
-            const headBuf = ctx.session.serialize(pkg, false);
-            ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter!, ctx.raw ?? Buffer.alloc(0)]);
-            pkg.__sent = true;
+        if (ctx.delimiter && ctx.headerDelimiter) {
+            const pkg = ctx.packet as SendPacket;
+            if (pkg && !pkg.__sent) {
+                const headBuf = ctx.session.serialize(pkg, false);
+                ctx.raw = Buffer.concat([headBuf, ctx.headerDelimiter, ctx.raw ?? Buffer.alloc(0)]);
+                pkg.__sent = true;
+            }
         }
         if (!ctx.raw) throwError(() => new ArgumentExecption('asset decoding input empty'));
         return of(ctx.raw!);
@@ -114,12 +116,12 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
         return next.handle(input)
             .pipe(
                 mergeMap(buf => {
-                    if(!buf) {
-                        buf =  Buffer.alloc(0);
+                    if (!buf) {
+                        buf = Buffer.alloc(0);
                     }
                     if (input.session.options.maxSize) {
                         let maxSize = input.session.options.maxSize;
-                        maxSize = maxSize - (Buffer.byteLength(maxSize.toString()) + Buffer.byteLength(input.session.options.delimiter ?? '#')) - ((input.packet as SendPacket)?.__headMsg ? 0 : 2) // 2 packet id;
+                        maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (input.delimiter ? Buffer.byteLength(input.delimiter) : 0) - ((input.packet as SendPacket)?.__headMsg ? 0 : 2) // 2 packet id;
                         if (buf.length <= maxSize) {
                             return of(buf);
                         } else {
@@ -142,6 +144,43 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
                 })
             )
 
+    }
+
+}
+
+
+@Injectable()
+export class FinalizeAssetEncodeInterceptor implements EncodeInterceptor {
+
+    intercept(input: Context, next: Handler<Context, Buffer>): Observable<Buffer> {
+        return next.handle(input)
+            .pipe(
+                map(data => {
+                    if (!input.delimiter) return data;
+
+                    const packet = input.packet as SendPacket;
+                    if (packet.__headMsg) {
+                        if (!data || !data.length) {
+                            return data ?? Buffer.alloc(0);
+                        }
+                        return Buffer.concat([
+                            Buffer.from(String(data.length)),
+                            input.delimiter,
+                            data
+                        ])
+                    }
+
+                    const bufId = Buffer.alloc(2);
+                    bufId.writeUInt16BE(packet.id);
+
+                    return Buffer.concat([
+                        Buffer.from(String(data.length + bufId.length)),
+                        input.delimiter,
+                        bufId,
+                        data
+                    ])
+                })
+            )
     }
 
 }

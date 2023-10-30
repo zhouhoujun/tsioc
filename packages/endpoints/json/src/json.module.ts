@@ -1,12 +1,9 @@
 import { Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Interceptor, TypedRespond } from '@tsdi/core';
-import { Context, Packet, TransportFactory } from '@tsdi/common';
+import { Context, Decoder, Encoder, Packet } from '@tsdi/common';
 import { RequestHandler, Responder } from '@tsdi/endpoints';
-import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend, JSON_ENCODER_INTERCEPTORS } from './encoder';
+import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend, JSON_ENCODER_INTERCEPTORS, FinalizeJsonEncodeInterceptor } from './encoder';
 import { JsonDecoder, SimpleJsonDecoderBackend, JsonInterceptingDecoder, JsonDecoderBackend, JSON_DECODER_INTERCEPTORS } from './decoder';
-import { JsonSender } from './sender';
-import { JsonReceiver } from './receiver';
-import { JsonTransportFactory } from './factory';
 import { JsonResponder } from './responder';
 import { JsonTransportTypedRespond } from './typed.respond';
 import { JsonRequestHandler } from './handler';
@@ -14,9 +11,13 @@ import { JsonRequestHandler } from './handler';
 
 @Module({
     providers: [
+        FinalizeJsonEncodeInterceptor,
+        { provide: JSON_ENCODER_INTERCEPTORS, useExisting: FinalizeJsonEncodeInterceptor, multi: true, multiOrder: 0 },
+
         SimpleJsonEncoderBackend,
         JsonInterceptingEncoder,
         { provide: JsonEncoderBackend, useExisting: SimpleJsonEncoderBackend, asDefault: true },
+
 
         SimpleJsonDecoderBackend,
         JsonInterceptingDecoder,
@@ -25,18 +26,17 @@ import { JsonRequestHandler } from './handler';
         { provide: JsonEncoder, useExisting: JsonInterceptingEncoder },
         { provide: JsonDecoder, useExisting: JsonInterceptingDecoder },
 
+        { provide: Encoder, useExisting: JsonEncoder, asDefault: true },
+        { provide: Decoder, useExisting: JsonDecoder, asDefault: true },
+
         JsonTransportTypedRespond,
         { provide: TypedRespond, useExisting: JsonTransportTypedRespond },
 
         JsonRequestHandler,
         { provide: RequestHandler, useExisting: JsonRequestHandler },
-        
 
-        JsonReceiver,
-        JsonSender,
+
         JsonResponder,
-        JsonTransportFactory,
-        { provide: TransportFactory, useExisting: JsonTransportFactory },
         { provide: Responder, useExisting: JsonResponder }
     ]
 })

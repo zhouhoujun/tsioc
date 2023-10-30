@@ -1,6 +1,6 @@
 import { ArgumentExecption, Injectable, Injector, lang } from '@tsdi/ioc';
-import { Packet, RequestPacket, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { AbstractTransportSession } from '@tsdi/endpoints';
+import { Decoder, Encoder, Packet, RequestPacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { EventTransportSession } from '@tsdi/endpoints';
 import { Socket, RemoteInfo } from 'dgram';
 import { Observable, first, fromEvent, map, merge } from 'rxjs';
 import { UdpClientTransportOpts } from './client/options';
@@ -9,6 +9,7 @@ import { UdpClientTransportOpts } from './client/options';
 
 export interface UdpMessage {
     msg: Buffer;
+    topic: string;
     rinfo: RemoteInfo;
 }
 
@@ -16,10 +17,16 @@ export interface UdpPacket<T = any> extends Packet<T> {
     rinfo: RemoteInfo;
 }
 
-export class UdpTransportSession extends AbstractTransportSession<Socket, UdpMessage> {
+export class UdpTransportSession extends EventTransportSession<Socket, UdpMessage> {
+
     protected message(): Observable<UdpMessage> {
-        return fromEvent(this.socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => ({ msg, rinfo }))
+        return fromEvent(this.socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => ({ msg, rinfo, topic: this.toTopic(rinfo) }))
     }
+
+    toTopic(rinfo: RemoteInfo) {
+        return rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
+    }
+
     protected mergeClose(source: Observable<any>): Observable<any> {
         const close$ = fromEvent(this.socket, ev.CLOSE).pipe(
             map(err => {
@@ -30,15 +37,17 @@ export class UdpTransportSession extends AbstractTransportSession<Socket, UdpMes
         return merge(source, error$, close$).pipe(first());
     }
 
-    protected override unpack(msg: UdpMessage): Observable<Packet> {
-        const topic = msg.rinfo.family == 'IPv6' ? `[${msg.rinfo.address}]:${msg.rinfo.port}` : `${msg.rinfo.address}:${msg.rinfo.port}`;
-        return this.receiver.receive(this.contextFactory, msg.msg, topic)
-            .pipe(
-                map(pkg => {
-                    pkg.topic = topic;
-                    return pkg;
-                })
-            );
+
+    protected override getTopic(msg: UdpMessage): string {
+        return msg.topic
+    }
+    protected override getPayload(msg: UdpMessage): string | Buffer | Uint8Array {
+        return msg.msg;
+    }
+
+    protected override afterDecode(pkg: Packet<any>, msg: UdpMessage): Packet<any> {
+        pkg.topic = msg.topic;
+        return pkg;
     }
 
     protected async write(data: Buffer, packet: Packet<any>): Promise<void> {
@@ -71,10 +80,15 @@ const udptl = /^udp(s)?:\/\//i;
 @Injectable()
 export class UdpTransportSessionFactory implements TransportSessionFactory<Socket> {
 
-    constructor(readonly injector: Injector, private factory: TransportFactory) { }
+    constructor(
+        readonly injector: Injector,
+        private encoder: Encoder,
+        private decoder: Decoder) {
+
+    }
 
     create(socket: Socket, options: TransportOpts): UdpTransportSession {
-        return new UdpTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+        return new UdpTransportSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }

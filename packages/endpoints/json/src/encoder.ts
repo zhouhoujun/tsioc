@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { InterceptorHandler } from '@tsdi/core';
-import { Context, EncodeInterceptor, Encoder, EncoderBackend, InvalidJsonException } from '@tsdi/common';
-import { Observable, of, throwError } from 'rxjs';
+import { Handler, InterceptorHandler } from '@tsdi/core';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend, SendPacket } from '@tsdi/common';
+import { Observable, map, of, throwError } from 'rxjs';
 import { Buffer } from 'buffer';
 
 @Abstract()
@@ -51,6 +51,29 @@ export class SimpleJsonEncoderBackend implements JsonEncoderBackend {
             return throwError(() => err);
         }
 
+    }
+
+}
+
+@Injectable()
+export class FinalizeJsonEncodeInterceptor implements EncodeInterceptor {
+
+    intercept(input: Context, next: Handler<Context, Buffer>): Observable<Buffer> {
+        return next.handle(input)
+            .pipe(
+                map(data => {
+                    if(!input.delimiter) return data;
+                    
+                    if ((input.packet as SendPacket)!.__headMsg && ((!data || !data.length))) {
+                        return data ?? Buffer.alloc(0);
+                    }
+                    return Buffer.concat([
+                        Buffer.from(String(data.length)),
+                        input.delimiter,
+                        data
+                    ])
+                })
+            )
     }
 
 }

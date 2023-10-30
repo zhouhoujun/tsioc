@@ -1,6 +1,6 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { Packet, RequestPacket, SendPacket, TransportFactory, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { AbstractTransportSession } from '@tsdi/endpoints';
+import { Decoder, Encoder, HeaderPacket, Packet, RequestPacket, SendPacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { AbstractTransportSession, PayloadTransportSession } from '@tsdi/endpoints';
 import { Server, ClientRequest } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Http2Server, ClientHttp2Stream } from 'http2';
@@ -13,7 +13,12 @@ export interface ResponseMsg {
     res: HttpServResponse
 }
 
-export class HttpClientSession extends AbstractTransportSession<ClientRequest | ClientHttp2Stream, ResponseMsg> {
+export class HttpClientSession extends PayloadTransportSession<ClientRequest | ClientHttp2Stream, ResponseMsg> {
+    
+    protected beforeRequest(packet: RequestPacket<any>): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+    
 
     protected message(): Observable<ResponseMsg> {
         return fromEvent(this.socket, ev.RESPONSE, (req, res) => ({ req, res }))
@@ -33,10 +38,17 @@ export class HttpClientSession extends AbstractTransportSession<ClientRequest | 
         return promisify<Buffer, void>(this.socket.write, this.socket)(data);
     }
 
-    protected async beforeRequest(packet: RequestPacket<any>): Promise<void> {
-        (packet as SendPacket).__sent = true;
-        (packet as SendPacket).__headMsg = true;
+    protected getHeaders(msg: ResponseMsg): HeaderPacket | undefined {
+        return msg.req
     }
+    protected concat(msg: ResponseMsg): Observable<Buffer> {
+        throw new Error('Method not implemented.');
+    }
+    protected getPacketId(): string | number {
+        throw new Error('Method not implemented.');
+    }
+
+
 
     async destroy(): Promise<void> {
 
@@ -46,10 +58,15 @@ export class HttpClientSession extends AbstractTransportSession<ClientRequest | 
 @Injectable()
 export class HttpClientSessionFactory implements TransportSessionFactory<ClientRequest | ClientHttp2Stream> {
 
-    constructor(readonly injector: Injector, private factory: TransportFactory) { }
+    constructor(
+        readonly injector: Injector,
+        private encoder: Encoder,
+        private decoder: Decoder) {
+
+    }
 
     create(socket: ClientRequest | ClientHttp2Stream, options: TransportOpts): HttpClientSession {
-        return new HttpClientSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+        return new HttpClientSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }
@@ -61,7 +78,16 @@ export interface RequestMsg {
 }
 
 
-export class HttpServerSession extends AbstractTransportSession<Http2Server | HttpsServer | Server, RequestMsg> {
+export class HttpServerSession extends PayloadTransportSession<Http2Server | HttpsServer | Server, RequestMsg> {
+    protected getHeaders(msg: RequestMsg): HeaderPacket | undefined {
+        throw new Error('Method not implemented.');
+    }
+    protected concat(msg: RequestMsg): Observable<Buffer> {
+        throw new Error('Method not implemented.');
+    }
+    protected getPacketId(): string | number {
+        throw new Error('Method not implemented.');
+    }
     destroy(): Promise<void> {
         throw new Error('Method not implemented.');
     }
@@ -79,6 +105,7 @@ export class HttpServerSession extends AbstractTransportSession<Http2Server | Ht
 
     protected write(data: Buffer, packet: Packet<any>): Promise<void> {
         
+        throw new Error('Method not implemented.');
     }
 
     protected beforeRequest(packet: RequestPacket<any>): Promise<void> {
@@ -90,10 +117,15 @@ export class HttpServerSession extends AbstractTransportSession<Http2Server | Ht
 @Injectable()
 export class HttpServerSessionFactory implements TransportSessionFactory<Http2Server | HttpsServer | Server> {
 
-    constructor(readonly injector: Injector, private factory: TransportFactory) { }
+    constructor(
+        readonly injector: Injector,
+        private encoder: Encoder,
+        private decoder: Decoder) {
+
+    }
 
     create(socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerSession {
-        return new HttpServerSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), options);
+        return new HttpServerSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }

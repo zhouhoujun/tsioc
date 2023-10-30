@@ -1,7 +1,7 @@
 import { Backend, Handler, Interceptor } from '@tsdi/core';
 import { Abstract, DefaultInvocationContext, Injector, InvokeArguments } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Packet } from './packet';
+import { HeaderPacket, Packet } from './packet';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportSession } from './TransportFactory';
 import { isBuffer } from './utils';
@@ -15,7 +15,9 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     readonly transport: Transport | HybirdTransport;
     readonly session: TransportSession;
     public packet?: Packet;
+    public headers?: HeaderPacket;
     public raw?: Buffer;
+    readonly delimiter?: Buffer;
     readonly headerDelimiter?: Buffer;
     readonly serverSide: boolean;
 
@@ -23,24 +25,32 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
         injector: Injector,
         session: TransportSession,
         packet: TPacket,
+        headers?: HeaderPacket,
+        delimiter?: Buffer,
         headerDelimiter?: Buffer,
         options?: InvokeArguments);
     constructor(
         injector: Injector,
         transportOpts: TransportSession,
         raw: Buffer,
+        headers?: HeaderPacket,
+        delimiter?: Buffer,
         headerDelimiter?: Buffer,
         options?: InvokeArguments);
     constructor(
         injector: Injector,
         session: TransportSession,
         packBuff: TPacket | Buffer,
+        headers?: HeaderPacket,
+        delimiter?: Buffer,
         headerDelimiter?: Buffer,
         options?: InvokeArguments) {
         super(injector, options);
         this.transport = session.options.transport!;
         this.serverSide = session.options.serverSide == true;
+        this.delimiter = delimiter;
         this.session = session;
+        this.headers = headers;
         if (isBuffer(packBuff)) {
             this.raw = packBuff;
         } else {

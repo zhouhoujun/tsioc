@@ -1,14 +1,14 @@
 import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, IncomingHeaders, NotFoundExecption, Packet, Receiver, RequestPacket, ResponsePacket, SendPacket, Sender, TransportFactory, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
-import { AbstractTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, RequestPacket, ResponsePacket, SendPacket, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
+import { PayloadTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
-import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
+import { Observable, filter, first, fromEvent, map, merge, of } from 'rxjs';
 import { AssignerProtocol, Cluster, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
 import { KafkaHeaders, KafkaTransport, KafkaTransportOpts } from './const';
 
 
-export class KafkaTransportSession extends AbstractTransportSession<KafkaTransport, EachMessagePayload> {
+export class KafkaTransportSession extends PayloadTransportSession<KafkaTransport, EachMessagePayload> {
 
 
     private regTopics?: RegExp[];
@@ -17,11 +17,11 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
     constructor(
         injector: Injector,
         socket: KafkaTransport,
-        sender: Sender,
-        receiver: Receiver,
+        encoder: Encoder,
+        decoder: Decoder,
         private uuidGenner: UuidGenerator,
         options: KafkaTransportOpts) {
-        super(injector, socket, sender, receiver, options)
+        super(injector, socket, encoder, decoder, options)
     }
 
 
@@ -52,7 +52,25 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         const opts = this.options as KafkaTransportOpts;
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
-
+        if (!packet.kafkaheaders) {
+            const headers = packet.kafkaheaders = {} as IHeaders;
+            packet.headers && Object.keys(packet.headers).forEach(k => {
+                headers[k] = this.generHead(packet.headers![k]);
+            });
+            headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
+            if (this.options.serverSide) {
+                packet.partition = packet.headers?.[KafkaHeaders.REPLY_PARTITION]
+            } else {
+                const opts = this.options as KafkaTransportOpts;
+                const replyTopic = this.getReply(packet);
+                headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
+                if (opts.consumerAssignments && !isNil(opts.consumerAssignments[replyTopic])) {
+                    headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[replyTopic].toString());
+                } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
+                    throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator?.notFound);
+                }
+            }
+        }
         const headers: IHeaders = packet.kafkaheaders;
 
         await this.socket.producer.send({
@@ -139,53 +157,27 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         )
     }
 
-    protected override pack(packet: Packet<any> & { partition: number, kafkaheaders: IHeaders }): Observable<Buffer> {
-        (packet as SendPacket).__sent = true;
-        (packet as SendPacket).__headMsg = true;
-        if (!packet.kafkaheaders) {
-            const headers = packet.kafkaheaders = {} as IHeaders;
-            packet.headers && Object.keys(packet.headers).forEach(k => {
-                headers[k] = this.generHead(packet.headers![k]);
-            });
-            headers[KafkaHeaders.CORRELATION_ID] = `${packet.id}`;
-            if (this.options.serverSide) {
-                packet.partition = packet.headers?.[KafkaHeaders.REPLY_PARTITION]
-            } else {
-                const opts = this.options as KafkaTransportOpts;
-                const replyTopic = this.getReply(packet);
-                headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
-                if (opts.consumerAssignments && !isNil(opts.consumerAssignments[replyTopic])) {
-                    headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[replyTopic].toString());
-                } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
-                    throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator?.notFound);
-                }
-            }
-        }
 
-
-        return this.sender.send(this.contextFactory, packet);
-    }
-
-    protected override unpack(msg: EachMessagePayload): Observable<Packet> {
+    protected override getHeaders(msg: EachMessagePayload): HeaderPacket | undefined {
         const headers = this.getIncomingHeaders(msg);
         const id = headers[KafkaHeaders.CORRELATION_ID];
 
-        const pkg = {
+        return {
             id,
             topic: msg.topic,
-            headers,
-            __headMsg: true
-        } as SendPacket;
+            headers
+        };
+    }
 
-        return this.receiver.receive(this.contextFactory, msg.message.value ?? Buffer.alloc(0), msg.topic, pkg)
-            .pipe(
-                map(payload => {
-                    return {
-                        ...pkg,
-                        ...payload
-                    } as Packet
-                })
-            )
+    protected override concat(msg: EachMessagePayload): Observable<Buffer> {
+        return of(msg.message.value ?? Buffer.alloc(0))
+    }
+
+    protected override afterDecode(ctx: Context<Packet<any>>, pkg: Packet<any>, msg: EachMessagePayload): Packet<any> {
+        return {
+            ...ctx.headers,
+            ...pkg
+        }
     }
 
     protected getReply(packet: Packet) {
@@ -206,11 +198,12 @@ export class KafkaTransportSessionFactory implements TransportSessionFactory<Kaf
 
     constructor(
         readonly injector: Injector,
-        private factory: TransportFactory,
+        private encoder: Encoder,
+        private decoder: Decoder,
         private uuidGenner: UuidGenerator) { }
 
     create(socket: KafkaTransport, options: TransportOpts): KafkaTransportSession {
-        return new KafkaTransportSession(this.injector, socket, this.factory.createSender(options), this.factory.createReceiver(options), this.uuidGenner, options);
+        return new KafkaTransportSession(this.injector, socket, this.encoder, this.decoder, this.uuidGenner, options);
     }
 
 }
