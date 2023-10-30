@@ -84,7 +84,9 @@ export interface ResponseFactory<TResponse = TransportEvent, TErrorResponse = Tr
 
 
 
-
+/**
+ * transport session.
+ */
 @Abstract()
 export abstract class TransportSession<TSocket = any, TMsg = any>  {
     /**
@@ -103,10 +105,23 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
      * send.
      * @param packet 
      */
-    abstract send(packet: RequestPacket | ResponsePacket): Observable<any>;
+    abstract send(packet: RequestPacket): Observable<any>;
+    /**
+     * send.
+     * @param packet 
+     */
+    abstract send(packet: ResponsePacket): Observable<any>;
 
+    /**
+     * serialize packet.
+     * @param packet 
+     * @param withPayload 
+     */
     abstract serialize(packet: Packet, withPayload?: boolean): Buffer;
-
+    /**
+     * deserialize packet.
+     * @param raw 
+     */
     abstract deserialize(raw: Buffer): Packet;
 
     /**

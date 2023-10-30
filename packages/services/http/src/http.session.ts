@@ -80,7 +80,7 @@ export class HttpServerSession extends AbstractTransportSession<Http2Server | Ht
     protected write(data: Buffer, packet: Packet<any>): Promise<void> {
         
     }
-    
+
     protected beforeRequest(packet: RequestPacket<any>): Promise<void> {
         throw new Error('Method not implemented.');
     }

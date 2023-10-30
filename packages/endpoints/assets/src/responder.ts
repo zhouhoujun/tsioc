@@ -84,7 +84,7 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         ctx.type = 'text';
         msg = Buffer.from(msg ?? ctx.statusMessage ?? '');
         ctx.length = Buffer.byteLength(msg);
-        res.end(msg)
+        res.end(msg);
 
         return res;
 

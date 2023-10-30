@@ -123,11 +123,11 @@ export class KafkaTransportSession extends AbstractTransportSession<KafkaTranspo
         return merge(source, err$).pipe(first());
     }
 
-    protected reqMsgFilter(req: RequestPacket<any>, msg: EachMessagePayload): boolean {
+    protected override responseFilter(req: RequestPacket<any>, msg: EachMessagePayload): boolean {
         return req.replyTo === msg.topic
     }
 
-    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+    protected override responsePacketFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
         return req.id === res.id;
     }
 

@@ -44,11 +44,11 @@ export class QueueTransportSession extends EventTransportSession<Channel, Consum
         packet.replyTo = (this.options as AmqpSessionOpts).replyQueue;
     }
 
-    protected reqMsgFilter(req: RequestPacket<any>, msg: ConsumeMessage): boolean {
+    protected override responseFilter(req: RequestPacket<any>, msg: ConsumeMessage): boolean {
         return req.id == msg.properties.correlationId
     }
 
-    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+    protected override responsePacketFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
         return res.topic == req.topic && req.id == req.id
     }
 

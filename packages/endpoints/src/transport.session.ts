@@ -1,6 +1,6 @@
 import { Execption, Injector, InvokeArguments, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, Context, IEventEmitter, InvalidJsonException, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, Context, IEventEmitter, IncomingHeaders, InvalidJsonException, NotSupportedExecption, Packet, PacketLengthException, Receiver, RequestPacket, ResponsePacket, Sender, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -180,6 +180,42 @@ export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg 
     }
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
+
+}
+
+
+export abstract class PayloadTransportSession<TSocket extends IEventEmitter, THeaders = IncomingHeaders, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> {
+
+    serialize(packet: Packet, withPayload?: boolean): Buffer {
+        let pkg: Packet;
+        if (withPayload) {
+            const { length, ...data } = packet;
+            pkg = data;
+        } else {
+            const { payload, ...headers } = packet;
+            pkg = headers;
+        }
+        try {
+            pkg = this.serialable(pkg);
+            return Buffer.from(JSON.stringify(pkg))
+        } catch (err) {
+            throw new InvalidJsonException(err, String(pkg))
+        }
+    }
+
+    protected serialable(packet: Packet): Packet {
+        return packet
+    }
+
+    deserialize(raw: Buffer): Packet<any> {
+        const jsonStr = new TextDecoder().decode(raw);
+        try {
+            return JSON.parse(jsonStr);
+        } catch (err) {
+            throw new InvalidJsonException(err, jsonStr);
+        }
+    }
+
 
 }
 

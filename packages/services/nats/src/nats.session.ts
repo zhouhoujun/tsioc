@@ -80,11 +80,11 @@ export class NatsTransportSession extends AbstractTransportSession<NatsConnectio
         return this.socket.isClosed() ? throwError(() => new OfflineExecption()) : source;
     }
 
-    protected reqMsgFilter(req: RequestPacket<any>, msg: Msg): boolean {
+    protected override responseFilter(req: RequestPacket<any>, msg: Msg): boolean {
         return req.replyTo === msg.subject
     }
 
-    protected override reqResFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+    protected override responsePacketFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
         return req.id === res.id;
     }
 
