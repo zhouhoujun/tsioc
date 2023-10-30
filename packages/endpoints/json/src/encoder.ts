@@ -64,9 +64,6 @@ export class FinalizeJsonEncodeInterceptor implements EncodeInterceptor {
                 map(data => {
                     if(!input.delimiter) return data;
                     
-                    if ((input.packet as SendPacket)!.__headMsg && ((!data || !data.length))) {
-                        return data ?? Buffer.alloc(0);
-                    }
                     return Buffer.concat([
                         Buffer.from(String(data.length)),
                         input.delimiter,

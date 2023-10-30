@@ -121,7 +121,9 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
                     }
                     if (input.session.options.maxSize) {
                         let maxSize = input.session.options.maxSize;
-                        maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (input.delimiter ? Buffer.byteLength(input.delimiter) : 0) - ((input.packet as SendPacket)?.__headMsg ? 0 : 2) // 2 packet id;
+                        if(!input.headers) {
+                            maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (input.delimiter ? Buffer.byteLength(input.delimiter) : 0) - ((input.headers) ? 0 : 2) // 2 packet id;
+                        }
                         if (buf.length <= maxSize) {
                             return of(buf);
                         } else {
@@ -158,20 +160,8 @@ export class FinalizeAssetEncodeInterceptor implements EncodeInterceptor {
                 map(data => {
                     if (!input.delimiter) return data;
 
-                    const packet = input.packet as SendPacket;
-                    if (packet.__headMsg) {
-                        if (!data || !data.length) {
-                            return data ?? Buffer.alloc(0);
-                        }
-                        return Buffer.concat([
-                            Buffer.from(String(data.length)),
-                            input.delimiter,
-                            data
-                        ])
-                    }
-
                     const bufId = Buffer.alloc(2);
-                    bufId.writeUInt16BE(packet.id);
+                    bufId.writeUInt16BE(input.packet!.id);
 
                     return Buffer.concat([
                         Buffer.from(String(data.length + bufId.length)),

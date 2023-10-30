@@ -33,10 +33,6 @@ export interface SendPacket extends Packet {
      * sent.
      */
     __sent?: boolean;
-    /**
-     * payload with extends message headers
-     */
-    __headMsg?: boolean
 }
 
 
