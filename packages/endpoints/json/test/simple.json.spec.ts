@@ -10,6 +10,7 @@ import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { JsonTransportModule } from '../src';
+import { AssetTransportModule } from '@tsdi/endpoints/assets';
 
 
 
@@ -69,11 +70,13 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         JsonTransportModule,
+        AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
+                strategy: 'json',
                 connectOpts: {
                     port: 2000
                 }
@@ -82,6 +85,7 @@ export class DeviceController {
         EndpointsModule.register({
             transport: 'tcp',
             serverOpts: {
+                strategy: 'json',
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000

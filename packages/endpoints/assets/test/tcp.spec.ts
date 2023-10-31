@@ -10,6 +10,7 @@ import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { DeviceController } from './demo';
 import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
+import { JsonTransportModule } from '@tsdi/endpoints/json';
 
 
 @Module({
@@ -18,11 +19,13 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
         ServerModule,
         LoggerModule,
         AssetTransportModule,
+        JsonTransportModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
+                strategy: 'asset',
                 connectOpts: {
                     port: 2000
                 }
@@ -32,6 +35,7 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
             {
                 transport: 'tcp',
                 serverOpts: {
+                    strategy: 'asset',
                     // timeout: 1000,
                     listenOpts: {
                         port: 2000
@@ -48,6 +52,7 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
                 microservice: true,
                 transport: 'tcp',
                 serverOpts: {
+                    strategy: 'asset',
                     listenOpts: {
                         port: 5000
                     }
