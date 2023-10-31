@@ -1,8 +1,8 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import { ArgumentExecption, Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, isString, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { TopicTransportBackend, TransportBackend } from './backend';
-import { ClientOpts } from './options';
+import { ClientOpts, ClientTransportPacketStrategy } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { BodyContentInterceptor } from './body';
@@ -108,7 +108,9 @@ export class ClientModule {
 /**
  * global register client modules.
  */
-export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES')
+export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
+
+export const CLIENT_TRANSPORT_PACKET_STRATEGIES: Record<string, ClientTransportPacketStrategy> = {};
 
 
 function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
@@ -148,10 +150,27 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                 providers.push(toFactory(clientOptsToken, options.clientOpts!, {
                     init: (clientOpts: ClientOpts) => {
 
-                        const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts;
+                        const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
                         if (opts.sessionFactory) {
-                            opts.providers?.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                            opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
                         }
+
+                        if (opts.strategy) {
+                            const strategy = isString(opts.strategy) ? CLIENT_TRANSPORT_PACKET_STRATEGIES[opts.strategy] : opts.strategy;
+                            if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
+                            if (strategy.encoder) {
+                                opts.providers.push(toProvider(Encoder, strategy.encoder))
+                            }
+
+                            if (strategy.decoder) {
+                                opts.providers.push(toProvider(Decoder, strategy.decoder))
+                            }
+
+                            if (strategy.providers) {
+                                opts.providers.push(...strategy.providers);
+                            }
+                        }
+
                         if (opts.timeout) {
                             if (opts.transportOpts) {
                                 opts.transportOpts.timeout = opts.timeout;
@@ -187,6 +206,23 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                     if (opts.sessionFactory) {
                         opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
                     }
+
+                    if (opts.strategy) {
+                        const strategy = isString(opts.strategy) ? CLIENT_TRANSPORT_PACKET_STRATEGIES[opts.strategy] : opts.strategy;
+                        if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
+                        if (strategy.encoder) {
+                            opts.providers.push(toProvider(Encoder, strategy.encoder))
+                        }
+
+                        if (strategy.decoder) {
+                            opts.providers.push(toProvider(Decoder, strategy.decoder))
+                        }
+
+                        if (strategy.providers) {
+                            opts.providers.push(...strategy.providers);
+                        }
+                    }
+
                     opts.providers.push({ provide: clientOptsToken, useExisting: token });
                     return opts as ClientOpts;
                 }

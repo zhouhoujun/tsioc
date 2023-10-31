@@ -25,6 +25,8 @@ export const ASSET_ENCODER_INTERCEPTORS = tokenId<Interceptor<Context, Buffer>[]
 export class AssetInterceptingEncoder implements Encoder {
     private chain!: Encoder;
 
+    strategy = 'asset';
+    
     constructor(private backend: AssetEncoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Buffer> {

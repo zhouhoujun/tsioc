@@ -1,6 +1,5 @@
-import { Abstract, Execption, Injector, ProvdierOf, Token } from '@tsdi/ioc';
+import { Abstract, Execption, Injector, Token } from '@tsdi/ioc';
 import { EndpointOptions, EndpointService, ConfigableEndpoint } from '@tsdi/core';
-import { Decoder, Encoder } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 import { Router } from './router/router';
 
@@ -20,9 +19,7 @@ export abstract class TransportEndpoint<TInput extends TransportContext = Transp
  * 传输节点配置
  */
 export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends EndpointOptions<T> {
-    
-    encoder?: ProvdierOf<Encoder>;
-    decoder?: ProvdierOf<Decoder>;
+
     /**
      * backend of endpoint. defaut `Router`
      */

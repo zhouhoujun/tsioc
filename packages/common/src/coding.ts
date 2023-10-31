@@ -70,6 +70,7 @@ export interface EncodeInterceptor extends Interceptor<Context, Buffer> { }
 
 @Abstract()
 export abstract class Encoder implements Handler<Context, Buffer> {
+    strategy?: string;
     abstract handle(ctx: Context): Observable<Buffer>;
 }
 
@@ -87,6 +88,7 @@ export interface DecodeInterceptor<T extends Packet = Packet> extends Intercepto
 
 @Abstract()
 export abstract class Decoder<T extends Packet = Packet> implements Handler<Context, T> {
+    strategy?: string;
     abstract handle(ctx: Context<T>): Observable<T>;
 }
 

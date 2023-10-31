@@ -1,8 +1,8 @@
-import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang } from '@tsdi/ioc';
-import { CanActivate, Filter, TransformModule } from '@tsdi/core';
-import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
+import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
+import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from './TransportContext';
-import { ServerOpts } from './Server';
+import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
 import { Responder } from './Responder';
@@ -16,6 +16,7 @@ import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
+import { RequestHandler } from './RequestHandler';
 
 
 
@@ -134,10 +135,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                 }
                             }
 
-                            if (serverOpts.sessionFactory) {
-                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
-                            }
-
                             if (serverOpts.detailError) {
                                 serverOpts.providers.push({
                                     provide: SHOW_DETAIL_ERROR,
@@ -145,13 +142,44 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                 });
                             }
 
-                            if (serverOpts.responder) {
-                                serverOpts.providers.push(toProvider(Responder, serverOpts.responder))
-                            }
+
+
                             if (isArray(serverOpts.execptionHandlers)) {
                                 serverOpts.providers.push(...serverOpts.execptionHandlers)
                             } else {
                                 serverOpts.providers.push(serverOpts.execptionHandlers ?? TransportExecptionHandlers)
+                            }
+
+                            if (serverOpts.sessionFactory) {
+                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+                            }
+
+                            if (serverOpts.strategy) {
+                                const strategy = isString(serverOpts.strategy) ? TRANSPORT_PACKET_STRATEGIES[serverOpts.strategy] : serverOpts.strategy;
+                                if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
+                                if (strategy.encoder) {
+                                    serverOpts.providers.push(toProvider(Encoder, strategy.encoder))
+                                }
+
+                                if (strategy.decoder) {
+                                    serverOpts.providers.push(toProvider(Decoder, strategy.decoder))
+                                }
+
+                                if (strategy.typedRespond) {
+                                    serverOpts.providers.push(toProvider(TypedRespond, strategy.typedRespond))
+                                }
+
+                                if (strategy.responder) {
+                                    serverOpts.providers.push(toProvider(Responder, strategy.responder))
+                                }
+
+                                if (strategy.requestHanlder) {
+                                    serverOpts.providers.push(toProvider(RequestHandler, strategy.requestHanlder))
+                                }
+
+                                if(strategy.providers) {
+                                    serverOpts.providers.push(...strategy.providers)
+                                }
                             }
 
                             return serverOpts;

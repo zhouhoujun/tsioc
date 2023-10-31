@@ -1,6 +1,6 @@
-import { Execption, Injector, createContext, toProvider } from '@tsdi/ioc';
+import { Execption, Injector, createContext } from '@tsdi/ioc';
 import { GuardHandler, setHandlerOptions } from '@tsdi/core';
-import { ForbiddenExecption, Decoder, Encoder } from '@tsdi/common';
+import { ForbiddenExecption } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 import { TransportEndpoint, TransportEndpointOptions } from '../TransportEndpoint';
 
@@ -18,13 +18,6 @@ export class TransportEndpointImpl<TInput extends TransportContext = TransportCo
             options.guardsToken,
             options.filtersToken);
 
-        if (options.encoder) {
-            this.injector.inject(toProvider(Encoder, options.encoder))
-        }
-
-        if (options.decoder) {
-            this.injector.inject(toProvider(Decoder, options.decoder))
-        }
         setHandlerOptions(this, options);
     }
 

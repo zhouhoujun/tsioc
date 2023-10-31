@@ -13,6 +13,7 @@ import expect = require('expect');
 import path = require('path');
 import del = require('del');
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { AssetTransportModule } from '@tsdi/endpoints/assets';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -55,11 +56,13 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         JsonTransportModule,
+        AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
+                strategy: 'json',
                 connectOpts: {
                     port: 2000
                 }
@@ -69,6 +72,7 @@ export class TcpService {
             transport: 'tcp',
             microservice: true,
             serverOpts: {
+                strategy: 'json',
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000

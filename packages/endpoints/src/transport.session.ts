@@ -1,4 +1,4 @@
-import { Execption, Injector, InvokeArguments, isNil, isString } from '@tsdi/ioc';
+import { Execption, Injector, InvokeArguments } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, finalize, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
@@ -12,6 +12,11 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         readonly encoder: Encoder,
         readonly decoder: Decoder,
         readonly options: TransportOpts) {
+    }
+
+
+    getPacketStrategy(): string | undefined {
+        return this.encoder.strategy ?? this.decoder.strategy
     }
 
     serialize(packet: Packet, withPayload?: boolean): Buffer {
@@ -309,7 +314,7 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
 
 
 export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends BufferTransportSession<TSocket, TMsg> {
-    
+
     protected message(): Observable<TMsg> {
         return fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
     }

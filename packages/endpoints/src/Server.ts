@@ -1,6 +1,6 @@
-import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
-import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
-import { TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { Abstract, ProvdierOf, ProviderType, StaticProvider, Type } from '@tsdi/ioc';
+import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent, TypedRespond } from '@tsdi/core';
+import { Decoder, Encoder, TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
@@ -14,6 +14,38 @@ export interface ProxyOpts {
     proxyIpHeader: string;
     maxIpsCount?: number;
 }
+
+/**
+ * transport packet strategy.
+ */
+export interface TransportPacketStrategy {
+    /**
+    * encoder
+    */
+    encoder: ProvdierOf<Encoder>;
+    /**
+     * decoder
+     */
+    decoder: ProvdierOf<Decoder>;
+    /**
+     * typed respond for endpoint.
+     */
+    typedRespond: ProvdierOf<TypedRespond>;
+    /**
+     * provider of responder.
+     */
+    responder: ProvdierOf<Responder>;
+    /**
+     * request handler for this server.
+     */
+    requestHanlder: ProvdierOf<RequestHandler>;
+
+    providers?: ProviderType[]
+}
+
+
+export const TRANSPORT_PACKET_STRATEGIES: Record<string, TransportPacketStrategy> = {};
+
 
 /**
  * server options
@@ -31,16 +63,18 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
      */
     transportOpts?: TransportOpts;
     server?: any;
-    responder?: ProvdierOf<Responder>;
+    /**
+     * transport packet strategy.
+     */
+    strategy?: 'json' | 'asset' | TransportPacketStrategy;
+    /**
+     * execption handlers
+     */
     execptionHandlers?: Type<any> | Type[];
     /**
      * micro service transport session factory.
      */
     sessionFactory?: ProvdierOf<TransportSessionFactory>;
-    /**
-     * request handler for this server.
-     */
-    requestHanlder?: ProvdierOf<RequestHandler>;
     /**
      * send detail error message to client or not. 
      */

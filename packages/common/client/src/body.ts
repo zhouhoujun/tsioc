@@ -1,6 +1,6 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { hdr, isArrayBuffer, isBlob, isBuffer, isFormData, IStream, isUrlSearchParams, StreamAdapter, TransportEvent, TransportParams, TransportRequest } from '@tsdi/common';
+import { hdr, isArrayBuffer, isBlob, isBuffer, isFormData, IStream, isUrlSearchParams, StreamAdapter, TransportEvent, TransportParams, TransportRequest, TransportSession } from '@tsdi/common';
 
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
@@ -15,6 +15,8 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
     constructor(private adapter: StreamAdapter) { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
+        if(req.context.get(TransportSession).getPacketStrategy() !== 'asset') return next.handle(req);
+        
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req);

@@ -24,6 +24,7 @@ export const JSON_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('JSON_DECO
 @Injectable()
 export class JsonInterceptingDecoder implements Decoder {
     private chain!: Decoder;
+    strategy = 'json';
 
     constructor(private backend: JsonDecoderBackend, private injector: Injector) { }
 

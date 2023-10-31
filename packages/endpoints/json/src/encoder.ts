@@ -24,6 +24,8 @@ export const JSON_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('JSON_ENCO
 export class JsonInterceptingEncoder implements Encoder {
     private chain!: Encoder;
 
+    strategy = 'json';
+
     constructor(private backend: JsonEncoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Buffer> {

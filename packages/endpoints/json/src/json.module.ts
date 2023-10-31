@@ -1,7 +1,8 @@
-import { Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, getToken,  ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Decoder, Encoder, Packet } from '@tsdi/common';
-import { RequestHandler, Responder } from '@tsdi/endpoints';
+import { CLIENT_TRANSPORT_PACKET_STRATEGIES, ResponseTransform, defaultTransform } from '@tsdi/common/client';
+import { RequestHandler, Responder, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
 import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend, JSON_ENCODER_INTERCEPTORS, FinalizeJsonEncodeInterceptor } from './encoder';
 import { JsonDecoder, SimpleJsonDecoderBackend, JsonInterceptingDecoder, JsonDecoderBackend, JSON_DECODER_INTERCEPTORS } from './decoder';
 import { JsonResponder } from './responder';
@@ -9,10 +10,25 @@ import { JsonTransportTypedRespond } from './typed.respond';
 import { JsonRequestHandler } from './handler';
 
 
+CLIENT_TRANSPORT_PACKET_STRATEGIES['json'] = {
+    encoder: { useExisting: JsonEncoder },
+    decoder: { useExisting: JsonDecoder }
+}
+
+TRANSPORT_PACKET_STRATEGIES['json'] = {
+    encoder: { useExisting: JsonEncoder },
+    decoder: { useExisting: JsonDecoder },
+    typedRespond: { useExisting: JsonTransportTypedRespond },
+    responder: { useExisting: JsonResponder },
+    requestHanlder: { useExisting: JsonRequestHandler }
+};
+
 @Module({
     providers: [
         FinalizeJsonEncodeInterceptor,
         { provide: JSON_ENCODER_INTERCEPTORS, useExisting: FinalizeJsonEncodeInterceptor, multi: true, multiOrder: 0 },
+
+        { provide: getToken(ResponseTransform, 'json'), useValue: defaultTransform },
 
         SimpleJsonEncoderBackend,
         JsonInterceptingEncoder,
@@ -34,7 +50,6 @@ import { JsonRequestHandler } from './handler';
 
         JsonRequestHandler,
         { provide: RequestHandler, useExisting: JsonRequestHandler },
-
 
         JsonResponder,
         { provide: Responder, useExisting: JsonResponder }

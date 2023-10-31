@@ -85,6 +85,10 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
      */
     abstract get options(): TransportOpts;
     /**
+     * get packet strategy
+     */
+    abstract getPacketStrategy(): string | undefined;
+    /**
      * send.
      * @param packet 
      */

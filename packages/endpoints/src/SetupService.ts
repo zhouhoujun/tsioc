@@ -8,6 +8,7 @@ import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middlewar
 
 
 
+
 export interface ServerConfig {
     /**
      * server provdier.

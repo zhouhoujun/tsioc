@@ -1,8 +1,8 @@
-import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider } from '@tsdi/ioc';
+import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider, getToken } from '@tsdi/ioc';
 import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Decoder, Encoder, Packet } from '@tsdi/common';
-import { BodyContentInterceptor, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
-import { AssetContextFactory, RequestHandler, Responder, StatusVaildator } from '@tsdi/endpoints';
+import { BodyContentInterceptor, CLIENT_TRANSPORT_PACKET_STRATEGIES, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
+import { AssetContextFactory, RequestHandler, Responder, StatusVaildator, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { AssetResponder } from './responder';
 import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, FinalizeAssetEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
@@ -15,21 +15,34 @@ import { AssetResponseTransform } from './impl/resp.transform';
 import { AssetContextFactoryImpl } from './impl/context';
 
 
+CLIENT_TRANSPORT_PACKET_STRATEGIES['asset'] = {
+    encoder: { useExisting: AssetEncoder },
+    decoder: { useExisting: AssetDecoder }
+};
 
+TRANSPORT_PACKET_STRATEGIES['asset'] = {
+    encoder: { useExisting: AssetEncoder },
+    decoder: { useExisting: AssetDecoder },
+    typedRespond: { useExisting: AssetTransportTypedRespond },
+    responder: { useExisting: AssetResponder },
+    requestHanlder: { useExisting: AssetRequestHandler }
+};
 
 
 @Module({
     providers: [
         ...ASSET_ENDPOINT_PROVIDERS,
+        BodyContentInterceptor,
         { provide: GLOBAL_CLIENT_INTERCEPTORS, useExisting: BodyContentInterceptor, multi: true },
-        { provide: ResponseTransform, useClass: AssetResponseTransform },
+        AssetResponseTransform,
+        { provide: getToken(ResponseTransform, 'asset'), useExisting: AssetResponseTransform },
         SimpleAssetEncoderBackend,
         AssetInterceptingEncoder,
         { provide: AssetEncoderBackend, useExisting: SimpleAssetEncoderBackend, asDefault: true },
         FinalizeAssetEncodeInterceptor,
         BufferifyEncodeInterceptor,
         SubpacketBufferEncodeInterceptor,
-        { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: FinalizeAssetEncodeInterceptor, multi: true, multiOrder: 0},
+        { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: FinalizeAssetEncodeInterceptor, multi: true, multiOrder: 0 },
         { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: BufferifyEncodeInterceptor, multi: true, multiOrder: 0 },
         { provide: ASSET_ENCODER_INTERCEPTORS, useExisting: SubpacketBufferEncodeInterceptor, multi: true },
 

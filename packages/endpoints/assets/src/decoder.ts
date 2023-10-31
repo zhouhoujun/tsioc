@@ -22,7 +22,8 @@ export const ASSET_DECODER_INTERCEPTORS = tokenId<Interceptor<Context, IncomingP
 @Injectable()
 export class AssetInterceptingDecoder implements Decoder {
     private chain!: Decoder;
-
+    strategy = 'asset';
+    
     constructor(private backend: AssetDecoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Packet> {

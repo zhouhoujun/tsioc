@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
+import { Abstract, Injectable, getToken, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
 import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, StatusCode, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportRequest, TransportResponse, TransportSession } from '@tsdi/common';
 import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
@@ -13,7 +13,7 @@ export abstract class ResponseTransform<T = TransportEvent> {
     abstract transform(req: TransportRequest, packet: ResponsePacket, factory: ResponseEventFactory<T>): Observable<T>;
 }
 
-const defaultTransform = {
+export const defaultTransform = {
     transform(req, packet, factory): Observable<TransportEvent> {
         if (packet.error) {
             return throwError(() => factory.createErrorResponse(packet));
@@ -38,7 +38,7 @@ export class TransportBackend implements Backend<TransportRequest, TransportEven
 
         const pkg = this.toPacket(url, req);
         const session = req.context.get(TransportSession);
-        const transform = req.context.get(ResponseTransform) ?? defaultTransform;
+        const transform = req.context.get(getToken(ResponseTransform, session.getPacketStrategy())) ?? defaultTransform;
 
         let obs$: Observable<ResponsePacket>;
         switch (req.observe) {
