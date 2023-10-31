@@ -1,6 +1,7 @@
 export * from './helmet';
 export * from './cors';
 export * from './csrf';
+export * from './body';
 
 export * from './json';
 export { Json as JsonMiddleware, Json as JsonInterceptor } from './json';
