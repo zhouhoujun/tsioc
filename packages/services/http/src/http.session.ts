@@ -1,8 +1,8 @@
 import { Injectable, Injector, InvocationContext, promisify } from '@tsdi/ioc';
-import { Decoder, Encoder, HeaderPacket, Packet, RequestPacket, SendPacket, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { Decoder, Encoder, HeaderPacket, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { ctype } from '@tsdi/endpoints/assets';
-import { Server, request as httpRequest, ClientRequest, IncomingMessage } from 'http';
+import { Server, request as httpRequest, IncomingMessage } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
 import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
 import { Observable, first, fromEvent, merge } from 'rxjs';
@@ -24,6 +24,43 @@ const {
 
 const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
+
+export class HttpTransportSession implements TransportSession {
+    get injector(): Injector {
+        throw new Error('Method not implemented.');
+    }
+    get socket(): any {
+        throw new Error('Method not implemented.');
+    }
+    get options(): TransportOpts {
+        throw new Error('Method not implemented.');
+    }
+    
+    getPacketStrategy(): string | undefined {
+        throw new Error('Method not implemented.');
+    }
+    send(packet: RequestPacket<any>): Observable<any>;
+    send(packet: ResponsePacket<any>): Observable<any>;
+    send(packet: unknown): Observable<any> {
+        throw new Error('Method not implemented.');
+    }
+    serialize(packet: Packet<any>, withPayload?: boolean | undefined): Buffer {
+        throw new Error('Method not implemented.');
+    }
+    deserialize(raw: Buffer): Packet<any> {
+        throw new Error('Method not implemented.');
+    }
+    request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
+        throw new Error('Method not implemented.');
+    }
+    receive(packet?: Packet<any> | undefined): Observable<Packet<any>> {
+        throw new Error('Method not implemented.');
+    }
+    destroy(): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
+}
 
 export class HttpClientSession extends PayloadTransportSession<ClientHttp2Session | null, ResponseMsg> {
 
