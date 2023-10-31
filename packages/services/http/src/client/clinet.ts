@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
 import {
     RequestOptions, ReqHeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
-    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts, ev
+    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts, ev, TransportSession, TransportSessionFactory
 } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
@@ -10,7 +10,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { HttpHandler } from './handler';
-import { HttpClientOpts, CLIENT_HTTP2SESSION, HTTP_CLIENT_OPTS } from './options';
+import { HttpClientOpts, HTTP_CLIENT_OPTS } from './options';
 
 
 
@@ -30,7 +30,6 @@ export type HttpNodeOpts = http.RequestOptions & https.RequestOptions;
 
 export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 
-const NONE = {} as http2.ClientHttp2Session;
 
 /**
  * http client for nodejs
@@ -38,58 +37,59 @@ const NONE = {} as http2.ClientHttp2Session;
 @Injectable()
 export class Http extends Client<HttpRequest, number> {
 
+    private session?: TransportSession<http2.ClientHttp2Session | null> | null;
     constructor(
         readonly handler: HttpHandler,
         @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
         super()
-        if (!option?.authority) {
-            this.connection = NONE;
-        }
     }
 
-    private connection?: http2.ClientHttp2Session | null;
+
     protected connect(): Observable<any> {
-        if (this.connection === NONE) return of(this.connection);
+        if (this.session) return of(this.session);
+        const injector = this.handler.injector;
+        if (!this.option.authority) {
+            this.session = injector.get(TransportSessionFactory).create(null, this.option);
+            return of(this.session);
+        } else {
 
-        return new Observable((observer) => {
-            const valid = this.connection && this.isValid(this.connection);
-            if (!valid) {
-                this.connection = this.createConnection(this.option);
-            }
-            const conn = this.connection!;
-            let cleaned = false;
-            const onError = (err: Error) => {
-                conn.close();
-                observer.error(err);
-            }
-            const onConnect = () => {
-                observer.next(conn);
-                observer.complete();
-            };
-            const onClose = () => {
-                conn.close();
-                observer.complete();
-            }
+            return new Observable((observer) => {
 
-            conn.on(ev.ERROR, onError)
-                .on(ev.END, onClose)
-                .on(ev.CLOSE, onClose);
+                const conn = this.createConnection(this.option);
 
-            if (valid) {
-                onConnect()
-            } else {
-                conn.on(ev.CONNECT, onConnect)
-            }
 
-            return () => {
-                if (cleaned) return;
-                cleaned = true;
-                conn.off(ev.CONNECT, onConnect)
-                    .off(ev.ERROR, onError)
-                    .off(ev.END, onClose)
-                    .off(ev.CLOSE, onClose)
-            };
-        })
+                let cleaned = false;
+                const onError = (err: Error) => {
+                    conn.close();
+                    observer.error(err);
+                }
+                const onConnect = () => {
+
+                    this.session = injector.get(TransportSessionFactory).create(conn, this.option);
+                    observer.next(this.session);
+                    observer.complete();
+                };
+                const onClose = () => {
+                    conn.close();
+                    observer.complete();
+                }
+
+                conn.on(ev.ERROR, onError)
+                    .on(ev.END, onClose)
+                    .on(ev.CLOSE, onClose)
+                    .on(ev.CONNECT, onConnect)
+
+
+                return () => {
+                    if (cleaned) return;
+                    cleaned = true;
+                    conn.off(ev.CONNECT, onConnect)
+                        .off(ev.ERROR, onError)
+                        .off(ev.END, onClose)
+                        .off(ev.CLOSE, onClose)
+                };
+            })
+        }
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {
@@ -97,7 +97,7 @@ export class Http extends Client<HttpRequest, number> {
     }
 
     protected createConnection(opts: HttpClientOpts): http2.ClientHttp2Session {
-        return http2.connect(opts.authority!, opts.options);
+        return http2.connect(opts.authority!, opts.connectOpts);
     }
 
     protected override isRequest(target: any): target is HttpRequest {
@@ -106,9 +106,7 @@ export class Http extends Client<HttpRequest, number> {
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        if (this.connection && this.connection !== NONE) {
-            context.setValue(CLIENT_HTTP2SESSION, this.connection);
-        }
+        context.setValue(TransportSession, this.session);
     }
 
     protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): TransportParams {
@@ -2355,10 +2353,7 @@ export class Http extends Client<HttpRequest, number> {
     }
 
     protected override async onShutdown(): Promise<void> {
-        if (this.connection) {
-            if (this.connection === NONE) return;
-            await promisify(this.connection.close, this.connection)();
-        }
+        await this.session?.destroy();
     }
 
 }

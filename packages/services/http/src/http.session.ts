@@ -1,36 +1,94 @@
-import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { Decoder, Encoder, HeaderPacket, Packet, RequestPacket, SendPacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
-import { AbstractTransportSession, PayloadTransportSession } from '@tsdi/endpoints';
-import { Server, ClientRequest } from 'http';
-import { Server as HttpsServer } from 'https';
-import { Http2Server, ClientHttp2Stream } from 'http2';
+import { Injectable, Injector, InvocationContext, promisify } from '@tsdi/ioc';
+import { Decoder, Encoder, HeaderPacket, Packet, RequestPacket, SendPacket, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { PayloadTransportSession } from '@tsdi/endpoints';
+import { ctype } from '@tsdi/endpoints/assets';
+import { Server, request as httpRequest, ClientRequest, IncomingMessage } from 'http';
+import { Server as HttpsServer, request as httpsRequest } from 'https';
+import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
 import { Observable, first, fromEvent, merge } from 'rxjs';
 import { HttpServRequest, HttpServResponse } from './server/context';
+import { HttpClientOpts } from './client/options';
 
 
-export interface ResponseMsg {
-    req: HttpServRequest,
-    res: HttpServResponse
+
+export type ResponseMsg = IncomingMessage | {
+    headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
+    stream: ClientHttp2Stream
 }
 
-export class HttpClientSession extends PayloadTransportSession<ClientRequest | ClientHttp2Stream, ResponseMsg> {
-    
+const {
+    HTTP2_HEADER_PATH,
+    HTTP2_HEADER_METHOD,
+    HTTP2_HEADER_ACCEPT
+} = constants;
+
+const httptl = /^https?:\/\//i;
+const secureExp = /^https:/;
+
+export class HttpClientSession extends PayloadTransportSession<ClientHttp2Session | null, ResponseMsg> {
+
+    constructor(
+        injector: Injector,
+        socket: ClientHttp2Session | null,
+        encoder: Encoder,
+        decoder: Decoder,
+        readonly clientOpts: HttpClientOpts) {
+        super(injector, socket, encoder, decoder, clientOpts.transportOpts ?? {});
+    }
+
     protected beforeRequest(packet: RequestPacket<any>): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    
 
-    protected message(): Observable<ResponseMsg> {
-        return fromEvent(this.socket, ev.RESPONSE, (req, res) => ({ req, res }))
+
+    protected message(req: RequestPacket): Observable<ResponseMsg> {
+        let path = req.url ?? '';
+        const ac = this.getAbortSignal(req.context);
+        if (this.clientOpts.authority && this.socket && (!httptl.test(path) || path.startsWith(this.clientOpts.authority))) {
+            path = path.replace(this.clientOpts.authority, '');
+
+            const reqHeaders = req.headers ?? {};
+
+            if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
+            reqHeaders[HTTP2_HEADER_METHOD] = req.method;
+            reqHeaders[HTTP2_HEADER_PATH] = path;
+
+            const stream = this.socket.request(reqHeaders, { abort: ac?.signal, ...this.clientOpts.requestOptions } as ClientSessionRequestOptions);
+            return fromEvent(stream, ev.RESPONSE, (headers) => ({ headers, stream }));
+
+        } else {
+            const headers = req.headers ?? {};
+
+
+            const option = {
+                method: req.method,
+                headers: {
+                    'accept': ctype.REQUEST_ACCEPT,
+                    ...headers,
+                },
+                abort: ac?.signal
+            };
+
+            const clientReq = secureExp.test(path) ? httpsRequest(path, option) : httpRequest(path, option);
+            const $close = fromEvent(clientReq, ev.CLOSE).pipe((err) => { throw err });
+            const $error = fromEvent(clientReq, ev.ERROR).pipe((err) => { throw err });
+            const $about = fromEvent(clientReq, ev.ABOUT).pipe((err) => { throw err });
+            const $timout = fromEvent(clientReq, ev.TIMEOUT).pipe((err) => { throw err });
+            const $source = fromEvent(clientReq, ev.RESPONSE, (resp: IncomingMessage)=> resp);
+
+
+            return merge($source, $close, $error, $about, $timout).pipe(first()) as Observable<ResponseMsg>;
+        }
     }
 
     protected mergeClose(source: Observable<any>): Observable<any> {
-        const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err });
-        const $error = fromEvent(this.socket, ev.ERROR);
-        const $about = fromEvent(this.socket, ev.ABOUT);
-        const $timout = fromEvent(this.socket, ev.TIMEOUT);
+        // const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err });
+        // const $error = fromEvent(this.socket, ev.ERROR);
+        // const $about = fromEvent(this.socket, ev.ABOUT);
+        // const $timout = fromEvent(this.socket, ev.TIMEOUT);
 
-        return merge(source, $close, $error, $about, $timout).pipe(first());
+        // return merge(source, $close, $error, $about, $timout).pipe(first());
+        return source;
 
     }
 
@@ -48,15 +106,19 @@ export class HttpClientSession extends PayloadTransportSession<ClientRequest | C
         throw new Error('Method not implemented.');
     }
 
-
+    protected getAbortSignal(ctx: InvocationContext): AbortController {
+        return typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
+    }
 
     async destroy(): Promise<void> {
-
+        if (this.socket) {
+            await promisify(this.socket.close, this.socket)();
+        }
     }
 }
 
 @Injectable()
-export class HttpClientSessionFactory implements TransportSessionFactory<ClientRequest | ClientHttp2Stream> {
+export class HttpClientSessionFactory implements TransportSessionFactory<ClientHttp2Session | null> {
 
     constructor(
         readonly injector: Injector,
@@ -65,7 +127,7 @@ export class HttpClientSessionFactory implements TransportSessionFactory<ClientR
 
     }
 
-    create(socket: ClientRequest | ClientHttp2Stream, options: TransportOpts): HttpClientSession {
+    create(socket: ClientHttp2Session | null, options: HttpClientOpts): HttpClientSession {
         return new HttpClientSession(this.injector, socket, this.encoder, this.decoder, options);
     }
 
@@ -92,7 +154,7 @@ export class HttpServerSession extends PayloadTransportSession<Http2Server | Htt
         throw new Error('Method not implemented.');
     }
     protected message(): Observable<RequestMsg> {
-        return fromEvent(this.socket, ev.REQUEST, (req, res)=> ({req, res}))
+        return fromEvent(this.socket, ev.REQUEST, (req, res) => ({ req, res }))
     }
     protected mergeClose(source: Observable<any>): Observable<any> {
         const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err });
@@ -104,7 +166,7 @@ export class HttpServerSession extends PayloadTransportSession<Http2Server | Htt
     }
 
     protected write(data: Buffer, packet: Packet<any>): Promise<void> {
-        
+
         throw new Error('Method not implemented.');
     }
 

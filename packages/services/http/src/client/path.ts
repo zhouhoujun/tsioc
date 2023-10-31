@@ -7,7 +7,7 @@ import { HTTP_CLIENT_OPTS } from './options';
 
 const abstUrlExp = /^http(s)?:/;
 
-@Injectable({ static: true })
+@Injectable()
 export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> {
 
     constructor() { }

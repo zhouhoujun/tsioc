@@ -1,9 +1,10 @@
-import { Injectable, isDefined } from '@tsdi/ioc';
+import { Injectable, getToken, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession } from '@tsdi/common';
+import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common';
 import { ResponseTransform } from '@tsdi/common/client';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
+
 
 const defaultTransform = {
     transform(req, packet, factory): Observable<HttpEvent> {
@@ -13,6 +14,8 @@ const defaultTransform = {
         return of(factory.createResponse(packet));
     },
 } as ResponseTransform<HttpEvent>;
+
+
 
 /**
  * transport http client endpoint backend.
@@ -30,7 +33,7 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
 
         const pkg = this.toPacket(url, req);
         const session = req.context.get(TransportSession);
-        const transform = req.context.get(ResponseTransform) ?? defaultTransform;
+        const transform = req.context.get(getToken(ResponseTransform, session.getPacketStrategy())) ?? defaultTransform;
 
         let obs$: Observable<ResponsePacket>;
         switch (req.observe as any) {
@@ -69,8 +72,13 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
 
     protected toPacket(url: string, req: HttpRequest) {
         const pkg = {
-            url
+            url,
+            headers: req.headers.getHeaders()
         } as RequestPacket;
+
+        if (!pkg.headers) {
+            pkg.headers = {};
+        }
         if (req.method) {
             pkg.method = req.method;
         }
@@ -80,6 +88,8 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
         if (isDefined(req.body)) {
             pkg.payload = req.body;
         }
+
+        if (!pkg.headers[hdr.CONTENT_TYPE]) pkg.headers[hdr.CONTENT_TYPE] = req.detectContentTypeHeader()!;
 
         return pkg;
     }

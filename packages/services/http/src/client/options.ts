@@ -1,37 +1,28 @@
-import * as http2 from 'http2';
 import { Token, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, Filter, Interceptor } from '@tsdi/core';
+import { Filter, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
-import { Client } from '@tsdi/common/client';
-
+import { Client, ClientOpts } from '@tsdi/common/client';
+import { ClientSessionOptions, SecureClientSessionOptions, ClientSessionRequestOptions } from 'http2';
 
 /**
  * http serssion options.
  */
-export type HttpSessionOpts = http2.ClientSessionOptions | http2.SecureClientSessionOptions;
+export type HttpSessionOpts = ClientSessionOptions | SecureClientSessionOptions;
 
-/**
- * client session
- */
-export const CLIENT_HTTP2SESSION = tokenId<http2.ClientHttp2Session>('CLIENT_HTTP2SESSION');
 
 /**
  * http client options.
  */
 
-export interface HttpClientOpts extends ConfigableHandlerOptions<HttpRequest> {
+export interface HttpClientOpts extends ClientOpts<HttpSessionOpts> {
     /**
      * http2 authority.
      */
     authority?: string;
     /**
-     * http2 session options.
-     */
-    options?: HttpSessionOpts;
-    /**
      * request options.
      */
-    requestOptions?: http2.ClientSessionRequestOptions;
+    requestOptions?: ClientSessionRequestOptions;
 }
 
 export interface HttpClientsOpts extends HttpClientOpts {
