@@ -31,7 +31,6 @@ export * from './Subscriber';
 
 
 export * from './Server';
-export * from './middleware/server';
 
 export * from './logger/log';
 export * from './logger/status.formater';

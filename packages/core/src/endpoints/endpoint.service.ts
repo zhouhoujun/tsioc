@@ -14,7 +14,7 @@ export interface EndpointOptions<T = any, TArg = any> extends ConfigableHandlerO
      */
     limit?: number;
     /**
-     * auto bootstrap endpoint attached.
+     * auto bootstrap endpoint attached. default true.
      */
     bootstrap?: boolean;
     /**

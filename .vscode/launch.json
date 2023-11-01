@@ -227,6 +227,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test http service",
+            "args": [
+                "${workspaceRoot}/packages/services/http/unit.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register"
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test kafka service",
             "args": [
                 "${workspaceRoot}/packages/services/kafka/unit.ts" 

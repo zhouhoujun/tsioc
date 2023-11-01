@@ -294,7 +294,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
 @Injectable()
 export class HttpAssetContextFactory implements AssetContextFactory {
 
-    create(injector: Injector, session: TransportSession<any, any>, incoming: IncomingPacket<any>, options: HttpServerOpts): HttpContext {
+    create(injector: Injector, session: TransportSession, incoming: IncomingPacket<any>, options: HttpServerOpts): HttpContext {
         return new HttpContext(injector, session, incoming.req as HttpServRequest, incoming.res as HttpServResponse, options);
     }
 

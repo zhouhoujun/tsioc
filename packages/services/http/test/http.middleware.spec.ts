@@ -68,15 +68,16 @@ describe('middleware', () => {
 
     it('use in http server.', async () => {
 
-        const runable = await ctx.runners.attach(HttpServer);
+        const runable = ctx.runners.getRef(HttpServer);
+
         runable.getInstance().use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
-                console.log('message queue test: ' + ctx.payload);
+                console.log('message queue test: ' + ctx.args);
             }
 
-            ctx.body = ctx.query.hi;
-            console.log(ctx.body, ctx.query);
+            ctx.body = ctx.args.hi;
+            console.log(ctx.body, ctx.args);
             return next();
         }, 0);
 

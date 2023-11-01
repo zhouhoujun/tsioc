@@ -1,8 +1,8 @@
-import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption, TransportSessionFactory } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
 import { CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints/assets';
 import { lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
@@ -19,7 +19,7 @@ import { HttpEndpoint } from './endpoint';
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpServRequest, HttpServResponse> implements ListenService<ListenOptions>  {
+export class HttpServer extends Server<HttpServRequest, HttpServResponse> implements ListenService<ListenOptions>, MiddlewareService {
 
     @InjectLog() logger!: Logger;
 
@@ -28,12 +28,23 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         this.validOptions(options);
     }
 
+
     private _secure?: boolean;
     get isSecure() {
         return this._secure === true
     }
 
     _server?: http2.Http2Server | http.Server | https.Server | null;
+
+    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
+        const endpoint = this.endpoint as MiddlewareEndpoint;
+        if (isFunction(endpoint.use)) {
+            endpoint.use(middlewares, order);
+        } else {
+            throw new ArgumentExecption('Not support middlewares');
+        }
+        return this;
+    }
 
 
     listen(options: ListenOptions, listeningListener?: () => void): this;
@@ -163,4 +174,3 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
     }
 
 }
-
