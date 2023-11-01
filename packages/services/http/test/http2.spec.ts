@@ -4,6 +4,7 @@ import { EndpointsModule } from '@tsdi/endpoints';
 import { ClientModule } from '@tsdi/common/client';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
+import { WsModule } from '@tsdi/ws';
 
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -16,8 +17,8 @@ import { Http, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
-const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
+const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
 
 @Module({
     baseURL: __dirname,
@@ -25,7 +26,11 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         ServerModule,
         LoggerModule,
         HttpModule,
+        WsModule,
         ClientModule.register([
+            {
+                transport: 'ws'
+            },
             {
                 transport: 'http',
                 clientOpts: {
@@ -37,6 +42,10 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
             }
         ]),
         EndpointsModule.register([
+            {
+                microservice: true,
+                transport: 'ws'
+            },
             {
                 transport: 'http',
                 serverOpts: {

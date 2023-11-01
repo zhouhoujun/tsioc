@@ -169,7 +169,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
     }
 
     protected validOptions(opts: HttpServerOpts) {
-        const withCredentials = this._secure = opts.protocol !== 'http' && !!(opts.serverOpts as any).cert;
+        const withCredentials = this._secure = opts.protocol !== 'http' && !!(opts.serverOpts as any)?.cert;
         opts.listenOpts = { ...opts.listenOpts!, withCredentials, majorVersion: opts.majorVersion } as ListenOptions;
     }
 

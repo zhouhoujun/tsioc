@@ -1,16 +1,17 @@
-import { ServerModule } from '@tsdi/platform-server';
 import { Module } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
-import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
+import { ServerModule } from '@tsdi/platform-server';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
+import { WsModule } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Http, HttpModule, HttpServer } from '../src';
-import { ClientModule } from '@tsdi/common/client';
 
 
 @Module({
@@ -22,8 +23,8 @@ class ModuleB {
 
 }
 
-const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
+const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
 
 describe('middleware', () => {
 
@@ -36,8 +37,8 @@ describe('middleware', () => {
                 ServerModule,
                 ServerTransportModule,
                 HttpModule,
-
-                MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
+                WsModule,
+                MicroServRouterModule.forRoot({ protocol: 'ws' }),
                 ClientModule.register({
                     transport: 'http',
                     clientOpts: {

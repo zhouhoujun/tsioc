@@ -1,8 +1,10 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { MicroServRouterModule } from '@tsdi/transport';
 import { LoggerModule } from '@tsdi/logger';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
+import { WsModule } from '@tsdi/ws';
 
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -12,12 +14,10 @@ import * as path from 'path';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 import { Http, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
 
 
-const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
+const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
 
 
 @Module({
@@ -26,6 +26,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         ServerModule,
         LoggerModule,
         HttpModule,
+        WsModule,
         ClientModule.register([
             {
                 transport: 'http',
@@ -37,13 +38,13 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                 }
             },
             {
-                transport: 'mqtt'
+                transport: 'ws'
             }
         ]),
         EndpointsModule.register([
             {
                 microservice: true,
-                transport: 'mqtt'
+                transport: 'ws'
             },
             {
                 transport: 'http',

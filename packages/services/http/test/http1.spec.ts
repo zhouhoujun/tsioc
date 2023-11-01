@@ -6,6 +6,7 @@ import { EndpointsModule } from '@tsdi/endpoints';
 import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { WsModule } from '@tsdi/ws';
 
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -13,6 +14,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { Http, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 import { BigFileInterceptor } from './BigFileInterceptor';
+
 
 
 
@@ -25,9 +27,10 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         AssetTransportModule,
         ServerEndpointModule,
         HttpModule,
+        WsModule,
         ClientModule.register([
             {
-                transport: 'mqtt'
+                transport: 'ws'
             },
             {
                 transport: 'http'
@@ -36,7 +39,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         EndpointsModule.register([
             {
                 microservice: true,
-                transport: 'mqtt'
+                transport: 'ws'
             },
             {
                 transport: 'http',
