@@ -1,6 +1,7 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { MicroServRouterModule } from '@tsdi/transport';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { ClientModule } from '@tsdi/common/client';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 
@@ -11,7 +12,7 @@ import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
-import { Http, HttpServerModule, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
+import { Http, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -23,43 +24,47 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
-            clientOpts: {
-                authority: 'http://localhost:3200',
-                options: {
-                    ca: cert
-                }
-            },
-        }),
-        HttpServerModule.withOption({
-            serverOpts: {
-                majorVersion: 2,
-                protocol: 'http',
-                serverOpts: {
-                    allowHTTP1: true,
-                    key,
-                    cert
+        HttpModule,
+        ClientModule.register([
+            {
+                transport: 'http',
+                clientOpts: {
+                    authority: 'http://localhost:3200',
+                    connectOpts: {
+                        ca: cert
+                    }
                 },
-                listenOpts: {
-                    port: 3200
-                }
-            },
-            providers: [
-                { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-            ]
-        }),
-        MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
+            }
+        ]),
+        EndpointsModule.register([
+            {
+                transport: 'http',
+                serverOpts: {
+                    majorVersion: 2,
+                    protocol: 'http',
+                    serverOpts: {
+                        allowHTTP1: true,
+                        key,
+                        cert
+                    },
+                    listenOpts: {
+                        port: 3200
+                    }
+                },
+                providers: [
+                    { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+                ]
+            }
+        ]),
         DeviceManageModule,
         DeviceAModule
     ],
     providers: [
-        // DeviceController,
         DeviceStartupHandle
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 class MainApp {
 

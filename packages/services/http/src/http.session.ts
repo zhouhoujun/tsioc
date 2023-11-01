@@ -1,11 +1,11 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, HeaderPacket, IReadableStream, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { Context, Decoder, Encoder, HeaderPacket, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
 import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
-import { Observable, defer, first, fromEvent, merge, mergeMap } from 'rxjs';
+import { Observable, defer, first, fromEvent, map, merge, mergeMap, share } from 'rxjs';
 import { HttpServRequest, HttpServResponse } from './server/context';
 import { HttpClientOpts } from './client/options';
 
@@ -280,39 +280,82 @@ export interface RequestMsg {
     res: HttpServResponse
 }
 
+export class HttpServerTransportSession implements TransportSession<Http2Server | HttpsServer | Server> {
+    constructor(
+        readonly injector: Injector,
+        readonly socket: Http2Server | HttpsServer | Server,
+        readonly streamAdapter: StreamAdapter,
+        private encoder: Encoder,
+        private decoder: Decoder,
+        readonly options: TransportOpts) {
 
-export class HttpServerSession extends PayloadTransportSession<Http2Server | HttpsServer | Server, RequestMsg> {
-    protected getHeaders(msg: RequestMsg): HeaderPacket | undefined {
-        throw new Error('Method not implemented.');
-    }
-    protected concat(msg: RequestMsg): Observable<Buffer> {
-        throw new Error('Method not implemented.');
-    }
-    protected getPacketId(): string | number {
-        throw new Error('Method not implemented.');
-    }
-    destroy(): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    protected message(): Observable<RequestMsg> {
-        return fromEvent(this.socket, ev.REQUEST, (req, res) => ({ req, res }))
-    }
-    protected mergeClose(source: Observable<any>): Observable<any> {
-        const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err });
-        const $error = fromEvent(this.socket, ev.ERROR);
-        const $about = fromEvent(this.socket, ev.ABOUT);
-        const $timout = fromEvent(this.socket, ev.TIMEOUT);
-
-        return merge(source, $close, $error, $about, $timout).pipe(first());
     }
 
-    protected write(data: Buffer, packet: Packet<any>): Promise<void> {
+    getPacketStrategy(): string | undefined {
+        return this.encoder.strategy ?? this.decoder.strategy
+    }
 
+    send(packet: ResponsePacket<any>): Observable<any> {
+        const ctx = new Context(this.injector, this, packet);
+        return this.encoder.handle(ctx);
+    }
+
+    serialize(packet: Packet<any>, withPayload?: boolean | undefined): Buffer {
+        let pkg: Packet;
+        if (withPayload) {
+            const { length, ...data } = packet;
+            pkg = data;
+        } else {
+            const { payload, ...headers } = packet;
+            pkg = headers;
+        }
+        try {
+            return Buffer.from(JSON.stringify(pkg))
+        } catch (err) {
+            throw new InvalidJsonException(err, String(pkg))
+        }
+    }
+
+    deserialize(raw: Buffer): Packet<any> {
+        const jsonStr = new TextDecoder().decode(raw);
+        try {
+            return JSON.parse(jsonStr);
+        } catch (err) {
+            throw new InvalidJsonException(err, jsonStr);
+        }
+    }
+
+    request(packet: RequestPacket<any>, context?: InvocationContext<any> | undefined): Observable<ResponsePacket<any>> {
         throw new Error('Method not implemented.');
     }
 
-    protected beforeRequest(packet: RequestPacket<any>): Promise<void> {
-        throw new Error('Method not implemented.');
+    receive(): Observable<IncomingPacket> {
+
+        const $source = fromEvent(this.socket, ev.REQUEST, (req, res) => ({ req, res } as RequestMsg))
+        const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        const $error = fromEvent(this.socket, ev.ERROR).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        const $about = fromEvent(this.socket, ev.ABOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        const $timout = fromEvent(this.socket, ev.TIMEOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
+
+        return merge($source, $close, $error, $about, $timout).pipe(
+            first(),
+            mergeMap(msg => {
+                const ctx = new Context(this.injector, this, msg.req, msg.req);
+                return this.decoder.handle(ctx)
+                    .pipe(
+                        map((pkg: IncomingPacket) => {
+                            pkg.res = msg.res;
+                            pkg.req = msg.req;
+                            return pkg;
+                        })
+                    );
+            }),
+            share()
+        );
+    }
+
+    async destroy(): Promise<void> {
+
     }
 
 }
@@ -328,8 +371,8 @@ export class HttpServerSessionFactory implements TransportSessionFactory<Http2Se
 
     }
 
-    create(socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerSession {
-        return new HttpServerSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+    create(socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerTransportSession {
+        return new HttpServerTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

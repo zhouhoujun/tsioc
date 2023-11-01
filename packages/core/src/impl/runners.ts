@@ -160,7 +160,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { args: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { bootstrap: true, args: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );

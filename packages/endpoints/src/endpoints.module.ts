@@ -30,6 +30,7 @@ import { RequestHandler } from './RequestHandler';
         RouterModule
     ],
     providers: [
+        ServerSetupService,
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
 
@@ -50,16 +51,16 @@ export class EndpointsModule {
      * @param options 
      * @param autoBootstrap default true 
      */
-    static register(options: ServiceOpts, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
+    static register(options: ServiceOpts): ModuleWithProviders<EndpointsModule>;
     /**
      * register service.
      * @param options
      * @param autoBootstrap default true 
      */
-    static register(options: Array<ServiceOpts>, autoBootstrap?: boolean): ModuleWithProviders<EndpointsModule>;
-    static register(options: Arrayify<ServiceOpts>, autoBootstrap = true): ModuleWithProviders<EndpointsModule> {
+    static register(options: Array<ServiceOpts>): ModuleWithProviders<EndpointsModule>;
+    static register(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointsModule> {
 
-        const providers: ProviderType[] = autoBootstrap ? [ServerSetupService] : [];
+        const providers: ProviderType[] = [];
         if (isArray(options)) {
             options.forEach((op, idx) => {
                 providers.push(...createServiceProviders(op, idx));

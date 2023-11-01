@@ -338,7 +338,7 @@ export abstract class PayloadTransportSession<TSocket, TMsg = string | Buffer | 
 
 
     private uuidGenner?: UuidGenerator;
-    protected override getPacketId(): string {
+    protected override getPacketId(): string | number {
         if (!this.uuidGenner) {
             this.uuidGenner = this.injector.get(UuidGenerator);
         }

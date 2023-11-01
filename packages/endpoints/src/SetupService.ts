@@ -1,4 +1,4 @@
-import { Injectable, Injector, ProvdierOf, ProviderType, Token, Type, toProvider, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, ProvdierOf, ProviderType, ReflectiveRef, Token, Type, toProvider, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
 import { Server, ServerOpts } from './Server';
@@ -10,6 +10,10 @@ import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middlewar
 
 
 export interface ServerConfig {
+    /**
+     * auto bootstrap or not. default true.
+     */
+    bootstrap?: boolean;
     /**
      * server provdier.
      */
@@ -89,15 +93,22 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Injectable()
 export class ServerSetupService {
 
+    context!: ApplicationContext;
+
+    private services: ReflectiveRef[] = [];
+    private unboots = new Set<Type>();
+
     @Startup()
-    async setup(context: ApplicationContext): Promise<any> {
+    protected async setup(context: ApplicationContext): Promise<any> {
+        this.context = context;
 
         const services = context.injector.get(REGISTER_SERVICES);
 
         services.forEach(s => {
 
-            const opts = s as (ServerModuleOpts & HeybirdServiceOpts) & (ServerModuleOpts & MicroServiceOpts);
-            const { serverType, server, endpointType, serverOpts, endpoint, microservice, middlewaresToken, middlewares } = opts;
+            const opts = s as ServiceModuleOpts;
+            const { bootstrap, serverType, server, endpointType, endpoint, microservice } = opts;
+            const serverOpts = opts.serverOpts as ServerOpts & MiddlewareOpts;
             const providers: ProviderType[] = [
                 { provide: s.serverOptsToken, useValue: s.serverOpts }
             ];
@@ -111,18 +122,28 @@ export class ServerSetupService {
                 providers.push({
                     provide: endpointType,
                     useFactory: (injector: Injector) => {
-                        return (!microservice && middlewaresToken && middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createTransportEndpoint(injector, serverOpts)
+                        return (!microservice && serverOpts.middlewaresToken && serverOpts.middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createTransportEndpoint(injector, serverOpts)
                     },
                     asDefault: true,
                     deps: [Injector]
                 })
             }
 
-
-            context.runners.attach(s.serverType, { providers })
+            if (bootstrap === false) {
+                this.unboots.add(s.serverType);
+            }
+            this.services.push(context.runners.attach(s.serverType, { limit: 1, bootstrap, providers }));
         })
 
+    }
 
+    getServices(): ReflectiveRef[] {
+        return this.services;
+    }
+
+    async run(): Promise<void> {
+        if (!this.unboots.size) return;
+        await Promise.all(Array.from(this.unboots.values()).map(ty => this.context.runners.run()));
     }
 
 }

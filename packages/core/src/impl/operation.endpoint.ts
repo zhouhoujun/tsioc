@@ -1,5 +1,5 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isPromise, isString } from '@tsdi/ioc';
-import { isObservable, lastValueFrom } from 'rxjs';
+import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isNumber, isPromise, isString } from '@tsdi/ioc';
+import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
 import { AbstractGuardHandler } from '../handlers/guards';
@@ -15,6 +15,7 @@ import { EndpointFactory, EndpointFactoryResolver, OPERA_FILTERS, OPERA_GUARDS, 
 
 export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> implements OperationEndpoint<TInput, TOutput> {
 
+    private limit?: number;
     constructor(
         public readonly invoker: OperationInvoker, readonly options: EndpointOptions = {}) {
         super(invoker.context,
@@ -22,8 +23,18 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
             options.guardsToken ?? OPERA_GUARDS,
             options.filtersToken ?? OPERA_FILTERS)
         setHandlerOptions(this, options);
+        this.limit = options.limit;
         invoker.context.onDestroy(this);
 
+    }
+
+    override handle(input: TInput): Observable<TOutput> {
+        if(input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
+        if (isNumber(this.limit)) {
+            if (this.limit < 1) return of(null) as Observable<TOutput>;
+            this.limit -= 1;
+        }
+        return super.handle(input);
     }
 
     equals(target: OperationEndpoint): boolean {

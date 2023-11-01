@@ -10,6 +10,14 @@ import { BackendConfigable, ConfigableHandlerOptions, HandlerService, HandlerTok
  */
 export interface EndpointOptions<T = any, TArg = any> extends ConfigableHandlerOptions<T, TArg>, HandlerTokenConfigable<T> {
     /**
+     * the endpoint run times limit. 
+     */
+    limit?: number;
+    /**
+     * auto bootstrap endpoint attached.
+     */
+    bootstrap?: boolean;
+    /**
      * endpoint order
      */
     order?: number;

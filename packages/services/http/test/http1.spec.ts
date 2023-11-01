@@ -1,13 +1,16 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { MicroServRouterModule } from '@tsdi/transport';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { Http, HttpServerModule, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
+import { Http, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
@@ -19,30 +22,44 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
+        AssetTransportModule,
+        ServerEndpointModule,
         HttpModule,
-        HttpServerModule.withOption({
-            serverOpts: {
-                majorVersion: 1,
-                listenOpts: {
-                    port: 3200
-                }
+        ClientModule.register([
+            {
+                transport: 'mqtt'
             },
-            providers: [
-                { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-            ]
-        }),
-        MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
+            {
+                transport: 'http'
+            }
+        ]),
+        EndpointsModule.register([
+            {
+                microservice: true,
+                transport: 'mqtt'
+            },
+            {
+                transport: 'http',
+                serverOpts: {
+                    majorVersion: 1,
+                    listenOpts: {
+                        port: 3200
+                    },
+                    providers: [
+                        { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+                    ]
+                }
+            }
+        ]),
         DeviceManageModule,
         DeviceAModule
     ],
     providers: [
-        // DeviceController,
         DeviceStartupHandle
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 class MainApp {
 

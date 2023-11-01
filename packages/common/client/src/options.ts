@@ -22,10 +22,15 @@ export interface ClientTransportPacketStrategy {
 }
 
 export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<TransportRequest> {
+    [x: string]: any;
     /**
      * url
      */
     url?: string;
+    /**
+     * authority base url.
+     */
+    authority?: string;
     connectOpts?: TConnOpts;
     transportOpts?: TransportOpts;
     timeout?: number;

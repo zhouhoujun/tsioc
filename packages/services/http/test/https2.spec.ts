@@ -10,8 +10,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
-import { Http, HttpServerModule, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
+import { Http, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule } from '@tsdi/endpoints';
 
 
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
@@ -23,42 +25,53 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
     imports: [
         ServerModule,
         LoggerModule,
-        MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
-        HttpModule.withOption({
-            clientOpts: {
-                authority: 'https://localhost:3200',
-                options: {
-                    ca: cert
+        HttpModule,
+        ClientModule.register([
+            {
+                transport: 'http',
+                clientOpts: {
+                    authority: 'https://localhost:3200',
+                    options: {
+                        ca: cert
+                    }
                 }
             },
-        }),
-        HttpServerModule.withOption({
-            serverOpts: {
-                majorVersion: 2,
+            {
+                transport: 'mqtt'
+            }
+        ]),
+        EndpointsModule.register([
+            {
+                microservice: true,
+                transport: 'mqtt'
+            },
+            {
+                transport: 'http',
                 serverOpts: {
-                    allowHTTP1: true,
-                    key,
-                    cert
+                    majorVersion: 2,
+                    serverOpts: {
+                        allowHTTP1: true,
+                        key,
+                        cert
+                    },
+                    listenOpts: {
+                        port: 3200
+                    }
                 },
-                listenOpts: {
-                    port: 3200
-                }
-            },
-            providers: [
-                { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-            ]
-        }),
+                providers: [
+                    { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+                ]
+            }
+        ]),
         DeviceManageModule,
         DeviceAModule
     ],
     providers: [
-        // DeviceController,
         DeviceStartupHandle
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 class SecureMainApp {
 

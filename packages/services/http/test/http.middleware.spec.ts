@@ -1,7 +1,7 @@
 import { ServerModule } from '@tsdi/platform-server';
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { MicroServRouterModule } from '@tsdi/transport';
+import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerTransportModule } from '@tsdi/platform-server/transport';
 import expect = require('expect');
@@ -9,7 +9,8 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Http, HttpModule, HttpServerModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServer } from '../src';
+import { ClientModule } from '@tsdi/common/client';
 
 
 @Module({
@@ -34,9 +35,11 @@ describe('middleware', () => {
             uses: [
                 ServerModule,
                 ServerTransportModule,
+                HttpModule,
 
                 MicroServRouterModule.forRoot({ protocol: 'mqtt' }),
-                HttpModule.withOption({
+                ClientModule.register({
+                    transport: 'http',
                     clientOpts: {
                         authority: 'https://localhost:3200',
                         options: {
@@ -44,7 +47,9 @@ describe('middleware', () => {
                         }
                     }
                 }),
-                HttpServerModule.withOption({
+                EndpointsModule.register({
+                    transport: 'http',
+                    bootstrap: false,
                     serverOpts: {
                         majorVersion: 2,
                         serverOpts: {

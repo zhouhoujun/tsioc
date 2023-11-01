@@ -5,6 +5,7 @@ import { getResolversToken } from './resolver';
  * endpoint invoke options.
  */
 export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
+    bootstrap?: boolean;
     isDone?(ctx: EndpointContext<T>): boolean;
 }
 
@@ -12,11 +13,13 @@ export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
  * endpoint context.
  */
 export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
-    private doneFn?: (ctx: EndpointContext<TInput>) => boolean
+    private doneFn?: (ctx: EndpointContext<TInput>) => boolean;
+    readonly bootstrap: boolean;
     constructor(
         injector: Injector,
         options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
         super(injector, options);
+        this.bootstrap = options.bootstrap !== false;
         this.doneFn = options.isDone;
         this.setValue(getClass(this), this);
     }
