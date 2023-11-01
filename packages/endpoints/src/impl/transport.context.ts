@@ -24,7 +24,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        this.streamAdapter = injector.get(StreamAdapter);
+        this.streamAdapter = session.streamAdapter;
         if (!response.id) {
             response.id = request.id;
         }
@@ -172,7 +172,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class TransportContextFactoryImpl implements TransportContextFactory {
-    create<TSocket, TInput extends RequestPacket<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: TransportSession<any, any>, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): TransportContext<TInput, TOutput, TSocket> {
+    create<TSocket, TInput extends RequestPacket<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): TransportContext<TInput, TOutput, TSocket> {
         return new TransportContextIml(injector, session, request, response, options);
     }
 

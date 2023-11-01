@@ -1,5 +1,5 @@
 import { ArgumentExecption, Injectable, Injector, lang } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, Packet, RequestPacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { Context, Decoder, Encoder, Packet, RequestPacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { EventTransportSession } from '@tsdi/endpoints';
 import { Socket, RemoteInfo } from 'dgram';
 import { Observable, first, fromEvent, map, merge } from 'rxjs';
@@ -82,13 +82,14 @@ export class UdpTransportSessionFactory implements TransportSessionFactory<Socke
 
     constructor(
         readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
         private encoder: Encoder,
         private decoder: Decoder) {
 
     }
 
     create(socket: Socket, options: TransportOpts): UdpTransportSession {
-        return new UdpTransportSession(this.injector, socket, this.encoder, this.decoder, options);
+        return new UdpTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

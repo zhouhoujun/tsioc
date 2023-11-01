@@ -1,5 +1,5 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, isNil, isString, tokenId } from '@tsdi/ioc';
-import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Handler, InterceptorHandler } from '@tsdi/core';
 import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, SendPacket, StreamAdapter, isBuffer } from '@tsdi/common';
 import { Observable, mergeMap, of, throwError, map, range } from 'rxjs';
 
@@ -16,26 +16,48 @@ export abstract class AssetEncoderBackend implements EncoderBackend {
 
 
 /**
- * asset encode interceptors
+ * global asset encode interceptors
  */
-export const ASSET_ENCODER_INTERCEPTORS = tokenId<Interceptor<Context, Buffer>[]>('ASSET_ENCODER_INTERCEPTORS')
+export const ASSET_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('ASSET_ENCODER_INTERCEPTORS');
+/**
+ * client asset encode interceptors
+ */
+export const CLIENT_ASSET_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('CLIENT_ASSET_ENCODER_INTERCEPTORS');
+/**
+ * server asset encode interceptors
+ */
+export const SERVER_ASSET_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('SERVER_ASSET_ENCODER_INTERCEPTORS');
 
 
 @Injectable()
 export class AssetInterceptingEncoder implements Encoder {
-    private chain!: Encoder;
+    private gloablChain!: Encoder;
+    private serverChain!: Encoder;
+    private clientChain!: Encoder;
 
     strategy = 'asset';
-    
+
     constructor(private backend: AssetEncoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Buffer> {
-        if (!this.chain) {
-            const interceptors = this.injector.get(ASSET_ENCODER_INTERCEPTORS, []);
-            this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
+        return this.getChain(ctx.serverSide).handle(ctx)
+    }
+
+    getChain(server?: boolean) {
+        let chain = server ? this.serverChain : this.clientChain;
+        if (!chain) {
+            if (!this.gloablChain) this.gloablChain = this.injector.get(ASSET_ENCODER_INTERCEPTORS, []).reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+
+            const extendsInters = this.injector.get(server ? SERVER_ASSET_ENCODER_INTERCEPTORS : CLIENT_ASSET_ENCODER_INTERCEPTORS, []);
+            chain = extendsInters.length ? extendsInters.reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.gloablChain) : this.gloablChain;
+
+            if (server) {
+                this.serverChain = chain;
+            } else {
+                this.clientChain = chain;
+            }
         }
-        return this.chain.handle(ctx)
+        return chain;
     }
 }
 
@@ -123,7 +145,7 @@ export class SubpacketBufferEncodeInterceptor implements EncodeInterceptor {
                     }
                     if (input.session.options.maxSize) {
                         let maxSize = input.session.options.maxSize;
-                        if(!input.headers) {
+                        if (!input.headers) {
                             maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (input.delimiter ? Buffer.byteLength(input.delimiter) : 0) - ((input.headers) ? 0 : 2) // 2 packet id;
                         }
                         if (buf.length <= maxSize) {

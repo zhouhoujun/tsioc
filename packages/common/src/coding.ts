@@ -5,6 +5,7 @@ import { HeaderPacket, Packet } from './packet';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportSession } from './TransportFactory';
 import { isBuffer } from './utils';
+import { IReadableStream } from './stream';
 
 
 /**
@@ -17,6 +18,7 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     public packet?: Packet;
     public headers?: HeaderPacket;
     public raw?: Buffer;
+    public stream?: IReadableStream;
     readonly delimiter?: Buffer;
     readonly headerDelimiter?: Buffer;
     readonly serverSide: boolean;
@@ -39,8 +41,16 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
         options?: InvokeArguments);
     constructor(
         injector: Injector,
+        transportOpts: TransportSession,
+        stream: IReadableStream,
+        headers?: HeaderPacket,
+        delimiter?: Buffer,
+        headerDelimiter?: Buffer,
+        options?: InvokeArguments);
+    constructor(
+        injector: Injector,
         session: TransportSession,
-        packBuff: TPacket | Buffer,
+        packBuff: TPacket | Buffer | IReadableStream,
         headers?: HeaderPacket,
         delimiter?: Buffer,
         headerDelimiter?: Buffer,
@@ -53,6 +63,8 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
         this.headers = headers;
         if (isBuffer(packBuff)) {
             this.raw = packBuff;
+        } else if (session.streamAdapter.isStream(packBuff)) {
+            this.stream = packBuff;
         } else {
             this.packet = packBuff;
         }

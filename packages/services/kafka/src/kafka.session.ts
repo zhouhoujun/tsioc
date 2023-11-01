@@ -1,6 +1,6 @@
 import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, RequestPacket, ResponsePacket, SendPacket, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, RequestPacket, ResponsePacket, SendPacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Observable, filter, first, fromEvent, map, merge, of } from 'rxjs';
@@ -13,16 +13,6 @@ export class KafkaTransportSession extends PayloadTransportSession<KafkaTranspor
 
     private regTopics?: RegExp[];
     private events = new EventEmitter();
-
-    constructor(
-        injector: Injector,
-        socket: KafkaTransport,
-        encoder: Encoder,
-        decoder: Decoder,
-        private uuidGenner: UuidGenerator,
-        options: KafkaTransportOpts) {
-        super(injector, socket, encoder, decoder, options)
-    }
 
 
     async bindTopics(topics: (string | RegExp)[]) {
@@ -184,10 +174,6 @@ export class KafkaTransportSession extends PayloadTransportSession<KafkaTranspor
         return packet.replyTo || packet.topic + '.reply';
     }
 
-    protected override getPacketId(): string {
-        return this.uuidGenner.generate()
-    }
-
     async destroy(): Promise<void> {
         this.events.removeAllListeners();
     }
@@ -198,12 +184,12 @@ export class KafkaTransportSessionFactory implements TransportSessionFactory<Kaf
 
     constructor(
         readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
         private encoder: Encoder,
-        private decoder: Decoder,
-        private uuidGenner: UuidGenerator) { }
+        private decoder: Decoder) { }
 
     create(socket: KafkaTransport, options: TransportOpts): KafkaTransportSession {
-        return new KafkaTransportSession(this.injector, socket, this.encoder, this.decoder, this.uuidGenner, options);
+        return new KafkaTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

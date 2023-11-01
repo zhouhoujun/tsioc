@@ -37,19 +37,20 @@ export class TransportBackend implements Backend<TransportRequest, TransportEven
         const url = this.getReqUrl(req);
 
         const pkg = this.toPacket(url, req);
-        const session = req.context.get(TransportSession);
-        const transform = req.context.get(getToken(ResponseTransform, session.getPacketStrategy())) ?? defaultTransform;
+        const context = req.context;
+        const session = context.get(TransportSession);
+        const transform = context.get(getToken(ResponseTransform, session.getPacketStrategy())) ?? defaultTransform;
 
         let obs$: Observable<ResponsePacket>;
         switch (req.observe) {
             case 'emit':
-                obs$ = session.send(pkg).pipe(take(1));
+                obs$ = session.send(pkg, context).pipe(take(1));
                 break;
             case 'observe':
-                obs$ = session.request(pkg);
+                obs$ = session.request(pkg, context);
                 break;
             default:
-                obs$ = session.request(pkg).pipe(take(1))
+                obs$ = session.request(pkg, context).pipe(take(1))
                 break;
         }
         return obs$.pipe(

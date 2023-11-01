@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Observable, first, fromEvent, map, merge, of } from 'rxjs';
@@ -8,16 +8,6 @@ import { AmqpSessionOpts } from './options';
 
 
 export class QueueTransportSession extends PayloadTransportSession<Channel, ConsumeMessage> {
-
-    constructor(
-        injector: Injector,
-        socket: Channel,
-        encoder: Encoder,
-        decoder: Decoder,
-        private uuidGenner: UuidGenerator,
-        options: TransportOpts) {
-        super(injector, socket, encoder, decoder, options)
-    }
 
 
     protected concat(msg: ConsumeMessage): Observable<Buffer> {
@@ -92,10 +82,6 @@ export class QueueTransportSession extends PayloadTransportSession<Channel, Cons
 
     }
 
-    protected override getPacketId(): string {
-        return this.uuidGenner.generate()
-    }
-
     async destroy(): Promise<void> {
 
     }
@@ -106,12 +92,12 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
 
     constructor(
         readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
         private encoder: Encoder,
-        private decoder: Decoder,
-        private uuidGenner: UuidGenerator) { }
+        private decoder: Decoder) { }
 
     create(socket: Channel, options: TransportOpts): QueueTransportSession {
-        return new QueueTransportSession(this.injector, socket, this.encoder, this.decoder, this.uuidGenner, options);
+        return new QueueTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

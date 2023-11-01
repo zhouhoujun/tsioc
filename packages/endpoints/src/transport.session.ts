@@ -1,14 +1,17 @@
 import { Execption, Injector, InvokeArguments } from '@tsdi/ioc';
-import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, TransportOpts, TransportSession, ev, hdr, isBuffer } from '@tsdi/common';
+import { PipeTransform, UuidGenerator } from '@tsdi/core';
+import { AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, ev, hdr } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, finalize, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
-export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> implements TransportSession<TSocket, TMsg> {
+
+
+export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> implements TransportSession<TSocket> {
 
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
+        readonly streamAdapter: StreamAdapter,
         readonly encoder: Encoder,
         readonly decoder: Decoder,
         readonly options: TransportOpts) {
@@ -21,12 +24,6 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 
     serialize(packet: Packet, withPayload?: boolean): Buffer {
         let pkg: Packet;
-        // if (isUndefined(packet.length)) {
-        //     pkg = packet;
-        // } else {
-        //     const { length, ...data } = packet;
-        //     pkg = data;
-        // }
         if (withPayload) {
             const { length, ...data } = packet;
             pkg = data;
@@ -176,7 +173,7 @@ export interface TopicBuffer {
     contentLength: number | null;
 }
 
-export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket, TMsg> {
+export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
 
     protected topics: Map<string, TopicBuffer>;
 
@@ -189,10 +186,11 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
     constructor(
         injector: Injector,
         socket: TSocket,
+        streamAdapter: StreamAdapter,
         encoder: Encoder,
         decoder: Decoder,
         options: TransportOpts) {
-        super(injector, socket, encoder, decoder, options);
+        super(injector, socket, streamAdapter, encoder, decoder, options);
         this.delimiter = Buffer.from(options.delimiter ?? '#');
         this.headDelimiter = Buffer.from(options.headDelimiter ?? '$');
         this.topics = new Map();
@@ -338,5 +336,13 @@ export abstract class PayloadTransportSession<TSocket, TMsg = string | Buffer | 
 
     protected abstract getHeaders(msg: TMsg): HeaderPacket | undefined;
 
+
+    private uuidGenner?: UuidGenerator;
+    protected override getPacketId(): string {
+        if (!this.uuidGenner) {
+            this.uuidGenner = this.injector.get(UuidGenerator);
+        }
+        return this.uuidGenner.generate()
+    }
 
 }

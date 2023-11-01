@@ -42,8 +42,8 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     constructor(injector: Injector, readonly session: TransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
+        this.streamAdapter = session.streamAdapter;
         this.vaildator = injector.get(StatusVaildator);
-        this.streamAdapter = injector.get(StreamAdapter);
         this.fileAdapter = injector.get(FileAdapter);
         this.negotiator = injector.get(Negotiator);
         this.mimeAdapter = injector.get(MimeAdapter);

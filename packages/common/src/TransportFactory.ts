@@ -1,9 +1,10 @@
-import { Abstract, Injector } from '@tsdi/ioc';
+import { Abstract, Injector, InvocationContext } from '@tsdi/ioc';
 import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportErrorResponse, TransportEvent } from './response';
 import { OutgoingHeaders, ResHeaders } from './headers';
+import { StreamAdapter } from './StreamAdapter';
 
 
 
@@ -71,7 +72,7 @@ export interface ResponseEventFactory<TResponse = TransportEvent, TErrorResponse
  * transport session.
  */
 @Abstract()
-export abstract class TransportSession<TSocket = any, TMsg = any>  {
+export abstract class TransportSession<TSocket = any>  {
     /**
      * injector.
      */
@@ -85,6 +86,10 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
      */
     abstract get options(): TransportOpts;
     /**
+     * stream adapter
+     */
+    abstract get streamAdapter(): StreamAdapter;
+    /**
      * get packet strategy
      */
     abstract getPacketStrategy(): string | undefined;
@@ -92,7 +97,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
      * send.
      * @param packet 
      */
-    abstract send(packet: RequestPacket): Observable<any>;
+    abstract send(packet: RequestPacket, context?: InvocationContext): Observable<any>;
     /**
      * send.
      * @param packet 
@@ -114,7 +119,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any>  {
      * request.
      * @param packet 
      */
-    abstract request(packet: RequestPacket): Observable<ResponsePacket>;
+    abstract request(packet: RequestPacket, context?: InvocationContext): Observable<ResponsePacket>;
 
     /**
      * receive

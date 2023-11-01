@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, OfflineExecption, OutgoingHeaders, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, OfflineExecption, OutgoingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
@@ -9,16 +9,6 @@ import { NatsSessionOpts } from './options';
 
 
 export class NatsTransportSession extends PayloadTransportSession<NatsConnection, Msg> {
-
-    constructor(
-        injector: Injector,
-        socket: NatsConnection,
-        encoder: Encoder,
-        decoder: Decoder,
-        private uuidGenner: UuidGenerator,
-        options: TransportOpts) {
-        super(injector, socket, encoder, decoder, options)
-    }
 
     private subjects: Set<string> = new Set();
     private events = new EventEmitter();
@@ -130,10 +120,6 @@ export class NatsTransportSession extends PayloadTransportSession<NatsConnection
         return packet.replyTo ?? packet.topic + '.reply';
     }
 
-    protected override getPacketId(): string {
-        return this.uuidGenner.generate()
-    }
-
     async destroy(): Promise<void> {
         if (this.subjects.size) {
             this.subjects.clear();
@@ -149,12 +135,12 @@ export class NatsTransportSessionFactory implements TransportSessionFactory<Nats
 
     constructor(
         readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
         private encoder: Encoder,
-        private decoder: Decoder,
-        private uuidGenner: UuidGenerator) { }
+        private decoder: Decoder) { }
 
     create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(this.injector, socket, this.encoder, this.decoder, this.uuidGenner, options);
+        return new NatsTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

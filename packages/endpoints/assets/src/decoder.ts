@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, StreamAdapter, IDuplexStream, hdr, SendPacket } from '@tsdi/common';
-import { Observable, Subscriber } from 'rxjs';
+import { InterceptorHandler } from '@tsdi/core';
+import { Packet, Context, Decoder, DecoderBackend, IncomingPacket, IDuplexStream, hdr, DecodeInterceptor } from '@tsdi/common';
+import { Observable, Subscriber, of } from 'rxjs';
 
 
 @Abstract()
@@ -16,23 +16,48 @@ export abstract class AssetDecoderBackend implements DecoderBackend {
     abstract handle(ctx: Context<IncomingPacket>): Observable<IncomingPacket>;
 }
 
+/**
+ * global asset decoder interceptors token
+ */
+export const ASSET_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('ASSET_DECODER_INTERCEPTORS');
+/**
+ * client asset decoder interceptors token
+ */
+export const CLIENT_ASSET_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('CLIENT_ASSET_DECODER_INTERCEPTORS');
+/**
+ * server asset decoder interceptors token
+ */
+export const SERVER_ASSET_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('SERVER_ASSET_DECODER_INTERCEPTORS');
 
-export const ASSET_DECODER_INTERCEPTORS = tokenId<Interceptor<Context, IncomingPacket>[]>('ASSET_DECODER_INTERCEPTORS')
 
 @Injectable()
 export class AssetInterceptingDecoder implements Decoder {
-    private chain!: Decoder;
+    private gloablChain!: Decoder;
+    private clientChain!: Decoder;
+    private serverChain!: Decoder;
     strategy = 'asset';
-    
+
     constructor(private backend: AssetDecoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Packet> {
-        if (!this.chain) {
-            const interceptors = this.injector.get(ASSET_DECODER_INTERCEPTORS, []);
-            this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
+        return this.getChain(ctx.serverSide).handle(ctx)
+    }
+
+    getChain(server?: boolean) {
+        let chain = server ? this.serverChain : this.clientChain;
+        if (!chain) {
+            if (!this.gloablChain) this.gloablChain = this.injector.get(ASSET_DECODER_INTERCEPTORS, []).reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+
+            const extendsInters = this.injector.get(server ? SERVER_ASSET_DECODER_INTERCEPTORS : CLIENT_ASSET_DECODER_INTERCEPTORS, []);
+            chain = extendsInters.length ? extendsInters.reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.gloablChain) : this.gloablChain;
+
+            if (server) {
+                this.serverChain = chain;
+            } else {
+                this.clientChain = chain;
+            }
         }
-        return this.chain.handle(ctx)
+        return chain;
     }
 }
 
@@ -50,6 +75,13 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
     }
 
     handle(ctx: Context): Observable<IncomingPacket> {
+        if (ctx.headers && ctx.session.streamAdapter.isStream(ctx.stream)) {
+            ctx.packet = {
+                ...ctx.headers,
+                payload: ctx.stream
+            } as IncomingPacket;
+            return of(ctx.packet);
+        }
 
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
@@ -57,6 +89,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                 subscriber.error(new ArgumentExecption('asset decoding input empty'));
                 return;
             }
+
             let raw = ctx.raw;
             let packet: CachePacket | undefined;
             let id: string | number;
@@ -65,6 +98,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                 raw = raw.subarray(2);
                 packet = this.packs.get(id);
             } else {
+
                 if (ctx.headers.id) {
                     id = ctx.headers.id;
                 } else {
@@ -72,6 +106,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                     raw = raw.subarray(2);
                 }
                 packet = this.packs.get(id);
+
             }
 
             if (!packet) {
@@ -102,7 +137,7 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
                             subscriber.next(packet);
                             subscriber.complete();
                         } else {
-                            const stream = packet.payload = ctx.get(StreamAdapter).createPassThrough();
+                            const stream = packet.payload = ctx.session.streamAdapter.createPassThrough();
                             stream.write(raw);
                             this.packs.set(id, packet);
                             subscriber.complete();

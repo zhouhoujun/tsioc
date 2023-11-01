@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { Decoder, Encoder, IDuplexStream, Packet, RequestPacket, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, IDuplexStream, Packet, RequestPacket, StreamAdapter, TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { EventTransportSession } from '../transport.session';
 
 
@@ -29,10 +29,14 @@ export class DuplexTransportSession extends EventTransportSession<IDuplexStream>
 @Injectable()
 export class DuplexTransportSessionFactory implements TransportSessionFactory<IDuplexStream> {
 
-    constructor(readonly injector: Injector, private encoder: Encoder, private decoder: Decoder) { }
+    constructor(
+        readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
+        private encoder: Encoder,
+        private decoder: Decoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(this.injector, socket, this.encoder, this.decoder, options);
+        return new DuplexTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

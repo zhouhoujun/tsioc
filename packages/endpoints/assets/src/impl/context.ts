@@ -59,7 +59,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class AssetContextFactoryImpl implements AssetContextFactory {
-    create(injector: Injector, session: TransportSession<any, any>, incoming: IncomingPacket<any>, options: ServerOpts<any>): AssetContext<any, any, ServerOpts<any>> {
+    create(injector: Injector, session: TransportSession, incoming: IncomingPacket<any>, options: ServerOpts<any>): AssetContext<any, any, ServerOpts<any>> {
         return new AssetContextImpl(injector, session, incoming.req ?? new IncomingMessage(session, incoming), incoming.res ?? new OutgoingMessage(session, incoming), options);
     }
 

@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Handler, InterceptorHandler } from '@tsdi/core';
-import { Context, EncodeInterceptor, Encoder, EncoderBackend, SendPacket } from '@tsdi/common';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
 import { Observable, map, of, throwError } from 'rxjs';
 import { Buffer } from 'buffer';
 
@@ -15,26 +15,48 @@ export abstract class JsonEncoderBackend implements EncoderBackend {
 }
 
 /**
- * json encoder interceptors token
+ * global json encoder interceptors token
  */
-export const JSON_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('JSON_ENCODER_INTERCEPTORS')
+export const JSON_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('JSON_ENCODER_INTERCEPTORS');
+/**
+ * client json encode interceptors
+ */
+export const CLIENT_JSON_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('CLIENT_JSON_ENCODER_INTERCEPTORS');
+/**
+ * server json encode interceptors
+ */
+export const SERVER_JSON_ENCODER_INTERCEPTORS = tokenId<EncodeInterceptor[]>('SERVER_JSON_ENCODER_INTERCEPTORS');
 
 
 @Injectable()
 export class JsonInterceptingEncoder implements Encoder {
-    private chain!: Encoder;
+    private gloablChain!: Encoder;
+    private serverChain!: Encoder;
+    private clientChain!: Encoder;
 
     strategy = 'json';
 
     constructor(private backend: JsonEncoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Buffer> {
-        if (!this.chain) {
-            const interceptors = this.injector.get(JSON_ENCODER_INTERCEPTORS, []);
-            this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
+        return this.getChain(ctx.serverSide).handle(ctx)
+    }
+
+    getChain(server?: boolean) {
+        let chain = server ? this.serverChain : this.clientChain;
+        if (!chain) {
+            if (!this.gloablChain) this.gloablChain = this.injector.get(JSON_ENCODER_INTERCEPTORS, []).reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+
+            const extendsInters = this.injector.get(server ? SERVER_JSON_ENCODER_INTERCEPTORS : CLIENT_JSON_ENCODER_INTERCEPTORS, []);
+            chain = extendsInters.length ? extendsInters.reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.gloablChain) : this.gloablChain;
+
+            if (server) {
+                this.serverChain = chain;
+            } else {
+                this.clientChain = chain;
+            }
         }
-        return this.chain.handle(ctx)
+        return chain;
     }
 }
 

@@ -17,24 +17,47 @@ export abstract class JsonDecoderBackend implements DecoderBackend {
 }
 
 /**
- * json decoder interceptors token
+ * global json decoder interceptors token
  */
 export const JSON_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('JSON_DECODER_INTERCEPTORS');
+/**
+ * client json decoder interceptors token
+ */
+export const CLIENT_JSON_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('CLIENT_JSON_DECODER_INTERCEPTORS');
+/**
+ * server json decoder interceptors token
+ */
+export const SERVER_JSON_DECODER_INTERCEPTORS = tokenId<DecodeInterceptor[]>('SERVER_JSON_DECODER_INTERCEPTORS');
+
 
 @Injectable()
 export class JsonInterceptingDecoder implements Decoder {
-    private chain!: Decoder;
+    private gloablChain!: Decoder;
+    private clientChain!: Decoder;
+    private serverChain!: Decoder;
     strategy = 'json';
 
     constructor(private backend: JsonDecoderBackend, private injector: Injector) { }
 
     handle(ctx: Context): Observable<Packet> {
-        if (!this.chain) {
-            const interceptors = this.injector.get(JSON_DECODER_INTERCEPTORS, []);
-            this.chain = interceptors.reduceRight(
-                (next, interceptor) => new InterceptorHandler(next, interceptor), this.backend)
+        return this.getChain(ctx.serverSide).handle(ctx)
+    }
+
+    getChain(server?: boolean) {
+        let chain = server ? this.serverChain : this.clientChain;
+        if (!chain) {
+            if (!this.gloablChain) this.gloablChain = this.injector.get(JSON_DECODER_INTERCEPTORS, []).reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+
+            const extendsInters = this.injector.get(server ? SERVER_JSON_DECODER_INTERCEPTORS : CLIENT_JSON_DECODER_INTERCEPTORS, []);
+            chain = extendsInters.length ? extendsInters.reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.gloablChain) : this.gloablChain;
+
+            if (server) {
+                this.serverChain = chain;
+            } else {
+                this.clientChain = chain;
+            }
         }
-        return this.chain.handle(ctx)
+        return chain;
     }
 }
 

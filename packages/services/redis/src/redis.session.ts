@@ -1,5 +1,5 @@
 import { Injectable, Injector, isString } from '@tsdi/ioc';
-import { BadRequestExecption, Context, Decoder, Encoder, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, Context, Decoder, Encoder, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { BufferTransportSession, TopicMessage } from '@tsdi/endpoints';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 import Redis from 'ioredis';
@@ -13,15 +13,6 @@ export interface ReidsTransport {
 const PATTERN_MSG_BUFFER = 'pmessageBuffer';
 
 export class RedisTransportSession extends BufferTransportSession<ReidsTransport, TopicMessage> {
-
-    constructor(
-        injector: Injector,
-        socket: ReidsTransport,
-        encoder: Encoder,
-        decoder: Decoder,
-        options: TransportOpts) {
-        super(injector, socket, encoder, decoder, options)
-    }
 
     private regTopics: Set<string> = new Set();
 
@@ -96,7 +87,7 @@ export class RedisTransportSession extends BufferTransportSession<ReidsTransport
         return msg.payload
     }
 
-    
+
     protected override afterDecode(ctx: Context<Packet<any>>, pkg: Packet<any>, msg: TopicMessage): Packet<any> {
         return {
             topic: msg.topic,
@@ -144,12 +135,13 @@ export class RedisTransportSessionFactory implements TransportSessionFactory<Rei
 
     constructor(
         readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
         private encoder: Encoder,
         private decoder: Decoder
     ) { }
 
     create(socket: ReidsTransport, options: TransportOpts): RedisTransportSession {
-        return new RedisTransportSession(this.injector, socket, this.encoder, this.decoder, options);
+        return new RedisTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

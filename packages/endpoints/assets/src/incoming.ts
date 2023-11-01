@@ -14,7 +14,6 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
     readonly originalUrl: string;
     readonly topic: string;
     readonly method: string;
-    private streamAdapter: StreamAdapter
 
     constructor(readonly session: TransportSession<T>, private packet: Packet) {
         super({ objectMode: true })
@@ -25,7 +24,6 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         this.originalUrl = headers[hdr.ORIGIN_PATH] ?? this.url;
         this.topic = packet.topic ?? '';
         this.method = packet.method ?? headers?.[hdr.METHOD] ?? (session.options.microservice ? MESSAGE : GET);
-        this.streamAdapter = session.injector.get(StreamAdapter);
         this._payloadIndex = 0
     }
 
@@ -46,7 +44,7 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         if (payload != null) {
             if (isBuffer(payload) && start < payload.length) {
                 buf = payload.subarray(start, end)
-            } else if (this.streamAdapter.isReadable(payload)) {
+            } else if (this.session.streamAdapter.isReadable(payload)) {
                 buf = payload.read(size)
             }
         }

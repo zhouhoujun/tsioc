@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, RequestPacket, ResponsePacket, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { EventTransportSession } from '../transport.session';
 
@@ -17,7 +17,7 @@ export interface TopicMessage {
 }
 
 export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends EventTransportSession<TSocket, TopicMessage> {
-    
+
     protected getTopic(msg: TopicMessage): string {
         return msg.topic
     }
@@ -72,10 +72,14 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
 @Injectable()
 export class TopicTransportSessionFactory implements TransportSessionFactory<TopicClient> {
 
-    constructor(readonly injector: Injector, private encoder: Encoder, private decoder: Decoder) { }
+    constructor(
+        readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
+        private encoder: Encoder,
+        private decoder: Decoder) { }
 
     create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(this.injector, socket, this.encoder, this.decoder, options);
+        return new TopicTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }
