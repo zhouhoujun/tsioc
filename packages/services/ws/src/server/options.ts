@@ -9,7 +9,10 @@ import { ServerOptions } from 'ws';
  * ws server options.
  */
 export interface WsServerOpts extends ServerOpts<ServerOptions> {
-
+    /**
+     * heybird or not.
+     */
+    heybird?: boolean;
 }
 
 /**

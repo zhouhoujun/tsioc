@@ -45,7 +45,7 @@ export class WsServer extends Server {
         const serverOpts = {
             ...this.options.serverOpts
         };
-        if (serverOpts.noServer) return;
+        if (this.options.heybird) return;
         if (server) {
             serverOpts.server = server;
         } else if (!serverOpts.server && !serverOpts.port) {

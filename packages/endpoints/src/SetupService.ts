@@ -33,6 +33,13 @@ export interface ServerConfig {
 }
 
 
+export interface HeybirdOpts {
+    /**
+    * heybird or not.
+    */
+    heybird?: boolean | HybirdTransport;
+}
+
 export interface MicroServiceOpts {
     /**
      * microservice or not.
@@ -42,11 +49,18 @@ export interface MicroServiceOpts {
      * microservice transport.
      */
     transport: Transport;
+    /**
+     * server options
+     */
+    serverOpts?: ProvdierOf<ServerOpts & HeybirdOpts>;
 }
 
 export interface HeybirdServiceOpts {
     microservice?: false;
     transport: HybirdTransport;
+    /**
+     * server options
+     */
     serverOpts?: ProvdierOf<ServerOpts & MiddlewareOpts>;
 
 }
@@ -57,7 +71,9 @@ export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & 
 export const REGISTER_SERVICES = tokenId<ServiceModuleOpts[]>('REGISTER_SERVICES');
 
 
-
+/**
+ * server module options.
+ */
 export interface ServerModuleOpts extends ServerConfig {
     /**
      * microservice or not.
@@ -79,6 +95,10 @@ export interface ServerModuleOpts extends ServerConfig {
      * server default options.
      */
     defaultOpts?: ServerOpts;
+    /**
+     * server options register as. 
+     */
+    registerAs?: Token<ServerOpts>;
 }
 export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
 
@@ -106,11 +126,10 @@ export class ServerSetupService {
 
         services.forEach(s => {
 
-            const opts = s as ServiceModuleOpts;
-            const { bootstrap, serverType, server, endpointType, endpoint, microservice } = opts;
-            const serverOpts = opts.serverOpts as ServerOpts & MiddlewareOpts;
+            const opts = s as ServiceModuleOpts & { registerAs: Token<ServerOpts> };
+            const { registerAs, bootstrap, serverType, serverOptsToken, server, endpointType, endpoint, microservice } = opts;
             const providers: ProviderType[] = [
-                { provide: s.serverOptsToken, useValue: s.serverOpts }
+                { provide: serverOptsToken, useExisting: registerAs }
             ];
             if (server) {
                 providers.push(toProvider(serverType, server));
@@ -121,18 +140,18 @@ export class ServerSetupService {
             } else {
                 providers.push({
                     provide: endpointType,
-                    useFactory: (injector: Injector) => {
+                    useFactory: (injector: Injector, serverOpts: ServerOpts) => {
                         return (!microservice && serverOpts.middlewaresToken && serverOpts.middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createTransportEndpoint(injector, serverOpts)
                     },
                     asDefault: true,
-                    deps: [Injector]
+                    deps: [Injector, registerAs]
                 })
             }
 
             if (bootstrap === false) {
-                this.unboots.add(s.serverType);
+                this.unboots.add(serverType);
             }
-            this.services.push(context.runners.attach(s.serverType, { limit: 1, bootstrap, providers }));
+            this.services.push(context.runners.attach(serverType, { limit: 1, bootstrap, providers }));
         })
 
     }

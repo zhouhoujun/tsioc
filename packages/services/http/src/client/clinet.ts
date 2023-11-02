@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, Optional, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import {
     RequestOptions, ReqHeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
     TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts, ev, TransportSession, TransportSessionFactory

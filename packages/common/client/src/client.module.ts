@@ -5,7 +5,6 @@ import { TopicTransportBackend, TransportBackend } from './backend';
 import { ClientOpts, ClientTransportPacketStrategy } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
-import { BodyContentInterceptor } from '../../../endpoints/assets/src/interceptors/body';
 
 
 export interface ClientModuleConfig {
@@ -62,7 +61,6 @@ export interface ClientTokenOpts {
 
 @Module({
     providers: [
-        BodyContentInterceptor,
         TransportBackend,
         TopicTransportBackend
     ]

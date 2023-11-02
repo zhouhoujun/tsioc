@@ -102,7 +102,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
             init: (options, injector) => {
                 const mdopts = injector.get(SERVER_MODULES).find(r => r.transport === transport && r.microservice === microservice);
                 if (!mdopts) throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice' : 'server'} has not implemented`);
-                const moduleOpts = { ...mdopts, ...options } as ServiceModuleOpts & ServiceOpts;
+                const moduleOpts = { registerAs: servOptsToken, ...mdopts, ...options } as ServiceModuleOpts & ServiceOpts;
                 return moduleOpts;
             },
             onRegistered: (injector) => {
@@ -126,8 +126,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                 providers: [...defaultOpts?.providers || EMPTY, ...opts?.providers || EMPTY]
                             } as ServerOpts & { providers: ProviderType[] };
 
-                            moduleOpts.serverOpts = serverOpts as any;
-
                             if (microservice) {
                                 if (serverOpts.transportOpts) {
                                     serverOpts.transportOpts.microservice = microservice;
@@ -142,7 +140,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                     useValue: true
                                 });
                             }
-
 
 
                             if (isArray(serverOpts.execptionHandlers)) {
@@ -178,7 +175,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                     serverOpts.providers.push(toProvider(RequestHandler, strategy.requestHanlder))
                                 }
 
-                                if(strategy.providers) {
+                                if (strategy.providers) {
                                     serverOpts.providers.push(...strategy.providers)
                                 }
                             }

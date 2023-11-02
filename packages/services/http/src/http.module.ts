@@ -58,7 +58,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 serverOptsToken: HTTP_SERV_OPTS,
                 endpointType: HttpEndpoint,
                 defaultOpts: {
-                    autoListen: true,
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
@@ -94,7 +93,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 serverOptsToken: HTTP_SERV_OPTS,
                 endpointType: HttpEndpoint,
                 defaultOpts: {
-                    autoListen: true,
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
@@ -114,11 +112,11 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
+                    ],
+                    providers: [
+                        { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
                     ]
-                },
-                providers: [
-                    { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
-                ]
+                }
             } as ServerModuleOpts,
             multi: true
         }

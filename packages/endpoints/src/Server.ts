@@ -51,7 +51,9 @@ export const TRANSPORT_PACKET_STRATEGIES: Record<string, TransportPacketStrategy
  * server options
  */
 export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any> {
+
     [x: string]: any;
+
     /**
      * socket timeout.
      */

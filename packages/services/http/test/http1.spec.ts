@@ -39,7 +39,10 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         EndpointsModule.register([
             {
                 microservice: true,
-                transport: 'ws'
+                transport: 'ws',
+                serverOpts: {
+                    heybird: true
+                }
             },
             {
                 transport: 'http',
@@ -330,6 +333,6 @@ describe('http1.1 server, Http', () => {
     })
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 });

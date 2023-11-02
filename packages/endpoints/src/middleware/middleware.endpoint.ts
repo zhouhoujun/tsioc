@@ -11,7 +11,7 @@ import { TransportEndpoint } from '../TransportEndpoint';
  * 含中间件的传输节点
  */
 @Abstract()
-export abstract class MiddlewareEndpoint<TInput extends TransportContext = TransportContext, TOutput = any> extends TransportEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
+export abstract class MiddlewareEndpoint<TInput extends TransportContext = any, TOutput = any> extends TransportEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
 
     abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
 }
@@ -19,7 +19,7 @@ export abstract class MiddlewareEndpoint<TInput extends TransportContext = Trans
 /**
  * middleware options.
  */
-export interface MiddlewareOpts<T extends TransportContext = TransportContext> {
+export interface MiddlewareOpts<T extends TransportContext = any> {
     middlewaresToken?: Token<MiddlewareLike<T>[]>;
     middlewares?: ProvdierOf<MiddlewareLike<T>>[];
 }

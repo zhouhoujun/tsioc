@@ -2,69 +2,80 @@ import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerTransportModule } from '@tsdi/platform-server/transport';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsModule } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Http, HttpModule, HttpServer } from '../src';
+import { HTTP_MIDDLEWARES, Http, HttpModule, HttpServer } from '../src';
 
+
+
+const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
 
 @Module({
     imports: [
-        LoggerModule
+        ServerModule,
+        LoggerModule,
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
+        WsModule,
+        ClientModule.register({
+            transport: 'http',
+            clientOpts: {
+                authority: 'https://localhost:3200',
+                options: {
+                    ca: cert
+                }
+            }
+        }),
+        EndpointsModule.register([
+            {
+                microservice: true,
+                bootstrap: false,
+                transport: 'ws',
+                serverOpts: {
+                    heybird: true
+                }
+            },
+            {
+                transport: 'http',
+                bootstrap: false,
+                serverOpts: {
+                    middlewares: [
+
+                    ],
+                    majorVersion: 2,
+                    serverOpts: {
+                        allowHTTP1: true,
+                        key,
+                        cert
+                    },
+                    listenOpts: {
+                        port: 3200
+                    }
+                }
+            }
+        ])
     ]
 })
 class ModuleB {
 
 }
 
-const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
-const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
-
 describe('middleware', () => {
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run({
-            module: ModuleB,
-            uses: [
-                ServerModule,
-                ServerTransportModule,
-                HttpModule,
-                WsModule,
-                MicroServRouterModule.forRoot({ protocol: 'ws' }),
-                ClientModule.register({
-                    transport: 'http',
-                    clientOpts: {
-                        authority: 'https://localhost:3200',
-                        options: {
-                            ca: cert
-                        }
-                    }
-                }),
-                EndpointsModule.register({
-                    transport: 'http',
-                    bootstrap: false,
-                    serverOpts: {
-                        majorVersion: 2,
-                        serverOpts: {
-                            allowHTTP1: true,
-                            key,
-                            cert
-                        },
-                        listenOpts: {
-                            port: 3200
-                        }
-                    }
-                })
-            ]
-        });
+        ctx = await Application.run(ModuleB);
     })
 
     it('use in http server.', async () => {
