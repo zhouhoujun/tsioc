@@ -1,6 +1,5 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, HeaderPacket, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr } from '@tsdi/common';
-import { PayloadTransportSession } from '@tsdi/endpoints';
+import { Context, Decoder, Encoder, HeaderPacket, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
 import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';

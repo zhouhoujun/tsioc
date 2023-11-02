@@ -19,7 +19,7 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
         injector: Injector,
         options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
         super(injector, options);
-        this.bootstrap = options.bootstrap !== false;
+        this.bootstrap = options.bootstrap === true;
         this.doneFn = options.isDone;
         this.setValue(getClass(this), this);
     }

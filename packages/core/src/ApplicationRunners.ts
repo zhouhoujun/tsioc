@@ -50,7 +50,7 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
   /**
    * run all runners.
    */
-  abstract run(type?: Type): Promise<void>;
+  abstract run(type?: Type|Type[]): Promise<void>;
 
   /**
    * stop all runners.

@@ -1,13 +1,13 @@
-import { Inject, Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { ArgumentExecption, Inject, Injectable, ProvdierOf, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { ApplicationEventMulticaster } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
-import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
 import { Subscription, lastValueFrom } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpEndpoint } from './endpoint';
-import { ApplicationEventMulticaster } from '@tsdi/core';
 
 
 
@@ -15,7 +15,7 @@ import { ApplicationEventMulticaster } from '@tsdi/core';
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server implements ListenService {
+export class TcpServer extends Server implements ListenService, MiddlewareService {
 
     protected serv?: net.Server | tls.Server | null;
 
@@ -33,6 +33,16 @@ export class TcpServer extends Server implements ListenService {
 
         this.subs = new Subscription();
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
+    }
+
+    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
+        const endpoint = this.endpoint as MiddlewareEndpoint;
+        if (isFunction(endpoint.use)) {
+            endpoint.use(middlewares, order);
+        } else {
+            throw new ArgumentExecption('Not support middlewares');
+        }
+        return this;
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -88,7 +98,7 @@ export class TcpServer extends Server implements ListenService {
         await this.setup();
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);

@@ -6,7 +6,7 @@ import { EndpointsModule } from '@tsdi/endpoints';
 import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { WsModule } from '@tsdi/ws';
+import { WsModule, WsServer } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
@@ -93,7 +93,7 @@ describe('middleware', () => {
             return next();
         }, 0);
 
-        await ctx.runners.run(runable.type);
+        await ctx.runners.run([WsServer, HttpServer]);
 
         const http = ctx.injector.get(Http);
 

@@ -162,7 +162,7 @@ export class ServerSetupService {
 
     async run(): Promise<void> {
         if (!this.unboots.size) return;
-        await Promise.all(Array.from(this.unboots.values()).map(ty => this.context.runners.run()));
+        await this.context.runners.run(Array.from(this.unboots.values()));
     }
 
 }

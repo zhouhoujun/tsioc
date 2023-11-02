@@ -23,7 +23,9 @@ export interface ClientModuleConfig {
 }
 
 export interface ClientModuleOpts extends ClientModuleConfig {
-
+    /**
+     * transport
+     */
     transport: Transport | HybirdTransport;
     /**
      * client type

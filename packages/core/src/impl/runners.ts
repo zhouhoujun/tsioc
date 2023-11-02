@@ -152,7 +152,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this._refs.get(type) ?? EMPTY;
     }
 
-    run(type?: Type): Promise<void> {
+    run(type?: Type|Type[]): Promise<void> {
         if (type) {
             return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { args: { useValue: type } })));
         }

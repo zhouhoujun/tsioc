@@ -45,7 +45,6 @@ export class WsServer extends Server {
         const serverOpts = {
             ...this.options.serverOpts
         };
-        if (this.options.heybird) return;
         if (server) {
             serverOpts.server = server;
         } else if (!serverOpts.server && !serverOpts.port) {
@@ -55,6 +54,7 @@ export class WsServer extends Server {
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
+        if (this.options.heybird && !bindServer) return;
         await this.setup(bindServer);
         if (!this.serv) throw new InternalServerExecption();
 
