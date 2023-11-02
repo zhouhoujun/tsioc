@@ -164,98 +164,6 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
 
 }
 
-// export class HttpClientSession extends PayloadTransportSession<ClientHttp2Session | null, ResponseMsg> {
-
-//     constructor(
-//         injector: Injector,
-//         socket: ClientHttp2Session | null,
-//         encoder: Encoder,
-//         decoder: Decoder,
-//         readonly clientOpts: HttpClientOpts) {
-//         super(injector, socket, encoder, decoder, clientOpts.transportOpts ?? {});
-//     }
-
-//     protected beforeRequest(packet: RequestPacket<any>): Promise<void> {
-//         throw new Error('Method not implemented.');
-//     }
-
-
-//     protected message(req: RequestPacket): Observable<ResponseMsg> {
-//         let path = req.url ?? '';
-//         const ac = this.getAbortSignal(req.context);
-//         if (this.clientOpts.authority && this.socket && (!httptl.test(path) || path.startsWith(this.clientOpts.authority))) {
-//             path = path.replace(this.clientOpts.authority, '');
-
-//             const reqHeaders = req.headers ?? {};
-
-//             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
-//             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
-//             reqHeaders[HTTP2_HEADER_PATH] = path;
-
-//             const stream = this.socket.request(reqHeaders, { abort: ac?.signal, ...this.clientOpts.requestOptions } as ClientSessionRequestOptions);
-//             return fromEvent(stream, ev.RESPONSE, (headers) => ({ headers, stream }));
-
-//         } else {
-//             const headers = req.headers ?? {};
-
-
-//             const option = {
-//                 method: req.method,
-//                 headers: {
-//                     'accept': ctype.REQUEST_ACCEPT,
-//                     ...headers,
-//                 },
-//                 abort: ac?.signal
-//             };
-
-//             const clientReq = secureExp.test(path) ? httpsRequest(path, option) : httpRequest(path, option);
-//             const $close = fromEvent(clientReq, ev.CLOSE).pipe((err) => { throw err });
-//             const $error = fromEvent(clientReq, ev.ERROR).pipe((err) => { throw err });
-//             const $about = fromEvent(clientReq, ev.ABOUT).pipe((err) => { throw err });
-//             const $timout = fromEvent(clientReq, ev.TIMEOUT).pipe((err) => { throw err });
-//             const $source = fromEvent(clientReq, ev.RESPONSE, (resp: IncomingMessage) => resp);
-
-
-//             return merge($source, $close, $error, $about, $timout).pipe(first()) as Observable<ResponseMsg>;
-//         }
-//     }
-
-//     protected mergeClose(source: Observable<any>): Observable<any> {
-//         // const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err });
-//         // const $error = fromEvent(this.socket, ev.ERROR);
-//         // const $about = fromEvent(this.socket, ev.ABOUT);
-//         // const $timout = fromEvent(this.socket, ev.TIMEOUT);
-
-//         // return merge(source, $close, $error, $about, $timout).pipe(first());
-//         return source;
-
-//     }
-
-//     protected write(data: Buffer, packet: Packet<any>): Promise<void> {
-//         return promisify<Buffer, void>(this.socket.write, this.socket)(data);
-//     }
-
-//     protected getHeaders(msg: ResponseMsg): HeaderPacket | undefined {
-//         return msg.req
-//     }
-//     protected concat(msg: ResponseMsg): Observable<Buffer> {
-//         throw new Error('Method not implemented.');
-//     }
-//     protected getPacketId(): string | number {
-//         throw new Error('Method not implemented.');
-//     }
-
-//     protected getAbortSignal(ctx?: InvocationContext): AbortController {
-//         return !ctx || typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
-//     }
-
-//     async destroy(): Promise<void> {
-//         if (this.socket) {
-//             await promisify(this.socket.close, this.socket)();
-//         }
-//     }
-// }
-
 @Injectable()
 export class HttpClientSessionFactory implements TransportSessionFactory<ClientHttp2Session | null> {
 
@@ -330,14 +238,30 @@ export class HttpServerTransportSession implements TransportSession<Http2Server 
 
     receive(): Observable<IncomingPacket> {
 
-        const $source = fromEvent(this.socket, ev.REQUEST, (req, res) => ({ req, res } as RequestMsg))
-        const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        const $error = fromEvent(this.socket, ev.ERROR).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        const $about = fromEvent(this.socket, ev.ABOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        const $timout = fromEvent(this.socket, ev.TIMEOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        // const $source = fromEvent(this.socket, ev.REQUEST, (req, res) => ({ req, res } as RequestMsg))
+        // const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        // const $error = fromEvent(this.socket, ev.ERROR).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        // const $about = fromEvent(this.socket, ev.ABOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        // const $timout = fromEvent(this.socket, ev.TIMEOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
+        // return merge($source, $close, $error, $about, $timout).pipe(
+        //     first(),
 
-        return merge($source, $close, $error, $about, $timout).pipe(
-            first(),
+        return new Observable<RequestMsg>(subscribe => {
+            const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next({ req, res } as RequestMsg);
+            const onError = (err: any) => err && subscribe.error(err);
+            this.socket.on(ev.CLOSE, onError);
+            this.socket.on(ev.TIMEOUT, onError);
+            this.socket.on(ev.ERROR, onError);
+            this.socket.on(ev.REQUEST, onRequest);
+
+            return () => {
+                this.socket.off(ev.CLOSE, onError);
+                this.socket.off(ev.TIMEOUT, onError);
+                this.socket.off(ev.ERROR, onError);
+                this.socket.off(ev.REQUEST, onRequest);
+                subscribe.unsubscribe();
+            }
+        }).pipe(
             mergeMap(msg => {
                 const ctx = new Context(this.injector, this, msg.req, msg.req);
                 return this.decoder.handle(ctx)
