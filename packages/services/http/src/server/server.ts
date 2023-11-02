@@ -115,9 +115,6 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
                 : http.createServer(option as https.ServerOptions);
         }
 
-        // notify hybrid service to bind http server.
-        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, this)));
-
         return this._server;
     }
 
@@ -148,7 +145,11 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         // this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
         // this._server.on(ev.ERROR, (err) => this.logger.error(err));
 
-        if (opts.listenOpts && opts.autoListen) {
+
+        // notify hybrid service to bind http server.
+        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, this)));
+
+        if (opts.listenOpts) {
             this.listen(opts.listenOpts);
         }
     }

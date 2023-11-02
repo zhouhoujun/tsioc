@@ -111,7 +111,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
  * setup register services in root.
  */
 @Injectable()
-export class ServerSetupService {
+export class SetupServices {
 
     context!: ApplicationContext;
 
@@ -160,6 +160,10 @@ export class ServerSetupService {
         return this.services;
     }
 
+    /**
+     * run services, configed not auto bootstrap.
+     * @returns 
+     */
     async run(): Promise<void> {
         if (!this.unboots.size) return;
         await this.context.runners.run(Array.from(this.unboots.values()));

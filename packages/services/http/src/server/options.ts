@@ -24,7 +24,6 @@ export interface HttpOpts extends ServerOpts {
     content?: ContentOptions;
     session?: boolean | SessionOptions;
     controllers?: string[] | Type[];
-    autoListen?: boolean;
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;
 }

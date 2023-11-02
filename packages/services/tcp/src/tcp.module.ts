@@ -48,7 +48,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 serverOptsToken: TCP_SERV_OPTS,
                 endpointType: TcpEndpoint,
                 defaultOpts: {
-                    autoListen: true,
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
@@ -81,7 +80,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 serverOptsToken: TCP_SERV_OPTS,
                 endpointType: TcpEndpoint,
                 defaultOpts: {
-                    autoListen: true,
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',

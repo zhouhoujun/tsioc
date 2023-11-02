@@ -15,7 +15,7 @@ import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { TransportContextFactoryImpl } from './impl/transport.context';
-import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, ServerSetupService, ServiceModuleOpts, ServiceOpts } from './SetupService';
+import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { RequestHandler } from './RequestHandler';
 
 
@@ -30,7 +30,7 @@ import { RequestHandler } from './RequestHandler';
         RouterModule
     ],
     providers: [
-        ServerSetupService,
+        SetupServices,
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
 

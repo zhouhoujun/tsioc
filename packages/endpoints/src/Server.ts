@@ -83,6 +83,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
      * send detail error message to client or not. 
      */
     detailError?: boolean;
+    
     listenOpts?: any;
     /**
      * routes config.

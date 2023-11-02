@@ -9,8 +9,6 @@ import * as tls from 'tls';
  * TCP server options.
  */
 export interface TcpServerOpts extends ServerOpts<net.ServerOpts | tls.TlsOptions> {
-    // backend?: ProvdierOf<Router>;
-    autoListen?: boolean;
     maxConnections?: number;
     listenOpts?: net.ListenOptions;
 }

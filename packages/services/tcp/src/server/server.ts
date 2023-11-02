@@ -118,7 +118,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
             })
         }
 
-        if (this.options.listenOpts && this.options.autoListen) {
+        if (this.options.listenOpts) {
             this.listen(this.options.listenOpts)
         }
     }

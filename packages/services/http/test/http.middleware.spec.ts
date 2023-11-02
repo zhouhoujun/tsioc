@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { EndpointsModule, SetupServices } from '@tsdi/endpoints';
 import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -93,7 +93,10 @@ describe('middleware', () => {
             return next();
         }, 0);
 
-        await ctx.runners.run([WsServer, HttpServer]);
+        //run services
+        // await ctx.runners.run([WsServer, HttpServer]);
+        //or
+        await ctx.get(SetupServices).run();
 
         const http = ctx.injector.get(Http);
 

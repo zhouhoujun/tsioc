@@ -50,7 +50,7 @@ export * from './impl/transport.endpoint';
 export * from './impl/duplex.session';
 export * from './impl/topic.session';
 
-export * from './SetupService';
+export * from './SetupServices';
 export * from './endpoints.module';
 
 
