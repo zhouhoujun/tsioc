@@ -1,5 +1,5 @@
-import { Interceptor, Filter, CanActivate } from '@tsdi/core';
-import { MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
+import { Interceptor, Filter, CanActivate, ApplicationEventContext } from '@tsdi/core';
+import { BindServerEvent, MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
 import { tokenId } from '@tsdi/ioc';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -11,6 +11,10 @@ import * as tls from 'tls';
 export interface TcpServerOpts extends ServerOpts<net.ServerOpts | tls.TlsOptions> {
     maxConnections?: number;
     listenOpts?: net.ListenOptions;
+    /**
+     * heybird or not.
+     */
+    heybird?: boolean;
 }
 
 /**
@@ -39,4 +43,18 @@ export const TCP_SERV_FILTERS = tokenId<Filter[]>('TCP_SERV_FILTERS');
  */
 export const TCP_SERV_GUARDS = tokenId<CanActivate[]>('TCP_SERV_GUARDS');
 
+
+
+/**
+ * Token of tcp bind server interceptors.
+ */
+export const TCP_BIND_INTERCEPTORS = tokenId<Interceptor<ApplicationEventContext<BindServerEvent>>[]>('TCP_BIND_INTERCEPTORS');
+/**
+ * Token of tcp bind server filters.
+ */
+export const TCP_BIND_FILTERS = tokenId<Filter<ApplicationEventContext<BindServerEvent>>[]>('TCP_BIND_FILTERS');
+/**
+ * Token of tcp bind server Guards.
+ */
+export const TCP_BIND_GUARDS = tokenId<CanActivate<ApplicationEventContext<BindServerEvent>>[]>('TCP_BIND_GUARDS');
 

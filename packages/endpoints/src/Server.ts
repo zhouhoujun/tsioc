@@ -1,6 +1,6 @@
 import { Abstract, ProvdierOf, ProviderType, StaticProvider, Type } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
@@ -83,7 +83,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
      * send detail error message to client or not. 
      */
     detailError?: boolean;
-    
+
     listenOpts?: any;
     /**
      * routes config.
@@ -159,7 +159,7 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
  */
 export class BindServerEvent<T = any> extends ApplicationEvent {
 
-    constructor(readonly server: T, target: any) {
+    constructor(readonly server: T, readonly transport: HybirdTransport, target: any) {
         super(target)
     }
 

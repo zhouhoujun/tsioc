@@ -1,12 +1,12 @@
 import { ArgumentExecption, Inject, Injectable, ProvdierOf, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { ApplicationEventMulticaster } from '@tsdi/core';
+import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
 import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
 import { Subscription, lastValueFrom } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_SERV_OPTS, TcpServerOpts } from './options';
+import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
 import { TcpEndpoint } from './endpoint';
 
 
@@ -83,19 +83,27 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         return this;
     }
 
+    @EventHandler(BindServerEvent, {
+        interceptorsToken: TCP_BIND_INTERCEPTORS,
+        filtersToken: TCP_BIND_FILTERS,
+        globalGuardsToken: TCP_BIND_GUARDS
+    })
+    async bind(event: BindServerEvent<any>) {
+        if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;
+        await this.onStart(event.server);
+    }
+
     protected async setup(): Promise<any> {
         const opts = this.options;
         this.serv = this.createServer(opts);
-
-        const injector = this.endpoint.injector;
-        if (!this.options.transportOpts?.microservice) {
-            // notify hybrid service to bind http server.
-            await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this)));
-        }
     }
 
-    protected async onStart(): Promise<any> {
-        await this.setup();
+    protected async onStart(bindServer?: any): Promise<any> {
+        if (this.options.heybird && !bindServer) return;
+
+        if (!bindServer) {
+            await this.setup();
+        }
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
@@ -118,7 +126,12 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
             })
         }
 
-        if (this.options.listenOpts) {
+        if (!this.options.transportOpts?.microservice && !bindServer) {
+            // notify hybrid service to bind http server.
+            await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
+        }
+
+        if (this.options.listenOpts && !bindServer) {
             this.listen(this.options.listenOpts)
         }
     }

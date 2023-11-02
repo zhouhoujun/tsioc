@@ -147,7 +147,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
 
 
         // notify hybrid service to bind http server.
-        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, this)));
+        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));
 
         if (opts.listenOpts) {
             this.listen(opts.listenOpts);

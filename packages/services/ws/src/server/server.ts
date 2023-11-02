@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Inject, Injectable, getClassName, lang, promisify } from '@tsdi/ioc';
+import { EMPTY_OBJ, Inject, Injectable, getClassName, isString, lang, promisify } from '@tsdi/ioc';
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InternalServerExecption, ev, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
@@ -37,7 +37,7 @@ export class WsServer extends Server {
         globalGuardsToken: WS_BIND_GUARDS
     })
     async bind(event: BindServerEvent<any>) {
-        if (this.serv) return;
+        if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;
         await this.onStart(event.server);
     }
 
