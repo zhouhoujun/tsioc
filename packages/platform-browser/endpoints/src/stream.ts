@@ -1,19 +1,13 @@
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
-import { StreamAdapter, ev, isBuffer, IWritableStream, IDuplexStream, IReadableStream, ITransformStream, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/transport';
-import { isReadable, Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
-import { promisify } from 'util';
-import * as zlib from 'zlib';
+import { global, isFormData, StreamAdapter, BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common';
+import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
+import * as pumpify from 'pumpify';
 import * as FormData from 'form-data';
 import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
-import { isFormData } from '@tsdi/common';
-
-const pmPipeline = promisify(pipeline);
-const gzip = promisify(zlib.gzip);
-const gunzip = promisify(zlib.gunzip);
 
 @Injectable({ static: true })
-export class NodeStreamAdapter extends StreamAdapter {
+export class BrowserStreamAdapter extends StreamAdapter {
 
     async pipeTo(source: PipeSource | Stream, destination: IWritableStream): Promise<void> {
         if (this.isStream(source) && !this.isReadable(source)) {
@@ -30,10 +24,8 @@ export class NodeStreamAdapter extends StreamAdapter {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
         } else {
-            await pmPipeline(source, destination)
-                .finally(() => {
-                    isFunction((source as any).destroy) && (source as any).destroy();
-                });
+            await pumpify.obj.pipeline(source, destination);
+            if (source instanceof Readable) source.destroy();
         }
     }
 
@@ -42,8 +34,9 @@ export class NodeStreamAdapter extends StreamAdapter {
     pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends IDuplexStream>(...args: any[]): T {
-        return (pipeline as any).apply(pipeline, args) as T;
+        return (pumpify.obj.pipeline as any).apply(pumpify.obj.pipeline, ...args) as T;
     }
+
 
     jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream {
         return new JsonStreamStringify(value, replacer, spaces, cycle);
@@ -53,17 +46,14 @@ export class NodeStreamAdapter extends StreamAdapter {
         return target instanceof Stream;
     }
 
-    isReadable(stream: any): stream is IReadableStream {
-        return (isReadable ? isReadable(stream) : stream instanceof Readable) || (isFunction(stream?.read) && isFunction(stream?.pipe) && (stream as Readable)?.readable);
+    isReadable(stream: any): stream is Readable {
+        return stream instanceof Readable;
+    }
+    isWritable(stream: any): stream is Writable {
+        return stream instanceof Writable;
     }
 
-    isWritable(stream: any): stream is IWritableStream {
-        return stream instanceof Writable || (isFunction(stream?.write) && (stream as Writable)?.writable);
-    }
-
-    createWritable(options?: WritableOptions): Writable {
-        return new Writable(options);
-    }
+    
     createPassThrough(options?: {
         allowHalfOpen?: boolean | undefined;
         readableObjectMode?: boolean | undefined;
@@ -84,43 +74,52 @@ export class NodeStreamAdapter extends StreamAdapter {
         ): void;
         final?(this: Transform, callback: (error?: Error | null) => void): void;
         destroy?(this: Transform, error: Error | null, callback: (error: Error | null) => void): void;
-        transform?(this: Transform, chunk: any, encoding: BufferEncoding, callback: TransformCallback): void;
-        flush?(this: Transform, callback: TransformCallback): void;
+        transform?(this: Transform, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
+        flush?(this: Transform, callback: (error?: Error | null, data?: any) => void): void;
     }): IDuplexStream {
         return new PassThrough(options);
     }
 
-    gzip<T extends Uint8Array>(buff: T): Promise<T> {
-        return gzip(buff) as any
+    
+    createWritable(options?: WritableOptions): IWritableStream {
+        return new Writable(options);
     }
-
+    gzip<T extends Uint8Array>(buff: T): Promise<T> {
+        throw new Error('Method not implemented.');
+    }
     gunzip<T extends Uint8Array>(buff: T): Promise<T> {
-        return gunzip(buff) as any;
+        throw new Error('Method not implemented.');
     }
 
     getZipConstants<T = any>(): T {
-        return zlib.constants as T;
+        return {} as T;
     }
 
     createGzip(options?: ZipOptions): ITransformStream {
-        return zlib.createGzip(options);
+        return new global.CompressionStream('gzip');
+        // return zlib.createGzip(options);
     }
     createGunzip(options?: ZipOptions): ITransformStream {
-        return zlib.createGunzip(options);
+        return new global.DecompressionStream('gzip');
+        // return zlib.createGunzip(options);
     }
 
     createInflate(options?: ZipOptions | undefined): ITransformStream {
-        return zlib.createInflate(options);
+        return new global.CompressionStream('deflate');
+        // return zlib.createInflate(options);
     }
     createInflateRaw(options?: ZipOptions | undefined): ITransformStream {
-        return zlib.createInflateRaw(options);
+        return new global.CompressionStream('deflate-raw');
+        // return zlib.createInflateRaw(options);
     }
 
     createBrotliCompress(options?: BrotliOptions | undefined): ITransformStream {
-        return zlib.createBrotliCompress(options);
+        return new global.CompressionStream('deflate');
+        // return zlib.createBrotliCompress(options);
     }
     createBrotliDecompress(options?: BrotliOptions | undefined): ITransformStream {
-        return zlib.createBrotliDecompress(options);
+        return new global.DecompressionStream('deflate');
+        // return zlib.createBrotliDecompress(options);
     }
 
     rawbody(
@@ -172,7 +171,6 @@ export class NodeStreamAdapter extends StreamAdapter {
     createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: IReadableStream, size: number): void; destroy?(this: IReadableStream, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined) {
         return new FormData(options);
     }
-
     isJson(target: any): boolean {
         if (!target) return false;
         if (isString(target)) return false;

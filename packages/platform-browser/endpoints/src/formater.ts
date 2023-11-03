@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
-import { AssetContext, ResponseStatusFormater } from '@tsdi/transport';
+import { AssetContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import hrtime = require('browser-process-hrtime');
 
 @Injectable({ static: true })

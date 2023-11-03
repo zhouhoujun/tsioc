@@ -1,5 +1,6 @@
 import { Module } from '@tsdi/ioc';
-import { FileAdapter, StreamAdapter, ContentSendAdapter, ResponseStatusFormater } from '@tsdi/transport';
+import { StreamAdapter } from '@tsdi/common';
+import { FileAdapter, ContentSendAdapter, ResponseStatusFormater } from '@tsdi/endpoints';
 import { BrowserResponseStatusFormater } from './formater';
 import { BrowserStreamAdapter } from './stream';
 import { BrowserContentSendAdapter } from './send';
@@ -15,5 +16,5 @@ import { BrowserFileAdapter } from './file';
         { provide: ResponseStatusFormater, useClass: BrowserResponseStatusFormater }
     ]
 })
-export class BrowserTransportModule { }
+export class BrowserEndpointModule { }
 

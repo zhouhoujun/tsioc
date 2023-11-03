@@ -1,7 +1,7 @@
 import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
 import { BadRequestExecption, joinPath } from '@tsdi/common';
 import { PROCESS_ROOT } from '@tsdi/core';
-import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/transport';
+import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 
 
 @Injectable({ static: true })

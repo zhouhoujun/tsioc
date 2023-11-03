@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import {
     Bodyparser, Content, Json,
-    CorsMiddleware, CsrfMiddleware, HelmetMiddleware
+    Cors, Csrf, HelmetMiddleware
 } from './interceptors';
 
 
@@ -11,8 +11,8 @@ import {
         Content,
         Json,
 
-        CorsMiddleware,
-        CsrfMiddleware,
+        Cors,
+        Csrf,
         HelmetMiddleware
     ]
 })

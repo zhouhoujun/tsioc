@@ -1,11 +1,12 @@
 import { Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure } from '@tsdi/logger';
-import { HttpServer, HttpServerModule } from '@tsdi/transport-http';
+import { HttpModule } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerLog4Module } from '@tsdi/platform-server/log4js'
+import { ServerLog4Module } from '@tsdi/platform-server/log4js';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints'
 import { SwaggerModule } from '@tsdi/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -14,6 +15,8 @@ import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { Role } from './models/Role';
+import { AssetTransportModule, Bodyparser, Content, Cors, Json } from '@tsdi/endpoints/assets';
+import { EndpointsModule } from '@tsdi/endpoints';
 
 
 
@@ -96,16 +99,25 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         LoggerModule.withOptions(logconfig),
         ServerModule,
         ServerLog4Module,
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections),
-        HttpServerModule.withOption({
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
                 majorVersion: 2,
-                cors: true,
                 serverOpts: {
                     cert,
                     key
-                }
+                },
+                interceptors: [
+                    Cors,
+                    Content,
+                    Json,
+                    Bodyparser,
+                ]
             }
         }),
         SwaggerModule.withOptions({
@@ -118,8 +130,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockTransBootTest {
 

@@ -2,6 +2,8 @@ import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '
 import { RequestMethod, InternalServerExecption, hdr } from '@tsdi/common';
 import { Middleware, AssetContext } from '@tsdi/endpoints';
 import { append, vary } from '../utils';
+import { Handler, Interceptor } from '@tsdi/core';
+import { defer, from, lastValueFrom, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
 
 
 
@@ -62,7 +64,7 @@ export abstract class CorsOptions {
 
 
 @Injectable()
-export class CorsMiddleware implements Middleware<AssetContext> {
+export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
     private options: Options;
 
@@ -94,6 +96,107 @@ export class CorsMiddleware implements Middleware<AssetContext> {
         options.keepHeadersOnError = options.keepHeadersOnError === undefined || !!options.keepHeadersOnError;
 
         return options as Options
+    }
+
+    intercept(ctx: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+        const requestOrigin = ctx.getHeader(hdr.ORIGIN);
+        !ctx.sent && vary(ctx.response, hdr.ORIGIN);
+        if (!requestOrigin) {
+            return next.handle(ctx)
+        }
+
+        return defer(async () => {
+            let options = this.options || {};
+
+            let origin;
+            if (isFunction(options.origin)) {
+                origin = options.origin(ctx);
+
+                if (isPromise(origin)) {
+                    origin = await origin;
+                }
+                if (!origin) {
+                    return await lastValueFrom(next.handle(ctx));
+                }
+
+            } else {
+                origin = options.origin || requestOrigin
+            }
+
+            const headersSet: any = {};
+
+            const set = (key: string, value: any) => {
+                ctx.setHeader(key, value);
+                headersSet[key] = value
+            };
+
+            if (ctx.method !== 'OPTIONS') {
+                set(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                if (options.credentials === true) {
+                    set(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
+                }
+
+                if (options.exposeHeaders) {
+                    set(hdr.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders)
+                }
+
+                if (!options.keepHeadersOnError) {
+                    return await lastValueFrom(next.handle(ctx));
+                }
+
+                try {
+                    await lastValueFrom(next.handle(ctx));
+                } catch (err: any) {
+                    const errHeadersSet = err.headers || {};
+                    const varyWithOrigin = append(errHeadersSet.vary || errHeadersSet.Vary || '', 'Origin');
+                    delete errHeadersSet.Vary;
+
+                    err.headers = {
+                        ...errHeadersSet,
+                        ...headersSet,
+                        ...{ vary: varyWithOrigin },
+                    };
+                    const statusMessage = err.message || err.toString() || '';
+                    if (err.status) {
+                        err.statusMessage = statusMessage;
+                        throw err;
+                    } else {
+                        throw new InternalServerExecption(statusMessage);
+                    }
+                }
+            } else {
+                if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
+                    // this not preflight request, ignore it
+                    return await lastValueFrom(next.handle(ctx));
+                }
+
+                options = this.options;
+                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+
+                if (options.credentials === true) {
+                    ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
+                }
+
+                const maxAge = String(options.maxAge);
+                if (maxAge) {
+                    ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge)
+                }
+
+                if (options.allowMethods) {
+                    ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods)
+                }
+
+                let allowHeaders = options.allowHeaders;
+                if (!allowHeaders) {
+                    allowHeaders = ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_HEADERS) as string
+                }
+                if (allowHeaders) {
+                    ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
+                }
+                ctx.status = ctx.vaildator.noContent;
+            }
+        });
+
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {

@@ -1,8 +1,11 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
+import { HttpModule } from '@tsdi/http';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
 import * as fs from 'fs';
@@ -12,6 +15,7 @@ import { TypeormModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
+import { ClientModule } from '@tsdi/common/client';
 // import { UserRepository } from './repositories/UserRepository';
 
 
@@ -51,9 +55,18 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
     imports: [
         ServerModule,
         LoggerModule,
-        HttpServerModule.withOption({
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
-                majorVersion: 1
+                majorVersion: 1,
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                ]
             }
         }),
         HttpClientModule,
@@ -72,8 +85,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockBootTest {
 
@@ -85,9 +97,18 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpServerModule.withOption({
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
-                majorVersion: 1
+                majorVersion: 1,
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                ]
             }
         }),
         HttpClientModule,
@@ -102,8 +123,7 @@ export class MockBootTest {
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockBootLoadTest {
 
@@ -116,9 +136,18 @@ export class MockBootLoadTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpServerModule.withOption({
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
-                majorVersion: 1
+                majorVersion: 1,
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                ]
             }
         }),
         HttpClientModule,
@@ -133,8 +162,7 @@ export class MockBootLoadTest {
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockTransBootTest {
 
@@ -145,21 +173,31 @@ export class MockTransBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
+        ClientModule.register({
+            transport: 'http',
             clientOpts: {
                 authority: 'https://localhost:3000',
-                options: {
+                connectOpts: {
                     ca: cert
                 }
             }
         }),
-        HttpServerModule.withOption({
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
                 majorVersion: 2,
                 serverOpts: {
                     key,
                     cert
-                }
+                },
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser,
+                ]
             }
         }),
         TransactionModule,
@@ -172,8 +210,7 @@ export class MockTransBootTest {
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class Http2TransBootTest {
 

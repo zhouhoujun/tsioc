@@ -1,6 +1,8 @@
 import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { GET, HEAD, OPTIONS, ForbiddenExecption, hdr } from '@tsdi/common';
 import { AssetContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
+import { Handler, Interceptor } from '@tsdi/core';
+import { Observable, throwError } from 'rxjs';
 
 
 
@@ -71,13 +73,56 @@ export abstract class CsrfTokensFactory {
 }
 
 @Injectable()
-export class CsrfMiddleware implements Middleware<AssetContext> {
+export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;
     constructor(factory: CsrfTokensFactory, @Nullable() options: CsrfOptions) {
         this.options = { ...defOpts, ...options };
         this.tokens = factory.create(this.options);
+    }
+
+    intercept(ctx: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+        ctx.injector.inject({
+            provide: CSRF,
+            useFactory: () => {
+                const se = ctx.injector.get(SessionAdapter, null);
+                if (!se) {
+                    return null
+                }
+                if (!se.secret) {
+                    se.secret = this.tokens.secretSync();
+                }
+                return this.tokens.create(se.secret)
+            }
+        });
+
+        const session = ctx.injector.get(SessionAdapter, null);
+        if (!session || this.options.excludedMethods?.indexOf(ctx.method) !== -1) {
+            return next.handle(ctx)
+        }
+
+        if (!session.secret) {
+            session.secret = this.tokens.secretSync()
+        }
+
+
+        const bodyToken = ctx.request.body && typeof ctx.request.body._csrf === 'string' ? ctx.request.body._csrf : false;
+        const token = bodyToken || !this.options.disableQuery && ctx.query && ctx.query._csrf
+            || ctx.getHeader(hdr.CSRF_TOKEN)
+            || ctx.getHeader(hdr.XSRF_TOKEN)
+            || ctx.getHeader(hdr.X_CSRF_TOKEN)
+            || ctx.getHeader(hdr.X_XSRF_TOKEN);
+
+        if (!token) {
+            return throwError(()=> new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
+        }
+
+        if (!this.tokens.verify(session.secret, token)) {
+            return throwError(()=> new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
+        }
+
+        return next.handle(ctx)
     }
 
     async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {

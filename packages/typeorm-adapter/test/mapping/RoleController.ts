@@ -1,4 +1,4 @@
-import { RouteMapping, RequestParam, Controller, Post, Put, Get, Delete, RequestPath } from '@tsdi/transport';
+import { RouteMapping, RequestParam, Controller, Post, Put, Get, Delete, RequestPath } from '@tsdi/endpoints';
 import { Log, Logger } from '@tsdi/logger';
 import { InternalServerExecption } from '@tsdi/common';
 import { InjectRepository, Transactional } from '@tsdi/repository';
