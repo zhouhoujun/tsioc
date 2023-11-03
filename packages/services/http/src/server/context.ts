@@ -1,4 +1,4 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession, normalize } from '@tsdi/common';
 import { Injectable, Injector, isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { append, parseTokenList, AbstractAssetContext } from '@tsdi/endpoints/assets';
 import * as assert from 'assert';
@@ -34,6 +34,10 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
 
     get socket() {
         return this.request.socket
+    }
+
+    protected getOriginalUrl(request: HttpServRequest) {
+        return normalize(request.url || '');
     }
 
 

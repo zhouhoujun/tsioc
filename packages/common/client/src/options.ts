@@ -22,7 +22,6 @@ export interface ClientTransportPacketStrategy {
 }
 
 export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<TransportRequest> {
-    [x: string]: any;
     /**
      * url
      */

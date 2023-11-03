@@ -1,18 +1,20 @@
-import { Module } from '@tsdi/ioc';
+import { Module, isString } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule, SetupServices } from '@tsdi/endpoints';
-import { AssetTransportModule } from '@tsdi/endpoints/assets';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { WsModule, WsServer } from '@tsdi/ws';
+import { WsClient, WsClientOpts, WsModule } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { HTTP_MIDDLEWARES, Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpModule, HttpServer } from '../src';
+import { SENSORS, WsService } from './demo';
+import { TransportErrorResponse } from '@tsdi/common';
 
 
 
@@ -27,22 +29,39 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         AssetTransportModule,
         HttpModule,
         WsModule,
-        ClientModule.register({
-            transport: 'http',
-            clientOpts: {
-                authority: 'https://localhost:3200',
-                options: {
-                    ca: cert
+        ClientModule.register([
+            {
+                transport: 'ws',
+                clientOpts: {
+                    url: 'wss://localhost:3200',
+                    // host: 'localhost:3200',
+                    connectOpts: {
+                        ca: cert
+                    }
+                } as WsClientOpts      
+            },
+            {
+                transport: 'http',
+                clientOpts: {
+                    authority: 'https://localhost:3200',
+                    connectOpts: {
+                        ca: cert
+                    }
                 }
             }
-        }),
+        ]),
         EndpointsModule.register([
             {
                 microservice: true,
                 bootstrap: false,
                 transport: 'ws',
                 serverOpts: {
-                    heybird: true
+                    heybird: true,
+                    interceptors:[
+                        Content,
+                        Json,
+                        Bodyparser
+                    ]
                 }
             },
             {
@@ -64,7 +83,16 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 }
             }
         ])
+    ],
+
+    providers: [
+        { provide: SENSORS, useValue: 'sensor01', multi: true },
+        { provide: SENSORS, useValue: 'sensor02', multi: true },
+    ],
+    declarations: [
+        WsService
     ]
+
 })
 class ModuleB {
 
@@ -73,23 +101,20 @@ class ModuleB {
 describe('middleware', () => {
 
     let ctx: ApplicationContext;
+    let client: WsClient;
 
     before(async () => {
         ctx = await Application.run(ModuleB);
-    })
-
-    it('use in http server.', async () => {
-
         const runable = ctx.runners.getRef(HttpServer);
 
         runable.getInstance().use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
-                console.log('message queue test: ' + ctx.args);
+                console.log('message queue test: ' + ctx.query);
             }
 
-            ctx.body = ctx.args.hi;
-            console.log(ctx.body, ctx.args);
+            ctx.body = ctx.query.hi;
+            console.log(ctx.body, ctx.query);
             return next();
         }, 0);
 
@@ -97,6 +122,12 @@ describe('middleware', () => {
         // await ctx.runners.run([WsServer, HttpServer]);
         //or
         await ctx.get(SetupServices).run();
+
+        client = ctx.injector.get(WsClient);
+
+    })
+
+    it('use in http server.', async () => {
 
         const http = ctx.injector.get(Http);
 
@@ -109,6 +140,134 @@ describe('middleware', () => {
                 })));
         expect(rep.body).toEqual('hello');
         expect(rep.status).toEqual(200);
+    });
+
+    it('cmd message', async () => {
+        const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor.message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor.message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a.status).toEqual(404);
+    });
+
+    it('sensor.message/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor.message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor/message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor/message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a.status).toEqual(404);
+    });
+
+    it('sensor/message/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor/message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor/submessage/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor/submessage/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('Subscribe sensor message', async () => {
+        const a = await lastValueFrom(client.send('sensor/sensor01/start', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('Subscribe sensor message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor/sensor03/start', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a.status).toEqual(404);
     });
 
     after(async () => {

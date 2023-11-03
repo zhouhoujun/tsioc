@@ -1,9 +1,11 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { EndpointsModule } from '@tsdi/endpoints';
 import { ClientModule } from '@tsdi/common/client';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsModule } from '@tsdi/ws';
 
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -25,6 +27,8 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
     imports: [
         ServerModule,
         LoggerModule,
+        ServerEndpointModule,
+        AssetTransportModule,
         HttpModule,
         WsModule,
         ClientModule.register([
@@ -59,6 +63,11 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                         key,
                         cert
                     },
+                    interceptors: [
+                        Content,
+                        Json,
+                        Bodyparser
+                    ],
                     listenOpts: {
                         port: 3200
                     }
@@ -342,6 +351,6 @@ describe('http2 server, Http', () => {
     })
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 });

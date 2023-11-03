@@ -57,7 +57,6 @@ export class Http extends Client<HttpRequest, number> {
 
                 const conn = this.createConnection(this.option);
 
-
                 let cleaned = false;
                 const onError = (err: Error) => {
                     conn.close();

@@ -140,7 +140,7 @@ export class SetupServices {
             } else {
                 providers.push({
                     provide: endpointType,
-                    useFactory: (injector: Injector, serverOpts: ServerOpts) => {
+                    useFactory: (injector: Injector, serverOpts: ServerOpts & MiddlewareOpts) => {
                         return (!microservice && serverOpts.middlewaresToken && serverOpts.middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createTransportEndpoint(injector, serverOpts)
                     },
                     asDefault: true,

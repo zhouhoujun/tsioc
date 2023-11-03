@@ -1,12 +1,58 @@
 import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; 
 import { BadRequestExecption } from '@tsdi/common';
+
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, TransportContext, compose, NEXT, Get, Payload
+    Middleware, TransportContext, compose, NEXT, Get, Payload, Subscribe
 } from '@tsdi/endpoints';
 import { RedirectResult } from '@tsdi/endpoints/assets';
+import { WsClient } from '@tsdi/ws';
 import { HttpContext } from '../src/server/context';
+
+
+export const SENSORS = tokenId<string[]>('SENSORS');
+
+
+@Injectable()
+export class WsService {
+
+    constructor(private client: WsClient) {
+
+    }
+
+
+    @Handle({ cmd: 'xxx' })
+    async handleMessage(@Payload() message: string) {
+        return message;
+    }
+
+    @Handle('sensor.message/*')
+    async handleMessage1(@Payload() message: string) {
+        return message;
+    }
+
+    @Handle('sensor/message/*', 'ws')
+    async handleMessage2(@Payload() message: string) {
+        return message;
+    }
+
+    @Subscribe('sensor/submessage/*')
+    async subMessage2(@Payload() message: string) {
+        return message;
+    }
+
+    @Subscribe('sensor/:id/start', 'ws', {
+        paths: {
+            id: SENSORS
+        }
+    })
+    async subsMessage(@RequestPath() id: string, @Payload() message: string) {
+        //todo start sensor
+        // this.client.send('');
+        return message;
+    }
+}
 
 
 @RouteMapping('/device')

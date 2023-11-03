@@ -67,7 +67,7 @@ describe('middleware', () => {
         runable.getInstance().use((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
-                console.log('message queue test: ' + ctx.payload);
+                console.log('message queue test: ' + ctx.args);
             }
 
             ctx.body = ctx.query.hi;

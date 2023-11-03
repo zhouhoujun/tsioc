@@ -74,7 +74,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     readonly withCredentials: boolean = false;
 
     
-    readonly observe: 'body' | 'events' | 'response';
+    readonly observe: 'body' | 'events' | 'response' | 'observe' | 'emit';
 
     /**
      * The expected response type of the server.

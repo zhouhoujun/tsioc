@@ -51,9 +51,6 @@ export const TRANSPORT_PACKET_STRATEGIES: Record<string, TransportPacketStrategy
  * server options
  */
 export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any> {
-
-    [x: string]: any;
-
     /**
      * socket timeout.
      */
@@ -131,11 +128,6 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
         return this;
     }
 
-    // @Startup()
-    // startup() {
-    //     return this.onStartup()
-    // }
-
     @Runner()
     start() {
         return this.onStart()
@@ -145,8 +137,6 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
     close() {
         return this.onShutdown()
     }
-
-    // protected abstract onStartup(): Promise<any>;
 
     protected abstract onStart(): Promise<any>;
 

@@ -122,16 +122,6 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         await this.onStartup();
         if (!this._server) throw new InternalServerExecption();
         const opts = this.options;
-        // const injector = this.endpoint.injector;
-        // const hybrids = opts.hybrids;
-        // //hybrids servers
-        // if (hybrids) {
-        //     injector.setValue(HYBRID_HOST, this._server);
-        //     const runners = injector.get(ApplicationRunners);
-        //     await Promise.all(hybrids.map(sr => {
-        //         return runners.run(sr);
-        //     }))
-        // }
 
         const injector = this.endpoint.injector;
         const factory = injector.get(TransportSessionFactory);
@@ -140,11 +130,6 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(this._server, transportOpts);
         injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
-
-        // this._server.on(ev.REQUEST, (req, res) => this.requestHandler(req, res));
-        // this._server.on(ev.CLOSE, () => this.logger.info('Http server closed!'));
-        // this._server.on(ev.ERROR, (err) => this.logger.error(err));
-
 
         // notify hybrid service to bind http server.
         await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));

@@ -107,11 +107,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
     abstract get pathname(): string;
 
     /**
-     * request URL query parameters.
-     */
-    abstract get query(): Record<string, string | string[] | number | any>;
-
-    /**
      * can response stream writeable
      */
     abstract get writable(): boolean;

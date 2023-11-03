@@ -3,7 +3,9 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsModule } from '@tsdi/ws';
 
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -25,6 +27,8 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
     imports: [
         ServerModule,
         LoggerModule,
+        ServerEndpointModule,
+        AssetTransportModule,
         HttpModule,
         WsModule,
         ClientModule.register([
@@ -32,7 +36,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 transport: 'http',
                 clientOpts: {
                     authority: 'https://localhost:3200',
-                    options: {
+                    connectOpts: {
                         ca: cert
                     }
                 }
@@ -58,13 +62,16 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                         key,
                         cert
                     },
+                    interceptors: [
+                        BigFileInterceptor,
+                        Content,
+                        Json,
+                        Bodyparser
+                    ],
                     listenOpts: {
                         port: 3200
                     }
-                },
-                providers: [
-                    { provide: HTTP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-                ]
+                }
             }
         ]),
         DeviceManageModule,
@@ -341,6 +348,6 @@ describe('http2 Secure server, Secure Http', () => {
     })
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 });

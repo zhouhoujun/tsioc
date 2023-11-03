@@ -1,10 +1,10 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, HeaderPacket, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev } from '@tsdi/common';
+import { Context, Decoder, Encoder, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr, statusMessage } from '@tsdi/common';
 import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
 import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
-import { Observable, defer, first, fromEvent, map, merge, mergeMap, share } from 'rxjs';
+import { Observable, defer, fromEvent, map, mergeMap, share } from 'rxjs';
 import { HttpServRequest, HttpServResponse } from './server/context';
 import { HttpClientOpts } from './client/options';
 
@@ -117,36 +117,58 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
             .pipe(
                 mergeMap(stream => {
                     if (stream instanceof ClientRequest) {
-                        const $close = fromEvent(stream, ev.CLOSE).pipe((err) => { throw err });
-                        const $error = fromEvent(stream, ev.ERROR).pipe((err) => { throw err });
-                        const $about = fromEvent(stream, ev.ABOUT).pipe((err) => { throw err });
-                        const $timout = fromEvent(stream, ev.TIMEOUT).pipe((err) => { throw err });
-                        const $source = fromEvent(stream, ev.RESPONSE, (resp: IncomingMessage) => resp);
+                        return new Observable<ResponseMsg>(subscribe => {
+                            const onResponse = (resp: IncomingMessage) => subscribe.next(resp);
+                            const onError = (err: any) => err && subscribe.error(err);
+                            stream.on(ev.CLOSE, onError);
+                            stream.on(ev.ERROR, onError);
+                            stream.on(ev.ABOUT, onError);
+                            stream.on(ev.TIMEOUT, onError);
+                            stream.on(ev.RESPONSE, onResponse);
 
-                        return merge($source, $close, $error, $about, $timout).pipe(first()) as Observable<ResponseMsg>;
+                            return () => {
+                                stream.off(ev.CLOSE, onError);
+                                stream.off(ev.ERROR, onError);
+                                stream.off(ev.ABOUT, onError);
+                                stream.off(ev.TIMEOUT, onError);
+                                stream.off(ev.RESPONSE, onResponse);
+                                subscribe.unsubscribe();
+                            }
+                        })
                     } else {
                         return fromEvent(stream, ev.RESPONSE, (headers) => ({ headers, stream })) as Observable<ResponseMsg>;
                     }
                 }),
                 mergeMap(msg => {
-                    let headPkg: HeaderPacket;
+                    let headPkg: ResponsePacket;
                     let stream: IReadableStream;
                     if (msg instanceof IncomingMessage) {
-                        const { headers, httpVersion, httpVersionMinor } = msg;
+                        const { headers, statusCode, statusMessage, httpVersion, httpVersionMinor } = msg;
                         headPkg = {
                             headers,
+                            status: statusCode,
+                            statusText: statusMessage,
                             httpVersion,
                             httpVersionMinor
-                        } as HeaderPacket;
+                        } as ResponsePacket;
                         stream = msg
                     } else {
+                        const status = (msg.headers[hdr.STATUS2] ?? 200) as HttpStatusCode;
                         headPkg = {
+                            status,
+                            statusText: (msg.headers[hdr.STATUS_MESSAGE] || statusMessage[status]) as string,
                             headers: msg.headers
                         };
                         stream = msg.stream;
                     }
                     const ctx = new Context(this.injector, this, stream, headPkg);
                     return this.decoder.handle(ctx)
+                        .pipe(
+                            map((pkg: ResponsePacket)=> {
+                                pkg.stream = stream;
+                                return pkg;
+                            })
+                        );
                 })
             )
 
@@ -238,26 +260,20 @@ export class HttpServerTransportSession implements TransportSession<Http2Server 
 
     receive(): Observable<IncomingPacket> {
 
-        // const $source = fromEvent(this.socket, ev.REQUEST, (req, res) => ({ req, res } as RequestMsg))
-        // const $close = fromEvent(this.socket, ev.CLOSE).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        // const $error = fromEvent(this.socket, ev.ERROR).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        // const $about = fromEvent(this.socket, ev.ABOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        // const $timout = fromEvent(this.socket, ev.TIMEOUT).pipe((err) => { throw err }) as Observable<RequestMsg>;
-        // return merge($source, $close, $error, $about, $timout).pipe(
-        //     first(),
-
         return new Observable<RequestMsg>(subscribe => {
             const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next({ req, res } as RequestMsg);
             const onError = (err: any) => err && subscribe.error(err);
             this.socket.on(ev.CLOSE, onError);
-            this.socket.on(ev.TIMEOUT, onError);
             this.socket.on(ev.ERROR, onError);
+            this.socket.on(ev.ABOUT, onError);
+            this.socket.on(ev.TIMEOUT, onError);
             this.socket.on(ev.REQUEST, onRequest);
 
             return () => {
                 this.socket.off(ev.CLOSE, onError);
-                this.socket.off(ev.TIMEOUT, onError);
                 this.socket.off(ev.ERROR, onError);
+                this.socket.off(ev.ABOUT, onError);
+                this.socket.off(ev.TIMEOUT, onError);
                 this.socket.off(ev.REQUEST, onRequest);
                 subscribe.unsubscribe();
             }

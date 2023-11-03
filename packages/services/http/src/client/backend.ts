@@ -3,7 +3,7 @@ import { Backend } from '@tsdi/core';
 import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common';
 import { ResponseTransform } from '@tsdi/common/client';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
-import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
+import { Observable, catchError, finalize, mergeMap, of, take, throwError } from 'rxjs';
 
 
 const defaultTransform = {
@@ -37,7 +37,7 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
         const transform = context.get(getToken(ResponseTransform, session.getPacketStrategy())) ?? defaultTransform;
 
         let obs$: Observable<ResponsePacket>;
-        switch (req.observe as any) {
+        switch (req.observe) {
             case 'emit':
                 obs$ = session.send(pkg, context).pipe(take(1));
                 break;
@@ -52,7 +52,11 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
             catchError((err, caught) => {
                 return throwError(() => this.createErrorResponse({ url, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
             }),
-            mergeMap(p => transform.transform(req, p, this))
+            mergeMap(p => transform.transform(req, p, this).pipe(
+                finalize(() => {
+                    if (p.stream && req.observe !== 'observe') p.stream.destroy?.();
+                })
+            ))
         );
 
     }

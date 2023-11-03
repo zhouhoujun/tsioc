@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, TransportContextFactory } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -79,6 +79,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         FinalizeFilter
                     ],
                     providers: [
+                        { provide: TransportContextFactory, useExisting: HttpAssetContextFactory },
                         { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
@@ -114,6 +115,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         FinalizeFilter
                     ],
                     providers: [
+                        { provide: TransportContextFactory, useExisting: HttpAssetContextFactory },
                         { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }

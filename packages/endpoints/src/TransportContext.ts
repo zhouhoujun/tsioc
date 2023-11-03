@@ -83,6 +83,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * original url
      */
     abstract get originalUrl(): string;
+    
+    /**
+     * request query parameters.
+     */
+    abstract get query(): Record<string, string | string[] | number | any>;
 
     /**
      * The request method.
