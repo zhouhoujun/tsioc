@@ -52,8 +52,7 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: [HttpServer, WsServer]
+    ]
 })
 export class WsTestModule {
 
