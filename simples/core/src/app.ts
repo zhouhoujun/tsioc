@@ -1,5 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure } from '@tsdi/logger';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule, Bodyparser, Content, Cors, Json } from '@tsdi/endpoints/assets';
 import { HttpModule } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
@@ -15,8 +17,6 @@ import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { Role } from './models/Role';
-import { AssetTransportModule, Bodyparser, Content, Cors, Json } from '@tsdi/endpoints/assets';
-import { EndpointsModule } from '@tsdi/endpoints';
 
 
 

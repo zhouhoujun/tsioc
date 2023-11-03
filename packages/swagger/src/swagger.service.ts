@@ -1,7 +1,7 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
 import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
+import { LOCALHOST, joinPath } from '@tsdi/common';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
 import { AssetContext, ControllerRoute, HybridRouter, RouteMappingMetadata, Router } from '@tsdi/endpoints';
 import { HttpServer } from '@tsdi/http'
@@ -56,29 +56,6 @@ export class SwaggerService {
 
         this.buildDoc(router, doc, getModelResolver);
 
-        const fspath = getAbsoluteFSPath();
-
-
-        const http = moduleRef.get(HttpServer);
-
-        http.useInterceptors(Content.create({
-            root: fspath,
-            baseUrl: false,
-            index: false
-        }), 1);
-
-        http.useInterceptors({
-            intercept: (input, next) => {
-                if (input.url.endsWith('swagger-ui-init.js')) {
-                    (input as AssetContext).contentType = ctype.APPL_JAVASCRIPT;
-                    input.body = this.swaggerInit;
-                    return of(input.response);
-                } else {
-                    return next.handle(input);
-                }
-            }
-        }, 2);
-
         const prefix = opts.prefix ?? 'api-doc';
         router.use(prefix, async (ctx, next) => {
             const html = this.generateHTML(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle);
@@ -86,8 +63,34 @@ export class SwaggerService {
             (ctx as AssetContext).body = html;
         });
 
-        const httpopts = moduleRef.get(HTTP_LISTEN_OPTS);
-        this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${prefix}`, '!')
+        const httpRefs = ctx.runners.getRefs(HttpServer);
+        const fspath = getAbsoluteFSPath();
+        httpRefs.forEach(httpRef => {
+            const http = httpRef.getInstance();
+            http.useInterceptors(Content.create({
+                root: fspath,
+                baseUrl: false,
+                index: false
+            }), 1);
+
+            http.useInterceptors({
+                intercept: (input, next) => {
+                    if (input.url.endsWith('swagger-ui-init.js')) {
+                        (input as AssetContext).contentType = ctype.APPL_JAVASCRIPT;
+                        input.body = this.swaggerInit;
+                        return of(input.response);
+                    } else {
+                        return next.handle(input);
+                    }
+                }
+            }, 2);
+            const httpopts = http.options.listenOpts ?? {};
+            this.logger.info('Swagger started!', 'access with url:', `${http.options.protocol ?? 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
+        });
+
+
+        // const httpopts = moduleRef.get(HTTP_LISTEN_OPTS);
+        // this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${prefix}`, '!')
 
     }
 

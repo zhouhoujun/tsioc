@@ -1,5 +1,5 @@
 import { InternalServerExecption } from '@tsdi/common';
-import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/transport';
+import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/endpoints';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
