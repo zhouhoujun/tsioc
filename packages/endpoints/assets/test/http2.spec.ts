@@ -2,14 +2,14 @@
 // import { Application, ApplicationContext } from '@tsdi/core';
 // import { LoggerModule } from '@tsdi/logger';
 // import { ServerModule } from '@tsdi/platform-server';
-// import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
+// import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/http';
 // import { catchError, lastValueFrom, of } from 'rxjs';
 // import expect = require('expect');
 // import * as fs from 'fs';
 // import * as path from 'path';
 
 // import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
-// import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule } from '@tsdi/transport-tcp';
+// import { TcpClient, TcpClientModule, TcpMicroService, TcpMicroServModule } from '@tsdi/tcp';
 
 
 // const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));

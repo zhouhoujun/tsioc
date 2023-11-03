@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/transport-redis",
+  "name": "@tsdi/redis",
   "version": "6.0.31",
   "description": "Application redis service. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {

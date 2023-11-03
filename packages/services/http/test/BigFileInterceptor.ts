@@ -1,6 +1,6 @@
 import { Handler, Interceptor } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
-import { AssetContext, ctype } from '@tsdi/transport';
+import { AssetContext, ctype } from '@tsdi/endpoints';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';

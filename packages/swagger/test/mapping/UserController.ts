@@ -1,5 +1,5 @@
 import { Inject, Injector, lang } from '@tsdi/ioc';
-import { RouteMapping } from '@tsdi/transport';
+import { RouteMapping } from '@tsdi/endpoints';
 import { ApiOperation, ApiParam } from '@tsdi/swagger';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';

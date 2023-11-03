@@ -3,7 +3,7 @@ import { BadRequestExecption } from '@tsdi/common';
 import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
 import {  of } from 'rxjs';
 import { UdpClient } from '../src';
-import { RedirectResult } from '@tsdi/transport';
+import { RedirectResult } from '@tsdi/endpoints';
 
 
 @RouteMapping('/device')

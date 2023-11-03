@@ -3,12 +3,13 @@ import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isN
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HTTP_LISTEN_OPTS, joinPath } from '@tsdi/common';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
-import { AssetContext, Content, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ctype } from '@tsdi/transport';
-import { HttpServer } from '@tsdi/transport-http'
+import { AssetContext, ControllerRoute, HybridRouter, RouteMappingMetadata, Router } from '@tsdi/endpoints';
+import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
+import { Content, ctype } from '@tsdi/endpoints/assets';
 
 
 
@@ -60,7 +61,7 @@ export class SwaggerService {
 
         const http = moduleRef.get(HttpServer);
 
-        http.useInterceptors(Content.create({
+        http.useInterceptors(new Content({
             root: fspath,
             baseUrl: false,
             index: false
@@ -69,7 +70,7 @@ export class SwaggerService {
         http.useInterceptors({
             intercept: (input, next) => {
                 if (input.url.endsWith('swagger-ui-init.js')) {
-                    input.contentType = ctype.APPL_JAVASCRIPT;
+                    (input as AssetContext).contentType = ctype.APPL_JAVASCRIPT;
                     input.body = this.swaggerInit;
                     return of(input.response);
                 } else {

@@ -4,13 +4,16 @@ import { ServerModule } from '@tsdi/platform-server';
 import { HttpClientModule } from '@tsdi/common/http';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
-import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/transport-http';
+import { HttpModule } from '@tsdi/http';
 import { Connection } from 'typeorm';
 import { Role, User } from './models/models';
 import { UserController } from './controllers/UserController';
 import { RoleController } from './controllers/RoleController';
 import { UserRepository } from './repositories/UserRepository';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
 
@@ -46,13 +49,21 @@ export const option = {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpServerModule.withOption({
-            serverOpts: {
-                majorVersion: 1
-            }
-        }),
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
+        EndpointsModule.register({
+            transport: 'http',
+            serverOpts: {
+                interceptors:[
+                    Content,
+                    Json,
+                    Bodyparser
+                ]
+            }
+        }),
         TypeOrmModule.withConnection({
             ...option,
             entities: [
@@ -67,8 +78,7 @@ export const option = {
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockBootTest {
 
@@ -80,13 +90,21 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpServerModule.withOption({
-            serverOpts: {
-                majorVersion: 1
-            }
-        }),
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
+        EndpointsModule.register({
+            transport: 'http',
+            serverOpts: {
+                interceptors:[
+                    Content,
+                    Json,
+                    Bodyparser
+                ]
+            }
+        }),
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
@@ -97,8 +115,7 @@ export class MockBootTest {
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockBootLoadTest {
 
@@ -111,13 +128,21 @@ export class MockBootLoadTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpServerModule.withOption({
-            serverOpts: {
-                majorVersion: 1
-            }
-        }),
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
+        EndpointsModule.register({
+            transport: 'http',
+            serverOpts: {
+                interceptors:[
+                    Content,
+                    Json,
+                    Bodyparser
+                ]
+            }
+        }),
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
@@ -128,8 +153,7 @@ export class MockBootLoadTest {
     providers: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockTransBootTest {
 

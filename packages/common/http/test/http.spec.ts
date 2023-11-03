@@ -3,16 +3,17 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, AssetContext, compose, NEXT, MicroServRouterModule
-} from '@tsdi/transport';
+    Middleware, AssetContext, compose, NEXT, MicroServRouterModule, EndpointsModule
+} from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { RedirectResult } from '@tsdi/transport';
-import { HttpServer, HttpServerModule } from '@tsdi/transport-http';
+import { HttpModule } from '@tsdi/http';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { HttpClient, HttpClientModule } from '..';
+import { AssetTransportModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
 
 
 @RouteMapping('/device')
@@ -196,13 +197,19 @@ class DeviceAModule {
     imports: [
         ServerModule,
         LoggerModule,
-        // TcpModule,
-        HttpServerModule.withOption({
+        ServerEndpointModule,
+        AssetTransportModule,
+        HttpModule,
+        HttpClientModule,
+        ServerHttpClientModule,
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
-                majorVersion: 1,
-                // allowHTTP1: true,
-                // key,
-                // cert
+                interceptors:[
+                    Content,
+                    Json,
+                    Bodyparser
+                ]
             }
         }),
         HttpClientModule,
@@ -217,8 +224,7 @@ class DeviceAModule {
     ],
     declarations: [
         DeviceController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 class MainApp {
 

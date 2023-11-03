@@ -3,9 +3,9 @@
 // import { LoggerModule } from '@tsdi/logger';
 // import { BadRequestExecption } from '@tsdi/common';
 // import { ServerModule } from '@tsdi/platform-server';
-// import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '@tsdi/transport-tcp';
+// import { TCP_CLIENT_OPTS, TcpClient, TcpClientModule, TcpClientOpts, TcpServer, TcpServerModule } from '@tsdi/tcp';
 // import { catchError, lastValueFrom, of } from 'rxjs';
-// import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult  } from '@tsdi/transport';
+// import { Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult  } from '@tsdi/endpoints';
 // import expect = require('expect');
 // import path = require('path');
 // import del = require('del');

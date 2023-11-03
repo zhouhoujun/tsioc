@@ -449,7 +449,7 @@ Documentation is available on the
 * [@tsdi/logger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/logger).
 * [@tsdi/common document](https://github.com/zhouhoujun/tsioc/tree/master/packages/common).
 * [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
-* [@tsdi/transport document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport).
+* [@tsdi/endpoints document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport).
 * [@tsdi/amqp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/amqp).
 * [@tsdi/coap document](https://github.com/zhouhoujun/tsioc/tree/master/packages/coap).
 * [@tsdi/http document](https://github.com/zhouhoujun/tsioc/tree/master/packages/http).
@@ -481,7 +481,7 @@ Documentation is available on the
 [@tsdi/logger](https://www.npmjs.com/package/@tsdi/logger)
 [@tsdi/common](https://www.npmjs.com/package/@tsdi/common)
 [@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
-[@tsdi/transport](https://www.npmjs.com/package/@tsdi/transport)
+[@tsdi/endpoints](https://www.npmjs.com/package/@tsdi/endpoints)
 [@tsdi/amqp](https://www.npmjs.com/package/@tsdi/amqp)
 [@tsdi/coap](https://www.npmjs.com/package/@tsdi/coap)
 [@tsdi/http](https://www.npmjs.com/package/@tsdi/http)

@@ -14,7 +14,7 @@
 //     NEXT
 // } from '../src';
 // import { LoggerModule } from '@tsdi/logger';
-// import { Http, HttpContext, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
+// import { Http, HttpContext, HttpServerModule, HttpServer, HttpModule } from '@tsdi/http';
 
 
 // @RouteMapping('/device')

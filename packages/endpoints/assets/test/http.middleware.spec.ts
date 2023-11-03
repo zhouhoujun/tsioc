@@ -2,7 +2,7 @@
 // import { LoggerModule } from '@tsdi/logger';
 // import { Application } from '@tsdi/core';
 // import { ServerModule } from '@tsdi/platform-server';
-// import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/transport-http';
+// import { Http, HttpServerModule, HttpServer, HttpModule } from '@tsdi/http';
 
 // import expect = require('expect');
 // import { catchError, lastValueFrom, of } from 'rxjs';
