@@ -1,13 +1,16 @@
 import { Module } from '@tsdi/ioc';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
-import { HttpModule, HttpServer, HttpServerModule } from '@tsdi/http';
+import { HttpModule } from '@tsdi/http';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { SwaggerModule } from '../src/swagger.module';
 import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { ConnectionOptions } from '@tsdi/repository';
 import { HttpClientModule } from '@tsdi/common/http';
+import { EndpointsModule } from '@tsdi/endpoints';
+import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
 export const option = <ConnectionOptions>{
@@ -41,12 +44,21 @@ export const option = <ConnectionOptions>{
     baseURL: __dirname,
     imports: [
         ServerModule,
-        HttpServerModule.withOption({
+        AssetTransportModule,
+        ServerEndpointModule,
+        HttpModule,
+        HttpClientModule,
+        EndpointsModule.register({
+            transport: 'http',
             serverOpts: {
-                majorVersion: 2
+                majorVersion: 2,
+                interceptors: [
+                    Content,
+                    Json,
+                    Bodyparser
+                ]
             }
         }),
-        HttpClientModule,
         TypeOrmModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
@@ -61,8 +73,7 @@ export const option = <ConnectionOptions>{
     declarations: [
         // RouteStartup,
         UserController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class MockBootTest {
 

@@ -61,7 +61,7 @@ export class SwaggerService {
 
         const http = moduleRef.get(HttpServer);
 
-        http.useInterceptors(new Content({
+        http.useInterceptors(Content.create({
             root: fspath,
             baseUrl: false,
             index: false

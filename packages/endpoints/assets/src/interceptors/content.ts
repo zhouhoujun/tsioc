@@ -12,6 +12,7 @@ import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 @Injectable()
 export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
 
+    options?: ContentOptions;
 
     constructor() { }
 
@@ -21,7 +22,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
             return next();
         }
 
-        const options = { ...defOpts, ...ctx.serverOptions.content };
+        const options = this.options ?? { ...defOpts, ...ctx.serverOptions.content };
         if (options.defer) {
             try {
                 await next()
@@ -45,7 +46,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
             return next.handle(input);
         }
 
-        const options = { ...defOpts, ...input.serverOptions.content };
+        const options = this.options ?? { ...defOpts, ...input.serverOptions.content };
         if (options.defer) {
             return next.handle(input)
                 .pipe(
@@ -83,6 +84,12 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         file = await sender.send(ctx, options);
 
         return file;
+    }
+
+    static create(options?: ContentOptions): Content {
+        const ct = new Content();
+        ct.options = options;
+        return ct;
     }
 
 }
