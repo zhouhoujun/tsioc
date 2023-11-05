@@ -1,3 +1,4 @@
+import { isNil } from '@tsdi/ioc';
 import { ResHeaders, ResHeadersLike } from './headers';
 
 
@@ -55,7 +56,7 @@ export class TransportHeaderResponse<TStatus = any> {
         statusMessage?: string;
     }) {
         this.url = options.url ?? '';
-        this.status = options.status ?? 200 as TStatus;
+        this.status = options.status ?? (options.headers ? 200 : 0) as TStatus
         this.ok = options.ok ?? true;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
         this.headers = new ResHeaders(options.headers);
@@ -68,7 +69,17 @@ export class TransportHeaderResponse<TStatus = any> {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportResponse<T = any, TStatus = any> extends TransportHeaderResponse<TStatus> {
+export class TransportResponse<T = any, TStatus = any> {
+    readonly url: string;
+    readonly ok: boolean;
+    readonly status: TStatus;
+    get statusText(): string {
+        return this.statusMessage;
+    }
+
+    readonly statusMessage: string;
+    readonly headers: ResHeaders;
+
     readonly body: T | null;
 
     constructor(options: {
@@ -81,8 +92,13 @@ export class TransportResponse<T = any, TStatus = any> extends TransportHeaderRe
         body?: T;
         payload?: T;
     }) {
-        super(options);
+        this.url = options.url ?? '';
+        const noRes = isNil(options.payload || options.body || options.headers);
+        this.status = options.status ?? (noRes ? 200 : 0) as TStatus;
+        this.ok = options.ok ?? !noRes;
         this.body = options.body ?? options.payload ?? null;
+        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
+        this.headers = new ResHeaders(options.headers);
     }
 }
 

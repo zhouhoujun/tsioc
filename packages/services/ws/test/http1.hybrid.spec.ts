@@ -34,6 +34,7 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints
                 microservice: true,
                 transport: 'ws',
                 serverOpts: {
+                    heybird: true,
                     strategy: 'json'
                 }
             },

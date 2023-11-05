@@ -41,16 +41,16 @@ export class WsServer extends Server {
         await this.onStart(event.server);
     }
 
-    protected async setup(server?: any): Promise<any> {
+    protected async setup(bindServer?: any): Promise<any> {
         const serverOpts = {
             ...this.options.serverOpts
         };
-        if (server) {
-            serverOpts.server = server;
+        if (bindServer) {
+            serverOpts.server = bindServer;
         } else if (!serverOpts.server && !serverOpts.port) {
             serverOpts.port = 3000;
         }
-        this.serv = serverOpts?.noServer ? new WebSocketServer(serverOpts) : new SocketServer(serverOpts);
+        this.serv = serverOpts.noServer || serverOpts.server ? new WebSocketServer(serverOpts) : new SocketServer(serverOpts);
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
@@ -80,10 +80,10 @@ export class WsServer extends Server {
         })
 
 
-        if (port) {
+        if (port && !bindServer) {
             this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host ?? LOCALHOST}:${port}`, '!');
         } else {
-            this.logger.info(lang.getClassName(this), 'hybrid bind with', getClassName(server ?? bindServer));
+            this.logger.info(lang.getClassName(this), 'hybrid bind with', getClassName(bindServer ?? server));
         }
     }
 
