@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, TransportContextFactory } from '@tsdi/endpoints';
+import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, StatusVaildator, TransportContextFactory } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -13,16 +13,21 @@ import { HttpEndpoint } from './server/endpoint';
 import { HttpServer } from './server/server';
 import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
 import { HttpAssetContextFactory } from './server/context';
+import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
 
 
-const defaultMaxSize = 1048576; // 1024 * 1024;
+// const defaultMaxSize = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 65515; //65535 - 20;
 // const defaultMaxSize = 524120; // 262060; //65515 * 4;
 
 @Module({
+    imports: [
+        AssetModule
+    ],
     providers: [
         Http,
         HttpServer,
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
         HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,
@@ -42,7 +47,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     backend: HttpTransportBackend,
                     transportOpts: {
                         delimiter: '#',
-                        maxSize: defaultMaxSize,
+                        // maxSize: defaultMaxSize,
                     },
                     sessionFactory: { useExisting: HttpClientSessionFactory },
                 } as ClientOpts
@@ -61,7 +66,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
-                        maxSize: defaultMaxSize
+                        // maxSize: defaultMaxSize
                     },
                     content: {
                         root: 'public',
@@ -97,7 +102,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
-                        maxSize: defaultMaxSize
+                        // maxSize: defaultMaxSize
                     },
                     content: {
                         root: 'public'

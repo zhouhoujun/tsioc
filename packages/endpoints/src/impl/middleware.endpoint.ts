@@ -45,7 +45,7 @@ export class MiddlewareEndpointImpl<TInput extends TransportContext = TransportC
     }
 
     protected getMiddlewares() {
-        return this.injector.get(this.midddlesToken);
+        return this.injector.get(this.midddlesToken, []);
     }
 
 }

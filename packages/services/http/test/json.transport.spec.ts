@@ -3,14 +3,19 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
-import { Http, HttpModule } from '@tsdi/http';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { WsModule } from '@tsdi/ws';
+
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { AmqpClient, AmqpModule } from '../src';
-import { DeviceController } from './controller';
+
+import { Http, HttpModule } from '../src';
+import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+
+
+
 
 
 
@@ -19,79 +24,101 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
+        JsonTransportModule,
         ServerEndpointModule,
-        AmqpModule,
         HttpModule,
+        WsModule,
         ClientModule.register([
             {
-                transport: 'amqp'
+                transport: 'ws'
             },
             {
-                transport: 'http'
+                transport: 'http',
+                clientOpts: {
+                    connectOpts: {
+                        port: 3200
+                    }
+                }
             }
         ]),
         EndpointsModule.register([
             {
                 microservice: true,
-                transport: 'amqp',
+                transport: 'ws',
                 serverOpts: {
-                    interceptors: [
-                        Bodyparser
-                    ]
+                    heybird: true
                 }
             },
             {
                 transport: 'http',
                 serverOpts: {
-                    interceptors: [
-                        Content,
-                        Json,
-                        Bodyparser
-                    ]
+                    majorVersion: 1,
+                    middlewares: [],
+                    listenOpts: {
+                        port: 3200
+                    }
                 }
             }
-        ])
+        ]),
+        DeviceManageModule,
+        DeviceAModule
+    ],
+    providers: [
+        DeviceStartupHandle
     ],
     declarations: [
         DeviceController
     ]
 })
-export class AmqpTestModule {
+class MainApp {
 
 }
 
-
-describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
+describe('http server json transport, Http', () => {
     let ctx: ApplicationContext;
     let injector: Injector;
 
     let client: Http;
-    let amqpClient: AmqpClient
 
     before(async () => {
-        ctx = await Application.run(AmqpTestModule);
+        const uri1 = new URL('redis://192.168.20.56:3200/pathname');
+        const uri2 = new URL('tcp://192.168.20.56:3200/users?name=z');
+
+        ctx = await Application.run(MainApp);
         injector = ctx.injector;
-        amqpClient = injector.get(AmqpClient);
-        client = injector.get(Http);
+        client = injector.resolve(Http);
     });
 
+    it('make sure singleton', async () => {
+        // ctx.send('msg://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
+        // console.log(ctx.getMessager());
+        const a = injector.get(DeviceQueue);
+        const b = injector.get(DeviceQueue);
+        expect(a).toBeInstanceOf(DeviceQueue);
+        expect(a).toEqual(b);
+    });
 
+    it('has registered', async () => {
+        const a = injector.get(DEVICE_MIDDLEWARES);
+        expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
+        expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
+    });
 
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
+    it('msg work', async () => {
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
+        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
+
+        const device = rep.body['device'];
+        const aState = rep.body['deviceA_state'];
+        const bState = rep.body['deviceB_state'];
+
+        expect(device).toBe('device next');
+        expect(aState).toBe('startuped');
+        expect(bState).toBe('startuped');
+    });
 
     it('query all', async () => {
-        const a = await lastValueFrom(client.send<any[]>('/device')
+        const a = await lastValueFrom(client.get<any[]>('/device')
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -104,7 +131,7 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     });
 
     it('query with params ', async () => {
-        const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
+        const a = await lastValueFrom(client.get<any[]>('/device', { params: { name: '2' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -116,8 +143,19 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
         expect(a[0].name).toEqual('2');
     });
 
-    it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
+    it('post not found', async () => {
+        const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
+            .pipe(
+                catchError(err => {
+                    console.log(err);
+                    return of(err)
+                })
+            ));
+        expect(a.status).toEqual(404);
+    });
+
+    it('get not found', async () => {
+        const a = await lastValueFrom(client.get<any>('/device/init5', { observe: 'response', params: { name: 'test' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -128,7 +166,7 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     });
 
     it('bad request', async () => {
-        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
+        const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -139,7 +177,8 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     })
 
     it('post route response object', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
+
+        const a = await lastValueFrom(client.post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
@@ -147,7 +186,8 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
+
+        const b = await lastValueFrom(client.post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -159,7 +199,7 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
+        const a = await lastValueFrom(client.post<any>('/device/usage', { id: 'test1', age: '50', createAt: '2021-10-01' }, { observe: 'response' }));
         // a.error && console.log(a.error);
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -169,82 +209,88 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     })
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST' })
+        const r = await lastValueFrom(client.post('/device/usage', {}, { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
+        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } })
+        const r = await lastValueFrom(client.post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
+        // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' })
+        const r = await lastValueFrom(client.get('/device/usege/find', { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
+        // expect(r.error).toBeInstanceOf(MissingParameterError)
     })
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: 'test' } })
+        const r = await lastValueFrom(client.get('/device/usege/find', { observe: 'response', params: { age: 'test' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
+        // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.get('/device/30/used', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device//used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.get('/device//used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
+        // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/age1/used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.get('/device/age1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
         expect(r.status).toEqual(400);
+        // expect(r.error).toBeInstanceOf(ArgumentError);
     })
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', responseType: 'text' })
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', responseType: 'text' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -256,25 +302,7 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
 
     it('redirect', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual(result);
-    })
-
-    it('xxx micro message', async () => {
-        const result = 'reload2';
-        const r = await lastValueFrom(amqpClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual(result);
-    })
-
-    it('dd micro message', async () => {
-        const result = 'reload';
-        const r = await lastValueFrom(amqpClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(client.get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -284,6 +312,6 @@ describe('Amqp hybrid Http Server & Amqp Client & Http', () => {
     })
 
     after(() => {
-        return ctx.destroy();
+        return ctx?.destroy();
     })
 });

@@ -1,5 +1,5 @@
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
-import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule, Handle, RequestPath, Subscribe } from '@tsdi/endpoints';

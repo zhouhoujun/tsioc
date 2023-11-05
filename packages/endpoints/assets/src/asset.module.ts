@@ -29,10 +29,25 @@ TRANSPORT_PACKET_STRATEGIES['asset'] = {
     requestHanlder: { useExisting: AssetRequestHandler }
 };
 
-
 @Module({
     providers: [
         ...ASSET_ENDPOINT_PROVIDERS,
+        HttpStatusVaildator
+    ]
+})
+export class AssetModule {
+
+}
+
+
+@Module({
+    imports:[
+        AssetModule
+    ],
+    providers: [
+        AssetTransportTypedRespond,
+        { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
+
         BodyContentInterceptor,
         { provide: GLOBAL_CLIENT_INTERCEPTORS, useExisting: BodyContentInterceptor, multi: true },
         AssetResponseTransform,
@@ -66,13 +81,13 @@ TRANSPORT_PACKET_STRATEGIES['asset'] = {
         AssetRequestHandler,
         { provide: RequestHandler, useExisting: AssetRequestHandler },
 
-        HttpStatusVaildator,
         { provide: StatusVaildator, useExisting: HttpStatusVaildator },
 
         AssetResponder,
         { provide: Responder, useExisting: AssetResponder }
     ],
     exports: [
+        AssetModule,
         InterceptorsModule
     ]
 })

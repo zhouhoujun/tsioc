@@ -1,16 +1,16 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { ServerModule } from '@tsdi/platform-server';
-import expect = require('expect');
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { Http, HttpModule } from '@tsdi/http';
-import { KafkaModule, KafkaClient, KafkaServer } from '../src';
-import { DeviceController } from './controller';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
+import { Http, HttpModule } from '@tsdi/http';
 import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import expect = require('expect');
+import { catchError, lastValueFrom, of } from 'rxjs';
+import { KafkaModule, KafkaClient, KafkaServer } from '../src';
+import { DeviceController } from './controller';
 
 
 

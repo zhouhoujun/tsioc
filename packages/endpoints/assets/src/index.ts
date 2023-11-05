@@ -23,7 +23,7 @@ export * from './asset.context';
 // export * from './impl/negotiator';
 // export * from './impl/redirector';
 // export * from './impl/typed.respond';
-// export * from './impl/status';
+export * from './impl/status';
 
 
 export * from './asset.module';
