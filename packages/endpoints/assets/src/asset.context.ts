@@ -8,7 +8,6 @@ import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { MimeAdapter } from './MimeAdapter';
 import { Negotiator } from './Negotiator';
 import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
-import { of } from 'rxjs';
 
 
 
@@ -28,7 +27,7 @@ export interface ServerOptions extends ServerOpts {
  */
 @Abstract()
 export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TServOpts> {
-    public _explicitNullBody?: boolean;
+    protected _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;

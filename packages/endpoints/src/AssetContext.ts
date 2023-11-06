@@ -110,8 +110,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      * can response stream writeable
      */
     abstract get writable(): boolean;
-
-    _explicitNullBody?: boolean;
     /**
      * The request body, or `null` if one isn't set.
      *
