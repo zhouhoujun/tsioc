@@ -903,22 +903,20 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     async respond(): Promise<any> {
         if (this.destroyed || !this.writable) return;
 
-        const { body, status, response } = this;
-
         // ignore body
-        if (this.vaildator.isEmpty(status)) {
+        if (this.vaildator.isEmpty(this.status)) {
             // strip headers
             this.body = null;
-            return response.end()
+            return this.response.end()
         }
 
         if (this.isHeadMethod()) {
-            return this.respondHead(response);
+            return this.respondHead();
         }
 
         // status body
-        if (null == body) {
-            return this.respondNoBody(status, response);
+        if (null == this.body) {
+            return this.respondNoBody();
         }
 
         const len = this.length ?? 0;
@@ -928,46 +926,48 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
             throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.payloadMaxSize)}`);
         }
 
-        return await this.respondBody(body, response);
+        const body = this.body;
+        const res = this.response;
+        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
+        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
+
+        if (this.streamAdapter.isReadable(body)) {
+            if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+            return await this.streamAdapter.pipeTo(body, res);
+        }
+
+        return await this.respondJson(body, res);
     }
 
     protected isHeadMethod(): boolean {
         return HEAD === this.method
     }
 
-    protected respondHead(res: TResponse) {
-        if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
+    protected respondHead() {
+        if (!this.sent && !this.response.hasHeader(hdr.CONTENT_LENGTH)) {
             const length = this.length;
             if (Number.isInteger(length)) this.length = length
         }
-        return res.end()
+        return this.response.end()
     }
 
-    protected respondNoBody(status: StatusCode, res: TResponse) {
+    protected respondNoBody() {
         if (this._explicitNullBody) {
-            res.removeHeader(hdr.CONTENT_TYPE);
-            res.removeHeader(hdr.CONTENT_LENGTH);
-            res.removeHeader(hdr.TRANSFER_ENCODING);
-            return res.end()
+            this.response.removeHeader(hdr.CONTENT_TYPE);
+            this.response.removeHeader(hdr.CONTENT_LENGTH);
+            this.response.removeHeader(hdr.TRANSFER_ENCODING);
+            return this.response.end()
         }
 
-        const body = Buffer.from(this.getStatusMessage(status));
-        if (!res.headersSent) {
+        const body = Buffer.from(this.statusMessage ?? String(this.status));
+        if (!this.sent) {
             this.type = 'text';
             this.length = Buffer.byteLength(body)
         }
-        return res.end(body)
+        return this.response.end(body)
     }
 
-    protected async respondBody(body: any, res: TResponse) {
-        // responses
-        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(body);
-        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
-
-        if (this.streamAdapter.isReadable(body)) {
-            return await this.respondStream(body, res);
-        }
-
+    protected async respondJson(body: any, res: TResponse) {
         // body: json
         body = Buffer.from(JSON.stringify(body));
         if (!res.headersSent) {
@@ -976,11 +976,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
         await promisify<any, void>(res.end, res)(body);
         return res
-    }
-
-    protected async respondStream(body: IReadableStream, res: TResponse): Promise<void> {
-        if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
-        return await this.streamAdapter.pipeTo(body, res);
     }
 
     protected getStatusMessage(status: StatusCode): string {
@@ -1019,7 +1014,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this.status = status;
         // empty response.
         if (vaildator.isEmptyExecption(status)) {
-            res.end();
+            await promisify<void>(res.end, res)();
             return;
         }
 
@@ -1031,7 +1026,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this.type = 'text';
         msg = Buffer.from(msg ?? this.statusMessage ?? '');
         this.length = Buffer.byteLength(msg);
-        res.end(msg);
+        await promisify<any, void>(res.end, res)(msg);
     }
 
 }
