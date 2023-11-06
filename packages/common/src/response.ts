@@ -94,7 +94,7 @@ export class TransportResponse<T = any, TStatus = any> {
     }) {
         this.url = options.url ?? '';
         const noRes = isNil(options.payload || options.body || options.headers);
-        this.status = options.status ?? (noRes ? 200 : 0) as TStatus;
+        this.status = options.status ?? (noRes ? 0 : 200) as TStatus;
         this.ok = options.ok ?? !noRes;
         this.body = options.body ?? options.payload ?? null;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
