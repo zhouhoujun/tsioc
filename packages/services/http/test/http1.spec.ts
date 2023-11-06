@@ -11,7 +11,7 @@ import { WsModule } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { Http, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
+import { Http, HttpModule } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 import { BigFileInterceptor } from './BigFileInterceptor';
 

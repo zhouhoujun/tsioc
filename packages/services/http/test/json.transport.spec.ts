@@ -106,11 +106,11 @@ describe('http server json transport, Http', () => {
 
     it('msg work', async () => {
 
-        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
+        const res = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
 
-        const device = rep.body['device'];
-        const aState = rep.body['deviceA_state'];
-        const bState = rep.body['deviceB_state'];
+        const device = res.body['device'];
+        const aState = res.body['deviceA_state'];
+        const bState = res.body['deviceB_state'];
 
         expect(device).toBe('device next');
         expect(aState).toBe('startuped');

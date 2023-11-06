@@ -73,18 +73,18 @@ export class AssetModule {
         { provide: Decoder, useExisting: AssetDecoder, asDefault: true },
 
         AssetTransportTypedRespond,
-        { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
+        { provide: TypedRespond, useExisting: AssetTransportTypedRespond, asDefault: true },
 
         AssetContextFactoryImpl,
-        { provide: AssetContextFactory, useExisting: AssetContextFactoryImpl },
+        { provide: AssetContextFactory, useExisting: AssetContextFactoryImpl, asDefault: true },
 
         AssetRequestHandler,
-        { provide: RequestHandler, useExisting: AssetRequestHandler },
+        { provide: RequestHandler, useExisting: AssetRequestHandler, asDefault: true },
 
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true },
 
         AssetResponder,
-        { provide: Responder, useExisting: AssetResponder }
+        { provide: Responder, useExisting: AssetResponder, asDefault: true }
     ],
     exports: [
         AssetModule,

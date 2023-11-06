@@ -1,11 +1,12 @@
 import { Backend, Handler, Interceptor } from '@tsdi/core';
-import { Abstract, DefaultInvocationContext, Injector, InvokeArguments } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, isFunction, isNil } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { HeaderPacket, Packet } from './packet';
+import { HeaderPacket, Packet, ResponsePacket } from './packet';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportSession } from './TransportFactory';
 import { isBuffer } from './utils';
-import { IReadableStream } from './stream';
+import { IReadableStream, IWritableStream } from './stream';
+import { Incoming, Outgoing } from './socket';
 
 
 /**
@@ -18,7 +19,8 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     public packet?: Packet;
     public headers?: HeaderPacket;
     public raw?: Buffer;
-    public stream?: IReadableStream;
+    public readable?: IReadableStream;
+    public writable?: IWritableStream;
     readonly delimiter?: Buffer;
     readonly headerDelimiter?: Buffer;
     readonly serverSide: boolean;
@@ -42,7 +44,15 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     constructor(
         injector: Injector,
         transportOpts: TransportSession,
-        stream: IReadableStream,
+        readable: IReadableStream,
+        headers?: HeaderPacket,
+        delimiter?: Buffer,
+        headerDelimiter?: Buffer,
+        options?: InvokeArguments);
+    constructor(
+        injector: Injector,
+        transportOpts: TransportSession,
+        writable: IWritableStream,
         headers?: HeaderPacket,
         delimiter?: Buffer,
         headerDelimiter?: Buffer,
@@ -50,7 +60,7 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
     constructor(
         injector: Injector,
         session: TransportSession,
-        packBuff: TPacket | Buffer | IReadableStream,
+        packBuff: TPacket | Buffer | IReadableStream | IWritableStream,
         headers?: HeaderPacket,
         delimiter?: Buffer,
         headerDelimiter?: Buffer,
@@ -63,8 +73,33 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
         this.headers = headers;
         if (isBuffer(packBuff)) {
             this.raw = packBuff;
-        } else if (session.streamAdapter.isStream(packBuff)) {
-            this.stream = packBuff;
+        } else if (session.streamAdapter.isReadable(packBuff)) {
+            this.readable = packBuff;
+            if (!headers && (packBuff as Incoming).headers) {
+                this.headers = {
+                    id: (packBuff as Incoming).id,
+                    url: (packBuff as Incoming).url,
+                    headers: (packBuff as Incoming).headers
+                }
+            }
+        } else if (session.streamAdapter.isWritable(packBuff)) {
+            this.writable = packBuff;
+            const outgoing = packBuff as any as Outgoing;
+            if (isFunction(outgoing.getHeaders) || outgoing.headers) {
+                if (!headers) {
+                    this.headers = {
+                        headers: outgoing.getHeaders?.() ?? outgoing.headers,
+                        status: outgoing.statusCode,
+                        statusText: outgoing.statusMessage
+                    } as ResponsePacket;
+                }
+                if (!isNil(outgoing.body)) {
+                    this.packet = {
+                        ...this.headers,
+                        payload: outgoing.body
+                    }
+                }
+            }
         } else {
             this.packet = packBuff;
         }

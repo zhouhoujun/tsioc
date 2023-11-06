@@ -75,10 +75,10 @@ export class SimpleAssetDecoderBackend implements AssetDecoderBackend {
     }
 
     handle(ctx: Context): Observable<IncomingPacket> {
-        if (ctx.headers && ctx.session.streamAdapter.isStream(ctx.stream)) {
+        if (ctx.headers && ctx.session.streamAdapter.isReadable(ctx.readable)) {
             ctx.packet = {
                 ...ctx.headers,
-                payload: ctx.stream
+                payload: ctx.readable
             } as IncomingPacket;
             return of(ctx.packet);
         }

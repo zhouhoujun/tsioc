@@ -164,6 +164,10 @@ export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableSt
  * server outgoing message stream.
  */
 export interface Outgoing<TSocket = any> extends IEnd {
+    /**
+     * headers
+     */
+    readonly headers?: Record<string, any>;
 
     readonly socket?: TSocket;
     /**
@@ -180,6 +184,8 @@ export interface Outgoing<TSocket = any> extends IEnd {
      * Do not depend on this.
      */
     statusMessage?: string;
+
+    body?: any;
 
     /**
      * headers has sent or not.

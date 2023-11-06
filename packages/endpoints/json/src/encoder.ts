@@ -67,7 +67,7 @@ export class SimpleJsonEncoderBackend implements JsonEncoderBackend {
 
     handle(ctx: Context): Observable<Buffer> {
         if (ctx.raw) return of(ctx.raw);
-        if (!ctx || !ctx.packet) return throwError(() => new ArgumentExecption('json decoding input empty'));
+        if (!ctx || !ctx.packet) return throwError(() => new ArgumentExecption('json encoding input empty'));
         try {
             ctx.raw = ctx.session.serialize(ctx.packet, true);
             return of(ctx.raw);
