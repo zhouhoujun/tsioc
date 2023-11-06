@@ -75,8 +75,8 @@ export class SimpleAssetEncoderBackend implements AssetEncoderBackend {
                 pkg.__sent = true;
             }
         }
-        if (!ctx.raw) throwError(() => new ArgumentExecption('asset decoding input empty'));
-        return of(ctx.raw!);
+        if (!ctx.raw) return throwError(() => new ArgumentExecption('asset decoding input empty'));
+        return of(ctx.raw);
     }
 
 }

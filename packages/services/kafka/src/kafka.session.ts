@@ -1,9 +1,8 @@
 import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, RequestPacket, ResponsePacket, SendPacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
-import { Observable, filter, first, fromEvent, map, merge, of } from 'rxjs';
+import { Observable, filter, first, fromEvent, merge, of } from 'rxjs';
 import { AssignerProtocol, Cluster, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
 import { KafkaHeaders, KafkaTransport, KafkaTransportOpts } from './const';
 

@@ -1,26 +1,13 @@
 import { Module, ModuleWithProviders, getToken, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { Context, DecodeInterceptor, Decoder, DecoderBackend, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
-import { CLIENT_TRANSPORT_PACKET_STRATEGIES, ResponseTransform, defaultTransform } from '@tsdi/common/client';
+import { DecodeInterceptor, Decoder, DecoderBackend, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
+import { ResponseTransform, defaultTransform } from '@tsdi/common/client';
 import { SimpleEncoderBackend, InterceptingEncoder, ENCODER_INTERCEPTORS, FinalizeEncodeInterceptor } from './encoder';
 import { SimpleDecoderBackend, InterceptingDecoder, DECODER_INTERCEPTORS } from './decoder';
 import { TransportTypedRespond } from './typed.respond';
 import { DefaultRequestHandler } from './handler';
 import { RequestHandler } from '../RequestHandler';
 
-
-// CLIENT_TRANSPORT_PACKET_STRATEGIES['json'] = {
-//     encoder: { useExisting: JsonEncoder },
-//     decoder: { useExisting: JsonDecoder }
-// }
-
-// TRANSPORT_PACKET_STRATEGIES['json'] = {
-//     encoder: { useExisting: JsonEncoder },
-//     decoder: { useExisting: JsonDecoder },
-//     typedRespond: { useExisting: JsonTransportTypedRespond },
-//     responder: { useExisting: JsonResponder },
-//     requestHanlder: { useExisting: JsonRequestHandler }
-// };
 
 @Module({
     providers: [

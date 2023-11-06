@@ -1,5 +1,4 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { UuidGenerator } from '@tsdi/core';
 import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { Channel, ConsumeMessage } from 'amqplib';
