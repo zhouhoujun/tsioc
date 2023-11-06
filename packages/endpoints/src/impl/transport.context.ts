@@ -1,11 +1,13 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
-import { LOCALHOST, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
+import { LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
+import { lastValueFrom } from 'rxjs';
 
 
 
 export class TransportContextIml<TRequest extends RequestPacket = RequestPacket, TResponse extends ResponsePacket = ResponsePacket, TSocket = any> extends TransportContext<TRequest, TResponse, TSocket> {
+
 
     private _url: string;
     private _originalUrl: string;
@@ -112,6 +114,20 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         }
     }
 
+    setHeader(headers: OutgoingHeaders): void {
+        if (this.response.headers) {
+            Object.assign(this.response.headers, headers)
+        } else {
+            this.response.headers = headers
+        }
+    }
+
+    setResponse(packet: ResponsePacket): void {
+        const { headers, payload, ...pkg } = packet;
+        Object.assign(this.response, pkg);
+        if (headers) this.setHeader(headers);
+        this.body = payload;
+    }
 
     get body(): any {
         return this.response.payload;
@@ -163,6 +179,19 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
      */
     get method(): string {
         return this._method;
+    }
+
+    throwExecption(execption: MessageExecption): void {
+        this.execption = execption;
+        this.body = null;
+        this.response.error = {
+            name: execption.name,
+            message: execption.message,
+            status: execption.status ?? execption.statusCode
+        };
+        if (!isNil(execption.status)) this.response.status = execption.status;
+        this.response.statusText = execption.message;
+        lastValueFrom(this.session.send(this.response));
     }
 
 }

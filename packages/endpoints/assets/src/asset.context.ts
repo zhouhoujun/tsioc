@@ -1,6 +1,6 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession } from '@tsdi/common';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
@@ -897,6 +897,54 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         return this.setHeader(field, val)
+    }
+
+    throwExecption(err: MessageExecption): void {
+        let headerSent = false;
+        if (this.sent || !this.writable) {
+            headerSent = err.headerSent = true
+        }
+
+        // nothing we can do here other
+        // than delegate to the app-level
+        // handler and log.
+        if (headerSent) {
+            return
+        }
+
+        const res = this.response;
+
+        // first unset all headers
+        this.removeHeaders();
+
+        // then set those specified
+        if (err.headers) this.setHeader(err.headers);
+
+        const vaildator = this.vaildator;
+        let status = err.status || err.statusCode;
+        // ENOENT support
+        if (ENOENT === err.code) status = vaildator.notFound;
+
+        // default to serverError
+        if (!vaildator.isStatus(status)) status = vaildator.serverError;
+
+        this.status = status;
+        // empty response.
+        if (vaildator.isEmptyExecption(status)) {
+            res.end();
+            return;
+        }
+
+        // respond
+        let msg: any;
+        msg = err.message;
+
+        // force text/plain
+        this.type = 'text';
+        msg = Buffer.from(msg ?? this.statusMessage ?? '');
+        this.length = Buffer.byteLength(msg);
+        res.end(msg);
+
     }
 
 }

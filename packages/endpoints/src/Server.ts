@@ -28,10 +28,6 @@ export interface TransportPacketStrategy {
      */
     decoder: ProvdierOf<Decoder>;
     /**
-     * typed respond for endpoint.
-     */
-    typedRespond: ProvdierOf<TypedRespond>;
-    /**
      * provider of responder.
      */
     responder: ProvdierOf<Responder>;

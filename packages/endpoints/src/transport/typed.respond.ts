@@ -2,15 +2,15 @@ import { Injectable } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
 import { TransportContext } from '@tsdi/endpoints';
 
-@Injectable({ static: true })
-export class JsonTransportTypedRespond extends TypedRespond {
+@Injectable()
+export class TransportTypedRespond extends TypedRespond {
     respond(ctx: TransportContext, value: any, response: 'body' | 'header' | 'response'): void {
         if (response === 'body') {
             ctx.body = value
         } else if (response === 'header') {
-            ctx.response.headers = value;
+            ctx.setHeader(value);
         } else if (response === 'response') {
-            ctx.response = value;
+            ctx.setResponse(value);
         }
     }
 }

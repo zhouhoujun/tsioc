@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector } from '@tsdi/ioc';
-import { Incoming, IncomingPacket, InternalServerExecption, LOCALHOST, Outgoing, StatusCode, TransportSession } from '@tsdi/common';
+import { Incoming, IncomingPacket, InternalServerExecption, LOCALHOST, Outgoing, ResponsePacket, StatusCode, TransportSession } from '@tsdi/common';
 import { AssetContext, AssetContextFactory, ServerOpts } from '@tsdi/endpoints';
 import { AbstractAssetContext, ServerOptions } from '../asset.context';
 import { IncomingMessage } from '../incoming';
@@ -51,6 +51,14 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
 
     get secure(): boolean {
         return this.serverOptions.secure == true;
+    }
+
+    setResponse(packet: ResponsePacket): void {
+        const { headers, payload, status, statusText } = packet;
+        if (status) this.status = status;
+        if (statusText) this.statusMessage = statusText;
+        if (headers) this.setHeader(headers);
+        this.body = payload;
     }
 
 }

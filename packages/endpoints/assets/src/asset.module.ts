@@ -8,7 +8,6 @@ import { AssetResponder } from './responder';
 import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, FinalizeAssetEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
 import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInterceptingDecoder, SimpleAssetDecoderBackend } from './decoder';
 import { HttpStatusVaildator } from './impl/status';
-import { AssetTransportTypedRespond } from './impl/typed.respond';
 import { AssetRequestHandler } from './handler';
 import { InterceptorsModule } from './interceptors.module';
 import { AssetResponseTransform } from './impl/resp.transform';
@@ -24,7 +23,6 @@ CLIENT_TRANSPORT_PACKET_STRATEGIES['asset'] = {
 TRANSPORT_PACKET_STRATEGIES['asset'] = {
     encoder: { useExisting: AssetEncoder },
     decoder: { useExisting: AssetDecoder },
-    typedRespond: { useExisting: AssetTransportTypedRespond },
     responder: { useExisting: AssetResponder },
     requestHanlder: { useExisting: AssetRequestHandler }
 };
@@ -45,9 +43,6 @@ export class AssetModule {
         AssetModule
     ],
     providers: [
-        AssetTransportTypedRespond,
-        { provide: TypedRespond, useExisting: AssetTransportTypedRespond },
-
         BodyContentInterceptor,
         { provide: GLOBAL_CLIENT_INTERCEPTORS, useExisting: BodyContentInterceptor, multi: true },
         AssetResponseTransform,
@@ -71,9 +66,6 @@ export class AssetModule {
 
         { provide: Encoder, useExisting: AssetEncoder, asDefault: true },
         { provide: Decoder, useExisting: AssetDecoder, asDefault: true },
-
-        AssetTransportTypedRespond,
-        { provide: TypedRespond, useExisting: AssetTransportTypedRespond, asDefault: true },
 
         AssetContextFactoryImpl,
         { provide: AssetContextFactory, useExisting: AssetContextFactoryImpl, asDefault: true },

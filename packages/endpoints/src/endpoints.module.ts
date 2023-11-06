@@ -17,6 +17,7 @@ import { TopicTransportSessionFactory } from './impl/topic.session';
 import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { RequestHandler } from './RequestHandler';
+import { TransportTypedRespond } from './transport/typed.respond';
 
 
 
@@ -36,6 +37,9 @@ import { RequestHandler } from './RequestHandler';
 
         TransportContextFactoryImpl,
         { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },
+
+        TransportTypedRespond,
+        { provide: TypedRespond, useExisting: TransportTypedRespond },
 
         LogInterceptor,
         // TransportExecptionHandlers,
@@ -161,10 +165,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                                 if (strategy.decoder) {
                                     serverOpts.providers.push(toProvider(Decoder, strategy.decoder))
-                                }
-
-                                if (strategy.typedRespond) {
-                                    serverOpts.providers.push(toProvider(TypedRespond, strategy.typedRespond))
                                 }
 
                                 if (strategy.responder) {

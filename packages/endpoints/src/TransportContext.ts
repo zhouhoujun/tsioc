@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { RequestPacket, ResponsePacket, StreamAdapter, TransportSession } from '@tsdi/common';
+import { MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession } from '@tsdi/common';
 import { ServerOpts } from './Server';
 
 /**
@@ -83,7 +83,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * original url
      */
     abstract get originalUrl(): string;
-    
+
     /**
      * request query parameters.
      */
@@ -93,6 +93,24 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * The request method.
      */
     abstract get method(): string;
+
+    /**
+     * set response headers
+     * @param headers 
+     */
+    abstract setHeader(headers: OutgoingHeaders): void;
+
+    /**
+     * set response with response packet
+     * @param headers 
+     */
+    abstract setResponse(packet: ResponsePacket): void;
+
+    /**
+     * throw execption to client.
+     * @param execption 
+     */
+    abstract throwExecption(execption: MessageExecption): void;
 
 }
 

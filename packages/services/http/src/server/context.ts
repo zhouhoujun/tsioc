@@ -1,4 +1,4 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession, normalize, Outgoing } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession, normalize, Outgoing, ResponsePacket } from '@tsdi/common';
 import { Injectable, Injector, isArray, isNumber, isString, lang, tokenId } from '@tsdi/ioc';
 import { append, parseTokenList, AbstractAssetContext } from '@tsdi/endpoints/assets';
 import * as assert from 'assert';
@@ -270,6 +270,14 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         // https://github.com/nodejs/node/blob/v4.4.7/lib/_http_server.js#L486
         if (!socket) return true;
         return socket.writable
+    }
+
+    setResponse(packet: ResponsePacket): void {
+        const { headers, payload, status, statusText } = packet;
+        if (status) this.status = status as number;
+        if (statusText) this.statusMessage = statusText;
+        if (headers) this.setHeader(headers);
+        this.body = payload;
     }
 
 
