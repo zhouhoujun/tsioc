@@ -107,6 +107,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract setResponse(packet: ResponsePacket): void;
 
     /**
+     * send response to client.
+     */
+    abstract respond(): Promise<any>;
+
+    /**
      * throw execption to client.
      * @param execption 
      */

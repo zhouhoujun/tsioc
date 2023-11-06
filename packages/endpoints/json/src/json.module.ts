@@ -2,10 +2,9 @@ import { Module, ModuleWithProviders, getToken, ProvdierOf, ProviderType, toProv
 import { Interceptor, TypedRespond } from '@tsdi/core';
 import { Context, Decoder, Encoder, Packet } from '@tsdi/common';
 import { CLIENT_TRANSPORT_PACKET_STRATEGIES, ResponseTransform, defaultTransform } from '@tsdi/common/client';
-import { RequestHandler, Responder, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
+import { RequestHandler, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
 import { JsonEncoder, SimpleJsonEncoderBackend, JsonInterceptingEncoder, JsonEncoderBackend, JSON_ENCODER_INTERCEPTORS, FinalizeJsonEncodeInterceptor } from './encoder';
 import { JsonDecoder, SimpleJsonDecoderBackend, JsonInterceptingDecoder, JsonDecoderBackend, JSON_DECODER_INTERCEPTORS } from './decoder';
-import { JsonResponder } from './responder';
 import { JsonRequestHandler } from './handler';
 
 
@@ -17,7 +16,6 @@ CLIENT_TRANSPORT_PACKET_STRATEGIES['json'] = {
 TRANSPORT_PACKET_STRATEGIES['json'] = {
     encoder: { useExisting: JsonEncoder },
     decoder: { useExisting: JsonDecoder },
-    responder: { useExisting: JsonResponder },
     requestHanlder: { useExisting: JsonRequestHandler }
 };
 
@@ -44,10 +42,7 @@ TRANSPORT_PACKET_STRATEGIES['json'] = {
         { provide: Decoder, useExisting: JsonDecoder, asDefault: true },
 
         JsonRequestHandler,
-        { provide: RequestHandler, useExisting: JsonRequestHandler, asDefault: true },
-
-        JsonResponder,
-        { provide: Responder, useExisting: JsonResponder, asDefault: true }
+        { provide: RequestHandler, useExisting: JsonRequestHandler, asDefault: true }
     ]
 })
 export class JsonTransportModule {

@@ -1,6 +1,6 @@
-import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
-import { EndpointInvokeOpts } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT } from '@tsdi/common';
+import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
+import { EndpointInvokeOpts, PipeTransform } from '@tsdi/core';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException, HEAD, StatusCode, IReadableStream } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
@@ -898,6 +898,94 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         return this.setHeader(field, val)
+    }
+
+
+    async respond(): Promise<any> {
+        if (this.destroyed || !this.writable) return;
+
+        const { body, status, response } = this;
+
+        // ignore body
+        if (this.vaildator.isEmpty(status)) {
+            // strip headers
+            this.body = null;
+            return response.end()
+        }
+
+        if (this.isHeadMethod()) {
+            return this.respondHead(response);
+        }
+
+        // status body
+        if (null == body) {
+            return this.respondNoBody(status, response);
+        }
+
+        const len = this.length ?? 0;
+        const opts = this.serverOptions.transportOpts as AssetTransportOpts;
+        if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
+            const btpipe = this.get<PipeTransform>('bytes-format');
+            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.payloadMaxSize)}`);
+        }
+
+        return await this.respondBody(body, response);
+    }
+
+    protected isHeadMethod(): boolean {
+        return HEAD === this.method
+    }
+
+    protected respondHead(res: TResponse) {
+        if (!res.headersSent && !res.hasHeader(hdr.CONTENT_LENGTH)) {
+            const length = this.length;
+            if (Number.isInteger(length)) this.length = length
+        }
+        return res.end()
+    }
+
+    protected respondNoBody(status: StatusCode, res: TResponse) {
+        if (this._explicitNullBody) {
+            res.removeHeader(hdr.CONTENT_TYPE);
+            res.removeHeader(hdr.CONTENT_LENGTH);
+            res.removeHeader(hdr.TRANSFER_ENCODING);
+            return res.end()
+        }
+
+        const body = Buffer.from(this.getStatusMessage(status));
+        if (!res.headersSent) {
+            this.type = 'text';
+            this.length = Buffer.byteLength(body)
+        }
+        return res.end(body)
+    }
+
+    protected async respondBody(body: any, res: TResponse) {
+        // responses
+        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(body);
+        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
+
+        if (this.streamAdapter.isReadable(body)) {
+            return await this.respondStream(body, res);
+        }
+
+        // body: json
+        body = Buffer.from(JSON.stringify(body));
+        if (!res.headersSent) {
+            this.length = Buffer.byteLength(body)
+        }
+
+        await promisify<any, void>(res.end, res)(body);
+        return res
+    }
+
+    protected async respondStream(body: IReadableStream, res: TResponse): Promise<void> {
+        if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+        return await this.streamAdapter.pipeTo(body, res);
+    }
+
+    protected getStatusMessage(status: StatusCode): string {
+        return this.statusMessage ?? String(status);
     }
 
     async throwExecption(err: MessageExecption): Promise<void> {

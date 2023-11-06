@@ -1,5 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
-import { LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
+import { PipeTransform } from '@tsdi/core';
+import { LOCALHOST, MessageExecption, OutgoingHeaders, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
@@ -179,6 +180,27 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
      */
     get method(): string {
         return this._method;
+    }
+
+    async respond(): Promise<any> {
+        const res = this.response;
+        if (isNil( this.response)) return;
+
+        const session = this.session;
+
+        const len = this.length ?? 0;
+        if (session.options.maxSize && len > session.options.maxSize) {
+            const btpipe = this.get<PipeTransform>('bytes-format');
+            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(session.options.maxSize)}`);
+        }
+
+        if (this.streamAdapter.isReadable(res)) {
+            this.body = new TextDecoder().decode(await toBuffer(res));
+        } else if (isBuffer(res)) {
+            this.body = new TextDecoder().decode(res);
+        }
+
+        await lastValueFrom(session.send(this.response));
     }
 
     throwExecption(execption: MessageExecption): Promise<void> {

@@ -1,5 +1,4 @@
 export * from './Redirector';
-export * from './responder';
 
 export * from './consts';
 export * from './content';

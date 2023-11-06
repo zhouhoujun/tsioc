@@ -21,7 +21,6 @@ export * from './RequestHandler';
 export * from './FileAdapter';
 export * from './StatusVaildator';
 export * from './AssetContext';
-export * from './Responder';
 
 export * from './send';
 

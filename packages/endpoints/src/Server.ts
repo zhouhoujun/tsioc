@@ -4,7 +4,6 @@ import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFacto
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
-import { Responder } from './Responder';
 import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './send';
@@ -27,10 +26,6 @@ export interface TransportPacketStrategy {
      * decoder
      */
     decoder: ProvdierOf<Decoder>;
-    /**
-     * provider of responder.
-     */
-    responder: ProvdierOf<Responder>;
     /**
      * request handler for this server.
      */

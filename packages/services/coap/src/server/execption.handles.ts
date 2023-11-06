@@ -7,7 +7,7 @@ import {
 } from '@tsdi/common';
 import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
 import { ExecptionHandler } from '@tsdi/core';
-import { AssetContext, Responder, SHOW_DETAIL_ERROR } from '@tsdi/endpoints';
+import { AssetContext, SHOW_DETAIL_ERROR } from '@tsdi/endpoints';
 import { MissingModelFieldExecption } from '@tsdi/repository';
 import { CoapStatuCode } from '../status';
 

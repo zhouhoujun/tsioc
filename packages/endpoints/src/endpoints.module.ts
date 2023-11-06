@@ -5,7 +5,6 @@ import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
-import { Responder } from './Responder';
 import { LogInterceptor } from './logger/log';
 import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
@@ -165,10 +164,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                                 if (strategy.decoder) {
                                     serverOpts.providers.push(toProvider(Decoder, strategy.decoder))
-                                }
-
-                                if (strategy.responder) {
-                                    serverOpts.providers.push(toProvider(Responder, strategy.responder))
                                 }
 
                                 if (strategy.requestHanlder) {

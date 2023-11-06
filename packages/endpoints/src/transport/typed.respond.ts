@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { TransportContext } from '@tsdi/endpoints';
+import { TransportContext } from '../TransportContext';
 
 @Injectable()
 export class TransportTypedRespond extends TypedRespond {
