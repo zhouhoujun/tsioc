@@ -1,6 +1,6 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AssetTransportOpts, ENOENT, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, StatusCode, hdr, isBuffer } from '@tsdi/common';
+import { AssetTransportOpts, HEAD, IReadableStream, Incoming, MessageExecption, Outgoing, PacketLengthException, StatusCode, hdr, isBuffer } from '@tsdi/common';
 import { AssetContext, Responder } from '@tsdi/endpoints';
 
 @Injectable()
@@ -38,56 +38,6 @@ export class AssetResponder<TRequest extends Incoming = any, TResponse extends O
         }
 
         return await this.respondBody(body, response, ctx);
-    }
-
-    async sendExecption(ctx: AssetContext, err: MessageExecption): Promise<any> {
-        //finllay defalt send error.
-        let headerSent = false;
-        if (ctx.sent || !ctx.response.writable) {
-            headerSent = err.headerSent = true
-        }
-
-        // nothing we can do here other
-        // than delegate to the app-level
-        // handler and log.
-        if (headerSent) {
-            return
-        }
-
-        const res = ctx.response;
-
-        // first unset all headers
-        ctx.removeHeaders();
-
-        // then set those specified
-        if (err.headers) ctx.setHeader(err.headers);
-
-        const vaildator = ctx.vaildator;
-        let status = err.status || err.statusCode;
-        // ENOENT support
-        if (ENOENT === err.code) status = vaildator.notFound;
-
-        // default to serverError
-        if (!vaildator.isStatus(status)) status = vaildator.serverError;
-
-        ctx.status = status;
-        // empty response.
-        if (vaildator.isEmptyExecption(status)) {
-            return res.end();
-        }
-
-        // respond
-        let msg: any;
-        msg = err.message;
-
-        // force text/plain
-        ctx.type = 'text';
-        msg = Buffer.from(msg ?? ctx.statusMessage ?? '');
-        ctx.length = Buffer.byteLength(msg);
-        res.end(msg);
-
-        return res;
-
     }
 
     protected isHeadMethod(ctx: AssetContext<TRequest, TResponse>): boolean {

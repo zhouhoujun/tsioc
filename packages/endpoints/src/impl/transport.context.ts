@@ -181,7 +181,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         return this._method;
     }
 
-    throwExecption(execption: MessageExecption): void {
+    throwExecption(execption: MessageExecption): Promise<void> {
         this.execption = execption;
         this.body = null;
         this.response.error = {
@@ -191,7 +191,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         };
         if (!isNil(execption.status)) this.response.status = execption.status;
         this.response.statusText = execption.message;
-        lastValueFrom(this.session.send(this.response));
+        return lastValueFrom(this.session.send(this.response));
     }
 
 }

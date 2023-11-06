@@ -8,6 +8,7 @@ import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { MimeAdapter } from './MimeAdapter';
 import { Negotiator } from './Negotiator';
 import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
+import { of } from 'rxjs';
 
 
 
@@ -899,7 +900,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.setHeader(field, val)
     }
 
-    throwExecption(err: MessageExecption): void {
+    async throwExecption(err: MessageExecption): Promise<void> {
         let headerSent = false;
         if (this.sent || !this.writable) {
             headerSent = err.headerSent = true
@@ -944,7 +945,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         msg = Buffer.from(msg ?? this.statusMessage ?? '');
         this.length = Buffer.byteLength(msg);
         res.end(msg);
-
     }
 
 }

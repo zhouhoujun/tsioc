@@ -110,7 +110,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * throw execption to client.
      * @param execption 
      */
-    abstract throwExecption(execption: MessageExecption): void;
+    abstract throwExecption(execption: MessageExecption): Promise<void>;
 
 }
 
