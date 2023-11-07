@@ -1,16 +1,16 @@
-import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { LoggerModule } from '@tsdi/logger';
-import expect = require('expect');
-import { catchError, lastValueFrom, of } from 'rxjs';
 import { EndpointsModule, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
-import { TcpClient, TcpModule } from '@tsdi/tcp';
+import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { TcpClient, TcpModule } from '@tsdi/tcp';
+import expect = require('expect');
+import { catchError, lastValueFrom, of } from 'rxjs';
 import { JsonTransportModule } from '../src';
-import { AssetTransportModule } from '@tsdi/endpoints/assets';
 
 
 

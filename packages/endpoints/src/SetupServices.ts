@@ -8,7 +8,9 @@ import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middlewar
 
 
 
-
+/**
+ * server config.
+ */
 export interface ServerConfig {
     /**
      * auto bootstrap or not. default true.
@@ -32,7 +34,9 @@ export interface ServerConfig {
     providers?: ProviderType[];
 }
 
-
+/**
+ * heybird options.
+ */
 export interface HeybirdOpts {
     /**
     * heybird or not.
@@ -40,6 +44,9 @@ export interface HeybirdOpts {
     heybird?: boolean | HybirdTransport;
 }
 
+/**
+ * microservice options.
+ */
 export interface MicroServiceOpts {
     /**
      * microservice or not.

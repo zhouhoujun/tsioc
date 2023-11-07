@@ -113,12 +113,12 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
  * 
  * 加密拦截器。
  */
-export interface EncodeInterceptor extends Interceptor<Context, Buffer> {}
+export interface EncodeInterceptor<T extends Packet = Packet> extends Interceptor<Context<T>, Buffer> {}
 
 @Abstract()
-export abstract class Encoder implements Handler<Context, Buffer> {
+export abstract class Encoder<T extends Packet = Packet> implements Handler<Context<T>, Buffer> {
     strategy?: string;
-    abstract handle(ctx: Context): Observable<Buffer>;
+    abstract handle(ctx: Context<T>): Observable<Buffer>;
 }
 
 @Abstract()
