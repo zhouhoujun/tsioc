@@ -113,7 +113,7 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
  * 
  * 加密拦截器。
  */
-export interface EncodeInterceptor extends Interceptor<Context, Buffer> { }
+export interface EncodeInterceptor extends Interceptor<Context, Buffer> {}
 
 @Abstract()
 export abstract class Encoder implements Handler<Context, Buffer> {
@@ -131,7 +131,18 @@ export abstract class EncoderBackend implements Backend<Context, Buffer> {
  * 
  * 解密拦截器。
  */
-export interface DecodeInterceptor<T extends Packet = Packet> extends Interceptor<Context, T> { }
+export interface DecodeInterceptor<T extends Packet = Packet> extends Interceptor<Context, T> {
+    /**
+     * the method to implemet decode interceptor.
+     * 
+     * 解密拦截处理的方法
+     * @param input  request input.
+     * @param next The next handler in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
+     */
+    intercept(input: Context, next: Handler<Context, T>): Observable<T>;
+}
 
 @Abstract()
 export abstract class Decoder<T extends Packet = Packet> implements Handler<Context, T> {

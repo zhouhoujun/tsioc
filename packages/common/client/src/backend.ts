@@ -22,6 +22,21 @@ export const defaultTransform = {
     },
 } as ResponseTransform;
 
+
+@Injectable()
+export class TransportResponseEventFactory implements ResponseEventFactory<TransportEvent, TransportErrorResponse> {
+    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportErrorResponse {
+        return new TransportErrorResponse(options);
+    }
+    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
+        return new TransportHeaderResponse(options) as TransportEvent;
+    }
+    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TransportEvent {
+        return new TransportResponse(options) as TransportEvent;
+    }
+}
+
+
 /**
  * transport client endpoint backend.
  */

@@ -52,7 +52,7 @@ export class InterceptingEncoder implements Encoder {
 
 
 @Injectable()
-export class SimpleEncoderBackend implements EncoderBackend {
+export class TransportEncoderBackend implements EncoderBackend {
 
     handle(ctx: Context): Observable<Buffer> {
 

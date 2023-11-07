@@ -2,8 +2,8 @@ import { Module, ModuleWithProviders, getToken, ProvdierOf, ProviderType, toProv
 import { TypedRespond } from '@tsdi/core';
 import { DecodeInterceptor, Decoder, DecoderBackend, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
 import { ResponseTransform, defaultTransform } from '@tsdi/common/client';
-import { SimpleEncoderBackend, InterceptingEncoder, ENCODER_INTERCEPTORS, FinalizeEncodeInterceptor } from './encoder';
-import { SimpleDecoderBackend, InterceptingDecoder, DECODER_INTERCEPTORS } from './decoder';
+import { TransportEncoderBackend, InterceptingEncoder, ENCODER_INTERCEPTORS, FinalizeEncodeInterceptor } from './encoder';
+import { TransportDecoderBackend, InterceptingDecoder, DECODER_INTERCEPTORS } from './decoder';
 import { TransportTypedRespond } from './typed.respond';
 import { DefaultRequestHandler } from './handler';
 import { RequestHandler } from '../RequestHandler';
@@ -16,14 +16,14 @@ import { RequestHandler } from '../RequestHandler';
 
         { provide: getToken(ResponseTransform, 'json'), useValue: defaultTransform },
 
-        SimpleEncoderBackend,
+        TransportEncoderBackend,
         InterceptingEncoder,
-        { provide: EncoderBackend, useExisting: SimpleEncoderBackend, asDefault: true },
+        { provide: EncoderBackend, useExisting: TransportEncoderBackend, asDefault: true },
 
 
-        SimpleDecoderBackend,
+        TransportDecoderBackend,
         InterceptingDecoder,
-        { provide: DecoderBackend, useExisting: SimpleDecoderBackend, asDefault: true },
+        { provide: DecoderBackend, useExisting: TransportDecoderBackend, asDefault: true },
 
         { provide: Encoder, useExisting: InterceptingEncoder, asDefault: true },
         { provide: Decoder, useExisting: InterceptingDecoder, asDefault: true },

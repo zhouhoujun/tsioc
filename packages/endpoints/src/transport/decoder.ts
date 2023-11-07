@@ -49,26 +49,9 @@ export class InterceptingDecoder implements Decoder {
     }
 }
 
-
-@Injectable()
-export class SimpleDecoderBackend implements DecoderBackend {
-
-    handle(ctx: Context): Observable<Packet> {
-        if (!ctx.raw || !ctx.raw.length) return of({});
-        try {
-            ctx.packet = ctx.session.deserialize(ctx.raw);
-            return of(ctx.packet ?? {});
-        } catch (err) {
-            return throwError(() => err);
-        }
-    }
-
-}
-
 interface CachePacket extends IncomingPacket {
     cacheSize: number;
 }
-
 
 @Injectable()
 export class TransportDecoderBackend implements DecoderBackend {
