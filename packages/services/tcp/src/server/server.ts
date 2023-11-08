@@ -1,7 +1,7 @@
 import { ArgumentExecption, Inject, Injectable, ProvdierOf, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ListenOpts, ListenService, InternalServerExecption, ev, TransportSessionFactory, LOCALHOST } from '@tsdi/common';
+import { ListenOpts, ListenService, InternalServerExecption, ev, LOCALHOST, ServerTransportSessionFactory } from '@tsdi/common';
 import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
 import { Subscription, lastValueFrom } from 'rxjs';
 import * as net from 'net';
@@ -109,7 +109,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.endpoint.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'tcp';

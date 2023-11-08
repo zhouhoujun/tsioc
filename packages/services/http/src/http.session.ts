@@ -1,10 +1,17 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr, statusMessage } from '@tsdi/common';
+import {
+    ClientTransportSession, Context, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, 
+    Packet, ResponsePacket, StreamAdapter, TransportOpts, ev, hdr, statusMessage,
+    ClientTransportSessionFactory, ServerTransportSessionFactory, ServerTransportSession
+} from '@tsdi/common';
+import { HttpEvent, HttpRequest } from '@tsdi/common/http';
+import { RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
+import { OutgoingEncoder, IncomingDecoder } from '@tsdi/endpoints';
 import { ctype } from '@tsdi/endpoints/assets';
-import { Server, request as httpRequest, IncomingMessage, ClientRequest } from 'http';
+import { Server, request as httpRequest, IncomingMessage, ClientRequest, OutgoingHttpHeaders } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
 import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
-import { Observable, defer, fromEvent, map, mergeMap, share } from 'rxjs';
+import { Observable, defer, finalize, fromEvent, map, mergeMap, share } from 'rxjs';
 import { HttpServRequest, HttpServResponse } from './server/context';
 import { HttpClientOpts } from './client/options';
 
@@ -24,35 +31,31 @@ const {
 const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
-export class HttpClientTransportSession implements TransportSession<ClientHttp2Session | null> {
+export class HttpClientTransportSession implements ClientTransportSession<ClientHttp2Session | null> {
 
     readonly options: TransportOpts;
     constructor(
         readonly injector: Injector,
         readonly socket: ClientHttp2Session | null,
         readonly streamAdapter: StreamAdapter,
-        readonly encoder: Encoder,
-        readonly decoder: Decoder,
+        readonly encoder: RequestEncoder,
+        readonly decoder: ResponseDecoder,
         readonly clientOpts: HttpClientOpts) {
         this.options = clientOpts.transportOpts ?? {};
     }
-
-    receive(packet?: Packet<any> | undefined): Observable<Packet<any>> {
+    
+    write(data: Buffer, packet: Packet<any>): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
-    getPacketStrategy(): string | undefined {
-        return this.encoder.strategy ?? this.decoder.strategy
-    }
-
-    send(req: RequestPacket, context?: InvocationContext): Observable<ClientHttp2Stream | ClientRequest> {
+    send(req: HttpRequest): Observable<ClientHttp2Stream | ClientRequest> {
         let path = req.url ?? '';
-        const ac = this.getAbortSignal(context);
+        const ac = this.getAbortSignal(req.context);
         let stream: ClientHttp2Stream | ClientRequest;
         if (this.clientOpts.authority && this.socket && (!httptl.test(path) || path.startsWith(this.clientOpts.authority))) {
             path = path.replace(this.clientOpts.authority, '');
 
-            const reqHeaders = req.headers ?? {};
+            const reqHeaders = req.headers.getHeaders() ?? {} as OutgoingHttpHeaders;
 
             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
@@ -78,10 +81,10 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
         }
 
         return defer(async () => {
-            if (isNil(req.payload)) {
+            if (isNil(req.body)) {
                 await promisify(stream.end, stream)();
             } else {
-                await promisify(this.streamAdapter.sendbody, this.streamAdapter)(req.payload, stream)
+                await promisify(this.streamAdapter.sendbody, this.streamAdapter)(req.body, stream)
             }
             return stream;
         });
@@ -112,8 +115,8 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
         }
     }
 
-    request(req: RequestPacket, context: InvocationContext): Observable<ResponsePacket<any>> {
-        return this.send(req, context)
+    request(req: HttpRequest): Observable<HttpEvent> {
+        return this.send(req)
             .pipe(
                 mergeMap(stream => {
                     if (stream instanceof ClientRequest) {
@@ -161,12 +164,14 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
                         };
                         stream = msg.stream;
                     }
-                    const ctx = new Context(this.injector, this, stream, headPkg);
-                    return this.decoder.handle(ctx)
+                    // const ctx = new Context(this.injector, this, stream, headPkg);
+                    return this.decoder.handle({...headPkg, context: req.context })
                         .pipe(
-                            map((pkg: ResponsePacket)=> {
-                                pkg.stream = stream;
-                                return pkg;
+                            map(res=> {
+                                return res as HttpEvent
+                            }),
+                            finalize(()=> {
+                                if (stream && req.observe !== 'observe') stream.destroy?.();
                             })
                         );
                 })
@@ -187,13 +192,13 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
 }
 
 @Injectable()
-export class HttpClientSessionFactory implements TransportSessionFactory<ClientHttp2Session | null> {
+export class HttpClientSessionFactory implements ClientTransportSessionFactory<ClientHttp2Session | null> {
 
     constructor(
         readonly injector: Injector,
         private streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder) {
+        private encoder: RequestEncoder,
+        private decoder: ResponseDecoder) {
 
     }
 
@@ -209,19 +214,19 @@ export interface RequestMsg {
     res: HttpServResponse
 }
 
-export class HttpServerTransportSession implements TransportSession<Http2Server | HttpsServer | Server> {
+export class HttpServerTransportSession implements ServerTransportSession<Http2Server | HttpsServer | Server> {
     constructor(
         readonly injector: Injector,
         readonly socket: Http2Server | HttpsServer | Server,
         readonly streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder,
+        private encoder: OutgoingEncoder,
+        private decoder: IncomingDecoder,
         readonly options: TransportOpts) {
 
     }
 
-    getPacketStrategy(): string | undefined {
-        return this.encoder.strategy ?? this.decoder.strategy
+    write(data: Buffer, packet: Packet<any>): Promise<void> {
+        throw new Error('Method not implemented.');
     }
 
     send(packet: ResponsePacket<any>): Observable<any> {
@@ -254,9 +259,6 @@ export class HttpServerTransportSession implements TransportSession<Http2Server 
         }
     }
 
-    request(packet: RequestPacket<any>, context?: InvocationContext<any> | undefined): Observable<ResponsePacket<any>> {
-        throw new Error('Method not implemented.');
-    }
 
     receive(): Observable<IncomingPacket> {
 
@@ -300,13 +302,13 @@ export class HttpServerTransportSession implements TransportSession<Http2Server 
 }
 
 @Injectable()
-export class HttpServerSessionFactory implements TransportSessionFactory<Http2Server | HttpsServer | Server> {
+export class HttpServerSessionFactory implements ServerTransportSessionFactory<Http2Server | HttpsServer | Server> {
 
     constructor(
         readonly injector: Injector,
         private streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder) {
+        private encoder: OutgoingEncoder,
+        private decoder: IncomingDecoder) {
 
     }
 

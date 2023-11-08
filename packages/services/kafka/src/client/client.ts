@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { TransportSession, TransportSessionFactory, patternToPath } from '@tsdi/common';
+import { ClientTransportSession, ClientTransportSessionFactory, patternToPath } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { MircoServRouters, StatusVaildator } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
@@ -22,6 +22,10 @@ export class KafkaClient extends Client {
     private consumer?: Consumer | null;
     private producer?: Producer | null;
     private _session?: KafkaTransportSession;
+
+    get session() {
+        return this._session as ClientTransportSession;
+    }
 
     constructor(
         readonly handler: KafkaHandler,
@@ -115,7 +119,7 @@ export class KafkaClient extends Client {
         await this.producer.connect();
 
         const vaildator = this.handler.injector.get(StatusVaildator, null);
-        this._session = this.handler.injector.get(TransportSessionFactory).create({
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create({
             producer: this.producer,
             vaildator,
             consumer: this.consumer!
@@ -142,11 +146,6 @@ export class KafkaClient extends Client {
             return new RegExp(source);
         }
         return topic + '.reply'
-    }
-
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this._session)
     }
 
     protected async onShutdown(): Promise<void> {

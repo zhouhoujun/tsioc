@@ -39,6 +39,8 @@ export * from './finalize.filter';
 export * from './execption.filter';
 export * from './execption.handlers';
 
+export * from './transport';
+
 
 export * from './impl/micro.router';
 export * from './impl/middleware.endpoint';

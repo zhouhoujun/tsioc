@@ -1,7 +1,8 @@
 import { Inject, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import {
     RequestOptions, ReqHeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
-    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts, ev, TransportSession, TransportSessionFactory
+    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts, ev,
+    ClientTransportSession, ClientTransportSessionFactory
 } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
@@ -37,7 +38,12 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 export class Http extends Client<HttpRequest, number> {
 
-    private session?: TransportSession<http2.ClientHttp2Session | null> | null;
+    private _session?: ClientTransportSession<http2.ClientHttp2Session | null> | null;
+
+    get session () {
+        return this._session!
+    }
+
     constructor(
         readonly handler: HttpHandler,
         @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
@@ -49,7 +55,7 @@ export class Http extends Client<HttpRequest, number> {
         if (this.session) return of(this.session);
         const injector = this.handler.injector;
         if (!this.option.authority) {
-            this.session = injector.get(TransportSessionFactory).create(null, this.option);
+            this._session = injector.get(ClientTransportSessionFactory).create(null, this.option);
             return of(this.session);
         } else {
 
@@ -63,8 +69,7 @@ export class Http extends Client<HttpRequest, number> {
                     observer.error(err);
                 }
                 const onConnect = () => {
-
-                    this.session = injector.get(TransportSessionFactory).create(conn, this.option);
+                    this._session = injector.get(ClientTransportSessionFactory).create(conn, this.option);
                     observer.next(this.session);
                     observer.complete();
                 };
@@ -101,11 +106,6 @@ export class Http extends Client<HttpRequest, number> {
 
     protected override isRequest(target: any): target is HttpRequest {
         return target instanceof HttpRequest
-    }
-
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this.session);
     }
 
     protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): TransportParams {

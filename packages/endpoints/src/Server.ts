@@ -1,6 +1,6 @@
 import { Abstract, ProvdierOf, ProviderType, StaticProvider, Type } from '@tsdi/ioc';
-import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
+import { Decoder, Encoder, HybirdTransport, TransportOpts, ServerTransportSessionFactory } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
@@ -66,7 +66,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     /**
      * micro service transport session factory.
      */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
+    sessionFactory?: ProvdierOf<ServerTransportSessionFactory>;
     /**
      * send detail error message to client or not. 
      */

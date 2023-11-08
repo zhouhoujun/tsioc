@@ -1,7 +1,7 @@
 import { ArgumentExecption, Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, isString, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { Decoder, Encoder, HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
-import { TopicTransportBackend, TransportBackend } from './backend';
+import { Decoder, Encoder, HybirdTransport, NotImplementedExecption, Transport, ClientTransportSessionFactory } from '@tsdi/common';
+import { TransportBackend } from './backend';
 import { ClientOpts, ClientTransportPacketStrategy } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -63,8 +63,7 @@ export interface ClientTokenOpts {
 
 @Module({
     providers: [
-        TransportBackend,
-        TopicTransportBackend
+        TransportBackend
     ]
 })
 export class ClientModule {
@@ -152,7 +151,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
 
                         const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
                         if (opts.sessionFactory) {
-                            opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                            opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
                         }
 
                         if (opts.strategy) {
@@ -204,7 +203,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                         }
                     }
                     if (opts.sessionFactory) {
-                        opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                        opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
                     }
 
                     if (opts.strategy) {

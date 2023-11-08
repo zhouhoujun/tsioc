@@ -1,5 +1,5 @@
-import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportRequest, ServiceUnavailableExecption, ev, TransportSessionFactory, TransportSession } from '@tsdi/common';
+import { Inject, Injectable } from '@tsdi/ioc';
+import { TransportRequest, ServiceUnavailableExecption, ev, ClientTransportSessionFactory, ClientTransportSession } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
@@ -12,7 +12,11 @@ import { WS_CLIENT_OPTS, WsClientOpts } from './options';
 @Injectable()
 export class WsClient extends Client<TransportRequest, number> {
     private socket?: WebSocket | null;
-    private session?: TransportSession | null;
+    private _session?: ClientTransportSession | null;
+
+    get session(): ClientTransportSession<any> {
+        return this._session!
+    }
 
     constructor(
         readonly handler: WsHandler,
@@ -21,20 +25,20 @@ export class WsClient extends Client<TransportRequest, number> {
     }
 
     protected connect(): Observable<any> {
-        return new Observable<TransportSession>((observer) => {
+        return new Observable<ClientTransportSession>((observer) => {
             if (!this.socket) {
                 this.session?.destroy();
                 this.socket = new WebSocket(this.options.url!, this.options.connectOpts);
-                this.session = null;
+                this._session = null;
             }
 
             const onOpen = () => {
                 if (!this.session) {
                     const socket = createWebSocketStream(this.socket!);
-                    const factory = this.handler.injector.get(TransportSessionFactory);
+                    const factory = this.handler.injector.get(ClientTransportSessionFactory);
                     const transportOpts = this.options.transportOpts!;
                     if(!transportOpts.transport) transportOpts.transport = 'ws';
-                    this.session = factory.create(socket, transportOpts);
+                    this._session = factory.create(socket, transportOpts);
                 }
                 observer.next(this.session);
                 observer.complete();
@@ -74,11 +78,6 @@ export class WsClient extends Client<TransportRequest, number> {
         this.socket.terminate();
         this.socket.removeAllListeners();
         this.socket = null;
-    }
-
-    protected initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this.session);
     }
 
 }

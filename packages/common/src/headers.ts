@@ -88,9 +88,9 @@ export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
         return Array.from(this._normal.keys())
     }
 
-    getHeaders(): Record<string, T> {
+    getHeaders(): OutgoingHeaders {
         if (!this._rcd) {
-            const rcd = this._rcd = {} as Record<string, T>;
+            const rcd = this._rcd = {} as OutgoingHeaders;
             this.forEach((v, k) => {
                 rcd[v] = k;
             });

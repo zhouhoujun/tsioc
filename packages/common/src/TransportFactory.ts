@@ -1,11 +1,12 @@
-import { Abstract, Injector, InvocationContext } from '@tsdi/ioc';
-import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
+import { Abstract, Injector } from '@tsdi/ioc';
+import { Packet, ResponsePacket, StatusCode } from './packet';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportErrorResponse, TransportEvent } from './response';
 import { OutgoingHeaders, ResHeaders } from './headers';
 import { StreamAdapter } from './StreamAdapter';
-
+import { IncomingPacket } from './socket';
+import { TransportRequest } from './request';
 
 
 
@@ -91,20 +92,11 @@ export abstract class TransportSession<TSocket = any>  {
      */
     abstract get streamAdapter(): StreamAdapter;
     /**
-     * get packet strategy
-     */
-    abstract getPacketStrategy(): string | undefined;
-    /**
-     * send.
+     * write packet buffer.
+     * @param data 
      * @param packet 
      */
-    abstract send(packet: RequestPacket, context?: InvocationContext): Observable<any>;
-    /**
-     * send.
-     * @param packet 
-     */
-    abstract send(packet: ResponsePacket): Observable<any>;
-
+    abstract write(data: Buffer, packet: Packet): Promise<void>;
     /**
      * serialize packet.
      * @param packet
@@ -115,18 +107,6 @@ export abstract class TransportSession<TSocket = any>  {
      * @param raw 
      */
     abstract deserialize(raw: Buffer): Packet;
-
-    /**
-     * request.
-     * @param packet 
-     */
-    abstract request(packet: RequestPacket, context?: InvocationContext): Observable<ResponsePacket>;
-
-    /**
-     * receive
-     */
-    abstract receive(packet?: Packet): Observable<Packet>;
-
     /**
      * destroy.
      */
@@ -134,11 +114,49 @@ export abstract class TransportSession<TSocket = any>  {
 
 }
 
+
+
 /**
- * transport session factory.
+ * transport session.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any> {
+export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket>  {
+    /**
+     * send.
+     * @param packet 
+     */
+    abstract send(packet: TransportRequest): Observable<any>;
+    /**
+     * request.
+     * @param packet 
+     */
+    abstract request(packet: TransportRequest): Observable<TransportEvent>;
+}
+
+/**
+ * transport session.
+ */
+@Abstract()
+export abstract class ServerTransportSession<TSocket = any> extends TransportSession<TSocket> {
+    /**
+     * send.
+     * @param packet 
+     */
+    abstract send(packet: ResponsePacket): Observable<any>;
+
+    /**
+     * receive
+     */
+    abstract receive(packet?: Packet): Observable<IncomingPacket>;
+
+}
+
+
+/**
+ * client transport session factory.
+ */
+@Abstract()
+export abstract class ClientTransportSessionFactory<TSocket = any> {
     /**
      * injector.
      */
@@ -147,5 +165,21 @@ export abstract class TransportSessionFactory<TSocket = any> {
      * create transport session.
      * @param options 
      */
-    abstract create(socket: TSocket, options: TransportOpts): TransportSession<TSocket>;
+    abstract create(socket: TSocket, options: TransportOpts): ClientTransportSession<TSocket>;
+}
+
+/**
+ * server transport session factory.
+ */
+@Abstract()
+export abstract class ServerTransportSessionFactory<TSocket = any> {
+    /**
+     * injector.
+     */
+    abstract get injector(): Injector;
+    /**
+     * create transport session.
+     * @param options 
+     */
+    abstract create(socket: TSocket, options: TransportOpts): ServerTransportSession<TSocket>;
 }

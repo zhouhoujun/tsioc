@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportRequest, TransportSession, TransportSessionFactory } from '@tsdi/common';
+import { TransportRequest, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
@@ -11,7 +11,11 @@ import { defaultMaxSize } from '../consts';
 @Injectable()
 export class UdpClient extends Client<TransportRequest> {
     private socket?: Socket | null;
-    private session?: TransportSession | null;
+    private _session?: ClientTransportSession | null;
+
+    get session(): ClientTransportSession<any> {
+        return this._session!;
+    }
 
     constructor(
         readonly handler: UdpHandler,
@@ -31,7 +35,7 @@ export class UdpClient extends Client<TransportRequest> {
             if (!transportOpts.host) {
                 transportOpts.host = new URL(this.options.url!).host;
             }
-            this.session = this.handler.injector.get(TransportSessionFactory).create(this.socket, this.options.transportOpts!);
+            this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.socket, this.options.transportOpts!);
         }
     }
 
@@ -40,9 +44,5 @@ export class UdpClient extends Client<TransportRequest> {
         this.session?.destroy();
     }
 
-    protected initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this.session)
-    }
 
 }

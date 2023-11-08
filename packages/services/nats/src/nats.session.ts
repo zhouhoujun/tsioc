@@ -1,7 +1,7 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, OfflineExecption, OutgoingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
-import { PayloadTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, OfflineExecption, OutgoingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, ServerTransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { IncomingDecoder, OutgoingEncoder, PayloadTransportSession } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
 import { Observable, filter, fromEvent, map, of, throwError } from 'rxjs';
@@ -131,13 +131,13 @@ export class NatsTransportSession extends PayloadTransportSession<NatsConnection
 }
 
 @Injectable()
-export class NatsTransportSessionFactory implements TransportSessionFactory<NatsConnection> {
+export class NatsTransportSessionFactory implements ServerTransportSessionFactory<NatsConnection> {
 
     constructor(
         readonly injector: Injector,
         private streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder) { }
+        private encoder: OutgoingEncoder,
+        private decoder: IncomingDecoder) { }
 
     create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
         return new NatsTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);

@@ -1,26 +1,14 @@
 import { Execption, Injector, InvokeArguments } from '@tsdi/ioc';
 import { PipeTransform, UuidGenerator } from '@tsdi/core';
-import { AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, ev, hdr } from '@tsdi/common';
+import { AssetTransportOpts, ClientTransportSession, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, IncomingPacket, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, ServerTransportSession, StreamAdapter, TransportEvent, TransportOpts, TransportRequest, TransportSession, ev, hdr } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, finalize, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
+import { RequestEncoder, ResponseContext, ResponseDecoder } from '@tsdi/common/client';
+import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
 
 
 
-export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> implements TransportSession<TSocket> {
-
-    constructor(
-        readonly injector: Injector,
-        readonly socket: TSocket,
-        readonly streamAdapter: StreamAdapter,
-        readonly encoder: Encoder,
-        readonly decoder: Decoder,
-        readonly options: TransportOpts) {
-    }
-
-
-    getPacketStrategy(): string | undefined {
-        return this.encoder.strategy ?? this.decoder.strategy
-    }
+export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends TransportSession<TSocket> {
 
     serialize(packet: Packet, withPayload?: boolean): Buffer {
         let pkg: Packet;
@@ -53,7 +41,173 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
     }
 
 
-    send(packet: Packet): Observable<any> {
+    // push(packet: Packet): Observable<any> {
+    //     const len = this.getPayloadLen(packet);
+    //     if (len) {
+    //         const opts = this.options as AssetTransportOpts;
+    //         if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
+    //             const byfmt = this.injector.get<PipeTransform>('bytes-format');
+    //             return throwError(() => new PacketLengthException(`Payload length ${byfmt.transform(len)} great than max size ${byfmt.transform(opts.payloadMaxSize)}`));
+    //         }
+    //     }
+
+    //     return this.mergeClose(this.encode(packet)
+    //         .pipe(
+    //             mergeMap(data => {
+    //                 const bufLen = data.length;
+    //                 if (this.options.maxSize && bufLen > this.options.maxSize) {
+    //                     const byfmt = this.injector.get<PipeTransform>('bytes-format');
+    //                     return throwError(() => new PacketLengthException(`Packet length ${byfmt.transform(bufLen)} great than max size ${byfmt.transform(this.options.maxSize)}`));
+    //                 }
+    //                 return this.write(data, packet);
+    //             })
+    //         ))
+    // }
+
+
+    protected abstract concat(msg: TMsg): Observable<Buffer>;
+
+    // protected encode(packet: Packet): Observable<Buffer> {
+    //     const ctx = this.createContext(packet);
+    //     return this.encoder.handle(ctx)
+    //         .pipe(
+    //             map(buf => this.afterEncode(ctx, buf)),
+    //             finalize(() => ctx.destroy())
+    //         )
+    // }
+
+    // protected afterEncode(ctx: Context, buf: Buffer) {
+    //     return buf;
+    // }
+
+    // protected decode(data: Buffer, msg: TMsg): Observable<Packet> {
+    //     const ctx = this.createContext(data, msg);
+    //     return this.decoder.handle(ctx)
+    //         .pipe(
+    //             map(pkg => this.afterDecode(ctx, pkg, msg)),
+    //             finalize(() => ctx.destroy())
+    //         );
+    // }
+
+    // protected afterDecode(ctx: Context, pkg: Packet, msg: TMsg) {
+    //     return pkg;
+    // }
+
+    abstract destroy(): Promise<void>;
+
+
+    protected abstract message(packet?: Packet): Observable<TMsg>;
+
+    protected abstract mergeClose(source: Observable<any>): Observable<any>;
+
+    abstract write(data: Buffer, packet: Packet): Promise<void>;
+
+
+
+}
+
+export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements ClientTransportSession<TSocket> {
+
+    abstract get encoder(): RequestEncoder;
+
+    abstract get decoder(): ResponseDecoder;
+
+    send(req: TransportRequest): Observable<any> {
+        const len = this.getPayloadLen(req);
+        if (len) {
+            const opts = this.options as AssetTransportOpts;
+            if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
+                const byfmt = this.injector.get<PipeTransform>('bytes-format');
+                return throwError(() => new PacketLengthException(`Payload length ${byfmt.transform(len)} great than max size ${byfmt.transform(opts.payloadMaxSize)}`));
+            }
+        }
+
+        return this.mergeClose(this.encoder.handle(req)
+            .pipe(
+                mergeMap(data => {
+                    const bufLen = data.length;
+                    if (this.options.maxSize && bufLen > this.options.maxSize) {
+                        const byfmt = this.injector.get<PipeTransform>('bytes-format');
+                        return throwError(() => new PacketLengthException(`Packet length ${byfmt.transform(bufLen)} great than max size ${byfmt.transform(this.options.maxSize)}`));
+                    }
+                    return this.write(data, req);
+                })
+            ))
+    }
+
+    request(req: TransportRequest): Observable<TransportEvent> {
+        let obs$ = defer(() => this.requesting(req)).pipe(
+            mergeMap(r => this.receive(req)),
+            filter(p => this.responsePacketFilter(req, p))
+        );
+
+        if (this.options.timeout) {
+            obs$ = obs$.pipe(timeout(this.options.timeout))
+        }
+        return obs$;
+    }
+
+    receive(req: TransportRequest): Observable<TransportEvent> {
+        return this.message(req)
+            .pipe(
+                filter(msg => this.responseFilter(req, msg)),
+                mergeMap(msg => this.concat(msg).pipe(mergeMap(data => this.decode(req, data, msg)))),
+                share()
+            )
+    }
+
+    protected decode(req: TransportRequest, data: Buffer, msg: TMsg): Observable<TransportEvent> {
+        const ctx = this.createContext(req, data, msg);
+        return this.decoder.handle(ctx)
+            .pipe(
+                map(pkg => this.afterDecode(ctx, pkg, msg))
+            );
+    }
+
+    protected afterDecode(ctx: ResponseContext, pkg: TransportEvent, msg: TMsg) {
+        return pkg;
+    }
+
+
+    protected abstract beforeRequest(packet: TransportRequest): Promise<void>;
+
+    protected abstract createContext(req: TransportRequest, msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments): ResponseContext;
+
+    protected async requesting(packet: TransportRequest): Promise<void> {
+        this.bindPacketId(packet);
+        await this.beforeRequest(packet);
+        await lastValueFrom(this.send(packet))
+    }
+
+    protected getPayloadLen(req: TransportRequest) {
+        return ~~(req.headers.get(hdr.CONTENT_LENGTH) ?? '0')
+    }
+
+    protected responseFilter(req: RequestPacket, msg: TMsg) {
+        return true;
+    }
+
+    protected responsePacketFilter(req: RequestPacket, res: ResponsePacket) {
+        return res.id == req.id
+    }
+
+    protected bindPacketId(req: TransportRequest): void {
+        if (!req.id) {
+            req.id = this.getPacketId();
+        }
+    }
+
+    protected abstract getPacketId(): string | number;
+
+}
+
+export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements ServerTransportSession<TSocket> {
+
+    abstract get encoder(): OutgoingEncoder;
+
+    abstract get decoder(): IncomingDecoder;
+
+    send(packet: ResponsePacket<any>): Observable<any> {
         const len = this.getPayloadLen(packet);
         if (len) {
             const opts = this.options as AssetTransportOpts;
@@ -76,30 +230,15 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
             ))
     }
 
-    request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
-        let obs$ = defer(() => this.requesting(packet)).pipe(
-            mergeMap(r => this.receive(packet)),
-            filter(p => this.responsePacketFilter(packet, p))
-        );
-
-        if (this.options.timeout) {
-            obs$ = obs$.pipe(timeout(this.options.timeout))
-        }
-        return obs$;
+    receive(packet?: Packet<any> | undefined): Observable<IncomingPacket<any>> {
+        throw new Error('Method not implemented.');
     }
 
-    receive(packet?: Packet): Observable<Packet> {
-        return this.message(packet)
-            .pipe(
-                filter(msg => packet ? this.responseFilter(packet, msg) : true),
-                mergeMap(msg => this.concat(msg).pipe(mergeMap(data => this.decode(data, msg)))),
-                share()
-            )
+    protected getPayloadLen(packet: Packet) {
+        return packet.length ?? (~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0'))
     }
 
-    protected abstract concat(msg: TMsg): Observable<Buffer>;
-
-    protected encode(packet: Packet): Observable<Buffer> {
+     protected encode(packet: Packet): Observable<Buffer> {
         const ctx = this.createContext(packet);
         return this.encoder.handle(ctx)
             .pipe(
@@ -112,59 +251,11 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         return buf;
     }
 
-    protected decode(data: Buffer, msg: TMsg): Observable<Packet> {
-        const ctx = this.createContext(data, msg);
-        return this.decoder.handle(ctx)
-            .pipe(
-                map(pkg => this.afterDecode(ctx, pkg, msg)),
-                finalize(() => ctx.destroy())
-            );
-    }
-
-    protected afterDecode(ctx: Context, pkg: Packet, msg: TMsg) {
-        return pkg;
-    }
-
-    abstract destroy(): Promise<void>;
-
-
-    protected abstract message(packet?: Packet): Observable<TMsg>;
-
-    protected abstract mergeClose(source: Observable<any>): Observable<any>;
-
-    protected abstract write(data: Buffer, packet: Packet): Promise<void>;
-
-    protected abstract beforeRequest(packet: RequestPacket<any>): Promise<void>;
-
+    
     protected abstract createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments): Context;
 
-    protected getPayloadLen(packet: Packet) {
-        return packet.length ?? (~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0'))
-    }
-
-    protected async requesting(packet: RequestPacket<any>): Promise<void> {
-        this.bindPacketId(packet);
-        await this.beforeRequest(packet);
-        await lastValueFrom(this.send(packet))
-    }
-
-    protected responseFilter(req: RequestPacket, msg: TMsg) {
-        return true;
-    }
-
-    protected responsePacketFilter(req: RequestPacket, res: ResponsePacket) {
-        return res.id == req.id
-    }
-
-    protected bindPacketId(packet: RequestPacket<any>): void {
-        if (!packet.id) {
-            packet.id = this.getPacketId();
-        }
-    }
-
-    protected abstract getPacketId(): string | number;
-
 }
+
 
 export interface TopicBuffer {
     topic: string;
@@ -184,13 +275,13 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
     private last?: number;
 
     constructor(
-        injector: Injector,
-        socket: TSocket,
-        streamAdapter: StreamAdapter,
-        encoder: Encoder,
-        decoder: Decoder,
+        readonly injector: Injector,
+        readonly socket: TSocket,
+        readonly streamAdapter: StreamAdapter,
+        readonly encoder: Encoder,
+        readonly decoder: Decoder,
         options: TransportOpts) {
-        super(injector, socket, streamAdapter, encoder, decoder, options);
+        super();
         this.delimiter = Buffer.from(options.delimiter ?? '#');
         this.headDelimiter = Buffer.from(options.headDelimiter ?? '$');
         this.topics = new Map();

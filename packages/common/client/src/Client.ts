@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, HeaderPacket, RequestPacket, ResponsePacket, patternToPath } from '@tsdi/common';
+import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, ClientTransportSession } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { ClientHandler } from './handler';
 
@@ -11,6 +11,8 @@ import { ClientHandler } from './handler';
  */
 @Abstract()
 export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> {
+
+    abstract get session(): ClientTransportSession;
 
     /**
      * client handler
@@ -404,11 +406,15 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * connect service.
      */
     protected abstract connect(): Promise<any> | Observable<any>;
+
     /**
      * init request context.
      * @param context 
      */
-    protected abstract initContext(context: InvocationContext): void;
+    protected initContext(context: InvocationContext): void {
+        context.setValue(ClientTransportSession, this.session);
+        context.setValue(Client, this);
+    }
 
     protected abstract onShutdown(): Promise<void>;
 

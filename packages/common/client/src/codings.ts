@@ -1,18 +1,18 @@
-import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, Decoder, Encoder, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Context, Decoder, RequestPacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 /**
  * Request encdoer.
  */
 @Abstract()
-export abstract class RequestEncoder<T extends TransportRequest = TransportRequest> implements Encoder<T> {
+export abstract class RequestEncoder<T extends TransportRequest = TransportRequest> implements Handler<T, Buffer> {
     /**
      * tranport request encode handle.
-     * @param ctx 
+     * @param req 
      */
-    abstract handle(ctx: Context<T>): Observable<Buffer>;
+    abstract handle(req: T): Observable<Buffer>;
 }
 
 /**
@@ -20,17 +20,17 @@ export abstract class RequestEncoder<T extends TransportRequest = TransportReque
  * 
  * 加密拦截器。
  */
-export interface RequestEncodeInterceptor<T extends TransportRequest = TransportRequest> extends Interceptor<Context<T>, Buffer> {
+export interface RequestEncodeInterceptor<T extends TransportRequest = TransportRequest> extends Interceptor<T, Buffer> {
     /**
      * the method to implemet encode interceptor.
      * 
      * 加密拦截处理的方法
-     * @param input  request input.
+     * @param req  request input.
      * @param next The next handler in the chain, or the backend
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(input: Context<T>, next: RequestEncoder<T>): Observable<Buffer>;
+    intercept(req: T, next: RequestEncoder<T>): Observable<Buffer>;
 }
 
 /**
@@ -44,28 +44,33 @@ export class InterceptingReuqestEncoder<T extends TransportRequest = TransportRe
 
     constructor(private backend: RequestEncoder, private injector: Injector) { }
 
-    handle(ctx: Context): Observable<Buffer> {
+    handle(req: T): Observable<Buffer> {
         if (!this.chain) {
             this.chain = this.injector.get(REQUEST_ENCODER_INTERCEPTORS, [])
                 .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
         }
-        return this.chain.handle(ctx);
+        return this.chain.handle(req);
     }
 
 }
 
-
+/**
+ * response context.
+ */
+export interface ResponseContext extends RequestPacket {
+    context: InvocationContext;
+}
 
 /**
  * response decoder.
  */
 @Abstract()
-export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent> implements Decoder<T> {
+export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent> implements Handler<ResponseContext, T> {
     /**
      * tranport response decode handle.
-     * @param ctx 
+     * @param res 
      */
-    abstract handle(ctx: Context<T>): Observable<T>;
+    abstract handle(res: ResponseContext): Observable<T>;
 }
 
 /**
@@ -73,17 +78,17 @@ export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent>
  * 
  * 解密拦截器。
  */
-export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportEvent> extends Interceptor<Context<T>, T> {
+export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportEvent> extends Handler<Context<T>, T> {
     /**
      * the method to implemet response decode interceptor.
      * 
      * 解密拦截处理的方法
-     * @param input  request input.
+     * @param res  response input.
      * @param next The next handler in the chain, or the backend
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(input: Context<T>, next: ResponseDecoder<T>): Observable<T>;
+    intercept(res: ResponseContext, next: ResponseDecoder<T>): Observable<T>;
 }
 
 /**
@@ -97,7 +102,7 @@ export class InterceptingResponseDecoder<T extends TransportEvent = TransportEve
 
     constructor(private backend: ResponseDecoder, private injector: Injector) { }
 
-    handle(ctx: Context): Observable<T> {
+    handle(ctx: ResponseContext): Observable<T> {
         if (!this.chain) {
             this.chain = this.injector.get(RESPONSE_DECODER_INTERCEPTORS, [])
                 .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend) as ResponseDecoder<T>;

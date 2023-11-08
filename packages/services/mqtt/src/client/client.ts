@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest, DisconnectExecption, ev, OfflineExecption, TransportSession, TransportSessionFactory } from '@tsdi/common';
+import { TransportRequest, DisconnectExecption, ev, OfflineExecption, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
@@ -18,7 +18,11 @@ export class MqttClient extends Client<TransportRequest, number> {
     private logger?: Logger;
 
     private mqtt?: mqtt.Client | null;
-    private _session?: TransportSession<mqtt.Client>;
+    private _session?: ClientTransportSession<mqtt.Client>;
+
+    get session() {
+        return this._session!
+    }
 
     constructor(
         readonly handler: MqttHandler,
@@ -86,14 +90,10 @@ export class MqttClient extends Client<TransportRequest, number> {
         if(!transportOpts.transport) {
             transportOpts.transport = 'mqtt';
         }
-        this._session = this.handler.injector.get(TransportSessionFactory).create(conn, transportOpts);
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(conn, transportOpts);
         return conn;
     }
 
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this._session);
-    }
 
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;

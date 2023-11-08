@@ -1,5 +1,5 @@
-import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest, Pattern, RequestInitOpts, TransportSession, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common';
+import { Inject, Injectable, promisify } from '@tsdi/ioc';
+import { TransportRequest, Pattern, RequestInitOpts, LOCALHOST, ev, ClientTransportSessionFactory, ClientTransportSession } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -18,7 +18,12 @@ export class TcpClient extends Client<TransportRequest, number> {
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private _session?: TransportSession<tls.TLSSocket | net.Socket>;
+    private _session?: ClientTransportSession<tls.TLSSocket | net.Socket>;
+
+    get session() {
+        return this._session!;
+    }
+
 
     constructor(
         readonly handler: TcpHandler,
@@ -76,11 +81,6 @@ export class TcpClient extends Client<TransportRequest, number> {
         });
     }
 
-    protected override initContext(context: InvocationContext): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this._session);
-    }
-
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {
         options.withCredentials = this.connection instanceof tls.TLSSocket;
         return new TransportRequest(pattern, options);
@@ -106,8 +106,8 @@ export class TcpClient extends Client<TransportRequest, number> {
             socket.setKeepAlive(true, opts.keepalive);
         }
         const transportOpts = opts.transportOpts!;
-        if(!transportOpts.transport) transportOpts.transport = 'tcp';
-        this._session = this.handler.injector.get(TransportSessionFactory).create(socket, transportOpts);
+        if (!transportOpts.transport) transportOpts.transport = 'tcp';
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(socket, transportOpts);
         return socket
     }
 

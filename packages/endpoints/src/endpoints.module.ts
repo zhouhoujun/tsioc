@@ -1,6 +1,6 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, NotImplementedExecption, Transport, ServerTransportSessionFactory } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -41,7 +41,6 @@ import { TransportTypedRespond } from './transport/typed.respond';
         { provide: TypedRespond, useExisting: TransportTypedRespond },
 
         LogInterceptor,
-        // TransportExecptionHandlers,
         FinalizeFilter,
         ExecptionFinalizeFilter,
         Session
@@ -152,7 +151,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             }
 
                             if (serverOpts.sessionFactory) {
-                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+                                serverOpts.providers.push(toProvider(ServerTransportSessionFactory, serverOpts.sessionFactory))
                             }
 
                             if (serverOpts.strategy) {

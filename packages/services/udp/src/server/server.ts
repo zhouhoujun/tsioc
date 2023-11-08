@@ -1,5 +1,5 @@
 import { Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { InternalServerExecption, ev, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
+import { InternalServerExecption, ev, LOCALHOST, ServerTransportSessionFactory } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Server, RequestHandler } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
@@ -41,7 +41,7 @@ export class UdpServer extends Server {
             this.logger.error(err);
         });
         const injector = this.endpoint.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
 
         const isSecure = false;
         if (!this.options.protocol) {

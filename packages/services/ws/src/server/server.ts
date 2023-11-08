@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, Inject, Injectable, getClassName, isString, lang, promisify } from '@tsdi/ioc';
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { InternalServerExecption, ev, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
+import { InternalServerExecption, ev, LOCALHOST, ServerTransportSessionFactory } from '@tsdi/common';
 import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription } from 'rxjs';
@@ -63,7 +63,7 @@ export class WsServer extends Server {
             this.logger.error(err);
         });
         const injector = this.endpoint.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
         const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
         const isSecure = server instanceof tls.Server;
         if (this.options.protocol) {

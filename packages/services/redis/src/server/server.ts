@@ -1,11 +1,10 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
-import { PatternFormatter, LOCALHOST, ev } from '@tsdi/common';
+import { PatternFormatter, LOCALHOST, ev, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/common';
 import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { RedisEndpoint } from './endpoint';
 import { REDIS_SERV_OPTS, RedisServerOpts } from './options';
-import { RedisTransportSession, RedisTransportSessionFactory } from '../redis.session';
 
 /**
  * Redis Server.
@@ -16,7 +15,7 @@ export class RedisServer extends Server {
     @InjectLog() logger!: Logger;
 
 
-    private _session?: RedisTransportSession;
+    private _session?: ServerTransportSession;
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
@@ -69,7 +68,7 @@ export class RedisServer extends Server {
             transportOpts.transport = 'redis';
         }
 
-        const factory = injector.get(RedisTransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
         const session = this._session = factory.create({
             subscriber,
             publisher

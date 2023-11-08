@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { LOCALHOST, TransportRequest, TransportSession, ev } from '@tsdi/common';
+import { LOCALHOST, TransportRequest, ClientTransportSession, ev, ClientTransportSessionFactory } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
@@ -18,7 +18,11 @@ export class RedisClient extends Client<TransportRequest, number> {
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
-    private _session?: TransportSession<ReidsTransport>;
+    private _session?: ClientTransportSession<ReidsTransport>;
+
+    get session(): ClientTransportSession<any> {
+        return this._session!;
+    }
 
     constructor(
         readonly handler: RedisHandler,
@@ -59,16 +63,11 @@ export class RedisClient extends Client<TransportRequest, number> {
             transportOpts.transport = 'redis';
         }
 
-        this._session = this.handler.injector.get(RedisTransportSessionFactory).create({
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create({
             subscriber: this.subscriber,
             publisher: this.publisher
         }, transportOpts)
 
-    }
-
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
-        context.setValue(TransportSession, this._session);
     }
 
     protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
