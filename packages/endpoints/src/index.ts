@@ -14,7 +14,6 @@ export * from './router/controller';
 export * from './router/router.module';
 
 export * from './metadata';
-export * from './transport.session';
 export * from './TransportEndpoint';
 export * from './TransportContext';
 export * from './RequestHandler';
@@ -48,6 +47,7 @@ export * from './impl/route.endpoint';
 export * from './impl/transport.context';
 export * from './impl/transport.endpoint';
 
+export * from './impl/transport.session';
 export * from './impl/duplex.session';
 export * from './impl/topic.session';
 

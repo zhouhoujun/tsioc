@@ -18,7 +18,7 @@ export * from './socket';
 export * from './StreamAdapter';
 
 export * from './codings';
-export * from './TransportFactory';
+export * from './TransportSession';
 
 
 export * from './request';

@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { ServerTransportSession } from '@tsdi/common';
 import { Logger } from '@tsdi/logger';
 import { Subscription } from 'rxjs';
 import { TransportEndpoint } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
+import { ServerTransportSession } from './transport/session';
 import { ServerOpts } from './Server';
 
 /**

@@ -1,7 +1,7 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
 import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, ServerTransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
-import { EventTransportSession } from '../transport.session';
+import { EventTransportSession } from './transport.session';
 
 
 export interface TopicClient extends IEventEmitter {

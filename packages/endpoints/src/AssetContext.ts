@@ -228,6 +228,11 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
     abstract is(type: string | string[]): string | null | false;
 
     /**
+     * is empty status or empty body.
+     */
+    abstract isEmpty():boolean;
+
+    /**
      * content type.
      */
     abstract get contentType(): string;

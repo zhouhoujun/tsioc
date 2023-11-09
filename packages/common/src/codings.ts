@@ -3,7 +3,7 @@ import { Backend, Handler, Interceptor } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { HeaderPacket, Packet, ResponsePacket } from './packet';
 import { HybirdTransport, Transport } from './protocols';
-import { TransportSession } from './TransportFactory';
+import { TransportSession } from './TransportSession';
 import { isBuffer } from './utils';
 import { IReadableStream, IWritableStream } from './stream';
 import { Incoming, Outgoing } from './socket';

@@ -899,6 +899,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.setHeader(field, val)
     }
 
+    isEmpty() {
+        return this.vaildator.isEmpty(this.status) || this.body === null;
+    }
+
 
     async respond(): Promise<any> {
         if (this.destroyed || !this.writable) return;

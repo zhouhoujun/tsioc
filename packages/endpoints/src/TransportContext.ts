@@ -95,6 +95,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract get method(): string;
 
     /**
+     * is empty status or empty body.
+     */
+    abstract isEmpty():boolean;
+
+    /**
      * set response headers
      * @param headers 
      */

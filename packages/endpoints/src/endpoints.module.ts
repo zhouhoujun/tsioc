@@ -1,6 +1,6 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder, NotImplementedExecption, Transport, ServerTransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, NotImplementedExecption, Transport } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -17,6 +17,8 @@ import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { RequestHandler } from './RequestHandler';
 import { TransportTypedRespond } from './transport/typed.respond';
+import { ServerTransportSessionFactory } from './transport/session';
+import { TransportModule } from './transport/tranport.module';
 
 
 
@@ -27,7 +29,8 @@ import { TransportTypedRespond } from './transport/typed.respond';
     imports: [
         TransformModule,
         MicroServRouterModule,
-        RouterModule
+        RouterModule,
+        TransportModule
     ],
     providers: [
         SetupServices,

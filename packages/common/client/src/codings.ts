@@ -1,7 +1,17 @@
-import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
-import { Context, Decoder, RequestPacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Context, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
+
+
+
+
+/**
+ * response context.
+ */
+export interface ResponseContext extends ResponsePacket {
+    req: TransportRequest;
+}
 
 /**
  * Request encdoer.
@@ -54,12 +64,6 @@ export class InterceptingReuqestEncoder<T extends TransportRequest = TransportRe
 
 }
 
-/**
- * response context.
- */
-export interface ResponseContext extends RequestPacket {
-    context: InvocationContext;
-}
 
 /**
  * response decoder.

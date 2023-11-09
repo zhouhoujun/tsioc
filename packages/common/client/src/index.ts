@@ -1,3 +1,4 @@
+export * from './session';
 export * from './options';
 export * from './handler';
 export * from './codings';

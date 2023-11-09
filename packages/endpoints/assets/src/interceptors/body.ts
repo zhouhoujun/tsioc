@@ -14,9 +14,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
 
     constructor(private adapter: StreamAdapter) { }
 
-    intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
-        if(req.context.get(TransportSession).getPacketStrategy() !== 'asset') return next.handle(req);
-        
+    intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {        
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req);

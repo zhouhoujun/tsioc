@@ -4,6 +4,7 @@ import { LOCALHOST, MessageExecption, OutgoingHeaders, PacketLengthException, Re
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
+import { ServerTransportSession } from '../transport/session';
 
 
 
@@ -19,7 +20,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
 
     constructor(
         injector: Injector,
-        readonly session: TransportSession,
+        readonly session: ServerTransportSession,
         readonly request: TRequest,
         readonly response: TResponse,
         private serverOptions: ServerOpts = EMPTY_OBJ
@@ -182,9 +183,14 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         return this._method;
     }
 
+
+    isEmpty(): boolean {
+        return isNil(this.body)
+    }
+
     async respond(): Promise<any> {
         const res = this.response;
-        if (isNil( this.response)) return;
+        if (isNil(this.response)) return;
 
         const session = this.session;
 
@@ -213,7 +219,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         };
         if (!isNil(execption.status)) this.response.status = execption.status;
         this.response.statusText = execption.message;
-        return lastValueFrom(this.session.send(this.response));
+        return lastValueFrom(this.session.send(this));
     }
 
 }
@@ -223,7 +229,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class TransportContextFactoryImpl implements TransportContextFactory {
-    create<TSocket, TInput extends RequestPacket<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): TransportContext<TInput, TOutput, TSocket> {
+    create<TSocket, TInput extends RequestPacket<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: ServerTransportSession, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): TransportContext<TInput, TOutput, TSocket> {
         return new TransportContextIml(injector, session, request, response, options);
     }
 

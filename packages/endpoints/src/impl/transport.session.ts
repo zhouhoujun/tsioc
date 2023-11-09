@@ -1,10 +1,15 @@
-import { Execption, Injector, InvokeArguments } from '@tsdi/ioc';
+import { Abstract, Execption, Injector, InvokeArguments } from '@tsdi/ioc';
 import { PipeTransform, UuidGenerator } from '@tsdi/core';
-import { AssetTransportOpts, ClientTransportSession, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, IncomingPacket, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, ServerTransportSession, StreamAdapter, TransportEvent, TransportOpts, TransportRequest, TransportSession, ev, hdr } from '@tsdi/common';
+import {
+    AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, IncomingPacket, InvalidJsonException, Packet, PacketLengthException,
+    RequestPacket, ResponsePacket, StreamAdapter, TransportEvent, TransportOpts, TransportRequest, TransportSession, ev, hdr
+} from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, finalize, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
-import { RequestEncoder, ResponseContext, ResponseDecoder } from '@tsdi/common/client';
-import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
+import { ClientTransportSession, RequestEncoder, ResponseContext, ResponseDecoder } from '@tsdi/common/client';
+import { IncomingContext, ServerTransportSession } from '../transport/session';
+import { IncomingDecoder, OutgoingEncoder, OutgoingType } from '../transport/codings';
+import { TransportContext } from '../TransportContext';
 
 
 
@@ -100,8 +105,6 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 
     protected abstract mergeClose(source: Observable<any>): Observable<any>;
 
-    abstract write(data: Buffer, packet: Packet): Promise<void>;
-
 
 
 }
@@ -122,7 +125,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
             }
         }
 
-        return this.mergeClose(this.encoder.handle(req)
+        return this.mergeClose(this.encode(req)
             .pipe(
                 mergeMap(data => {
                     const bufLen = data.length;
@@ -151,13 +154,24 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
         return this.message(req)
             .pipe(
                 filter(msg => this.responseFilter(req, msg)),
-                mergeMap(msg => this.concat(msg).pipe(mergeMap(data => this.decode(req, data, msg)))),
+                mergeMap(msg => this.concat(msg).pipe(mergeMap(data => this.decode(data, msg, req)))),
                 share()
             )
     }
 
-    protected decode(req: TransportRequest, data: Buffer, msg: TMsg): Observable<TransportEvent> {
-        const ctx = this.createContext(req, data, msg);
+    protected encode(req: TransportRequest): Observable<Buffer> {
+        return this.encoder.handle(req)
+            .pipe(
+                map(buf => this.afterEncode(req, buf)),
+            )
+    }
+
+    protected afterEncode(req: TransportRequest, buf: Buffer) {
+        return buf;
+    }
+
+    protected decode(data: Buffer, msg: TMsg, req: TransportRequest): Observable<TransportEvent> {
+        const ctx = this.createContext(data, msg, req);
         return this.decoder.handle(ctx)
             .pipe(
                 map(pkg => this.afterDecode(ctx, pkg, msg))
@@ -168,10 +182,16 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
         return pkg;
     }
 
+    /**
+     * write packet buffer.
+     * @param data 
+     * @param packet 
+     */
+    abstract write(data: Buffer, packet: Packet): Promise<void>;
 
     protected abstract beforeRequest(packet: TransportRequest): Promise<void>;
 
-    protected abstract createContext(req: TransportRequest, msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments): ResponseContext;
+    protected abstract createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg: TMsg, req: TransportRequest): ResponseContext;
 
     protected async requesting(packet: TransportRequest): Promise<void> {
         this.bindPacketId(packet);
@@ -207,8 +227,8 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
 
     abstract get decoder(): IncomingDecoder;
 
-    send(packet: ResponsePacket<any>): Observable<any> {
-        const len = this.getPayloadLen(packet);
+    send(ctx: TransportContext): Observable<any> {
+        const len = ctx.length;
         if (len) {
             const opts = this.options as AssetTransportOpts;
             if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
@@ -217,42 +237,51 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
             }
         }
 
-        return this.mergeClose(this.encode(packet)
+        return this.mergeClose(this.encode(ctx)
             .pipe(
                 mergeMap(data => {
-                    const bufLen = data.length;
-                    if (this.options.maxSize && bufLen > this.options.maxSize) {
-                        const byfmt = this.injector.get<PipeTransform>('bytes-format');
-                        return throwError(() => new PacketLengthException(`Packet length ${byfmt.transform(bufLen)} great than max size ${byfmt.transform(this.options.maxSize)}`));
-                    }
-                    return this.write(data, packet);
+                    return this.write(data, ctx);
                 })
             ))
     }
 
-    receive(packet?: Packet<any> | undefined): Observable<IncomingPacket<any>> {
-        throw new Error('Method not implemented.');
+    receive(packet?: Packet): Observable<IncomingPacket<any>> {
+        return this.message(packet)
+            .pipe(
+                mergeMap(msg => this.concat(msg).pipe(mergeMap(data => this.decode(data, msg, packet)))),
+                share()
+            )
     }
 
-    protected getPayloadLen(packet: Packet) {
-        return packet.length ?? (~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0'))
-    }
-
-     protected encode(packet: Packet): Observable<Buffer> {
-        const ctx = this.createContext(packet);
+    protected encode(ctx: TransportContext): Observable<OutgoingType> {
         return this.encoder.handle(ctx)
             .pipe(
-                map(buf => this.afterEncode(ctx, buf)),
+                map(data => this.afterEncode(ctx, data)),
                 finalize(() => ctx.destroy())
             )
     }
 
-    protected afterEncode(ctx: Context, buf: Buffer) {
+    protected afterEncode(ctx: TransportContext, buf: OutgoingType) {
         return buf;
     }
 
-    
-    protected abstract createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments): Context;
+    protected decode(data: Buffer, msg: TMsg, packet?: Packet): Observable<TransportContext> {
+        const incoming = this.createContext(data, msg, packet);
+        incoming.session = this;
+        return this.decoder.handle(incoming)
+            .pipe(
+                map(ctx => this.afterDecode(incoming, ctx, msg))
+            );
+    }
+
+    protected afterDecode(incoming: IncomingContext, ctx: TransportContext, msg: TMsg) {
+        return ctx;
+    }
+
+    protected abstract write(data: OutgoingType, ctx: TransportContext): Promise<void>;
+
+    protected abstract createContext(data: Buffer, msg: TMsg, packet?: Packet): IncomingContext;
+
 
 }
 
@@ -263,6 +292,8 @@ export interface TopicBuffer {
     length: number;
     contentLength: number | null;
 }
+
+
 
 export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
 

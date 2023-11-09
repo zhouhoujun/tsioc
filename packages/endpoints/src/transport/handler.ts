@@ -1,17 +1,18 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
-import { GET, MESSAGE, RequestPacket, ResponsePacket, TransportSession } from '@tsdi/common';
+import { GET, MESSAGE, RequestPacket, ResponsePacket } from '@tsdi/common';
 import { finalize, mergeMap } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
 import { TransportEndpoint } from '../TransportEndpoint';
 import { TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
+import { ServerTransportSession } from './session';
 
 
 @Injectable()
 export class DefaultRequestHandler implements RequestHandler<RequestPacket, ResponsePacket> {
 
-    handle(endpoint: TransportEndpoint, session: TransportSession<any>, logger: Logger, options: ServerOpts) {
+    handle(endpoint: TransportEndpoint, session: ServerTransportSession<any>, logger: Logger, options: ServerOpts) {
 
         return session.receive().pipe(
             mergeMap(incoming => {

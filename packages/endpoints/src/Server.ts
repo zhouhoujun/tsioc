@@ -1,12 +1,13 @@
 import { Abstract, ProvdierOf, ProviderType, StaticProvider, Type } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
-import { Decoder, Encoder, HybirdTransport, TransportOpts, ServerTransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, HybirdTransport, TransportOpts } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
 import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './send';
+import { ServerTransportSessionFactory } from './transport/session';
 
 
 export interface ProxyOpts {
