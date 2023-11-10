@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { IncomingPacket, TransportOpts, TransportSession } from '@tsdi/common';
+import { Incoming, Outgoing, Packet, TransportOpts, TransportSession } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 import { Observable } from 'rxjs';
 import { ServerOpts } from '../Server';
@@ -7,8 +7,12 @@ import { ServerOpts } from '../Server';
 /**
  * incoming context.
  */
-export interface IncomingContext extends IncomingPacket {
+export interface IncomingContext {
     session: ServerTransportSession;
+    req?: Incoming;
+    res?: Outgoing;
+    packet?: Packet;
+    length?: number;
     raw?: Buffer;
 }
 
