@@ -4,7 +4,7 @@ import { GET, MESSAGE, RequestPacket, ResponsePacket } from '@tsdi/common';
 import { finalize, mergeMap } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
 import { TransportEndpoint } from '../TransportEndpoint';
-import { TransportContextFactory } from '../TransportContext';
+// import { TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { ServerTransportSession } from './session';
 
@@ -14,13 +14,13 @@ export class DefaultRequestHandler implements RequestHandler<RequestPacket, Resp
 
     handle(endpoint: TransportEndpoint, session: ServerTransportSession<any>, logger: Logger, options: ServerOpts) {
 
-        return session.receive().pipe(
-            mergeMap(incoming => {
-                if (!incoming.method) {
-                    incoming.method = options.transportOpts?.microservice ? MESSAGE : GET;
-                }
-                const injector = endpoint.injector;
-                const ctx = injector.get(TransportContextFactory).create(injector, session, incoming, {}, options);
+        return session.receive(options).pipe(
+            mergeMap(ctx => {
+                // if (!incoming.method) {
+                //     incoming.method = options.transportOpts?.microservice ? MESSAGE : GET;
+                // }
+                // const injector = endpoint.injector;
+                // const ctx = injector.get(TransportContextFactory).create(injector, session, incoming, {}, options);
                 ctx.setValue(Logger, logger);
 
                 return endpoint.handle(ctx)

@@ -1,7 +1,8 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession } from '@tsdi/common';
+import { MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter } from '@tsdi/common';
 import { ServerOpts } from './Server';
+import { ServerTransportSession } from './transport/session';
 
 /**
  * abstract transport context.
@@ -18,7 +19,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     /**
      * transport session
      */
-    abstract get session(): TransportSession<TSocket>;
+    abstract get session(): ServerTransportSession<TSocket>;
 
     /**
      * stream adapter
@@ -69,6 +70,13 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     abstract set body(value: any);
+
+    /**
+     * has sent or not.
+     */
+    abstract get sent(): boolean;
+
+    rawBody?: Buffer | null;
 
     /**
      * Get request rul
@@ -138,7 +146,7 @@ export abstract class TransportContextFactory {
      * @param response 
      * @param options 
      */
-    abstract create<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket>
+    abstract create<TSocket, TInput extends RequestPacket, TOutput extends ResponsePacket>(injector: Injector, session: ServerTransportSession, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket>
 }
 
 

@@ -3,13 +3,26 @@ import { TypedRespond } from '@tsdi/core';
 import { TransportTypedRespond } from './typed.respond';
 import { DefaultRequestHandler } from './handler';
 import { RequestHandler } from '../RequestHandler';
-import { OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder } from './codings';
+import { OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder, OutgoingBackend, OUTGOING_ENCODER_INTERCEPTORS } from './codings';
+import { BufferOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor } from './encoders';
 
 
 @Module({
     providers: [
+        OutgoingPipeEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true, multiOrder: 0 },
+        OutgoingBufferFinalizeEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingBufferFinalizeEncodeInterceptor, multi: true },
+        OutgoingSubpacketBufferEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingSubpacketBufferEncodeInterceptor, multi: true },
+        
+
+        BufferOutgoingEncodeBackend,
+        { provide: OutgoingBackend, useExisting: BufferOutgoingEncodeBackend },
         InterceptingOutgoingEncoder,
         { provide: OutgoingEncoder, useExisting: InterceptingOutgoingEncoder },
+
+
 
         InterceptingIncomingDecoder,
         { provide: IncomingDecoder, useExisting: InterceptingIncomingDecoder },

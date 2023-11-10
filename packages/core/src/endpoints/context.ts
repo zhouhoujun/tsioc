@@ -38,8 +38,6 @@ export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInp
 
     protected onExecption(err: any) { }
 
-    sent?: boolean;
-
     isDone() {
         return this.doneFn ? this.doneFn(this) : false;
     }

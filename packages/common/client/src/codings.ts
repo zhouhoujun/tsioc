@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Context, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
@@ -49,18 +49,10 @@ export interface RequestEncodeInterceptor<T extends TransportRequest = Transport
 export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>('REQUEST_ENCODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingReuqestEncoder<T extends TransportRequest = TransportRequest> implements RequestEncoder<T> {
-    private chain?: RequestEncoder<T>;
-
-    constructor(private backend: RequestEncoder, private injector: Injector) { }
-
-    handle(req: T): Observable<Buffer> {
-        if (!this.chain) {
-            this.chain = this.injector.get(REQUEST_ENCODER_INTERCEPTORS, [])
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
-        }
-        return this.chain.handle(req);
-    }
+export class InterceptingReuqestEncoder<T extends TransportRequest = TransportRequest> extends InterceptingHandler<T> implements RequestEncoder<T> {
+    constructor(backend: RequestEncoder, injector: Injector) {
+        super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
+     }
 
 }
 
@@ -101,17 +93,8 @@ export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportE
 export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor[]>('RESPONSE_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingResponseDecoder<T extends TransportEvent = TransportEvent> implements ResponseDecoder<T> {
-    private chain!: ResponseDecoder<T>;
-
-    constructor(private backend: ResponseDecoder, private injector: Injector) { }
-
-    handle(ctx: ResponseContext): Observable<T> {
-        if (!this.chain) {
-            this.chain = this.injector.get(RESPONSE_DECODER_INTERCEPTORS, [])
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend) as ResponseDecoder<T>;
-        }
-        return this.chain.handle(ctx)
+export class InterceptingResponseDecoder<T extends TransportEvent = TransportEvent> extends InterceptingHandler<ResponseContext, T> implements ResponseDecoder<T> {
+    constructor(backend: ResponseDecoder<T>, injector: Injector) { 
+        super(backend, injector, RESPONSE_DECODER_INTERCEPTORS)
     }
-
 }

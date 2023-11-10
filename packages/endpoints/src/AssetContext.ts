@@ -57,10 +57,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
     abstract get response(): TResponse;
 
     /**
-     * has sent or not.
-     */
-    abstract readonly sent: boolean;
-    /**
      * Get response status.
      */
     abstract get status(): StatusCode;

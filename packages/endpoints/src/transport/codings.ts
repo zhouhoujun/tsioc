@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { IReadableStream } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { TransportContext } from '../TransportContext';
@@ -14,7 +14,7 @@ export abstract class OutgoingEncoder<T extends TransportContext = TransportCont
 }
 
 @Abstract()
-export abstract class OutgoingEncoderBackend<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
+export abstract class OutgoingBackend<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
     abstract handle(ctx: T): Observable<TOutput>;
 }
 
@@ -29,10 +29,6 @@ export abstract class StreamOutgoingEncoder<T extends TransportContext = Transpo
     abstract handle(ctx: T): Observable<IReadableStream>;
 }
 
-@Abstract()
-export abstract class BufferOutgoingEncoder<T extends TransportContext = TransportContext> implements OutgoingEncoder<T, Buffer> {
-    abstract handle(ctx: T): Observable<Buffer>;
-}
 
 /**
  * Encode interceptor is a chainable behavior modifier for `Encoders`.
@@ -58,19 +54,10 @@ export interface OutgoingEncodeInterceptor<T extends TransportContext = Transpor
 export const OUTGOING_ENCODER_INTERCEPTORS = tokenId<OutgoingEncodeInterceptor[]>('OUTGOING_ENCODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingOutgoingEncoder<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> implements OutgoingEncoder<T, TOutput> {
-    private chain?: OutgoingEncoder<T, TOutput>;
-
-    constructor(private backend: OutgoingEncoderBackend<T, TOutput>, private injector: Injector) { }
-
-    handle(ctx: T): Observable<TOutput> {
-        if (!this.chain) {
-            this.chain = this.injector.get(OUTGOING_ENCODER_INTERCEPTORS, [])
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor as OutgoingEncodeInterceptor<T, TOutput>), this.backend);
-        }
-        return this.chain.handle(ctx);
+export class InterceptingOutgoingEncoder<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> extends InterceptingHandler<T, TOutput> implements OutgoingEncoder<T, TOutput> {
+    constructor(backend: OutgoingBackend<T, TOutput>, injector: Injector) {
+        super(backend, injector, OUTGOING_ENCODER_INTERCEPTORS);
     }
-
 }
 
 
@@ -81,7 +68,7 @@ export abstract class IncomingDecoder<T extends IncomingContext = IncomingContex
 }
 
 @Abstract()
-export abstract class IncomingDecoderBackend<T extends IncomingContext = IncomingContext> implements Backend<T, TransportContext> {
+export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, TransportContext> {
     abstract handle(ctx: T): Observable<TransportContext>;
 }
 
@@ -112,17 +99,8 @@ export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingC
 export const INCOMING_DECODER_INTERCEPTORS = tokenId<IncomingDecodeInterceptor[]>('INCOMING_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingIncomingDecoder<T extends IncomingContext = IncomingContext> implements IncomingDecoder<T> {
-    private chain!: IncomingDecoder<T>;
-
-    constructor(private backend: IncomingDecoder, private injector: Injector) { }
-
-    handle(ctx: T): Observable<TransportContext> {
-        if (!this.chain) {
-            this.chain = this.injector.get(INCOMING_DECODER_INTERCEPTORS, [])
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend) as IncomingDecoder<T>;
-        }
-        return this.chain.handle(ctx)
+export class InterceptingIncomingDecoder<T extends IncomingContext = IncomingContext> extends InterceptingHandler<T> implements IncomingDecoder<T> {
+    constructor(backend: IncomingDecoder, injector: Injector) {
+        super(backend, injector, INCOMING_DECODER_INTERCEPTORS)
     }
-
 }

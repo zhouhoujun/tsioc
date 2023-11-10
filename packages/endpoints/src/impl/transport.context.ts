@@ -183,30 +183,17 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         return this._method;
     }
 
+    get sent(): boolean {
+        return false;
+    }
+
 
     isEmpty(): boolean {
         return isNil(this.body)
     }
 
-    async respond(): Promise<any> {
-        const res = this.response;
-        if (isNil(this.response)) return;
-
-        const session = this.session;
-
-        const len = this.length ?? 0;
-        if (session.options.maxSize && len > session.options.maxSize) {
-            const btpipe = this.get<PipeTransform>('bytes-format');
-            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(session.options.maxSize)}`);
-        }
-
-        if (this.streamAdapter.isReadable(res)) {
-            this.body = new TextDecoder().decode(await toBuffer(res));
-        } else if (isBuffer(res)) {
-            this.body = new TextDecoder().decode(res);
-        }
-
-        await lastValueFrom(session.send(this.response));
+    respond(): Promise<any> {
+        return lastValueFrom(this.session.send(this));
     }
 
     throwExecption(execption: MessageExecption): Promise<void> {

@@ -84,6 +84,18 @@ export abstract class BufferUnpacker<TMessage = any> {
 @Abstract()
 export abstract class TransportSession<TSocket = any, TMessage = any>  {
     /**
+     * packet buffer delimiter.
+     */
+    delimiter?: Buffer;
+    /**
+     * packet header delimiter.
+     */
+    headerDelimiter?: Buffer;
+    /**
+     * exist header in Origin message or not.
+     */
+    existHeader?: boolean;
+    /**
      * injector.
      */
     abstract get injector(): Injector;
@@ -100,20 +112,20 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      */
     abstract get streamAdapter(): StreamAdapter;
     /**
+     * generate header.
+     * @param packet 
+     */
+    abstract generateHeader(msg: TMessage): Buffer;
+    /**
+     * parse header.
+     * @param packet 
+     */
+    abstract parseHeader(msg: TMessage| Buffer): Packet;
+    /**
      * send message
      * @param ctx 
      */
-    abstract send(ctx: TMessage): Observable<any>;
-    /**
-     * serialize packet.
-     * @param packet
-     */
-    abstract serialize(packet: Packet, withPayload?: boolean): Buffer;
-    /**
-     * deserialize packet.
-     * @param raw 
-     */
-    abstract deserialize(raw: Buffer): Packet;
+    abstract send(msg: TMessage): Observable<any>;
     /**
      * destroy.
      */
