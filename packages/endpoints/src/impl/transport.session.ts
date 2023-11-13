@@ -95,12 +95,12 @@ export interface TopicBuffer {
 
 
 
-export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
+export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
 
     protected topics: Map<string, TopicBuffer>;
 
-    private delimiter: Buffer;
-    private headDelimiter: Buffer;
+    readonly delimiter: Buffer|undefined;
+    readonly headDelimiter: Buffer|undefined;
 
     private allocator?: NumberAllocator;
     private last?: number;
@@ -114,14 +114,14 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
         options: TransportOpts) {
         super();
         this.delimiter = Buffer.from(options.delimiter ?? '#');
-        this.headDelimiter = Buffer.from(options.headDelimiter ?? '$');
+        if(options.headDelimiter) this.headDelimiter = Buffer.from(options.headDelimiter);
         this.topics = new Map();
     }
 
 
-    protected override createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments) {
-        return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, this.delimiter, this.headDelimiter, options)
-    }
+    // protected override createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments) {
+    //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, this.delimiter, this.headDelimiter, options)
+    // }
 
     protected concat(msg: TMsg): Observable<Buffer> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
@@ -181,7 +181,7 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
         chl.length += Buffer.byteLength(data);
 
         if (chl.contentLength == null) {
-            const i = data.indexOf(this.delimiter);
+            const i = data.indexOf(this.delimiter!);
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
                 const idx = chl.length - Buffer.byteLength(data) + i;
@@ -250,21 +250,12 @@ export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg 
 
 }
 
-export abstract class PayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractTransportSession<TSocket, TMsg> {
+export abstract class PayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> {
 
-    protected createContext(msgOrPkg: string | Packet<any> | Buffer | Uint8Array, msg?: TMsg | undefined, options?: InvokeArguments<any> | undefined): Context<Packet<any>> {
-        return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, undefined, undefined, options);
-    }
+    // protected createContext(msgOrPkg: string | Packet<any> | Buffer | Uint8Array, msg?: TMsg | undefined, options?: InvokeArguments<any> | undefined): Context<Packet<any>> {
+    //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, undefined, undefined, options);
+    // }
 
     protected abstract getHeaders(msg: TMsg): HeaderPacket | undefined;
-
-
-    private uuidGenner?: UuidGenerator;
-    protected override getPacketId(): string | number {
-        if (!this.uuidGenner) {
-            this.uuidGenner = this.injector.get(UuidGenerator);
-        }
-        return this.uuidGenner.generate()
-    }
 
 }
