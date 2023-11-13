@@ -22,10 +22,6 @@ export interface HeaderPacket {
  * packet data.
  */
 export interface Packet<T = any> extends HeaderPacket {
-    /**
-     * payload length.
-     */
-    length?: number;
     payload?: T;
 }
 

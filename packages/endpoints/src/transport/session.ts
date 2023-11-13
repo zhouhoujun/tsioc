@@ -7,8 +7,9 @@ import { ServerOpts } from '../Server';
 /**
  * incoming context.
  */
-export interface IncomingContext extends IncomingPacket {
+export interface IncomingContext {
     session: ServerTransportSession;
+    packet?: IncomingPacket;
     raw?: Buffer;
 }
 
@@ -27,7 +28,7 @@ export abstract class ServerTransportSession<TSocket = any> extends TransportSes
     /**
      * receive
      */
-    abstract receive(options: ServerOpts): Observable<TransportContext>;
+    abstract receive(options: ServerOpts): Observable<IncomingPacket>;
 
 }
 
@@ -46,5 +47,6 @@ export abstract class ServerTransportSessionFactory<TSocket = any> {
      */
     abstract create(socket: TSocket, options: TransportOpts): ServerTransportSession<TSocket>;
 }
+
 
 

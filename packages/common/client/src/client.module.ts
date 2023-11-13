@@ -6,6 +6,7 @@ import { ClientOpts, ClientTransportPacketStrategy } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { ClientTransportSessionFactory } from './session';
+import { InterceptingResponseDecoder, InterceptingReuqestEncoder, RequestEncoder, ResponseDecoder } from './codings';
 
 
 export interface ClientModuleConfig {
@@ -64,7 +65,14 @@ export interface ClientTokenOpts {
 
 @Module({
     providers: [
-        TransportBackend
+        TransportBackend,
+
+        InterceptingReuqestEncoder,
+        { provide: RequestEncoder, useExisting: InterceptingReuqestEncoder },
+
+        
+        InterceptingResponseDecoder,
+        { provide: ResponseDecoder, useClass: InterceptingResponseDecoder }
     ]
 })
 export class ClientModule {

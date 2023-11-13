@@ -1,7 +1,7 @@
 import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { isBuffer, toBuffer } from '@tsdi/common';
+import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
-import { EmptyOutgoingEncoder, OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend, OutgoingType, StreamOutgoingEncoder } from './codings';
+import { EmptyOutgoingEncoder, OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend, StreamOutgoingEncoder } from './codings';
 import { TransportContext } from '../TransportContext';
 import { AssetContext } from '../AssetContext';
 
@@ -56,7 +56,7 @@ export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<
 
 
 @Injectable()
-export class BufferOutgoingEncodeBackend implements OutgoingBackend<TransportContext, Buffer> {
+export class BufferifyOutgoingEncodeBackend implements OutgoingBackend<TransportContext, Buffer> {
 
     handle(ctx: TransportContext): Observable<Buffer> {
         if (isPlainObject(ctx.response)) {

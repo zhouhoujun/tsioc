@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Context, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
+import { Context, IReadableStream, OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -17,20 +17,37 @@ export interface ResponseContext extends ResponsePacket {
  * Request encdoer.
  */
 @Abstract()
-export abstract class RequestEncoder<T extends TransportRequest = TransportRequest> implements Handler<T, Buffer> {
+export abstract class RequestEncoder<T extends TransportRequest = TransportRequest, TOutput extends OutgoingType = OutgoingType> implements Handler<T, TOutput> {
     /**
      * tranport request encode handle.
      * @param req 
      */
-    abstract handle(req: T): Observable<Buffer>;
+    abstract handle(req: T): Observable<TOutput>;
 }
+
+@Abstract()
+export abstract class RequestBackend<T extends TransportRequest = TransportRequest, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
+    abstract handle(ctx: T): Observable<TOutput>;
+}
+
+@Abstract()
+export abstract class EmptyRequestEncoder<T extends TransportRequest = TransportRequest> implements RequestEncoder<T, null> {
+    abstract handle(ctx: T): Observable<null>;
+}
+
+@Abstract()
+export abstract class StreamRequestEncoder<T extends TransportRequest = TransportRequest> implements RequestEncoder<T, IReadableStream> {
+    abstract handle(ctx: T): Observable<IReadableStream>;
+}
+
+
 
 /**
  * Encode interceptor is a chainable behavior modifier for `Encoders`.
  * 
  * 加密拦截器。
  */
-export interface RequestEncodeInterceptor<T extends TransportRequest = TransportRequest> extends Interceptor<T, Buffer> {
+export interface RequestEncodeInterceptor<T extends TransportRequest = TransportRequest, TOutput extends OutgoingType = OutgoingType> extends Interceptor<T, TOutput> {
     /**
      * the method to implemet encode interceptor.
      * 
@@ -40,7 +57,7 @@ export interface RequestEncodeInterceptor<T extends TransportRequest = Transport
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(req: T, next: RequestEncoder<T>): Observable<Buffer>;
+    intercept(req: T, next: RequestEncoder<T>): Observable<TOutput>;
 }
 
 /**
@@ -52,7 +69,7 @@ export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>(
 export class InterceptingReuqestEncoder<T extends TransportRequest = TransportRequest> extends InterceptingHandler<T> implements RequestEncoder<T> {
     constructor(backend: RequestEncoder, injector: Injector) {
         super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
-     }
+    }
 
 }
 
@@ -68,6 +85,12 @@ export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent>
      */
     abstract handle(res: ResponseContext): Observable<T>;
 }
+
+@Abstract()
+export abstract class ResponseBackend<T extends TransportEvent = TransportEvent> implements Backend<ResponseContext, T> {
+    abstract handle(ctx: ResponseContext): Observable<T>;
+}
+
 
 /**
  * Decode interceptor is a chainable behavior modifier for `Decoders`.
@@ -94,7 +117,7 @@ export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor[]
 
 @Injectable()
 export class InterceptingResponseDecoder<T extends TransportEvent = TransportEvent> extends InterceptingHandler<ResponseContext, T> implements ResponseDecoder<T> {
-    constructor(backend: ResponseDecoder<T>, injector: Injector) { 
+    constructor(backend: ResponseDecoder<T>, injector: Injector) {
         super(backend, injector, RESPONSE_DECODER_INTERCEPTORS)
     }
 }

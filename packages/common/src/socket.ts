@@ -282,8 +282,8 @@ export interface Outgoing<TSocket = any> extends IEnd {
  * incoming packet.
  */
 export interface IncomingPacket<T = any> extends Packet<T> {
+    originalUrl?: string;
     req?: Incoming;
     res?: Outgoing;
     headers?: IncomingHeaders;
-    originalUrl?: string;
 }

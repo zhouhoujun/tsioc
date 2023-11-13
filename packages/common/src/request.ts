@@ -25,6 +25,8 @@ export class TransportRequest<T = any> {
     readonly withCredentials: boolean;
     readonly urlWithParams: string;
 
+    rawBody?: Buffer | null;
+
     /**
      * client side timeout.
      */

@@ -1,12 +1,14 @@
 import { Abstract, Injector } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import { Packet, StatusCode } from './packet';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportErrorResponse, TransportEvent } from './response';
 import { OutgoingHeaders, ResHeaders } from './headers';
 import { StreamAdapter } from './StreamAdapter';
-import { Observable } from 'rxjs';
+import { IReadableStream } from './stream';
 
 
+export type OutgoingType = Buffer | IReadableStream | null;
 
 /**
  * transport options.

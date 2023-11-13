@@ -1,11 +1,11 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { IReadableStream } from '@tsdi/common';
+import { IReadableStream, IncomingPacket, OutgoingType } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { TransportContext } from '../TransportContext';
 import { IncomingContext } from './session';
 
-export type OutgoingType = Buffer | IReadableStream | null;
+
 
 
 @Abstract()
@@ -63,13 +63,13 @@ export class InterceptingOutgoingEncoder<T extends TransportContext = TransportC
 
 
 @Abstract()
-export abstract class IncomingDecoder<T extends IncomingContext = IncomingContext> implements Handler<T, TransportContext> {
-    abstract handle(ctx: T): Observable<TransportContext>;
+export abstract class IncomingDecoder<T extends IncomingContext = IncomingContext> implements Handler<T, IncomingPacket> {
+    abstract handle(ctx: T): Observable<IncomingPacket>;
 }
 
 @Abstract()
-export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, TransportContext> {
-    abstract handle(ctx: T): Observable<TransportContext>;
+export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, IncomingPacket> {
+    abstract handle(ctx: T): Observable<IncomingPacket>;
 }
 
 
@@ -80,7 +80,7 @@ export abstract class IncomingBackend<T extends IncomingContext = IncomingContex
  * 
  * 解密拦截器。
  */
-export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingContext> extends Interceptor<T, TransportContext> {
+export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingContext> extends Interceptor<T, IncomingPacket> {
     /**
      * the method to implemet response decode interceptor.
      * 
@@ -90,7 +90,7 @@ export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingC
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(input: T, next: IncomingDecoder<T>): Observable<TransportContext>;
+    intercept(ctx: T, next: IncomingDecoder<T>): Observable<IncomingPacket>;
 }
 
 /**
