@@ -1,4 +1,3 @@
-import { tokenId } from '@tsdi/ioc';
 import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
 import { Packet, StatusCode } from './packet';
 import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
