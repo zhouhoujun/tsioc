@@ -2,6 +2,7 @@ import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Context, IReadableStream, OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
+import { ClientTransportSession } from './session';
 
 
 
@@ -9,8 +10,11 @@ import { Observable } from 'rxjs';
 /**
  * response context.
  */
-export interface ResponseContext extends ResponsePacket {
+export interface ResponseContext {
+    packet: ResponsePacket;
+    session: ClientTransportSession;
     req: TransportRequest;
+    raw?: Buffer;
 }
 
 /**

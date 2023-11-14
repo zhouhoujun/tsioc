@@ -1,7 +1,7 @@
-import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
-import { OutgoingType, StreamAdapter, TransportRequest, isBuffer, toBuffer } from '@tsdi/common';
-import { EmptyRequestEncoder, RequestBackend, RequestEncodeInterceptor, RequestEncoder, StreamRequestEncoder } from './codings';
+import { Injectable, isNumber, isString } from '@tsdi/ioc';
+import { OutgoingType, TransportRequest, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
+import { EmptyRequestEncoder, RequestBackend, RequestEncodeInterceptor, RequestEncoder, StreamRequestEncoder } from './codings';
 import { ClientTransportSession } from './session';
 
 
@@ -142,7 +142,7 @@ export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInte
                 map(data => {
                     const session = req.context.get(ClientTransportSession);
                     if (!session.delimiter) return data;
-                    if (!session.existHeader) {
+                    if (!session.existHeader || !isNumber(req.id)) {
                         return Buffer.concat([
                             Buffer.from(String(data.length)),
                             session.delimiter,
@@ -151,7 +151,7 @@ export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInte
                     }
 
                     const bufId = Buffer.alloc(2);
-                    bufId.writeUInt16BE(req.id as any);
+                    bufId.writeUInt16BE(req.id);
                     return Buffer.concat([
                         Buffer.from(String(data.length + bufId.length)),
                         session.delimiter,

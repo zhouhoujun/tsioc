@@ -1,4 +1,4 @@
-import { Injectable, isPlainObject, isString } from '@tsdi/ioc';
+import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
 import { EmptyOutgoingEncoder, OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend, StreamOutgoingEncoder } from './codings';
@@ -139,7 +139,7 @@ export class OutgoingBufferFinalizeEncodeInterceptor implements OutgoingEncodeIn
             .pipe(
                 map(data => {
                     if (!ctx.session.delimiter) return data;
-                    if (!isPlainObject(ctx.response) || ctx.session.existHeader) {
+                    if (!isPlainObject(ctx.response) || ctx.session.existHeader || !isNumber(ctx.response.id)) {
                         return Buffer.concat([
                             Buffer.from(String(data.length)),
                             ctx.session.delimiter,
