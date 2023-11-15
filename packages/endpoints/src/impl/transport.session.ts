@@ -1,7 +1,7 @@
 import { Abstract, Execption, Injector, InvokeArguments, isNil } from '@tsdi/ioc';
 import { PipeTransform, UuidGenerator } from '@tsdi/core';
 import {
-    AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, IReadableStream, IncomingPacket, InvalidJsonException, OutgoingType, Packet, PacketLengthException,
+    AssetTransportOpts, HeaderPacket, IEventEmitter, IReadableStream, IncomingPacket, InvalidJsonException, OutgoingType, Packet, PacketLengthException,
     RequestPacket, ResponsePacket, StreamAdapter, TransportEvent, TransportOpts, TransportRequest, TransportSession, ev, hdr, isBuffer
 } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
@@ -109,8 +109,8 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
         readonly injector: Injector,
         readonly socket: TSocket,
         readonly streamAdapter: StreamAdapter,
-        readonly encoder: Encoder,
-        readonly decoder: Decoder,
+        readonly encoder: OutgoingEncoder,
+        readonly decoder: IncomingDecoder,
         options: TransportOpts) {
         super();
         this.delimiter = Buffer.from(options.delimiter ?? '#');

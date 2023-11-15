@@ -1,8 +1,8 @@
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-control-regex */
 import { Injectable, isString, Static, TypeExecption } from '@tsdi/ioc';
+import { MimeAdapter, MimeDb, MimeTypes, SplitType } from '@tsdi/common';
 import { FileAdapter } from '@tsdi/endpoints';
-import { MimeAdapter, MimeDb, MimeTypes, SplitType } from '../MimeAdapter';
 
 
 @Injectable({ static: true })

@@ -1,6 +1,6 @@
-import { Abstract, ProvdierOf, ProviderType, StaticProvider, Type } from '@tsdi/ioc';
+import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
-import { Decoder, Encoder, HybirdTransport, TransportOpts } from '@tsdi/common';
+import { HybirdTransport, TransportOpts } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
@@ -8,6 +8,7 @@ import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './send';
 import { ServerTransportSessionFactory } from './transport/session';
+import { IncomingDecoder, OutgoingEncoder } from './transport';
 
 
 export interface ProxyOpts {
@@ -22,21 +23,19 @@ export interface TransportPacketStrategy {
     /**
     * encoder
     */
-    encoder: ProvdierOf<Encoder>;
+    encoder: ProvdierOf<OutgoingEncoder>;
     /**
      * decoder
      */
-    decoder: ProvdierOf<Decoder>;
+    decoder: ProvdierOf<IncomingDecoder>;
     /**
      * request handler for this server.
      */
     requestHanlder: ProvdierOf<RequestHandler>;
 
-    providers?: ProviderType[]
 }
 
 
-export const TRANSPORT_PACKET_STRATEGIES: Record<string, TransportPacketStrategy> = {};
 
 
 /**
@@ -59,7 +58,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     /**
      * transport packet strategy.
      */
-    strategy?: 'json' | 'asset' | TransportPacketStrategy;
+    strategy?: TransportPacketStrategy;
     /**
      * execption handlers
      */

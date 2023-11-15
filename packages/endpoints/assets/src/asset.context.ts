@@ -1,11 +1,10 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
 import { EndpointInvokeOpts, PipeTransform } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException, HEAD, StatusCode, IReadableStream } from '@tsdi/common';
-import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
+import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException, HEAD, StatusCode, IReadableStream, StatusVaildator, MimeAdapter } from '@tsdi/common';
+import { AssetContext, FileAdapter, ServerOpts, ServerTransportSession } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-import { MimeAdapter } from './MimeAdapter';
 import { Negotiator } from './Negotiator';
 import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
 
@@ -39,7 +38,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly mimeAdapter: MimeAdapter;
 
 
-    constructor(injector: Injector, readonly session: TransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
+    constructor(injector: Injector, readonly session: ServerTransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
         this.streamAdapter = session.streamAdapter;

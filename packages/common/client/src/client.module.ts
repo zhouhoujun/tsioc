@@ -1,8 +1,8 @@
-import { ArgumentExecption, Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, isString, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import { ArgumentExecption, Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { Decoder, Encoder, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common';
+import { HybirdTransport, NotImplementedExecption, Redirector, Transport } from '@tsdi/common';
 import { TransportBackend } from './backend';
-import { ClientOpts, ClientTransportPacketStrategy } from './options';
+import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { ClientTransportSessionFactory } from './session';
@@ -12,6 +12,7 @@ import {
     ErrorResponseDecordeInterceptor, PayloadStreamResponseDecordeInterceptor, RedirectResponseDecordeInterceptor, StreamResponseDecordeInterceptor, TypeResponseBackend
 } from './decoders';
 import { BufferifyRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor } from './encoders';
+import { DefaultRedirector } from './redirector';
 
 
 export interface ClientModuleConfig {
@@ -71,6 +72,9 @@ export interface ClientTokenOpts {
 @Module({
     providers: [
         TransportBackend,
+
+        DefaultRedirector,
+        { provide: Redirector, useExisting: DefaultRedirector, asDefault: true },
 
         RequestBufferFinalizeEncodeInterceptor,
         OutgoingPipeEncodeInterceptor,
@@ -152,8 +156,6 @@ export class ClientModule {
  */
 export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 
-export const CLIENT_TRANSPORT_PACKET_STRATEGIES: Record<string, ClientTransportPacketStrategy> = {};
-
 
 function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
     const { client, transport } = options;
@@ -198,18 +200,14 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                         }
 
                         if (opts.strategy) {
-                            const strategy = isString(opts.strategy) ? CLIENT_TRANSPORT_PACKET_STRATEGIES[opts.strategy] : opts.strategy;
+                            const strategy = opts.strategy;
                             if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
                             if (strategy.encoder) {
-                                opts.providers.push(toProvider(Encoder, strategy.encoder))
+                                opts.providers.push(toProvider(RequestEncoder, strategy.encoder))
                             }
 
                             if (strategy.decoder) {
-                                opts.providers.push(toProvider(Decoder, strategy.decoder))
-                            }
-
-                            if (strategy.providers) {
-                                opts.providers.push(...strategy.providers);
+                                opts.providers.push(toProvider(ResponseDecoder, strategy.decoder))
                             }
                         }
 
@@ -250,18 +248,14 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                     }
 
                     if (opts.strategy) {
-                        const strategy = isString(opts.strategy) ? CLIENT_TRANSPORT_PACKET_STRATEGIES[opts.strategy] : opts.strategy;
+                        const strategy = opts.strategy;
                         if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
                         if (strategy.encoder) {
-                            opts.providers.push(toProvider(Encoder, strategy.encoder))
+                            opts.providers.push(toProvider(RequestEncoder, strategy.encoder))
                         }
 
                         if (strategy.decoder) {
-                            opts.providers.push(toProvider(Decoder, strategy.decoder))
-                        }
-
-                        if (strategy.providers) {
-                            opts.providers.push(...strategy.providers);
+                            opts.providers.push(toProvider(ResponseDecoder, strategy.decoder))
                         }
                     }
 

@@ -1,7 +1,9 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, ServerTransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, IEventEmitter, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { EventTransportSession } from './transport.session';
+import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
+import { ServerTransportSessionFactory } from '../transport/session';
 
 
 export interface TopicClient extends IEventEmitter {
@@ -75,8 +77,8 @@ export class TopicTransportSessionFactory implements ServerTransportSessionFacto
     constructor(
         readonly injector: Injector,
         private streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder) { }
+        private encoder: OutgoingEncoder,
+        private decoder: IncomingDecoder) { }
 
     create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
         return new TopicTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);

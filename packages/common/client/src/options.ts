@@ -1,8 +1,9 @@
-import { ProvdierOf, ProviderType } from '@tsdi/ioc';
+import { ProvdierOf } from '@tsdi/ioc';
 import { ConfigableEndpointOptions } from '@tsdi/core';
-import { Decoder, Encoder, TransportOpts, TransportRequest } from '@tsdi/common';
+import { TransportOpts, TransportRequest } from '@tsdi/common';
 import { TransportResponseEventFactory } from './backend';
 import { ClientTransportSessionFactory } from './session';
+import { RequestEncoder, ResponseDecoder } from './codings';
 
 
 /**
@@ -12,15 +13,11 @@ export interface ClientTransportPacketStrategy {
     /**
     * encoder
     */
-    encoder: ProvdierOf<Encoder>;
+    encoder: ProvdierOf<RequestEncoder>;
     /**
      * decoder
      */
-    decoder: ProvdierOf<Decoder>;
-    /**
-     * strategy providers.
-     */
-    providers?: ProviderType[];
+    decoder: ProvdierOf<ResponseDecoder>;
 }
 
 export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<TransportRequest> {
@@ -39,7 +36,7 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<T
     /**
      * client transport packet strategy.
      */
-    strategy?: 'json' | 'asset' | ClientTransportPacketStrategy;
+    strategy?: ClientTransportPacketStrategy;
 
     /**
      * response factory.
