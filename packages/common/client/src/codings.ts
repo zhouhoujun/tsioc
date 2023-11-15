@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Context, IReadableStream, OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { IReadableStream, OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { ClientTransportSession } from './session';
 
@@ -11,6 +11,10 @@ import { ClientTransportSession } from './session';
  * response context.
  */
 export interface ResponseContext {
+    /**
+     * packet ready or not.
+     */
+    ready?: boolean;
     packet: ResponsePacket;
     session: ClientTransportSession;
     req: TransportRequest;
@@ -101,7 +105,7 @@ export abstract class ResponseBackend<T extends TransportEvent = TransportEvent>
  * 
  * 解密拦截器。
  */
-export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportEvent> extends Handler<Context<T>, T> {
+export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportEvent> extends Interceptor<ResponseContext, T> {
     /**
      * the method to implemet response decode interceptor.
      * 

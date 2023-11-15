@@ -54,6 +54,7 @@ export type StatusCode = string | number;
 export interface ResponsePacket<T = any> extends Packet<T> {
     type?: number | string;
     headers?: OutgoingHeaders;
+    ok?: boolean;
     status?: StatusCode;
     statusText?: string;
     stream?: IReadableStream

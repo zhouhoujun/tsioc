@@ -18,7 +18,6 @@ export * from './TransportEndpoint';
 export * from './TransportContext';
 export * from './RequestHandler';
 export * from './FileAdapter';
-export * from './StatusVaildator';
 export * from './AssetContext';
 
 export * from './send';

@@ -25,8 +25,8 @@ export class TransportErrorResponse<TStatus = any> {
         statusMessage?: string;
     }) {
         this.url = options.url ?? '';
-        this.status = options.status ?? 0 as TStatus;
-        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
+        this.status = options.status ?? options.error?.status ?? 0 as TStatus;
+        this.statusMessage = options.statusMessage ?? options.statusText ?? options.error?.message ?? '';
         this.error = options.error;
         this.headers = new ResHeaders(options.headers);
     }

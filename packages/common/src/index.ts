@@ -11,7 +11,10 @@ export * from './params';
 export * from './pattern';
 export * from './protocols';
 export * from './status';
+export * from './StatusVaildator';
+export * from './Redirector';
 export * from './utils';
+export * from './MimeAdapter';
 
 export * from './stream';
 export * from './socket';

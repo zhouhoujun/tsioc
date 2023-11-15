@@ -1,10 +1,7 @@
 import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
-import { ResponsePacket, ResponseEventFactory, TransportEvent, StreamAdapter, TransportRequest, toBuffer, isBuffer, hdr, HEAD, ev, ResponseJsonParseError } from '@tsdi/common';
+import { ResponsePacket, ResponseEventFactory, TransportEvent, StreamAdapter, TransportRequest, toBuffer, isBuffer, hdr, HEAD, ev, ResponseJsonParseError, StatusVaildator, Redirector, MimeTypes, MimeAdapter } from '@tsdi/common';
 // import { ResponseTransform } from '@tsdi/common/client';
-import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, defer, of } from 'rxjs';
-import { Redirector } from '../Redirector';
-import { MimeAdapter, MimeTypes } from '../MimeAdapter';
 import { XSSI_PREFIX } from '../utils';
 
 

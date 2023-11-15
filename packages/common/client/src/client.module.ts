@@ -6,7 +6,12 @@ import { ClientOpts, ClientTransportPacketStrategy } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { ClientTransportSessionFactory } from './session';
-import { InterceptingResponseDecoder, InterceptingReuqestEncoder, RequestEncoder, ResponseDecoder } from './codings';
+import { InterceptingResponseDecoder, InterceptingReuqestEncoder, REQUEST_ENCODER_INTERCEPTORS, RESPONSE_DECODER_INTERCEPTORS, RequestBackend, RequestEncoder, ResponseBackend, ResponseDecoder } from './codings';
+import {
+    BufferResponseDecordeInterceptor, CatchErrorResponseDecordeInterceptor, CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor,
+    ErrorResponseDecordeInterceptor, PayloadStreamResponseDecordeInterceptor, RedirectResponseDecordeInterceptor, StreamResponseDecordeInterceptor, TypeResponseBackend
+} from './decoders';
+import { BufferifyRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor } from './encoders';
 
 
 export interface ClientModuleConfig {
@@ -67,10 +72,39 @@ export interface ClientTokenOpts {
     providers: [
         TransportBackend,
 
+        RequestBufferFinalizeEncodeInterceptor,
+        OutgoingPipeEncodeInterceptor,
+        SubpacketRequestEncodeInterceptor,
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: RequestBufferFinalizeEncodeInterceptor, multi: true },
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true },
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: SubpacketRequestEncodeInterceptor, multi: true },
+
+        BufferifyRequestEncodeBackend,
+        { provide: RequestBackend, useExisting: BufferifyRequestEncodeBackend },
+
         InterceptingReuqestEncoder,
         { provide: RequestEncoder, useExisting: InterceptingReuqestEncoder },
 
-        
+
+        CatchErrorResponseDecordeInterceptor,
+        StreamResponseDecordeInterceptor,
+        PayloadStreamResponseDecordeInterceptor,
+        BufferResponseDecordeInterceptor,
+        EmptyResponseDecordeInterceptor,
+        RedirectResponseDecordeInterceptor,
+        ErrorResponseDecordeInterceptor,
+        CompressResponseDecordeInterceptor,
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: CatchErrorResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: StreamResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: PayloadStreamResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: BufferResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: EmptyResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: RedirectResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: ErrorResponseDecordeInterceptor, multi: true },
+        { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: CompressResponseDecordeInterceptor, multi: true },
+        TypeResponseBackend,
+        { provide: ResponseBackend, useExisting: TypeResponseBackend },
+
         InterceptingResponseDecoder,
         { provide: ResponseDecoder, useClass: InterceptingResponseDecoder }
     ]

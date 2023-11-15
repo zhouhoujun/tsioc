@@ -2,7 +2,7 @@ import { Abstract, Injector } from '@tsdi/ioc';
 import { IncomingPacket, StatusCode, TransportSession } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 import { FileAdapter } from './FileAdapter';
-import { StatusVaildator } from './StatusVaildator';
+import { StatusVaildator } from '../../common/src/StatusVaildator';
 import { ServerOpts } from './Server';
 
 /**
