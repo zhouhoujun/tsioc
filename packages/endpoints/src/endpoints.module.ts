@@ -1,8 +1,8 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder, NotImplementedExecption, Transport } from '@tsdi/common';
+import { NotImplementedExecption, Transport } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from './TransportContext';
-import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
+import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
 import { LogInterceptor } from './logger/log';
@@ -19,6 +19,7 @@ import { RequestHandler } from './RequestHandler';
 import { TransportTypedRespond } from './transport/typed.respond';
 import { ServerTransportSessionFactory } from './transport/session';
 import { TransportModule } from './transport/tranport.module';
+import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
 
 
 
@@ -158,22 +159,18 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             }
 
                             if (serverOpts.strategy) {
-                                const strategy = isString(serverOpts.strategy) ? TRANSPORT_PACKET_STRATEGIES[serverOpts.strategy] : serverOpts.strategy;
+                                const strategy = serverOpts.strategy;
                                 if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
                                 if (strategy.encoder) {
-                                    serverOpts.providers.push(toProvider(Encoder, strategy.encoder))
+                                    serverOpts.providers.push(toProvider(OutgoingEncoder, strategy.encoder))
                                 }
 
                                 if (strategy.decoder) {
-                                    serverOpts.providers.push(toProvider(Decoder, strategy.decoder))
+                                    serverOpts.providers.push(toProvider(IncomingDecoder, strategy.decoder))
                                 }
 
                                 if (strategy.requestHanlder) {
                                     serverOpts.providers.push(toProvider(RequestHandler, strategy.requestHanlder))
-                                }
-
-                                if (strategy.providers) {
-                                    serverOpts.providers.push(...strategy.providers)
                                 }
                             }
 

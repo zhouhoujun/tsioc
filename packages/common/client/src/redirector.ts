@@ -1,13 +1,16 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { ReqHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr, StatusCode, OutgoingHeaders, StatusVaildator, Redirector } from '@tsdi/common';
-import { Client } from '@tsdi/common/client';
+import {
+    ReqHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter,
+    hdr, StatusCode, OutgoingHeaders, StatusVaildator, Redirector
+} from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
+import { Client } from './Client';
 
 
 
 @Injectable()
-export class AssetRedirector implements Redirector {
+export class DefaultRedirector implements Redirector {
 
     constructor() {
     }
