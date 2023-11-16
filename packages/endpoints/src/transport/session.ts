@@ -9,6 +9,11 @@ import { ServerOpts } from '../Server';
  */
 export interface IncomingContext {
     session: ServerTransportSession;
+    options: ServerOpts;
+    /**
+     * packet ready.
+     */
+    ready?: boolean;
     packet?: IncomingPacket;
     raw?: Buffer;
 }
@@ -28,7 +33,7 @@ export abstract class ServerTransportSession<TSocket = any> extends TransportSes
     /**
      * receive
      */
-    abstract receive(options: ServerOpts): Observable<IncomingPacket>;
+    abstract receive(options: ServerOpts): Observable<TransportContext>;
 
 }
 

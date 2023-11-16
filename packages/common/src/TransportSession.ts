@@ -75,8 +75,10 @@ export abstract class BufferUnpacker<TMessage = any> {
     /**
      * ubpack message to full packet buffers
      * @param msg 
+     * @param getTopic 
+     * @param getPayload 
      */
-    abstract unpack(msg: TMessage): Observable<Buffer>;
+    abstract unpack(msg: TMessage, getTopic?: (msg: TMessage) => string, getPayload?: (msg: TMessage) => string | Buffer | Uint8Array): Observable<Buffer>;
 }
 
 
@@ -122,7 +124,7 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * parse header.
      * @param packet 
      */
-    abstract parseHeader(msg: TMessage| Buffer): Packet;
+    abstract parseHeader(msg: TMessage | Buffer): Packet;
     /**
      * send message
      * @param ctx 

@@ -15,23 +15,20 @@ export class TopicBufferUnpacker<TMsg = any> implements BufferUnpacker<TMsg> {
     protected topics: Map<string, TopicBuffer>;
 
     private delimiter: Buffer;
-    private headDelimiter?: Buffer;
 
     constructor(
-        private getTopic: (msg: TMsg) => string,
-        private getPayload: (msg: TMsg) => string | Buffer | Uint8Array,
+        // private getTopic: (msg: TMsg) => string,
+        // private getPayload: (msg: TMsg) => string | Buffer | Uint8Array,
         private options: TransportOpts) {
         this.topics = new Map();
         this.delimiter = Buffer.from(options.delimiter ?? '#');
-        if (options.headDelimiter) {
-            this.headDelimiter = Buffer.from(options.headDelimiter);
-        }
+
 
     }
 
-    unpack(msg: TMsg): Observable<Buffer> {
+    unpack(msg: TMsg, getTopic?: (msg: TMsg) => string, getPayload?: (msg: TMsg) => string | Buffer | Uint8Array): Observable<Buffer> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
-            const topic = this.getTopic(msg);
+            const topic = getTopic ? getTopic(msg) : '__default__';
             let chl = this.topics.get(topic);
             if (!chl) {
                 chl = {
@@ -42,7 +39,7 @@ export class TopicBufferUnpacker<TMsg = any> implements BufferUnpacker<TMsg> {
                 }
                 this.topics.set(topic, chl)
             }
-            this.handleData(chl, this.getPayload(msg), subscriber);
+            this.handleData(chl, getPayload ? getPayload(msg) : msg as string | Buffer | Uint8Array, subscriber);
 
             return subscriber;
 

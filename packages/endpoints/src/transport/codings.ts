@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { IReadableStream, IncomingPacket, OutgoingType } from '@tsdi/common';
+import { IReadableStream, OutgoingType } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { TransportContext } from '../TransportContext';
 import { IncomingContext } from './session';
@@ -63,16 +63,14 @@ export class InterceptingOutgoingEncoder<T extends TransportContext = TransportC
 
 
 @Abstract()
-export abstract class IncomingDecoder<T extends IncomingContext = IncomingContext> implements Handler<T, IncomingPacket> {
-    abstract handle(ctx: T): Observable<IncomingPacket>;
+export abstract class IncomingDecoder<T extends IncomingContext = IncomingContext> implements Handler<T, TransportContext> {
+    abstract handle(ctx: T): Observable<TransportContext>;
 }
 
 @Abstract()
-export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, IncomingPacket> {
-    abstract handle(ctx: T): Observable<IncomingPacket>;
+export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, TransportContext> {
+    abstract handle(ctx: T): Observable<TransportContext>;
 }
-
-
 
 
 /**
@@ -80,7 +78,7 @@ export abstract class IncomingBackend<T extends IncomingContext = IncomingContex
  * 
  * 解密拦截器。
  */
-export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingContext> extends Interceptor<T, IncomingPacket> {
+export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingContext> extends Interceptor<T, TransportContext> {
     /**
      * the method to implemet response decode interceptor.
      * 
@@ -90,7 +88,7 @@ export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingC
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<IncomingPacket>;
+    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext>;
 }
 
 /**
@@ -99,7 +97,7 @@ export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingC
 export const INCOMING_DECODER_INTERCEPTORS = tokenId<IncomingDecodeInterceptor[]>('INCOMING_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingIncomingDecoder<T extends IncomingContext = IncomingContext> extends InterceptingHandler<T> implements IncomingDecoder<T> {
+export class InterceptingIncomingDecoder<T extends IncomingContext = IncomingContext> extends InterceptingHandler<T, TransportContext> implements IncomingDecoder<T> {
     constructor(backend: IncomingDecoder, injector: Injector) {
         super(backend, injector, INCOMING_DECODER_INTERCEPTORS)
     }

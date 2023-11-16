@@ -1,8 +1,9 @@
 import { ArgumentExecption, Injectable } from '@tsdi/ioc';
-import { IDuplexStream, IncomingPacket, hdr } from '@tsdi/common';
-import { Observable, Subscriber, of } from 'rxjs';
+import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, hdr } from '@tsdi/common';
+import { Observable, Subscriber, mergeMap, of, throwError } from 'rxjs';
 import { IncomingBackend, IncomingDecodeInterceptor, IncomingDecoder } from './codings';
 import { IncomingContext } from './session';
+import { TransportContext, TransportContextFactory } from '../TransportContext';
 
 
 
@@ -13,11 +14,11 @@ interface CachePacket extends IncomingPacket {
 
 
 @Injectable()
-export class StreamIncomingDecorder<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
+export class StreamIncomingDecordeInterceptor<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
 
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<IncomingPacket> {
-        if (ctx.packet && ctx.packet.req && ctx.packet.res) {
-            return of(ctx.packet);
+    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext> {
+        if (!ctx.ready && ctx.packet && ctx.packet.req && ctx.packet.res) {
+            ctx.ready = true;
         }
         return next.handle(ctx)
     }
@@ -25,12 +26,15 @@ export class StreamIncomingDecorder<T extends IncomingContext = IncomingContext>
 }
 
 @Injectable()
-export class PayloadStreamIncomingDecorder<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
+export class PayloadStreamIncomingDecordeInterceptor<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
 
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<IncomingPacket> {
-        if (ctx.packet && !ctx.packet.payload && ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.raw)) {
+    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext> {
+        if (!ctx.ready && ctx.packet && !ctx.packet.payload && ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.raw)) {
             ctx.packet.payload = ctx.raw;
-            return of(ctx.packet);
+            if (!ctx.packet.method) {
+                ctx.packet.method = ctx.options.transportOpts?.microservice ? MESSAGE : GET;
+            }
+            ctx.ready = true;
         }
         return next.handle(ctx)
     }
@@ -38,14 +42,15 @@ export class PayloadStreamIncomingDecorder<T extends IncomingContext = IncomingC
 }
 
 @Injectable()
-export class TransportIncomingBackend<T extends IncomingContext = IncomingContext> implements IncomingBackend<T> {
+export class BufferIncomingDecordeInterceptor<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
 
     packs: Map<string | number, CachePacket>;
     constructor() {
         this.packs = new Map();
     }
 
-    handle(ctx: T): Observable<IncomingPacket> {
+    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext> {
+        if (ctx.ready) return next.handle(ctx);
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
             if (!ctx.raw) {
@@ -122,7 +127,30 @@ export class TransportIncomingBackend<T extends IncomingContext = IncomingContex
             }
 
             return subscriber;
-        })
+        }).pipe(
+            mergeMap(pkg => {
+                if (!pkg.method) {
+                    pkg.method = ctx.options.transportOpts?.microservice ? MESSAGE : GET;
+                }
+                ctx.packet = pkg;
+                ctx.ready = true;
+                return next.handle(ctx);
+            })
+        )
+    }
+}
+
+@Injectable()
+export class TransportIncomingBackend<T extends IncomingContext = IncomingContext> implements IncomingBackend<T> {
+
+
+    handle(ctx: T): Observable<TransportContext> {
+        const injector = ctx.session.injector;
+        if (!ctx.packet || !ctx.ready) return throwError(() => new InternalServerExecption('incoming packet no ready.'));
+
+        const context = injector.get(TransportContextFactory).create(injector, ctx.session, ctx.packet, ctx.options);
+        return of(context);
+
     }
 
 }
