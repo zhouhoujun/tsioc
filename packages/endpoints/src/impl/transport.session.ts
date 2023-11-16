@@ -1,11 +1,10 @@
 import { Execption, Injector, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    AssetTransportOpts, HeaderPacket, IEventEmitter, IReadableStream, IncomingPacket, InvalidJsonException, OutgoingType, Packet, PacketLengthException,
-    RequestPacket, ResponsePacket, StreamAdapter, TransportEvent, TransportOpts, TransportRequest, TransportSession, ev, hdr, isBuffer
+    AssetTransportOpts, HeaderPacket, IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException,
+    StreamAdapter, TransportOpts, TransportSession, ev
 } from '@tsdi/common';
-import { Observable, Subscriber, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
-import { NumberAllocator } from 'number-allocator';
+import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { TransportContext } from '../TransportContext';
@@ -95,15 +94,7 @@ export interface TopicBuffer {
 
 
 
-export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
-
-    protected topics: Map<string, TopicBuffer>;
-
-    readonly delimiter: Buffer | undefined;
-    readonly headDelimiter: Buffer | undefined;
-
-    private allocator?: NumberAllocator;
-    private last?: number;
+export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
 
     constructor(
         readonly injector: Injector,
@@ -111,11 +102,9 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
         readonly streamAdapter: StreamAdapter,
         readonly encoder: OutgoingEncoder,
         readonly decoder: IncomingDecoder,
-        options: TransportOpts) {
+        protected packetBuffer: PacketBuffer,
+        readonly options: TransportOpts) {
         super();
-        this.delimiter = Buffer.from(options.delimiter ?? '#');
-        if (options.headDelimiter) this.headDelimiter = Buffer.from(options.headDelimiter);
-        this.topics = new Map();
     }
 
 
@@ -124,24 +113,7 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
     // }
 
     protected concat(msg: TMsg): Observable<Buffer> {
-        return new Observable((subscriber: Subscriber<Buffer>) => {
-            const topic = this.getTopic(msg);
-            let chl = this.topics.get(topic);
-            if (!chl) {
-                chl = {
-                    topic,
-                    buffers: [],
-                    length: 0,
-                    contentLength: null
-                }
-                this.topics.set(topic, chl)
-            }
-            this.handleData(chl, this.getPayload(msg), subscriber);
-
-            return subscriber;
-
-        });
-
+        return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
     }
 
     protected abstract getTopic(msg: TMsg): string;
@@ -154,86 +126,15 @@ export abstract class BufferTransportSession<TSocket, TMsg = string | Buffer | U
 
 
     async destroy(): Promise<void> {
-        this.topics.clear();
-    }
-
-    protected getPacketId(): string | number {
-        if (!this.allocator) {
-            this.allocator = new NumberAllocator(1, 65536)
-        }
-        const id = this.allocator.alloc();
-        if (!id) {
-            throw new Execption('alloc stream id failed');
-        }
-        this.last = id;
-        return id;
+        this.packetBuffer.clear();
     }
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
-    protected handleData(chl: TopicBuffer, dataRaw: string | Buffer | Uint8Array, subscriber: Subscriber<Buffer>) {
-        const data = Buffer.isBuffer(dataRaw)
-            ? dataRaw
-            : Buffer.from(dataRaw);
-
-
-        chl.buffers.push(data);
-        chl.length += Buffer.byteLength(data);
-
-        if (chl.contentLength == null) {
-            const i = data.indexOf(this.delimiter!);
-            if (i !== -1) {
-                const buffer = this.concatCaches(chl);
-                const idx = chl.length - Buffer.byteLength(data) + i;
-                const rawContentLength = buffer.subarray(0, idx).toString();
-                chl.contentLength = parseInt(rawContentLength, 10);
-
-                if (isNaN(chl.contentLength) || (this.options.maxSize && chl.contentLength > this.options.maxSize)) {
-                    chl.contentLength = null;
-                    chl.length = 0;
-                    chl.buffers = [];
-                    throw new PacketLengthException(rawContentLength);
-                }
-                chl.buffers = [buffer.subarray(idx + 1)];
-                chl.length -= (idx + 1);
-            }
-        }
-
-        if (chl.contentLength !== null) {
-            if (chl.length === chl.contentLength) {
-                this.handleMessage(chl, this.concatCaches(chl), subscriber);
-                subscriber.complete();
-            } else if (chl.length > chl.contentLength) {
-                const buffer = this.concatCaches(chl);
-                const message = buffer.subarray(0, chl.contentLength);
-                const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message, subscriber);
-                if (rest.length) {
-                    this.handleData(chl, rest, subscriber);
-                }
-            } else {
-                subscriber.complete();
-            }
-        } else {
-            subscriber.complete();
-        }
-    }
-
-    protected concatCaches(chl: TopicBuffer) {
-        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
-    }
-
-    protected handleMessage(chl: TopicBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
-        chl.contentLength = null;
-        chl.length = 0;
-        chl.buffers = [];
-        subscriber.next(message);
-    }
-
 }
 
 
-export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends BufferTransportSession<TSocket, TMsg> {
+export abstract class ServerEventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends ServerBufferTransportSession<TSocket, TMsg> {
 
     protected message(): Observable<TMsg> {
         return fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
@@ -250,7 +151,7 @@ export abstract class EventTransportSession<TSocket extends IEventEmitter, TMsg 
 
 }
 
-export abstract class PayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> {
+export abstract class ServerPayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> {
 
     // protected createContext(msgOrPkg: string | Packet<any> | Buffer | Uint8Array, msg?: TMsg | undefined, options?: InvokeArguments<any> | undefined): Context<Packet<any>> {
     //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, undefined, undefined, options);

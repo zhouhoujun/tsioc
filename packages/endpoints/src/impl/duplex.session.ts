@@ -1,12 +1,29 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { IDuplexStream, Packet, RequestPacket, StreamAdapter, TransportOpts } from '@tsdi/common';
-import { EventTransportSession } from './transport.session';
+import { IDuplexStream, IReadableStream, Packet, PacketBuffer, RequestPacket, StreamAdapter, TransportOpts } from '@tsdi/common';
+import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
-import { ServerTransportSessionFactory } from '../transport/session';
+import { IncomingContext, ServerTransportSessionFactory } from '../transport/session';
+import { ServerOpts } from '../Server';
+import { TransportContext } from '../TransportContext';
 
 
 
-export class DuplexTransportSession extends EventTransportSession<IDuplexStream> {
+export class ServerDuplexTransportSession extends ServerEventTransportSession<IDuplexStream> {
+    protected writeHeader(ctx: TransportContext<any, any, any>): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+    protected pipe(ata: IReadableStream, ctx: TransportContext<any, any, any>): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+    protected createContext(data: Buffer, msg: string | Buffer | Uint8Array, options: ServerOpts<any>): IncomingContext {
+        throw new Error('Method not implemented.');
+    }
+    generateHeader(msg: TransportContext<any, any, any>): Buffer {
+        throw new Error('Method not implemented.');
+    }
+    parseHeader(msg: Buffer | TransportContext<any, any, any>): Packet<any> {
+        throw new Error('Method not implemented.');
+    }
 
     protected getTopic(msg: string | Buffer | Uint8Array): string {
         return '__DEFALUT_TOPIC__'
@@ -15,16 +32,13 @@ export class DuplexTransportSession extends EventTransportSession<IDuplexStream>
         return msg;
     }
 
-    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
-        // do nothing
-    }
-
     protected override write(data: Buffer, packet: Packet): Promise<void> {
         return promisify<Buffer, void>(this.socket.write, this.socket)(data);
     }
 
     override async destroy(): Promise<void> {
         this.socket.destroy?.();
+        this.packetBuffer.clear();
     }
 }
 
@@ -37,8 +51,8 @@ export class DuplexTransportSessionFactory implements ServerTransportSessionFact
         private encoder: OutgoingEncoder,
         private decoder: IncomingDecoder) { }
 
-    create(socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+    create(socket: IDuplexStream, options: TransportOpts): ServerDuplexTransportSession {
+        return new ServerDuplexTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, new PacketBuffer(), options);
     }
 
 }

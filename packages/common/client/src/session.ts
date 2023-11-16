@@ -1,11 +1,13 @@
-import { Abstract, Injector, isNil } from '@tsdi/ioc';
+import { Abstract, Execption, Injector, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
-    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, TransportSession, hdr
+    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, TransportSession, hdr, StreamAdapter, PacketBuffer, HeaderPacket, IEventEmitter, ev
 } from '@tsdi/common';
-import { Observable, defer, filter, lastValueFrom, map, mergeMap, share, throwError, timeout } from 'rxjs';
+import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
+import { NumberAllocator } from 'number-allocator';
 import { RequestEncoder, ResponseContext, ResponseDecoder } from './codings';
+
 
 /**
  * transport session.
@@ -159,5 +161,89 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
     }
 
     protected abstract getPacketId(): string | number;
+
+}
+
+
+export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
+
+
+    private allocator?: NumberAllocator;
+    private last?: number;
+
+    constructor(
+        readonly injector: Injector,
+        readonly socket: TSocket,
+        readonly streamAdapter: StreamAdapter,
+        readonly encoder: RequestEncoder,
+        readonly decoder: ResponseDecoder,
+        private packetBuffer: PacketBuffer,
+        readonly options: TransportOpts) {
+        super();
+    }
+
+
+
+    // protected override createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments) {
+    //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, this.delimiter, this.headDelimiter, options)
+    // }
+
+    protected concat(msg: TMsg): Observable<Buffer> {
+        return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
+    }
+
+    protected abstract getTopic(msg: TMsg): string;
+
+    protected abstract getPayload(msg: TMsg): string | Buffer | Uint8Array;
+
+    protected getHeaders(msg: TMsg): HeaderPacket | undefined {
+        return undefined;
+    }
+
+
+    async destroy(): Promise<void> {
+        this.packetBuffer.clear();
+    }
+
+    protected getPacketId(): string | number {
+        if (!this.allocator) {
+            this.allocator = new NumberAllocator(1, 65536)
+        }
+        const id = this.allocator.alloc();
+        if (!id) {
+            throw new Execption('alloc stream id failed');
+        }
+        this.last = id;
+        return id;
+    }
+
+    // protected abstract write(data: Buffer, packet: Packet): Promise<void>;
+
+}
+
+export abstract class ClientEventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends ClientBufferTransportSession<TSocket, TMsg> {
+
+    protected message(): Observable<TMsg> {
+        return fromEvent(this.socket, ev.DATA) as Observable<TMsg>;
+    }
+
+    protected mergeClose(source: Observable<any>) {
+        const close$ = fromEvent(this.socket, ev.CLOSE).pipe(
+            map(err => {
+                throw err
+            }));
+        const error$ = fromEvent(this.socket, ev.ERROR);
+        return merge(source, error$, close$).pipe(first());
+    }
+
+}
+
+export abstract class ClientPayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> {
+
+    // protected createContext(msgOrPkg: string | Packet<any> | Buffer | Uint8Array, msg?: TMsg | undefined, options?: InvokeArguments<any> | undefined): Context<Packet<any>> {
+    //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, undefined, undefined, options);
+    // }
+
+    protected abstract getHeaders(msg: TMsg): HeaderPacket | undefined;
 
 }
