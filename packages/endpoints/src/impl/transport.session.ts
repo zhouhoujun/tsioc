@@ -1,8 +1,8 @@
-import { Execption, Injector, isNil } from '@tsdi/ioc';
+import { Injector, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    AssetTransportOpts, HeaderPacket, IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException,
-    StreamAdapter, TransportOpts, TransportSession, ev
+    IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException,
+    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, TransportSession, ev
 } from '@tsdi/common';
 import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
@@ -46,6 +46,10 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
             )
     }
 
+    generatePacket(ctx: TransportContext): Packet<any> {
+        return {};
+    }
+
     protected encode(ctx: TransportContext): Observable<OutgoingType> {
         return this.encoder.handle(ctx)
             .pipe(
@@ -76,7 +80,7 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
     protected abstract message(options: ServerOpts): Observable<TMsg>;
 
     protected abstract writeHeader(ctx: TransportContext): Promise<void>;
-    protected abstract pipe(ata: IReadableStream, ctx: TransportContext): Promise<void>;
+    protected abstract pipe(data: IReadableStream, ctx: TransportContext): Promise<void>;
     protected abstract write(data: Buffer, ctx: TransportContext): Promise<void>;
 
     protected abstract createContext(data: Buffer, msg: TMsg, options: ServerOpts): IncomingContext;
@@ -107,10 +111,15 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
         super();
     }
 
-
-    // protected override createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments) {
-    //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, this.delimiter, this.headDelimiter, options)
-    // }
+    protected override createContext(data: Buffer, msg: TMsg, options: ServerOpts): IncomingContext {
+        const packet = msg ? this.getHeaders(msg) : undefined
+        return {
+            session: this,
+            packet,
+            options,
+            raw: data
+        }
+    }
 
     protected concat(msg: TMsg): Observable<Buffer> {
         return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
@@ -153,9 +162,15 @@ export abstract class ServerEventTransportSession<TSocket extends IEventEmitter,
 
 export abstract class ServerPayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> {
 
-    // protected createContext(msgOrPkg: string | Packet<any> | Buffer | Uint8Array, msg?: TMsg | undefined, options?: InvokeArguments<any> | undefined): Context<Packet<any>> {
-    //     return new Context(this.injector, this, msgOrPkg, msg ? this.getHeaders(msg) : undefined, undefined, undefined, options);
-    // }
+    protected override createContext(data: Buffer, msg: TMsg, options: ServerOpts): IncomingContext {
+        const packet = msg ? this.getHeaders(msg) : undefined
+        return {
+            session: this,
+            packet,
+            options,
+            raw: data
+        }
+    }
 
     protected abstract getHeaders(msg: TMsg): HeaderPacket | undefined;
 

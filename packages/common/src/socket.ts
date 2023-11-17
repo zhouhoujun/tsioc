@@ -184,6 +184,7 @@ export interface Outgoing<TSocket = any> extends IEnd {
      */
     statusMessage?: string;
 
+    id?: any;
     body?: any;
 
     /**

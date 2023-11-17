@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
-import { IncomingPacket, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
+import { IncomingPacket, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';

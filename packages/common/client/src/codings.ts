@@ -5,7 +5,14 @@ import { Observable } from 'rxjs';
 import { ClientTransportSession } from './session';
 
 
-
+/**
+ * request context
+ */
+export interface RequestContext {
+    session: ClientTransportSession;
+    req: TransportRequest;
+    raw?: Buffer | null;
+}
 
 /**
  * response context.
@@ -25,26 +32,26 @@ export interface ResponseContext {
  * Request encdoer.
  */
 @Abstract()
-export abstract class RequestEncoder<T extends TransportRequest = TransportRequest, TOutput extends OutgoingType = OutgoingType> implements Handler<T, TOutput> {
+export abstract class RequestEncoder<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> implements Handler<T, TOutput> {
     /**
      * tranport request encode handle.
-     * @param req 
+     * @param ctx 
      */
-    abstract handle(req: T): Observable<TOutput>;
-}
-
-@Abstract()
-export abstract class RequestBackend<T extends TransportRequest = TransportRequest, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
     abstract handle(ctx: T): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class EmptyRequestEncoder<T extends TransportRequest = TransportRequest> implements RequestEncoder<T, null> {
+export abstract class RequestBackend<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
+    abstract handle(ctx: T): Observable<TOutput>;
+}
+
+@Abstract()
+export abstract class EmptyRequestEncoder<T extends RequestContext = RequestContext> implements RequestEncoder<T, null> {
     abstract handle(ctx: T): Observable<null>;
 }
 
 @Abstract()
-export abstract class StreamRequestEncoder<T extends TransportRequest = TransportRequest> implements RequestEncoder<T, IReadableStream> {
+export abstract class StreamRequestEncoder<T extends RequestContext = RequestContext> implements RequestEncoder<T, IReadableStream> {
     abstract handle(ctx: T): Observable<IReadableStream>;
 }
 
@@ -55,17 +62,17 @@ export abstract class StreamRequestEncoder<T extends TransportRequest = Transpor
  * 
  * 加密拦截器。
  */
-export interface RequestEncodeInterceptor<T extends TransportRequest = TransportRequest, TOutput extends OutgoingType = OutgoingType> extends Interceptor<T, TOutput> {
+export interface RequestEncodeInterceptor<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> extends Interceptor<T, TOutput> {
     /**
      * the method to implemet encode interceptor.
      * 
      * 加密拦截处理的方法
-     * @param req  request input.
+     * @param ctx  request context.
      * @param next The next handler in the chain, or the backend
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(req: T, next: RequestEncoder<T>): Observable<TOutput>;
+    intercept(ctx: T, next: RequestEncoder<T>): Observable<TOutput>;
 }
 
 /**
@@ -74,7 +81,7 @@ export interface RequestEncodeInterceptor<T extends TransportRequest = Transport
 export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>('REQUEST_ENCODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingReuqestEncoder<T extends TransportRequest = TransportRequest> extends InterceptingHandler<T> implements RequestEncoder<T> {
+export class InterceptingReuqestEncoder<T extends RequestContext = RequestContext> extends InterceptingHandler<T> implements RequestEncoder<T> {
     constructor(backend: RequestEncoder, injector: Injector) {
         super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
     }

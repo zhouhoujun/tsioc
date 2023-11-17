@@ -1,74 +1,69 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
-import { OutgoingType, TransportRequest, isBuffer, toBuffer } from '@tsdi/common';
+import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
-import { EmptyRequestEncoder, RequestBackend, RequestEncodeInterceptor, RequestEncoder, StreamRequestEncoder } from './codings';
+import { EmptyRequestEncoder, RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder, StreamRequestEncoder } from './codings';
 import { ClientTransportSession } from './session';
 
 
 
 @Injectable()
-export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<TransportRequest, OutgoingType> {
+export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<RequestContext, OutgoingType> {
 
     constructor(
         private empty: EmptyRequestEncoder,
         private stream: StreamRequestEncoder
     ) { }
 
-    intercept(req: TransportRequest, next: RequestEncoder<TransportRequest>): Observable<OutgoingType> {
-        const session = req.context.get(ClientTransportSession);
-        if (null == req.body) {
-            return this.empty.handle(req);
-        } else if (session.streamAdapter.isReadable(req.body)) {
-            if (!session.existHeader) {
+    intercept(ctx: RequestContext, next: RequestEncoder<RequestContext>): Observable<OutgoingType> {
+
+        if (null == ctx.req.body) {
+            return this.empty.handle(ctx);
+        } else if (ctx.session.streamAdapter.isReadable(ctx.req.body)) {
+            if (!ctx.session.existHeader) {
                 return defer(async () => {
-                    req.body = new TextDecoder().decode(await toBuffer(req.body));
-                    return req;
+                    ctx.req.body = new TextDecoder().decode(await toBuffer(ctx.req.body));
+                    return ctx;
                 }).pipe(
                     mergeMap(ctx => next.handle(ctx))
                 )
             }
-            if (session.options.maxSize) {
+            if (ctx.session.options.maxSize) {
                 return new Observable(subsr => {
-                    session.streamAdapter.pipeTo(req.body, session.streamAdapter.createWritable({
+                    ctx.session.streamAdapter.pipeTo(ctx.req.body, ctx.session.streamAdapter.createWritable({
                         write(chunk, encoding, callback) {
-                            req.rawBody = chunk;
-                            subsr.next(req);
+                            ctx.raw = chunk;
+                            subsr.next(ctx.req);
                             callback();
                         }
                     })).then(() => {
-                        req.rawBody = null;
+                        ctx.raw = null;
                         subsr.complete();
                     }).catch(err => {
                         subsr.error(err);
                     })
                     return () => subsr.unsubscribe()
                 }).pipe(
-                    mergeMap(chunk => next.handle(req))
+                    mergeMap(chunk => next.handle(ctx))
                 )
             }
-            return this.stream.handle(req);
+            return this.stream.handle(ctx);
         }
 
-        return next.handle(req);
+        return next.handle(ctx);
     }
 }
 
 @Injectable()
-export class BufferifyRequestEncodeBackend implements RequestBackend<TransportRequest, Buffer> {
-    handle(req: TransportRequest): Observable<Buffer> {
-        const session = req.context.get(ClientTransportSession);
+export class BufferifyRequestEncodeBackend implements RequestBackend<RequestContext, Buffer> {
+    handle(ctx: RequestContext): Observable<Buffer> {
+        const session = ctx.req.context.get(ClientTransportSession);
         if (!session.existHeader) {
-            const res = Buffer.from(JSON.stringify({
-                id: req.id,
-                headers: req.headers.getHeaders(),
-                url: req.url,
-                payload: req.body
-            }));
-            return of(res);
+            const pkg = Buffer.from(JSON.stringify(session.generatePacket(ctx.req)));
+            return of(pkg);
         } else {
-            let rawBody = req.rawBody;
+            let rawBody = ctx.raw;
             if (!rawBody) {
-                const body = req.body;
+                const body = ctx.req.body;
                 if (isBuffer(body)) {
                     rawBody = body;
                 } else if (isString(body)) {
@@ -79,7 +74,7 @@ export class BufferifyRequestEncodeBackend implements RequestBackend<TransportRe
             }
 
             if (!session.existHeader && session.headerDelimiter) {
-                rawBody = Buffer.concat([session.generateHeader(req), session.headerDelimiter, rawBody]);
+                rawBody = Buffer.concat([session.generateHeader(ctx.req), session.headerDelimiter, rawBody]);
             }
 
             return of(rawBody)
@@ -89,14 +84,14 @@ export class BufferifyRequestEncodeBackend implements RequestBackend<TransportRe
 }
 
 @Injectable()
-export class SubpacketRequestEncodeInterceptor implements RequestEncodeInterceptor<TransportRequest, Buffer>  {
+export class SubpacketRequestEncodeInterceptor implements RequestEncodeInterceptor<RequestContext, Buffer>  {
 
-    intercept(req: TransportRequest, next: RequestEncoder<TransportRequest, Buffer>): Observable<Buffer> {
+    intercept(ctx: RequestContext, next: RequestEncoder<RequestContext, Buffer>): Observable<Buffer> {
 
-        return next.handle(req)
+        return next.handle(ctx)
             .pipe(
                 mergeMap(buf => {
-                    const session = req.context.get(ClientTransportSession);
+                    const session = ctx.req.context.get(ClientTransportSession);
                     if (!buf) {
                         buf = Buffer.alloc(0);
                     }
@@ -134,15 +129,15 @@ export class SubpacketRequestEncodeInterceptor implements RequestEncodeIntercept
 
 
 @Injectable()
-export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInterceptor<TransportRequest, Buffer> {
+export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInterceptor<RequestContext, Buffer> {
 
-    intercept(req: TransportRequest, next: RequestEncoder<TransportRequest, Buffer>): Observable<Buffer> {
-        return next.handle(req)
+    intercept(ctx: RequestContext, next: RequestEncoder<RequestContext, Buffer>): Observable<Buffer> {
+        return next.handle(ctx)
             .pipe(
                 map(data => {
-                    const session = req.context.get(ClientTransportSession);
+                    const session = ctx.session;
                     if (!session.delimiter) return data;
-                    if (!session.existHeader || !isNumber(req.id)) {
+                    if (!session.existHeader || !isNumber(ctx.req.id)) {
                         return Buffer.concat([
                             Buffer.from(String(data.length)),
                             session.delimiter,
@@ -151,7 +146,7 @@ export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInte
                     }
 
                     const bufId = Buffer.alloc(2);
-                    bufId.writeUInt16BE(req.id);
+                    bufId.writeUInt16BE(ctx.req.id);
                     return Buffer.concat([
                         Buffer.from(String(data.length + bufId.length)),
                         session.delimiter,

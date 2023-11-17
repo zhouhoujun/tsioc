@@ -25,15 +25,13 @@ export class TransportRequest<T = any> {
     readonly withCredentials: boolean;
     readonly urlWithParams: string;
 
-    rawBody?: Buffer | null;
-
     /**
      * client side timeout.
      */
     readonly timeout?: number;
 
     constructor(pattern: Pattern, options: RequestInitOpts) {
-        this.context = options.context!;
+        this.context = options.context;
         const url = this.url = this.context.get(PatternFormatter).format(pattern);
         this.pattern = pattern;
         this.method = options.method;
@@ -200,6 +198,10 @@ export interface ResponseAs {
 }
 
 export interface RequestInitOpts extends RequestOptions, ResponseAs {
+    /**
+     * request context.
+     */
+    context: InvocationContext;
     reportProgress?: boolean;
     withCredentials?: boolean;
 }

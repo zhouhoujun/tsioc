@@ -1,27 +1,45 @@
-import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, Packet, PacketBuffer, RequestPacket, StreamAdapter, TransportOpts } from '@tsdi/common';
+import { Injectable, Injector, isPlainObject, promisify } from '@tsdi/ioc';
+import { IDuplexStream, IReadableStream, Outgoing, Packet, PacketBuffer, ResponsePacket, StreamAdapter, TransportOpts } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { IncomingContext, ServerTransportSessionFactory } from '../transport/session';
-import { ServerOpts } from '../Server';
 import { TransportContext } from '../TransportContext';
 
 
 
 export class ServerDuplexTransportSession extends ServerEventTransportSession<IDuplexStream> {
-    protected writeHeader(ctx: TransportContext<any, any, any>): Promise<void> {
-        throw new Error('Method not implemented.');
+
+    protected writeHeader(ctx: TransportContext): Promise<void> {
+        const headBuff = this.generateHeader(ctx);
+        return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
     }
-    protected pipe(ata: IReadableStream, ctx: TransportContext<any, any, any>): Promise<void> {
-        throw new Error('Method not implemented.');
+
+    protected pipe(data: IReadableStream, ctx: TransportContext): Promise<void> {
+        return this.streamAdapter.pipeTo(data, this.socket)
     }
-    protected createContext(data: Buffer, msg: string | Buffer | Uint8Array, options: ServerOpts<any>): IncomingContext {
-        throw new Error('Method not implemented.');
+
+    protected override write(data: Buffer, packet: Packet): Promise<void> {
+        return promisify<Buffer, void>(this.socket.write, this.socket)(data);
     }
-    generateHeader(msg: TransportContext<any, any, any>): Buffer {
-        throw new Error('Method not implemented.');
+
+    generateHeader(ctx: TransportContext): Buffer {
+        if (isPlainObject(ctx.response)) {
+            const { payload, ...head } = ctx.response;
+            return Buffer.from(JSON.stringify(head));
+        } else {
+            const res = ctx.response as Outgoing;
+            const head = {
+                id: res.id,
+                status: res.statusCode,
+                statusText: res.statusMessage,
+                headers: res.getHeaders?.() ?? res.headers
+            } as ResponsePacket;
+
+            return Buffer.from(JSON.stringify(head));
+        }
     }
-    parseHeader(msg: Buffer | TransportContext<any, any, any>): Packet<any> {
+
+    parseHeader(msg: Buffer | TransportContext): Packet<any> {
         throw new Error('Method not implemented.');
     }
 
@@ -30,10 +48,6 @@ export class ServerDuplexTransportSession extends ServerEventTransportSession<ID
     }
     protected getPayload(msg: string | Buffer | Uint8Array): string | Buffer | Uint8Array {
         return msg;
-    }
-
-    protected override write(data: Buffer, packet: Packet): Promise<void> {
-        return promisify<Buffer, void>(this.socket.write, this.socket)(data);
     }
 
     override async destroy(): Promise<void> {

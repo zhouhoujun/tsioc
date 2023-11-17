@@ -103,6 +103,11 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      */
     abstract get streamAdapter(): StreamAdapter;
     /**
+     * generate message to packet.
+     * @param packet 
+     */
+    abstract generatePacket(msg: TMessage): Packet;
+    /**
      * generate header.
      * @param packet 
      */
@@ -111,7 +116,7 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * parse header.
      * @param packet 
      */
-    abstract parseHeader(msg: TMessage | Buffer): Packet;
+    abstract parseHeader(raw: Buffer): Packet;
     /**
      * send message
      * @param ctx 
@@ -143,7 +148,7 @@ export class PacketBuffer {
     constructor() {
         this.topics = new Map();
     }
-    
+
     clear() {
         this.topics.clear();
     }
@@ -152,7 +157,7 @@ export class PacketBuffer {
      * @param topic 
      * @param msg 
      */
-    concat(session: TransportSession, topic: string,  msg: string | Buffer | Uint8Array): Observable<Buffer> {
+    concat(session: TransportSession, topic: string, msg: string | Buffer | Uint8Array): Observable<Buffer> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
             let chl = this.topics.get(topic);
             if (!chl) {
