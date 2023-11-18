@@ -31,7 +31,7 @@ export interface TransportPacketStrategy {
     /**
      * request handler for this server.
      */
-    requestHanlder: ProvdierOf<RequestHandler>;
+    requestHanlder?: ProvdierOf<RequestHandler>;
 
 }
 

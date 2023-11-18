@@ -139,7 +139,7 @@ export class OutgoingBufferFinalizeEncodeInterceptor implements OutgoingEncodeIn
             .pipe(
                 map(data => {
                     if (!ctx.session.delimiter) return data;
-                    if (!isPlainObject(ctx.response) || ctx.session.existHeader || !isNumber(ctx.response.id)) {
+                    if (ctx.session.existHeader || !isNumber(ctx.response.id)) {
                         return Buffer.concat([
                             Buffer.from(String(data.length)),
                             ctx.session.delimiter,

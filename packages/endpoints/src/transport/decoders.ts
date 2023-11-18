@@ -1,5 +1,5 @@
 import { ArgumentExecption, Injectable } from '@tsdi/ioc';
-import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, hdr } from '@tsdi/common';
+import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, hdr, isBuffer } from '@tsdi/common';
 import { Observable, Subscriber, mergeMap, of, throwError } from 'rxjs';
 import { IncomingBackend, IncomingDecodeInterceptor, IncomingDecoder } from './codings';
 import { IncomingContext } from './session';
@@ -53,8 +53,8 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
         if (ctx.ready) return next.handle(ctx);
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
-            if (!ctx.raw) {
-                subscriber.error(new ArgumentExecption('asset decoding input empty'));
+            if (!ctx.raw || !isBuffer(ctx.raw)) {
+                subscriber.error(new ArgumentExecption('asset decoding input is not buffer.'));
                 return;
             }
 

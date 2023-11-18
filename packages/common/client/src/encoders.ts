@@ -137,7 +137,7 @@ export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInte
                 map(data => {
                     const session = ctx.session;
                     if (!session.delimiter) return data;
-                    if (!session.existHeader || !isNumber(ctx.req.id)) {
+                    if (session.existHeader || !isNumber(ctx.req.id)) {
                         return Buffer.concat([
                             Buffer.from(String(data.length)),
                             session.delimiter,

@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { IncomingPacket, TransportOpts, TransportSession } from '@tsdi/common';
+import { IReadableStream, IncomingPacket, TransportOpts, TransportSession } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 import { Observable } from 'rxjs';
 import { ServerOpts } from '../Server';
@@ -15,7 +15,7 @@ export interface IncomingContext {
      */
     ready?: boolean;
     packet?: IncomingPacket;
-    raw?: Buffer;
+    raw?: Buffer | IReadableStream;
 }
 
 

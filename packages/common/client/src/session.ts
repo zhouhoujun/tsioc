@@ -2,7 +2,7 @@ import { Abstract, Execption, Injector, isDefined, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
-    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, TransportSession, hdr, StreamAdapter, PacketBuffer, HeaderPacket, IEventEmitter, ev
+    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, TransportSession, hdr, StreamAdapter, PacketBuffer, IEventEmitter, ev
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
