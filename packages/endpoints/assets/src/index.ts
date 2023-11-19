@@ -7,8 +7,6 @@ export * from './Negotiator';
 
 export * from './utils';
 
-export * from './asset.pdr';
-
 export * from './results';
 
 export * from './interceptors';

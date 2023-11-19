@@ -22,7 +22,8 @@ export interface TopicMessage {
 
 export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends ServerEventTransportSession<TSocket, TopicMessage> {
     protected writeHeader(ctx: TransportContext<any, any, any>): Promise<void> {
-        throw new Error('Method not implemented.');
+        const headBuff = this.generateHeader(ctx);
+        return promisify<string, Buffer, void>(this.socket.publish, this.socket)(ctx.response.replyTo, headBuff);
     }
     protected pipe(ata: IReadableStream, ctx: TransportContext<any, any, any>): Promise<void> {
         throw new Error('Method not implemented.');

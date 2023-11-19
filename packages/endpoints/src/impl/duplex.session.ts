@@ -2,7 +2,7 @@ import { Injectable, Injector, isPlainObject, promisify } from '@tsdi/ioc';
 import { IDuplexStream, IReadableStream, Outgoing, Packet, PacketBuffer, ResponsePacket, StreamAdapter, TransportOpts } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
-import { IncomingContext, ServerTransportSessionFactory } from '../transport/session';
+import { ServerTransportSessionFactory } from '../transport/session';
 import { TransportContext } from '../TransportContext';
 
 
