@@ -1,24 +1,22 @@
 import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
-import { EmptyOutgoingEncoder, OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend, StreamOutgoingEncoder } from './codings';
+import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend, StreamOutgoingEncoder } from './codings';
 import { TransportContext } from '../TransportContext';
-import { AssetContext } from '../AssetContext';
 
 
 @Injectable()
 export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType> {
 
     constructor(
-        private empty: EmptyOutgoingEncoder,
-        private stream: StreamOutgoingEncoder
+        // private stream: StreamOutgoingEncoder
     ) { }
 
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
 
-        if (null == ctx.body || (ctx instanceof AssetContext && ctx.isEmpty())) {
-            return this.empty.handle(ctx);
-        } else if (ctx.streamAdapter.isReadable(ctx.body)) {
+        if (ctx.isEmpty()) return next.handle(ctx);
+        
+        if (ctx.streamAdapter.isReadable(ctx.body)) {
             if (isPlainObject(ctx.response)) {
                 return defer(async () => {
                     ctx.body = new TextDecoder().decode(await toBuffer(ctx.body));
@@ -46,7 +44,7 @@ export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<
                     mergeMap(chunk => next.handle(ctx))
                 )
             }
-            return this.stream.handle(ctx);
+            // return this.stream.handle(ctx);
         }
 
         return next.handle(ctx);

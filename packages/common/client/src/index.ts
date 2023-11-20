@@ -7,3 +7,5 @@ export * from './Client';
 export * from './client.module';
 
 export * from './impl/session';
+export * from './impl/duplex.session';
+export * from './impl/topic.session';

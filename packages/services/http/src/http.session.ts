@@ -1,12 +1,11 @@
-import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
+import { Injectable, Injector, InvocationContext, isDefined, isNil, promisify } from '@tsdi/ioc';
 import {
-    ClientTransportSession, Context, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, 
-    Packet, ResponsePacket, StreamAdapter, TransportOpts, ev, hdr, statusMessage,
-    ClientTransportSessionFactory, ServerTransportSessionFactory, ServerTransportSession
+    HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, 
+    Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportRequest, XSSI_PREFIX, ev, hdr, statusMessage
 } from '@tsdi/common';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
-import { RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
-import { OutgoingEncoder, IncomingDecoder } from '@tsdi/endpoints';
+import { ClientTransportSession, ClientTransportSessionFactory, RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
+import { OutgoingEncoder, IncomingDecoder, ServerTransportSession, ServerTransportSessionFactory, TransportContext, ServerOpts } from '@tsdi/endpoints';
 import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest, OutgoingHttpHeaders } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
@@ -43,9 +42,24 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
         readonly clientOpts: HttpClientOpts) {
         this.options = clientOpts.transportOpts ?? {};
     }
-    
-    write(data: Buffer, packet: Packet<any>): Promise<void> {
-        throw new Error('Method not implemented.');
+
+    existHeader = true;
+
+    generatePacket(req: TransportRequest, noPayload?: boolean): Packet<any> {
+        const pkg = {
+            url: req.urlWithParams
+        } as RequestPacket;
+        if (req.method) {
+            pkg.method = req.method;
+        }
+        if (req.headers.size) {
+            pkg.headers = req.headers.getHeaders()
+        }
+        if (!noPayload && isDefined(req.body)) {
+            pkg.payload = req.body;
+        }
+
+        return pkg;
     }
 
     send(req: HttpRequest): Observable<ClientHttp2Stream | ClientRequest> {
@@ -90,28 +104,18 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
         });
     }
 
-    serialize(packet: Packet<any>, withPayload?: boolean | undefined): Buffer {
-        let pkg: Packet;
-        if (withPayload) {
-            const { length, ...data } = packet;
-            pkg = data;
-        } else {
-            const { payload, ...headers } = packet;
-            pkg = headers;
-        }
-        try {
-            return Buffer.from(JSON.stringify(pkg))
-        } catch (err) {
-            throw new InvalidJsonException(err, String(pkg))
-        }
+    serialize(packet: Packet): Buffer {
+        return Buffer.from(JSON.stringify(packet));
     }
 
+
     deserialize(raw: Buffer): Packet<any> {
-        const jsonStr = new TextDecoder().decode(raw);
+        let src = new TextDecoder().decode(raw);
         try {
-            return JSON.parse(jsonStr);
+            src = src.replace(XSSI_PREFIX, '');
+            return src !== '' ? JSON.parse(src) : null
         } catch (err) {
-            throw new InvalidJsonException(err, jsonStr);
+            throw new InvalidJsonException(err, src)
         }
     }
 
@@ -165,7 +169,7 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
                         stream = msg.stream;
                     }
                     // const ctx = new Context(this.injector, this, stream, headPkg);
-                    return this.decoder.handle({...headPkg, context: req.context })
+                    return this.decoder.handle({ packet: headPkg, req, session: this })
                         .pipe(
                             map(res=> {
                                 return res as HttpEvent
@@ -225,42 +229,32 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
 
     }
 
-    write(data: Buffer, packet: Packet<any>): Promise<void> {
+    existHeader = true;
+
+    generatePacket(msg: TransportContext<any, any, any>, noPayload?: boolean | undefined): Packet<any> {
         throw new Error('Method not implemented.');
     }
 
-    send(packet: ResponsePacket<any>): Observable<any> {
-        const ctx = new Context(this.injector, this, packet);
+    send(ctx: TransportContext): Observable<any> {
         return this.encoder.handle(ctx);
     }
 
-    serialize(packet: Packet<any>, withPayload?: boolean | undefined): Buffer {
-        let pkg: Packet;
-        if (withPayload) {
-            const { length, ...data } = packet;
-            pkg = data;
-        } else {
-            const { payload, ...headers } = packet;
-            pkg = headers;
-        }
-        try {
-            return Buffer.from(JSON.stringify(pkg))
-        } catch (err) {
-            throw new InvalidJsonException(err, String(pkg))
-        }
+    serialize(packet: Packet): Buffer {
+        return Buffer.from(JSON.stringify(packet));
     }
 
     deserialize(raw: Buffer): Packet<any> {
-        const jsonStr = new TextDecoder().decode(raw);
+        let src = new TextDecoder().decode(raw);
         try {
-            return JSON.parse(jsonStr);
+            src = src.replace(XSSI_PREFIX, '');
+            return src !== '' ? JSON.parse(src) : null
         } catch (err) {
-            throw new InvalidJsonException(err, jsonStr);
+            throw new InvalidJsonException(err, src)
         }
     }
 
 
-    receive(): Observable<IncomingPacket> {
+    receive(options: ServerOpts): Observable<TransportContext> {
 
         return new Observable<RequestMsg>(subscribe => {
             const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next({ req, res } as RequestMsg);
@@ -281,15 +275,8 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
             }
         }).pipe(
             mergeMap(msg => {
-                const ctx = new Context(this.injector, this, msg.req, msg.req);
-                return this.decoder.handle(ctx)
-                    .pipe(
-                        map((pkg: IncomingPacket) => {
-                            pkg.res = msg.res;
-                            pkg.req = msg.req;
-                            return pkg;
-                        })
-                    );
+                const packet = {...msg } ;
+                return this.decoder.handle({session: this, packet, options})
             }),
             share()
         );

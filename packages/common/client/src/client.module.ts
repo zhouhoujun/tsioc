@@ -13,6 +13,8 @@ import {
 } from './decoders';
 import { BufferifyRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor } from './encoders';
 import { DefaultRedirector } from './redirector';
+import { ClientDuplexTransportSessionFactory } from './impl/duplex.session';
+import { ClientTopicTransportSessionFactory } from './impl/topic.session';
 
 
 export interface ClientModuleConfig {
@@ -110,7 +112,10 @@ export interface ClientTokenOpts {
         { provide: ResponseBackend, useExisting: TypeResponseBackend },
 
         InterceptingResponseDecoder,
-        { provide: ResponseDecoder, useClass: InterceptingResponseDecoder }
+        { provide: ResponseDecoder, useClass: InterceptingResponseDecoder },
+
+        ClientDuplexTransportSessionFactory,
+        ClientTopicTransportSessionFactory
     ]
 })
 export class ClientModule {

@@ -1,4 +1,4 @@
-import { Token, tokenId } from '@tsdi/ioc';
+import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter } from '@tsdi/core';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';

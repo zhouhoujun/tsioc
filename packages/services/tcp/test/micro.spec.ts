@@ -3,7 +3,8 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+// import { JsonTransportModule } from '@tsdi/endpoints/json';
+// import { AssetModule } from '@tsdi/endpoints/assets';
 import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -13,7 +14,6 @@ import expect = require('expect');
 import path = require('path');
 import del = require('del');
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { AssetTransportModule } from '@tsdi/endpoints/assets';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -55,14 +55,12 @@ export class TcpService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
-        AssetTransportModule,
+        // JsonTransportModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
-                strategy: 'json',
                 connectOpts: {
                     port: 2000
                 }
@@ -72,7 +70,6 @@ export class TcpService {
             transport: 'tcp',
             microservice: true,
             serverOpts: {
-                strategy: 'json',
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000

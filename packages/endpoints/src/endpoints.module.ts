@@ -1,4 +1,4 @@
-import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
+import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
 import { NotImplementedExecption, Transport } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from './TransportContext';
@@ -34,9 +34,9 @@ import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
         TransportModule
     ],
     providers: [
-        SetupServices,
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
+        SetupServices,
 
         TransportContextFactoryImpl,
         { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },

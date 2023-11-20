@@ -1,10 +1,12 @@
-import { promisify } from '@tsdi/ioc';
-import { BadRequestExecption, IReadableStream, Packet, RequestPacket, TopicClient, TopicMessage, TransportRequest } from '@tsdi/common';
+import { Injectable, Injector, promisify } from '@tsdi/ioc';
+import { BadRequestExecption, IReadableStream, Packet, PacketBuffer, RequestPacket, StreamAdapter, TopicClient, TopicMessage, TransportOpts, TransportRequest } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
+import { ClientTransportSessionFactory } from '../session';
+import { RequestEncoder, ResponseDecoder } from '../codings';
 
 
 
-export class ClientTopicTransportSession<TSocket extends TopicClient> extends ClientEventTransportSession<TSocket, TopicMessage> {
+export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClient> extends ClientEventTransportSession<TSocket, TopicMessage> {
 
     private replys: Set<string> = new Set();
 
@@ -43,6 +45,22 @@ export class ClientTopicTransportSession<TSocket extends TopicClient> extends Cl
 
     protected getReply(packet: Packet) {
         return packet.replyTo || packet.topic + '/reply';
+    }
+
+}
+
+
+@Injectable()
+export class ClientTopicTransportSessionFactory implements ClientTransportSessionFactory<TopicClient> {
+
+    constructor(
+        readonly injector: Injector,
+        private streamAdapter: StreamAdapter,
+        private encoder: RequestEncoder,
+        private decoder: ResponseDecoder) { }
+
+    create(socket: TopicClient, options: TransportOpts): ClientTopicTransportSession<TopicClient> {
+        return new ClientTopicTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, new PacketBuffer(), options);
     }
 
 }

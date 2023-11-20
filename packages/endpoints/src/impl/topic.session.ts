@@ -1,10 +1,9 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, IEventEmitter, IReadableStream, Packet, PacketBuffer, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
+import { BadRequestExecption, IReadableStream, Packet, PacketBuffer, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
-import { IncomingContext, ServerTransportSessionFactory } from '../transport/session';
-import { ServerOpts } from '../Server';
+import { ServerTransportSessionFactory } from '../transport/session';
 import { TransportContext } from '../TransportContext';
 
 
@@ -15,9 +14,6 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         return promisify<string, Buffer, void>(this.socket.publish, this.socket)(ctx.response.replyTo, headBuff);
     }
     protected pipe(ata: IReadableStream, ctx: TransportContext<any, any, any>): Promise<void> {
-        throw new Error('Method not implemented.');
-    }
-    protected createContext(data: Buffer, msg: TopicMessage, options: ServerOpts<any>): IncomingContext {
         throw new Error('Method not implemented.');
     }
 
@@ -51,6 +47,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
             await promisify(this.socket.unsubscribe, this.socket)(Array.from(this.replys.values()));
             this.replys.clear();
         }
+        this.packetBuffer.clear();
     }
 }
 

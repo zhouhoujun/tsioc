@@ -6,7 +6,7 @@ import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointsModule } from '@tsdi/endpoints';
-import { RedirectResult, Bodyparser, Content, Json, AssetTransportModule } from '@tsdi/endpoints/assets';
+import { AssetModule, InterceptorsModule, RedirectResult, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
@@ -98,7 +98,8 @@ const ipcpath = path.join(__dirname, 'myipctmp')
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
+        AssetModule,
+        InterceptorsModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({

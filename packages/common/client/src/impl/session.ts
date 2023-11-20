@@ -119,7 +119,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
     }
 
     protected abstract writeHeader(req: TransportRequest): Promise<void>;
-    protected abstract pipe(ata: IReadableStream, req: TransportRequest): Promise<void>;
+    protected abstract pipe(data: IReadableStream, req: TransportRequest): Promise<void>;
     /**
      * write packet buffer.
      * @param data 
@@ -185,7 +185,7 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         readonly streamAdapter: StreamAdapter,
         readonly encoder: RequestEncoder,
         readonly decoder: ResponseDecoder,
-        private packetBuffer: PacketBuffer,
+        protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();
     }
