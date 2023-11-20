@@ -99,7 +99,7 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
                     const hidx = raw.indexOf(session.headerDelimiter!);
                     if (hidx >= 0) {
                         try {
-                            packet = session.parseHeader(raw.subarray(0, hidx)) as ResponseCachePacket;
+                            packet = session.deserialize(raw.subarray(0, hidx)) as ResponseCachePacket;
                         } catch (err) {
                             subscriber.error(err);
                         }

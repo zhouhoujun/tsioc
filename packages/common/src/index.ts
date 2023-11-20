@@ -18,6 +18,7 @@ export * from './MimeAdapter';
 
 export * from './stream';
 export * from './socket';
+export * from './subscriber';
 export * from './StreamAdapter';
 
 // export * from './codings';

@@ -1,6 +1,6 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
-import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
+import { Observable, Subscriber, defer, map, mergeMap, of, range } from 'rxjs';
 import { EmptyRequestEncoder, RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder, StreamRequestEncoder } from './codings';
 import { ClientTransportSession } from './session';
 
@@ -28,11 +28,15 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
                 )
             }
             if (ctx.session.options.maxSize) {
-                return new Observable(subsr => {
+                return new Observable((subsr: Subscriber<RequestContext>) => {
                     ctx.session.streamAdapter.pipeTo(ctx.req.body, ctx.session.streamAdapter.createWritable({
                         write(chunk, encoding, callback) {
                             ctx.raw = chunk;
-                            subsr.next(ctx.req);
+                            subsr.next(ctx);
+                            // subsr.next({
+                            //     ...ctx,
+                            //     raw: chunk
+                            // });
                             callback();
                         }
                     })).then(() => {
@@ -43,7 +47,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
                     })
                     return () => subsr.unsubscribe()
                 }).pipe(
-                    mergeMap(chunk => next.handle(ctx))
+                    mergeMap(ctx => next.handle(ctx))
                 )
             }
             return this.stream.handle(ctx);
@@ -74,7 +78,7 @@ export class BufferifyRequestEncodeBackend implements RequestBackend<RequestCont
             }
 
             if (!session.existHeader && session.headerDelimiter) {
-                rawBody = Buffer.concat([session.generateHeader(ctx.req), session.headerDelimiter, rawBody]);
+                rawBody = Buffer.concat([session.serialize(session.generatePacket(ctx.req, true)), session.headerDelimiter, rawBody]);
             }
 
             return of(rawBody)

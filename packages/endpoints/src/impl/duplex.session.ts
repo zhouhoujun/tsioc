@@ -1,5 +1,5 @@
-import { Injectable, Injector, isPlainObject, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, Outgoing, Packet, PacketBuffer, ResponsePacket, StreamAdapter, TransportOpts } from '@tsdi/common';
+import { Injectable, Injector, promisify } from '@tsdi/ioc';
+import { IDuplexStream, IReadableStream, Packet, PacketBuffer, StreamAdapter, TransportOpts } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
@@ -10,7 +10,7 @@ import { TransportContext } from '../TransportContext';
 export class ServerDuplexTransportSession extends ServerEventTransportSession<IDuplexStream> {
 
     protected writeHeader(ctx: TransportContext): Promise<void> {
-        const headBuff = this.generateHeader(ctx);
+        const headBuff = this.serialize(ctx);
         return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
     }
 
@@ -20,27 +20,6 @@ export class ServerDuplexTransportSession extends ServerEventTransportSession<ID
 
     protected override write(data: Buffer, packet: Packet): Promise<void> {
         return promisify<Buffer, void>(this.socket.write, this.socket)(data);
-    }
-
-    generateHeader(ctx: TransportContext): Buffer {
-        if (isPlainObject(ctx.response)) {
-            const { payload, ...head } = ctx.response;
-            return Buffer.from(JSON.stringify(head));
-        } else {
-            const res = ctx.response as Outgoing;
-            const head = {
-                id: res.id,
-                status: res.statusCode,
-                statusText: res.statusMessage,
-                headers: res.getHeaders?.() ?? res.headers
-            } as ResponsePacket;
-
-            return Buffer.from(JSON.stringify(head));
-        }
-    }
-
-    parseHeader(msg: Buffer | TransportContext): Packet<any> {
-        throw new Error('Method not implemented.');
     }
 
     protected getTopic(msg: string | Buffer | Uint8Array): string {

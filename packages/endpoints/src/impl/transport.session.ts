@@ -1,8 +1,8 @@
-import { Injector, isNil } from '@tsdi/ioc';
+import { Injector, isNil, isPlainObject, lang } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException,
-    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, TransportSession, ev
+    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, TransportSession, ev, XSSI_PREFIX, InvalidJsonException, Outgoing, ResponsePacket
 } from '@tsdi/common';
 import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
@@ -46,8 +46,41 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
             )
     }
 
-    generatePacket(ctx: TransportContext): Packet<any> {
-        return {};
+    serialize(packet: Packet): Buffer {
+        return Buffer.from(JSON.stringify(packet));
+    }
+
+    deserialize(raw: Buffer): Packet<any> {
+        let src = new TextDecoder().decode(raw);
+        try {
+            src = src.replace(XSSI_PREFIX, '');
+            return src !== '' ? JSON.parse(src) : null
+        } catch (err) {
+            throw new InvalidJsonException(err, src)
+        }
+    }
+
+    generatePacket(ctx: TransportContext, noPayload?: boolean): Packet {
+        if (isPlainObject(ctx.response)) {
+            return noPayload ? lang.omit(ctx.response, 'payload') : ctx.response
+        } else {
+            const res = ctx.response as Outgoing;
+            const pkg = {
+                id: res.id,
+                status: res.statusCode,
+                statusText: res.statusMessage,
+                headers: res.getHeaders?.() ?? res.headers
+            } as ResponsePacket;
+            this.setPacketPattern(pkg, ctx);
+            if (!noPayload) {
+                pkg.payload = ctx.body;
+            }
+            return pkg;
+        }
+    }
+
+    protected setPacketPattern(pkg: ResponsePacket, ctx: TransportContext) {
+
     }
 
     protected encode(ctx: TransportContext): Observable<OutgoingType> {

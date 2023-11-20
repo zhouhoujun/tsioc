@@ -287,3 +287,4 @@ export interface IncomingPacket<T = any> extends Packet<T> {
     res?: Outgoing;
     headers?: IncomingHeaders;
 }
+

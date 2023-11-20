@@ -79,7 +79,7 @@ export class BufferifyOutgoingEncodeBackend implements OutgoingBackend<Transport
             }
 
             if (!ctx.session.existHeader && ctx.session.headerDelimiter && !ctx.sent) {
-                rawBody = Buffer.concat([ctx.session.generateHeader(ctx), ctx.session.headerDelimiter, rawBody]);
+                rawBody = Buffer.concat([ctx.session.serialize(ctx.session.generatePacket(ctx, true)), ctx.session.headerDelimiter, rawBody]);
             }
 
             return of(rawBody)

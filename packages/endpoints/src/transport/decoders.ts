@@ -83,7 +83,7 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
                     const hidx = raw.indexOf(ctx.session.headerDelimiter!);
                     if (hidx >= 0) {
                         try {
-                            packet = ctx.session.parseHeader(raw.subarray(0, hidx)) as CachePacket;
+                            packet = ctx.session.deserialize(raw.subarray(0, hidx)) as CachePacket;
                         } catch (err) {
                             subscriber.error(err);
                         }
