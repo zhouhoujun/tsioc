@@ -1,16 +1,13 @@
 import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
-import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend, StreamOutgoingEncoder } from './codings';
+import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend } from './codings';
 import { TransportContext } from '../TransportContext';
 
 
 @Injectable()
 export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType> {
 
-    constructor(
-        // private stream: StreamOutgoingEncoder
-    ) { }
 
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
 
@@ -44,7 +41,6 @@ export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<
                     mergeMap(chunk => next.handle(ctx))
                 )
             }
-            // return this.stream.handle(ctx);
         }
 
         return next.handle(ctx);
@@ -54,7 +50,7 @@ export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<
 
 
 @Injectable()
-export class BufferifyOutgoingEncodeBackend implements OutgoingBackend<TransportContext, Buffer> {
+export class TransportOutgoingEncodeBackend implements OutgoingBackend<TransportContext, Buffer> {
 
     handle(ctx: TransportContext): Observable<Buffer> {
         if (isPlainObject(ctx.response)) {

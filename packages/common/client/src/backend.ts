@@ -5,7 +5,7 @@ import {
     TransportHeaderResponse, TransportRequest, TransportResponse
 } from '@tsdi/common';
 import { Observable, take } from 'rxjs';
-import { ClientTransportSession } from './session';
+import { ClientTransportSession } from './transport/session';
 
 
 

@@ -5,13 +5,13 @@ import { TransportBackend } from './backend';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
-import { ClientTransportSessionFactory } from './session';
-import { InterceptingResponseDecoder, InterceptingReuqestEncoder, REQUEST_ENCODER_INTERCEPTORS, RESPONSE_DECODER_INTERCEPTORS, RequestBackend, RequestEncoder, ResponseBackend, ResponseDecoder } from './codings';
+import { ClientTransportSessionFactory } from './transport/session';
+import { InterceptingResponseDecoder, InterceptingReuqestEncoder, REQUEST_ENCODER_INTERCEPTORS, RESPONSE_DECODER_INTERCEPTORS, RequestBackend, RequestEncoder, ResponseBackend, ResponseDecoder } from './transport/codings';
 import {
     BufferResponseDecordeInterceptor, CatchErrorResponseDecordeInterceptor, CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor,
-    ErrorResponseDecordeInterceptor, PayloadStreamResponseDecordeInterceptor, RedirectResponseDecordeInterceptor, StreamResponseDecordeInterceptor, TypeResponseBackend
-} from './decoders';
-import { BufferifyRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor } from './encoders';
+    ErrorResponseDecordeInterceptor, PayloadStreamResponseDecordeInterceptor, RedirectResponseDecordeInterceptor, StreamResponseDecordeInterceptor, TransportResponseDecordeBackend
+} from './transport/decoders';
+import { TransportRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor } from './transport/encoders';
 import { DefaultRedirector } from './redirector';
 import { ClientDuplexTransportSessionFactory } from './impl/duplex.session';
 import { ClientTopicTransportSessionFactory } from './impl/topic.session';
@@ -85,8 +85,8 @@ export interface ClientTokenOpts {
         { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true },
         { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: SubpacketRequestEncodeInterceptor, multi: true },
 
-        BufferifyRequestEncodeBackend,
-        { provide: RequestBackend, useExisting: BufferifyRequestEncodeBackend },
+        TransportRequestEncodeBackend,
+        { provide: RequestBackend, useExisting: TransportRequestEncodeBackend },
 
         InterceptingReuqestEncoder,
         { provide: RequestEncoder, useExisting: InterceptingReuqestEncoder },
@@ -108,8 +108,8 @@ export interface ClientTokenOpts {
         { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: RedirectResponseDecordeInterceptor, multi: true },
         { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: ErrorResponseDecordeInterceptor, multi: true },
         { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: CompressResponseDecordeInterceptor, multi: true },
-        TypeResponseBackend,
-        { provide: ResponseBackend, useExisting: TypeResponseBackend },
+        TransportResponseDecordeBackend,
+        { provide: ResponseBackend, useExisting: TransportResponseDecordeBackend },
 
         InterceptingResponseDecoder,
         { provide: ResponseDecoder, useClass: InterceptingResponseDecoder },

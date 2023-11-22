@@ -141,7 +141,7 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
 }
 
 @Injectable()
-export class TransportIncomingBackend<T extends IncomingContext = IncomingContext> implements IncomingBackend<T> {
+export class TransportIncomingDecordeBackend<T extends IncomingContext = IncomingContext> implements IncomingBackend<T> {
 
 
     handle(ctx: T): Observable<TransportContext> {

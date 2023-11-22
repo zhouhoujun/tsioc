@@ -324,7 +324,7 @@ export class CompressResponseDecordeInterceptor<T extends TransportEvent = Trans
 
 
 @Injectable()
-export class TypeResponseBackend<T extends TransportEvent = TransportEvent> implements ResponseBackend<T> {
+export class TransportResponseDecordeBackend<T extends TransportEvent = TransportEvent> implements ResponseBackend<T> {
 
     constructor(
         @Optional() private mimeTypes: MimeTypes,

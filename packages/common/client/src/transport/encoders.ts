@@ -1,7 +1,7 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, Subscriber, defer, map, mergeMap, of, range } from 'rxjs';
-import { EmptyRequestEncoder, RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder, StreamRequestEncoder } from './codings';
+import { RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder } from './codings';
 import { ClientTransportSession } from './session';
 
 
@@ -9,27 +9,23 @@ import { ClientTransportSession } from './session';
 @Injectable()
 export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<RequestContext, OutgoingType> {
 
-    constructor(
-        private empty: EmptyRequestEncoder,
-        private stream: StreamRequestEncoder
-    ) { }
-
     intercept(ctx: RequestContext, next: RequestEncoder<RequestContext>): Observable<OutgoingType> {
 
-        if (null == ctx.req.body) {
-            return this.empty.handle(ctx);
-        } else if (ctx.session.streamAdapter.isReadable(ctx.req.body)) {
-            if (!ctx.session.existHeader) {
+        if (ctx.req.body == null) return next.handle(ctx);
+
+        const { session, req } = ctx;
+        if (session.streamAdapter.isReadable(req.body)) {
+            if (!session.existHeader) {
                 return defer(async () => {
-                    ctx.req.body = new TextDecoder().decode(await toBuffer(ctx.req.body));
+                    req.body = new TextDecoder().decode(await toBuffer(req.body));
                     return ctx;
                 }).pipe(
                     mergeMap(ctx => next.handle(ctx))
                 )
             }
-            if (ctx.session.options.maxSize) {
+            if (session.options.maxSize) {
                 return new Observable((subsr: Subscriber<RequestContext>) => {
-                    ctx.session.streamAdapter.pipeTo(ctx.req.body, ctx.session.streamAdapter.createWritable({
+                    session.streamAdapter.pipeTo(req.body, session.streamAdapter.createWritable({
                         write(chunk, encoding, callback) {
                             ctx.raw = chunk;
                             subsr.next(ctx);
@@ -50,7 +46,6 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
                     mergeMap(ctx => next.handle(ctx))
                 )
             }
-            return this.stream.handle(ctx);
         }
 
         return next.handle(ctx);
@@ -58,7 +53,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
 }
 
 @Injectable()
-export class BufferifyRequestEncodeBackend implements RequestBackend<RequestContext, Buffer> {
+export class TransportRequestEncodeBackend implements RequestBackend<RequestContext, Buffer> {
     handle(ctx: RequestContext): Observable<Buffer> {
         const session = ctx.req.context.get(ClientTransportSession);
         if (!session.existHeader) {
@@ -95,7 +90,7 @@ export class SubpacketRequestEncodeInterceptor implements RequestEncodeIntercept
         return next.handle(ctx)
             .pipe(
                 mergeMap(buf => {
-                    const session = ctx.req.context.get(ClientTransportSession);
+                    const session = ctx.session;
                     if (!buf) {
                         buf = Buffer.alloc(0);
                     }

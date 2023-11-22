@@ -98,7 +98,7 @@ export const INCOMING_DECODER_INTERCEPTORS = tokenId<IncomingDecodeInterceptor[]
 
 @Injectable()
 export class InterceptingIncomingDecoder<T extends IncomingContext = IncomingContext> extends InterceptingHandler<T, TransportContext> implements IncomingDecoder<T> {
-    constructor(backend: IncomingDecoder, injector: Injector) {
+    constructor(backend: IncomingBackend<T>, injector: Injector) {
         super(backend, injector, INCOMING_DECODER_INTERCEPTORS)
     }
 }

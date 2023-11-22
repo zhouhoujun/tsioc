@@ -4,8 +4,8 @@ import { TransportTypedRespond } from './typed.respond';
 import { DefaultRequestHandler } from './handler';
 import { RequestHandler } from '../RequestHandler';
 import { OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder, OutgoingBackend, OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS } from './codings';
-import { BufferifyOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor } from './encoders';
-import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeInterceptor, StreamIncomingDecordeInterceptor, TransportIncomingBackend } from './decoders';
+import { TransportOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor } from './encoders';
+import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeInterceptor, StreamIncomingDecordeInterceptor, TransportIncomingDecordeBackend } from './decoders';
 
 
 @Module({
@@ -18,8 +18,8 @@ import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeIntercept
         { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingSubpacketBufferEncodeInterceptor, multi: true },
         
 
-        BufferifyOutgoingEncodeBackend,
-        { provide: OutgoingBackend, useExisting: BufferifyOutgoingEncodeBackend },
+        TransportOutgoingEncodeBackend,
+        { provide: OutgoingBackend, useExisting: TransportOutgoingEncodeBackend },
         InterceptingOutgoingEncoder,
         { provide: OutgoingEncoder, useExisting: InterceptingOutgoingEncoder },
 
@@ -33,8 +33,8 @@ import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeIntercept
         
 
 
-        TransportIncomingBackend,
-        { provide: IncomingBackend, useExisting: TransportIncomingBackend },
+        TransportIncomingDecordeBackend,
+        { provide: IncomingBackend, useExisting: TransportIncomingDecordeBackend },
         InterceptingIncomingDecoder,
         { provide: IncomingDecoder, useExisting: InterceptingIncomingDecoder },
 

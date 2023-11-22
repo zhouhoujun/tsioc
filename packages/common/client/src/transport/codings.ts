@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { IReadableStream, OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { ClientTransportSession } from './session';
 
@@ -45,16 +45,6 @@ export abstract class RequestBackend<T extends RequestContext = RequestContext, 
     abstract handle(ctx: T): Observable<TOutput>;
 }
 
-@Abstract()
-export abstract class EmptyRequestEncoder<T extends RequestContext = RequestContext> implements RequestEncoder<T, null> {
-    abstract handle(ctx: T): Observable<null>;
-}
-
-@Abstract()
-export abstract class StreamRequestEncoder<T extends RequestContext = RequestContext> implements RequestEncoder<T, IReadableStream> {
-    abstract handle(ctx: T): Observable<IReadableStream>;
-}
-
 
 
 /**
@@ -82,7 +72,7 @@ export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>(
 
 @Injectable()
 export class InterceptingReuqestEncoder<T extends RequestContext = RequestContext> extends InterceptingHandler<T> implements RequestEncoder<T> {
-    constructor(backend: RequestEncoder, injector: Injector) {
+    constructor(backend: RequestBackend<T>, injector: Injector) {
         super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
     }
 
@@ -132,7 +122,7 @@ export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor[]
 
 @Injectable()
 export class InterceptingResponseDecoder<T extends TransportEvent = TransportEvent> extends InterceptingHandler<ResponseContext, T> implements ResponseDecoder<T> {
-    constructor(backend: ResponseDecoder<T>, injector: Injector) {
+    constructor(backend: ResponseBackend<T>, injector: Injector) {
         super(backend, injector, RESPONSE_DECODER_INTERCEPTORS)
     }
 }

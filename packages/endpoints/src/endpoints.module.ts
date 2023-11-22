@@ -29,9 +29,9 @@ import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
 @Module({
     imports: [
         TransformModule,
+        TransportModule,
         MicroServRouterModule,
-        RouterModule,
-        TransportModule
+        RouterModule
     ],
     providers: [
         DuplexTransportSessionFactory,
