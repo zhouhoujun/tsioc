@@ -3,7 +3,7 @@ import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
     TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, TransportSession, hdr,
-    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException
+    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, BufferTransportSession
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
@@ -173,11 +173,12 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
 }
 
 
-export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
-
+export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> implements BufferTransportSession<TSocket> {
 
     private allocator?: NumberAllocator;
     private last?: number;
+    delimiter: Buffer;
+    headDelimiter?: Buffer | undefined;
 
     constructor(
         readonly injector: Injector,
@@ -188,6 +189,11 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();
+
+        this.delimiter = Buffer.from(options.delimiter || '#');
+        if(options.headDelimiter) {
+            this.headDelimiter = Buffer.from(options.headDelimiter);
+        }
     }
 
 

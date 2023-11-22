@@ -72,16 +72,15 @@ export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorRes
 /**
  * transport session.
  */
-@Abstract()
 export abstract class TransportSession<TSocket = any, TMessage = any>  {
     /**
      * packet buffer delimiter.
      */
-    delimiter?: Buffer;
+    abstract readonly delimiter?: Buffer;
     /**
      * packet header delimiter.
      */
-    headerDelimiter?: Buffer;
+    abstract readonly headDelimiter?: Buffer;
     /**
      * exist header in Origin message or not.
      */
@@ -130,6 +129,15 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
 
 }
 
+/**
+ * transport session.
+ */
+export abstract class BufferTransportSession<TSocket = any, TMessage = any> extends TransportSession<TSocket, TMessage> {
+    /**
+     * packet buffer delimiter.
+     */
+    abstract readonly delimiter: Buffer;
+}
 
 export interface TopicBuffer {
     topic: string;
@@ -158,7 +166,7 @@ export class PacketBuffer {
      * @param topic 
      * @param msg 
      */
-    concat(session: TransportSession, topic: string, msg: string | Buffer | Uint8Array): Observable<Buffer> {
+    concat(session: BufferTransportSession, topic: string, msg: string | Buffer | Uint8Array): Observable<Buffer> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
             let chl = this.topics.get(topic);
             if (!chl) {
@@ -178,7 +186,7 @@ export class PacketBuffer {
     }
 
 
-    protected handleData(session: TransportSession, chl: TopicBuffer, dataRaw: string | Buffer | Uint8Array, subscriber: Subscriber<Buffer>) {
+    protected handleData(session: BufferTransportSession, chl: TopicBuffer, dataRaw: string | Buffer | Uint8Array, subscriber: Subscriber<Buffer>) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -188,7 +196,7 @@ export class PacketBuffer {
         chl.length += Buffer.byteLength(data);
 
         if (chl.contentLength == null) {
-            const i = data.indexOf(session.delimiter!);
+            const i = data.indexOf(session.delimiter);
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
                 const idx = chl.length - Buffer.byteLength(data) + i;

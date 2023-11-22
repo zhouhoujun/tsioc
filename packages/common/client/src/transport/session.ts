@@ -8,17 +8,17 @@ import { Observable } from 'rxjs';
  * transport session.
  */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket, TransportRequest>  {
+export abstract class ClientTransportSession<TSocket = any, TRequest extends TransportRequest = TransportRequest> extends TransportSession<TSocket, TRequest>  {
     /**
      * send request message.
      * @param packet 
      */
-    abstract send(req: TransportRequest): Observable<any>;
+    abstract send(req: TRequest): Observable<any>;
     /**
      * request.
      * @param packet 
      */
-    abstract request(req: TransportRequest): Observable<TransportEvent>;
+    abstract request(req: TRequest): Observable<TransportEvent>;
 
 }
 

@@ -72,8 +72,8 @@ export class TransportOutgoingEncodeBackend implements OutgoingBackend<Transport
                 }
             }
 
-            if (!ctx.session.existHeader && ctx.session.headerDelimiter && !ctx.sent) {
-                rawBody = Buffer.concat([ctx.session.serialize(ctx.session.generatePacket(ctx, true)), ctx.session.headerDelimiter, rawBody]);
+            if (!ctx.session.existHeader && ctx.session.headDelimiter && !ctx.sent) {
+                rawBody = Buffer.concat([ctx.session.serialize(ctx.session.generatePacket(ctx, true)), ctx.session.headDelimiter, rawBody]);
             }
 
             return of(rawBody)

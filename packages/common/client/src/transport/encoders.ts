@@ -72,8 +72,8 @@ export class TransportRequestEncodeBackend implements RequestBackend<RequestCont
                 }
             }
 
-            if (!session.existHeader && session.headerDelimiter) {
-                rawBody = Buffer.concat([session.serialize(session.generatePacket(ctx.req, true)), session.headerDelimiter, rawBody]);
+            if (!session.existHeader && session.headDelimiter) {
+                rawBody = Buffer.concat([session.serialize(session.generatePacket(ctx.req, true)), session.headDelimiter, rawBody]);
             }
 
             return of(rawBody)

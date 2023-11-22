@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
-import { MimeAdapter, MimeDb, MimeTypes } from '@tsdi/common';
-import { AssetContextFactory } from '@tsdi/endpoints';
+import { MimeAdapter, MimeDb, MimeTypes, StatusVaildator } from '@tsdi/common';
+import { TransportContextFactory } from '@tsdi/endpoints';
 import { HttpStatusVaildator } from './impl/status';
 import { AssetContextFactoryImpl } from './impl/context';
 import { BodyContentInterceptor } from './interceptors/body';
@@ -20,8 +20,9 @@ import { TransportNegotiator } from './impl/negotiator';
 
         BodyContentInterceptor,
         HttpStatusVaildator,
+        { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true },
         AssetContextFactoryImpl,
-        { provide: AssetContextFactory, useExisting: AssetContextFactoryImpl, asDefault: true },
+        { provide: TransportContextFactory, useExisting: AssetContextFactoryImpl }
     ]
 })
 export class AssetModule {

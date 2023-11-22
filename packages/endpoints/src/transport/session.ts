@@ -23,17 +23,17 @@ export interface IncomingContext {
  * transport session.
  */
 @Abstract()
-export abstract class ServerTransportSession<TSocket = any> extends TransportSession<TSocket, TransportContext> {
+export abstract class ServerTransportSession<TSocket = any, TContext extends TransportContext = TransportContext> extends TransportSession<TSocket, TContext> {
     /**
      * send.
      * @param packet 
      */
-    abstract send(ctx: TransportContext): Observable<any>;
+    abstract send(ctx: TContext): Observable<any>;
 
     /**
      * receive
      */
-    abstract receive(options: ServerOpts): Observable<TransportContext>;
+    abstract receive(options: ServerOpts): Observable<TContext>;
 
 }
 

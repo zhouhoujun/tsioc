@@ -59,28 +59,20 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
             }
 
             let raw = ctx.raw;
-            let packet: CachePacket | undefined;
             let id: string | number;
-            if (!ctx.packet) {
+            if (ctx.packet?.id) {
+                id = ctx.packet.id;
+            } else {
                 id = raw.readInt16BE(0);
                 raw = raw.subarray(2);
-                packet = this.packs.get(id);
-            } else {
-                if (ctx.packet.id) {
-                    id = ctx.packet.id;
-                } else {
-                    id = raw.readInt16BE(0);
-                    raw = raw.subarray(2);
-                }
-                packet = this.packs.get(id);
-
             }
+            let packet = this.packs.get(id);
 
             if (!packet) {
                 if (ctx.packet) {
                     packet = ctx.packet as CachePacket;
-                } else {
-                    const hidx = raw.indexOf(ctx.session.headerDelimiter!);
+                } else if (ctx.session.headDelimiter) {
+                    const hidx = raw.indexOf(ctx.session.headDelimiter);
                     if (hidx >= 0) {
                         try {
                             packet = ctx.session.deserialize(raw.subarray(0, hidx)) as CachePacket;
@@ -89,7 +81,10 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
                         }
                         raw = raw.subarray(hidx + 1);
                     }
+                } else {
+                    packet = ctx.session.deserialize(raw) as CachePacket;
                 }
+
                 if (packet) {
                     const len = ~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0');
                     if (!len) {

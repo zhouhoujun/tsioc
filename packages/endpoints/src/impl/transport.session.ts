@@ -1,8 +1,8 @@
 import { Injector, isNil, isPlainObject, lang } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException,
-    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, TransportSession, ev, XSSI_PREFIX, InvalidJsonException, Outgoing, ResponsePacket
+    IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException, BufferTransportSession,
+    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing, ResponsePacket
 } from '@tsdi/common';
 import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
@@ -131,8 +131,10 @@ export interface TopicBuffer {
 
 
 
-export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> implements TransportSession<TSocket> {
+export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> implements BufferTransportSession<TSocket> {
 
+    delimiter: Buffer;
+    headDelimiter?: Buffer | undefined;
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
@@ -142,6 +144,11 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
         protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();
+        
+        this.delimiter = Buffer.from(options.delimiter || '#');
+        if(options.headDelimiter) {
+            this.headDelimiter = Buffer.from(options.headDelimiter);
+        }
     }
 
     protected override createContext(data: Buffer | IReadableStream, msg: TMsg, options: ServerOpts): IncomingContext {

@@ -39,7 +39,7 @@ import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
         SetupServices,
 
         TransportContextFactoryImpl,
-        { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },
+        { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl, asDefault: true },
 
         TransportTypedRespond,
         { provide: TypedRespond, useExisting: TransportTypedRespond },

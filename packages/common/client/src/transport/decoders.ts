@@ -75,28 +75,20 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
             }
 
             let raw = ctx.raw;
-            let packet: ResponseCachePacket | undefined;
             let id: string | number;
-            if (!ctx.packet) {
+            if (ctx.packet?.id) {
+                id = ctx.packet.id;
+            } else {
                 id = raw.readInt16BE(0);
                 raw = raw.subarray(2);
-                packet = this.packs.get(id);
-            } else {
-                if (ctx.packet.id) {
-                    id = ctx.packet.id;
-                } else {
-                    id = raw.readInt16BE(0);
-                    raw = raw.subarray(2);
-                }
-                packet = this.packs.get(id);
-
             }
+            let packet = this.packs.get(id);
 
             if (!packet) {
                 if (ctx.packet) {
                     packet = ctx.packet as ResponseCachePacket;
-                } else {
-                    const hidx = raw.indexOf(session.headerDelimiter!);
+                } else if (session.headDelimiter) {
+                    const hidx = raw.indexOf(session.headDelimiter);
                     if (hidx >= 0) {
                         try {
                             packet = session.deserialize(raw.subarray(0, hidx)) as ResponseCachePacket;
@@ -105,7 +97,10 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
                         }
                         raw = raw.subarray(hidx + 1);
                     }
+                } else {
+                    packet = session.deserialize(raw) as ResponseCachePacket;
                 }
+
                 if (packet) {
                     const len = ~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0');
                     if (!len) {

@@ -413,18 +413,3 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
     abstract redirect(url: string, alt?: string): void;
 
 }
-
-/**
- * Asset context factory.
- */
-@Abstract()
-export abstract class AssetContextFactory {
-    /**
-     * create context factory.
-     * @param injector 
-     * @param session 
-     * @param incoming 
-     * @param options 
-     */
-    abstract create(injector: Injector, session: TransportSession, incoming: IncomingPacket, options: ServerOpts): AssetContext;
-}

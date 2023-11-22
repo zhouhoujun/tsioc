@@ -1,7 +1,7 @@
 import { Injectable, Injector, InvocationContext, isDefined, isNil, promisify } from '@tsdi/ioc';
 import {
-    HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, 
-    Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportRequest, XSSI_PREFIX, ev, hdr, statusMessage
+    HttpStatusCode, IReadableStream, InvalidJsonException,
+    Packet, ResponsePacket, StreamAdapter, TransportOpts, XSSI_PREFIX, ev, hdr, statusMessage
 } from '@tsdi/common';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession, ClientTransportSessionFactory, RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
@@ -30,7 +30,7 @@ const {
 const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
-export class HttpClientTransportSession implements ClientTransportSession<ClientHttp2Session | null> {
+export class HttpClientTransportSession implements ClientTransportSession<ClientHttp2Session | null, HttpRequest> {
 
     readonly options: TransportOpts;
     constructor(
@@ -45,10 +45,12 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
 
     existHeader = true;
 
-    generatePacket(req: TransportRequest, noPayload?: boolean): Packet<any> {
-        const pkg = {
-            url: req.urlWithParams
-        } as RequestPacket;
+    generatePacket(req: HttpRequest, noPayload?: boolean): Packet<any> {
+        const pkg: any = {
+            url: req.urlWithParams,
+            headers: req.headers.getHeaders()
+        };
+
         if (req.method) {
             pkg.method = req.method;
         }
@@ -58,6 +60,7 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
         if (!noPayload && isDefined(req.body)) {
             pkg.payload = req.body;
         }
+        if (!pkg.headers[hdr.CONTENT_TYPE]) pkg.headers[hdr.CONTENT_TYPE] = req.detectContentTypeHeader();
 
         return pkg;
     }
@@ -171,10 +174,10 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
                     // const ctx = new Context(this.injector, this, stream, headPkg);
                     return this.decoder.handle({ packet: headPkg, req, session: this })
                         .pipe(
-                            map(res=> {
+                            map(res => {
                                 return res as HttpEvent
                             }),
-                            finalize(()=> {
+                            finalize(() => {
                                 if (stream && req.observe !== 'observe') stream.destroy?.();
                             })
                         );
@@ -275,8 +278,8 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
             }
         }).pipe(
             mergeMap(msg => {
-                const packet = {...msg } ;
-                return this.decoder.handle({session: this, packet, options})
+                const packet = { ...msg };
+                return this.decoder.handle({ session: this, packet, options })
             }),
             share()
         );
