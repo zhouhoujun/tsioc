@@ -1,6 +1,6 @@
 import { Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { InterceptingHandler, Interceptor, InterceptorHandler } from '@tsdi/core';
+import { InterceptingHandler, Interceptor } from '@tsdi/core';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';

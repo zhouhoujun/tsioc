@@ -25,7 +25,7 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
             const restParams: any = {};
             const routes = this.route.split('/').map(r => r.trim());
             const restParamNames = routes.filter(d => restParms.test(d));
-            const routeUrls = normalize(ctx.originalUrl ?? ctx.url, this.prefix).split('/');
+            const routeUrls = normalize(ctx.originalUrl || ctx.url, this.prefix).split('/');
             let has = false;
             restParamNames.forEach(pname => {
                 const val = routeUrls[routes.indexOf(pname)];

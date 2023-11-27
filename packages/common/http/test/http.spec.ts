@@ -13,7 +13,7 @@ import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { HttpClient, HttpClientModule } from '..';
-import { AssetTransportModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
+import { AssetModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
 
 
 @RouteMapping('/device')
@@ -198,7 +198,7 @@ class DeviceAModule {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
@@ -357,7 +357,7 @@ describe('HttpClient', () => {
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
-    it('route with request param pipe', async () => {
+    it('route with request query param pipe', async () => {
         const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
@@ -386,8 +386,13 @@ describe('HttpClient', () => {
         // expect(r.error).toBeInstanceOf(ArgumentError)
     })
 
-    it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/30/used', { observe: 'response', params: { age: '20' } }));
+    it('route with request path param pipe', async () => {
+        const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/30/used', { observe: 'response', params: { age: '20' } }).pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            })));
+
         expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);

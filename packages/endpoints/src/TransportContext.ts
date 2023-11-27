@@ -145,7 +145,7 @@ export abstract class TransportContextFactory {
      * @param incoming 
      * @param options 
      */
-    abstract create<TSocket>(injector: Injector, session: ServerTransportSession, incoming: IncomingPacket, options?: ServerOpts): TransportContext<TSocket>
+    abstract create(injector: Injector, session: ServerTransportSession, incoming: IncomingPacket, options?: ServerOpts): TransportContext;
 }
 
 

@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsModule } from '@tsdi/ws';
@@ -28,7 +28,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         WsModule,
         ClientModule.register([

@@ -1,8 +1,9 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common';
+import { LOCALHOST, StatusVaildator } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, StatusVaildator, TransportContextFactory } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, TransportContextFactory } from '@tsdi/endpoints';
+import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -13,7 +14,6 @@ import { HttpEndpoint } from './server/endpoint';
 import { HttpServer } from './server/server';
 import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
 import { HttpAssetContextFactory } from './server/context';
-import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -84,8 +84,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                         FinalizeFilter
                     ],
                     providers: [
-                        { provide: TransportContextFactory, useExisting: HttpAssetContextFactory },
-                        { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
+                        { provide: TransportContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,
@@ -120,8 +119,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                         FinalizeFilter
                     ],
                     providers: [
-                        { provide: TransportContextFactory, useExisting: HttpAssetContextFactory },
-                        { provide: AssetContextFactory, useExisting: HttpAssetContextFactory }
+                        { provide: TransportContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,
