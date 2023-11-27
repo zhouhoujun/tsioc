@@ -3,7 +3,6 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { Handle, Payload, RequestPath, Subscribe, EndpointsModule } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { NATS_SERV_INTERCEPTORS, NatsClient, NatsModule } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -62,7 +61,6 @@ export class NatsService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         NatsModule,
         ClientModule.register({

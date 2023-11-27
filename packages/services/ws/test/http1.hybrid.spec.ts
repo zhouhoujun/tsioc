@@ -10,8 +10,7 @@ import { Http, HttpModule, HttpServer } from '@tsdi/http';
 import { WsClient, WsModule, WsServer } from '../src';
 import { DeviceController } from './controller';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
 
@@ -21,27 +20,24 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        JsonTransportModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         WsModule,
         ClientModule.register([
-            { transport: 'ws', clientOpts: { strategy: 'json' } },
-            { transport: 'http', clientOpts: { strategy: 'asset' } }
+            { transport: 'ws' },
+            { transport: 'http' }
         ]),
         EndpointsModule.register([
             {
                 microservice: true,
                 transport: 'ws',
                 serverOpts: {
-                    heybird: true,
-                    strategy: 'json'
+                    heybird: true
                 }
             },
             {
                 transport: 'http',
                 serverOpts: {
-                    strategy: 'asset',
                     interceptors: [
                         Content,
                         Json,

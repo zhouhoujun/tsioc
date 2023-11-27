@@ -4,7 +4,6 @@ import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { Handle, EndpointsModule, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -61,7 +60,6 @@ export class WsService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         WsModule,
         ClientModule.register([

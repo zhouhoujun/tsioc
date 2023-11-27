@@ -10,8 +10,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { NatsClient, NatsModule, NatsServer } from '../src';
 import { DeviceController } from './controller';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
 
@@ -21,26 +20,21 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
-        JsonTransportModule,
+        AssetModule,
         HttpModule,
         NatsModule,
         ClientModule.register([
-            { transport: 'nats', clientOpts: { strategy: 'json' } },
-            { transport: 'http', clientOpts: { strategy: 'asset' } }
+            { transport: 'nats' },
+            { transport: 'http' }
         ]),
         EndpointsModule.register([
             {
                 microservice: true,
-                transport: 'nats',
-                serverOpts: {
-                    strategy: 'json'
-                }
+                transport: 'nats'
             },
             {
                 transport: 'http',
                 serverOpts: {
-                    strategy: 'asset',
                     interceptors: [
                         Content,
                         Json,

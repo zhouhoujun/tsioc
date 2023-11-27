@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { TcpClient, TcpModule, TcpServer, } from '@tsdi/tcp';
 import expect = require('expect');
@@ -20,7 +20,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
+        AssetModule,
         ServerEndpointModule,
         TcpModule,
         KafkaModule,
