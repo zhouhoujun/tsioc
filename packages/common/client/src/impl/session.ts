@@ -2,7 +2,7 @@ import { Execption, Injector, isDefined, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
-    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, TransportSession, hdr,
+    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, hdr,
     StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, BufferTransportSession
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
@@ -33,7 +33,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
                 mergeMap(data => {
                     if (isNil(data)) return this.writeHeader(req);
                     if (this.streamAdapter.isReadable(data)) return this.pipe(data, req);
-                    return this.write(data, req);
+                    return this.writeMessage(data, req);
                 })
             ))
     }
@@ -120,12 +120,13 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
 
     protected abstract writeHeader(req: TransportRequest): Promise<void>;
     protected abstract pipe(data: IReadableStream, req: TransportRequest): Promise<void>;
+    
     /**
-     * write packet buffer.
+     * write encode request message.
      * @param data 
      * @param packet 
      */
-    abstract write(data: Buffer, req: TransportRequest): Promise<void>;
+    abstract writeMessage(data: Buffer, req: TransportRequest): Promise<void>;
 
     protected abstract concat(msg: TMsg): Observable<Buffer>;
 

@@ -27,16 +27,16 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract get streamAdapter(): StreamAdapter;
 
     /**
-     * transport response.
+     * transport request.
      */
     abstract get request(): TRequest;
 
     /**
-     * transport response.
+     * Get transport response.
      */
     abstract get response(): TResponse;
     /**
-     * transport response.
+     * Set transport response.
      */
     abstract set response(val: TResponse);
 

@@ -33,7 +33,7 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
                 mergeMap(data => {
                     if (isNil(data)) return this.writeHeader(ctx);
                     if (this.streamAdapter.isReadable(data)) return this.pipe(data, ctx);
-                    return this.write(data, ctx);
+                    return this.writeMessage(data, ctx);
                 })
             ))
     }
@@ -82,6 +82,7 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
     protected setPacketPattern(pkg: ResponsePacket, ctx: TransportContext) {
 
     }
+    
 
     protected encode(ctx: TransportContext): Observable<OutgoingType> {
         return this.encoder.handle(ctx)
@@ -114,7 +115,6 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
 
     protected abstract writeHeader(ctx: TransportContext): Promise<void>;
     protected abstract pipe(data: IReadableStream, ctx: TransportContext): Promise<void>;
-    protected abstract write(data: Buffer, ctx: TransportContext): Promise<void>;
 
     protected abstract createContext(data: Buffer | IReadableStream, msg: TMsg, options: ServerOpts): IncomingContext;
 
@@ -177,8 +177,6 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
     async destroy(): Promise<void> {
         this.packetBuffer.clear();
     }
-
-    protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
 }
 

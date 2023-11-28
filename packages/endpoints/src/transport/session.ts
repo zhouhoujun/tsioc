@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { IReadableStream, IncomingPacket, TransportOpts, TransportSession } from '@tsdi/common';
+import { IReadableStream, IncomingPacket, ResponsePacket, TransportOpts, TransportSession } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 import { Observable } from 'rxjs';
 import { ServerOpts } from '../Server';
@@ -34,6 +34,20 @@ export abstract class ServerTransportSession<TSocket = any, TContext extends Tra
      * receive
      */
     abstract receive(options: ServerOpts): Observable<TContext>;
+
+    /**
+     * write encode response message.
+     * @param packet 
+     * @param chunk 
+     */
+    abstract writeMessage(chunk: Buffer, ctx: TContext): Promise<void>;
+    /**
+     * write packet buffers.
+     * @param packet 
+     * @param chunk 
+     * @param callback 
+     */
+    abstract write(packet: ResponsePacket, chunk: Buffer, callback?: (error?: any) => void): void;
 
 }
 

@@ -42,6 +42,8 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
         readonly clientOpts: HttpClientOpts) {
         this.options = clientOpts.transportOpts ?? {};
     }
+    delimiter?: Buffer | undefined;
+    headDelimiter?: Buffer | undefined;
 
     existHeader = true;
 
@@ -232,6 +234,9 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
 
     }
 
+    delimiter?: Buffer | undefined;
+    headDelimiter?: Buffer | undefined;
+
     existHeader = true;
 
     generatePacket(msg: TransportContext<any, any, any>, noPayload?: boolean | undefined): Packet<any> {
@@ -240,6 +245,15 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
 
     send(ctx: TransportContext): Observable<any> {
         return this.encoder.handle(ctx);
+    }
+
+    
+    writeMessage(chunk: Buffer, ctx: TransportContext<any, any, any>): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
+
+    write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
+        throw new Error('Method not implemented.');
     }
 
     serialize(packet: Packet): Buffer {

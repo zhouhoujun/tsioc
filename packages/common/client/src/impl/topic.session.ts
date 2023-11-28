@@ -24,7 +24,7 @@ export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClie
     protected pipe(ata: IReadableStream, req: TransportRequest<any>): Promise<void> {
         throw new Error('Method not implemented.');
     }
-    write(data: Buffer, req: TransportRequest): Promise<void> {
+    writeMessage(data: Buffer, req: TransportRequest): Promise<void> {
         const pkg = this.generatePacket(req);
         if (!pkg.topic) throw new BadRequestExecption();
         return promisify<string, Buffer, void>(this.socket.publish, this.socket)(pkg.topic, data)

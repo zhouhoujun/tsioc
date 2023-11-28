@@ -7,6 +7,7 @@ import { RequestEncoder, ResponseDecoder } from '../transport/codings';
 
 
 export class ClientDuplexTransportSession extends ClientEventTransportSession<IDuplexStream> {
+    
     protected writeHeader(req: TransportRequest<any>): Promise<void> {
         const headBuff = this.serialize(this.generatePacket(req, true));
         return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
@@ -14,15 +15,14 @@ export class ClientDuplexTransportSession extends ClientEventTransportSession<ID
     protected pipe(data: IReadableStream, req: TransportRequest<any>): Promise<void> {
         return this.streamAdapter.pipeTo(data, this.socket)
     }
-    write(data: Buffer, req: TransportRequest<any>): Promise<void> {
+
+    writeMessage(data: Buffer, req: TransportRequest<any>): Promise<void> {
         return promisify<Buffer, void>(this.socket.write, this.socket)(data);
     }
 
     protected async beforeRequest(packet: TransportRequest<any>): Promise<void> {
         
     }
-
-    
 
     protected getTopic(msg: string | Buffer | Uint8Array): string {
         return '__DEFALUT_TOPIC__'

@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, Packet, PacketBuffer, StreamAdapter, TransportOpts } from '@tsdi/common';
+import { IDuplexStream, IReadableStream, Packet, PacketBuffer, ResponsePacket, StreamAdapter, TransportOpts } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
@@ -18,8 +18,12 @@ export class ServerDuplexTransportSession extends ServerEventTransportSession<ID
         return this.streamAdapter.pipeTo(data, this.socket)
     }
 
-    protected override write(data: Buffer, packet: Packet): Promise<void> {
-        return promisify<Buffer, void>(this.socket.write, this.socket)(data);
+    override writeMessage(chunk: Buffer, ctx: TransportContext): Promise<void> {
+        return promisify<Buffer, void>(this.socket.write, this.socket)(chunk);
+    }
+
+    override write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
+        this.socket.write(chunk, callback);
     }
 
     protected getTopic(msg: string | Buffer | Uint8Array): string {

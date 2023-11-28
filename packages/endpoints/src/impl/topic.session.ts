@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, IReadableStream, Packet, PacketBuffer, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
+import { BadRequestExecption, IReadableStream, Packet, PacketBuffer, ResponsePacket, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
@@ -26,10 +26,17 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
 
     private replys: Set<string> = new Set();
 
-    protected async write(data: Buffer, packet: Packet<any>): Promise<void> {
+    async writeMessage(chunk: Buffer, ctx: TransportContext): Promise<void> {
+        const packet = this.generatePacket(ctx, true);
         const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
-        await promisify(this.socket.publish, this.socket)(topic, data)
+        await promisify(this.socket.publish, this.socket)(topic, chunk)
+    }
+
+    override write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
+        const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
+        if (!topic) throw new BadRequestExecption();
+        this.socket.publish(topic, chunk, callback)
     }
 
     protected override message(): Observable<any> {

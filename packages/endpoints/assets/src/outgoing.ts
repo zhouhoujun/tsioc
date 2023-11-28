@@ -1,12 +1,9 @@
 import { ArgumentExecption, isArray, isFunction, isString, nextTick } from '@tsdi/ioc';
-import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, TransportSession, hdr } from '@tsdi/common';
+import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, hdr } from '@tsdi/common';
 import { Writable } from 'readable-stream';
+import { ServerTransportSession } from '@tsdi/endpoints/src';
 
 
-
-export interface SendPacket extends ResponsePacket {
-    headerSent?: boolean;
-}
 
 
 /**
@@ -19,7 +16,8 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
     private _hdr: ResHeaders;
     destroyed = false;
     sendDate = true;
-    private _sentpkt?: SendPacket;
+    private _pkt?: ResponsePacket;
+    protected _headerSent: boolean;
     readonly id: number;
     readonly url?: string;
     readonly topic?: string;
@@ -27,12 +25,13 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
 
     writable = true;
     constructor(
-        readonly session: TransportSession<T>,
+        readonly session: ServerTransportSession<T>,
         packet: Packet
     ) {
         super({ objectMode: true });
         this.setMaxListeners(0);
         this._hdr = new ResHeaders();
+        this._headerSent = false;
         this.id = packet.id;
         this.url = packet.url;
         this.topic = packet.topic;
@@ -65,7 +64,7 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
     }
 
     get headersSent() {
-        return this._sentpkt?.headerSent == true;
+        return this._headerSent;
     }
 
     getHeaders(): Record<string, OutgoingHeader> {
@@ -92,10 +91,10 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
         }
     }
 
-    end(cb?: (() => void) | undefined): this;
-    end(chunk: any, cb?: (() => void) | undefined): this;
-    end(chunk: any, encoding: BufferEncoding, cb?: (() => void) | undefined): this;
-    end(chunk?: any, encoding?: any, cb?: (() => void) | undefined): this {
+    end(cb?: ((error?: Error | null | undefined) => void) | undefined): this;
+    end(chunk: any, cb?: ((error?: Error | null | undefined) => void) | undefined): this;
+    end(chunk: any, encoding: BufferEncoding, cb?: ((error?: Error | null | undefined) => void) | undefined): this;
+    end(chunk?: any, encoding?: any, cb?: ((error?: Error | null | undefined) => void) | undefined): this {
         if (isFunction(chunk)) {
             cb = chunk;
             chunk = null;
@@ -109,7 +108,14 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
             }
             return this;
         }
-        super.end(chunk, encoding, cb);
+        if (!this.headersSent) {
+            this.writeHead(this.statusCode, this.getHeaders(), (err) => {
+                if (err) return cb?.(err);
+                super.end(chunk, encoding, cb)
+            })
+        } else {
+            super.end(chunk, encoding, cb);
+        }
 
         this.ending = true;
 
@@ -118,31 +124,27 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
     }
 
     override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null | undefined) => void): void {
-        if (!this._sentpkt) {
-            this._sentpkt = this.createSentPacket();
+        this.session.write(this.getPacket(), chunk, callback)
+    }
+
+    getPacket(): ResponsePacket {
+        if (!this._pkt) {
+            const pkg = this._pkt = {
+                id: this.id,
+                headers: this.getHeaders(),
+                status: this.statusCode,
+                statusText: this.statusMessage
+            } as ResponsePacket;
+            if (this.url) pkg.url = this.url;
+            if (this.topic) pkg.topic = this.topic;
+            if (this.replyTo) pkg.replyTo = this.replyTo;
         }
-        this._sentpkt.payload = chunk;
-        this.session.send(this._sentpkt).subscribe({
-            next: () => callback(),
-            error: err => callback(err)
-        });
+
+        return this._pkt;
     }
 
-    createSentPacket(): SendPacket {
-        const pkg = {
-            id: this.id,
-            headers: this.getHeaders(),
-            status: this.statusCode,
-            statusText: this.statusMessage
-        } as SendPacket;
-        if (this.url) pkg.url = this.url;
-        if (this.topic) pkg.topic = this.topic;
-        if (this.replyTo) pkg.replyTo = this.replyTo;
 
-        return pkg;
-    }
-
-    writeHead(statusCode: StatusCode, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode?: StatusCode, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
     writeHead(statusCode: StatusCode, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
     writeHead(statusCode: StatusCode, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
         if (this.headersSent) return this;
@@ -167,14 +169,9 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
         }
         this.setHeader(hdr.STATUS, statusCode);
 
-        if (!this._sentpkt) {
-            this._sentpkt = this.createSentPacket();
-        }
-
-        this.session.send(this._sentpkt).subscribe({
-            next: () => callback?.(),
-            error: err => callback?.(err)
-        });
+        const pkg = this.getPacket();
+        this._headerSent = true;
+        this.session.write(pkg, this.session.serialize(pkg), callback);
 
         return this;
     }
