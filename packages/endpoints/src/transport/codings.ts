@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { IReadableStream, OutgoingType } from '@tsdi/common';
+import { OutgoingType } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { TransportContext } from '../TransportContext';
 import { IncomingContext } from './session';
@@ -16,17 +16,6 @@ export abstract class OutgoingEncoder<T extends TransportContext = TransportCont
 @Abstract()
 export abstract class OutgoingBackend<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
     abstract handle(ctx: T): Observable<TOutput>;
-}
-
-
-@Abstract()
-export abstract class EmptyOutgoingEncoder<T extends TransportContext = TransportContext> implements OutgoingEncoder<T, null> {
-    abstract handle(ctx: T): Observable<null>;
-}
-
-@Abstract()
-export abstract class StreamOutgoingEncoder<T extends TransportContext = TransportContext> implements OutgoingEncoder<T, IReadableStream> {
-    abstract handle(ctx: T): Observable<IReadableStream>;
 }
 
 

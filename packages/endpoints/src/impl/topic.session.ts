@@ -13,7 +13,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         const headBuff = this.serialize(ctx);
         return promisify<string, Buffer, void>(this.socket.publish, this.socket)(ctx.response.replyTo, headBuff);
     }
-    protected pipe(ata: IReadableStream, ctx: TransportContext<any, any, any>): Promise<void> {
+    protected pipe(data: IReadableStream, ctx: TransportContext<any, any, any>): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
