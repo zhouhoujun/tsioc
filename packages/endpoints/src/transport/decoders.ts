@@ -138,15 +138,12 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
 @Injectable()
 export class TransportIncomingDecordeBackend<T extends IncomingContext = IncomingContext> implements IncomingBackend<T> {
 
-
     handle(ctx: T): Observable<TransportContext> {
         const injector = ctx.session.injector;
         if (!ctx.packet || !ctx.ready) return throwError(() => new InternalServerExecption('incoming packet no ready.'));
 
         const context = injector.get(TransportContextFactory).create(injector, ctx.session, ctx.packet, ctx.options);
         return of(context);
-
     }
 
 }
-

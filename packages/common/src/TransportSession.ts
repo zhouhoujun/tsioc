@@ -7,6 +7,7 @@ import { OutgoingHeaders, ResHeaders } from './headers';
 import { StreamAdapter } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { PacketLengthException } from './execptions';
+import { StatusVaildator } from './StatusVaildator';
 
 
 export type OutgoingType = Buffer | IReadableStream | null;
@@ -97,6 +98,10 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * transport options.
      */
     abstract get options(): TransportOpts;
+    /**
+     * status vaildateor.
+     */
+    abstract get statusVaildator(): StatusVaildator | null;
     /**
      * stream adapter
      */
