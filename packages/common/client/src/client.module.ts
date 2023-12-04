@@ -64,7 +64,9 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     defaultOpts?: ClientOpts;
 }
 
-
+/**
+ * client token options.
+ */
 export interface ClientTokenOpts {
 
     transport: Transport | HybirdTransport;
@@ -75,7 +77,9 @@ export interface ClientTokenOpts {
     client?: Token<Client>;
 }
 
-
+/**
+ * client module.
+ */
 @Module({
     providers: [
         TransportBackend,

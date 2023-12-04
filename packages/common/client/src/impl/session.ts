@@ -2,8 +2,9 @@ import { Execption, Injector, isDefined, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
-    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, hdr,
-    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, BufferTransportSession, StatusVaildator, ResponseEventFactory
+    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, hdr, BufferTransportSession,
+    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException,
+    StatusVaildator, ResponseEventFactory
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
@@ -11,7 +12,9 @@ import { RequestContext, RequestEncoder, ResponseContext, ResponseDecoder } from
 import { ClientTransportSession } from '../transport/session';
 
 
-
+/**
+ * abstract client transport session.
+ */
 export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends ClientTransportSession<TSocket> {
 
     abstract get encoder(): RequestEncoder;
@@ -120,7 +123,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
 
     protected abstract writeHeader(req: TransportRequest): Promise<void>;
     protected abstract pipe(data: IReadableStream, req: TransportRequest): Promise<void>;
-    
+
     /**
      * write encode request message.
      * @param data 
@@ -173,7 +176,9 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
 
 }
 
-
+/**
+ * client buffer transport session.
+ */
 export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> implements BufferTransportSession<TSocket> {
 
     private allocator?: NumberAllocator;
@@ -194,7 +199,7 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         super();
 
         this.delimiter = Buffer.from(options.delimiter || '#');
-        if(options.headDelimiter) {
+        if (options.headDelimiter) {
             this.headDelimiter = Buffer.from(options.headDelimiter);
         }
     }
@@ -240,6 +245,9 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
 
 }
 
+/**
+ * client event transport session.
+ */
 export abstract class ClientEventTransportSession<TSocket extends IEventEmitter, TMsg = string | Buffer | Uint8Array> extends ClientBufferTransportSession<TSocket, TMsg> {
 
     protected message(): Observable<TMsg> {
@@ -257,6 +265,9 @@ export abstract class ClientEventTransportSession<TSocket extends IEventEmitter,
 
 }
 
+/**
+ * client payload transport session.
+ */
 export abstract class ClientPayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> {
 
     protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {

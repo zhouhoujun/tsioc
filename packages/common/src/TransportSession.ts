@@ -29,12 +29,16 @@ export interface TransportOpts {
      */
     microservice?: boolean;
     /**
-     * packet delimiter flag
+     * packet delimiter flag.
      */
     delimiter?: string;
-
+    /**
+     * head delimiter flag.
+     */
     headDelimiter?: string;
-
+    /**
+     * timeout.
+     */
     timeout?: number;
     /**
      * packet max size limit.

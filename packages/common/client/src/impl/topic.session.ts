@@ -5,7 +5,9 @@ import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
 
 
-
+/**
+ * Client topic transport session.
+ */
 export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClient> extends ClientEventTransportSession<TSocket, TopicMessage> {
 
     private replys: Set<string> = new Set();
@@ -49,7 +51,9 @@ export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClie
 
 }
 
-
+/**
+ * client topic transport factory.
+ */
 @Injectable()
 export class ClientTopicTransportSessionFactory implements ClientTransportSessionFactory<TopicClient> {
 

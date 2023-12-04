@@ -1,4 +1,4 @@
-import { Injectable, isNumber, isString } from '@tsdi/ioc';
+import { Injectable, isNil, isNumber, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, Subscriber, defer, map, mergeMap, of, range } from 'rxjs';
 import { RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder } from './codings';
@@ -10,7 +10,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
 
     intercept(ctx: RequestContext, next: RequestEncoder<RequestContext>): Observable<OutgoingType> {
 
-        if (ctx.req.body == null) return next.handle(ctx);
+        if (isNil(ctx.req.body)) return next.handle(ctx);
 
         const { session, req } = ctx;
         if (session.streamAdapter.isReadable(req.body)) {

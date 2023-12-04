@@ -8,7 +8,9 @@ import { Observable, take } from 'rxjs';
 import { ClientTransportSession } from './transport/session';
 
 
-
+/**
+ * transport response event factory.
+ */
 @Injectable()
 export class TransportResponseEventFactory implements ResponseEventFactory<TransportEvent, TransportErrorResponse> {
     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportErrorResponse {
