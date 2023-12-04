@@ -1,7 +1,7 @@
 import { ArgumentExecption, Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { HybirdTransport, NotImplementedExecption, Redirector, Transport } from '@tsdi/common';
-import { TransportBackend } from './backend';
+import { HybirdTransport, NotImplementedExecption, Redirector, ResponseEventFactory, Transport } from '@tsdi/common';
+import { TransportBackend, TransportResponseEventFactory } from './backend';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -86,6 +86,9 @@ export interface ClientTokenOpts {
 
         DefaultRedirector,
         { provide: Redirector, useExisting: DefaultRedirector, asDefault: true },
+
+        TransportResponseEventFactory,
+        { provide: ResponseEventFactory, useExisting: TransportResponseEventFactory, asDefault: true },
 
         RequestBufferFinalizeEncodeInterceptor,
         OutgoingPipeEncodeInterceptor,
@@ -213,6 +216,10 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                             opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
                         }
 
+                        if (opts.responseFactory) {
+                            opts.providers.push(toProvider(ResponseEventFactory, opts.responseFactory));
+                        }
+
                         if (opts.strategy) {
                             const strategy = opts.strategy;
                             if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
@@ -259,6 +266,10 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                     }
                     if (opts.sessionFactory) {
                         opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
+                    }
+
+                    if (opts.responseFactory) {
+                        opts.providers.push(toProvider(ResponseEventFactory, opts.responseFactory));
                     }
 
                     if (opts.strategy) {

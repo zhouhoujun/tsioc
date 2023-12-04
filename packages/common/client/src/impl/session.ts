@@ -210,7 +210,8 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         return {
             session: this,
             req,
-            packet
+            packet,
+            raw: data
         }
     }
 
