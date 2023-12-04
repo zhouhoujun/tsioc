@@ -3,7 +3,7 @@ import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
     TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, hdr,
-    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, BufferTransportSession
+    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, BufferTransportSession, StatusVaildator
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
@@ -184,6 +184,7 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
+        readonly statusVaildator: StatusVaildator,
         readonly streamAdapter: StreamAdapter,
         readonly encoder: RequestEncoder,
         readonly decoder: ResponseDecoder,

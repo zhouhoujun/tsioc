@@ -1,8 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { StatusCode } from '@tsdi/common';
+import { StatusCode, StatusVaildator } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 import { FileAdapter } from './FileAdapter';
-import { StatusVaildator } from '../../common/src/StatusVaildator';
 import { ServerOpts } from './Server';
 
 /**

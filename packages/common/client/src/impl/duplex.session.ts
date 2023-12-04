@@ -1,5 +1,5 @@
-import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, PacketBuffer, StreamAdapter, TransportOpts, TransportRequest } from '@tsdi/common';
+import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
+import { IDuplexStream, IReadableStream, PacketBuffer, StatusVaildator, StreamAdapter, TransportOpts, TransportRequest } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
@@ -9,7 +9,7 @@ import { RequestEncoder, ResponseDecoder } from '../transport/codings';
  * client duplex transport session.
  */
 export class ClientDuplexTransportSession extends ClientEventTransportSession<IDuplexStream> {
-    
+
     protected writeHeader(req: TransportRequest<any>): Promise<void> {
         const headBuff = this.serialize(this.generatePacket(req, true));
         return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
@@ -23,7 +23,7 @@ export class ClientDuplexTransportSession extends ClientEventTransportSession<ID
     }
 
     protected async beforeRequest(packet: TransportRequest<any>): Promise<void> {
-        
+
     }
 
     protected getTopic(msg: string | Buffer | Uint8Array): string {
@@ -47,12 +47,13 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
 
     constructor(
         readonly injector: Injector,
+        @Optional() private statusVaildator: StatusVaildator,
         private streamAdapter: StreamAdapter,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): ClientDuplexTransportSession {
-        return new ClientDuplexTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, new PacketBuffer(), options);
+        return new ClientDuplexTransportSession(this.injector, socket, this.statusVaildator, this.streamAdapter, this.encoder, this.decoder, new PacketBuffer(), options);
     }
 
 }

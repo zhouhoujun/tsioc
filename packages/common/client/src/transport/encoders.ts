@@ -2,7 +2,6 @@ import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, Subscriber, defer, map, mergeMap, of, range } from 'rxjs';
 import { RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder } from './codings';
-import { ClientTransportSession } from './session';
 
 
 
@@ -29,10 +28,6 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
                         write(chunk, encoding, callback) {
                             ctx.raw = chunk;
                             subsr.next(ctx);
-                            // subsr.next({
-                            //     ...ctx,
-                            //     raw: chunk
-                            // });
                             callback();
                         }
                     })).then(() => {
@@ -55,7 +50,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<R
 @Injectable()
 export class TransportRequestEncodeBackend implements RequestBackend<RequestContext, Buffer> {
     handle(ctx: RequestContext): Observable<Buffer> {
-        const session = ctx.req.context.get(ClientTransportSession);
+        const session = ctx.session;
         if (!session.existHeader) {
             const pkg = Buffer.from(JSON.stringify(session.generatePacket(ctx.req)));
             return of(pkg);

@@ -16,7 +16,9 @@ import { DefaultRedirector } from './redirector';
 import { ClientDuplexTransportSessionFactory } from './impl/duplex.session';
 import { ClientTopicTransportSessionFactory } from './impl/topic.session';
 
-
+/**
+ * client module config.
+ */
 export interface ClientModuleConfig {
     /**
      * client options.
@@ -32,6 +34,9 @@ export interface ClientModuleConfig {
     providers?: ProviderType[];
 }
 
+/**
+ * Client module options.
+ */
 export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * transport

@@ -2,7 +2,7 @@ import { Injector, isNil, isPlainObject, lang } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException, BufferTransportSession,
-    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing, ResponsePacket
+    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing, ResponsePacket, StatusVaildator
 } from '@tsdi/common';
 import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
@@ -82,7 +82,7 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = string | Bu
     protected setPacketPattern(pkg: ResponsePacket, ctx: TransportContext) {
 
     }
-    
+
 
     protected encode(ctx: TransportContext): Observable<OutgoingType> {
         return this.encoder.handle(ctx)
@@ -138,15 +138,16 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
+        readonly statusVaildator: StatusVaildator | null,
         readonly streamAdapter: StreamAdapter,
         readonly encoder: OutgoingEncoder,
         readonly decoder: IncomingDecoder,
         protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();
-        
+
         this.delimiter = Buffer.from(options.delimiter || '#');
-        if(options.headDelimiter) {
+        if (options.headDelimiter) {
             this.headDelimiter = Buffer.from(options.headDelimiter);
         }
     }

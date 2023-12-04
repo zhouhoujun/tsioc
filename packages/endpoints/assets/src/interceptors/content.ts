@@ -52,7 +52,6 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
                 .pipe(
                     catchError((err, caught) => {
                         if (err instanceof NotFoundExecption) {
-                            input.status = input.vaildator.notFound;
                             return of(input)
                         } else {
                             return throwError(() => err);
