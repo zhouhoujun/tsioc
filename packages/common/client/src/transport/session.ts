@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { TransportEvent, TransportOpts, TransportRequest, TransportSession } from '@tsdi/common';
+import { ResponseEventFactory, TransportEvent, TransportOpts, TransportRequest, TransportSession } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -9,6 +9,11 @@ import { Observable } from 'rxjs';
  */
 @Abstract()
 export abstract class ClientTransportSession<TSocket = any, TRequest extends TransportRequest = TransportRequest> extends TransportSession<TSocket, TRequest>  {
+    
+    /**
+     * response event factory.
+     */
+    abstract get eventFactory(): ResponseEventFactory;
     /**
      * send request message.
      * @param packet 

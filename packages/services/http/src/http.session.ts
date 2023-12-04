@@ -1,7 +1,7 @@
 import { Injectable, Injector, InvocationContext, isDefined, isNil, promisify } from '@tsdi/ioc';
 import {
     HttpStatusCode, IReadableStream, InvalidJsonException,
-    Packet, ResponsePacket, StatusVaildator, StreamAdapter, TransportOpts, XSSI_PREFIX, ev, hdr, statusMessage
+    Packet, ResponseEventFactory, ResponsePacket, StatusVaildator, StreamAdapter, TransportOpts, XSSI_PREFIX, ev, hdr, statusMessage
 } from '@tsdi/common';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession, ClientTransportSessionFactory, RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
@@ -38,6 +38,7 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
         readonly socket: ClientHttp2Session | null,
         readonly statusVaildator: StatusVaildator,
         readonly streamAdapter: StreamAdapter,
+        readonly eventFactory: ResponseEventFactory, 
         readonly encoder: RequestEncoder,
         readonly decoder: ResponseDecoder,
         readonly clientOpts: HttpClientOpts) {
@@ -208,13 +209,14 @@ export class HttpClientSessionFactory implements ClientTransportSessionFactory<C
         readonly injector: Injector,
         readonly statusVaildtor: StatusVaildator,
         private streamAdapter: StreamAdapter,
+        private eventFactory: ResponseEventFactory,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) {
 
     }
 
     create(socket: ClientHttp2Session | null, options: HttpClientOpts): HttpClientTransportSession {
-        return new HttpClientTransportSession(this.injector, socket, this.statusVaildtor, this.streamAdapter, this.encoder, this.decoder, options);
+        return new HttpClientTransportSession(this.injector, socket, this.statusVaildtor, this.streamAdapter, this.eventFactory, this.encoder, this.decoder, options);
     }
 
 }
