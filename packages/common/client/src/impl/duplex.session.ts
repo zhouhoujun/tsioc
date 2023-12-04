@@ -5,7 +5,9 @@ import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
 
 
-
+/**
+ * client duplex transport session.
+ */
 export class ClientDuplexTransportSession extends ClientEventTransportSession<IDuplexStream> {
     
     protected writeHeader(req: TransportRequest<any>): Promise<void> {
@@ -37,6 +39,9 @@ export class ClientDuplexTransportSession extends ClientEventTransportSession<ID
     }
 }
 
+/**
+ * client duplex transport session factory.
+ */
 @Injectable()
 export class ClientDuplexTransportSessionFactory implements ClientTransportSessionFactory<IDuplexStream> {
 

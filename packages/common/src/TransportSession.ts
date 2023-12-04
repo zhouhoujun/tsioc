@@ -64,8 +64,20 @@ export interface AssetTransportOpts extends TransportOpts {
  */
 @Abstract()
 export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
+    /**
+     * create error response.
+     * @param options
+     */
     abstract createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TErrorResponse;
+    /**
+     * create head response.
+     * @param options
+     */
     abstract createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse;
+    /**
+     * create response.
+     * @param options
+     */
     abstract createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse;
 }
 
@@ -139,6 +151,9 @@ export abstract class BufferTransportSession<TSocket = any, TMessage = any> exte
     abstract readonly delimiter: Buffer;
 }
 
+/**
+ * topic buffer.
+ */
 export interface TopicBuffer {
     topic: string;
     buffers: Buffer[];
@@ -184,7 +199,6 @@ export class PacketBuffer {
 
         });
     }
-
 
     protected handleData(session: BufferTransportSession, chl: TopicBuffer, dataRaw: string | Buffer | Uint8Array, subscriber: Subscriber<Buffer>) {
         const data = Buffer.isBuffer(dataRaw)
