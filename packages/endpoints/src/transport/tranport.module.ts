@@ -3,20 +3,37 @@ import { TypedRespond } from '@tsdi/core';
 import { TransportTypedRespond } from './typed.respond';
 import { DefaultRequestHandler } from './handler';
 import { RequestHandler } from '../RequestHandler';
-import { OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder, OutgoingBackend, OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS } from './codings';
-import { TransportOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor } from './encoders';
+import {
+    OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder, OutgoingBackend,
+    OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS
+} from './codings';
+import {
+    TransportOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor,
+    JsonOutgoingEncodeInterceptor, PayloadOutgoingEncodeInterceptor, EmptyOutgoingEncodeInterceptor, HeadOutgoingEncodeInterceptor, NoBodyOutgoingEncodeInterceptor
+} from './encoders';
 import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeInterceptor, StreamIncomingDecordeInterceptor, TransportIncomingDecordeBackend } from './decoders';
 
 
 @Module({
     providers: [
+        EmptyOutgoingEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: EmptyOutgoingEncodeInterceptor, multi: true, multiOrder: 0 },
+        HeadOutgoingEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: HeadOutgoingEncodeInterceptor, multi: true },
+        NoBodyOutgoingEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: NoBodyOutgoingEncodeInterceptor, multi: true },
         OutgoingPipeEncodeInterceptor,
-        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true, multiOrder: 0 },
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true },
+        JsonOutgoingEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: JsonOutgoingEncodeInterceptor, multi: true },
+        PayloadOutgoingEncodeInterceptor,
+        { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: PayloadOutgoingEncodeInterceptor, multi: true },
+
         OutgoingBufferFinalizeEncodeInterceptor,
         { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingBufferFinalizeEncodeInterceptor, multi: true },
         OutgoingSubpacketBufferEncodeInterceptor,
         { provide: OUTGOING_ENCODER_INTERCEPTORS, useExisting: OutgoingSubpacketBufferEncodeInterceptor, multi: true },
-        
+
 
         TransportOutgoingEncodeBackend,
         { provide: OutgoingBackend, useExisting: TransportOutgoingEncodeBackend },
@@ -30,7 +47,7 @@ import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeIntercept
         { provide: INCOMING_DECODER_INTERCEPTORS, useExisting: PayloadStreamIncomingDecordeInterceptor, multi: true },
         BufferIncomingDecordeInterceptor,
         { provide: INCOMING_DECODER_INTERCEPTORS, useExisting: BufferIncomingDecordeInterceptor, multi: true },
-        
+
 
 
         TransportIncomingDecordeBackend,

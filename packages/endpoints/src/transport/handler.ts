@@ -15,11 +15,7 @@ export class DefaultRequestHandler implements RequestHandler<RequestPacket, Resp
 
         return session.receive(options).pipe(
             mergeMap(context => {
-                // if (!incoming.method) {
-                //     incoming.method = options.transportOpts?.microservice ? MESSAGE : GET;
-                // }
-                // const injector = endpoint.injector;
-                // const ctx = injector.get(TransportContextFactory).create(injector, session, incoming, options);
+
                 context.setValue(Logger, logger);
 
                 return endpoint.handle(context)

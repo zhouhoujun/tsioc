@@ -1,20 +1,81 @@
 import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
-import { OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
-import { Observable, defer, map, mergeMap, of, range } from 'rxjs';
+import { InternalServerExecption, OutgoingType, hdr, isBuffer, toBuffer } from '@tsdi/common';
+import { Observable, defer, map, mergeMap, of, range, throwError } from 'rxjs';
 import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend } from './codings';
 import { TransportContext } from '../TransportContext';
+
+
+export const emptyBody = Buffer.alloc(0);
+
+@Injectable()
+export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+
+    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+
+        if (ctx.isEmpty()) {
+            //ignore body
+            ctx.body = null;
+            ctx.rawBody = emptyBody;
+        }
+        return next.handle(ctx);
+    }
+
+}
+
+@Injectable()
+export class HeadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+
+    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+        if (ctx.rawBody) return next.handle(ctx);
+
+        if (ctx.isHeadMethod()) {
+            if (!ctx.sent && !ctx.response.headers[hdr.CONTENT_LENGTH]) {
+                const length = ctx.length;
+                if (Number.isInteger(length)) ctx.length = length;
+                ctx.rawBody = emptyBody;
+            }
+        }
+        return next.handle(ctx);
+    }
+
+}
+
+
+@Injectable()
+export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+
+    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+        if (ctx.rawBody) return next.handle(ctx);
+
+        // if (ctx.body === null) {
+        //     if (this._explicitNullBody) {
+        //         this.response.removeHeader(hdr.CONTENT_TYPE);
+        //         this.response.removeHeader(hdr.CONTENT_LENGTH);
+        //         this.response.removeHeader(hdr.TRANSFER_ENCODING);
+        //         return this.response.end()
+        //     }
+
+        //     const body = Buffer.from(this.statusMessage ?? String(this.status));
+        //     if (!this.sent) {
+        //         this.type = 'text';
+        //         this.length = Buffer.byteLength(body)
+        //     }
+        // }
+        return next.handle(ctx);
+    }
+
+}
+
 
 
 @Injectable()
 export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType> {
 
-
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+        if (ctx.rawBody) return next.handle(ctx);
 
-        if (ctx.isEmpty()) return next.handle(ctx);
-        
         if (ctx.streamAdapter.isReadable(ctx.body)) {
-            if (isPlainObject(ctx.response)) {
+            if (!ctx.streamAdapter.isWritable(ctx.response)) {
                 return defer(async () => {
                     ctx.body = new TextDecoder().decode(await toBuffer(ctx.body));
                     return ctx;
@@ -47,37 +108,52 @@ export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<
     }
 }
 
+@Injectable()
+export class JsonOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+        if (ctx.rawBody) return next.handle(ctx);
+
+        if (!ctx.session.headDelimiter && isPlainObject(ctx.response)) {
+            ctx.rawBody = ctx.session.serialize(ctx.response);
+        }
+        return next.handle(ctx);
+    }
+}
+
+@Injectable()
+export class PayloadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+        if (ctx.rawBody) return next.handle(ctx);
+
+        if (ctx.session.headDelimiter || ctx.session.existHeader) {
+            const body = ctx.body;
+            if (isBuffer(body)) {
+                ctx.rawBody = body;
+            } else if (isString(body)) {
+                ctx.rawBody = Buffer.from(body);
+            } else {
+                ctx.rawBody = Buffer.from(JSON.stringify(body));
+                if (!ctx.sent) {
+                    ctx.length = Buffer.byteLength(body)
+                }
+            }
+        }
+        return next.handle(ctx);
+    }
+}
 
 
 @Injectable()
 export class TransportOutgoingEncodeBackend implements OutgoingBackend<TransportContext, Buffer> {
 
     handle(ctx: TransportContext): Observable<Buffer> {
-        if (isPlainObject(ctx.response)) {
-            const res = Buffer.from(JSON.stringify(ctx.response));
-            return of(res);
-        } else {
-            let rawBody = ctx.rawBody;
-            if (!rawBody) {
-                const body = ctx.body;
-                if (isBuffer(body)) {
-                    rawBody = body;
-                } else if (isString(body)) {
-                    rawBody = Buffer.from(body);
-                } else {
-                    rawBody = Buffer.from(JSON.stringify(body));
-                    if (!ctx.sent) {
-                        ctx.length = Buffer.byteLength(body)
-                    }
-                }
-            }
-
-            if (!ctx.session.existHeader && ctx.session.headDelimiter && !ctx.sent) {
-                rawBody = Buffer.concat([ctx.session.serialize(ctx.session.generatePacket(ctx, true)), ctx.session.headDelimiter, rawBody]);
-            }
-
-            return of(rawBody)
+        if (!ctx.rawBody) return throwError(() => new InternalServerExecption())
+        let rawBody = ctx.rawBody;
+        if (!ctx.session.existHeader && ctx.session.headDelimiter && !ctx.sent) {
+            rawBody = Buffer.concat([ctx.session.serialize(ctx.session.generatePacket(ctx, true)), ctx.session.headDelimiter, rawBody]);
         }
+        return of(rawBody)
+
     }
 }
 

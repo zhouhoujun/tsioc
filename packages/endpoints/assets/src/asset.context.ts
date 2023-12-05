@@ -6,6 +6,7 @@ import {
     HEAD, StatusCode, StatusVaildator, MimeAdapter
 } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, ServerTransportSession } from '@tsdi/endpoints';
+import { lastValueFrom } from 'rxjs';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
@@ -906,87 +907,13 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.vaildator.isEmpty(this.status) || this.body === null;
     }
 
-
-    async respond(): Promise<any> {
-        if (this.destroyed || !this.writable) return;
-
-        // ignore body
-        if (this.vaildator.isEmpty(this.status)) {
-            // strip headers
-            this.body = null;
-            return this.response.end()
-        }
-
-        if (this.isHeadMethod()) {
-            return this.respondHead();
-        }
-
-        // status body
-        if (null == this.body) {
-            return this.respondNoBody();
-        }
-
-        const len = this.length ?? 0;
-        const opts = this.serverOptions.transportOpts as AssetTransportOpts;
-        if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
-            const btpipe = this.get<PipeTransform>('bytes-format');
-            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.payloadMaxSize)}`);
-        }
-
-        const body = this.body;
-        const res = this.response;
-        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
-        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
-
-        if (this.streamAdapter.isReadable(body)) {
-            if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
-            return await this.streamAdapter.pipeTo(body, res);
-        }
-
-        return await this.respondJson(body, res);
-    }
-
-    protected isHeadMethod(): boolean {
+    isHeadMethod(): boolean {
         return HEAD === this.method
     }
 
-    protected respondHead() {
-        if (!this.sent && !this.response.hasHeader(hdr.CONTENT_LENGTH)) {
-            const length = this.length;
-            if (Number.isInteger(length)) this.length = length
-        }
-        return this.response.end()
-    }
-
-    protected respondNoBody() {
-        if (this._explicitNullBody) {
-            this.response.removeHeader(hdr.CONTENT_TYPE);
-            this.response.removeHeader(hdr.CONTENT_LENGTH);
-            this.response.removeHeader(hdr.TRANSFER_ENCODING);
-            return this.response.end()
-        }
-
-        const body = Buffer.from(this.statusMessage ?? String(this.status));
-        if (!this.sent) {
-            this.type = 'text';
-            this.length = Buffer.byteLength(body)
-        }
-        return this.response.end(body)
-    }
-
-    protected async respondJson(body: any, res: TResponse) {
-        // body: json
-        body = Buffer.from(JSON.stringify(body));
-        if (!res.headersSent) {
-            this.length = Buffer.byteLength(body)
-        }
-
-        await promisify<any, void>(res.end, res)(body);
-        return res
-    }
-
-    protected getStatusMessage(status: StatusCode): string {
-        return this.statusMessage ?? String(status);
+    async respond(): Promise<any> {
+        if (this.destroyed || !this.writable) return;
+        return lastValueFrom(this.session.send(this));
     }
 
     async throwExecption(err: MessageExecption): Promise<void> {
@@ -1002,13 +929,13 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
             return
         }
 
-        const res = this.response;
-
         // first unset all headers
         this.removeHeaders();
 
         // then set those specified
         if (err.headers) this.setHeader(err.headers);
+
+        this.execption = err;
 
         const vaildator = this.vaildator;
         let status = err.status || err.statusCode;
@@ -1019,21 +946,150 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if (!vaildator.isStatus(status)) status = vaildator.serverError;
 
         this.status = status;
+
         // empty response.
-        if (vaildator.isEmptyExecption(status)) {
-            await promisify<void>(res.end, res)();
-            return;
+        if (!vaildator.isEmptyExecption(status)) {
+            // respond
+            let msg: any;
+            msg = err.message;
+
+            // force text/plain
+            this.type = 'text';
+            msg = Buffer.from(msg ?? this.statusMessage ?? '');
+            this.length = Buffer.byteLength(msg);
+            this.rawBody = msg;
         }
 
-        // respond
-        let msg: any;
-        msg = err.message;
+        return await lastValueFrom(this.session.send(this));
 
-        // force text/plain
-        this.type = 'text';
-        msg = Buffer.from(msg ?? this.statusMessage ?? '');
-        this.length = Buffer.byteLength(msg);
-        await promisify<any, void>(res.end, res)(msg);
     }
+
+
+    // async respond(): Promise<any> {
+    //     if (this.destroyed || !this.writable) return;
+
+    //     // ignore body
+    //     if (this.vaildator.isEmpty(this.status)) {
+    //         // strip headers
+    //         this.body = null;
+    //         return this.response.end()
+    //     }
+
+    //     if (this.isHeadMethod()) {
+    //         return this.respondHead();
+    //     }
+
+    //     // status body
+    //     if (null == this.body) {
+    //         return this.respondNoBody();
+    //     }
+
+    //     const len = this.length ?? 0;
+    //     const opts = this.serverOptions.transportOpts as AssetTransportOpts;
+    //     if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
+    //         const btpipe = this.get<PipeTransform>('bytes-format');
+    //         throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.payloadMaxSize)}`);
+    //     }
+
+    //     const body = this.body;
+    //     const res = this.response;
+    //     if (isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
+    //     if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
+
+    //     if (this.streamAdapter.isReadable(body)) {
+    //         if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+    //         return await this.streamAdapter.pipeTo(body, res);
+    //     }
+
+    //     return await this.respondJson(body, res);
+    // }
+
+
+
+    // protected respondHead() {
+    //     if (!this.sent && !this.response.hasHeader(hdr.CONTENT_LENGTH)) {
+    //         const length = this.length;
+    //         if (Number.isInteger(length)) this.length = length
+    //     }
+    //     return this.response.end()
+    // }
+
+    // protected respondNoBody() {
+    //     if (this._explicitNullBody) {
+    //         this.response.removeHeader(hdr.CONTENT_TYPE);
+    //         this.response.removeHeader(hdr.CONTENT_LENGTH);
+    //         this.response.removeHeader(hdr.TRANSFER_ENCODING);
+    //         return this.response.end()
+    //     }
+
+    //     const body = Buffer.from(this.statusMessage ?? String(this.status));
+    //     if (!this.sent) {
+    //         this.type = 'text';
+    //         this.length = Buffer.byteLength(body)
+    //     }
+    //     return this.response.end(body)
+    // }
+
+    // protected async respondJson(body: any, res: TResponse) {
+    //     // body: json
+    //     body = Buffer.from(JSON.stringify(body));
+    //     if (!res.headersSent) {
+    //         this.length = Buffer.byteLength(body)
+    //     }
+
+    //     await promisify<any, void>(res.end, res)(body);
+    //     return res
+    // }
+
+    // protected getStatusMessage(status: StatusCode): string {
+    //     return this.statusMessage ?? String(status);
+    // }
+
+    // async throwExecption(err: MessageExecption): Promise<void> {
+    //     let headerSent = false;
+    //     if (this.sent || !this.writable) {
+    //         headerSent = err.headerSent = true
+    //     }
+
+    //     // nothing we can do here other
+    //     // than delegate to the app-level
+    //     // handler and log.
+    //     if (headerSent) {
+    //         return
+    //     }
+
+    //     const res = this.response;
+
+    //     // first unset all headers
+    //     this.removeHeaders();
+
+    //     // then set those specified
+    //     if (err.headers) this.setHeader(err.headers);
+
+    //     const vaildator = this.vaildator;
+    //     let status = err.status || err.statusCode;
+    //     // ENOENT support
+    //     if (ENOENT === err.code) status = vaildator.notFound;
+
+    //     // default to serverError
+    //     if (!vaildator.isStatus(status)) status = vaildator.serverError;
+
+    //     this.status = status;
+    //     // empty response.
+    //     if (vaildator.isEmptyExecption(status)) {
+    //         await promisify<void>(res.end, res)();
+    //         return;
+    //     }
+
+    //     // respond
+    //     let msg: any;
+    //     msg = err.message;
+
+    //     // force text/plain
+    //     this.type = 'text';
+    //     msg = Buffer.from(msg ?? this.statusMessage ?? '');
+    //     this.length = Buffer.byteLength(msg);
+    //     await promisify<any, void>(res.end, res)(msg);
+    // }
 
 }

@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { IncomingPacket, MessageExecption, OutgoingHeaders, ResponsePacket, StreamAdapter } from '@tsdi/common';
+import { IReadableStream, IncomingPacket, MessageExecption, OutgoingHeaders, ResponsePacket, StreamAdapter } from '@tsdi/common';
 import { ServerOpts } from './Server';
 import { ServerTransportSession } from './transport/session';
 
@@ -106,6 +106,10 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * is empty status or empty body.
      */
     abstract isEmpty():boolean;
+    /**
+     * is head method
+     */
+    abstract isHeadMethod(): boolean;
 
     /**
      * set response headers

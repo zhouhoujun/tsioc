@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
-import { IncomingPacket, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
+import { HEAD, IncomingPacket, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
@@ -191,8 +191,13 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         return isNil(this.body)
     }
 
-    respond(): Promise<any> {
-        return lastValueFrom(this.session.send(this));
+    isHeadMethod(): boolean {
+        return HEAD === this.method
+    }
+
+    async respond(): Promise<any> {
+        if (this.destroyed) return;
+        return await lastValueFrom(this.session.send(this));
     }
 
     throwExecption(execption: MessageExecption): Promise<void> {
