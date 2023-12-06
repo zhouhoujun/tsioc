@@ -324,18 +324,8 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      */
     getHeader(field: string): string {
         field = this.toHeaderName(field);
-        let h: IncomingHeader;
-        switch (field) {
-            case 'referer':
-            case 'referrer':
-            case 'Referer':
-            case 'Referrer':
-                h = this.request.headers.referrer ?? this.request.headers.referr;
-                break;
-            default:
-                h = this.request.headers[field];
-                break;
-        }
+        const h = this.request.headers[field];
+
         if (isNil(h)) return '';
         return isArray(h) ? h[0] : String(h);
     }

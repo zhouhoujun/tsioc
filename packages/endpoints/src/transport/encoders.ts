@@ -1,4 +1,4 @@
-import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { Injectable, isNil, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 import { InternalServerExecption, OutgoingType, hdr, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range, throwError } from 'rxjs';
 import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend } from './codings';
@@ -12,7 +12,7 @@ export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor
 
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
 
-        if (ctx.isEmpty()) {
+        if (isNil(ctx.body)) {
             //ignore body
             ctx.body = null;
             ctx.rawBody = emptyBody;
@@ -47,20 +47,19 @@ export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeIntercepto
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
         if (ctx.rawBody) return next.handle(ctx);
 
-        // if (ctx.body === null) {
-        //     if (this._explicitNullBody) {
-        //         this.response.removeHeader(hdr.CONTENT_TYPE);
-        //         this.response.removeHeader(hdr.CONTENT_LENGTH);
-        //         this.response.removeHeader(hdr.TRANSFER_ENCODING);
-        //         return this.response.end()
-        //     }
+        if (ctx.body === null) {
+            if (this._explicitNullBody) {
+                ctx.removeHeader(hdr.CONTENT_TYPE);
+                ctx.removeHeader(hdr.CONTENT_LENGTH);
+                ctx.removeHeader(hdr.TRANSFER_ENCODING);
+            }
 
-        //     const body = Buffer.from(this.statusMessage ?? String(this.status));
-        //     if (!this.sent) {
-        //         this.type = 'text';
-        //         this.length = Buffer.byteLength(body)
-        //     }
-        // }
+            const body = Buffer.from(this.statusMessage ?? String(this.status));
+            if (!ctx.sent) {
+                ctx.type = 'text';
+                this.length = Buffer.byteLength(body)
+            }
+        }
         return next.handle(ctx);
     }
 

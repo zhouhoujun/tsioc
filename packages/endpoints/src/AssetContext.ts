@@ -129,77 +129,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      */
     abstract set ok(ok: boolean);
     /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    abstract getHeader(field: string): string | string[] | undefined;
-
-    /**
-     * has response header field or not.
-     * @param field 
-     */
-    abstract hasHeader(field: string): boolean;
-    /**
-     * Set response header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set('Foo', ['bar', 'baz']);
-     *    this.set('Accept', 'application/json');
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    abstract setHeader(field: string, val: string | number | string[]): void;
-    /**
-     * Set response header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {Record<string, string | number | string[]>} fields
-     * @param {String} val
-     * @api public
-     */
-    abstract setHeader(fields: Record<string, string | number | string[]>): void;
-    /**
-     * Remove response header `field`.
-     *
-     * @param {String} name
-     * @api public
-     */
-    abstract removeHeader(field: string): void;
-
-    /**
-     * Remove all response headers
-     *
-     * @api public
-     */
-    abstract removeHeaders(): void;
-
-    /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
      * If there is no request body, `null` is returned.
@@ -221,11 +150,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      *     this.is('html'); // => false
      */
     abstract is(type: string | string[]): string | null | false;
-
-    /**
-     * is empty status or empty body.
-     */
-    abstract isEmpty():boolean;
 
     /**
      * content type.

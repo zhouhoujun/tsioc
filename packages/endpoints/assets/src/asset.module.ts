@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { MimeAdapter, MimeDb, MimeTypes, StatusVaildator } from '@tsdi/common';
+import { MimeAdapter, MimeDb, MimeTypes } from '@tsdi/common';
 import { TransportContextFactory } from '@tsdi/endpoints';
 import { HttpStatusVaildator } from './impl/status';
 import { AssetContextFactoryImpl } from './impl/context';
@@ -20,7 +20,6 @@ import { TransportNegotiator } from './impl/negotiator';
 
         BodyContentInterceptor,
         HttpStatusVaildator,
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true },
         AssetContextFactoryImpl,
         { provide: TransportContextFactory, useExisting: AssetContextFactoryImpl }
     ]

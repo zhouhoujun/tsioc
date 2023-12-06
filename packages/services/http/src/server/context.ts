@@ -1,5 +1,5 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession, normalize, Outgoing, ResponsePacket } from '@tsdi/common';
-import { Injectable, Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, MessageExecption, InternalServerExecption, hdr, IncomingPacket, TransportSession, normalize, Outgoing, ResponsePacket, IncomingHeader } from '@tsdi/common';
+import { Injectable, Injector, isArray, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { ServerTransportSession, Throwable, TransportContextFactory } from '@tsdi/endpoints';
 import { append, parseTokenList, AbstractAssetContext } from '@tsdi/endpoints/assets';
 import * as assert from 'assert';
@@ -180,6 +180,25 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
     get stale(): boolean {
         return !this.fresh;
     }
+
+    getHeader(field: string): string {
+        field = this.toHeaderName(field);
+        let h: IncomingHeader;
+        switch (field) {
+            case 'referer':
+            case 'referrer':
+            case 'Referer':
+            case 'Referrer':
+                h = this.request.headers.referrer ?? this.request.headers.referr;
+                break;
+            default:
+                h = this.request.headers[field];
+                break;
+        }
+        if (isNil(h)) return '';
+        return isArray(h) ? h[0] : String(h);
+    }
+
 
     protected freshHeader(): boolean {
         const reqHeaders = this.request.headers;

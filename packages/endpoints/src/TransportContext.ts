@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { IReadableStream, IncomingPacket, MessageExecption, OutgoingHeaders, ResponsePacket, StreamAdapter } from '@tsdi/common';
+import { IncomingPacket, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StreamAdapter } from '@tsdi/common';
 import { ServerOpts } from './Server';
 import { ServerTransportSession } from './transport/session';
 
@@ -102,20 +102,85 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      */
     abstract get method(): string;
 
-    /**
-     * is empty status or empty body.
-     */
-    abstract isEmpty():boolean;
-    /**
-     * is head method
-     */
-    abstract isHeadMethod(): boolean;
+    // /**
+    //  * is empty status or empty body.
+    //  */
+    // abstract isEmpty(): boolean;
+    // /**
+    //  * is head method
+    //  */
+    // abstract isHeadMethod(): boolean;
 
     /**
-     * set response headers
-     * @param headers 
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.get('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.get('content-type');
+     *     // => "text/plain"
+     *
+     *     this.get('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
      */
-    abstract setHeader(headers: OutgoingHeaders): void;
+    abstract getHeader(field: string): string;
+
+    /**
+     * has response header field or not.
+     * @param field 
+     */
+    abstract hasHeader(field: string): boolean;
+    /**
+     * Set response header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.setHeader('Foo', ['bar', 'baz']);
+     *    this.setHeader('Accept', 'application/json');
+     *    this.setHeader({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(field: string, val: OutgoingHeader): void;
+    /**
+     * Set response header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.setHeader({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {OutgoingHeaders} fields
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(fields: OutgoingHeaders): void;
+    /**
+     * Remove response header `field`.
+     *
+     * @param {String} name
+     * @api public
+     */
+    abstract removeHeader(field: string): void;
+
+    /**
+     * Remove all response headers
+     *
+     * @api public
+     */
+    abstract removeHeaders(): void;
 
     /**
      * set response with response packet

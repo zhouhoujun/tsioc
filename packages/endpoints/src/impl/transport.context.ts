@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isNil, isString } from '@tsdi/ioc';
 import { HEAD, IncomingPacket, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
@@ -115,12 +115,117 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         }
     }
 
-    setHeader(headers: OutgoingHeaders): void {
-        if (this.response.headers) {
-            Object.assign(this.response.headers, headers)
-        } else {
-            this.response.headers = headers
+    /**
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.get('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.get('content-type');
+     *     // => "text/plain"
+     *
+     *     this.get('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
+     */
+    getHeader(field: string): string {
+        field = this.toHeaderName(field);
+        const h = this.request.headers?.[field];
+
+        if (isNil(h)) return '';
+        return isArray(h) ? h[0] : String(h);
+    }
+
+    /**
+     * Returns true if the header identified by name is currently set in the outgoing headers.
+     * The header name matching is case-insensitive.
+     *
+     * Examples:
+     *
+     *     this.hasHeader('Content-Type');
+     *     // => true
+     *
+     * @param {String} field
+     * @return {boolean}
+     * @api public
+     */
+    hasHeader(field: string) {
+        return !isNil(this.response.headers?.[field])
+    }
+
+    protected toHeaderName(field: string) {
+        return field.toLowerCase();
+    }
+
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    setHeader(field: string, val: string | number | string[]): void;
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {OutgoingHeaders} fields
+     * @param {String} val
+     * @api public
+     */
+    setHeader(fields: OutgoingHeaders): void;
+    setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
+        if (this.sent) return;
+        if (!this.response.headers) {
+            this.response.headers = {};
         }
+        if (val) {
+            this.response.headers[field as string] = val
+        } else {
+            Object.assign(this.response.headers, field)
+        }
+    }
+
+
+    /**
+     * Remove header `field` of response.
+     *
+     * @param {String} name
+     * @api public
+     */
+    removeHeader(field: string): void {
+        if (this.sent) return;
+        if (!this.response.headers) return;
+        delete this.response.headers[field];
+    }
+
+    /**
+     * Remove all header of response.
+     * @api public
+     */
+    removeHeaders(): void {
+        if (this.sent) return;
+        this.response.headers = {};
+
     }
 
     setResponse(packet: ResponsePacket): void {
@@ -187,13 +292,13 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
     }
 
 
-    isEmpty(): boolean {
-        return isNil(this.body)
-    }
+    // isEmpty(): boolean {
+    //     return isNil(this.body)
+    // }
 
-    isHeadMethod(): boolean {
-        return HEAD === this.method
-    }
+    // isHeadMethod(): boolean {
+    //     return HEAD === this.method
+    // }
 
     async respond(): Promise<any> {
         if (this.destroyed) return;
