@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
-import { AssetContext, Middleware, ContentSendAdapter, ContentOptions } from '@tsdi/endpoints';
+import { Middleware, ContentSendAdapter, ContentOptions, TransportContext } from '@tsdi/endpoints';
 import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 
 
@@ -10,13 +10,13 @@ import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
  * static content resources.
  */
 @Injectable()
-export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class Content implements Middleware<TransportContext>, Interceptor<TransportContext> {
 
     options?: ContentOptions;
 
     constructor() { }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         if (!(ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE)
             || !ctx.getRequestFilePath()) {
             return next();
@@ -40,7 +40,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         }
     }
 
-    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(input: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
         if (!(input.method === HEAD || input.method === GET || input.method === MESSAGE)
             || !input.getRequestFilePath()) {
             return next.handle(input);
@@ -75,9 +75,9 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         }
     }
 
-    protected async send(ctx: AssetContext, options: ContentOptions) {
+    protected async send(ctx: TransportContext, options: ContentOptions) {
         let file = '';
-        if (!ctx.statusAdapter.isNotFound(ctx.status)) return file;
+        if (ctx.session.statusAdapter && !ctx.session.statusAdapter.isNotFound(ctx.status)) return file;
 
         const sender = ctx.injector.get(ContentSendAdapter);
         file = await sender.send(ctx, options);

@@ -10,7 +10,7 @@ import { ServerOpts } from './Server';
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse, any, TServOpts> {
 
     abstract get serverOptions(): TServOpts;
     /**

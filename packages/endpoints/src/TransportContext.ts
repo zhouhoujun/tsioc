@@ -10,11 +10,13 @@ import { ServerTransportSession } from './transport/session';
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any, TSocket = any> extends EndpointContext<TRequest> {
+export abstract class TransportContext<TRequest = any, TResponse = any, TSocket = any, TServOpts extends ServerOpts = ServerOpts> extends EndpointContext<TRequest> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
+
+    abstract get serverOptions(): TServOpts;
 
     /**
      * transport session
@@ -113,6 +115,8 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * Set request url
      */
     abstract set url(value: string);
+
+    abstract getRequestFilePath(): string | null;
 
     /**
      * original url

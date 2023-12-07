@@ -1,7 +1,7 @@
 import { PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, isBoolean, isNil, isString, TypeExecption } from '@tsdi/ioc';
-import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, hdr, InternalServerExecption, NotFoundExecption } from '@tsdi/common';
-import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
+import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption } from '@tsdi/common';
+import { ContentSendAdapter, SendOptions, TransportContext } from '@tsdi/endpoints';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
@@ -10,7 +10,7 @@ const statify = promisify(stat);
 
 @Injectable({ static: true })
 export class ContentSendAdapterImpl extends ContentSendAdapter {
-    async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
+    async send(ctx: TransportContext, opts: SendOptions): Promise<string> {
         let path = ctx.getRequestFilePath();
         if (isNil(path) || !isString(path)) return '';
 
@@ -100,7 +100,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
 
-        ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
+        ctx.length = stats.size;
         if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
         if (!ctx.response.getHeader(hdr.CACHE_CONTROL)) {
             const maxAge = opts.maxAge ?? 0;

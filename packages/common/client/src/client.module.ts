@@ -15,7 +15,7 @@ import { TransportRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBu
 import { DefaultRedirector } from './redirector';
 import { ClientDuplexTransportSessionFactory } from './impl/duplex.session';
 import { ClientTopicTransportSessionFactory } from './impl/topic.session';
-import { BodyContentInterceptor } from './body';
+import { BodyContentInterceptor } from './interceptors/body';
 
 /**
  * client module config.

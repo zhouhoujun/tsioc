@@ -7,7 +7,7 @@ import {
 
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
-import { ClientTransportSession } from './transport/session';
+import { ClientTransportSession } from '../transport/session';
 
 
 /**

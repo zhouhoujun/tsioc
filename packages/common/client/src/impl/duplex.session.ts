@@ -1,5 +1,8 @@
 import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, PacketBuffer, ResponseEventFactory, IncomingAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, TransportOpts, TransportRequest } from '@tsdi/common';
+import {
+    IDuplexStream, IReadableStream, ResponseEventFactory, TransportOpts, TransportRequest,
+    PacketBuffer, IncomingAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter
+} from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
@@ -27,7 +30,7 @@ export class ClientDuplexTransportSession extends ClientEventTransportSession<ID
     protected getTopic(msg: string | Buffer | Uint8Array): string {
         return '__DEFALUT_TOPIC__'
     }
-    
+
     protected getPayload(msg: string | Buffer | Uint8Array): string | Buffer | Uint8Array {
         return msg;
     }

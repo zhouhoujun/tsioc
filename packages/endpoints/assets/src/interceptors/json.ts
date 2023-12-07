@@ -1,6 +1,5 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { hdr } from '@tsdi/common';
 import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, map } from 'rxjs';
 import { ctype } from '../consts';
@@ -43,6 +42,9 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
     }
 
     protected streamify(ctx: AssetContext) {
+        const adapter = ctx.session.outgoingAdapter;
+        if (!adapter) return;
+
         const body = ctx.body;
         const strm = ctx.streamAdapter.isStream(body);
         const json = ctx.streamAdapter.isJson(body);
@@ -54,10 +56,10 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
         const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
         if (strm) {
-            ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON);
+            ctx.contentType = ctype.APPL_JSON;
             ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
-            ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON_UTF8);
+            ctx.contentType = ctype.APPL_JSON_UTF8;
             ctx.body = JSON.stringify(body, null, this.spaces);
         }
     }
