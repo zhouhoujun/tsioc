@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { StatusVaildator, patternToPath } from '@tsdi/common';
+import { statusAdapter, patternToPath } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { MircoServRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
@@ -118,7 +118,7 @@ export class KafkaClient extends Client {
         this.producer = this.client.producer(this.options.producer);
         await this.producer.connect();
 
-        const vaildator = this.handler.injector.get(StatusVaildator, null);
+        const vaildator = this.handler.injector.get(statusAdapter, null);
         this._session = this.handler.injector.get(ClientTransportSessionFactory).create({
             producer: this.producer,
             vaildator,

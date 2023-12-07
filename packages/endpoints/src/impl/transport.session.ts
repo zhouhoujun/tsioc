@@ -2,7 +2,8 @@ import { Injector, isNil, isPlainObject, lang } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException, BufferTransportSession,
-    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing, ResponsePacket, StatusVaildator
+    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing,
+    ResponsePacket, StatusAdapter, IncomingAdapter, OutgoingAdapter
 } from '@tsdi/common';
 import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
@@ -138,7 +139,9 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly statusVaildator: StatusVaildator | null,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly incomingAdapter: IncomingAdapter | null,
+        readonly outgoingAdapter: OutgoingAdapter | null,
         readonly streamAdapter: StreamAdapter,
         readonly encoder: OutgoingEncoder,
         readonly decoder: IncomingDecoder,

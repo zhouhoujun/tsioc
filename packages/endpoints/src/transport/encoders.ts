@@ -1,5 +1,5 @@
-import { Injectable, isNil, isNumber, isPlainObject, isString } from '@tsdi/ioc';
-import { InternalServerExecption, OutgoingType, hdr, isBuffer, toBuffer } from '@tsdi/common';
+import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { HEAD, InternalServerExecption, OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range, throwError } from 'rxjs';
 import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend } from './codings';
 import { TransportContext } from '../TransportContext';
@@ -12,10 +12,9 @@ export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor
 
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
 
-        if (isNil(ctx.body)) {
+        if (ctx.session.statusAdapter?.isEmpty(ctx.status)) {
             //ignore body
             ctx.body = null;
-            ctx.rawBody = emptyBody;
         }
         return next.handle(ctx);
     }
@@ -28,11 +27,10 @@ export class HeadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
         if (ctx.rawBody) return next.handle(ctx);
 
-        if (ctx.isHeadMethod()) {
-            if (!ctx.sent && !ctx.response.headers[hdr.CONTENT_LENGTH]) {
+        if (ctx.method === HEAD) {
+            if (!ctx.sent && !ctx.session.outgoingAdapter?.getContentLength(ctx.response)) {
                 const length = ctx.length;
                 if (Number.isInteger(length)) ctx.length = length;
-                ctx.rawBody = emptyBody;
             }
         }
         return next.handle(ctx);
@@ -48,17 +46,17 @@ export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeIntercepto
         if (ctx.rawBody) return next.handle(ctx);
 
         if (ctx.body === null) {
-            if (this._explicitNullBody) {
-                ctx.removeHeader(hdr.CONTENT_TYPE);
-                ctx.removeHeader(hdr.CONTENT_LENGTH);
-                ctx.removeHeader(hdr.TRANSFER_ENCODING);
-            }
+            // if (this._explicitNullBody) {
+            //     ctx.removeHeader(hdr.CONTENT_TYPE);
+            //     ctx.removeHeader(hdr.CONTENT_LENGTH);
+            //     ctx.removeHeader(hdr.TRANSFER_ENCODING);
+            // }
 
-            const body = Buffer.from(this.statusMessage ?? String(this.status));
-            if (!ctx.sent) {
-                ctx.type = 'text';
-                this.length = Buffer.byteLength(body)
-            }
+            // const body = Buffer.from(this.statusMessage ?? String(this.status));
+            // if (!ctx.sent) {
+            //     ctx.type = 'text';
+            //     ctx.length = Buffer.byteLength(body)
+            // }
         }
         return next.handle(ctx);
     }

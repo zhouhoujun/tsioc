@@ -77,7 +77,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
 
     protected async send(ctx: AssetContext, options: ContentOptions) {
         let file = '';
-        if (!ctx.vaildator.isNotFound(ctx.status)) return file;
+        if (!ctx.statusAdapter.isNotFound(ctx.status)) return file;
 
         const sender = ctx.injector.get(ContentSendAdapter);
         file = await sender.send(ctx, options);

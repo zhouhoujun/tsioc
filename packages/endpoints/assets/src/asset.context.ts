@@ -1,9 +1,9 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
 import { EndpointInvokeOpts, PipeTransform } from '@tsdi/core';
 import {
-    Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr,
+    Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer,
     InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException,
-    HEAD, StatusCode, StatusVaildator, MimeAdapter
+    HEAD, StatusCode, StatusAdapter, MimeAdapter
 } from '@tsdi/common';
 import { AssetContext, FileAdapter, ServerOpts, ServerTransportSession } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
@@ -36,7 +36,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly originalUrl: string;
     private _url?: string;
 
-    readonly vaildator: StatusVaildator;
+    readonly statusAdapter: StatusAdapter;
     readonly streamAdapter: StreamAdapter;
     readonly fileAdapter: FileAdapter;
     readonly negotiator: Negotiator;
@@ -44,10 +44,10 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
 
     constructor(injector: Injector, readonly session: ServerTransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
-        super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
+        super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.statusAdapter.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
         this.streamAdapter = session.streamAdapter;
-        this.vaildator = session.statusVaildator ?? injector.get(StatusVaildator);
+        this.statusAdapter = session.statusAdapter ?? injector.get(StatusAdapter);
         this.fileAdapter = injector.get(FileAdapter);
         this.negotiator = injector.get(Negotiator);
         this.mimeAdapter = injector.get(MimeAdapter);
@@ -68,7 +68,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     protected init(request: TRequest) {
-        this.status = this.vaildator.notFound;
+        this.status = this.statusAdapter.notFound;
         this._url = request.url || request.topic || '';
         if (this.isAbsoluteUrl(this._url)) {
             this._url = normalize(this.URL.pathname);
@@ -116,14 +116,14 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * Whether the status code is ok
      */
     get ok(): boolean {
-        return this.vaildator.isOk(this.status);
+        return this.statusAdapter.isOk(this.status);
     }
 
     /**
      * Whether the status code is ok
      */
     set ok(ok: boolean) {
-        this.status = ok ? this.vaildator.ok : this.vaildator.notFound
+        this.status = ok ? this.statusAdapter.ok : this.statusAdapter.notFound
     }
 
     get socket() {
@@ -489,7 +489,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * content type.
      */
     get contentType(): string {
-        const ctype = this.getRespHeader(hdr.CONTENT_TYPE);
+        const ctype = this.session.outgoingAdapter?.getContentType(this.response);
         return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
     }
 
@@ -547,8 +547,8 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
         // no content
         if (null == val) {
-            if (!(this.vaildator.isEmpty(this.status))) {
-                this.status = this.vaildator.noContent;
+            if (!(this.statusAdapter.isEmpty(this.status))) {
+                this.status = this.statusAdapter.noContent;
             }
             if (val === null) this.onNullBody();
             this.removeHeader(hdr.CONTENT_TYPE);
@@ -558,7 +558,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         // set the status
-        if (!this._explicitStatus || this.vaildator.isNotFound(this.status)) this.ok = true;
+        if (!this._explicitStatus || this.statusAdapter.isNotFound(this.status)) this.ok = true;
 
         // set the content-type only if not yet set
         const setType = !this.hasHeader(hdr.CONTENT_TYPE);
@@ -754,7 +754,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
-        if (!this.vaildator.isRedirect(this.status)) this.status = this.vaildator.found;
+        if (!this.statusAdapter.isRedirect(this.status)) this.status = this.statusAdapter.found;
 
         // html
         if (this.accepts('html')) {
@@ -894,7 +894,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     isEmpty() {
-        return this.vaildator.isEmpty(this.status) || this.body === null;
+        return this.statusAdapter.isEmpty(this.status) || this.body === null;
     }
 
     isHeadMethod(): boolean {
@@ -927,7 +927,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
         this.execption = err;
 
-        const vaildator = this.vaildator;
+        const vaildator = this.statusAdapter;
         let status = err.status || err.statusCode;
         // ENOENT support
         if (ENOENT === err.code) status = vaildator.notFound;

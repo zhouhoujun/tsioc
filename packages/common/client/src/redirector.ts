@@ -2,7 +2,7 @@
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import {
     ReqHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter,
-    hdr, StatusCode, OutgoingHeaders, StatusVaildator, Redirector
+    StatusCode, OutgoingHeaders, StatusAdapter, Redirector
 } from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Client } from './Client';
@@ -17,7 +17,7 @@ export class DefaultRedirector implements Redirector {
 
     redirect<T>(req: TransportRequest, status: StatusCode, headers: OutgoingHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            const validator = req.context.get(StatusVaildator);
+            const validator = req.context.get(StatusAdapter);
             const adapter = req.context.get(StreamAdapter);
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2

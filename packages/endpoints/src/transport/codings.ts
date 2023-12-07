@@ -7,12 +7,17 @@ import { TransportContext } from '../TransportContext';
 
 
 
-
+/**
+ * Outgoing encoder.
+ */
 @Abstract()
 export abstract class OutgoingEncoder<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> implements Handler<T, TOutput> {
     abstract handle(ctx: T): Observable<TOutput>;
 }
 
+/**
+ * Outgoing encode backend.
+ */
 @Abstract()
 export abstract class OutgoingBackend<T extends TransportContext = TransportContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
     abstract handle(ctx: T): Observable<TOutput>;
@@ -50,12 +55,17 @@ export class InterceptingOutgoingEncoder<T extends TransportContext = TransportC
 }
 
 
-
+/**
+ * Incoming decoder.
+ */
 @Abstract()
 export abstract class IncomingDecoder<T extends IncomingContext = IncomingContext> implements Handler<T, TransportContext> {
     abstract handle(ctx: T): Observable<TransportContext>;
 }
 
+/**
+ * Incoming decode backend.
+ */
 @Abstract()
 export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, TransportContext> {
     abstract handle(ctx: T): Observable<TransportContext>;

@@ -29,7 +29,7 @@ export interface ResponseContext {
 }
 
 /**
- * Request encdoer.
+ * request encdoer.
  */
 @Abstract()
 export abstract class RequestEncoder<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> implements Handler<T, TOutput> {
@@ -40,6 +40,9 @@ export abstract class RequestEncoder<T extends RequestContext = RequestContext, 
     abstract handle(ctx: T): Observable<TOutput>;
 }
 
+/**
+ * request encode backend.
+ */
 @Abstract()
 export abstract class RequestBackend<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
     abstract handle(ctx: T): Observable<TOutput>;
@@ -90,7 +93,9 @@ export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent>
      */
     abstract handle(res: ResponseContext): Observable<T>;
 }
-
+/**
+ * response decode backend.
+ */
 @Abstract()
 export abstract class ResponseBackend<T extends TransportEvent = TransportEvent> implements Backend<ResponseContext, T> {
     abstract handle(ctx: ResponseContext): Observable<T>;

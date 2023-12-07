@@ -193,7 +193,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
                 if (allowHeaders) {
                     ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
                 }
-                ctx.status = ctx.vaildator.noContent;
+                ctx.status = ctx.statusAdapter.noContent;
             }
         });
 
@@ -290,7 +290,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = ctx.vaildator.noContent;
+            ctx.status = ctx.statusAdapter.noContent;
         }
     }
 }

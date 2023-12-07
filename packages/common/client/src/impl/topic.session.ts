@@ -1,5 +1,9 @@
 import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, IReadableStream, Packet, PacketBuffer, RequestPacket, ResponseEventFactory, StatusVaildator, StreamAdapter, TopicClient, TopicMessage, TransportOpts, TransportRequest } from '@tsdi/common';
+import {
+    BadRequestExecption, IReadableStream, IncomingAdapter, OutgoingAdapter,
+    Packet, PacketBuffer, RequestPacket, ResponseEventFactory, StatusAdapter,
+    StreamAdapter, TopicClient, TopicMessage, TransportOpts, TransportRequest
+} from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
@@ -59,14 +63,16 @@ export class ClientTopicTransportSessionFactory implements ClientTransportSessio
 
     constructor(
         readonly injector: Injector,
-        @Optional() private statusVaildator: StatusVaildator,
+        @Optional() private statusAdapter: StatusAdapter,
+        @Optional() private incomingAdapter: IncomingAdapter,
+        @Optional() private outgoingAdapter: OutgoingAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) { }
 
     create(socket: TopicClient, options: TransportOpts): ClientTopicTransportSession<TopicClient> {
-        return new ClientTopicTransportSession(this.injector, socket, this.statusVaildator, this.streamAdapter, this.eventFactory, this.encoder, this.decoder, new PacketBuffer(), options);
+        return new ClientTopicTransportSession(this.injector, socket, this.statusAdapter, this.incomingAdapter, this.outgoingAdapter, this.streamAdapter, this.eventFactory, this.encoder, this.decoder, new PacketBuffer(), options);
     }
 
 }

@@ -1,7 +1,7 @@
 import { Injectable, Injector, InvocationContext, isDefined, isNil, promisify } from '@tsdi/ioc';
 import {
     HttpStatusCode, IReadableStream, InvalidJsonException,
-    Packet, ResponseEventFactory, ResponsePacket, StatusVaildator, StreamAdapter, TransportOpts, XSSI_PREFIX, ev, hdr, statusMessage
+    Packet, ResponseEventFactory, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts, XSSI_PREFIX, ev, statusMessage
 } from '@tsdi/common';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession, ClientTransportSessionFactory, RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
@@ -36,7 +36,7 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
     constructor(
         readonly injector: Injector,
         readonly socket: ClientHttp2Session | null,
-        readonly statusVaildator: StatusVaildator,
+        readonly statusAdapter: StatusAdapter,
         readonly streamAdapter: StreamAdapter,
         readonly eventFactory: ResponseEventFactory, 
         readonly encoder: RequestEncoder,
@@ -207,7 +207,7 @@ export class HttpClientSessionFactory implements ClientTransportSessionFactory<C
 
     constructor(
         readonly injector: Injector,
-        readonly statusVaildtor: StatusVaildator,
+        readonly statusVaildtor: StatusAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
         private encoder: RequestEncoder,
@@ -231,7 +231,7 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
     constructor(
         readonly injector: Injector,
         readonly socket: Http2Server | HttpsServer | Server,
-        readonly statusVaildator: StatusVaildator,
+        readonly statusAdapter: StatusAdapter,
         readonly streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
         private decoder: IncomingDecoder,
@@ -315,7 +315,7 @@ export class HttpServerSessionFactory implements ServerTransportSessionFactory<H
 
     constructor(
         readonly injector: Injector,
-        private statusVaildator: StatusVaildator,
+        private statusAdapter: StatusAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
         private decoder: IncomingDecoder) {
@@ -323,7 +323,7 @@ export class HttpServerSessionFactory implements ServerTransportSessionFactory<H
     }
 
     create(socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerTransportSession {
-        return new HttpServerTransportSession(this.injector, socket, this.statusVaildator, this.streamAdapter, this.encoder, this.decoder, options);
+        return new HttpServerTransportSession(this.injector, socket, this.statusAdapter, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

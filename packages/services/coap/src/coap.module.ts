@@ -2,14 +2,14 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, StatusVaildator } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, statusAdapter } from '@tsdi/endpoints';
 import { CoapClient } from './client/client';
 import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, COAP_CLIENT_OPTS } from './client/options';
 import { CoapHandler } from './client/handler';
 import { CoapServer } from './server/server';
 import { COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_OPTS } from './server/options';
 import { CoapEndpoint } from './server/endpoint';
-import { CoapStatusVaildator } from './status';
+import { CoapstatusAdapter } from './status';
 import { CoapTransportSessionFactory } from './coap.session';
 import { CoapExecptionHandlers } from './server/execption.handles';
 
@@ -20,7 +20,7 @@ const defaultMaxSize = 1024 * 256;
     providers: [
         CoapClient,
         CoapServer,
-        CoapStatusVaildator,
+        CoapstatusAdapter,
         CoapTransportSessionFactory,
         {
             provide: CLIENT_MODULES,
@@ -40,7 +40,7 @@ const defaultMaxSize = 1024 * 256;
                     },
                     sessionFactory: { useExisting: CoapTransportSessionFactory },
                     providers: [
-                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
+                        { provide: statusAdapter, useExisting: CoapstatusAdapter }
                     ]
                 } as ClientOpts
             },
@@ -79,7 +79,7 @@ const defaultMaxSize = 1024 * 256;
                         FinalizeFilter
                     ],
                     providers: [
-                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
+                        { provide: statusAdapter, useExisting: CoapstatusAdapter }
                     ]
                 }
             } as ServerModuleOpts,
@@ -115,7 +115,7 @@ const defaultMaxSize = 1024 * 256;
                         FinalizeFilter
                     ],
                     providers: [
-                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
+                        { provide: statusAdapter, useExisting: CoapstatusAdapter }
                     ]
                 }
             } as ServerModuleOpts,

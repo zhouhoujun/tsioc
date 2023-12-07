@@ -84,7 +84,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         this._explicitStatus = true;
         this.response.statusCode = code;
         if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
-        if (this.body && this.vaildator.isEmpty(code)) this.body = null;
+        if (this.body && this.statusAdapter.isEmpty(code)) this.body = null;
     }
 
     get statusMessage() {

@@ -15,6 +15,7 @@ import { TransportRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBu
 import { DefaultRedirector } from './redirector';
 import { ClientDuplexTransportSessionFactory } from './impl/duplex.session';
 import { ClientTopicTransportSessionFactory } from './impl/topic.session';
+import { BodyContentInterceptor } from './body';
 
 /**
  * client module config.
@@ -83,6 +84,8 @@ export interface ClientTokenOpts {
 @Module({
     providers: [
         TransportBackend,
+
+        BodyContentInterceptor,
 
         DefaultRedirector,
         { provide: Redirector, useExisting: DefaultRedirector, asDefault: true },

@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { StatusCode, StatusVaildator } from '@tsdi/common';
+import { StatusAdapter } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
 import { FileAdapter } from './FileAdapter';
 import { ServerOpts } from './Server';
@@ -18,9 +18,9 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      */
     abstract get fileAdapter(): FileAdapter;
     /**
-     * status vaildator
+     * status adapter
      */
-    abstract get vaildator(): StatusVaildator;
+    abstract get statusAdapter(): StatusAdapter;
 
     /**
      * Get request rul
@@ -56,24 +56,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
     abstract get response(): TResponse;
 
     /**
-     * Get response status.
-     */
-    abstract get status(): StatusCode;
-    /**
-     * Set response status, defaults to OK.
-     */
-    abstract set status(status: StatusCode);
-
-    /**
-     * Get response status message.
-     */
-    abstract get statusMessage(): string;
-    /**
-     * Set response status message.
-     */
-    abstract set statusMessage(message: string);
-
-    /**
      * Set Content-Length field to `n`.
      *
      * @param {Number} n
@@ -105,29 +87,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      * can response stream writeable
      */
     abstract get writable(): boolean;
-    /**
-     * The request body, or `null` if one isn't set.
-     *
-     * Bodies are not enforced to be immutable, as they can include a reference to any
-     * user-defined data type. However, middlewares should take care to preserve
-     * idempotence by treating them as such.
-     */
-    abstract get body(): any;
-    /**
-     * Set response body.
-     *
-     * @param {any} value
-     * @api public
-     */
-    abstract set body(value: any);
-    /**
-     * Whether the status code is ok
-     */
-    abstract get ok(): boolean;
-    /**
-     * Whether the status code is ok
-     */
-    abstract set ok(ok: boolean);
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.

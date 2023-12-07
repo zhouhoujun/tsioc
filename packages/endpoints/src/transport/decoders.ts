@@ -1,5 +1,5 @@
 import { ArgumentExecption, Injectable } from '@tsdi/ioc';
-import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, hdr, isBuffer } from '@tsdi/common';
+import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, isBuffer } from '@tsdi/common';
 import { Observable, Subscriber, mergeMap, of, throwError } from 'rxjs';
 import { IncomingBackend, IncomingDecodeInterceptor, IncomingDecoder } from './codings';
 import { IncomingContext } from './session';
@@ -86,7 +86,7 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
                 }
 
                 if (packet) {
-                    const len = ~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0');
+                    const len = ctx.session.incomingAdapter?.getContentLength(packet);
                     if (!len) {
                         packet.payload = raw;
                         subscriber.next(packet);

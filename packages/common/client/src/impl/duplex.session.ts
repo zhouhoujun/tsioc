@@ -1,5 +1,5 @@
 import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, PacketBuffer, ResponseEventFactory, StatusVaildator, StreamAdapter, TransportOpts, TransportRequest } from '@tsdi/common';
+import { IDuplexStream, IReadableStream, PacketBuffer, ResponseEventFactory, IncomingAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, TransportOpts, TransportRequest } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
@@ -46,14 +46,16 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
 
     constructor(
         readonly injector: Injector,
-        @Optional() private statusVaildator: StatusVaildator,
+        @Optional() private statusAdapter: StatusAdapter,
+        @Optional() private incomingAdapter: IncomingAdapter,
+        @Optional() private outgoingAdapter: OutgoingAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): ClientDuplexTransportSession {
-        return new ClientDuplexTransportSession(this.injector, socket, this.statusVaildator, this.streamAdapter, this.eventFactory, this.encoder, this.decoder, new PacketBuffer(), options);
+        return new ClientDuplexTransportSession(this.injector, socket, this.statusAdapter, this.incomingAdapter, this.outgoingAdapter, this.streamAdapter, this.eventFactory, this.encoder, this.decoder, new PacketBuffer(), options);
     }
 
 }

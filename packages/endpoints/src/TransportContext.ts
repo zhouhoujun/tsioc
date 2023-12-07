@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { IncomingPacket, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StreamAdapter } from '@tsdi/common';
+import { IncomingPacket, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode, StreamAdapter } from '@tsdi/common';
 import { ServerOpts } from './Server';
 import { ServerTransportSession } from './transport/session';
 
@@ -41,14 +41,32 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract set response(val: TResponse);
 
     /**
-     * Set Content-Length field to `n`.
+     * Get response status.
+     */
+    abstract get status(): StatusCode;
+    /**
+     * Set response status, defaults to OK.
+     */
+    abstract set status(status: StatusCode);
+
+    /**
+     * Get response status message.
+     */
+    abstract get statusMessage(): string;
+    /**
+     * Set response status message.
+     */
+    abstract set statusMessage(message: string);
+
+    /**
+     * Set response content length.
      *
      * @param {Number} n
      * @api public
      */
     abstract set length(n: number | undefined);
     /**
-     * Return parsed response Content-Length when present.
+     * Get response content length
      *
      * @return {Number}
      * @api public
@@ -70,6 +88,15 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     abstract set body(value: any);
+
+    /**
+     * Whether the status code is ok
+     */
+    abstract get ok(): boolean;
+    /**
+     * Whether the status code is ok
+     */
+    abstract set ok(ok: boolean);
 
     /**
      * has sent or not.

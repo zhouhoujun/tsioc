@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector, isArray, isNil, isString } from '@tsdi/ioc';
-import { HEAD, IncomingPacket, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
+import { HEAD, IncomingPacket, InternalServerExecption, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StatusCode, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
@@ -8,7 +8,6 @@ import { ServerTransportSession } from '../transport/session';
 
 
 export class TransportContextIml<TRequest extends RequestPacket = RequestPacket, TResponse extends ResponsePacket = ResponsePacket, TSocket = any> extends TransportContext<TRequest, TResponse, TSocket> {
-
 
     private _url: string;
     private _originalUrl: string;
@@ -113,6 +112,45 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
             const uri = new URL(url, baseUrl);
             return uri;
         }
+    }
+
+    protected _explicitStatus?: boolean;
+
+    get status(): StatusCode {
+        return this.response.status!
+    }
+
+    set status(status: StatusCode) {
+        if (this.sent) return;
+
+        if (!this.session.statusAdapter?.isStatus(status)) throw new InternalServerExecption(`invalid status code: ${status}`)
+        this.response.status = status;
+        this._explicitStatus = true;
+        if (this.body && this.session.statusAdapter?.isEmpty(status)) this.body = null;
+    }
+
+    get statusMessage(): string {
+        return this.response.statusText ?? '';
+    }
+    set statusMessage(message: string) {
+        this.response.statusText = message;
+    }
+
+    private _ok = true;
+    /**
+     * Whether the status code is ok
+     */
+    get ok(): boolean {
+        return this.session.statusAdapter?.isOk(this.status) ?? this._ok;
+    }
+
+    /**
+     * Whether the status code is ok
+     */
+    set ok(ok: boolean) {
+        this._ok = ok;
+        if (!this.session.statusAdapter) return;
+        this.status = ok ? this.session.statusAdapter.ok : this.session.statusAdapter.notFound
     }
 
     /**

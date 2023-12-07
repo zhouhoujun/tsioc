@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc'
-import { GET, POST, HttpStatusCode, statusMessage, StatusVaildator } from '@tsdi/common';
+import { GET, POST, HttpStatusCode, statusMessage, StatusAdapter } from '@tsdi/common';
 
 
 @Injectable({ static: true })
-export class HttpStatusVaildator implements StatusVaildator {
+export class HttpstatusAdapter implements StatusAdapter {
     get ok(): number {
         return HttpStatusCode.Ok
     }

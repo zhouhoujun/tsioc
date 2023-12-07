@@ -61,7 +61,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         const { status, statusMessage } = ctx;
         if (!withColor) return [status, statusMessage ?? ''];
 
-        const vaildator = ctx.vaildator;
+        const vaildator = ctx.statusAdapter;
 
         if (vaildator.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];

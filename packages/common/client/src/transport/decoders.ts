@@ -1,7 +1,7 @@
 import { ArgumentExecption, EMPTY_OBJ, Injectable, Optional, isNil, lang } from '@tsdi/ioc';
 import {
     HEAD, IDuplexStream, MimeAdapter, MimeTypes, Redirector, ResponseJsonParseError, ResponsePacket,
-    TransportEvent, XSSI_PREFIX, ev, hdr, isBuffer, toBuffer
+    TransportEvent, XSSI_PREFIX, ev, isBuffer, toBuffer
 } from '@tsdi/common';
 import { Observable, Subscriber, catchError, defer, mergeMap, of, throwError } from 'rxjs';
 import { ResponseBackend, ResponseContext, ResponseDecodeInterceptor, ResponseDecoder } from './codings';
@@ -102,7 +102,7 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
                 }
 
                 if (packet) {
-                    const len = ~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0');
+                    const len = session.incomingAdapter?.getContentLength(packet) // ~~ (packet.headers?.[hdr.CONTENT_LENGTH] ?? '0');
                     if (!len) {
                         packet.payload = raw;
                         subscriber.next(packet);
@@ -151,13 +151,12 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
 @Injectable()
 export class EmptyResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (ctx.packet.status && ctx.session.statusVaildator) {
-            if (ctx.session.statusVaildator.isEmpty(ctx.packet.status)) {
-                return of(ctx.session.eventFactory.createResponse({
-                    ...ctx.packet,
-                    payload: null
-                }) as T);
-            }
+        if (ctx.packet.status && ctx.session.statusAdapter?.isEmpty(ctx.packet.status)) {
+            return of(ctx.session.eventFactory.createResponse({
+                ...ctx.packet,
+                payload: null
+            }) as T);
+
         }
         return next.handle(ctx);
     }
@@ -166,12 +165,10 @@ export class EmptyResponseDecordeInterceptor<T extends TransportEvent = Transpor
 @Injectable()
 export class RedirectResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (ctx.packet.status && ctx.session.statusVaildator) {
-            if (ctx.session.statusVaildator.isRedirect(ctx.packet.status)) {
-                // HTTP fetch step 5.2
-                const redirector = ctx.req.context.get(Redirector);
-                return redirector.redirect<T>(ctx.req, ctx.packet.status, ctx.packet.headers!);
-            }
+        if (ctx.packet.status && ctx.session.statusAdapter?.isRedirect(ctx.packet.status)) {
+            // HTTP fetch step 5.2
+            const redirector = ctx.req.context.get(Redirector);
+            return redirector.redirect<T>(ctx.req, ctx.packet.status, ctx.packet.headers!);
         }
         return next.handle(ctx);
     }
@@ -182,8 +179,8 @@ export class ErrorResponseDecordeInterceptor<T extends TransportEvent = Transpor
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
         if (ctx.packet.error) {
             return throwError(() => ctx.session.eventFactory.createErrorResponse(ctx.packet))
-        } else if (ctx.packet.status && ctx.session.statusVaildator) {
-            ctx.packet.ok = ctx.session.statusVaildator.isOk(ctx.packet.status);
+        } else if (ctx.packet.status && ctx.session.statusAdapter) {
+            ctx.packet.ok = ctx.session.statusAdapter.isOk(ctx.packet.status);
             if (!ctx.packet.ok) {
                 return defer(async () => {
                     const packet = ctx.packet;
@@ -234,8 +231,8 @@ export class RequestStauts {
 export class CompressResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
 
-        if (ctx.packet.headers?.[hdr.CONTENT_ENCODING]) {
-            const codings = ctx.packet.headers?.[hdr.CONTENT_ENCODING];
+        if (ctx.session.incomingAdapter) {
+            const codings = ctx.session.incomingAdapter.getContentEncoding(ctx.packet);
             const req = ctx.req;
             const streamAdapter = ctx.session.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
@@ -325,7 +322,7 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
         return defer(async () => {
             const { packet, session } = ctx;
             let responseType = ctx.req.responseType;
-            const contentType = packet.headers?.[hdr.CONTENT_TYPE];
+            const contentType = session.incomingAdapter?.getContentType(packet);
             if (contentType) {
                 if (responseType === 'json' && !this.mimeAdapter.match(this.mimeTypes.json, contentType)) {
                     if (this.mimeAdapter.match(this.mimeTypes.xml, contentType) || this.mimeAdapter.match(this.mimeTypes.text, contentType)) {
@@ -376,7 +373,7 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: packet.headers?.[hdr.CONTENT_TYPE] as string
+                        type: session.incomingAdapter?.getContentType(packet)
                     });
                     break;
 

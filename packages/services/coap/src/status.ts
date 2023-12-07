@@ -1,10 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
 import { NotSupportedExecption } from '@tsdi/common';
-import { StatusVaildator } from '@tsdi/endpoints';
+import { statusAdapter } from '@tsdi/endpoints';
 
 
 @Injectable({ static: true })
-export class CoapStatusVaildator implements StatusVaildator {
+export class CoapstatusAdapter implements statusAdapter {
     get ok(): string {
         return CoapStatuCode.Content
     }

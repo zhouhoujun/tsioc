@@ -2,9 +2,9 @@ import { Execption, Injector, isDefined, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
-    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, hdr, BufferTransportSession,
+    TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, BufferTransportSession,
     StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException,
-    StatusVaildator, ResponseEventFactory
+    StatusAdapter, ResponseEventFactory, IncomingAdapter, OutgoingAdapter
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
@@ -22,7 +22,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
     abstract get decoder(): ResponseDecoder;
 
     send(req: TransportRequest): Observable<any> {
-        const len = this.getPayloadLen(req);
+        const len = this.outgoingAdapter?.getContentLength(req);
         if (len) {
             const opts = this.options as AssetTransportOpts;
             if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
@@ -154,10 +154,6 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
         await lastValueFrom(this.send(packet))
     }
 
-    protected getPayloadLen(req: TransportRequest) {
-        return ~~(req.headers.get(hdr.CONTENT_LENGTH) ?? '0')
-    }
-
     protected responseFilter(req: RequestPacket, msg: TMsg) {
         return true;
     }
@@ -189,7 +185,9 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly statusVaildator: StatusVaildator,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly incomingAdapter: IncomingAdapter | null,
+        readonly outgoingAdapter: OutgoingAdapter | null,
         readonly streamAdapter: StreamAdapter,
         readonly eventFactory: ResponseEventFactory,
         readonly encoder: RequestEncoder,
