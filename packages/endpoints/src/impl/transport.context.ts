@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, Injector, isArray, isNil, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isNil, isString, isUndefined } from '@tsdi/ioc';
 import { HEAD, IncomingPacket, InternalServerExecption, LOCALHOST, MessageExecption, OutgoingHeaders, RequestPacket, ResponsePacket, StatusCode, StreamAdapter, TransportSession, isBuffer } from '@tsdi/common';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
@@ -8,6 +8,7 @@ import { ServerTransportSession } from '../transport/session';
 
 
 export class TransportContextIml<TRequest extends RequestPacket = RequestPacket, TResponse extends ResponsePacket = ResponsePacket, TSocket = any> extends TransportContext<TRequest, TResponse, TSocket> {
+ 
 
     private _url: string;
     private _originalUrl: string;
@@ -66,6 +67,17 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
     get originalUrl(): string {
         return this._originalUrl;
     }
+
+    private _filepath?: string | null;
+    getRequestFilePath() {
+        if (isUndefined(this._filepath)) {
+            const pathname = this.originalUrl || this.url;
+            this.mimeAdapter.lookup(pathname);
+            this._filepath = this.mimeAdapter.lookup(pathname) ? pathname : null;
+        }
+        return this._filepath;
+    }
+
 
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
@@ -180,6 +192,35 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
 
         if (isNil(h)) return '';
         return isArray(h) ? h[0] : String(h);
+    }
+
+
+    /**
+     * content type.
+     */
+    get contentType(): string {
+        return this.session.outgoingAdapter?.getContentType(this.response) ?? ''
+    }
+    /**
+     * Set Content-Type response header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.contentType = 'application/json';
+     *     this.contentType = 'application/octet-stream';  // buffer stream
+     *     this.contentType = 'image/png';      // png
+     *     this.contentType = 'image/pjpeg';   //jpeg
+     *     this.contentType = 'text/plain';    // text, txt
+     *     this.contentType = 'text/html';    // html, htm, shtml
+     *     this.contextType = 'text/javascript'; // javascript text
+     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+     *
+     * @param {String} type
+     * @api public
+     */
+    set contentType(type: string) {
+        this.session.outgoingAdapter?.setContentType(this.response, type)
     }
 
     /**

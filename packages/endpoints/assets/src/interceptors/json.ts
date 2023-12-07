@@ -1,6 +1,6 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { AssetContext, Middleware } from '@tsdi/endpoints';
+import { TransportContext, Middleware } from '@tsdi/endpoints';
 import { Observable, map } from 'rxjs';
 import { ctype } from '../consts';
 
@@ -15,7 +15,7 @@ export abstract class JsonMiddlewareOption {
 
 
 @Injectable()
-export class Json implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class Json implements Middleware<TransportContext>, Interceptor<TransportContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
@@ -26,7 +26,7 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
         this.paramName = option?.param ?? '';
     }
 
-    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(input: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
         return next.handle(input)
             .pipe(
                 map(res => {
@@ -36,12 +36,12 @@ export class Json implements Middleware<AssetContext>, Interceptor<AssetContext>
             )
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         await next();
         this.streamify(ctx);
     }
 
-    protected streamify(ctx: AssetContext) {
+    protected streamify(ctx: TransportContext) {
         const adapter = ctx.session.outgoingAdapter;
         if (!adapter) return;
 

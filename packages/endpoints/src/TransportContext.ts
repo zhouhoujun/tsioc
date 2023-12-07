@@ -166,6 +166,30 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract getHeader(field: string): string;
 
     /**
+     * content type.
+     */
+    abstract get contentType(): string;
+    /**
+     * Set Content-Type response header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.contentType = 'application/json';
+     *     this.contentType = 'application/octet-stream';  // buffer stream
+     *     this.contentType = 'image/png';      // png
+     *     this.contentType = 'image/pjpeg';   //jpeg
+     *     this.contentType = 'text/plain';    // text, txt
+     *     this.contentType = 'text/html';    // html, htm, shtml
+     *     this.contextType = 'text/javascript'; // javascript text
+     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+     *
+     * @param {String} type
+     * @api public
+     */
+    abstract set contentType(type: string);
+
+    /**
      * has response header field or not.
      * @param field 
      */
