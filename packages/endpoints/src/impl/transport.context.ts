@@ -15,19 +15,16 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
     private _method: string;
     private _URL?: URL;
 
-    readonly streamAdapter: StreamAdapter;
-
     constructor(
         injector: Injector,
         readonly session: ServerTransportSession,
         readonly request: TRequest,
         readonly response: TResponse,
-        private serverOptions: ServerOpts = EMPTY_OBJ
+        readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        this.streamAdapter = session.streamAdapter;
         if (!response.id) {
             response.id = request.id;
         }
@@ -72,8 +69,12 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
     getRequestFilePath() {
         if (isUndefined(this._filepath)) {
             const pathname = this.originalUrl || this.url;
-            this.mimeAdapter.lookup(pathname);
-            this._filepath = this.mimeAdapter.lookup(pathname) ? pathname : null;
+            if (this.session.mimeAdapter) {
+                this.session.mimeAdapter.lookup(pathname);
+                this._filepath = this.session.mimeAdapter.lookup(pathname) ? pathname : null;
+            } else {
+                this._filepath = pathname;
+            }
         }
         return this._filepath;
     }

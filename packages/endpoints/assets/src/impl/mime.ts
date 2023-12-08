@@ -1,13 +1,16 @@
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-control-regex */
 import { Injectable, isString, Static, TypeExecption } from '@tsdi/ioc';
-import { MimeAdapter, MimeDb, MimeTypes, SplitType } from '@tsdi/common';
-import { FileAdapter } from '@tsdi/endpoints';
+import { FileAdapter, MimeAdapter, MimeDb, MimeTypes, SplitType } from '@tsdi/common';
+
 
 
 @Injectable({ static: true })
 export class TrasportMimeAdapter extends MimeAdapter {
-    constructor(private db: MimeDb, private adapter: FileAdapter) {
+    constructor(
+        readonly mimeTypes: MimeTypes,
+        private db: MimeDb,
+        private adapter: FileAdapter) {
         super();
     }
 

@@ -3,7 +3,7 @@ import { PipeTransform } from '@tsdi/core';
 import {
     IEventEmitter, IReadableStream, OutgoingType, Packet, PacketBuffer, PacketLengthException, BufferTransportSession,
     StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing,
-    ResponsePacket, StatusAdapter, IncomingAdapter, OutgoingAdapter
+    ResponsePacket, StatusAdapter, IncomingAdapter, OutgoingAdapter, MimeAdapter, FileAdapter
 } from '@tsdi/common';
 import { Observable, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { IncomingContext, ServerTransportSession } from '../transport/session';
@@ -142,6 +142,8 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
         readonly statusAdapter: StatusAdapter | null,
         readonly incomingAdapter: IncomingAdapter | null,
         readonly outgoingAdapter: OutgoingAdapter | null,
+        readonly mimeAdapter: MimeAdapter | null,
+        readonly fileAdapter: FileAdapter,
         readonly streamAdapter: StreamAdapter,
         readonly encoder: OutgoingEncoder,
         readonly decoder: IncomingDecoder,

@@ -3,7 +3,7 @@ import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runne
 import { HybirdTransport, TransportOpts } from '@tsdi/common';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
-import { SessionOptions } from './Session';
+import { SessionOptions } from './interceptors/Session';
 import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './send';

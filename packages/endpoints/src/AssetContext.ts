@@ -1,7 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { StatusAdapter } from '@tsdi/common';
 import { TransportContext } from './TransportContext';
-import { FileAdapter } from './FileAdapter';
 import { ServerOpts } from './Server';
 
 /**
@@ -12,63 +10,10 @@ import { ServerOpts } from './Server';
 @Abstract()
 export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse, any, TServOpts> {
 
-    abstract get serverOptions(): TServOpts;
-    /**
-     * file adapter
-     */
-    abstract get fileAdapter(): FileAdapter;
-    /**
-     * status adapter
-     */
-    abstract get statusAdapter(): StatusAdapter;
-
-    /**
-     * Get request rul
-     */
-    abstract get url(): string;
-    /**
-     * Set request url
-     */
-    abstract set url(value: string);
-
-    /**
-     * original url
-     */
-    abstract get originalUrl(): string;
-
-    /**
-     * The request method.
-     */
-    abstract get method(): string;
-
     /**
      * protocol name
      */
     abstract get protocol(): string;
-
-    /**
-     * transport request.
-     */
-    abstract get request(): TRequest;
-    /**
-     * transport response.
-     */
-    abstract get response(): TResponse;
-
-    /**
-     * Set Content-Length field to `n`.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    abstract set length(n: number | undefined);
-    /**
-     * Return parsed response Content-Length when present.
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract get length(): number | undefined;
 
     /**
      * is secure protocol or not.

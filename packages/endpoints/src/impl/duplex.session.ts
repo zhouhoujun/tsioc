@@ -1,5 +1,5 @@
 import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { IDuplexStream, IReadableStream, IncomingAdapter, OutgoingAdapter, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts } from '@tsdi/common';
+import { FileAdapter, IDuplexStream, IReadableStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
@@ -47,12 +47,26 @@ export class DuplexTransportSessionFactory implements ServerTransportSessionFact
         @Optional() private statusAdapter: StatusAdapter,
         @Optional() private incomingAdapter: IncomingAdapter,
         @Optional() private outgoingAdapter: OutgoingAdapter,
+        @Optional() private mimeAdapter: MimeAdapter,
+        private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
         private decoder: IncomingDecoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): ServerDuplexTransportSession {
-        return new ServerDuplexTransportSession(this.injector, socket, this.statusAdapter, this.incomingAdapter, this.outgoingAdapter, this.streamAdapter, this.encoder, this.decoder, new PacketBuffer(), options);
+        return new ServerDuplexTransportSession(
+            this.injector,
+            socket,
+            this.statusAdapter,
+            this.incomingAdapter,
+            this.outgoingAdapter,
+            this.mimeAdapter,
+            this.fileAdapter,
+            this.streamAdapter,
+            this.encoder,
+            this.decoder,
+            new PacketBuffer(),
+            options);
     }
 
 }

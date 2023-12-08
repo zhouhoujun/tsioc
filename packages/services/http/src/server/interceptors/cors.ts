@@ -1,9 +1,8 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
-import { RequestMethod, InternalServerExecption, hdr } from '@tsdi/common';
+import { RequestMethod, InternalServerExecption, hdr, append, vary } from '@tsdi/common';
 import { Middleware, AssetContext } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
 import { defer, lastValueFrom, Observable } from 'rxjs';
-import { append, vary } from '../utils';
 
 
 
@@ -193,7 +192,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
                 if (allowHeaders) {
                     ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
                 }
-                ctx.status = ctx.statusAdapter.noContent;
+                ctx.status = ctx.session.statusAdapter!.noContent;
             }
         });
 
@@ -290,7 +289,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
             if (allowHeaders) {
                 ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = ctx.statusAdapter.noContent;
+            ctx.status = ctx.session.statusAdapter!.noContent;
         }
     }
 }

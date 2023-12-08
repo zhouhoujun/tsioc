@@ -1,17 +1,13 @@
-import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointInvokeOpts, PipeTransform } from '@tsdi/core';
 import {
-    Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer,
-    InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException,
-    HEAD, StatusCode, StatusAdapter, MimeAdapter
+    Incoming, Outgoing, OutgoingHeader, OutgoingHeaders, normalize, isBuffer, encodeUrl, escapeHtml, vary, xmlRegExp,
+    InternalServerExecption, TransportSession, MessageExecption, ENOENT, HEAD, StatusAdapter, ctype, hdr
 } from '@tsdi/common';
-import { AssetContext, FileAdapter, ServerOpts, ServerTransportSession } from '@tsdi/endpoints';
+import { AssetContext, ServerOpts, ServerTransportSession, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
 import { Buffer } from 'buffer';
-import { ctype } from './consts';
-import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { Negotiator } from './Negotiator';
-import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
 
 
 
@@ -37,20 +33,20 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     private _url?: string;
 
     readonly statusAdapter: StatusAdapter;
-    readonly streamAdapter: StreamAdapter;
-    readonly fileAdapter: FileAdapter;
+    // readonly streamAdapter: StreamAdapter;
+    // readonly fileAdapter: FileAdapter;
     readonly negotiator: Negotiator;
-    readonly mimeAdapter: MimeAdapter;
+    // readonly mimeAdapter: MimeAdapter;
 
 
     constructor(injector: Injector, readonly session: ServerTransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
-        super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.statusAdapter.isNotFound(ctx.status), ...options, args: request });
+        super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.session.statusAdapter?.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
-        this.streamAdapter = session.streamAdapter;
+        // this.streamAdapter = session.streamAdapter;
         this.statusAdapter = session.statusAdapter ?? injector.get(StatusAdapter);
-        this.fileAdapter = injector.get(FileAdapter);
+        // this.fileAdapter = injector.get(FileAdapter);
         this.negotiator = injector.get(Negotiator);
-        this.mimeAdapter = injector.get(MimeAdapter);
+        // this.mimeAdapter = injector.get(MimeAdapter);
         this.originalUrl = this.getOriginalUrl(request);
         this.init(request);
     }
@@ -86,8 +82,12 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     getRequestFilePath() {
         if (isUndefined(this._filepath)) {
             const pathname = this.pathname || this.url;
-            this.mimeAdapter.lookup(pathname);
-            this._filepath = this.mimeAdapter.lookup(pathname) ? pathname : null;
+            if (this.session.mimeAdapter) {
+                this.session.mimeAdapter.lookup(pathname);
+                this._filepath = this.session.mimeAdapter.lookup(pathname) ? pathname : null;
+            } else {
+                this._filepath = pathname;
+            }
         }
         return this._filepath;
     }
@@ -277,13 +277,18 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      *     this.is('html'); // => false
      */
     is(type: string | string[]): string | null | false {
+        const adapter = this.session.mimeAdapter;
+        if (!adapter) return null;
+
         //no body
-        if (this.getHeader(hdr.TRANSFER_ENCODING) && !this.getHeader(hdr.CONTENT_LENGTH)) {
+        const encoding = this.session.incomingAdapter?.getContentEncoding(this.request);
+        const len = this.session.incomingAdapter?.getContentLength(this.request);
+
+        if (encoding && !len) {
             return null
         }
-        const ctype = this.getHeader(hdr.CONTENT_TYPE) as string;
+        const ctype = this.session.incomingAdapter?.getContentType(this.request);
         if (!ctype) return false;
-        const adapter = this.mimeAdapter;
         const normaled = adapter.normalize(ctype);
         if (!normaled) return false;
 
@@ -379,7 +384,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
             return this.negotiator.mediaTypes(this)
         }
 
-        const medias = args.map(a => a.indexOf('/') === -1 ? this.mimeAdapter.lookup(a) : a).filter(a => isString(a)) as string[];
+        const medias = args.map(a => a.indexOf('/') === -1 ? this.session.mimeAdapter?.lookup(a) ?? a : a).filter(a => isString(a)) as string[];
         return lang.first(this.negotiator.mediaTypes(this, ...medias)) ?? false
     }
 
@@ -465,7 +470,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     set type(type: string) {
-        const contentType = this.mimeAdapter.contentType(type);
+        const contentType = this.session.mimeAdapter?.contentType(type) ?? type;
         if (contentType) {
             this.contentType = contentType
         }

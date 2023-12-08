@@ -9,6 +9,7 @@ import { IReadableStream } from './stream';
 import { PacketLengthException } from './execptions';
 import { StatusAdapter } from './StatusAdapter';
 import { IncomingAdapter, OutgoingAdapter } from './MessageAdapter';
+import { MimeAdapter } from './MimeAdapter';
 
 
 export type OutgoingType = Buffer | IReadableStream | null;
@@ -127,6 +128,10 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * status adapter.
      */
     abstract get statusAdapter(): StatusAdapter | null;
+    /**
+     * mime adapter.
+     */
+    abstract get mimeAdapter(): MimeAdapter | null;
     /**
      * stream adapter
      */

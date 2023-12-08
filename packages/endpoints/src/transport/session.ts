@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { IReadableStream, IncomingPacket, ResponsePacket, TransportOpts, TransportSession } from '@tsdi/common';
+import { FileAdapter, IReadableStream, IncomingPacket, ResponsePacket, TransportOpts, TransportSession } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 import { Observable } from 'rxjs';
 import { ServerOpts } from '../Server';
@@ -24,6 +24,11 @@ export interface IncomingContext {
  */
 @Abstract()
 export abstract class ServerTransportSession<TSocket = any, TContext extends TransportContext = TransportContext> extends TransportSession<TSocket, TContext> {
+
+    /**
+     * file adapter
+     */
+    abstract get fileAdapter(): FileAdapter;
     /**
      * send.
      * @param packet 

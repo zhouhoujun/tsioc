@@ -1,6 +1,6 @@
-import { ArgumentExecption, EMPTY_OBJ, Injectable, Optional, isNil, lang } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY_OBJ, Injectable, isNil, lang } from '@tsdi/ioc';
 import {
-    HEAD, IDuplexStream, MimeAdapter, MimeTypes, Redirector, ResponseJsonParseError, ResponsePacket,
+    HEAD, IDuplexStream, Redirector, ResponseJsonParseError, ResponsePacket,
     TransportEvent, XSSI_PREFIX, ev, isBuffer, toBuffer
 } from '@tsdi/common';
 import { Observable, Subscriber, catchError, defer, mergeMap, of, throwError } from 'rxjs';
@@ -313,22 +313,21 @@ export class CompressResponseDecordeInterceptor<T extends TransportEvent = Trans
 @Injectable()
 export class TransportResponseDecordeBackend<T extends TransportEvent = TransportEvent> implements ResponseBackend<T> {
 
-    constructor(
-        @Optional() private mimeTypes: MimeTypes,
-        @Optional() private mimeAdapter: MimeAdapter,
-    ) { }
+    constructor() { }
 
     handle(ctx: ResponseContext): Observable<T> {
         return defer(async () => {
             const { packet, session } = ctx;
             let responseType = ctx.req.responseType;
-            const contentType = session.incomingAdapter?.getContentType(packet);
-            if (contentType) {
-                if (responseType === 'json' && !this.mimeAdapter.match(this.mimeTypes.json, contentType)) {
-                    if (this.mimeAdapter.match(this.mimeTypes.xml, contentType) || this.mimeAdapter.match(this.mimeTypes.text, contentType)) {
-                        responseType = 'text';
-                    } else {
-                        responseType = 'blob';
+            if (session.incomingAdapter && session.mimeAdapter) {
+                const contentType = session.incomingAdapter?.getContentType(packet);
+                if (contentType) {
+                    if (responseType === 'json' && !session.mimeAdapter.isJson(contentType)) {
+                        if (session.mimeAdapter.isXml(contentType) || session.mimeAdapter.isText(contentType)) {
+                            responseType = 'text';
+                        } else {
+                            responseType = 'blob';
+                        }
                     }
                 }
             }

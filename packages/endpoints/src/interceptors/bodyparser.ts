@@ -1,10 +1,11 @@
 /* eslint-disable no-control-regex */
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream, InvalidJsonException, MimeTypes  } from '@tsdi/common';
-import { TransportContext, Middleware } from '@tsdi/endpoints';
+import { BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream, InvalidJsonException, Incoming } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
+import { Middleware } from '../middleware/middleware';
+import { TransportContext } from '../TransportContext';
 
 
 @Abstract()
@@ -69,38 +70,43 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
         this.enableXml = this.enableType('xml');
     }
 
-    intercept(input: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
-        if (!isUndefined(input.request.body) || !input.session.incomingAdapter) return next.handle(input);
-        return from(this.parseBody(input))
+    intercept(ctx: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
+        if (!isUndefined(ctx.request.body) || !ctx.session.incomingAdapter || !ctx.session.mimeAdapter || !(ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request))) return next.handle(ctx);
+        return from(this.parseBody(ctx))
             .pipe(
                 mergeMap(res => {
-                    input.request.payload = input.request.body = res.body ?? {};
-                    if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
-                    return next.handle(input)
+                    const request = ctx.request as Incoming;
+                    request.payload = request.body = res.body ?? {};
+                    if (isUndefined(request.rawBody)) request.rawBody = res.raw;
+                    return next.handle(ctx)
                 })
             )
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        if (!isUndefined(ctx.request.body) || !ctx.session.incomingAdapter) return await next();
+        if (!isUndefined(ctx.request.body) || !ctx.session.incomingAdapter || !ctx.session.mimeAdapter || !(ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request))) return await next();
         const res = await this.parseBody(ctx);
-        ctx.request.payload = ctx.request.body = res.body ?? {};
-        if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
+        const request = ctx.request as Incoming;
+        request.payload = request.body = res.body ?? {};
+        if (isUndefined(request.rawBody)) request.rawBody = res.raw;
         await next()
     }
 
     parseBody(context: TransportContext): Promise<{ raw?: any, body?: any }> {
-        const types = context.get(MimeTypes);
-        if (this.enableJson && context.is(types.json)) {
+        const session = context.session;
+        const contentType = session.incomingAdapter?.getContentType(context.request);
+        if (!contentType) return this.parseJson(context);
+
+        if (this.enableJson && session.mimeAdapter?.isJson(contentType)) {
             return this.parseJson(context)
         }
-        if (this.enableForm && context.is(types.form)) {
+        if (this.enableForm && session.mimeAdapter?.isForm(contentType)) {
             return this.parseForm(context)
         }
-        if (this.enableText && context.is(types.text)) {
+        if (this.enableText && session.mimeAdapter?.isText(contentType)) {
             return this.parseText(context)
         }
-        if (this.enableXml && context.is(types.xml)) {
+        if (this.enableXml && session.mimeAdapter?.isXml(contentType)) {
             return this.parseText(context)
         }
 

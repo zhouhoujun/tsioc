@@ -16,6 +16,7 @@ export * from './MessageAdapter';
 export * from './Redirector';
 export * from './utils';
 export * from './MimeAdapter';
+export * from './FileAdapter';
 
 export * from './stream';
 export * from './socket';

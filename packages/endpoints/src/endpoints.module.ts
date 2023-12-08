@@ -5,11 +5,9 @@ import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { SHOW_DETAIL_ERROR } from './execption.handlers';
-import { LogInterceptor } from './logger/log';
 import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { TransportExecptionHandlers } from './execption.handlers';
-import { Session } from './Session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
@@ -20,6 +18,7 @@ import { TransportTypedRespond } from './transport/typed.respond';
 import { ServerTransportSessionFactory } from './transport/session';
 import { TransportModule } from './transport/tranport.module';
 import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
+import { Json, Bodyparser, Content, Session, LogInterceptor } from './interceptors';
 
 
 
@@ -34,6 +33,7 @@ import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
         RouterModule
     ],
     providers: [
+
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
         SetupServices,
@@ -47,7 +47,10 @@ import { IncomingDecoder, OutgoingEncoder } from './transport/codings';
         LogInterceptor,
         FinalizeFilter,
         ExecptionFinalizeFilter,
-        Session
+        Session,
+        Bodyparser,
+        Content,
+        Json
     ]
 })
 export class EndpointsModule {

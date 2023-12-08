@@ -9,4 +9,6 @@ export * from './server/context';
 export * from './server/endpoint';
 export * from './server/server';
 
+export * from './server/interceptors';
+
 export * from './http.module';

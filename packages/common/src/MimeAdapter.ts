@@ -5,6 +5,8 @@ import { Abstract } from '@tsdi/ioc';
  */
 @Abstract()
 export abstract class MimeAdapter {
+
+    abstract get mimeTypes(): MimeTypes;
     /**
      * Get the default charset for a MIME type.
      * @param type 
@@ -44,6 +46,23 @@ export abstract class MimeAdapter {
     abstract normalize(type: string): string | false;
 
     abstract match(types: string[], target: string): string | false;
+
+    isJson(contentType: string) {
+        return this.match(this.mimeTypes.json, contentType)
+    }
+
+    isXml(contentType: string) {
+        return this.match(this.mimeTypes.xml, contentType)
+    }
+
+    isText(contentType: string) {
+        return this.match(this.mimeTypes.text, contentType)
+    }
+
+    isForm(contentType: string) {
+        return this.match(this.mimeTypes.form, contentType);
+    }
+
 }
 
 /**
@@ -73,7 +92,7 @@ export interface MimeSource {
 export abstract class MimeDb {
     abstract from(db: Record<string, MimeSource>): void;
     abstract has(mime: string): boolean;
-    abstract get(mime: string): MimeSource|undefined;
+    abstract get(mime: string): MimeSource | undefined;
     abstract set(mime: string, source: MimeSource): void;
     abstract remove(mime: string): void;
     /**

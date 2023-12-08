@@ -1,8 +1,9 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { TransportContext, Middleware } from '@tsdi/endpoints';
 import { Observable, map } from 'rxjs';
-import { ctype } from '../consts';
+import { Middleware } from '../middleware/middleware';
+import { TransportContext } from '../TransportContext';
+import { ctype } from '@tsdi/common';
 
 
 @Abstract()

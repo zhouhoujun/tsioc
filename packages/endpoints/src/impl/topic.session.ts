@@ -1,5 +1,5 @@
 import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, IReadableStream, IncomingAdapter, OutgoingAdapter, Packet, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
+import { BadRequestExecption, FileAdapter, IReadableStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, Packet, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { ServerEventTransportSession } from './transport.session';
 import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
@@ -66,12 +66,26 @@ export class TopicTransportSessionFactory implements ServerTransportSessionFacto
         @Optional() private statusAdapter: StatusAdapter,
         @Optional() private incomingAdapter: IncomingAdapter,
         @Optional() private outgoingAdapter: OutgoingAdapter,
+        @Optional() private mimeAdapter: MimeAdapter,
+        private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
         private decoder: IncomingDecoder) { }
 
     create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
-        return new TopicTransportSession(this.injector, socket, this.statusAdapter, this.incomingAdapter, this.outgoingAdapter, this.streamAdapter, this.encoder, this.decoder, new PacketBuffer(), options);
+        return new TopicTransportSession(
+            this.injector,
+            socket,
+            this.statusAdapter,
+            this.incomingAdapter,
+            this.outgoingAdapter,
+            this.mimeAdapter,
+            this.fileAdapter,
+            this.streamAdapter,
+            this.encoder,
+            this.decoder,
+            new PacketBuffer(),
+            options);
     }
 
 }

@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { IncomingPacket, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode, StreamAdapter } from '@tsdi/common';
+import { FileAdapter, IncomingPacket, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode } from '@tsdi/common';
 import { ServerOpts } from './Server';
 import { ServerTransportSession } from './transport/session';
 
@@ -17,16 +17,37 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     }
 
     abstract get serverOptions(): TServOpts;
-
     /**
      * transport session
      */
     abstract get session(): ServerTransportSession<TSocket>;
 
+    get streamAdapter() {
+        return this.session.streamAdapter;
+    }
+
+    get fileAdapter() {
+        return this.session.fileAdapter;
+    }
+
     /**
-     * stream adapter
+     * Get request rul
      */
-    abstract get streamAdapter(): StreamAdapter;
+    abstract get url(): string;
+    /**
+     * Set request url
+     */
+    abstract set url(value: string);
+    /**
+     * original url
+     */
+    abstract get originalUrl(): string;
+    /**
+     * The request method.
+     */
+    abstract get method(): string;
+
+    abstract getRequestFilePath(): string | null;
 
     /**
      * transport request.
@@ -37,10 +58,21 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * Get transport response.
      */
     abstract get response(): TResponse;
+
     /**
-     * Set transport response.
+     * Set response content length.
+     *
+     * @param {Number} n
+     * @api public
      */
-    abstract set response(val: TResponse);
+    abstract set length(n: number | undefined);
+    /**
+     * Get response content length
+     *
+     * @return {Number}
+     * @api public
+     */
+    abstract get length(): number | undefined;
 
     /**
      * Get response status.
@@ -59,21 +91,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * Set response status message.
      */
     abstract set statusMessage(message: string);
-
-    /**
-     * Set response content length.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    abstract set length(n: number | undefined);
-    /**
-     * Get response content length
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract get length(): number | undefined;
 
     /**
      * The request body, or `null` if one isn't set.
@@ -108,30 +125,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     rawBody?: Buffer | null;
 
     /**
-     * Get request rul
-     */
-    abstract get url(): string;
-    /**
-     * Set request url
-     */
-    abstract set url(value: string);
-
-    abstract getRequestFilePath(): string | null;
-
-    /**
-     * original url
-     */
-    abstract get originalUrl(): string;
-
-    /**
      * request query parameters.
      */
     abstract get query(): Record<string, string | string[] | number | any>;
 
-    /**
-     * The request method.
-     */
-    abstract get method(): string;
+
 
     // /**
     //  * is empty status or empty body.

@@ -1,8 +1,10 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, tokenId } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
-import { Middleware, ContentSendAdapter, ContentOptions, TransportContext } from '@tsdi/endpoints';
 import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
+import { Middleware } from '../middleware/middleware';
+import { ContentOptions, ContentSendAdapter } from '../send';
+import { TransportContext } from '../TransportContext';
 
 
 
@@ -101,4 +103,3 @@ export const defOpts: ContentOptions = {
     immutable: false,
 
 }
-
