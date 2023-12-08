@@ -3,8 +3,8 @@ import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule } from '@tsdi/http';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { EndpointsModule, Bodyparser, Content, Json } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
@@ -56,7 +56,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         EndpointsModule.register({
             transport: 'http',
@@ -98,7 +98,7 @@ export class MockBootTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         EndpointsModule.register({
             transport: 'http',
@@ -137,7 +137,7 @@ export class MockBootLoadTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         EndpointsModule.register({
             transport: 'http',
@@ -174,7 +174,7 @@ export class MockTransBootTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         ClientModule.register({
             transport: 'http',

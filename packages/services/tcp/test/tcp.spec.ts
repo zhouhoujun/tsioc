@@ -4,11 +4,11 @@ import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestExecption } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { AssetModule, InterceptorsModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
+import { EndpointsModule, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { EndpointsModule, Handle, MicroServRouterModule, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -95,7 +95,6 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         AssetModule,
-        InterceptorsModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register([

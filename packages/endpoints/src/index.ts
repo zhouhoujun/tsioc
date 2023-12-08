@@ -37,6 +37,8 @@ export * from './transport';
 
 export * from './interceptors';
 
+export * from './results';
+
 
 export * from './impl/micro.router';
 export * from './impl/middleware.endpoint';

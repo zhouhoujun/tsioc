@@ -1,15 +1,14 @@
-import { BadRequestExecption  } from '@tsdi/common';
+import { BadRequestExecption } from '@tsdi/common';
 import { lang } from '@tsdi/ioc';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/endpoints';
-import { RedirectResult } from '@tsdi/endpoints/assets';
-import {  of } from 'rxjs';
+import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/endpoints';
+import { of } from 'rxjs';
 import { MqttClient } from '../src';
 
 
 @RouteMapping('/device')
 export class DeviceController {
 
-    constructor(private client: MqttClient){
+    constructor(private client: MqttClient) {
 
     }
 

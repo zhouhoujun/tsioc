@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure } from '@tsdi/logger';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Cors, Json } from '@tsdi/endpoints/assets';
-import { HttpModule } from '@tsdi/http';
+import { EndpointsModule, Bodyparser, Content, Json } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
+import { HttpModule, Cors } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
@@ -100,7 +100,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         ServerModule,
         ServerLog4Module,
         ServerEndpointModule,
-        AssetTransportModule,
+        AssetModule,
         HttpModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections),

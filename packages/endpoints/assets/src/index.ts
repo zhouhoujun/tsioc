@@ -3,8 +3,6 @@
 export * from './Negotiator';
 
 
-export * from './results';
-
 // export * from './interceptors.module';
 // export { InterceptorsModule as MiddewaresModule } from './interceptors.module';
 

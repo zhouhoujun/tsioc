@@ -2,8 +2,8 @@ import { Module, isString } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, SetupServices } from '@tsdi/endpoints';
-import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { EndpointsModule, SetupServices, Bodyparser, Content, Json } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsClient, WsClientOpts, WsModule } from '@tsdi/ws';
@@ -38,7 +38,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                     connectOpts: {
                         ca: cert
                     }
-                } as WsClientOpts      
+                } as WsClientOpts
             },
             {
                 transport: 'http',
@@ -57,7 +57,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 transport: 'ws',
                 serverOpts: {
                     heybird: true,
-                    interceptors:[
+                    interceptors: [
                         Content,
                         Json,
                         Bodyparser

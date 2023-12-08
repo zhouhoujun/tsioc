@@ -8,8 +8,8 @@ import { Http, HttpModule } from '@tsdi/http';
 import { MqttClient, MqttModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { EndpointsModule, Bodyparser, Content, Json } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 
 

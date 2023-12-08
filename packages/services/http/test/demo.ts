@@ -3,10 +3,9 @@ import { of } from 'rxjs';
 import { BadRequestExecption } from '@tsdi/common';
 
 import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
+    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, RedirectResult,
     Middleware, TransportContext, compose, NEXT, Get, Payload, Subscribe
 } from '@tsdi/endpoints';
-import { RedirectResult } from '@tsdi/endpoints/assets';
 import { WsClient } from '@tsdi/ws';
 import { HttpContext } from '../src/server/context';
 

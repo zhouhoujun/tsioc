@@ -1,8 +1,8 @@
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { EndpointsModule, Bodyparser, Content, Json } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';

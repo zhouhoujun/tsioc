@@ -1,7 +1,9 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { EndpointsModule, Bodyparser, Content, Json } from '@tsdi/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
@@ -9,8 +11,6 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { Http, HttpModule, HttpServer } from '@tsdi/http';
 import { WsClient, WsModule, WsServer } from '../src';
 import { DeviceController } from './controller';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { AssetModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
 
@@ -71,7 +71,7 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
     });
 
 
-    
+
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(

@@ -5,8 +5,8 @@ import { TransportResponse, BadRequestExecption } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointsModule } from '@tsdi/endpoints';
-import { AssetModule, InterceptorsModule, RedirectResult, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointsModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints';
+import { AssetModule } from '@tsdi/endpoints/assets';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
@@ -99,7 +99,6 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         ServerModule,
         LoggerModule,
         AssetModule,
-        InterceptorsModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({

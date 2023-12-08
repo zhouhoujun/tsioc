@@ -2,8 +2,8 @@ import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc'
 import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common';
 import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, AssetContext, compose, NEXT, MicroServRouterModule, EndpointsModule
+    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, Bodyparser, Content, Json,
+    Middleware, AssetContext, compose, NEXT, MicroServRouterModule, EndpointsModule, RedirectResult
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -13,7 +13,7 @@ import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { HttpClient, HttpClientModule } from '..';
-import { AssetModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
+import { AssetModule } from '@tsdi/endpoints/assets';
 
 
 @RouteMapping('/device')
@@ -205,7 +205,7 @@ class DeviceAModule {
         EndpointsModule.register({
             transport: 'http',
             serverOpts: {
-                interceptors:[
+                interceptors: [
                     Content,
                     Json,
                     Bodyparser

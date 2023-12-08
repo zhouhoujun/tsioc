@@ -1,15 +1,14 @@
 import { lang } from '@tsdi/ioc';
 import { BadRequestExecption } from '@tsdi/common';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
-import {  of } from 'rxjs';
+import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/endpoints';
+import { of } from 'rxjs';
 import { UdpClient } from '../src';
-import { RedirectResult } from '@tsdi/endpoints';
 
 
 @RouteMapping('/device')
 export class DeviceController {
 
-    constructor(private client: UdpClient){
+    constructor(private client: UdpClient) {
 
     }
 
