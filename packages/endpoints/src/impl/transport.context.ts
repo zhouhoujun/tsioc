@@ -65,21 +65,6 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         return this._originalUrl;
     }
 
-    private _filepath?: string | null;
-    getRequestFilePath() {
-        if (isUndefined(this._filepath)) {
-            const pathname = this.originalUrl || this.url;
-            if (this.session.mimeAdapter) {
-                this.session.mimeAdapter.lookup(pathname);
-                this._filepath = this.session.mimeAdapter.lookup(pathname) ? pathname : null;
-            } else {
-                this._filepath = pathname;
-            }
-        }
-        return this._filepath;
-    }
-
-
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
         if (!this._query) {
@@ -149,22 +134,7 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         this.response.statusText = message;
     }
 
-    private _ok = true;
-    /**
-     * Whether the status code is ok
-     */
-    get ok(): boolean {
-        return this.session.statusAdapter?.isOk(this.status) ?? this._ok;
-    }
-
-    /**
-     * Whether the status code is ok
-     */
-    set ok(ok: boolean) {
-        this._ok = ok;
-        if (!this.session.statusAdapter) return;
-        this.status = ok ? this.session.statusAdapter.ok : this.session.statusAdapter.notFound
-    }
+    
 
     /**
      * Return request header.

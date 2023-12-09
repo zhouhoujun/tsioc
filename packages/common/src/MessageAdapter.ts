@@ -78,6 +78,11 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract setContentType(packet: TPacket, type: string | null | undefined): TPacket;
+    /**
+     * remove content type.
+     * @param packet 
+     */
+    abstract removeContentType(packet: TPacket): TPacket;
 
     /**
      * Get Content-Encoding.
@@ -90,6 +95,12 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param encoding 
      */
     abstract setContentEncoding(packet: TPacket, encoding: string | null | undefined): TPacket;
+
+    /**
+     * remove content encoding.
+     * @param packet 
+     */
+    abstract removeContentEncoding(packet: TPacket): TPacket;
 
     /**
      * Set packet content length.
@@ -105,6 +116,12 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract getContentLength(packet: TPacket): number | undefined;
+
+    /**
+     * remove content length.
+     * @param packet 
+     */
+    abstract removeContentLength(packet: TPacket): TPacket;
 
     /**
      * Get packet content
@@ -123,11 +140,17 @@ export abstract class OutgoingAdapter<TPacket = any> {
     abstract setContent(packet: TPacket, body: any): TPacket;
 
     /**
+     * remove content encoding, length and type.
+     * @param packet 
+     */
+    abstract clearContent(packet: TPacket): TPacket;
+
+    /**
      * has header in packet or not.
      * @param packet 
      * @param field 
      */
-    abstract hasHeader(packet: TPacket, field: string): OutgoingHeader;
+    abstract hasHeader(packet: TPacket, field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
@@ -150,18 +173,32 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract setHeader(packet: TPacket, field: string, val: OutgoingHeader): TPacket;
+    // /**
+    //  * Set header `field` to `val` or pass
+    //  * an object of header fields.
+    //  *
+    //  * Examples:
+    //  *
+    //  *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+    //  *
+    //  * @param {OutgoingHeaders} fields
+    //  * @param {String} val
+    //  * @api public
+    //  */
+    // abstract setHeader(packet: TPacket, fields: OutgoingHeaders): TPacket;
+
     /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {OutgoingHeaders} fields
-     * @param {String} val
-     * @api public
+     * remove header in packet.
+     * @param packet 
+     * @param field 
      */
-    abstract setHeader(packet: TPacket, fields: OutgoingHeaders): TPacket;
+    abstract removeHeader(packet: TPacket, field: string): TPacket;
+    /**
+     * remove all headers.
+     * @param packet 
+     */
+    abstract removeHeaders(packet: TPacket): TPacket;
+
+    abstract writable(packet: TPacket): boolean;
 
 }

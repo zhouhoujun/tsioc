@@ -3,14 +3,13 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
-import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
+import { EndpointsModule, MicroServRouterModule, Bodyparser, Content, Json } from '@tsdi/endpoints';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { DeviceController } from './demo';
-import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { AssetModule } from '../src';
 
 
 @Module({
@@ -18,14 +17,12 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
-        JsonTransportModule,
+        AssetModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
-                strategy: 'asset',
                 connectOpts: {
                     port: 2000
                 }
@@ -35,7 +32,6 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
             {
                 transport: 'tcp',
                 serverOpts: {
-                    strategy: 'asset',
                     // timeout: 1000,
                     listenOpts: {
                         port: 2000
@@ -52,7 +48,6 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
                 microservice: true,
                 transport: 'tcp',
                 serverOpts: {
-                    strategy: 'asset',
                     listenOpts: {
                         port: 5000
                     }

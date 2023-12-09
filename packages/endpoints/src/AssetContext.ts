@@ -8,7 +8,7 @@ import { ServerOpts } from './Server';
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse, any, TServOpts> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = any ,TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse, TSocket, TServOpts> {
 
     /**
      * protocol name
@@ -28,10 +28,10 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      */
     abstract get pathname(): string;
 
-    /**
-     * can response stream writeable
-     */
-    abstract get writable(): boolean;
+    // /**
+    //  * can response stream writeable
+    //  */
+    // abstract get writable(): boolean;
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
@@ -57,31 +57,31 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
 
     
 
-    /**
-     * Set Content-Type response header with `type` through `mime.lookup()`
-     * when it does not contain a charset.
-     *
-     * Examples:
-     *
-     *     this.type = '.html';
-     *     this.type = 'html';
-     *     this.type = 'json';
-     *     this.type = 'application/json';
-     *     this.type = 'png';
-     *
-     * @param {String} type
-     * @api public
-     */
-    abstract set type(type: string);
+    // /**
+    //  * Set Content-Type response header with `type` through `mime.lookup()`
+    //  * when it does not contain a charset.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.type = '.html';
+    //  *     this.type = 'html';
+    //  *     this.type = 'json';
+    //  *     this.type = 'application/json';
+    //  *     this.type = 'png';
+    //  *
+    //  * @param {String} type
+    //  * @api public
+    //  */
+    // abstract set type(type: string);
 
-    /**
-     * Return the response mime type void of
-     * parameters such as "charset".
-     *
-     * @return {String}
-     * @api public
-     */
-    abstract get type(): string;
+    // /**
+    //  * Return the response mime type void of
+    //  * parameters such as "charset".
+    //  *
+    //  * @return {String}
+    //  * @api public
+    //  */
+    // abstract get type(): string;
 
     /**
      * Check if the given `type(s)` is acceptable, returning
@@ -164,11 +164,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
      * @api public
      */
     abstract acceptsLanguages(...langs: string[]): string | string[];
-
-    /**
-     * get file request pathname.  
-     */
-    abstract getRequestFilePath(): string | null;
 
     /**
     * Set Content-Disposition header to "attachment" with optional `filename`.

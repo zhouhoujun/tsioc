@@ -26,13 +26,13 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket =  any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TSocket, TServOpts> {
     protected _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;
 
-    readonly statusAdapter: StatusAdapter;
+    // readonly statusAdapter: StatusAdapter;
     // readonly streamAdapter: StreamAdapter;
     // readonly fileAdapter: FileAdapter;
     readonly negotiator: Negotiator;
@@ -43,7 +43,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.session.statusAdapter?.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
         // this.streamAdapter = session.streamAdapter;
-        this.statusAdapter = session.statusAdapter ?? injector.get(StatusAdapter);
+        // this.statusAdapter = session.statusAdapter ?? injector.get(StatusAdapter);
         // this.fileAdapter = injector.get(FileAdapter);
         this.negotiator = injector.get(Negotiator);
         // this.mimeAdapter = injector.get(MimeAdapter);
@@ -64,7 +64,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     }
 
     protected init(request: TRequest) {
-        this.status = this.statusAdapter.notFound;
+        if(this.statusAdapter)  this.status = this.statusAdapter.notFound;
         this._url = request.url || request.topic || '';
         if (this.isAbsoluteUrl(this._url)) {
             this._url = normalize(this.URL.pathname);
@@ -78,19 +78,19 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         (this.request as any)['query'] = this.query;
     }
 
-    private _filepath?: string | null;
-    getRequestFilePath() {
-        if (isUndefined(this._filepath)) {
-            const pathname = this.pathname || this.url;
-            if (this.session.mimeAdapter) {
-                this.session.mimeAdapter.lookup(pathname);
-                this._filepath = this.session.mimeAdapter.lookup(pathname) ? pathname : null;
-            } else {
-                this._filepath = pathname;
-            }
-        }
-        return this._filepath;
-    }
+    // private _filepath?: string | null;
+    // getRequestFilePath() {
+    //     if (isUndefined(this._filepath)) {
+    //         const pathname = this.pathname || this.url;
+    //         if (this.session.mimeAdapter) {
+    //             this.session.mimeAdapter.lookup(pathname);
+    //             this._filepath = this.session.mimeAdapter.lookup(pathname) ? pathname : null;
+    //         } else {
+    //             this._filepath = pathname;
+    //         }
+    //     }
+    //     return this._filepath;
+    // }
 
     /**
      * Get url path.
@@ -112,19 +112,19 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         this._url = value
     }
 
-    /**
-     * Whether the status code is ok
-     */
-    get ok(): boolean {
-        return this.statusAdapter.isOk(this.status);
-    }
+    // /**
+    //  * Whether the status code is ok
+    //  */
+    // get ok(): boolean {
+    //     return this.statusAdapter?.isOk(this.status) ?? true;
+    // }
 
-    /**
-     * Whether the status code is ok
-     */
-    set ok(ok: boolean) {
-        this.status = ok ? this.statusAdapter.ok : this.statusAdapter.notFound
-    }
+    // /**
+    //  * Whether the status code is ok
+    //  */
+    // set ok(ok: boolean) {
+    //     this.status = ok ? this.statusAdapter.ok : this.statusAdapter.notFound
+    // }
 
     get socket() {
         return this.request.socket;
@@ -306,38 +306,38 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.request.headers
     }
 
-    /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): string {
-        field = this.toHeaderName(field);
-        const h = this.request.headers[field];
+    // /**
+    //  * Return request header.
+    //  *
+    //  * The `Referrer` header field is special-cased,
+    //  * both `Referrer` and `Referer` are interchangeable.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.get('Content-Type');
+    //  *     // => "text/plain"
+    //  *
+    //  *     this.get('content-type');
+    //  *     // => "text/plain"
+    //  *
+    //  *     this.get('Something');
+    //  *     // => ''
+    //  *
+    //  * @param {String} field
+    //  * @return {String}
+    //  * @api public
+    //  */
+    // getHeader(field: string): string {
+    //     field = this.toHeaderName(field);
+    //     const h = this.request.headers[field];
 
-        if (isNil(h)) return '';
-        return isArray(h) ? h[0] : String(h);
-    }
+    //     if (isNil(h)) return '';
+    //     return isArray(h) ? h[0] : String(h);
+    // }
 
-    protected toHeaderName(field: string) {
-        return field.toLowerCase();
-    }
+    // protected toHeaderName(field: string) {
+    //     return field.toLowerCase();
+    // }
 
 
     /**
@@ -454,163 +454,163 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
 
 
-    /**
-     * Set Content-Type response header with `type` through `mime.lookup()`
-     * when it does not contain a charset.
-     *
-     * Examples:
-     *
-     *     this.type = '.html';
-     *     this.type = 'html';
-     *     this.type = 'json';
-     *     this.type = 'application/json';
-     *     this.type = 'png';
-     *
-     * @param {String} type
-     * @api public
-     */
-    set type(type: string) {
-        const contentType = this.session.mimeAdapter?.contentType(type) ?? type;
-        if (contentType) {
-            this.contentType = contentType
-        }
-    }
+    // /**
+    //  * Set Content-Type response header with `type` through `mime.lookup()`
+    //  * when it does not contain a charset.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.type = '.html';
+    //  *     this.type = 'html';
+    //  *     this.type = 'json';
+    //  *     this.type = 'application/json';
+    //  *     this.type = 'png';
+    //  *
+    //  * @param {String} type
+    //  * @api public
+    //  */
+    // set type(type: string) {
+    //     const contentType = this.session.mimeAdapter?.contentType(type) ?? type;
+    //     if (contentType) {
+    //         this.contentType = contentType
+    //     }
+    // }
 
-    /**
-     * Return the response mime type void of
-     * parameters such as "charset".
-     *
-     * @return {String}
-     * @api public
-     */
+    // /**
+    //  * Return the response mime type void of
+    //  * parameters such as "charset".
+    //  *
+    //  * @return {String}
+    //  * @api public
+    //  */
 
-    get type(): string {
-        const type = this.contentType;
-        if (!type) return '';
-        return type.split(';', 1)[0]
-    }
+    // get type(): string {
+    //     const type = this.contentType;
+    //     if (!type) return '';
+    //     return type.split(';', 1)[0]
+    // }
 
-    /**
-     * content type.
-     */
-    get contentType(): string {
-        const ctype = this.session.outgoingAdapter?.getContentType(this.response);
-        return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
-    }
+    // /**
+    //  * content type.
+    //  */
+    // get contentType(): string {
+    //     const ctype = this.session.outgoingAdapter?.getContentType(this.response);
+    //     return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
+    // }
 
-    /**
-     * Set Content-Type response header with `type` through `mime.lookup()`
-     * when it does not contain a charset.
-     *
-     * Examples:
-     *
-     *     this.contentType = 'application/json';
-     *     this.contentType = 'application/octet-stream';  // buffer stream
-     *     this.contentType = 'image/png';      // png
-     *     this.contentType = 'image/pjpeg';   //jpeg
-     *     this.contentType = 'text/plain';    // text, txt
-     *     this.contentType = 'text/html';    // html, htm, shtml
-     *     this.contextType = 'text/javascript'; // javascript text
-     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
-     *
-     * @param {String} type
-     * @api public
-     */
-    set contentType(type: string) {
-        if (type) {
-            this.setHeader(hdr.CONTENT_TYPE, type)
-        } else {
-            this.removeHeader(hdr.CONTENT_TYPE)
-        }
-    }
+    // /**
+    //  * Set Content-Type response header with `type` through `mime.lookup()`
+    //  * when it does not contain a charset.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.contentType = 'application/json';
+    //  *     this.contentType = 'application/octet-stream';  // buffer stream
+    //  *     this.contentType = 'image/png';      // png
+    //  *     this.contentType = 'image/pjpeg';   //jpeg
+    //  *     this.contentType = 'text/plain';    // text, txt
+    //  *     this.contentType = 'text/html';    // html, htm, shtml
+    //  *     this.contextType = 'text/javascript'; // javascript text
+    //  *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+    //  *
+    //  * @param {String} type
+    //  * @api public
+    //  */
+    // set contentType(type: string) {
+    //     if (type) {
+    //         this.setHeader(hdr.CONTENT_TYPE, type)
+    //     } else {
+    //         this.removeHeader(hdr.CONTENT_TYPE)
+    //     }
+    // }
 
 
-    protected _body: any;
-    protected _explicitStatus?: boolean;
-    /**
-     * Get response body.
-     *
-     * @return {Mixed}
-     * @api public
-     */
-    get body() {
-        return this._body
-    }
+    // protected _body: any;
+    // protected _explicitStatus?: boolean;
+    // /**
+    //  * Get response body.
+    //  *
+    //  * @return {Mixed}
+    //  * @api public
+    //  */
+    // get body() {
+    //     return this._body
+    // }
 
-    /**
-     * Set response body.
-     *
-     * @param {String|Buffer|Object|Stream} val
-     * @api public
-     */
-    set body(val) {
-        const original = this._body;
-        this._body = val;
-        if (original !== val) {
-            this.onBodyChanged(val, original);
-        }
+    // /**
+    //  * Set response body.
+    //  *
+    //  * @param {String|Buffer|Object|Stream} val
+    //  * @api public
+    //  */
+    // set body(val) {
+    //     const original = this._body;
+    //     this._body = val;
+    //     if (original !== val) {
+    //         this.onBodyChanged(val, original);
+    //     }
 
-        // no content
-        if (null == val) {
-            if (!(this.statusAdapter.isEmpty(this.status))) {
-                this.status = this.statusAdapter.noContent;
-            }
-            if (val === null) this.onNullBody();
-            this.removeHeader(hdr.CONTENT_TYPE);
-            this.removeHeader(hdr.CONTENT_LENGTH);
-            this.removeHeader(hdr.TRANSFER_ENCODING);
-            return
-        }
+    //     // no content
+    //     if (null == val) {
+    //         if (!(this.statusAdapter.isEmpty(this.status))) {
+    //             this.status = this.statusAdapter.noContent;
+    //         }
+    //         if (val === null) this.onNullBody();
+    //         this.removeHeader(hdr.CONTENT_TYPE);
+    //         this.removeHeader(hdr.CONTENT_LENGTH);
+    //         this.removeHeader(hdr.TRANSFER_ENCODING);
+    //         return
+    //     }
 
-        // set the status
-        if (!this._explicitStatus || this.statusAdapter.isNotFound(this.status)) this.ok = true;
+    //     // set the status
+    //     if (!this._explicitStatus || this.statusAdapter.isNotFound(this.status)) this.ok = true;
 
-        // set the content-type only if not yet set
-        const setType = !this.hasHeader(hdr.CONTENT_TYPE);
+    //     // set the content-type only if not yet set
+    //     const setType = !this.hasHeader(hdr.CONTENT_TYPE);
 
-        // string
-        if (isString(val)) {
-            if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
-            this.length = Buffer.byteLength(val);
-            return
-        }
+    //     // string
+    //     if (isString(val)) {
+    //         if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
+    //         this.length = Buffer.byteLength(val);
+    //         return
+    //     }
 
-        // buffer
-        if (isBuffer(val)) {
-            if (setType) this.contentType = ctype.OCTET_STREAM;
-            this.length = val.length;
-            return
-        }
+    //     // buffer
+    //     if (isBuffer(val)) {
+    //         if (setType) this.contentType = ctype.OCTET_STREAM;
+    //         this.length = val.length;
+    //         return
+    //     }
 
-        // stream
-        if (this.streamAdapter.isStream(val)) {
-            if (original != val) {
-                // overwriting
-                if (null != original) this.removeHeader(hdr.CONTENT_LENGTH)
-            }
+    //     // stream
+    //     if (this.streamAdapter.isStream(val)) {
+    //         if (original != val) {
+    //             // overwriting
+    //             if (null != original) this.removeHeader(hdr.CONTENT_LENGTH)
+    //         }
 
-            if (setType) this.contentType = ctype.OCTET_STREAM;
-            return
-        }
+    //         if (setType) this.contentType = ctype.OCTET_STREAM;
+    //         return
+    //     }
 
-        // json
-        this.removeHeader(hdr.CONTENT_LENGTH);
-        this.contentType = ctype.APPL_JSON;
-    }
+    //     // json
+    //     this.removeHeader(hdr.CONTENT_LENGTH);
+    //     this.contentType = ctype.APPL_JSON;
+    // }
 
-    /**
-     * on body changed. default do nothing.
-     * @param newVal 
-     * @param oldVal 
-     */
-    protected onBodyChanged(newVal: any, oldVal: any) { }
+    // /**
+    //  * on body changed. default do nothing.
+    //  * @param newVal 
+    //  * @param oldVal 
+    //  */
+    // protected onBodyChanged(newVal: any, oldVal: any) { }
 
-    /**
-     * on body set null.
-     */
-    protected onNullBody() {
-        this._explicitNullBody = true;
-    }
+    // /**
+    //  * on body set null.
+    //  */
+    // protected onNullBody() {
+    //     this._explicitNullBody = true;
+    // }
 
     vary(field: string) {
         if (this.sent) return;
@@ -639,7 +639,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      */
     get length(): number | undefined {
         if (this.hasHeader(hdr.CONTENT_LENGTH)) {
-            return ~~(this.getRespHeader(hdr.CONTENT_LENGTH) || 0)
+            return ~~(this.outgoingAdapter?.getContentLength(this.response) || 0)
         }
 
         const { body } = this;
@@ -756,6 +756,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     redirect(url: string, alt?: string): void {
+        if(!this.statusAdapter) return;
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
@@ -784,93 +785,93 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.response.headersSent!
     }
 
-    /**
-     * Returns true if the header identified by name is currently set in the outgoing headers.
-     * The header name matching is case-insensitive.
-     *
-     * Examples:
-     *
-     *     this.hasHeader('Content-Type');
-     *     // => true
-     *
-     * @param {String} field
-     * @return {boolean}
-     * @api public
-     */
-    hasHeader(field: string) {
-        return this.response.hasHeader(field)
-    }
+    // /**
+    //  * Returns true if the header identified by name is currently set in the outgoing headers.
+    //  * The header name matching is case-insensitive.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.hasHeader('Content-Type');
+    //  *     // => true
+    //  *
+    //  * @param {String} field
+    //  * @return {boolean}
+    //  * @api public
+    //  */
+    // hasHeader(field: string) {
+    //     return this.response.hasHeader(field)
+    // }
 
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set('Foo', ['bar', 'baz']);
-     *    this.set('Accept', 'application/json');
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    setHeader(field: string, val: string | number | string[]): void;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {OutgoingHeaders} fields
-     * @param {String} val
-     * @api public
-     */
-    setHeader(fields: OutgoingHeaders): void;
-    setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
-        if (this.sent) return;
-        if (val) {
-            this.response.setHeader(field as string, val)
-        } else {
-            const fields = field as OutgoingHeaders;
-            for (const key in fields) {
-                this.response.setHeader(key, fields[key])
-            }
-        }
-    }
+    // /**
+    //  * Set header `field` to `val` or pass
+    //  * an object of header fields.
+    //  *
+    //  * Examples:
+    //  *
+    //  *    this.set('Foo', ['bar', 'baz']);
+    //  *    this.set('Accept', 'application/json');
+    //  *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+    //  *
+    //  * @param {String|Object|Array} field
+    //  * @param {String} val
+    //  * @api public
+    //  */
+    // setHeader(field: string, val: string | number | string[]): void;
+    // /**
+    //  * Set header `field` to `val` or pass
+    //  * an object of header fields.
+    //  *
+    //  * Examples:
+    //  *
+    //  *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+    //  *
+    //  * @param {OutgoingHeaders} fields
+    //  * @param {String} val
+    //  * @api public
+    //  */
+    // setHeader(fields: OutgoingHeaders): void;
+    // setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
+    //     if (this.sent) return;
+    //     if (val) {
+    //         this.response.setHeader(field as string, val)
+    //     } else {
+    //         const fields = field as OutgoingHeaders;
+    //         for (const key in fields) {
+    //             this.response.setHeader(key, fields[key])
+    //         }
+    //     }
+    // }
 
-    getRespHeader(field: string): OutgoingHeader {
-        return this.response.getHeader(field)
-    }
+    // getRespHeader(field: string): OutgoingHeader {
+    //     return this.response.getHeader(field)
+    // }
 
-    /**
-     * Remove header `field` of response.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void {
-        if (this.sent) return;
-        this.response.removeHeader(field)
-    }
+    // /**
+    //  * Remove header `field` of response.
+    //  *
+    //  * @param {String} name
+    //  * @api public
+    //  */
+    // removeHeader(field: string): void {
+    //     if (this.sent) return;
+    //     this.response.removeHeader(field)
+    // }
 
-    /**
-     * Remove all header of response.
-     * @api public
-     */
-    removeHeaders(): void {
-        if (this.sent) return;
-        // first unset all headers
-        const res = this.response;
-        if (isFunction(res.getHeaderNames)) {
-            res.getHeaderNames().forEach((name: string) => res.removeHeader(name))
-        } else if ((res as any)._headers) {
-            (res as any)._headers = {} // Node < 7.7
-        }
+    // /**
+    //  * Remove all header of response.
+    //  * @api public
+    //  */
+    // removeHeaders(): void {
+    //     if (this.sent) return;
+    //     // first unset all headers
+    //     const res = this.response;
+    //     if (isFunction(res.getHeaderNames)) {
+    //         res.getHeaderNames().forEach((name: string) => res.removeHeader(name))
+    //     } else if ((res as any)._headers) {
+    //         (res as any)._headers = {} // Node < 7.7
+    //     }
 
-    }
+    // }
 
     /**
      * Append additional header `field` with value `val`.
@@ -898,66 +899,66 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.setHeader(field, val)
     }
 
-    isEmpty() {
-        return this.statusAdapter.isEmpty(this.status) || this.body === null;
-    }
+    // isEmpty() {
+    //     return this.statusAdapter.isEmpty(this.status) || this.body === null;
+    // }
 
-    isHeadMethod(): boolean {
-        return HEAD === this.method
-    }
+    // isHeadMethod(): boolean {
+    //     return HEAD === this.method
+    // }
 
-    async respond(): Promise<any> {
-        if (this.destroyed || !this.writable) return;
-        return lastValueFrom(this.session.send(this));
-    }
+    // async respond(): Promise<any> {
+    //     if (this.destroyed || !this.writable) return;
+    //     return lastValueFrom(this.session.send(this));
+    // }
 
-    async throwExecption(err: MessageExecption): Promise<void> {
-        let headerSent = false;
-        if (this.sent || !this.writable) {
-            headerSent = err.headerSent = true
-        }
+    // async throwExecption(err: MessageExecption): Promise<void> {
+    //     let headerSent = false;
+    //     if (this.sent || !this.writable) {
+    //         headerSent = err.headerSent = true
+    //     }
 
-        // nothing we can do here other
-        // than delegate to the app-level
-        // handler and log.
-        if (headerSent) {
-            return
-        }
+    //     // nothing we can do here other
+    //     // than delegate to the app-level
+    //     // handler and log.
+    //     if (headerSent) {
+    //         return
+    //     }
 
-        // first unset all headers
-        this.removeHeaders();
+    //     // first unset all headers
+    //     this.removeHeaders();
 
-        // then set those specified
-        if (err.headers) this.setHeader(err.headers);
+    //     // then set those specified
+    //     if (err.headers) this.setHeader(err.headers);
 
-        this.execption = err;
+    //     this.execption = err;
 
-        const vaildator = this.statusAdapter;
-        let status = err.status || err.statusCode;
-        // ENOENT support
-        if (ENOENT === err.code) status = vaildator.notFound;
+    //     const vaildator = this.statusAdapter;
+    //     let status = err.status || err.statusCode;
+    //     // ENOENT support
+    //     if (ENOENT === err.code) status = vaildator.notFound;
 
-        // default to serverError
-        if (!vaildator.isStatus(status)) status = vaildator.serverError;
+    //     // default to serverError
+    //     if (!vaildator.isStatus(status)) status = vaildator.serverError;
 
-        this.status = status;
+    //     this.status = status;
 
-        // empty response.
-        if (!vaildator.isEmptyExecption(status)) {
-            // respond
-            let msg: any;
-            msg = err.message;
+    //     // empty response.
+    //     if (!vaildator.isEmptyExecption(status)) {
+    //         // respond
+    //         let msg: any;
+    //         msg = err.message;
 
-            // force text/plain
-            this.type = 'text';
-            msg = Buffer.from(msg ?? this.statusMessage ?? '');
-            this.length = Buffer.byteLength(msg);
-            this.rawBody = msg;
-        }
+    //         // force text/plain
+    //         this.type = 'text';
+    //         msg = Buffer.from(msg ?? this.statusMessage ?? '');
+    //         this.length = Buffer.byteLength(msg);
+    //         this.rawBody = msg;
+    //     }
 
-        return await lastValueFrom(this.session.send(this));
+    //     return await lastValueFrom(this.session.send(this));
 
-    }
+    // }
 
 
     // async respond(): Promise<any> {
