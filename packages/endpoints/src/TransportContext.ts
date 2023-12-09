@@ -243,17 +243,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      */
     abstract get query(): Record<string, string | string[] | number | any>;
 
-
-
-    // /**
-    //  * is empty status or empty body.
-    //  */
-    // abstract isEmpty(): boolean;
-    // /**
-    //  * is head method
-    //  */
-    // abstract isHeadMethod(): boolean;
-
     /**
      * Return request header.
      *

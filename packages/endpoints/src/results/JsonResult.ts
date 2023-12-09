@@ -1,4 +1,5 @@
 import { ResultValue } from '@tsdi/core';
+import { ctype } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 
 
@@ -11,7 +12,7 @@ import { TransportContext } from '../TransportContext';
  */
 export class JsonResult extends ResultValue {
     constructor(private data: object) {
-        super('application/json')
+        super(ctype.APPL_JSON)
     }
     async sendValue(ctx: TransportContext) {
         ctx.contentType = this.contentType;

@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
+import { ctype } from '@tsdi/common';
 import { AssetContext } from '../AssetContext';
 
 @Abstract()
@@ -16,7 +17,7 @@ export abstract class ViewRenderer {
  */
 export class ViewResult extends ResultValue {
     constructor(private name: string, private model?: object) {
-        super('text/html')
+        super(ctype.TEXT_HTML)
     }
 
     async sendValue(ctx: AssetContext) {

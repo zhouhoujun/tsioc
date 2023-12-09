@@ -28,10 +28,7 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
      */
     abstract get pathname(): string;
 
-    // /**
-    //  * can response stream writeable
-    //  */
-    // abstract get writable(): boolean;
+
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
@@ -56,6 +53,10 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
     abstract is(type: string | string[]): string | null | false;
 
     
+    // /**
+    //  * can response stream writeable
+    //  */
+    // abstract get writable(): boolean;
 
     // /**
     //  * Set Content-Type response header with `type` through `mime.lookup()`

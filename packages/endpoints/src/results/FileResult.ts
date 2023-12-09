@@ -1,6 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
-import { IStream } from '@tsdi/common';
+import { IStream, ctype } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { AssetContext } from '../AssetContext';
 
@@ -49,7 +49,7 @@ export class FileResult extends ResultValue {
                 fallback?: string | boolean | undefined;
             }
         }) {
-        super(options?.contentType || 'application/octet-stream');
+        super(options?.contentType || ctype.OCTET_STREAM);
     }
 
     async sendValue(ctx: AssetContext) {

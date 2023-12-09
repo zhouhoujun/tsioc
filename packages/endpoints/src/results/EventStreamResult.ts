@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { IStream, hdr } from '@tsdi/common';
+import { IStream, hdr, ctype } from '@tsdi/common';
 import { TransportContext } from '../TransportContext';
 
 /**
@@ -11,7 +11,7 @@ import { TransportContext } from '../TransportContext';
  */
 export class EventStreamResult extends ResultValue {
     constructor(private message: string | Buffer | IStream) {
-        super('text/event-stream')
+        super(ctype.TEXT_EVENT_STREAM) //'text/event-stream'
     }
     async sendValue(ctx: TransportContext) {
         ctx.contentType = this.contentType;

@@ -108,6 +108,10 @@ export namespace ctype {
      */
     export const TEXT_PLAIN_UTF8 = 'text/plain; charset=utf-8';
     /**
+     * text event stream.
+     */
+    export const TEXT_EVENT_STREAM = 'text/event-stream'
+    /**
      * request default accept.
      */
     export const REQUEST_ACCEPT = 'application/json, text/plain, */*';
