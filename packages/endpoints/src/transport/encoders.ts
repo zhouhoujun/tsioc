@@ -12,7 +12,7 @@ export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor
 
     intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
 
-        if (ctx.session.statusAdapter?.isEmpty(ctx.status)) {
+        if (ctx.statusAdapter?.isEmpty(ctx.status)) {
             //ignore body
             ctx.body = null;
         }
@@ -28,7 +28,7 @@ export class HeadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<
         if (ctx.rawBody) return next.handle(ctx);
 
         if (ctx.method === HEAD) {
-            if (!ctx.sent && !ctx.session.outgoingAdapter?.getContentLength(ctx.response)) {
+            if (!ctx.sent && !ctx.outgoingAdapter?.getContentLength(ctx.response)) {
                 const length = ctx.length;
                 if (Number.isInteger(length)) ctx.length = length;
             }

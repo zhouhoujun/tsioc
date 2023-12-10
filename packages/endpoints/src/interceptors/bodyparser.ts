@@ -71,7 +71,7 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
     }
 
     intercept(ctx: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
-        if (!isUndefined(ctx.request.body) || !ctx.session.incomingAdapter || !ctx.session.mimeAdapter || !(ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request))) return next.handle(ctx);
+        if (!isUndefined(ctx.request.body) || !ctx.incomingAdapter || !ctx.mimeAdapter || !(ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request))) return next.handle(ctx);
         return from(this.parseBody(ctx))
             .pipe(
                 mergeMap(res => {
@@ -84,7 +84,7 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
     }
 
     async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        if (!isUndefined(ctx.request.body) || !ctx.session.incomingAdapter || !ctx.session.mimeAdapter || !(ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request))) return await next();
+        if (!isUndefined(ctx.request.body) || !ctx.incomingAdapter || !ctx.mimeAdapter || !(ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request))) return await next();
         const res = await this.parseBody(ctx);
         const request = ctx.request as Incoming;
         request.payload = request.body = res.body ?? {};
@@ -114,8 +114,8 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
     }
 
     protected async parseJson(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.session.incomingAdapter?.getContentLength(ctx.request); // ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.session.incomingAdapter?.getContentEncoding(ctx.request) || identity; // ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
+        const len = ctx.incomingAdapter?.getContentLength(ctx.request); // ctx.getHeader(hdr.CONTENT_LENGTH);
+        const hdrcode = ctx.incomingAdapter?.getContentEncoding(ctx.request) || identity; // ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -175,8 +175,8 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
     }
 
     protected async parseForm(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.session.incomingAdapter?.getContentLength(ctx.request); // ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.session.incomingAdapter?.getContentEncoding(ctx.request) || identity; // ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
+        const len = ctx.incomingAdapter?.getContentLength(ctx.request); // ctx.getHeader(hdr.CONTENT_LENGTH);
+        const hdrcode = ctx.incomingAdapter?.getContentEncoding(ctx.request) || identity; // ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -206,8 +206,8 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
     }
 
     protected async parseText(ctx: TransportContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.session.incomingAdapter?.getContentLength(ctx.request); // ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.session.incomingAdapter?.getContentEncoding(ctx.request) || identity; // ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
+        const len = ctx.incomingAdapter?.getContentLength(ctx.request); // ctx.getHeader(hdr.CONTENT_LENGTH);
+        const hdrcode = ctx.incomingAdapter?.getContentEncoding(ctx.request) || identity; // ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len

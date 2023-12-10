@@ -43,7 +43,7 @@ export class Json implements Middleware<TransportContext>, Interceptor<Transport
     }
 
     protected streamify(ctx: TransportContext) {
-        const adapter = ctx.session.outgoingAdapter;
+        const adapter = ctx.outgoingAdapter;
         if (!adapter) return;
 
         const body = ctx.body;

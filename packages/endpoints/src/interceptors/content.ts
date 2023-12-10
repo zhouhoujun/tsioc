@@ -79,7 +79,7 @@ export class Content implements Middleware<TransportContext>, Interceptor<Transp
 
     protected async send(ctx: TransportContext, options: ContentOptions) {
         let file = '';
-        if (ctx.session.statusAdapter && !ctx.session.statusAdapter.isNotFound(ctx.status)) return file;
+        if (ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status)) return file;
 
         const sender = ctx.injector.get(ContentSendAdapter);
         file = await sender.send(ctx, options);
