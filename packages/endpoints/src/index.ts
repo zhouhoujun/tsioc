@@ -18,7 +18,6 @@ export * from './metadata';
 export * from './TransportEndpoint';
 export * from './TransportContext';
 export * from './RequestHandler';
-export * from './AssetContext';
 
 
 export * from './Publisher';

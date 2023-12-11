@@ -1,5 +1,5 @@
+import { TransportContext } from '@tsdi/endpoints';
 import { Abstract } from '@tsdi/ioc';
-import { AssetContext } from '@tsdi/endpoints';
 
 /**
  * negotiator.
@@ -7,11 +7,11 @@ import { AssetContext } from '@tsdi/endpoints';
 @Abstract()
 export abstract class Negotiator {
 
-    abstract charsets(ctx: AssetContext, ...accepts: string[]): string[];
+    abstract charsets(ctx: TransportContext, ...accepts: string[]): string[];
 
-    abstract encodings(ctx: AssetContext, ...accepts: string[]): string[];
+    abstract encodings(ctx: TransportContext, ...accepts: string[]): string[];
 
-    abstract languages(ctx: AssetContext, ...accepts: string[]): string[];
+    abstract languages(ctx: TransportContext, ...accepts: string[]): string[];
 
-    abstract mediaTypes(ctx: AssetContext, ...accepts: string[]): string[];
+    abstract mediaTypes(ctx: TransportContext, ...accepts: string[]): string[];
 }

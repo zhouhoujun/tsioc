@@ -2,7 +2,7 @@ import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { IStream, ctype } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { AssetContext } from '../AssetContext';
+import { TransportContext } from '../TransportContext';
 
 /**
  * controller method return result type of file.
@@ -52,7 +52,7 @@ export class FileResult extends ResultValue {
         super(options?.contentType || ctype.OCTET_STREAM);
     }
 
-    async sendValue(ctx: AssetContext) {
+    async sendValue(ctx: TransportContext) {
         const file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {

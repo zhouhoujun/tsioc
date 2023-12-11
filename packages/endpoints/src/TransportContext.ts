@@ -1,10 +1,12 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { ENOENT, IncomingHeader, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode, ctype, encodeUrl, escapeHtml, hdr, isBuffer, xmlRegExp } from '@tsdi/common';
+import {
+    ENOENT, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket,
+    StatusCode, ctype, encodeUrl, escapeHtml, hdr, isBuffer, xmlRegExp
+} from '@tsdi/common';
 import { lastValueFrom } from 'rxjs';
 import { ServerOpts } from './Server';
 import { ServerTransportSession } from './transport/session';
-import { Negotiator } from './Negotiator';
 import { CONTENT_DISPOSITION_TOKEN } from './send';
 
 /**
@@ -505,9 +507,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
         return adapter.match(types, normaled)
     }
 
-
-    abstract get negotiator(): Negotiator;
-
     /**
      * Check if the given `type(s)` is acceptable, returning
      * the best match when true, otherwise `false`, in which
@@ -548,12 +547,13 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     accepts(...args: string[]): string | string[] | false {
+        if (!this.incomingAdapter) return [];
         if (!args.length) {
-            return this.negotiator.mediaTypes(this)
+            return this.incomingAdapter.getAcceptType(this.request)
         }
 
         const medias = args.map(a => a.indexOf('/') === -1 ? this.session.mimeAdapter?.lookup(a) ?? a : a).filter(a => isString(a)) as string[];
-        return lang.first(this.negotiator.mediaTypes(this, ...medias)) ?? false
+        return lang.first(this.incomingAdapter.getAcceptType(this.request, ...medias)) ?? false
     }
 
     /**
@@ -569,10 +569,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     * @api public
     */
     acceptsEncodings(...encodings: string[]): string | string[] | false {
+        if (!this.incomingAdapter) return [];
         if (!encodings.length) {
-            return this.negotiator.encodings(this)
+            return this.incomingAdapter.getAcceptEncoding(this.request)
         }
-        return lang.first(this.negotiator.encodings(this, ...encodings)) ?? false
+        return lang.first(this.incomingAdapter.getAcceptEncoding(this.request, ...encodings)) ?? false
     }
 
     /**
@@ -588,10 +589,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     acceptsCharsets(...charsets: string[]): string | string[] | false {
+        if (!this.incomingAdapter) return [];
         if (!charsets.length) {
-            return this.negotiator.charsets(this)
+            return this.incomingAdapter.getAcceptCharset(this.request)
         }
-        return lang.first(this.negotiator.charsets(this, ...charsets)) ?? false
+        return lang.first(this.incomingAdapter.getAcceptCharset(this.request, ...charsets)) ?? false
     }
 
     /**
@@ -607,10 +609,11 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     acceptsLanguages(...langs: string[]): string | string[] {
+        if (!this.incomingAdapter) return [];
         if (!langs.length) {
-            return this.negotiator.languages(this)
+            return this.incomingAdapter.getAcceptLanguage(this.request)
         }
-        return lang.first(this.negotiator.languages(this, ...langs)) ?? false
+        return lang.first(this.incomingAdapter.getAcceptLanguage(this.request, ...langs)) ?? false
     }
 
     /**

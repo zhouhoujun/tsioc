@@ -47,6 +47,14 @@ export abstract class IncomingAdapter<TPacket = any> {
      */
     abstract getContent(packet: TPacket): any;
 
+    abstract getAcceptType(packet: TPacket, ...contentTypes: string[]): string[];
+
+    abstract getAcceptCharset(packet: TPacket, ...charsets: string[]): string[];
+
+    abstract getAcceptEncoding(packet: TPacket, ...encodings: string[]): string[];
+
+    abstract getAcceptLanguage(packet: TPacket, ...languages: string[]): string[];
+
 }
 
 

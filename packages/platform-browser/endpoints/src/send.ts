@@ -1,13 +1,13 @@
 import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
 import { BadRequestExecption, joinPath } from '@tsdi/common';
 import { PROCESS_ROOT } from '@tsdi/core';
-import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
+import { TransportContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 
 
 @Injectable({ static: true })
 export class BrowserContentSendAdapter extends ContentSendAdapter {
 
-    async send(ctx: AssetContext, opts: SendOptions<any>): Promise<string> {
+    async send(ctx: TransportContext, opts: SendOptions<any>): Promise<string> {
         let path = ctx.getRequestFilePath();
         if (isNil(path) || !isString(path)) return '';
 

@@ -17,7 +17,6 @@ import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
 import { TransportContext } from '../TransportContext';
 import { RouteEndpoint } from './route.endpoint';
-import { AssetContext } from '../AssetContext';
 
 
 
@@ -462,10 +461,10 @@ export class MappingRoute implements Middleware, Endpoint {
     }
 
     protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
-        if (!isFunction((ctx as AssetContext).redirect)) {
+        if (!isFunction((ctx as TransportContext).redirect)) {
             throw new BadRequestExecption();
         }
-        (ctx as AssetContext).redirect(url, alt)
+        (ctx as TransportContext).redirect(url, alt)
     }
 
 }

@@ -4,7 +4,7 @@ import {
     Incoming, Outgoing, OutgoingHeader, OutgoingHeaders, normalize, isBuffer, encodeUrl, escapeHtml, vary, xmlRegExp,
     InternalServerExecption, TransportSession, MessageExecption, ENOENT, HEAD, StatusAdapter, ctype, hdr
 } from '@tsdi/common';
-import { AssetContext, ServerOpts, ServerTransportSession, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
+import { TransportContext, ServerOpts, ServerTransportSession, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
 import { Buffer } from 'buffer';
 import { Negotiator } from './Negotiator';
@@ -26,7 +26,7 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TSocket, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any, TServOpts extends ServerOptions = any> extends TransportContext<TRequest, TResponse, TSocket, TServOpts> {
 
     private _URL?: URL;
     readonly originalUrl: string;

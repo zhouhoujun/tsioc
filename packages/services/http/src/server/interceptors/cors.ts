@@ -1,6 +1,6 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Optional } from '@tsdi/ioc';
 import { RequestMethod, InternalServerExecption, hdr, append, vary } from '@tsdi/common';
-import { Middleware, AssetContext } from '@tsdi/endpoints';
+import { Middleware, TransportContext } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 
@@ -16,7 +16,7 @@ export abstract class CorsOptions {
      *
      * @memberof CorsOptions
      */
-    origin?: string | ((ctx: AssetContext) => string | Promise<string>);
+    origin?: string | ((ctx: TransportContext) => string | Promise<string>);
     /**
      * enable Access-Control-Allow-Credentials
      *
@@ -63,7 +63,7 @@ export abstract class CorsOptions {
 
 
 @Injectable()
-export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class Cors implements Middleware<TransportContext>, Interceptor<TransportContext> {
 
     private options: Options;
 
@@ -97,7 +97,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
         return options as Options
     }
 
-    intercept(ctx: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(ctx: TransportContext, next: Handler<TransportContext, any>): Observable<any> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
@@ -198,7 +198,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
 
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
@@ -303,7 +303,7 @@ interface Options {
     /**
      * origin `Access-Control-Allow-Origin`, default is request Origin header
      */
-    origin?: string | ((ctx: AssetContext) => any);
+    origin?: string | ((ctx: TransportContext) => any);
     /**
      * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
      */

@@ -1,6 +1,6 @@
 import { ResultValue } from '@tsdi/core';
 import { ctype } from '@tsdi/common';
-import { AssetContext } from '../AssetContext';
+import { TransportContext } from '../TransportContext';
 
 
 /**
@@ -14,7 +14,7 @@ export class RedirectResult extends ResultValue {
     constructor(private url: string, private alt?: string) {
         super(ctype.TEXT_HTML)
     }
-    async sendValue(ctx: AssetContext) {
+    async sendValue(ctx: TransportContext) {
         return ctx.redirect(this.url, this.alt)
     }
 }
