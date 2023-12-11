@@ -14,6 +14,7 @@ import { HttpEndpoint } from './server/endpoint';
 import { HttpServer } from './server/server';
 import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
 import { HttpAssetContextFactory } from './server/context';
+import { CsrfTokensFactory, NodeCsrfTokensFactory } from './server/interceptors/csrf';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -27,7 +28,9 @@ import { HttpAssetContextFactory } from './server/context';
     providers: [
         Http,
         HttpServer,
+        NodeCsrfTokensFactory,
         { provide: StatusAdapter, useExisting: HttpstatusAdapter },
+        { provide: CsrfTokensFactory, useExisting: NodeCsrfTokensFactory },
         HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,

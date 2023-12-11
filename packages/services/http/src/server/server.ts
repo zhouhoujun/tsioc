@@ -2,8 +2,7 @@ import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, i
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
-import { CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints/assets';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';

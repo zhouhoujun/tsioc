@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "csrf": "^3.1.0",
     "ws": "^8.5.0",
     "@types/ws": "^8.5.3"
   },

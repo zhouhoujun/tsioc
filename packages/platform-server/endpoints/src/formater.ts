@@ -59,7 +59,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
 
     private formatStatus(ctx: AssetContext, withColor: boolean): [StatusCode, string] {
         const { status, statusMessage } = ctx;
-        if (!withColor) return [status, statusMessage ?? ''];
+        if (!withColor || !ctx.statusAdapter) return [status, statusMessage ?? ''];
 
         const vaildator = ctx.statusAdapter;
 

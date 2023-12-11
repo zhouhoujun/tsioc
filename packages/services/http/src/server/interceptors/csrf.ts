@@ -3,6 +3,7 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS, ForbiddenExecption, hdr } from '@tsdi/common';
 import { TransportContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
 import { Observable, throwError } from 'rxjs';
+import * as CsrfTokens from 'csrf';
 
 
 
@@ -115,11 +116,11 @@ export class Csrf implements Middleware<TransportContext>, Interceptor<Transport
             || ctx.getHeader(hdr.X_XSRF_TOKEN);
 
         if (!token) {
-            return throwError(()=> new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
+            return throwError(() => new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
         }
 
         if (!this.tokens.verify(session.secret, token)) {
-            return throwError(()=> new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
+            return throwError(() => new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
         }
 
         return next.handle(ctx)
@@ -169,4 +170,16 @@ export class Csrf implements Middleware<TransportContext>, Interceptor<Transport
         return next()
     }
 
+}
+
+
+
+
+/**
+ * csrf token factory for nodejs.
+ */
+export class NodeCsrfTokensFactory extends CsrfTokensFactory {
+    create(options: CsrfOptions): Tokens {
+        return new CsrfTokens(options);
+    }
 }

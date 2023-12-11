@@ -32,7 +32,6 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "chalk": "^4.0.0",
-    "csrf": "^3.1.0",
     "form-data": "^4.0.0",
     "log4js": "^6.3.0",
     "raw-body": "^2.5.1",

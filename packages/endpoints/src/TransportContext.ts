@@ -1,9 +1,11 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { ENOENT, IncomingHeader, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode, ctype, isBuffer, xmlRegExp } from '@tsdi/common';
+import { ENOENT, IncomingHeader, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode, ctype, encodeUrl, escapeHtml, hdr, isBuffer, xmlRegExp } from '@tsdi/common';
 import { lastValueFrom } from 'rxjs';
 import { ServerOpts } from './Server';
 import { ServerTransportSession } from './transport/session';
+import { Negotiator } from './Negotiator';
+import { CONTENT_DISPOSITION_TOKEN } from './send';
 
 /**
  * abstract transport context.
@@ -459,6 +461,255 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     removeHeaders(): void {
         if (this.sent) return;
         this.outgoingAdapter?.removeHeaders(this.response);
+    }
+
+
+    /**
+     * Check if the incoming request contains the "Content-Type"
+     * header field and if it contains any of the given mime `type`s.
+     * If there is no request body, `null` is returned.
+     * If there is no content type, `false` is returned.
+     * Otherwise, it returns the first `type` that matches.
+     *
+     * Examples:
+     *
+     *     // With Content-Type: text/html; charset=utf-8
+     *     this.is('html'); // => 'html'
+     *     this.is('text/html'); // => 'text/html'
+     *     this.is('text/*', 'application/json'); // => 'text/html'
+     *
+     *     // When Content-Type is application/json
+     *     this.is('json', 'urlencoded'); // => 'json'
+     *     this.is('application/json'); // => 'application/json'
+     *     this.is('html', 'application/*'); // => 'application/json'
+     *
+     *     this.is('html'); // => false
+     */
+    is(type: string | string[]): string | null | false {
+        const adapter = this.session.mimeAdapter;
+        if (!adapter) return null;
+
+        //no body
+        const encoding = this.session.incomingAdapter?.getContentEncoding(this.request);
+        const len = this.session.incomingAdapter?.getContentLength(this.request);
+
+        if (encoding && !len) {
+            return null
+        }
+        const ctype = this.session.incomingAdapter?.getContentType(this.request);
+        if (!ctype) return false;
+        const normaled = adapter.normalize(ctype);
+        if (!normaled) return false;
+
+        const types = isArray(type) ? type : [type];
+        return adapter.match(types, normaled)
+    }
+
+
+    abstract get negotiator(): Negotiator;
+
+    /**
+     * Check if the given `type(s)` is acceptable, returning
+     * the best match when true, otherwise `false`, in which
+     * case you should respond with 406 "Not Acceptable".
+     *
+     * The `type` value may be a single mime type string
+     * such as "application/json", the extension name
+     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
+     * or array is given the _best_ match, if any is returned.
+     *
+     * Examples:
+     *
+     *     // Accept: text/html
+     *     this.accepts('html');
+     *     // => "html"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('html');
+     *     // => "html"
+     *     this.accepts('text/html');
+     *     // => "text/html"
+     *     this.accepts('json', 'text');
+     *     // => "json"
+     *     this.accepts('application/json');
+     *     // => "application/json"
+     *
+     *     // Accept: text/*, application/json
+     *     this.accepts('image/png');
+     *     this.accepts('png');
+     *     // => false
+     *
+     *     // Accept: text/*;q=.5, application/json
+     *     this.accepts('html', 'json');
+     *     // => "json"
+     *
+     * @param {String|Array} type(s)...
+     * @return {String|Array|false}
+     * @api public
+     */
+    accepts(...args: string[]): string | string[] | false {
+        if (!args.length) {
+            return this.negotiator.mediaTypes(this)
+        }
+
+        const medias = args.map(a => a.indexOf('/') === -1 ? this.session.mimeAdapter?.lookup(a) ?? a : a).filter(a => isString(a)) as string[];
+        return lang.first(this.negotiator.mediaTypes(this, ...medias)) ?? false
+    }
+
+    /**
+    * Return accepted encodings or best fit based on `encodings`.
+    *
+    * Given `Accept-Encoding: gzip, deflate`
+    * an array sorted by quality is returned:
+    *
+    *     ['gzip', 'deflate']
+    *
+    * @param {String|Array} encoding(s)...
+    * @return {String|Array}
+    * @api public
+    */
+    acceptsEncodings(...encodings: string[]): string | string[] | false {
+        if (!encodings.length) {
+            return this.negotiator.encodings(this)
+        }
+        return lang.first(this.negotiator.encodings(this, ...encodings)) ?? false
+    }
+
+    /**
+     * Return accepted charsets or best fit based on `charsets`.
+     *
+     * Given `Accept-Charset: utf-8, iso-8859-1;q=0.2, utf-7;q=0.5`
+     * an array sorted by quality is returned:
+     *
+     *     ['utf-8', 'utf-7', 'iso-8859-1']
+     *
+     * @param {String|Array} charset(s)...
+     * @return {String|Array}
+     * @api public
+     */
+    acceptsCharsets(...charsets: string[]): string | string[] | false {
+        if (!charsets.length) {
+            return this.negotiator.charsets(this)
+        }
+        return lang.first(this.negotiator.charsets(this, ...charsets)) ?? false
+    }
+
+    /**
+     * Return accepted languages or best fit based on `langs`.
+     *
+     * Given `Accept-Language: en;q=0.8, es, pt`
+     * an array sorted by quality is returned:
+     *
+     *     ['es', 'pt', 'en']
+     *
+     * @param {String|Array} lang(s)...
+     * @return {Array|String}
+     * @api public
+     */
+    acceptsLanguages(...langs: string[]): string | string[] {
+        if (!langs.length) {
+            return this.negotiator.languages(this)
+        }
+        return lang.first(this.negotiator.languages(this, ...langs)) ?? false
+    }
+
+    /**
+    * Set Content-Disposition header to "attachment" with optional `filename`.
+    *
+    * @param filname file name for download.
+    * @param options content disposition.
+    * @api public
+    */
+    attachment(filename: string, options?: {
+        contentType?: string;
+        /**
+        * Specifies the disposition type.
+        * This can also be "inline", or any other value (all values except `inline` are treated like attachment,
+        * but can convey additional information if both parties agree to it).
+        * The `type` is normalized to lower-case.
+        * @default 'attachment'
+        */
+        type?: 'attachment' | 'inline' | string | undefined;
+        /**
+         * If the filename option is outside ISO-8859-1,
+         * then the file name is actually stored in a supplemental field for clients
+         * that support Unicode file names and a ISO-8859-1 version of the file name is automatically generated
+         * @default true
+         */
+        fallback?: string | boolean | undefined;
+    }): void {
+        if (options?.contentType) {
+            this.contentType = options.contentType;
+        } else if (filename) {
+            this.type = this.fileAdapter.extname(filename);
+        }
+        const func = this.get(CONTENT_DISPOSITION_TOKEN);
+        // this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
+        this.outgoingAdapter?.setContentDisposition(this.response, func(filename, options))
+    }
+
+    /**
+     * Set the Last-Modified date using a string or a Date.
+     *
+     *     this.response.lastModified = new Date();
+     *
+     * @param {String|Date} type
+     * @api public
+     */
+    set lastModified(val: Date | null) {
+        if (!val) {
+            this.outgoingAdapter?.removeContentDisposition(this.response);
+            return
+        }
+        this.outgoingAdapter?.setContentDisposition(this.response, val.toUTCString())
+    }
+
+    /**
+     * Get the Last-Modified date in Date form, if it exists.
+     *
+     * @return {Date}
+     * @api public
+     */
+    get lastModified(): Date | null {
+        const date = this.outgoingAdapter?.getContentDisposition(this.response);
+        return date ? new Date(date) : null
+    }
+    /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    redirect(url: string, alt?: string): void {
+        if (!this.statusAdapter) return;
+        if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
+        this.setHeader(hdr.LOCATION, encodeUrl(url));
+        // status
+        if (!this.statusAdapter.isRedirect(this.status)) this.status = this.statusAdapter.found;
+
+        // html
+        if (this.accepts('html')) {
+            url = escapeHtml(url);
+            this.type = ctype.TEXT_HTML_UTF8;
+            this.body = `Redirecting to <a href="${url}">${url}</a>.`;
+            return
+        }
+
+        // text
+        this.type = ctype.TEXT_PLAIN_UTF8;
+        this.body = `Redirecting to ${url}.`
     }
 
     /**

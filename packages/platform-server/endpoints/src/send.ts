@@ -50,13 +50,17 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
                 filename = rpath + '.br';
                 encodingExt = '.br';
-                ctx.setHeader(hdr.CONTENT_ENCODING, 'br');
-                ctx.removeHeader(hdr.CONTENT_LENGTH)
+                ctx.outgoingAdapter?.setContentEncoding(ctx.response, 'br');
+                ctx.outgoingAdapter?.removeContentLength(ctx.response);
+                // ctx.setHeader(hdr.CONTENT_ENCODING, 'br');
+                // ctx.removeHeader(hdr.CONTENT_LENGTH)
             } else if (ctx.acceptsEncodings('gzip', 'identity') === 'gzip' && opts.gzip && existsSync(rpath + '.gz')) {
                 filename = rpath + '.gz';
                 encodingExt = '.gz';
-                ctx.setHeader(hdr.CONTENT_ENCODING, 'gzip');
-                ctx.removeHeader(hdr.CONTENT_LENGTH)
+                ctx.outgoingAdapter?.setContentEncoding(ctx.response, 'gzip');
+                ctx.outgoingAdapter?.removeContentLength(ctx.response);
+                // ctx.setHeader(hdr.CONTENT_ENCODING, 'gzip');
+                // ctx.removeHeader(hdr.CONTENT_LENGTH)
             } else if (existsSync(rpath)) {
                 filename = rpath
             } else if (opts.extensions && !/\./.exec(basename(rpath))) {
@@ -101,14 +105,16 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
 
         ctx.length = stats.size;
-        if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
-        if (!ctx.response.getHeader(hdr.CACHE_CONTROL)) {
+        // if (!ctx.response.getHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
+        if (ctx.outgoingAdapter && !ctx.outgoingAdapter.getLastModified(ctx.response)) ctx.outgoingAdapter.setLastModified(ctx.response, stats.mtime.toUTCString())
+        if (ctx.outgoingAdapter && !ctx.outgoingAdapter.getCacheControl(ctx.response)) {// !ctx.response.getHeader(hdr.CACHE_CONTROL)) {
             const maxAge = opts.maxAge ?? 0;
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (opts.immutable) {
                 directives.push('immutable')
             }
-            ctx.setHeader(hdr.CACHE_CONTROL, directives.join(','))
+            ctx.outgoingAdapter.setCacheControl(ctx.response, directives.join(','))
+            // ctx.setHeader(hdr.CACHE_CONTROL, directives.join(','))
         }
         if (!ctx.type) ctx.type = this.getExtname(filename, encodingExt);
         ctx.body = createReadStream(filename);

@@ -237,14 +237,29 @@ export abstract class OutgoingAdapter<TPacket = any> {
      */
     abstract removeHeaders(packet: TPacket): TPacket;
     /**
-     * set no cache
-     * @param packet 
-     */
-    abstract noCache(packet: TPacket): boolean;
-    /**
      * is writable or not.
      * @param packet 
      */
     abstract writable(packet: TPacket): boolean;
+
+
+    /**
+     * set no cache
+     * @param packet 
+     */
+    abstract noCache(packet: TPacket): boolean;
+
+    abstract getLastModified(packet: TPacket):  string; 
+    abstract setLastModified(packet: TPacket, control: string):  TPacket; 
+
+    abstract getCacheControl(packet: TPacket):  string; 
+
+    abstract setCacheControl(packet: TPacket, control: string):  TPacket;
+    
+    
+    abstract getContentDisposition(packet: TPacket): string;
+    abstract setContentDisposition(packet: TPacket, disposition: string): TPacket;
+    abstract removeContentDisposition(packet: TPacket): TPacket;
+
 
 }
