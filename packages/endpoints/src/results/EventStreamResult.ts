@@ -15,7 +15,7 @@ export class EventStreamResult extends ResultValue {
     }
     async sendValue(ctx: TransportContext) {
         ctx.contentType = this.contentType;
-        ctx.outgoingAdapter?.setNoCache(ctx.response);
+        ctx.outgoingAdapter?.noCache(ctx.response);
         // ctx.setHeader(hdr.CACHE_CONTROL, "no-cache");
         // ctx.setHeader(hdr.CONNECTION, "keep-alive");
         // ctx.setHeader(hdr.X_ACCEL_BUFFERING, "no");

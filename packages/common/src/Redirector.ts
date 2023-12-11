@@ -2,7 +2,9 @@ import { OutgoingHeaders, StatusCode, TransportRequest } from '@tsdi/common';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
-
+/**
+ * Redirector.
+ */
 @Abstract()
 export abstract class Redirector {
     /**

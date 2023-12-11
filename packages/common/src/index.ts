@@ -23,7 +23,6 @@ export * from './socket';
 export * from './subscriber';
 export * from './StreamAdapter';
 
-// export * from './codings';
 export * from './TransportSession';
 
 

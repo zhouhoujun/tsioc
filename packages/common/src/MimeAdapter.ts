@@ -5,7 +5,9 @@ import { Abstract } from '@tsdi/ioc';
  */
 @Abstract()
 export abstract class MimeAdapter {
-
+    /**
+     * mime types.
+     */
     abstract get mimeTypes(): MimeTypes;
     /**
      * Get the default charset for a MIME type.
@@ -15,7 +17,6 @@ export abstract class MimeAdapter {
     /**
      * Get the default extension for a MIME type.
      * @param extname 
-     * 
      */
     abstract extension(extname: string): string | false;
 
@@ -29,7 +30,6 @@ export abstract class MimeAdapter {
      * @param path 
      */
     abstract lookup(path: string): string | false;
-
     /**
      * Format object to media type.
      * @param media 
@@ -41,10 +41,14 @@ export abstract class MimeAdapter {
      */
     abstract parse(type: string): SplitType;
     /**
-     *  normalize Content-Type media type.
+     * normalize Content-Type media type.
      */
     abstract normalize(type: string): string | false;
-
+    /**
+     * match mime types.
+     * @param types 
+     * @param target 
+     */
     abstract match(types: string[], target: string): string | false;
 
     isJson(contentType: string) {

@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { IncomingHeader, OutgoingHeader, OutgoingHeaders } from './headers';
+import { IncomingHeader, OutgoingHeader } from './headers';
 
 
 @Abstract()
@@ -127,7 +127,6 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract getContentLength(packet: TPacket): number | undefined;
-
     /**
      * remove content length.
      * @param packet 
@@ -141,7 +140,6 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract getContent(packet: TPacket): any;
-
     /**
      * Set packet content
      *
@@ -149,7 +147,6 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract setContent(packet: TPacket, body: any): TPacket;
-
     /**
      * remove content encoding, length and type.
      * @param packet 
@@ -168,7 +165,6 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param field 
      */
     abstract getHeader(packet: TPacket, field: string): OutgoingHeader;
-
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -213,7 +209,7 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * set no cache
      * @param packet 
      */
-    abstract setNoCache(packet: TPacket): boolean;
+    abstract noCache(packet: TPacket): boolean;
     /**
      * is writable or not.
      * @param packet 

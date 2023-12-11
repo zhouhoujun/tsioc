@@ -197,6 +197,9 @@ export interface ResponseAs {
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
+/**
+ * request init options.
+ */
 export interface RequestInitOpts extends RequestOptions, ResponseAs {
     /**
      * request context.

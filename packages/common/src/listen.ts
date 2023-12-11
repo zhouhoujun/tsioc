@@ -25,6 +25,9 @@ export interface ListenOpts {
     withCredentials?: boolean;
 }
 
+/**
+ * Http listen options.
+ */
 export const HTTP_LISTEN_OPTS = tokenId<ListenOpts>('HTTP_LISTEN_OPTS');
 
 export interface BindListenning {

@@ -17,9 +17,9 @@ export interface IncomingHeaders {
     'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
+    'origin-path'?: string;
     ':method'?: string;
     ':path'?: string;
-    'origin-path'?: string;
     ':authority'?: string;
     ':scheme'?: string;
     ':topic'?: string;
@@ -39,9 +39,9 @@ export interface OutgoingHeaders {
     'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
+    'origin-path'?: string;
     ':authority'?: string;
     ':path'?: string;
-    'origin-path'?: string;
     ':method'?: string;
     ':type'?: string | number;
     ':topic'?: string;

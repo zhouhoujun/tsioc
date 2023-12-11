@@ -57,7 +57,7 @@ export interface ResponsePacket<T = any> extends Packet<T> {
     ok?: boolean;
     status?: StatusCode;
     statusText?: string;
-    stream?: IReadableStream
+    stream?: IReadableStream;
 }
 
 
