@@ -75,30 +75,30 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         }
     }
 
-    get status(): HttpStatusCode {
-        return this.response.statusCode
-    }
+    // get status(): HttpStatusCode {
+    //     return this.response.statusCode
+    // }
 
-    set status(code: HttpStatusCode) {
-        if (this.sent) return;
+    // set status(code: HttpStatusCode) {
+    //     if (this.sent) return;
 
-        assert(Number.isInteger(code), 'status code must be a number');
-        assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
-        this._explicitStatus = true;
-        this.response.statusCode = code;
-        if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
-        if (this.body && this.statusAdapter.isEmpty(code)) this.body = null;
-    }
+    //     assert(Number.isInteger(code), 'status code must be a number');
+    //     assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
+    //     this._explicitStatus = true;
+    //     this.response.statusCode = code;
+    //     if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
+    //     if (this.body && this.statusAdapter.isEmpty(code)) this.body = null;
+    // }
 
-    get statusMessage() {
-        return this.response.statusMessage || statusMessage[this.status]
-    }
+    // get statusMessage() {
+    //     return this.response.statusMessage || statusMessage[this.status]
+    // }
 
-    set statusMessage(msg: string) {
-        if (this.request.httpVersionMajor < 2) {
-            this.response.statusMessage = msg
-        }
-    }
+    // set statusMessage(msg: string) {
+    //     if (this.request.httpVersionMajor < 2) {
+    //         this.response.statusMessage = msg
+    //     }
+    // }
 
     /**
      * When `httpServer.proxy` is `true`, parse
@@ -254,13 +254,13 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         return true
     }
 
-    protected override onBodyChanged(newVal: any, oldVal: any): void {
-        (this.response as Outgoing).body = newVal;
-    }
+    // protected override onBodyChanged(newVal: any, oldVal: any): void {
+    //     (this.response as Outgoing).body = newVal;
+    // }
 
-    protected override onNullBody(): void {
-        this._explicitNullBody = true;
-    }
+    // protected override onNullBody(): void {
+    //     this._explicitNullBody = true;
+    // }
 
     vary(field: string) {
         if (this.sent) return;

@@ -1,12 +1,11 @@
-import { Injectable, Injector, InvocationContext, isDefined, isNil, promisify } from '@tsdi/ioc';
+import { Injectable, Injector, InvocationContext, Optional, isDefined, isNil, promisify } from '@tsdi/ioc';
 import {
-    HttpStatusCode, IReadableStream, InvalidJsonException,
-    Packet, ResponseEventFactory, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts, XSSI_PREFIX, ev, statusMessage
+    HttpStatusCode, IReadableStream, InvalidJsonException, ctype, XSSI_PREFIX, ev, hdr,
+    Packet, ResponseEventFactory, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts, statusMessage, IncomingAdapter, OutgoingAdapter, MimeAdapter, FileAdapter
 } from '@tsdi/common';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession, ClientTransportSessionFactory, RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
 import { OutgoingEncoder, IncomingDecoder, ServerTransportSession, ServerTransportSessionFactory, TransportContext, ServerOpts } from '@tsdi/endpoints';
-import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest, OutgoingHttpHeaders } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
 import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
@@ -36,9 +35,12 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
     constructor(
         readonly injector: Injector,
         readonly socket: ClientHttp2Session | null,
-        readonly statusAdapter: StatusAdapter,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly incomingAdapter: IncomingAdapter | null,
+        readonly outgoingAdapter: OutgoingAdapter | null,
+        readonly mimeAdapter: MimeAdapter | null,
         readonly streamAdapter: StreamAdapter,
-        readonly eventFactory: ResponseEventFactory, 
+        readonly eventFactory: ResponseEventFactory,
         readonly encoder: RequestEncoder,
         readonly decoder: ResponseDecoder,
         readonly clientOpts: HttpClientOpts) {
@@ -207,7 +209,11 @@ export class HttpClientSessionFactory implements ClientTransportSessionFactory<C
 
     constructor(
         readonly injector: Injector,
-        readonly statusVaildtor: StatusAdapter,
+        @Optional() private statusAdapter: StatusAdapter,
+        @Optional() private incomingAdapter: IncomingAdapter,
+        @Optional() private outgoingAdapter: OutgoingAdapter,
+        @Optional() private mimeAdapter: MimeAdapter,
+        private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
         private encoder: RequestEncoder,
@@ -216,7 +222,17 @@ export class HttpClientSessionFactory implements ClientTransportSessionFactory<C
     }
 
     create(socket: ClientHttp2Session | null, options: HttpClientOpts): HttpClientTransportSession {
-        return new HttpClientTransportSession(this.injector, socket, this.statusVaildtor, this.streamAdapter, this.eventFactory, this.encoder, this.decoder, options);
+        return new HttpClientTransportSession(this.injector,
+            socket,
+            this.statusAdapter,
+            this.incomingAdapter,
+            this.outgoingAdapter,
+            this.mimeAdapter,
+            this.streamAdapter,
+            this.eventFactory,
+            this.encoder,
+            this.decoder,
+            options);
     }
 
 }
@@ -231,7 +247,11 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
     constructor(
         readonly injector: Injector,
         readonly socket: Http2Server | HttpsServer | Server,
-        readonly statusAdapter: StatusAdapter,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly incomingAdapter: IncomingAdapter | null,
+        readonly outgoingAdapter: OutgoingAdapter | null,
+        readonly mimeAdapter: MimeAdapter | null,
+        readonly fileAdapter: FileAdapter,
         readonly streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
         private decoder: IncomingDecoder,
@@ -315,15 +335,30 @@ export class HttpServerSessionFactory implements ServerTransportSessionFactory<H
 
     constructor(
         readonly injector: Injector,
-        private statusAdapter: StatusAdapter,
-        private streamAdapter: StreamAdapter,
+        @Optional() private statusAdapter: StatusAdapter,
+        @Optional() private incomingAdapter: IncomingAdapter,
+        @Optional() private outgoingAdapter: OutgoingAdapter,
+        @Optional() private mimeAdapter: MimeAdapter,
+        private fileAdapter: FileAdapter,
+        readonly streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
-        private decoder: IncomingDecoder) {
+        private decoder: IncomingDecoder,
+        readonly options: TransportOpts) {
 
     }
 
     create(socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerTransportSession {
-        return new HttpServerTransportSession(this.injector, socket, this.statusAdapter, this.streamAdapter, this.encoder, this.decoder, options);
+        return new HttpServerTransportSession(this.injector, 
+            socket, 
+            this.statusAdapter,
+            this.incomingAdapter,
+            this.outgoingAdapter,
+            this.mimeAdapter,
+            this.fileAdapter,
+            this.streamAdapter, 
+            this.encoder, 
+            this.decoder, 
+            options);
     }
 
 }

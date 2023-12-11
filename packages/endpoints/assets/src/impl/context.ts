@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector } from '@tsdi/ioc';
-import { Incoming, IncomingPacket, InternalServerExecption, LOCALHOST, Outgoing, ResponsePacket, StatusCode } from '@tsdi/common';
+import { Incoming, IncomingPacket, LOCALHOST, Outgoing, ResponsePacket } from '@tsdi/common';
 import { AssetContext, TransportContextFactory, ServerOpts, ServerTransportSession } from '@tsdi/endpoints';
 import { AbstractAssetContext, ServerOptions } from '../asset.context';
 import { IncomingMessage } from '../incoming';
@@ -30,6 +30,21 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
         return (this.response as any).writable === true;
     }
 
+    protected override getRequestPath(): string {
+        return this.pathname || this.originalUrl || this.url
+    }
+    get secure(): boolean {
+        return this.serverOptions.secure == true;
+    }
+
+    setResponse(packet: ResponsePacket): void {
+        const { headers, payload, status, statusText } = packet;
+        if (status) this.status = status;
+        if (statusText) this.statusMessage = statusText;
+        if (headers) this.setHeader(headers);
+        this.body = payload;
+    }
+
     // get status(): StatusCode {
     //     return this.response.statusCode;
     // }
@@ -42,10 +57,6 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     //     if (this.body && this.statusAdapter?.isEmpty(code)) this.body = null;
     // }
 
-    protected override getRequestPath(): string {
-        return this.pathname || this.originalUrl || this.url
-    }
-
     // get statusMessage(): string {
     //     return this.response.statusMessage ?? '';
     // }
@@ -53,17 +64,6 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     //     this.response.statusMessage = message;
     // }
 
-    get secure(): boolean {
-        return this.serverOptions.secure == true;
-    }
-
-    setResponse(packet: ResponsePacket): void {
-        const { headers, payload, status, statusText } = packet;
-        if (status) this.status = status;
-        if (statusText) this.statusMessage = statusText;
-        if (headers) this.setHeader(headers);
-        this.body = payload;
-    }
 
 }
 

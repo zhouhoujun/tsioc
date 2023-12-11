@@ -296,8 +296,8 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @return {String}
      * @api public
      */
-    getHeader(field: string): IncomingHeader {
-        return this.incomingAdapter?.getHeader(this.request, field)
+    getHeader(field: string): string | undefined {
+        return this.incomingAdapter?.getHeader(this.request, field)?.toString()
     }
 
     /**
