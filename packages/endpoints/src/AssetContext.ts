@@ -52,38 +52,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
      */
     abstract is(type: string | string[]): string | null | false;
 
-    
-    // /**
-    //  * can response stream writeable
-    //  */
-    // abstract get writable(): boolean;
-
-    // /**
-    //  * Set Content-Type response header with `type` through `mime.lookup()`
-    //  * when it does not contain a charset.
-    //  *
-    //  * Examples:
-    //  *
-    //  *     this.type = '.html';
-    //  *     this.type = 'html';
-    //  *     this.type = 'json';
-    //  *     this.type = 'application/json';
-    //  *     this.type = 'png';
-    //  *
-    //  * @param {String} type
-    //  * @api public
-    //  */
-    // abstract set type(type: string);
-
-    // /**
-    //  * Return the response mime type void of
-    //  * parameters such as "charset".
-    //  *
-    //  * @return {String}
-    //  * @api public
-    //  */
-    // abstract get type(): string;
-
     /**
      * Check if the given `type(s)` is acceptable, returning
      * the best match when true, otherwise `false`, in which

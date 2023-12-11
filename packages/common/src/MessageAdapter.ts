@@ -85,6 +85,11 @@ export abstract class OutgoingAdapter<TPacket = any> {
     abstract removeContentType(packet: TPacket): TPacket;
 
     /**
+     * has Content-Encoding or not.
+     * @param packet
+     */
+    abstract hasContentEncoding(packet: TPacket): boolean;
+    /**
      * Get Content-Encoding.
      * @param packet
      */
@@ -95,13 +100,19 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param encoding 
      */
     abstract setContentEncoding(packet: TPacket, encoding: string | null | undefined): TPacket;
-
     /**
      * remove content encoding.
      * @param packet 
      */
     abstract removeContentEncoding(packet: TPacket): TPacket;
 
+    /**
+     * has packet content length or not.
+     *
+     * @return {Number}
+     * @api public
+     */
+    abstract hasContentLength(packet: TPacket): number | undefined;
     /**
      * Set packet content length.
      *
@@ -198,7 +209,15 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param packet 
      */
     abstract removeHeaders(packet: TPacket): TPacket;
-
+    /**
+     * set no cache
+     * @param packet 
+     */
+    abstract setNoCache(packet: TPacket): boolean;
+    /**
+     * is writable or not.
+     * @param packet 
+     */
     abstract writable(packet: TPacket): boolean;
 
 }

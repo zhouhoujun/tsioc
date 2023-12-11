@@ -1,4 +1,4 @@
-import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, hasOwn, Injectable, Optional } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, map } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
@@ -20,7 +20,7 @@ export class Json implements Middleware<TransportContext>, Interceptor<Transport
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
-    constructor(@Nullable() option: JsonMiddlewareOption) {
+    constructor(@Optional() option: JsonMiddlewareOption) {
 
         this.pretty = option?.pretty ?? true;
         this.spaces = option?.spaces ?? 2;

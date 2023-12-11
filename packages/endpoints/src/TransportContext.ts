@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isFunction, isString, isUndefined, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isFunction, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { ENOENT, IncomingHeader, IncomingPacket, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket, StatusCode, ctype, isBuffer, xmlRegExp } from '@tsdi/common';
 import { ServerOpts } from './Server';
@@ -75,21 +75,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     abstract get response(): TResponse;
 
     /**
-     * Set response content length.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    abstract set length(n: number | undefined);
-    /**
-     * Get response content length
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract get length(): number | undefined;
-
-    /**
      * Get response status.
      */
     abstract get status(): StatusCode;
@@ -125,6 +110,40 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
         return this.originalUrl || this.url
     }
 
+
+    private _len?: number;
+    /**
+     * Set response content length.
+     *
+     * @param {Number} n
+     * @api public
+     */
+    set length(n: number | undefined) {
+        this._len = n;
+        if (!this.outgoingAdapter) return
+        if (isNumber(n) && !this.outgoingAdapter.hasContentEncoding(this.response)) {
+            this.outgoingAdapter.setContentLength(this.response, n)
+        } else {
+            this.outgoingAdapter.removeContentLength(this.response)
+        }
+    }
+    /**
+     * Get response content length
+     *
+     * @return {Number}
+     * @api public
+     */
+    get length(): number | undefined {
+        if (!this.outgoingAdapter) return this._len
+        if (this.outgoingAdapter.hasContentLength(this.response)) {
+            return this.outgoingAdapter.getContentLength(this.response)
+        }
+        if (!isNil(this._len)) return this._len
+        if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return undefined
+        if (isString(this.body)) return Buffer.byteLength(this.body)
+        if (Buffer.isBuffer(this.body)) return this.body.length
+        return Buffer.byteLength(JSON.stringify(this.body))
+    }
 
     protected _body: any;
     protected _explicitStatus?: boolean;
@@ -379,6 +398,33 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
                 this.outgoingAdapter.setHeader(this.response, key, fields[key])
             }
         }
+    }
+
+    /**
+     * Append additional header `field` with value `val`.
+     *
+     * Examples:
+     *
+     * ```
+     * this.append('Link', ['<http://localhost/>', '<http://localhost:3000/>']);
+     * this.append('Set-Cookie', 'foo=bar; Path=/; HttpOnly');
+     * this.append('Warning', '199 Miscellaneous warning');
+     * ```
+     *
+     * @param {String} field
+     * @param {String|Array} val
+     * @api public
+     */
+    appendHeader(field: string, val: string | number | string[]) {
+        if (this.sent || !this.outgoingAdapter) return;
+        const prev = this.outgoingAdapter.getHeader(this.response, field);
+        if (prev) {
+            val = Array.isArray(prev)
+                ? prev.concat(Array.isArray(val) ? val : String(val))
+                : [String(prev)].concat(Array.isArray(val) ? val : String(val))
+        }
+
+        return this.setHeader(field, val)
     }
 
     /**

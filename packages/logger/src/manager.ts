@@ -1,6 +1,6 @@
 import {
     ArgumentExecption, getToken, Inject, Injectable,
-    Injector, isString, Nullable, Token, Type
+    Injector, isString, Optional, Token, Type
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
@@ -121,7 +121,8 @@ export class ConsoleLogManager implements LoggerManager {
     static ƿNPT = true;
     private config: ConsoleLoggerConfig | undefined;
 
-    constructor(@Nullable() private headerFormater: HeaderFormater) {
+    constructor(@Optional() private headerFormater: HeaderFormater) {
+
     }
 
     configure(config: ConsoleLoggerConfig) {

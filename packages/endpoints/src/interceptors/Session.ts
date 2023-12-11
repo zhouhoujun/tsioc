@@ -1,4 +1,4 @@
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, finalize, from, mergeMap } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
@@ -105,7 +105,7 @@ const defOpts = {
 export class Session implements Middleware<TransportContext>, Interceptor<TransportContext> {
 
     private options: SessionOptions;
-    constructor(@Nullable() options: SessionOptions) {
+    constructor(@Optional() options: SessionOptions) {
         this.options = {
             ...defOpts,
             ...options

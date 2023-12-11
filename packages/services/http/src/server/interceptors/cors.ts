@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
+import { Abstract, Injectable, isArray, isFunction, isPromise, Optional } from '@tsdi/ioc';
 import { RequestMethod, InternalServerExecption, hdr, append, vary } from '@tsdi/common';
 import { Middleware, AssetContext } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
@@ -67,7 +67,7 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
 
     private options: Options;
 
-    constructor(@Nullable() options: CorsOptions) {
+    constructor(@Optional() options: CorsOptions) {
 
         this.options = this.parseOption({
             allowMethods,

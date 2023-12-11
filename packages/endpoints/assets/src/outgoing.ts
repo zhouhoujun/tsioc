@@ -1,7 +1,7 @@
 import { ArgumentExecption, isArray, isFunction, isString, nextTick } from '@tsdi/ioc';
 import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, hdr } from '@tsdi/common';
 import { Writable } from 'readable-stream';
-import { ServerTransportSession } from '@tsdi/endpoints/src';
+import { ServerTransportSession } from '@tsdi/endpoints';
 
 
 

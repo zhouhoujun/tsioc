@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
+import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Optional, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream, InvalidJsonException, Incoming } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
@@ -57,7 +57,7 @@ export class Bodyparser implements Middleware<TransportContext>, Interceptor<Tra
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(@Nullable() options: PayloadOptions) {
+    constructor(@Optional() options: PayloadOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };

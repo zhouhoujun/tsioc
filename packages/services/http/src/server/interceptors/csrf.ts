@@ -1,4 +1,4 @@
-import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS, ForbiddenExecption, hdr } from '@tsdi/common';
 import { TransportContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
@@ -77,7 +77,7 @@ export class Csrf implements Middleware<TransportContext>, Interceptor<Transport
 
     private options: CsrfOptions;
     private tokens: Tokens;
-    constructor(factory: CsrfTokensFactory, @Nullable() options: CsrfOptions) {
+    constructor(factory: CsrfTokensFactory, @Optional() options: CsrfOptions) {
         this.options = { ...defOpts, ...options };
         this.tokens = factory.create(this.options);
     }

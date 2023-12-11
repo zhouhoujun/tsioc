@@ -285,50 +285,50 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         this.body = payload;
     }
 
-    get body(): any {
-        return this.response.payload;
-    }
+    // get body(): any {
+    //     return this.response.payload;
+    // }
 
-    set body(value: any) {
-        if (!this.streamAdapter.isStream(value)) {
-            this._len = undefined;
-        }
-        this.response.payload = value;
-    }
+    // set body(value: any) {
+    //     if (!this.streamAdapter.isStream(value)) {
+    //         this._len = undefined;
+    //     }
+    //     this.response.payload = value;
+    // }
 
-    private _len?: number;
-    /**
-     * Set Content-Length field to `n`.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    set length(n: number | undefined) {
-        this._len = n;
-    }
+    // private _len?: number;
+    // /**
+    //  * Set Content-Length field to `n`.
+    //  *
+    //  * @param {Number} n
+    //  * @api public
+    //  */
+    // set length(n: number | undefined) {
+    //     this._len = n;
+    // }
 
-    /**
-     * Return parsed response Content-Length when present.
-     *
-     * @return {Number}
-     * @api public
-     */
-    get length(): number | undefined {
-        if (isNil(this._len)) {
-            if (isNil(this.body)) {
-                this._len = 0;
-            } else if (this.streamAdapter.isStream(this.body)) {
-                this._len = undefined;
-            } else if (isString(this.body)) {
-                this._len = Buffer.byteLength(this.body);
-            } else if (isBuffer(this.body)) {
-                this._len = this.body.length;
-            } else {
-                this._len = Buffer.byteLength(JSON.stringify(this.body))
-            }
-        }
-        return this._len;
-    }
+    // /**
+    //  * Return parsed response Content-Length when present.
+    //  *
+    //  * @return {Number}
+    //  * @api public
+    //  */
+    // get length(): number | undefined {
+    //     if (isNil(this._len)) {
+    //         if (isNil(this.body)) {
+    //             this._len = 0;
+    //         } else if (this.streamAdapter.isStream(this.body)) {
+    //             this._len = undefined;
+    //         } else if (isString(this.body)) {
+    //             this._len = Buffer.byteLength(this.body);
+    //         } else if (isBuffer(this.body)) {
+    //             this._len = this.body.length;
+    //         } else {
+    //             this._len = Buffer.byteLength(JSON.stringify(this.body))
+    //         }
+    //     }
+    //     return this._len;
+    // }
 
     /**
      * The request method.

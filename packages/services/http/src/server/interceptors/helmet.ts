@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Optional } from '@tsdi/ioc';
 import { hdr } from '@tsdi/common';
 import { TransportContext, Middleware } from '@tsdi/endpoints';
 
@@ -37,7 +37,7 @@ export class HelmetMiddleware implements Middleware<TransportContext> {
 
     private options: HelmentOptions;
     
-    constructor(@Nullable() options: HelmentOptions) {
+    constructor(@Optional() options: HelmentOptions) {
         this.options = { ...defOpts, ...options };
     }
 

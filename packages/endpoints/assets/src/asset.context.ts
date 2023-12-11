@@ -445,14 +445,154 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return lang.first(this.negotiator.languages(this, ...langs)) ?? false
     }
 
+    
+    vary(field: string) {
+        if (this.sent) return;
+        vary(this.response, field);
+    }
+
     /**
-     * Checks if the request is writable.
-     * Tests for the existence of the socket
-     * as node sometimes does not set it.
+     * Set Content-Disposition header to "attachment" with optional `filename`.
+     *
+     * @param filname file name for download.
+     * @param options content disposition.
+     * @api public
      */
-    abstract get writable(): boolean;
+    attachment(filename: string, options?: {
+        contentType?: string;
+        /**
+        * Specifies the disposition type.
+        * This can also be "inline", or any other value (all values except `inline` are treated like attachment,
+        * but can convey additional information if both parties agree to it).
+        * The `type` is normalized to lower-case.
+        * @default 'attachment'
+        */
+        type?: 'attachment' | 'inline' | string | undefined;
+        /**
+         * If the filename option is outside ISO-8859-1,
+         * then the file name is actually stored in a supplemental field for clients
+         * that support Unicode file names and a ISO-8859-1 version of the file name is automatically generated
+         * @default true
+         */
+        fallback?: string | boolean | undefined;
+    }): void {
+        if (options?.contentType) {
+            this.contentType = options.contentType;
+        } else if (filename) {
+            this.type = this.fileAdapter.extname(filename);
+        }
+        const func = this.get(CONTENT_DISPOSITION_TOKEN);
+        this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
+    }
 
 
+    /**
+     * Set the Last-Modified date using a string or a Date.
+     *
+     *     this.response.lastModified = new Date();
+     *
+     * @param {String|Date} type
+     * @api public
+     */
+    set lastModified(val: Date | null) {
+        if (!val) {
+            this.removeHeader(hdr.LAST_MODIFIED);
+            return
+        }
+        this.setHeader(hdr.LAST_MODIFIED, val.toUTCString())
+    }
+
+    /**
+     * Get the Last-Modified date in Date form, if it exists.
+     *
+     * @return {Date}
+     * @api public
+     */
+    get lastModified(): Date | null {
+        const date = this.response.getHeader(hdr.LAST_MODIFIED) as string;
+        return date ? new Date(date) : null
+    }
+
+    /**
+     * Set the etag of a response.
+     * This will normalize the quotes if necessary.
+     *
+     *     this.response.etag = 'md5hashsum';
+     *     this.response.etag = '"md5hashsum"';
+     *     this.response.etag = 'W/"123456789"';
+     *
+     * @param {String} etag
+     * @api public
+     */
+    set etag(val: string) {
+        if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
+        this.setHeader(hdr.ETAG, val)
+    }
+
+    /**
+     * Get the etag of a response.
+     *
+     * @return {String}
+     * @api public
+     */
+    get etag(): string {
+        return this.response.getHeader(hdr.ETAG) as string
+    }
+
+    /**
+     * Perform a 302 redirect to `url`.
+     *
+     * The string "back" is special-cased
+     * to provide Referrer support, when Referrer
+     * is not present `alt` or "/" is used.
+     *
+     * Examples:
+     *
+     *    this.redirect('back');
+     *    this.redirect('back', '/index.html');
+     *    this.redirect('/login');
+     *    this.redirect('http://google.com');
+     *
+     * @param {String} url
+     * @param {String} [alt]
+     * @api public
+     */
+    redirect(url: string, alt?: string): void {
+        if(!this.statusAdapter) return;
+        if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
+        this.setHeader(hdr.LOCATION, encodeUrl(url));
+        // status
+        if (!this.statusAdapter.isRedirect(this.status)) this.status = this.statusAdapter.found;
+
+        // html
+        if (this.accepts('html')) {
+            url = escapeHtml(url);
+            this.type = ctype.TEXT_HTML_UTF8;
+            this.body = `Redirecting to <a href="${url}">${url}</a>.`;
+            return
+        }
+
+        // text
+        this.type = ctype.TEXT_PLAIN_UTF8;
+        this.body = `Redirecting to ${url}.`
+    }
+
+    /**
+     * Check if a header has been written to the socket.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get sent() {
+        return this.response.headersSent!
+    }
+
+     // /**
+    //  * Checks if the request is writable.
+    //  * Tests for the existence of the socket
+    //  * as node sometimes does not set it.
+    //  */
+    // abstract get writable(): boolean;
 
     // /**
     //  * Set Content-Type response header with `type` through `mime.lookup()`
@@ -612,178 +752,38 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     //     this._explicitNullBody = true;
     // }
 
-    vary(field: string) {
-        if (this.sent) return;
-        vary(this.response, field);
-    }
 
-    /**
-     * Set Content-Length field to `n`.
-     *
-     * @param {Number} n
-     * @api public
-     */
-    set length(n: number | undefined) {
-        if (isNumber(n) && !this.hasHeader(hdr.TRANSFER_ENCODING)) {
-            this.setHeader(hdr.CONTENT_LENGTH, n)
-        } else {
-            this.removeHeader(hdr.CONTENT_LENGTH)
-        }
-    }
+    // /**
+    //  * Set Content-Length field to `n`.
+    //  *
+    //  * @param {Number} n
+    //  * @api public
+    //  */
+    // set length(n: number | undefined) {
+    //     if (isNumber(n) && !this.hasHeader(hdr.TRANSFER_ENCODING)) {
+    //         this.setHeader(hdr.CONTENT_LENGTH, n)
+    //     } else {
+    //         this.removeHeader(hdr.CONTENT_LENGTH)
+    //     }
+    // }
 
-    /**
-     * Return parsed response Content-Length when present.
-     *
-     * @return {Number}
-     * @api public
-     */
-    get length(): number | undefined {
-        if (this.hasHeader(hdr.CONTENT_LENGTH)) {
-            return ~~(this.outgoingAdapter?.getContentLength(this.response) || 0)
-        }
+    // /**
+    //  * Return parsed response Content-Length when present.
+    //  *
+    //  * @return {Number}
+    //  * @api public
+    //  */
+    // get length(): number | undefined {
+    //     if (this.hasHeader(hdr.CONTENT_LENGTH)) {
+    //         return ~~(this.outgoingAdapter?.getContentLength(this.response) || 0)
+    //     }
 
-        const { body } = this;
-        if (isNil(this.body) || this.streamAdapter.isStream(body)) return undefined;
-        if (isString(body)) return Buffer.byteLength(body);
-        if (Buffer.isBuffer(body)) return body.length;
-        return Buffer.byteLength(JSON.stringify(body))
-    }
-
-    /**
-     * Set Content-Disposition header to "attachment" with optional `filename`.
-     *
-     * @param filname file name for download.
-     * @param options content disposition.
-     * @api public
-     */
-    attachment(filename: string, options?: {
-        contentType?: string;
-        /**
-        * Specifies the disposition type.
-        * This can also be "inline", or any other value (all values except `inline` are treated like attachment,
-        * but can convey additional information if both parties agree to it).
-        * The `type` is normalized to lower-case.
-        * @default 'attachment'
-        */
-        type?: 'attachment' | 'inline' | string | undefined;
-        /**
-         * If the filename option is outside ISO-8859-1,
-         * then the file name is actually stored in a supplemental field for clients
-         * that support Unicode file names and a ISO-8859-1 version of the file name is automatically generated
-         * @default true
-         */
-        fallback?: string | boolean | undefined;
-    }): void {
-        if (options?.contentType) {
-            this.contentType = options.contentType;
-        } else if (filename) {
-            this.type = this.fileAdapter.extname(filename);
-        }
-        const func = this.get(CONTENT_DISPOSITION_TOKEN);
-        this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
-    }
-
-
-    /**
-     * Set the Last-Modified date using a string or a Date.
-     *
-     *     this.response.lastModified = new Date();
-     *
-     * @param {String|Date} type
-     * @api public
-     */
-    set lastModified(val: Date | null) {
-        if (!val) {
-            this.removeHeader(hdr.LAST_MODIFIED);
-            return
-        }
-        this.setHeader(hdr.LAST_MODIFIED, val.toUTCString())
-    }
-
-    /**
-     * Get the Last-Modified date in Date form, if it exists.
-     *
-     * @return {Date}
-     * @api public
-     */
-    get lastModified(): Date | null {
-        const date = this.response.getHeader(hdr.LAST_MODIFIED) as string;
-        return date ? new Date(date) : null
-    }
-
-    /**
-     * Set the etag of a response.
-     * This will normalize the quotes if necessary.
-     *
-     *     this.response.etag = 'md5hashsum';
-     *     this.response.etag = '"md5hashsum"';
-     *     this.response.etag = 'W/"123456789"';
-     *
-     * @param {String} etag
-     * @api public
-     */
-    set etag(val: string) {
-        if (!/^(W\/)?"/.test(val)) val = `"${val}"`;
-        this.setHeader(hdr.ETAG, val)
-    }
-
-    /**
-     * Get the etag of a response.
-     *
-     * @return {String}
-     * @api public
-     */
-    get etag(): string {
-        return this.response.getHeader(hdr.ETAG) as string
-    }
-
-    /**
-     * Perform a 302 redirect to `url`.
-     *
-     * The string "back" is special-cased
-     * to provide Referrer support, when Referrer
-     * is not present `alt` or "/" is used.
-     *
-     * Examples:
-     *
-     *    this.redirect('back');
-     *    this.redirect('back', '/index.html');
-     *    this.redirect('/login');
-     *    this.redirect('http://google.com');
-     *
-     * @param {String} url
-     * @param {String} [alt]
-     * @api public
-     */
-    redirect(url: string, alt?: string): void {
-        if(!this.statusAdapter) return;
-        if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
-        this.setHeader(hdr.LOCATION, encodeUrl(url));
-        // status
-        if (!this.statusAdapter.isRedirect(this.status)) this.status = this.statusAdapter.found;
-
-        // html
-        if (this.accepts('html')) {
-            url = escapeHtml(url);
-            this.type = ctype.TEXT_HTML_UTF8;
-            this.body = `Redirecting to <a href="${url}">${url}</a>.`;
-            return
-        }
-
-        // text
-        this.type = ctype.TEXT_PLAIN_UTF8;
-        this.body = `Redirecting to ${url}.`
-    }
-
-    /**
-     * Check if a header has been written to the socket.
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get sent() {
-        return this.response.headersSent!
-    }
+    //     const { body } = this;
+    //     if (isNil(body) || this.streamAdapter.isStream(body)) return undefined;
+    //     if (isString(body)) return Buffer.byteLength(body);
+    //     if (Buffer.isBuffer(body)) return body.length;
+    //     return Buffer.byteLength(JSON.stringify(body))
+    // }
 
     // /**
     //  * Returns true if the header identified by name is currently set in the outgoing headers.
@@ -873,31 +873,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
     // }
 
-    /**
-     * Append additional header `field` with value `val`.
-     *
-     * Examples:
-     *
-     * ```
-     * this.append('Link', ['<http://localhost/>', '<http://localhost:3000/>']);
-     * this.append('Set-Cookie', 'foo=bar; Path=/; HttpOnly');
-     * this.append('Warning', '199 Miscellaneous warning');
-     * ```
-     *
-     * @param {String} field
-     * @param {String|Array} val
-     * @api public
-     */
-    appendHeader(field: string, val: string | number | string[]) {
-        const prev = this.response.getHeader(field);
-        if (prev) {
-            val = Array.isArray(prev)
-                ? prev.concat(Array.isArray(val) ? val : String(val))
-                : [String(prev)].concat(Array.isArray(val) ? val : String(val))
-        }
 
-        return this.setHeader(field, val)
-    }
 
     // isEmpty() {
     //     return this.statusAdapter.isEmpty(this.status) || this.body === null;
