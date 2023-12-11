@@ -46,6 +46,8 @@ export * from './impl/transport.context';
 export * from './impl/transport.endpoint';
 
 export * from './impl/transport.session';
+export * from './impl/restful.context';
+
 export * from './impl/duplex.session';
 export * from './impl/topic.session';
 

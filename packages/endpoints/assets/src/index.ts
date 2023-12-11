@@ -6,7 +6,7 @@ export * from './Negotiator';
 // export * from './interceptors.module';
 // export { InterceptorsModule as MiddewaresModule } from './interceptors.module';
 
-export * from './asset.context';
+// export * from './asset.context';
 // export * from './impl/mime';
 // export * from './impl/mimedb';
 // export * from './impl/negotiator';

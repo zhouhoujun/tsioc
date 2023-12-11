@@ -1,13 +1,13 @@
 import { EMPTY_OBJ, Injectable, Injector } from '@tsdi/ioc';
 import { Incoming, IncomingPacket, LOCALHOST, Outgoing, ResponsePacket } from '@tsdi/common';
-import { TransportContextFactory, ServerOpts, ServerTransportSession, TransportContext } from '@tsdi/endpoints';
-import { AbstractAssetContext, ServerOptions } from '../asset.context';
+import { TransportContextFactory, ServerOpts, ServerTransportSession, TransportContext, RestfulContext } from '@tsdi/endpoints';
+
 import { IncomingMessage } from '../incoming';
 import { OutgoingMessage } from '../outgoing';
 
 
 
-export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSocket>, Outgoing<TSocket>, TSocket, ServerOptions> {
+export class AssetContextImpl<TSocket> extends RestfulContext<Incoming<TSocket>, Outgoing<TSocket>, TSocket, ServerOpts> {
 
     isAbsoluteUrl(url: string): boolean {
         return abstl.test(url)

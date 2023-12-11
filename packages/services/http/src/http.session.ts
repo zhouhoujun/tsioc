@@ -213,7 +213,6 @@ export class HttpClientSessionFactory implements ClientTransportSessionFactory<C
         @Optional() private incomingAdapter: IncomingAdapter,
         @Optional() private outgoingAdapter: OutgoingAdapter,
         @Optional() private mimeAdapter: MimeAdapter,
-        private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
         private encoder: RequestEncoder,
@@ -342,8 +341,7 @@ export class HttpServerSessionFactory implements ServerTransportSessionFactory<H
         private fileAdapter: FileAdapter,
         readonly streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
-        private decoder: IncomingDecoder,
-        readonly options: TransportOpts) {
+        private decoder: IncomingDecoder) {
 
     }
 
