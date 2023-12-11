@@ -11,6 +11,9 @@ import { ServerTransportSessionFactory } from './transport/session';
 import { IncomingDecoder, OutgoingEncoder } from './transport';
 
 
+/**
+ * Proxy options.
+ */
 export interface ProxyOpts {
     proxyIpHeader: string;
     maxIpsCount?: number;

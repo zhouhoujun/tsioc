@@ -27,7 +27,7 @@ export interface ServerOptions extends ServerOpts {
  */
 @Abstract()
 export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket =  any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TSocket, TServOpts> {
-    protected _explicitNullBody?: boolean;
+
     private _URL?: URL;
     readonly originalUrl: string;
     private _url?: string;

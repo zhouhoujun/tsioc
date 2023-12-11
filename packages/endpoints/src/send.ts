@@ -1,7 +1,9 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { TransportContext } from './TransportContext';
 
-
+/**
+ * Send options.
+ */
 export interface SendOptions<TStats = any> {
     root: string | string[];
     prefix?: string;
@@ -21,7 +23,6 @@ export interface SendOptions<TStats = any> {
 /**
  * Static Content options.
  */
-
 export interface ContentOptions extends SendOptions {
     defer?: boolean;
 }
@@ -35,7 +36,9 @@ export abstract class ContentSendAdapter<TStats = any> {
 }
 
 
-
+/**
+ * content disposition token.
+ */
 export const CONTENT_DISPOSITION_TOKEN = tokenId<ContentDisposition>('CONTENT_DISPOSITION');
 
 /**

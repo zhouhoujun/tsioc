@@ -112,171 +112,148 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         }
     }
 
-    protected _explicitStatus?: boolean;
 
-    get status(): StatusCode {
-        return this.response.status!
-    }
+    // /**
+    //  * Return request header.
+    //  *
+    //  * The `Referrer` header field is special-cased,
+    //  * both `Referrer` and `Referer` are interchangeable.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.get('Content-Type');
+    //  *     // => "text/plain"
+    //  *
+    //  *     this.get('content-type');
+    //  *     // => "text/plain"
+    //  *
+    //  *     this.get('Something');
+    //  *     // => ''
+    //  *
+    //  * @param {String} field
+    //  * @return {String}
+    //  * @api public
+    //  */
+    // getHeader(field: string): string {
+    //     field = this.toHeaderName(field);
+    //     const h = this.request.headers?.[field];
 
-    set status(status: StatusCode) {
-        if (this.sent) return;
-
-        if (!this.session.statusAdapter?.isStatus(status)) throw new InternalServerExecption(`invalid status code: ${status}`)
-        this.response.status = status;
-        this._explicitStatus = true;
-        if (this.body && this.session.statusAdapter?.isEmpty(status)) this.body = null;
-    }
-
-    get statusMessage(): string {
-        return this.response.statusText ?? '';
-    }
-    set statusMessage(message: string) {
-        this.response.statusText = message;
-    }
-
-    
-
-    /**
-     * Return request header.
-     *
-     * The `Referrer` header field is special-cased,
-     * both `Referrer` and `Referer` are interchangeable.
-     *
-     * Examples:
-     *
-     *     this.get('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.get('content-type');
-     *     // => "text/plain"
-     *
-     *     this.get('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): string {
-        field = this.toHeaderName(field);
-        const h = this.request.headers?.[field];
-
-        if (isNil(h)) return '';
-        return isArray(h) ? h[0] : String(h);
-    }
+    //     if (isNil(h)) return '';
+    //     return isArray(h) ? h[0] : String(h);
+    // }
 
 
-    /**
-     * content type.
-     */
-    get contentType(): string {
-        return this.session.outgoingAdapter?.getContentType(this.response) ?? ''
-    }
-    /**
-     * Set Content-Type response header with `type` through `mime.lookup()`
-     * when it does not contain a charset.
-     *
-     * Examples:
-     *
-     *     this.contentType = 'application/json';
-     *     this.contentType = 'application/octet-stream';  // buffer stream
-     *     this.contentType = 'image/png';      // png
-     *     this.contentType = 'image/pjpeg';   //jpeg
-     *     this.contentType = 'text/plain';    // text, txt
-     *     this.contentType = 'text/html';    // html, htm, shtml
-     *     this.contextType = 'text/javascript'; // javascript text
-     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
-     *
-     * @param {String} type
-     * @api public
-     */
-    set contentType(type: string) {
-        this.session.outgoingAdapter?.setContentType(this.response, type)
-    }
+    // /**
+    //  * content type.
+    //  */
+    // get contentType(): string {
+    //     return this.session.outgoingAdapter?.getContentType(this.response) ?? ''
+    // }
+    // /**
+    //  * Set Content-Type response header with `type` through `mime.lookup()`
+    //  * when it does not contain a charset.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.contentType = 'application/json';
+    //  *     this.contentType = 'application/octet-stream';  // buffer stream
+    //  *     this.contentType = 'image/png';      // png
+    //  *     this.contentType = 'image/pjpeg';   //jpeg
+    //  *     this.contentType = 'text/plain';    // text, txt
+    //  *     this.contentType = 'text/html';    // html, htm, shtml
+    //  *     this.contextType = 'text/javascript'; // javascript text
+    //  *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+    //  *
+    //  * @param {String} type
+    //  * @api public
+    //  */
+    // set contentType(type: string) {
+    //     this.session.outgoingAdapter?.setContentType(this.response, type)
+    // }
 
-    /**
-     * Returns true if the header identified by name is currently set in the outgoing headers.
-     * The header name matching is case-insensitive.
-     *
-     * Examples:
-     *
-     *     this.hasHeader('Content-Type');
-     *     // => true
-     *
-     * @param {String} field
-     * @return {boolean}
-     * @api public
-     */
-    hasHeader(field: string) {
-        return !isNil(this.response.headers?.[field])
-    }
+    // /**
+    //  * Returns true if the header identified by name is currently set in the outgoing headers.
+    //  * The header name matching is case-insensitive.
+    //  *
+    //  * Examples:
+    //  *
+    //  *     this.hasHeader('Content-Type');
+    //  *     // => true
+    //  *
+    //  * @param {String} field
+    //  * @return {boolean}
+    //  * @api public
+    //  */
+    // hasHeader(field: string) {
+    //     return !isNil(this.response.headers?.[field])
+    // }
 
-    protected toHeaderName(field: string) {
-        return field.toLowerCase();
-    }
+    // protected toHeaderName(field: string) {
+    //     return field.toLowerCase();
+    // }
 
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set('Foo', ['bar', 'baz']);
-     *    this.set('Accept', 'application/json');
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    setHeader(field: string, val: string | number | string[]): void;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-     *
-     * @param {OutgoingHeaders} fields
-     * @param {String} val
-     * @api public
-     */
-    setHeader(fields: OutgoingHeaders): void;
-    setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
-        if (this.sent) return;
-        if (!this.response.headers) {
-            this.response.headers = {};
-        }
-        if (val) {
-            this.response.headers[field as string] = val
-        } else {
-            Object.assign(this.response.headers, field)
-        }
-    }
+    // /**
+    //  * Set header `field` to `val` or pass
+    //  * an object of header fields.
+    //  *
+    //  * Examples:
+    //  *
+    //  *    this.set('Foo', ['bar', 'baz']);
+    //  *    this.set('Accept', 'application/json');
+    //  *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+    //  *
+    //  * @param {String|Object|Array} field
+    //  * @param {String} val
+    //  * @api public
+    //  */
+    // setHeader(field: string, val: string | number | string[]): void;
+    // /**
+    //  * Set header `field` to `val` or pass
+    //  * an object of header fields.
+    //  *
+    //  * Examples:
+    //  *
+    //  *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+    //  *
+    //  * @param {OutgoingHeaders} fields
+    //  * @param {String} val
+    //  * @api public
+    //  */
+    // setHeader(fields: OutgoingHeaders): void;
+    // setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
+    //     if (this.sent) return;
+    //     if (!this.response.headers) {
+    //         this.response.headers = {};
+    //     }
+    //     if (val) {
+    //         this.response.headers[field as string] = val
+    //     } else {
+    //         Object.assign(this.response.headers, field)
+    //     }
+    // }
 
 
-    /**
-     * Remove header `field` of response.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void {
-        if (this.sent) return;
-        if (!this.response.headers) return;
-        delete this.response.headers[field];
-    }
+    // /**
+    //  * Remove header `field` of response.
+    //  *
+    //  * @param {String} name
+    //  * @api public
+    //  */
+    // removeHeader(field: string): void {
+    //     if (this.sent) return;
+    //     if (!this.response.headers) return;
+    //     delete this.response.headers[field];
+    // }
 
-    /**
-     * Remove all header of response.
-     * @api public
-     */
-    removeHeaders(): void {
-        if (this.sent) return;
-        this.response.headers = {};
+    // /**
+    //  * Remove all header of response.
+    //  * @api public
+    //  */
+    // removeHeaders(): void {
+    //     if (this.sent) return;
+    //     this.response.headers = {};
 
-    }
+    // }
 
     setResponse(packet: ResponsePacket): void {
         const { headers, payload, ...pkg } = packet;
@@ -284,6 +261,31 @@ export class TransportContextIml<TRequest extends RequestPacket = RequestPacket,
         if (headers) this.setHeader(headers);
         this.body = payload;
     }
+
+    
+    // protected _explicitStatus?: boolean;
+
+    // get status(): StatusCode {
+    //     return this.response.status!
+    // }
+
+    // set status(status: StatusCode) {
+    //     if (this.sent) return;
+
+    //     if (!this.session.statusAdapter?.isStatus(status)) throw new InternalServerExecption(`invalid status code: ${status}`)
+    //     this.response.status = status;
+    //     this._explicitStatus = true;
+    //     if (this.body && this.session.statusAdapter?.isEmpty(status)) this.body = null;
+    // }
+
+    // get statusMessage(): string {
+    //     return this.response.statusText ?? '';
+    // }
+    // set statusMessage(message: string) {
+    //     this.response.statusText = message;
+    // }
+
+    
 
     // get body(): any {
     //     return this.response.payload;

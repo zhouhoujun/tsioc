@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { IncomingHeader, OutgoingHeader } from './headers';
+import { StatusCode } from './packet';
 
 
 @Abstract()
@@ -152,6 +153,36 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param packet 
      */
     abstract clearContent(packet: TPacket): TPacket;
+
+    /**
+     * Get packet status code.
+     *
+     * @return {StatusCode}
+     * @api public
+     */
+    abstract getStatus(packet: TPacket): StatusCode;
+    /**
+     * Set packet status code.
+     *
+     * @return {TPacket}
+     * @api public
+     */
+    abstract setStatus(packet: TPacket, code: StatusCode): TPacket;
+
+    /**
+     * Get packet status message.
+     *
+     * @return {String}
+     * @api public
+     */
+    abstract getStatusText(packet: TPacket): string;
+    /**
+     * Set packet status message
+     *
+     * @return {TPacket}
+     * @api public
+     */
+    abstract setStatusText(packet: TPacket, statusText: string): TPacket;
 
     /**
      * has header in packet or not.

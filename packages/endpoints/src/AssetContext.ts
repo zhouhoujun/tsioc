@@ -28,7 +28,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
      */
     abstract get pathname(): string;
 
-
     /**
      * Check if the incoming request contains the "Content-Type"
      * header field and if it contains any of the given mime `type`s.
@@ -91,7 +90,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
      * @return {String|Array|false}
      * @api public
      */
-
     abstract accepts(...args: string[]): string | string[] | false;
     /**
     * Return accepted encodings or best fit based on `encodings`.
@@ -119,7 +117,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
      * @api public
      */
     abstract acceptsCharsets(...charsets: string[]): string | string[] | false;
-
     /**
      * Return accepted languages or best fit based on `langs`.
      *
@@ -133,7 +130,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
      * @api public
      */
     abstract acceptsLanguages(...langs: string[]): string | string[];
-
     /**
     * Set Content-Disposition header to "attachment" with optional `filename`.
     *
@@ -159,8 +155,6 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TSocket = an
          */
         fallback?: string | boolean | undefined;
     }): void;
-
-
     /**
      * Perform a 302 redirect to `url`.
      *

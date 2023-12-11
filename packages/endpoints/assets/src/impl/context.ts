@@ -30,28 +30,28 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
         return (this.response as any).writable === true;
     }
 
-    get status(): StatusCode {
-        return this.response.statusCode;
-    }
-    set status(code: StatusCode) {
-        if (this.sent) return;
+    // get status(): StatusCode {
+    //     return this.response.statusCode;
+    // }
+    // set status(code: StatusCode) {
+    //     if (this.sent) return;
 
-        if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
-        this._explicitStatus = true;
-        this.response.statusCode = code;
-        if (this.body && this.statusAdapter?.isEmpty(code)) this.body = null;
-    }
+    //     if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
+    //     this._explicitStatus = true;
+    //     this.response.statusCode = code;
+    //     if (this.body && this.statusAdapter?.isEmpty(code)) this.body = null;
+    // }
 
     protected override getRequestPath(): string {
         return this.pathname || this.originalUrl || this.url
     }
 
-    get statusMessage(): string {
-        return this.response.statusMessage ?? '';
-    }
-    set statusMessage(message: string) {
-        this.response.statusMessage = message;
-    }
+    // get statusMessage(): string {
+    //     return this.response.statusMessage ?? '';
+    // }
+    // set statusMessage(message: string) {
+    //     this.response.statusMessage = message;
+    // }
 
     get secure(): boolean {
         return this.serverOptions.secure == true;

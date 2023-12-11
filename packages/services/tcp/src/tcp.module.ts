@@ -12,8 +12,6 @@ import { TcpEndpoint } from './server/endpoint';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
-// const defaultMaxSize = 65515; //65535 - 20;
-// const defaultMaxSize = 524120; // 262060; //65515 * 4;
 
 @Module({
     providers: [
