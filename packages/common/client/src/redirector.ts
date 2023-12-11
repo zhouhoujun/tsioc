@@ -2,7 +2,7 @@
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import {
     ReqHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter,
-    StatusCode, OutgoingHeaders, StatusAdapter, Redirector
+    StatusCode, OutgoingHeaders, StatusAdapter, Redirector, hdr
 } from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Client } from './Client';

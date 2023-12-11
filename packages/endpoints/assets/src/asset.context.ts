@@ -26,7 +26,7 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket =  any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TSocket, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TSocket, TServOpts> {
 
     private _URL?: URL;
     readonly originalUrl: string;
@@ -63,8 +63,12 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return normalize(request.originalUrl || request.topic || '');
     }
 
+    protected override getRequestPath(): string {
+        return this.pathname || this.originalUrl || this.url
+    }
+
     protected init(request: TRequest) {
-        if(this.statusAdapter)  this.status = this.statusAdapter.notFound;
+        if (this.statusAdapter) this.status = this.statusAdapter.notFound;
         this._url = request.url || request.topic || '';
         if (this.isAbsoluteUrl(this._url)) {
             this._url = normalize(this.URL.pathname);
@@ -445,7 +449,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return lang.first(this.negotiator.languages(this, ...langs)) ?? false
     }
 
-    
+
     vary(field: string) {
         if (this.sent) return;
         vary(this.response, field);
@@ -558,7 +562,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if(!this.statusAdapter) return;
+        if (!this.statusAdapter) return;
         if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
         this.setHeader(hdr.LOCATION, encodeUrl(url));
         // status
@@ -587,7 +591,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return this.response.headersSent!
     }
 
-     // /**
+    // /**
     //  * Checks if the request is writable.
     //  * Tests for the existence of the socket
     //  * as node sometimes does not set it.

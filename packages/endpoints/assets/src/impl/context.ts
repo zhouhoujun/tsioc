@@ -30,9 +30,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
         return (this.response as any).writable === true;
     }
 
-    protected override getRequestPath(): string {
-        return this.pathname || this.originalUrl || this.url
-    }
+
     get secure(): boolean {
         return this.serverOptions.secure == true;
     }

@@ -167,7 +167,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
      */
     get fresh(): boolean {
         const method = this.methodName;
-        const s = this.status;
+        const s = this.status as number;
 
         // GET or HEAD for weak freshness validation only
         if (GET !== method && HEAD !== method) return false;
@@ -200,6 +200,10 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
         }
         if (isNil(h)) return '';
         return isArray(h) ? h[0] : String(h);
+    }
+
+    protected toHeaderName(field: string) {
+        return field.toLowerCase();
     }
 
 

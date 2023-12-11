@@ -31,10 +31,10 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         return defer(async () => {
             // let headers = req.headers;
             const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(req.body);
-            if (!outgoingAdapter.getContentType(req)) {
+            if (!outgoingAdapter.hasContentType(req) && contentType) {
                 req = outgoingAdapter.setContentType(req, contentType);
             }
-            if (!outgoingAdapter.hasContentType(req)) {
+            if (!outgoingAdapter.hasContentLength(req)) {
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
