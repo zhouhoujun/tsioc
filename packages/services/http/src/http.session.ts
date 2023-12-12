@@ -1,7 +1,9 @@
 import { Injectable, Injector, InvocationContext, Optional, isDefined, isNil, promisify } from '@tsdi/ioc';
+import { PipeTransform } from '@tsdi/core';
 import {
     HttpStatusCode, IReadableStream, InvalidJsonException, ctype, XSSI_PREFIX, ev, hdr,
-    Packet, ResponseEventFactory, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts, statusMessage, IncomingAdapter, OutgoingAdapter, MimeAdapter, FileAdapter
+    Packet, ResponseEventFactory, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts, statusMessage,
+    IncomingAdapter, OutgoingAdapter, MimeAdapter, FileAdapter, AssetTransportOpts, PacketLengthException
 } from '@tsdi/common';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession, ClientTransportSessionFactory, RequestEncoder, ResponseDecoder } from '@tsdi/common/client';
@@ -9,7 +11,7 @@ import { OutgoingEncoder, IncomingDecoder, ServerTransportSession, ServerTranspo
 import { Server, request as httpRequest, IncomingMessage, ClientRequest, OutgoingHttpHeaders } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
 import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
-import { Observable, defer, finalize, fromEvent, map, mergeMap, share } from 'rxjs';
+import { Observable, finalize, fromEvent, map, mergeMap, share, throwError } from 'rxjs';
 import { HttpServRequest, HttpServResponse } from './server/context';
 import { HttpClientOpts } from './client/options';
 
@@ -103,14 +105,14 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
 
         }
 
-        return defer(async () => {
-            if (isNil(req.body)) {
-                await promisify(stream.end, stream)();
-            } else {
-                await promisify(this.streamAdapter.sendbody, this.streamAdapter)(req.body, stream)
-            }
-            return stream;
-        });
+        return this.encoder.handle({ req, session: this })
+            .pipe(
+                mergeMap(async data => {
+                    if (isNil(data)) await promisify(stream.end, stream)();
+                    if (this.streamAdapter.isReadable(data)) await this.streamAdapter.pipeTo(data, stream);
+                    return stream;
+                })
+            )
     }
 
     serialize(packet: Packet): Buffer {
@@ -264,16 +266,42 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
     existHeader = true;
 
     generatePacket(msg: TransportContext<any, any, any>, noPayload?: boolean | undefined): Packet<any> {
-        throw new Error('Method not implemented.');
+        return {
+            // id; 
+            headers: msg.response.headers,
+            payload: noPayload ? null : msg.body
+        }
     }
 
     send(ctx: TransportContext): Observable<any> {
-        return this.encoder.handle(ctx);
+        const len = ctx.length;
+        if (len) {
+            const opts = this.options as AssetTransportOpts;
+            if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
+                const byfmt = this.injector.get<PipeTransform>('bytes-format');
+                return throwError(() => new PacketLengthException(`Payload length ${byfmt.transform(len)} great than max size ${byfmt.transform(opts.payloadMaxSize)}`));
+            }
+        }
+
+        return this.encoder.handle(ctx)
+            .pipe(
+                mergeMap(data => {
+                    const res = ctx.response;
+                    if (isNil(data)) return this.writeHeader(ctx);
+                    if (this.streamAdapter.isReadable(data)) return this.streamAdapter.pipeTo(data, ctx.response);
+                    return this.writeMessage(data, ctx);
+                })
+            )
     }
 
+    private writeHeader(ctx: TransportContext): Promise<void> {
+        const res = ctx.response;
+        return promisify<void>(res.end, res)();
+    }
 
     writeMessage(chunk: Buffer, ctx: TransportContext<any, any, any>): Promise<void> {
-        throw new Error('Method not implemented.');
+        const res = ctx.response;
+        return promisify<Buffer, void>(res.end, res)(chunk);
     }
 
     write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
@@ -346,16 +374,16 @@ export class HttpServerSessionFactory implements ServerTransportSessionFactory<H
     }
 
     create(socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerTransportSession {
-        return new HttpServerTransportSession(this.injector, 
-            socket, 
+        return new HttpServerTransportSession(this.injector,
+            socket,
             this.statusAdapter,
             this.incomingAdapter,
             this.outgoingAdapter,
             this.mimeAdapter,
             this.fileAdapter,
-            this.streamAdapter, 
-            this.encoder, 
-            this.decoder, 
+            this.streamAdapter,
+            this.encoder,
+            this.decoder,
             options);
     }
 
