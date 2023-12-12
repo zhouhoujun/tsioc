@@ -1,7 +1,7 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import {
-    ENOENT, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket,
+    ENOENT, IReadableStream, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket,
     StatusCode, ctype, encodeUrl, escapeHtml, isBuffer, xmlRegExp
 } from '@tsdi/common';
 import { lastValueFrom } from 'rxjs';
@@ -82,9 +82,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     getRequestFilePath() {
         if (isUndefined(this._filepath)) {
             const pathname = this.getRequestPath();
-            if (this.session.mimeAdapter) {
-                this.session.mimeAdapter.lookup(pathname);
-                this._filepath = this.session.mimeAdapter.lookup(pathname) ? pathname : null;
+            if (this.mimeAdapter) {
+                this.mimeAdapter.lookup(pathname);
+                this._filepath = this.mimeAdapter.lookup(pathname) ? pathname : null;
             } else {
                 this._filepath = pathname;
             }
@@ -132,11 +132,13 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     }
 
     private _explicitStatus?: boolean;
+
+    private _status?: StatusCode;
     /**
      * Get response status.
      */
     get status(): StatusCode {
-        return this.outgoingAdapter?.getStatus(this.response) ?? 0
+        return this.outgoingAdapter?.getStatus(this.response) ?? this.getDefaultStatus()
     }
     /**
      * Set response status, defaults to OK.
@@ -145,8 +147,16 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
         if (this.sent) return;
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
+        this._status = code;
         this.outgoingAdapter?.setStatus(this.response, code);
         if (this.body && this.statusAdapter?.isEmpty(code)) this.body = null;
+    }
+
+    protected getDefaultStatus(): StatusCode {
+        if (isNil(this._status)) {
+            this._status = this.statusAdapter?.notFound ?? 0;
+        }
+        return this._status;
     }
 
     /**

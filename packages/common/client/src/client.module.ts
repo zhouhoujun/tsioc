@@ -11,7 +11,7 @@ import {
     BufferResponseDecordeInterceptor, CatchErrorResponseDecordeInterceptor, CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor,
     ErrorResponseDecordeInterceptor, PayloadStreamResponseDecordeInterceptor, RedirectResponseDecordeInterceptor, StreamResponseDecordeInterceptor, TransportResponseDecordeBackend
 } from './transport/decoders';
-import { TransportRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor } from './transport/encoders';
+import { TransportRequestEncodeBackend, OutgoingPipeEncodeInterceptor, RequestBufferFinalizeEncodeInterceptor, SubpacketRequestEncodeInterceptor, NoBodyRequestEncodeInterceptor, HeadRequestEncodeInterceptor, PayloadRequestEncodeInterceptor } from './transport/encoders';
 import { DefaultRedirector } from './redirector';
 import { ClientDuplexTransportSessionFactory } from './impl/duplex.session';
 import { ClientTopicTransportSessionFactory } from './impl/topic.session';
@@ -94,11 +94,17 @@ export interface ClientTokenOpts {
         { provide: ResponseEventFactory, useExisting: TransportResponseEventFactory, asDefault: true },
 
         RequestBufferFinalizeEncodeInterceptor,
-        OutgoingPipeEncodeInterceptor,
         SubpacketRequestEncodeInterceptor,
-        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: RequestBufferFinalizeEncodeInterceptor, multi: true },
-        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true },
+        OutgoingPipeEncodeInterceptor,
+        HeadRequestEncodeInterceptor,
+        NoBodyRequestEncodeInterceptor,
+        PayloadRequestEncodeInterceptor,
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: RequestBufferFinalizeEncodeInterceptor, multi: true, multiOrder: 0 },
         { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: SubpacketRequestEncodeInterceptor, multi: true },
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: HeadRequestEncodeInterceptor, multi: true },
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: NoBodyRequestEncodeInterceptor, multi: true },
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: PayloadRequestEncodeInterceptor, multi: true },
+        { provide: REQUEST_ENCODER_INTERCEPTORS, useExisting: OutgoingPipeEncodeInterceptor, multi: true },
 
         TransportRequestEncodeBackend,
         { provide: RequestBackend, useExisting: TransportRequestEncodeBackend },
