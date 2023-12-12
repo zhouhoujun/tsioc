@@ -8,8 +8,9 @@ import { StreamAdapter } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { PacketLengthException } from './execptions';
 import { StatusAdapter } from './StatusAdapter';
-import { IncomingAdapter, OutgoingAdapter } from './MessageAdapter';
 import { MimeAdapter } from './MimeAdapter';
+import { IncomingAdapter } from './IncomingAdapter';
+import { OutgoingAdapter } from './OutgoingAdapter';
 
 
 export type OutgoingType = Buffer | IReadableStream | null;

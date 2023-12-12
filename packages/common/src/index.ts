@@ -12,7 +12,6 @@ export * from './pattern';
 export * from './protocols';
 export * from './status';
 export * from './StatusAdapter';
-export * from './MessageAdapter';
 export * from './Redirector';
 export * from './utils';
 export * from './MimeAdapter';
@@ -22,6 +21,9 @@ export * from './stream';
 export * from './socket';
 export * from './subscriber';
 export * from './StreamAdapter';
+
+export * from './IncomingAdapter';
+export * from './OutgoingAdapter';
 
 export * from './TransportSession';
 

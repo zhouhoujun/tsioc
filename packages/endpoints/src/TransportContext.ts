@@ -2,7 +2,7 @@ import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefine
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import {
     ENOENT, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket,
-    StatusCode, ctype, encodeUrl, escapeHtml, hdr, isBuffer, xmlRegExp
+    StatusCode, ctype, encodeUrl, escapeHtml, isBuffer, xmlRegExp
 } from '@tsdi/common';
 import { lastValueFrom } from 'rxjs';
 import { ServerOpts } from './Server';
@@ -165,6 +165,10 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
 
     private _body: any;
     private _explicitNullBody?: boolean;
+
+    get explicitNullBody() {
+        return this._explicitNullBody;
+    }
     /**
      * Get response body.
      *
@@ -194,7 +198,9 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
                 this.status = this.statusAdapter.noContent;
             }
             if (val === null) this.onNullBody();
-            this.outgoingAdapter?.clearContent(this.response);
+            this.outgoingAdapter?.removeContentEncoding(this.response);
+            this.outgoingAdapter?.removeContentLength(this.response);
+            this.outgoingAdapter?.removeContentType(this.response);
             return
         }
 
@@ -547,7 +553,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     accepts(...args: string[]): string | string[] | false {
-        if (!this.incomingAdapter) return [];
+        if (!this.incomingAdapter) return '*';
         if (!args.length) {
             return this.incomingAdapter.getAcceptType(this.request)
         }
@@ -569,7 +575,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
     * @api public
     */
     acceptsEncodings(...encodings: string[]): string | string[] | false {
-        if (!this.incomingAdapter) return [];
+        if (!this.incomingAdapter) return '*';
         if (!encodings.length) {
             return this.incomingAdapter.getAcceptEncoding(this.request)
         }
@@ -589,7 +595,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     acceptsCharsets(...charsets: string[]): string | string[] | false {
-        if (!this.incomingAdapter) return [];
+        if (!this.incomingAdapter) return '*';
         if (!charsets.length) {
             return this.incomingAdapter.getAcceptCharset(this.request)
         }
@@ -609,7 +615,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     acceptsLanguages(...langs: string[]): string | string[] {
-        if (!this.incomingAdapter) return [];
+        if (!this.incomingAdapter) return '*';
         if (!langs.length) {
             return this.incomingAdapter.getAcceptLanguage(this.request)
         }
@@ -647,7 +653,6 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
             this.type = this.fileAdapter.extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION_TOKEN);
-        // this.setHeader(hdr.CONTENT_DISPOSITION, func(filename, options))
         this.outgoingAdapter?.setContentDisposition(this.response, func(filename, options))
     }
 
@@ -661,10 +666,10 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      */
     set lastModified(val: Date | null) {
         if (!val) {
-            this.outgoingAdapter?.removeContentDisposition(this.response);
+            this.outgoingAdapter?.removeLastModified(this.response);
             return
         }
-        this.outgoingAdapter?.setContentDisposition(this.response, val.toUTCString())
+        this.outgoingAdapter?.setLastModified(this.response, val.toUTCString())
     }
 
     /**
@@ -674,7 +679,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * @api public
      */
     get lastModified(): Date | null {
-        const date = this.outgoingAdapter?.getContentDisposition(this.response);
+        const date = this.outgoingAdapter?.getLastModified(this.response);
         return date ? new Date(date) : null
     }
     /**
@@ -697,8 +702,8 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      */
     redirect(url: string, alt?: string): void {
         if (!this.statusAdapter) return;
-        if ('back' === url) url = this.getHeader(hdr.REFERRER) as string || alt || '/';
-        this.setHeader(hdr.LOCATION, encodeUrl(url));
+        if ('back' === url) url = this.incomingAdapter?.getReferrer?.(this.request) || alt || '/';
+        this.outgoingAdapter?.setLocation(this.response, encodeUrl(url));
         // status
         if (!this.statusAdapter.isRedirect(this.status)) this.status = this.statusAdapter.found;
 

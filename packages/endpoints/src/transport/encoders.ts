@@ -1,4 +1,4 @@
-import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { Injectable, isNil, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 import { HEAD, InternalServerExecption, OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range, throwError } from 'rxjs';
 import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend } from './codings';
@@ -46,17 +46,17 @@ export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeIntercepto
         if (ctx.rawBody) return next.handle(ctx);
 
         if (ctx.body === null) {
-            // if (this._explicitNullBody) {
-            //     ctx.removeHeader(hdr.CONTENT_TYPE);
-            //     ctx.removeHeader(hdr.CONTENT_LENGTH);
-            //     ctx.removeHeader(hdr.TRANSFER_ENCODING);
-            // }
+            if (ctx.explicitNullBody && ctx.outgoingAdapter) {
+                ctx.outgoingAdapter.removeContentType(ctx.response);
+                ctx.outgoingAdapter.removeContentLength(ctx.response);
+                ctx.outgoingAdapter.removeContentEncoding(ctx.response);
+            }
 
-            // const body = Buffer.from(this.statusMessage ?? String(this.status));
-            // if (!ctx.sent) {
-            //     ctx.type = 'text';
-            //     ctx.length = Buffer.byteLength(body)
-            // }
+            const body = Buffer.from(ctx.statusMessage ?? String(ctx.status));
+            if (!ctx.sent) {
+                ctx.type = 'text';
+                ctx.length = Buffer.byteLength(body)
+            }
         }
         return next.handle(ctx);
     }
@@ -129,7 +129,7 @@ export class PayloadOutgoingEncodeInterceptor implements OutgoingEncodeIntercept
             } else if (isString(body)) {
                 ctx.rawBody = Buffer.from(body);
             } else {
-                ctx.rawBody = Buffer.from(JSON.stringify(body));
+                ctx.rawBody = isNil(body) ? Buffer.alloc(0) : Buffer.from(JSON.stringify(body));
                 if (!ctx.sent) {
                     ctx.length = Buffer.byteLength(body)
                 }

@@ -1,61 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
-import { IncomingHeader, OutgoingHeader } from './headers';
+import { OutgoingHeader } from './headers';
 import { StatusCode } from './packet';
-
-
-@Abstract()
-export abstract class IncomingAdapter<TPacket = any> {
-    /**
-     * has content type or not.
-     */
-    abstract hasContentType(packet: TPacket): boolean;
-    /**
-     * content type.
-     */
-    abstract getContentType(packet: TPacket): string;
-
-    /**
-     * Get Content-Encoding.
-     * @param packet
-     */
-    abstract getContentEncoding(packet: TPacket): string;
-    /**
-     * Get packet content length
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract getContentLength(packet: TPacket): number | undefined;
-
-    /**
-     * has header in packet or not.
-     * @param packet 
-     * @param field 
-     */
-    abstract hasHeader(packet: TPacket, field: string): IncomingHeader;
-    /**
-     * get header from packet.
-     * @param packet 
-     * @param field 
-     */
-    abstract getHeader(packet: TPacket, field: string): IncomingHeader;
-    /**
-     * Get packet content
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract getContent(packet: TPacket): any;
-
-    abstract getAcceptType(packet: TPacket, ...contentTypes: string[]): string[];
-
-    abstract getAcceptCharset(packet: TPacket, ...charsets: string[]): string[];
-
-    abstract getAcceptEncoding(packet: TPacket, ...encodings: string[]): string[];
-
-    abstract getAcceptLanguage(packet: TPacket, ...languages: string[]): string[];
-
-}
 
 
 @Abstract()
@@ -156,11 +101,6 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract setContent(packet: TPacket, body: any): TPacket;
-    /**
-     * remove content encoding, length and type.
-     * @param packet 
-     */
-    abstract clearContent(packet: TPacket): TPacket;
 
     /**
      * Get packet status code.
@@ -219,6 +159,7 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @api public
      */
     abstract setHeader(packet: TPacket, field: string, val: OutgoingHeader): TPacket;
+
     // /**
     //  * Set header `field` to `val` or pass
     //  * an object of header fields.
@@ -244,30 +185,26 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param packet 
      */
     abstract removeHeaders(packet: TPacket): TPacket;
+
     /**
      * is writable or not.
      * @param packet 
      */
     abstract writable(packet: TPacket): boolean;
 
+    abstract getLastModified(packet: TPacket): string;
+    abstract setLastModified(packet: TPacket, control: string): TPacket;
+    abstract removeLastModified(packet: TPacket): TPacket;
 
+    abstract getCacheControl(packet: TPacket): string;
+    abstract setCacheControl(packet: TPacket, control: string): TPacket;
     /**
      * set no cache
      * @param packet 
      */
-    abstract noCache(packet: TPacket): boolean;
+    abstract noCache(packet: TPacket): TPacket;
 
-    abstract getLastModified(packet: TPacket):  string; 
-    abstract setLastModified(packet: TPacket, control: string):  TPacket; 
-
-    abstract getCacheControl(packet: TPacket):  string; 
-
-    abstract setCacheControl(packet: TPacket, control: string):  TPacket;
-    
-    
-    abstract getContentDisposition(packet: TPacket): string;
     abstract setContentDisposition(packet: TPacket, disposition: string): TPacket;
-    abstract removeContentDisposition(packet: TPacket): TPacket;
-
+    abstract setLocation(packet: TPacket, location: string): TPacket
 
 }
