@@ -5,7 +5,7 @@ import {
 } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
-import { RequestEncoder, ResponseDecoder } from '../transport/codings';
+import { PacketDecoder, RequestEncoder, ResponseDecoder } from '../transport/codings';
 
 
 /**
@@ -37,7 +37,6 @@ export class ClientDuplexTransportSession extends ClientEventTransportSession<ID
 
     override async destroy(): Promise<void> {
         this.socket.destroy?.();
-        this.packetBuffer.clear();
     }
 }
 
@@ -55,6 +54,7 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
         @Optional() private mimeAdapter: MimeAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
+        private packetDevoder: PacketDecoder,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) { }
 
@@ -68,9 +68,9 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
             this.mimeAdapter,
             this.streamAdapter,
             this.eventFactory,
+            this.packetDevoder,
             this.encoder,
             this.decoder,
-            new PacketBuffer(),
             options);
     }
 

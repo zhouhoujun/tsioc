@@ -15,20 +15,6 @@ export interface RequestContext {
 }
 
 /**
- * response context.
- */
-export interface ResponseContext {
-    /**
-     * packet ready or not.
-     */
-    ready?: boolean;
-    packet: ResponsePacket;
-    session: ClientTransportSession;
-    req: TransportRequest;
-    raw?: Buffer;
-}
-
-/**
  * request encdoer.
  */
 @Abstract()
@@ -81,6 +67,75 @@ export class InterceptingReuqestEncoder<T extends RequestContext = RequestContex
 
 }
 
+
+/**
+ * packet decode context.
+ */
+export interface ResponsePacketContext<TMsg = any> {
+    session: ClientTransportSession;
+    req: TransportRequest;
+    packet?: ResponsePacket;
+    msg: TMsg;
+    topic?: string;
+    raw?: Buffer;
+}
+
+/**
+ * packet decoder.
+ */
+@Abstract()
+export abstract class PacketDecoder<TMsg = any> implements Handler<ResponsePacketContext, ResponsePacket> {
+    /**
+     * packet decode handle.
+     * @param ctx 
+     */
+    abstract handle(ctx: ResponsePacketContext<TMsg>): Observable<ResponsePacket>;
+}
+/**
+ * packet decode backend.
+ */
+@Abstract()
+export abstract class PacketDecodeBackend<TMsg = any> implements Backend<ResponsePacketContext, ResponsePacket> {
+    abstract handle(ctx: ResponsePacketContext<TMsg>): Observable<ResponsePacket>;
+}
+/**
+ * Decode interceptor is a chainable behavior modifier for `Decoders`.
+ * 
+ * 解密拦截器。
+ */
+export interface PacketDecodeInterceptor<TMsg = any> extends Interceptor<ResponsePacketContext, ResponsePacket> {
+    /**
+     * the method to implemet response decode interceptor.
+     * 
+     * 解密拦截处理的方法
+     * @param res  response input.
+     * @param next The next handler in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
+     */
+    intercept(res: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket>;
+}
+
+/**
+ * Token of packet decoder interceptors.
+ */
+export const PACKET_DECODER_INTERCEPTORS = tokenId<PacketDecodeInterceptor[]>('PACKET_DECODER_INTERCEPTORS');
+
+@Injectable()
+export class InterceptingPacketDecoder<TMsg = any> extends InterceptingHandler<ResponsePacketContext, ResponsePacket> implements PacketDecoder<ResponsePacket> {
+    constructor(backend: PacketDecodeBackend<TMsg>, injector: Injector) {
+        super(backend, injector, PACKET_DECODER_INTERCEPTORS)
+    }
+}
+
+
+
+/**
+ * response context.
+ */
+export interface ResponseContext<TMsg = any> extends ResponsePacketContext<TMsg> {
+    packet: ResponsePacket;
+}
 
 /**
  * response decoder.

@@ -1,53 +1,77 @@
-import { ArgumentExecption, EMPTY_OBJ, Injectable, isNil, lang } from '@tsdi/ioc';
+import { ArgumentExecption, EMPTY_OBJ, Injectable, isNil, isPlainObject, lang } from '@tsdi/ioc';
 import {
-    HEAD, IDuplexStream, Redirector, ResponseJsonParseError, ResponsePacket,
+    BufferTransportSession,
+    HEAD, IDuplexStream, MessageExecption, PacketBuffer, Redirector, ResponseJsonParseError, ResponsePacket,
     TransportEvent, XSSI_PREFIX, ev, isBuffer, toBuffer
 } from '@tsdi/common';
 import { Observable, Subscriber, catchError, defer, mergeMap, of, throwError } from 'rxjs';
-import { ResponseBackend, ResponseContext, ResponseDecodeInterceptor, ResponseDecoder } from './codings';
+import {
+    PacketDecodeBackend, PacketDecodeInterceptor, PacketDecoder, ResponsePacketContext,
+    ResponseBackend, ResponseContext, ResponseDecodeInterceptor, ResponseDecoder
+} from './codings';
 
 
 
 @Injectable()
-export class CatchErrorResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
+export class ObjectPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
 
-    intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+        if (isPlainObject(ctx.msg) && !isNil(ctx.msg.payload)) {
+            return of(ctx.msg);
+        }
         return next.handle(ctx)
+    }
+}
+
+@Injectable()
+export class StreamPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+
+    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+        if (ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.msg)) {
+            return of({
+                ...ctx.packet,
+                payload: ctx.msg
+            });
+        }
+        return next.handle(ctx)
+    }
+
+}
+
+
+@Injectable()
+export class BufferPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+
+    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+        if (ctx.session.existHeader && isBuffer(ctx.msg)) {
+            ctx.raw = ctx.msg;
+        }
+        return next.handle(ctx)
+    }
+
+}
+
+
+@Injectable({ static: false })
+export class UnpackPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+
+    private packetBuffer?: PacketBuffer;
+    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+        if (!isBuffer(ctx.raw) && !ctx.session.delimiter) return next.handle(ctx)
+        if (!this.packetBuffer) {
+            this.packetBuffer = new PacketBuffer();
+        }
+        return this.packetBuffer.concat(ctx.session as BufferTransportSession, ctx.topic ?? '', ctx.raw!)
             .pipe(
-                catchError(err => {
-                    if (err instanceof Error) {
-                        err = ctx.session.eventFactory.createErrorResponse({ url: ctx.req.urlWithParams, error: err })
-                    }
-                    return throwError(() => err)
+                mergeMap(buf => {
+                    ctx.raw = buf;
+                    return next.handle(ctx);
                 })
-            )
+            );
+
     }
 }
 
-
-@Injectable()
-export class StreamResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
-
-    intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (!ctx.ready && ctx.packet && !isNil(ctx.packet.payload)) {
-            ctx.ready = true;
-        }
-        return next.handle(ctx)
-    }
-}
-
-@Injectable()
-export class PayloadStreamResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
-
-    intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (!ctx.ready && ctx.packet && ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.raw)) {
-            ctx.packet.payload = ctx.raw;
-            ctx.ready = true;
-        }
-        return next.handle(ctx)
-    }
-
-}
 
 
 interface ResponseCachePacket extends ResponsePacket {
@@ -56,22 +80,28 @@ interface ResponseCachePacket extends ResponsePacket {
 }
 
 @Injectable()
-export class BufferResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
+export class ConnectPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
     packs: Map<string | number, ResponseCachePacket>;
 
     constructor() {
         this.packs = new Map();
     }
 
-    intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (ctx.ready) return next.handle(ctx);
+    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
         const session = ctx.session;
+        if (!ctx.raw || !isBuffer(ctx.raw)) {
+            return next.handle(ctx);
+        }
 
-        return new Observable((subscriber: Subscriber<ResponseCachePacket>) => {
+        return new Observable((subscriber: Subscriber<ResponsePacket>) => {
 
             if (!ctx.raw) {
                 subscriber.error(new ArgumentExecption('asset decoding input empty'));
-                return;
+                return subscriber;
+            }
+            if (!isBuffer(ctx.raw)) {
+                subscriber.error(new ArgumentExecption('asset decoding input is not buffer'));
+                return subscriber;
             }
 
             let raw = ctx.raw;
@@ -82,7 +112,7 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
                 id = raw.readInt16BE(0);
                 raw = raw.subarray(2);
             }
-            let packet = this.packs.get(id);
+            let packet = this.packs.get(id) as ResponseCachePacket;
 
             if (!packet) {
                 if (ctx.packet) {
@@ -138,15 +168,41 @@ export class BufferResponseDecordeInterceptor<T extends TransportEvent = Transpo
             }
 
             return subscriber;
-        }).pipe(
-            mergeMap(pkg => {
-                ctx.packet = pkg;
-                ctx.ready = true;
-                return next.handle(ctx);
-            })
-        )
+        })
     }
 }
+
+
+@Injectable()
+export class TransportPacketDecordeBackend<TMsg = any> implements PacketDecodeBackend<TMsg> {
+
+    handle(ctx: ResponsePacketContext<TMsg>): Observable<ResponsePacket> {
+        if (!ctx.packet) return throwError(() => new MessageExecption('no packet'))
+
+        return of(ctx.packet);
+    }
+
+}
+
+
+
+@Injectable()
+export class CatchErrorResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
+
+    intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
+        return next.handle(ctx)
+            .pipe(
+                catchError(err => {
+                    if (err instanceof Error) {
+                        err = ctx.session.eventFactory.createErrorResponse({ url: ctx.req.urlWithParams, error: err })
+                    }
+                    return throwError(() => err)
+                })
+            )
+    }
+}
+
+
 
 @Injectable()
 export class EmptyResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {

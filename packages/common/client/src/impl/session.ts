@@ -3,12 +3,12 @@ import { PipeTransform } from '@tsdi/core';
 import {
     IReadableStream, OutgoingType, Packet, PacketLengthException, RequestPacket, ResponsePacket,
     TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, BufferTransportSession,
-    StreamAdapter, PacketBuffer, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException,
+    StreamAdapter, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException,
     StatusAdapter, ResponseEventFactory, IncomingAdapter, OutgoingAdapter, MimeAdapter
 } from '@tsdi/common';
 import { Observable, defer, filter, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
-import { RequestContext, RequestEncoder, ResponseContext, ResponseDecoder } from '../transport/codings';
+import { PacketDecoder, ResponsePacketContext, RequestContext, RequestEncoder, ResponseContext, ResponseDecoder } from '../transport/codings';
 import { ClientTransportSession } from '../transport/session';
 
 
@@ -18,6 +18,8 @@ import { ClientTransportSession } from '../transport/session';
 export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends ClientTransportSession<TSocket> {
 
     abstract get encoder(): RequestEncoder;
+
+    abstract get packetDecoder(): PacketDecoder;
 
     abstract get decoder(): ResponseDecoder;
 
@@ -57,7 +59,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
         return this.message(req)
             .pipe(
                 filter(msg => this.responseFilter(req, msg)),
-                mergeMap(msg => this.concat(msg).pipe(mergeMap(data => this.decode(data, msg, req)))),
+                mergeMap(msg => this.decode(msg, req)),
                 share()
             )
     }
@@ -109,16 +111,16 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
         return data;
     }
 
-    protected decode(data: Buffer, msg: TMsg, req: TransportRequest): Observable<TransportEvent> {
-        const ctx = this.createResContext(data, msg, req);
-        return this.decoder.handle(ctx)
+    protected decode(msg: TMsg, req: TransportRequest): Observable<TransportEvent> {
+        const ctx = this.createResContext(msg, req);
+        return this.packetDecoder.handle(ctx)
             .pipe(
-                map(pkg => this.afterDecode(ctx, pkg, msg))
-            );
-    }
-
-    protected afterDecode(ctx: ResponseContext, pkg: TransportEvent, msg: TMsg) {
-        return pkg;
+                filter(pkg => !!pkg),
+                mergeMap(pkg => {
+                    ctx.packet = pkg;
+                    return this.decoder.handle(ctx as ResponseContext)
+                })
+            )
     }
 
     protected abstract writeHeader(req: TransportRequest): Promise<void>;
@@ -131,7 +133,7 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
      */
     abstract writeMessage(data: Buffer, req: TransportRequest): Promise<void>;
 
-    protected abstract concat(msg: TMsg): Observable<Buffer>;
+    // protected abstract concat(msg: TMsg): Observable<Buffer>;
 
     protected abstract mergeClose(source: Observable<any>): Observable<any>;
 
@@ -146,7 +148,13 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = string | Bu
         }
     }
 
-    protected abstract createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext;
+    protected createResContext(msg: TMsg, req: TransportRequest): ResponsePacketContext {
+        return {
+            msg,
+            req,
+            session: this
+        }
+    }
 
     protected async requesting(packet: TransportRequest): Promise<void> {
         this.bindPacketId(packet);
@@ -191,9 +199,10 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         readonly mimeAdapter: MimeAdapter | null,
         readonly streamAdapter: StreamAdapter,
         readonly eventFactory: ResponseEventFactory,
+
+        readonly packetDecoder: PacketDecoder,
         readonly encoder: RequestEncoder,
         readonly decoder: ResponseDecoder,
-        protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();
 
@@ -204,18 +213,22 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
     }
 
 
-    protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {
-        const packet = this.getResHeaders(msg) ?? {};
-        return {
-            session: this,
-            req,
-            packet,
-            raw: data
-        }
-    }
+    // protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {
+    //     const packet = this.getResHeaders(msg) ?? {};
+    //     return {
+    //         session: this,
+    //         req,
+    //         packet,
+    //         raw: data
+    //     }
+    // }
 
-    protected concat(msg: TMsg): Observable<Buffer> {
-        return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
+    // protected concat(msg: TMsg): Observable<Buffer> {
+    //     return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
+    // }
+
+    async destroy(): Promise<void> {
+        // this.packetBuffer.clear();
     }
 
     protected abstract getTopic(msg: TMsg): string;
@@ -227,9 +240,7 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
     }
 
 
-    async destroy(): Promise<void> {
-        this.packetBuffer.clear();
-    }
+
 
     protected getPacketId(): string | number {
         if (!this.allocator) {
@@ -270,15 +281,15 @@ export abstract class ClientEventTransportSession<TSocket extends IEventEmitter,
  */
 export abstract class ClientPayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> {
 
-    protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {
-        const packet = this.getResHeaders(msg) ?? {};
-        return {
-            session: this,
-            req,
-            packet,
-            raw: data
-        }
-    }
+    // protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {
+    //     const packet = this.getResHeaders(msg) ?? {};
+    //     return {
+    //         session: this,
+    //         req,
+    //         packet,
+    //         raw: data
+    //     }
+    // }
 
     protected abstract getResHeaders(msg: TMsg): ResponsePacket | undefined;
 

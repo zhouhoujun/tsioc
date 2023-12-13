@@ -1,5 +1,4 @@
 import { IncomingHeaders, OutgoingHeaders } from './headers';
-import { IReadableStream } from './stream';
 
 
 
@@ -57,7 +56,6 @@ export interface ResponsePacket<T = any> extends Packet<T> {
     ok?: boolean;
     status?: StatusCode;
     statusText?: string;
-    stream?: IReadableStream;
 }
 
 
