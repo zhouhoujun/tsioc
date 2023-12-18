@@ -1,7 +1,8 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { FileAdapter, ResponsePacket, TransportOpts, TransportSession } from '@tsdi/common';
-import { TransportContext } from '../TransportContext';
+import { FileAdapter, TransportOpts, TransportSession } from '@tsdi/common';
 import { Observable } from 'rxjs';
+import { IncomingPacketDecoder, OutgoingPacketEncoder } from './codings';
+import { TransportContext } from '../TransportContext';
 import { ServerOpts } from '../Server';
 
 
@@ -9,7 +10,10 @@ import { ServerOpts } from '../Server';
  * transport session.
  */
 @Abstract()
-export abstract class ServerTransportSession<TSocket = any, TContext extends TransportContext = TransportContext> extends TransportSession<TSocket, TContext> {
+export abstract class ServerTransportSession<TSocket = any, TMsg = any, TContext extends TransportContext = TransportContext> extends TransportSession<TSocket, TContext> {
+
+    abstract get packetEncoder(): OutgoingPacketEncoder<TMsg>;
+    abstract get packetDecoder(): IncomingPacketDecoder<TMsg>;
 
     /**
      * file adapter
@@ -31,14 +35,7 @@ export abstract class ServerTransportSession<TSocket = any, TContext extends Tra
      * @param packet 
      * @param chunk 
      */
-    abstract writeMessage(chunk: Buffer, ctx: TContext): Promise<void>;
-    /**
-     * write packet buffers.
-     * @param packet 
-     * @param chunk 
-     * @param callback 
-     */
-    abstract write(packet: ResponsePacket, chunk: Buffer, callback?: (error?: any) => void): void;
+    abstract writeMessage(chunk: TMsg, ctx: TContext): Promise<void>;
 
 }
 

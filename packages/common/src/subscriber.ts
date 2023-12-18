@@ -14,6 +14,7 @@ export interface TopicClient extends IEventEmitter {
  * Topic message.
  */
 export interface TopicMessage {
-    topic: string,
+    topic: string;
+    replyTo?: string;
     payload: string | Buffer | Uint8Array
 }

@@ -61,6 +61,8 @@ export class InterceptingOutgoingEncoder<T extends ResponsePacket = ResponsePack
  * Outgoing packet encode context.
  */
 export interface OutgoingPacketContext<TMsg = any> {
+    session: ServerTransportSession;
+    options: ServerOpts;
     context: TransportContext;
     outgoing: ResponsePacket;
     raw?: Buffer | null;

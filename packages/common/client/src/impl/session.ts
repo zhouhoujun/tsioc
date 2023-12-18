@@ -12,7 +12,7 @@ import { ClientTransportSession } from '../transport/session';
 /**
  * abstract client transport session.
  */
-export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extends ClientTransportSession<TSocket> {
+export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extends ClientTransportSession<TSocket, TMsg> {
 
     abstract get encoder(): RequestEncoder;
     abstract get decoder(): ResponseDecoder;

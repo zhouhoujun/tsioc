@@ -1,23 +1,26 @@
-import { Injector, isNil, isPlainObject, lang } from '@tsdi/ioc';
+import { Injector } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    IEventEmitter, IReadableStream, Packet, PacketBuffer, PacketLengthException, BufferTransportSession,
-    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException, Outgoing,
+    IEventEmitter, Packet, PacketLengthException, BufferTransportSession,
+    StreamAdapter, TransportOpts, AssetTransportOpts, HeaderPacket, ev, XSSI_PREFIX, InvalidJsonException,
     ResponsePacket, StatusAdapter, IncomingAdapter, OutgoingAdapter, MimeAdapter, FileAdapter
 } from '@tsdi/common';
 import { Observable, filter, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
-import { IncomingContext, ServerTransportSession } from '../transport/session';
-import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
+import { ServerTransportSession } from '../transport/session';
+import { IncomingContext, IncomingDecoder, IncomingPacketContext, IncomingPacketDecoder, OutgoingEncoder, OutgoingPacketContext, OutgoingPacketEncoder } from '../transport/codings';
 import { TransportContext } from '../TransportContext';
 import { ServerOpts } from '../Server';
 
 
 
-export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extends ServerTransportSession<TSocket> {
+export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extends ServerTransportSession<TSocket, TMsg> {
 
     abstract get encoder(): OutgoingEncoder;
 
     abstract get decoder(): IncomingDecoder;
+
+    abstract get packetEncoder(): OutgoingPacketEncoder<TMsg>;
+    abstract get packetDecoder(): IncomingPacketDecoder<TMsg>;
 
     send(ctx: TransportContext): Observable<any> {
         const len = ctx.length;
@@ -32,8 +35,6 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extend
         return this.mergeClose(this.encode(ctx)
             .pipe(
                 mergeMap(data => {
-                    if (isNil(data)) return this.writeHeader(ctx);
-                    if (this.streamAdapter.isReadable(data)) return this.pipe(data, ctx);
                     return this.writeMessage(data, ctx);
                 })
             ))
@@ -61,6 +62,52 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extend
         }
     }
 
+
+    protected encode(ctx: TransportContext): Observable<TMsg> {
+        return this.encoder.handle(ctx)
+            .pipe(
+                filter(pkg => !!pkg),
+                mergeMap(outgoing => {
+                    return this.packetEncoder.handle(this.createOutgoingContext(ctx, outgoing, this.options));
+                })
+            )
+    }
+
+    protected decode(msg: TMsg, options: ServerOpts): Observable<TransportContext> {
+        const ctx = this.createIncomingContext(msg, options);
+        ctx.session = this;
+        return this.packetDecoder.handle(ctx)
+            .pipe(
+                filter(pkg => !!pkg),
+                mergeMap(pkg => {
+                    ctx.incoming = pkg;
+                    return this.decoder.handle(ctx as IncomingContext)
+                })
+            );
+    }
+
+    protected abstract mergeClose(source: Observable<any>): Observable<any>;
+    protected abstract message(options: ServerOpts): Observable<TMsg>;
+
+    protected createOutgoingContext(context: TransportContext, outgoing: ResponsePacket, options: ServerOpts): OutgoingPacketContext<TMsg> {
+        return {
+            session: this,
+            options,
+            context,
+            outgoing
+        }
+    }
+
+    protected createIncomingContext(msg: TMsg, options: ServerOpts): IncomingPacketContext<TMsg> {
+        return {
+            session: this,
+            options,
+            msg
+        }
+    }
+
+
+
     // generatePacket(ctx: TransportContext, noPayload?: boolean): Packet {
     //     if (isPlainObject(ctx.response)) {
     //         return noPayload ? lang.omit(ctx.response, 'payload') : ctx.response
@@ -84,49 +131,8 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extend
 
     // }
 
-
-    protected encode(ctx: TransportContext): Observable<TMsg> {
-        return this.encoder.handle(ctx)
-            .pipe(
-                filter(pkg => !!pkg),
-                mergeMap(packet => {
-                    ctx.request = packet;
-                    return this.packetEncoder.handle(ctx as RequestPacketContext);
-                })
-            )
-    }
-
-    // protected afterEncode(ctx: TransportContext, buf: TMsg) {
-    //     return buf;
-    // }
-
-    protected decode(msg: TMsg, options: ServerOpts): Observable<TransportContext> {
-        const ctx = this.createContext(msg, options);
-        ctx.session = this;
-        return this.packetDecoder.handle(ctx)
-            .pipe(
-                filter(pkg => !!pkg),
-                mergeMap(pkg => {
-                    ctx.incoming = pkg;
-                    return this.decoder.handle(ctx as ResponseContext)
-                })
-            );
-    }
-
-    // protected afterDecode(incomingContext: IncomingContext, transportContext: TransportContext, msg: TMsg) {
-    //     return transportContext;
-    // }
-
-
-    // protected abstract concat(msg: TMsg): Observable<Buffer | IReadableStream>;
-    protected abstract mergeClose(source: Observable<any>): Observable<any>;
-    protected abstract message(options: ServerOpts): Observable<TMsg>;
-
-    protected abstract writeHeader(ctx: TransportContext): Promise<void>;
-    protected abstract pipe(data: IReadableStream, ctx: TransportContext): Promise<void>;
-
-    protected abstract createContext(msg: TMsg, options: ServerOpts): IncomingContext;
-
+    // protected abstract writeHeader(ctx: TransportContext): Promise<void>;
+    // protected abstract pipe(data: IReadableStream, ctx: TransportContext): Promise<void>;
 
 }
 
@@ -155,7 +161,9 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
         readonly streamAdapter: StreamAdapter,
         readonly encoder: OutgoingEncoder,
         readonly decoder: IncomingDecoder,
-        protected packetBuffer: PacketBuffer,
+        readonly packetEncoder: OutgoingPacketEncoder<TMsg>,
+        readonly packetDecoder: IncomingPacketDecoder<TMsg>,
+        // protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();
 
@@ -165,19 +173,19 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
         }
     }
 
-    protected override createContext(data: Buffer | IReadableStream, msg: TMsg, options: ServerOpts): IncomingContext {
-        const packet = msg ? this.getHeaders(msg) : undefined
-        return {
-            session: this,
-            incoming: packet,
-            options,
-            raw: data
-        }
-    }
+    // protected override createContext(data: Buffer | IReadableStream, msg: TMsg, options: ServerOpts): IncomingContext {
+    //     const packet = msg ? this.getHeaders(msg) : undefined
+    //     return {
+    //         session: this,
+    //         incoming: packet,
+    //         options,
+    //         raw: data
+    //     }
+    // }
 
-    protected concat(msg: TMsg): Observable<Buffer> {
-        return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
-    }
+    // protected concat(msg: TMsg): Observable<Buffer> {
+    //     return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
+    // }
 
     protected abstract getTopic(msg: TMsg): string;
 
@@ -189,7 +197,7 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
 
 
     async destroy(): Promise<void> {
-        this.packetBuffer.clear();
+    
     }
 
 }
@@ -213,16 +221,6 @@ export abstract class ServerEventTransportSession<TSocket extends IEventEmitter,
 }
 
 export abstract class ServerPayloadTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractServerTransportSession<TSocket, TMsg> {
-
-    protected override createContext(data: Buffer | IReadableStream, msg: TMsg, options: ServerOpts): IncomingContext {
-        const packet = msg ? this.getHeaders(msg) : undefined
-        return {
-            session: this,
-            incoming: packet,
-            options,
-            raw: data
-        }
-    }
 
     protected abstract getHeaders(msg: TMsg): HeaderPacket | undefined;
 

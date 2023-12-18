@@ -1,7 +1,7 @@
-import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { FileAdapter, IDuplexStream, IReadableStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TransportOpts } from '@tsdi/common';
+import { Injectable, Injector, Optional, isString, promisify } from '@tsdi/ioc';
+import { FileAdapter, IDuplexStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, TransportOpts, isBuffer } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
-import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
+import { IncomingDecoder, IncomingPacketDecoder, OutgoingEncoder, OutgoingPacketEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
 import { TransportContext } from '../TransportContext';
 
@@ -9,23 +9,27 @@ import { TransportContext } from '../TransportContext';
 
 export class ServerDuplexTransportSession extends ServerEventTransportSession<IDuplexStream> {
     topic = false;
-    
-    protected writeHeader(ctx: TransportContext): Promise<void> {
-        const headBuff = this.serialize(this.generatePacket(ctx, true));
-        return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
+
+    // protected writeHeader(ctx: TransportContext): Promise<void> {
+    //     const headBuff = this.serialize(this.generatePacket(ctx, true));
+    //     return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
+    // }
+
+    // protected pipe(data: IReadableStream, ctx: TransportContext): Promise<void> {
+    //     return this.streamAdapter.pipeTo(data, this.socket)
+    // }
+
+    override writeMessage(data: any, ctx: TransportContext): Promise<void> {
+        if(this.streamAdapter.isReadable(data)) return this.streamAdapter.pipeTo(data, this.socket)
+        if(isBuffer(data)) return promisify<Buffer, void>(this.socket.write, this.socket)(data);
+        if(isString(data)) return promisify<Buffer, void>(this.socket.write, this.socket)(Buffer.from(data));
+
+        return promisify<Buffer, void>(this.socket.write, this.socket)(Buffer.from(JSON.stringify(data)));
     }
 
-    protected pipe(data: IReadableStream, ctx: TransportContext): Promise<void> {
-        return this.streamAdapter.pipeTo(data, this.socket)
-    }
-
-    override writeMessage(chunk: Buffer, ctx: TransportContext): Promise<void> {
-        return promisify<Buffer, void>(this.socket.write, this.socket)(chunk);
-    }
-
-    override write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
-        this.socket.write(chunk, callback);
-    }
+    // override write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
+    //     this.socket.write(chunk, callback);
+    // }
 
     protected getTopic(msg: string | Buffer | Uint8Array): string {
         return '__DEFALUT_TOPIC__'
@@ -36,7 +40,6 @@ export class ServerDuplexTransportSession extends ServerEventTransportSession<ID
 
     override async destroy(): Promise<void> {
         this.socket.destroy?.();
-        this.packetBuffer.clear();
     }
 }
 
@@ -52,7 +55,9 @@ export class DuplexTransportSessionFactory implements ServerTransportSessionFact
         private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
-        private decoder: IncomingDecoder) { }
+        private decoder: IncomingDecoder,
+        private packetEncoder: OutgoingPacketEncoder,
+        private packetDecoder: IncomingPacketDecoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): ServerDuplexTransportSession {
         return new ServerDuplexTransportSession(
@@ -66,7 +71,8 @@ export class DuplexTransportSessionFactory implements ServerTransportSessionFact
             this.streamAdapter,
             this.encoder,
             this.decoder,
-            new PacketBuffer(),
+            this.packetEncoder,
+            this.packetDecoder,
             options);
     }
 

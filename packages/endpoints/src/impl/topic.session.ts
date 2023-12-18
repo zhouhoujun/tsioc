@@ -1,8 +1,8 @@
-import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, FileAdapter, IReadableStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, Packet, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev } from '@tsdi/common';
+import { Injectable, Injector, Optional, isString, promisify } from '@tsdi/ioc';
+import { BadRequestExecption, FileAdapter, IReadableStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, Packet, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { ServerEventTransportSession } from './transport.session';
-import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
+import { IncomingDecoder, IncomingPacketDecoder, OutgoingEncoder, OutgoingPacketEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
 import { TransportContext } from '../TransportContext';
 
@@ -29,18 +29,27 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
 
     private replys: Set<string> = new Set();
 
-    async writeMessage(chunk: Buffer, ctx: TransportContext): Promise<void> {
-        const packet = this.generatePacket(ctx, true);
-        const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
+    override writeMessage(data: TopicMessage, ctx: TransportContext): Promise<any> {
+        const topic = this.options.serverSide ? this.getReply(data) : data.topic;
         if (!topic) throw new BadRequestExecption();
-        await promisify(this.socket.publish, this.socket)(topic, chunk)
+
+        
+        if(this.streamAdapter.isReadable(data)) {
+            return toBuffer(data)
+                .then(buf=> promisify(this.socket.publish, this.socket)(topic, buf));
+        }
+
+        if(isBuffer(data)) return promisify(this.socket.publish, this.socket)(topic,data);
+        if(isString(data)) return promisify(this.socket.publish, this.socket)(topic, Buffer.from(data));
+
+        return promisify(this.socket.publish, this.socket)(topic, Buffer.from(JSON.stringify(data)))
     }
 
-    override write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
-        const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
-        if (!topic) throw new BadRequestExecption();
-        this.socket.publish(topic, chunk, callback)
-    }
+    // override write(packet: ResponsePacket, chunk: Buffer, callback?: (err?: any) => void): void {
+    //     const topic = this.options.serverSide ? this.getReply(packet) : packet.topic;
+    //     if (!topic) throw new BadRequestExecption();
+    //     this.socket.publish(topic, chunk, callback)
+    // }
 
     protected override message(): Observable<any> {
         return fromEvent(this.socket, ev.MESSAGE, (topic: string, payload) => ({ topic, payload })).pipe(
@@ -48,8 +57,8 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         ) as Observable<any>;
     }
 
-    protected getReply(packet: Packet) {
-        return packet.replyTo || packet.topic + '/reply';
+    protected getReply(msg: TopicMessage) {
+        return msg.replyTo || msg.topic + '/reply';
     }
 
     async destroy(): Promise<void> {
@@ -57,7 +66,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
             await promisify(this.socket.unsubscribe, this.socket)(Array.from(this.replys.values()));
             this.replys.clear();
         }
-        this.packetBuffer.clear();
+        // this.packetBuffer.clear();
     }
 }
 
@@ -73,7 +82,9 @@ export class TopicTransportSessionFactory implements ServerTransportSessionFacto
         private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
-        private decoder: IncomingDecoder) { }
+        private decoder: IncomingDecoder,
+        private packetEncoder: OutgoingPacketEncoder,
+        private packetDecoder: IncomingPacketDecoder) { }
 
     create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
         return new TopicTransportSession(
@@ -87,7 +98,8 @@ export class TopicTransportSessionFactory implements ServerTransportSessionFacto
             this.streamAdapter,
             this.encoder,
             this.decoder,
-            new PacketBuffer(),
+            this.packetEncoder,
+            this.packetDecoder,
             options);
     }
 
