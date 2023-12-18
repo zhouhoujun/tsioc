@@ -4,18 +4,30 @@ import {
     HEAD, IDuplexStream, MessageExecption, PacketBuffer, Redirector, ResponseJsonParseError, ResponsePacket,
     TransportEvent, XSSI_PREFIX, ev, isBuffer, toBuffer
 } from '@tsdi/common';
-import { Observable, Subscriber, catchError, defer, mergeMap, of, throwError } from 'rxjs';
+import { Observable, Subscriber, catchError, defer, filter, mergeMap, of, throwError } from 'rxjs';
 import {
-    PacketDecodeBackend, PacketDecodeInterceptor, PacketDecoder, ResponsePacketContext,
+    ResponsePacketDecodeBackend, ResponsePacketDecodeInterceptor, ResponsePacketDecoder, ResponsePacketContext,
     ResponseBackend, ResponseContext, ResponseDecodeInterceptor, ResponseDecoder
 } from './codings';
 
 
+@Injectable()
+export class ResponseFilterDecodeInterceptor<TMsg = any> implements ResponsePacketDecodeInterceptor<TMsg> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket<any>> {
+        return next.handle(ctx)
+            .pipe(
+                filter(r => {
+                    if (!ctx.request.id) return true;
+                    return r.id === ctx.request.id
+                })
+            )
+    }
+}
 
 @Injectable()
-export class ObjectPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+export class ObjectPacketDecordeInterceptor<TMsg = any> implements ResponsePacketDecodeInterceptor<TMsg> {
 
-    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket> {
         if (isPlainObject(ctx.msg) && !isNil(ctx.msg.payload)) {
             return of(ctx.msg);
         }
@@ -24,12 +36,12 @@ export class ObjectPacketDecordeInterceptor<TMsg = any> implements PacketDecodeI
 }
 
 @Injectable()
-export class StreamPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+export class StreamPacketDecordeInterceptor<TMsg = any> implements ResponsePacketDecodeInterceptor<TMsg> {
 
-    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket> {
         if (ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.msg)) {
             return of({
-                ...ctx.packet,
+                ...ctx.response,
                 payload: ctx.msg
             });
         }
@@ -40,9 +52,9 @@ export class StreamPacketDecordeInterceptor<TMsg = any> implements PacketDecodeI
 
 
 @Injectable()
-export class BufferPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+export class BufferPacketDecordeInterceptor<TMsg = any> implements ResponsePacketDecodeInterceptor<TMsg> {
 
-    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket> {
         if (ctx.session.existHeader && isBuffer(ctx.msg)) {
             ctx.raw = ctx.msg;
         }
@@ -53,10 +65,10 @@ export class BufferPacketDecordeInterceptor<TMsg = any> implements PacketDecodeI
 
 
 @Injectable({ static: false })
-export class UnpackPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+export class UnpackPacketDecordeInterceptor<TMsg = any> implements ResponsePacketDecodeInterceptor<TMsg> {
 
     private packetBuffer?: PacketBuffer;
-    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket> {
         if (!isBuffer(ctx.raw) && !ctx.session.delimiter) return next.handle(ctx)
         if (!this.packetBuffer) {
             this.packetBuffer = new PacketBuffer();
@@ -80,14 +92,14 @@ interface ResponseCachePacket extends ResponsePacket {
 }
 
 @Injectable()
-export class ConnectPacketDecordeInterceptor<TMsg = any> implements PacketDecodeInterceptor<TMsg> {
+export class ConnectPacketDecordeInterceptor<TMsg = any> implements ResponsePacketDecodeInterceptor<TMsg> {
     packs: Map<string | number, ResponseCachePacket>;
 
     constructor() {
         this.packs = new Map();
     }
 
-    intercept(ctx: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket> {
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket> {
         const session = ctx.session;
         if (!ctx.raw || !isBuffer(ctx.raw)) {
             return next.handle(ctx);
@@ -106,8 +118,8 @@ export class ConnectPacketDecordeInterceptor<TMsg = any> implements PacketDecode
 
             let raw = ctx.raw;
             let id: string | number;
-            if (ctx.packet?.id) {
-                id = ctx.packet.id;
+            if (ctx.response?.id) {
+                id = ctx.response.id;
             } else {
                 id = raw.readInt16BE(0);
                 raw = raw.subarray(2);
@@ -115,8 +127,8 @@ export class ConnectPacketDecordeInterceptor<TMsg = any> implements PacketDecode
             let packet = this.packs.get(id) as ResponseCachePacket;
 
             if (!packet) {
-                if (ctx.packet) {
-                    packet = ctx.packet as ResponseCachePacket;
+                if (ctx.response) {
+                    packet = ctx.response as ResponseCachePacket;
                 } else if (session.headDelimiter) {
                     const hidx = raw.indexOf(session.headDelimiter);
                     if (hidx >= 0) {
@@ -174,12 +186,20 @@ export class ConnectPacketDecordeInterceptor<TMsg = any> implements PacketDecode
 
 
 @Injectable()
-export class TransportPacketDecordeBackend<TMsg = any> implements PacketDecodeBackend<TMsg> {
+export class TransportPacketDecordeBackend<TMsg = any> implements ResponsePacketDecodeBackend<TMsg> {
 
     handle(ctx: ResponsePacketContext<TMsg>): Observable<ResponsePacket> {
-        if (!ctx.packet) return throwError(() => new MessageExecption('no packet'))
+        if (!ctx.response) return throwError(() => {
+            let msg: string;
+            try {
+                msg = JSON.stringify(ctx.msg)
+            } catch {
+                msg = ctx.msg?.toString() ?? '';
+            }
+            return new MessageExecption('can not recognize message: ', msg)
+        })
 
-        return of(ctx.packet);
+        return of(ctx.response);
     }
 
 }
@@ -207,9 +227,9 @@ export class CatchErrorResponseDecordeInterceptor<T extends TransportEvent = Tra
 @Injectable()
 export class EmptyResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (ctx.packet.status && ctx.session.statusAdapter?.isEmpty(ctx.packet.status)) {
+        if (ctx.response.status && ctx.session.statusAdapter?.isEmpty(ctx.response.status)) {
             return of(ctx.session.eventFactory.createResponse({
-                ...ctx.packet,
+                ...ctx.response,
                 payload: null
             }) as T);
 
@@ -221,10 +241,10 @@ export class EmptyResponseDecordeInterceptor<T extends TransportEvent = Transpor
 @Injectable()
 export class RedirectResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (ctx.packet.status && ctx.session.statusAdapter?.isRedirect(ctx.packet.status)) {
+        if (ctx.response.status && ctx.session.statusAdapter?.isRedirect(ctx.response.status)) {
             // HTTP fetch step 5.2
             const redirector = ctx.req.context.get(Redirector);
-            return redirector.redirect<T>(ctx.req, ctx.packet.status, ctx.packet.headers!);
+            return redirector.redirect<T>(ctx.req, ctx.response.status, ctx.response.headers!);
         }
         return next.handle(ctx);
     }
@@ -233,13 +253,13 @@ export class RedirectResponseDecordeInterceptor<T extends TransportEvent = Trans
 @Injectable()
 export class ErrorResponseDecordeInterceptor<T extends TransportEvent = TransportEvent> implements ResponseDecodeInterceptor<T> {
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
-        if (ctx.packet.error) {
-            return throwError(() => ctx.session.eventFactory.createErrorResponse(ctx.packet))
-        } else if (ctx.packet.status && ctx.session.statusAdapter) {
-            ctx.packet.ok = ctx.session.statusAdapter.isOk(ctx.packet.status);
-            if (!ctx.packet.ok) {
+        if (ctx.response.error) {
+            return throwError(() => ctx.session.eventFactory.createErrorResponse(ctx.response))
+        } else if (ctx.response.status && ctx.session.statusAdapter) {
+            ctx.response.ok = ctx.session.statusAdapter.isOk(ctx.response.status);
+            if (!ctx.response.ok) {
                 return defer(async () => {
-                    const packet = ctx.packet;
+                    const packet = ctx.response;
                     if (!packet.error) {
                         if (ctx.session.streamAdapter.isReadable(packet.payload)) {
                             packet.payload = await toBuffer(packet.payload);
@@ -288,7 +308,7 @@ export class CompressResponseDecordeInterceptor<T extends TransportEvent = Trans
     intercept(ctx: ResponseContext, next: ResponseDecoder<T>): Observable<T> {
 
         if (ctx.session.incomingAdapter) {
-            const codings = ctx.session.incomingAdapter.getContentEncoding(ctx.packet);
+            const codings = ctx.session.incomingAdapter.getContentEncoding(ctx.response);
             const req = ctx.req;
             const streamAdapter = ctx.session.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
@@ -301,7 +321,7 @@ export class CompressResponseDecordeInterceptor<T extends TransportEvent = Trans
             // 5. content not modified response (304)
             if (rqstatus.compress && req.method !== HEAD && codings) {
                 return defer(async () => {
-                    let body = ctx.packet.payload;
+                    let body = ctx.response.payload;
                     // For Node v6+
                     // Be less strict when decoding compressed responses, since sometimes
                     // servers send slightly invalid responses that are still accepted
@@ -349,7 +369,7 @@ export class CompressResponseDecordeInterceptor<T extends TransportEvent = Trans
                             await streamAdapter.pipeTo(body, unBr);
                             body = unBr;
                         }
-                        ctx.packet.payload = body;
+                        ctx.response.payload = body;
 
                     } catch (err) {
                         throw ctx.session.eventFactory.createErrorResponse({ url: req.urlWithParams, error: err })
@@ -373,10 +393,10 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
 
     handle(ctx: ResponseContext): Observable<T> {
         return defer(async () => {
-            const { packet, session } = ctx;
+            const { response, session } = ctx;
             let responseType = ctx.req.responseType;
             if (session.incomingAdapter && session.mimeAdapter) {
-                const contentType = session.incomingAdapter?.getContentType(packet);
+                const contentType = session.incomingAdapter?.getContentType(response);
                 if (contentType) {
                     if (responseType === 'json' && !session.mimeAdapter.isJson(contentType)) {
                         if (session.mimeAdapter.isXml(contentType) || session.mimeAdapter.isText(contentType)) {
@@ -388,12 +408,12 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
                 }
             }
             const streamAdapter = session.streamAdapter;
-            if (responseType !== 'stream' && streamAdapter.isReadable(packet.payload)) {
-                packet.payload = await toBuffer(packet.payload);
+            if (responseType !== 'stream' && streamAdapter.isReadable(response.payload)) {
+                response.payload = await toBuffer(response.payload);
             }
             let body, originalBody;
-            body = originalBody = packet.payload;
-            let ok = packet.ok ?? !!packet.error;
+            body = originalBody = response.payload;
+            let ok = response.ok ?? !!response.error;
             switch (responseType) {
                 case 'json':
                     // Save the original body, before attempting XSSI prefix stripping.
@@ -417,7 +437,7 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
                             // Even though the response status was 2xx, this is still an error.
                             ok = false;
                             // The parse error contains the text of the body that failed to parse.
-                            packet.error = { error: err, text: body } as ResponseJsonParseError
+                            response.error = { error: err, text: body } as ResponseJsonParseError
                         }
                     }
                     break;
@@ -428,7 +448,7 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: session.incomingAdapter?.getContentType(packet)
+                        type: session.incomingAdapter?.getContentType(response)
                     });
                     break;
 
@@ -444,12 +464,12 @@ export class TransportResponseDecordeBackend<T extends TransportEvent = Transpor
                     break;
 
             }
-            packet.payload = body;
+            response.payload = body;
 
             if (ok) {
-                return session.eventFactory.createResponse(packet) as T;
+                return session.eventFactory.createResponse(response) as T;
             } else {
-                throw session.eventFactory.createErrorResponse(packet);
+                throw session.eventFactory.createErrorResponse(response);
             }
 
         })

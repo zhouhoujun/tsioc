@@ -8,7 +8,8 @@ import { TransportContext } from '../TransportContext';
 
 
 export class ServerDuplexTransportSession extends ServerEventTransportSession<IDuplexStream> {
-
+    topic = false;
+    
     protected writeHeader(ctx: TransportContext): Promise<void> {
         const headBuff = this.serialize(this.generatePacket(ctx, true));
         return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);

@@ -9,6 +9,9 @@ import { TransportContext } from '../TransportContext';
 
 
 export class TopicTransportSession<TSocket extends TopicClient = TopicClient> extends ServerEventTransportSession<TSocket, TopicMessage> {
+    
+    topic = true;
+
     protected writeHeader(ctx: TransportContext<any, any, any>): Promise<void> {
         const headBuff = this.serialize(ctx);
         return promisify<string, Buffer, void>(this.socket.publish, this.socket)(ctx.response.replyTo, headBuff);

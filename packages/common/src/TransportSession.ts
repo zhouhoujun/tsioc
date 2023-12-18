@@ -5,7 +5,6 @@ import { HybirdTransport, Transport } from './protocols';
 import { TransportErrorResponse, TransportEvent } from './response';
 import { OutgoingHeaders, ResHeaders } from './headers';
 import { StreamAdapter } from './StreamAdapter';
-import { IReadableStream } from './stream';
 import { PacketLengthException } from './execptions';
 import { StatusAdapter } from './StatusAdapter';
 import { MimeAdapter } from './MimeAdapter';
@@ -13,7 +12,7 @@ import { IncomingAdapter } from './IncomingAdapter';
 import { OutgoingAdapter } from './OutgoingAdapter';
 
 
-export type OutgoingType = Buffer | IReadableStream | null;
+// export type OutgoingType = Buffer | IReadableStream | null;
 
 /**
  * transport options.
@@ -101,6 +100,8 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * packet header delimiter.
      */
     abstract readonly headDelimiter?: Buffer;
+    
+    abstract readonly topic?: boolean;
     /**
      * exist header in Origin message or not.
      */
@@ -138,11 +139,11 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      */
     abstract get streamAdapter(): StreamAdapter;
     /**
-     * generate message to packet.
-     * @param msg 
-     * @param noPayload without payload.
-     */
-    abstract generatePacket(msg: TMessage, noPayload?: boolean): Packet;
+    //  * generate message to packet.
+    //  * @param msg 
+    //  * @param noPayload without payload.
+    //  */
+    // abstract generatePacket(msg: TMessage, noPayload?: boolean): Packet;
     /**
      * serialize packet to buffer.
      * @param packet 

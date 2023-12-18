@@ -180,7 +180,7 @@ export class HttpClientTransportSession implements ClientTransportSession<Client
                         stream = msg.stream;
                     }
                     // const ctx = new Context(this.injector, this, stream, headPkg);
-                    return this.decoder.handle({ packet: headPkg, req, session: this })
+                    return this.decoder.handle({ response: headPkg, req, session: this })
                         .pipe(
                             map(res => {
                                 return res as HttpEvent
@@ -345,7 +345,7 @@ export class HttpServerTransportSession implements ServerTransportSession<Http2S
         }).pipe(
             mergeMap(msg => {
                 const packet = { ...msg };
-                return this.decoder.handle({ session: this, packet, options })
+                return this.decoder.handle({ session: this, incoming: packet, options })
             }),
             share()
         );

@@ -1,47 +1,47 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { OutgoingType, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { RequestPacket, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { ClientTransportSession } from './session';
 
 
 /**
- * request context
+ * Request context
  */
 export interface RequestContext {
     session: ClientTransportSession;
     req: TransportRequest;
-    raw?: Buffer | null;
+    request?: RequestPacket;
 }
 
 /**
- * request encdoer.
+ * Request encdoer.
  */
 @Abstract()
-export abstract class RequestEncoder<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> implements Handler<T, TOutput> {
+export abstract class RequestEncoder<T extends RequestPacket = RequestPacket> implements Handler<RequestContext, T> {
     /**
      * tranport request encode handle.
      * @param ctx 
      */
-    abstract handle(ctx: T): Observable<TOutput>;
+    abstract handle(ctx: RequestContext): Observable<T>;
 }
 
 /**
- * request encode backend.
+ * Request encode backend.
  */
 @Abstract()
-export abstract class RequestBackend<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> implements Backend<T, TOutput> {
-    abstract handle(ctx: T): Observable<TOutput>;
+export abstract class RequestBackend<T extends RequestPacket = RequestPacket> implements Backend<RequestContext, T> {
+    abstract handle(ctx: RequestContext): Observable<T>;
 }
 
 
 
 /**
- * Encode interceptor is a chainable behavior modifier for `Encoders`.
+ * Request Encode interceptor is a chainable behavior modifier for `Encoders`.
  * 
  * 加密拦截器。
  */
-export interface RequestEncodeInterceptor<T extends RequestContext = RequestContext, TOutput extends OutgoingType = OutgoingType> extends Interceptor<T, TOutput> {
+export interface RequestEncodeInterceptor<T extends RequestPacket = RequestPacket> extends Interceptor<RequestContext, T> {
     /**
      * the method to implemet encode interceptor.
      * 
@@ -51,40 +51,102 @@ export interface RequestEncodeInterceptor<T extends RequestContext = RequestCont
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(ctx: T, next: RequestEncoder<T>): Observable<TOutput>;
+    intercept(ctx: RequestContext, next: RequestEncoder<T>): Observable<T>;
 }
 
 /**
- * Token of request encoder interceptors.
+ * Token of request encoder interceptors of client request.
  */
 export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>('REQUEST_ENCODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingReuqestEncoder<T extends RequestContext = RequestContext> extends InterceptingHandler<T> implements RequestEncoder<T> {
+export class InterceptingReuqestEncoder<T extends RequestPacket = RequestPacket> extends InterceptingHandler<RequestContext, T> implements RequestEncoder<T> {
     constructor(backend: RequestBackend<T>, injector: Injector) {
         super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
     }
 
 }
 
+/**
+ * Request packet encode context.
+ */
+export interface RequestPacketContext<TMsg = any> extends RequestContext {
+    request: RequestPacket;
+    raw?: Buffer | null;
+    msg?: TMsg;
+    topic?: string;
+}
+
 
 /**
- * packet decode context.
+ * Request packet encoder.
+ */
+@Abstract()
+export abstract class RequestPacketEncoder<TMsg = any> implements Handler<RequestPacketContext, TMsg> {
+    /**
+     * packet decode handle.
+     * @param ctx 
+     */
+    abstract handle(ctx: RequestPacketContext<TMsg>): Observable<TMsg>;
+}
+/**
+ * Request packet decode backend.
+ */
+@Abstract()
+export abstract class RequestPacketEncodeBackend<TMsg = any> implements Backend<RequestPacketContext, TMsg> {
+    abstract handle(ctx: RequestPacketContext<TMsg>): Observable<TMsg>;
+}
+
+/**
+ * Request packet Decode interceptor is a chainable behavior modifier for `Decoders`.
+ * 
+ * 加密拦截器。
+ */
+export interface RequestPacketEncodeInterceptor<TMsg = any> extends Interceptor<RequestPacketContext, TMsg> {
+    /**
+     * the method to implemet response decode interceptor.
+     * 
+     * 加密拦截处理的方法
+     * @param res  response input.
+     * @param next The next handler in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
+     */
+    intercept(res: RequestPacketContext<TMsg>, next: RequestPacketEncoder<TMsg>): Observable<TMsg>;
+}
+
+/**
+ * Token of packet encoder interceptors for client request message.
+ */
+export const REQUEST_PACKET_ENCODER_INTERCEPTORS = tokenId<ResponsePacketDecodeInterceptor[]>('REQUEST_PACKET_ENCODER_INTERCEPTORS');
+
+@Injectable()
+export class InterceptingRequestPacketEncoder<TMsg = any> extends InterceptingHandler<RequestPacketContext, TMsg> implements RequestPacketEncoder<TMsg> {
+    constructor(backend: RequestPacketEncodeBackend<TMsg>, injector: Injector) {
+        super(backend, injector, REQUEST_PACKET_ENCODER_INTERCEPTORS)
+    }
+}
+
+
+
+/**
+ * Response packet decode context.
  */
 export interface ResponsePacketContext<TMsg = any> {
     session: ClientTransportSession;
     req: TransportRequest;
-    packet?: ResponsePacket;
+    request: RequestPacket;
+    response?: ResponsePacket;
     msg: TMsg;
     topic?: string;
     raw?: Buffer;
 }
 
 /**
- * packet decoder.
+ * Response packet decoder.
  */
 @Abstract()
-export abstract class PacketDecoder<TMsg = any> implements Handler<ResponsePacketContext, ResponsePacket> {
+export abstract class ResponsePacketDecoder<TMsg = any> implements Handler<ResponsePacketContext, ResponsePacket> {
     /**
      * packet decode handle.
      * @param ctx 
@@ -92,53 +154,53 @@ export abstract class PacketDecoder<TMsg = any> implements Handler<ResponsePacke
     abstract handle(ctx: ResponsePacketContext<TMsg>): Observable<ResponsePacket>;
 }
 /**
- * packet decode backend.
+ * Response packet decode backend.
  */
 @Abstract()
-export abstract class PacketDecodeBackend<TMsg = any> implements Backend<ResponsePacketContext, ResponsePacket> {
+export abstract class ResponsePacketDecodeBackend<TMsg = any> implements Backend<ResponsePacketContext, ResponsePacket> {
     abstract handle(ctx: ResponsePacketContext<TMsg>): Observable<ResponsePacket>;
 }
 /**
- * Decode interceptor is a chainable behavior modifier for `Decoders`.
+ * Response packet Decode interceptor is a chainable behavior modifier for `Decoders`.
  * 
  * 解密拦截器。
  */
-export interface PacketDecodeInterceptor<TMsg = any> extends Interceptor<ResponsePacketContext, ResponsePacket> {
+export interface ResponsePacketDecodeInterceptor<TMsg = any> extends Interceptor<ResponsePacketContext, ResponsePacket> {
     /**
      * the method to implemet response decode interceptor.
      * 
      * 解密拦截处理的方法
-     * @param res  response input.
+     * @param ctx  response context.
      * @param next The next handler in the chain, or the backend
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(res: ResponsePacketContext<TMsg>, next: PacketDecoder<TMsg>): Observable<ResponsePacket>;
+    intercept(ctx: ResponsePacketContext<TMsg>, next: ResponsePacketDecoder<TMsg>): Observable<ResponsePacket>;
 }
 
 /**
- * Token of packet decoder interceptors.
+ * Token of packet decoder interceptors for client response message.
  */
-export const PACKET_DECODER_INTERCEPTORS = tokenId<PacketDecodeInterceptor[]>('PACKET_DECODER_INTERCEPTORS');
+export const RESPONSE_PACKET_DECODER_INTERCEPTORS = tokenId<ResponsePacketDecodeInterceptor[]>('RESPONSE_PACKET_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingPacketDecoder<TMsg = any> extends InterceptingHandler<ResponsePacketContext, ResponsePacket> implements PacketDecoder<ResponsePacket> {
-    constructor(backend: PacketDecodeBackend<TMsg>, injector: Injector) {
-        super(backend, injector, PACKET_DECODER_INTERCEPTORS)
+export class InterceptingResponsePacketDecoder<TMsg = any> extends InterceptingHandler<ResponsePacketContext<TMsg>, ResponsePacket> implements ResponsePacketDecoder<TMsg> {
+    constructor(backend: ResponsePacketDecodeBackend<TMsg>, injector: Injector) {
+        super(backend, injector, RESPONSE_PACKET_DECODER_INTERCEPTORS)
     }
 }
 
 
 
 /**
- * response context.
+ * Response context.
  */
 export interface ResponseContext<TMsg = any> extends ResponsePacketContext<TMsg> {
-    packet: ResponsePacket;
+    response: ResponsePacket;
 }
 
 /**
- * response decoder.
+ * Response decoder.
  */
 @Abstract()
 export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent> implements Handler<ResponseContext, T> {
@@ -149,7 +211,7 @@ export abstract class ResponseDecoder<T extends TransportEvent = TransportEvent>
     abstract handle(res: ResponseContext): Observable<T>;
 }
 /**
- * response decode backend.
+ * Response decode backend.
  */
 @Abstract()
 export abstract class ResponseBackend<T extends TransportEvent = TransportEvent> implements Backend<ResponseContext, T> {
@@ -158,7 +220,7 @@ export abstract class ResponseBackend<T extends TransportEvent = TransportEvent>
 
 
 /**
- * Decode interceptor is a chainable behavior modifier for `Decoders`.
+ * Response Decode interceptor is a chainable behavior modifier for `Decoders`.
  * 
  * 解密拦截器。
  */
@@ -176,7 +238,7 @@ export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportE
 }
 
 /**
- * Token of response decoder interceptors.
+ * Token of response decoder interceptors of response.
  */
 export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor[]>('RESPONSE_DECODER_INTERCEPTORS');
 

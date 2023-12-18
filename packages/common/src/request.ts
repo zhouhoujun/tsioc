@@ -15,7 +15,6 @@ export class TransportRequest<T = any> {
     readonly params: TransportParams;
     public body: T | null;
     readonly headers: ReqHeaders;
-    id?: string | number;
 
     readonly context: InvocationContext;
 

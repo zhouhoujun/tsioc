@@ -1,11 +1,11 @@
-import { Injectable, Injector, Optional, promisify } from '@tsdi/ioc';
+import { Injectable, Injector, Optional, isString, promisify } from '@tsdi/ioc';
 import {
-    IDuplexStream, IReadableStream, ResponseEventFactory, TransportOpts, TransportRequest,
-    PacketBuffer, IncomingAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, MimeAdapter
+    IDuplexStream, ResponseEventFactory, TransportOpts, TransportRequest,
+    IncomingAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, MimeAdapter, isBuffer
 } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
-import { PacketDecoder, RequestEncoder, ResponseDecoder } from '../transport/codings';
+import { ResponsePacketDecoder, RequestPacketEncoder, RequestEncoder, ResponseDecoder } from '../transport/codings';
 
 
 /**
@@ -13,16 +13,21 @@ import { PacketDecoder, RequestEncoder, ResponseDecoder } from '../transport/cod
  */
 export class ClientDuplexTransportSession extends ClientEventTransportSession<IDuplexStream> {
 
-    protected writeHeader(req: TransportRequest<any>): Promise<void> {
-        const headBuff = this.serialize(this.generatePacket(req, true));
-        return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
-    }
-    protected pipe(data: IReadableStream, req: TransportRequest<any>): Promise<void> {
-        return this.streamAdapter.pipeTo(data, this.socket)
-    }
+    topic = false; 
+    // protected writeHeader(req: TransportRequest<any>): Promise<void> {
+    //     const headBuff = this.serialize(this.generatePacket(req, true));
+    //     return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
+    // }
+    // protected pipe(data: IReadableStream, req: TransportRequest<any>): Promise<void> {
+    //     return this.streamAdapter.pipeTo(data, this.socket)
+    // }
 
-    writeMessage(data: Buffer, req: TransportRequest<any>): Promise<void> {
-        return promisify<Buffer, void>(this.socket.write, this.socket)(data);
+    writeMessage(data: any, req: TransportRequest<any>): Promise<void> {
+        if(this.streamAdapter.isReadable(data)) return this.streamAdapter.pipeTo(data, this.socket)
+        if(isBuffer(data)) return promisify<Buffer, void>(this.socket.write, this.socket)(data);
+        if(isString(data)) return promisify<Buffer, void>(this.socket.write, this.socket)(Buffer.from(data));
+
+        return promisify<Buffer, void>(this.socket.write, this.socket)(Buffer.from(JSON.stringify(data)));
     }
 
     protected async beforeRequest(packet: TransportRequest<any>): Promise<void> { }
@@ -54,7 +59,8 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
         @Optional() private mimeAdapter: MimeAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
-        private packetDevoder: PacketDecoder,
+        private packetEncoder: RequestPacketEncoder,
+        private packetDecoder: ResponsePacketDecoder,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) { }
 
@@ -68,7 +74,8 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
             this.mimeAdapter,
             this.streamAdapter,
             this.eventFactory,
-            this.packetDevoder,
+            this.packetEncoder,
+            this.packetDecoder,
             this.encoder,
             this.decoder,
             options);
