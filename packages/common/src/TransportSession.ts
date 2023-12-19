@@ -100,7 +100,7 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * packet header delimiter.
      */
     abstract readonly headDelimiter?: Buffer;
-    
+
     abstract readonly topic?: boolean;
     /**
      * exist header in Origin message or not.
@@ -153,7 +153,7 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * deserialize buffer to packet.
      * @param packet 
      */
-    abstract deserialize(raw: Buffer): Packet;
+    abstract deserialize(raw: Buffer | string): Packet;
     /**
      * send message
      * @param ctx 

@@ -170,12 +170,12 @@ export interface IncomingPacketDecodeInterceptor<TMsg = any> extends Interceptor
 /**
  * Token of packet decoder interceptors for server incoming message.
  */
-export const RESPONSE_PACKET_DECODER_INTERCEPTORS = tokenId<IncomingPacketDecodeInterceptor[]>('RESPONSE_PACKET_DECODER_INTERCEPTORS');
+export const INCOMING_PACKET_DECODER_INTERCEPTORS = tokenId<IncomingPacketDecodeInterceptor[]>('INCOMING_PACKET_DECODER_INTERCEPTORS');
 
 @Injectable()
 export class InterceptingIncomingPacketDecoder<TMsg = any> extends InterceptingHandler<IncomingPacketContext<TMsg>, IncomingPacket> implements IncomingPacketDecoder<TMsg> {
     constructor(backend: IncomingPacketDecodeBackend<TMsg>, injector: Injector) {
-        super(backend, injector, RESPONSE_PACKET_DECODER_INTERCEPTORS)
+        super(backend, injector, INCOMING_PACKET_DECODER_INTERCEPTORS)
     }
 }
 

@@ -1,5 +1,5 @@
 import { Injectable, isNumber, isPlainObject, isString } from '@tsdi/ioc';
-import { HEAD, InternalServerExecption, OutgoingType, isBuffer, toBuffer } from '@tsdi/common';
+import { HEAD, InternalServerExecption, ResponsePacket, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, defer, map, mergeMap, of, range, throwError } from 'rxjs';
 import { OutgoingEncodeInterceptor, OutgoingEncoder, OutgoingBackend } from './codings';
 import { TransportContext } from '../TransportContext';
@@ -9,9 +9,9 @@ export const emptyBody = Buffer.alloc(0);
 
 
 @Injectable()
-export class OutgoingBufferFinalizeEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType> {
+export class OutgoingBufferFinalizeEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket> {
 
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext, OutgoingType>): Observable<OutgoingType> {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         return next.handle(ctx)
             .pipe(
                 map(data => {
@@ -42,9 +42,9 @@ export class OutgoingBufferFinalizeEncodeInterceptor implements OutgoingEncodeIn
 }
 
 @Injectable()
-export class OutgoingSubpacketBufferEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+export class OutgoingSubpacketBufferEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket>  {
 
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext, Buffer>): Observable<OutgoingType> {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
 
         return next.handle(ctx)
             .pipe(
@@ -89,9 +89,9 @@ export class OutgoingSubpacketBufferEncodeInterceptor implements OutgoingEncodeI
 
 
 @Injectable()
-export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket>  {
 
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         if (ctx.statusAdapter?.isEmpty(ctx.status)) {
             //ignore body
             ctx.body = null;
@@ -103,9 +103,9 @@ export class EmptyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor
 }
 
 @Injectable()
-export class HeadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+export class HeadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket>  {
 
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         if (ctx.method === HEAD) {
             if (!ctx.sent && !ctx.outgoingAdapter?.getContentLength(ctx.response)) {
                 const length = ctx.length;
@@ -121,9 +121,9 @@ export class HeadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<
 
 
 @Injectable()
-export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
+export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket>  {
 
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         if (ctx.body === null) {
             if (ctx.explicitNullBody && ctx.outgoingAdapter) {
                 ctx.outgoingAdapter.removeContentType(ctx.response);
@@ -145,8 +145,8 @@ export class NoBodyOutgoingEncodeInterceptor implements OutgoingEncodeIntercepto
 }
 
 @Injectable()
-export class JsonOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+export class JsonOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket>  {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         if (!ctx.session.headDelimiter && isPlainObject(ctx.response)) {
             return of(ctx.session.serialize(ctx.session.generatePacket(ctx)));
         }
@@ -155,8 +155,8 @@ export class JsonOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<
 }
 
 @Injectable()
-export class PayloadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType>  {
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+export class PayloadOutgoingEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket>  {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         if (ctx.session.headDelimiter || ctx.session.existHeader) {
             let body = ctx.body;
             if (isBuffer(body)) {
@@ -176,9 +176,9 @@ export class PayloadOutgoingEncodeInterceptor implements OutgoingEncodeIntercept
 }
 
 @Injectable()
-export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<TransportContext, OutgoingType> {
+export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<ResponsePacket> {
 
-    intercept(ctx: TransportContext, next: OutgoingEncoder<TransportContext>): Observable<OutgoingType> {
+    intercept(ctx: TransportContext, next: OutgoingEncoder<ResponsePacket>): Observable<ResponsePacket> {
         if (ctx.rawBody) return next.handle(ctx);
 
         if (ctx.streamAdapter.isReadable(ctx.body)) {
@@ -222,7 +222,7 @@ export class OutgoingPipeEncodeInterceptor implements OutgoingEncodeInterceptor<
 
 
 @Injectable()
-export class TransportOutgoingEncodeBackend implements OutgoingBackend<TransportContext, Buffer> {
+export class TransportOutgoingEncodeBackend implements OutgoingBackend<ResponsePacket> {
 
     handle(ctx: TransportContext): Observable<Buffer> {
         if (!ctx.rawBody) return throwError(() => new InternalServerExecption())

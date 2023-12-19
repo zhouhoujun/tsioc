@@ -5,13 +5,13 @@ import { DefaultRequestHandler } from './handler';
 import { RequestHandler } from '../RequestHandler';
 import {
     OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder, OutgoingBackend,
-    OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS
+    OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS, INCOMING_PACKET_DECODER_INTERCEPTORS, IncomingPacketDecodeBackend, IncomingPacketDecoder, InterceptingIncomingPacketDecoder
 } from './codings';
 import {
     TransportOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor,
     JsonOutgoingEncodeInterceptor, PayloadOutgoingEncodeInterceptor, EmptyOutgoingEncodeInterceptor, HeadOutgoingEncodeInterceptor, NoBodyOutgoingEncodeInterceptor
 } from './encoders';
-import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeInterceptor, StreamIncomingDecordeInterceptor, TransportIncomingDecordeBackend } from './decoders';
+import { BufferIncomingPacketDecordeBackend, StreamIncomingPacketDecordeInterceptor, IncomingPacketMessageDecordeInterceptor, TransportIncomingDecordeBackend, StringIncomingPacketDecordeInterceptor, BufferIncomingPacketDecordeInterceptor } from './decoders';
 
 
 @Module({
@@ -41,15 +41,20 @@ import { BufferIncomingDecordeInterceptor, PayloadStreamIncomingDecordeIntercept
         InterceptingOutgoingEncoder,
         { provide: OutgoingEncoder, useExisting: InterceptingOutgoingEncoder },
 
+        StringIncomingPacketDecordeInterceptor,
+        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StringIncomingPacketDecordeInterceptor, multi: true },
+        BufferIncomingPacketDecordeInterceptor,
+        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: BufferIncomingPacketDecordeInterceptor, multi: true },
+        StreamIncomingPacketDecordeInterceptor,
+        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StreamIncomingPacketDecordeInterceptor, multi: true },
+        IncomingPacketMessageDecordeInterceptor,
+        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: IncomingPacketMessageDecordeInterceptor, multi: true },
 
-        StreamIncomingDecordeInterceptor,
-        { provide: INCOMING_DECODER_INTERCEPTORS, useExisting: StreamIncomingDecordeInterceptor, multi: true, multiOrder: 0 },
-        PayloadStreamIncomingDecordeInterceptor,
-        { provide: INCOMING_DECODER_INTERCEPTORS, useExisting: PayloadStreamIncomingDecordeInterceptor, multi: true },
-        BufferIncomingDecordeInterceptor,
-        { provide: INCOMING_DECODER_INTERCEPTORS, useExisting: BufferIncomingDecordeInterceptor, multi: true },
-
-
+        BufferIncomingPacketDecordeBackend,
+        { provide: IncomingPacketDecodeBackend, useExisting: BufferIncomingPacketDecordeBackend },
+        InterceptingIncomingPacketDecoder,
+        { provide: IncomingPacketDecoder, useExisting: InterceptingIncomingPacketDecoder },
+        
 
         TransportIncomingDecordeBackend,
         { provide: IncomingBackend, useExisting: TransportIncomingDecordeBackend },

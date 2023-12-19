@@ -1,8 +1,7 @@
-import { ArgumentExecption, Injectable } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, isString } from '@tsdi/ioc';
 import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, isBuffer } from '@tsdi/common';
-import { Observable, Subscriber, mergeMap, of, throwError } from 'rxjs';
-import { IncomingBackend, IncomingDecodeInterceptor, IncomingDecoder } from './codings';
-import { IncomingContext } from './session';
+import { Observable, Subscriber, map, mergeMap, of, throwError } from 'rxjs';
+import { IncomingPacketContext, IncomingPacketDecodeInterceptor, IncomingPacketDecoder, IncomingBackend, IncomingContext, IncomingDecodeInterceptor, IncomingDecoder, IncomingPacketDecodeBackend } from './codings';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 
 
@@ -12,13 +11,17 @@ interface CachePacket extends IncomingPacket {
     length: number;
 }
 
-
 @Injectable()
-export class StreamIncomingDecordeInterceptor<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
+export class StringIncomingPacketDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
 
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext> {
-        if (!ctx.ready && ctx.incoming && ctx.incoming.req && ctx.incoming.res) {
-            ctx.ready = true;
+    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+        if (isString(ctx.msg)) {
+            try {
+                ctx.incoming = ctx.session.deserialize(ctx.msg);
+                return of(ctx.incoming);
+            } catch {
+                ctx.raw = Buffer.from(ctx.msg);
+            }
         }
         return next.handle(ctx)
     }
@@ -26,31 +29,62 @@ export class StreamIncomingDecordeInterceptor<T extends IncomingContext = Incomi
 }
 
 @Injectable()
-export class PayloadStreamIncomingDecordeInterceptor<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
+export class BufferIncomingPacketDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
 
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext> {
-        if (!ctx.ready && ctx.incoming && !ctx.incoming.payload && ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.raw)) {
-            ctx.incoming.payload = ctx.raw;
+    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+        if (isBuffer(ctx.msg)) {
+            ctx.raw = ctx.msg;
+        }
+        return next.handle(ctx)
+    }
+}
+
+@Injectable()
+export class StreamIncomingPacketDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
+
+    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+        if (ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.msg)) {
+            if (ctx.incoming) {
+                ctx.incoming.payload = ctx.msg;
+            } else {
+                ctx.incoming = { payload: ctx.msg };
+            }
             if (!ctx.incoming.method) {
                 ctx.incoming.method = ctx.options.transportOpts?.microservice ? MESSAGE : GET;
             }
-            ctx.ready = true;
+            return of(ctx.incoming)
+        }
+        return next.handle(ctx)
+    }
+}
+
+
+@Injectable()
+export class IncomingPacketMessageDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
+
+    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+        const msg = ctx.msg as IncomingPacket;
+        if (msg?.req && msg?.res) {
+            ctx.incoming = { ...msg };
+            return of(ctx.incoming);
         }
         return next.handle(ctx)
     }
 
 }
 
+
+
 @Injectable()
-export class BufferIncomingDecordeInterceptor<T extends IncomingContext = IncomingContext> implements IncomingDecodeInterceptor<T> {
+export class BufferIncomingPacketDecordeBackend<T = any> implements IncomingPacketDecodeBackend<T> {
 
     packs: Map<string | number, CachePacket>;
     constructor() {
         this.packs = new Map();
     }
 
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext> {
-        if (ctx.ready) return next.handle(ctx);
+    handle(ctx: IncomingPacketContext<T>): Observable<IncomingPacket> {
+
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
             if (!ctx.raw || !isBuffer(ctx.raw)) {
@@ -123,13 +157,12 @@ export class BufferIncomingDecordeInterceptor<T extends IncomingContext = Incomi
 
             return subscriber;
         }).pipe(
-            mergeMap(pkg => {
+            map(pkg => {
                 if (!pkg.method) {
                     pkg.method = ctx.options.transportOpts?.microservice ? MESSAGE : GET;
                 }
                 ctx.incoming = pkg;
-                ctx.ready = true;
-                return next.handle(ctx);
+                return pkg;
             })
         )
     }
@@ -140,7 +173,7 @@ export class TransportIncomingDecordeBackend<T extends IncomingContext = Incomin
 
     handle(ctx: T): Observable<TransportContext> {
         const injector = ctx.session.injector;
-        if (!ctx.incoming || !ctx.ready) return throwError(() => new InternalServerExecption('incoming packet no ready.'));
+        if (!ctx.incoming) return throwError(() => new InternalServerExecption('incoming packet no ready.'));
 
         const context = injector.get(TransportContextFactory).create(injector, ctx.session, ctx.incoming, ctx.options);
         return of(context);
