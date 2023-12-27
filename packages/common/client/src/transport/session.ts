@@ -1,7 +1,7 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { ResponseEventFactory, TransportEvent, TransportOpts, TransportRequest, TransportSession } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { RequestPacketEncoder, ResponsePacketDecoder } from './codings';
+import { RequestEncoder, ResponseDecoder } from './codings';
 
 
 
@@ -11,9 +11,14 @@ import { RequestPacketEncoder, ResponsePacketDecoder } from './codings';
 @Abstract()
 export abstract class ClientTransportSession<TSocket = any, TMsg = any, TRequest extends TransportRequest = TransportRequest> extends TransportSession<TSocket, TRequest>  {
     
-    
-    abstract get packetEncoder(): RequestPacketEncoder<TMsg>;
-    abstract get packetDecoder(): ResponsePacketDecoder<TMsg>;
+    /**
+     * request encoder.
+     */
+    abstract get encoder(): RequestEncoder<TMsg>;
+    /**
+     * response decoder.
+     */
+    abstract get decoder(): ResponseDecoder<TMsg>;
     
     /**
      * response event factory.
