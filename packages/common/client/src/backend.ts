@@ -13,13 +13,13 @@ import { ClientTransportSession } from './transport/session';
  */
 @Injectable()
 export class TransportResponseEventFactory implements ResponseEventFactory<TransportEvent, TransportErrorResponse> {
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportErrorResponse {
+    createErrorResponse(options: { url?: string; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; error?: any; statusText?: string; statusMessage?: string; }): TransportErrorResponse {
         return new TransportErrorResponse(options);
     }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
+    createHeadResponse(options: { url?: string; ok?: boolean; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; statusText?: string; statusMessage?: string; }): TransportEvent {
         return new TransportHeaderResponse(options) as TransportEvent;
     }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TransportEvent {
+    createResponse(options: { url?: string; ok?: boolean; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TransportEvent {
         return new TransportResponse(options) as TransportEvent;
     }
 }
@@ -39,7 +39,7 @@ export class TransportBackend implements Backend<TransportRequest, TransportEven
 
         const context = req.context;
         const session = context.get(ClientTransportSession);
-      
+
         let obs$: Observable<TransportEvent>;
         switch (req.observe) {
             case 'emit':

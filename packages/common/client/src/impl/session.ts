@@ -12,10 +12,10 @@ import { ClientTransportSession } from '../transport/session';
 /**
  * abstract client transport session.
  */
-export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extends ClientTransportSession<TSocket, TMsg> {
+export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extends ClientTransportSession<TSocket, TMsg, TransportRequest> {
 
-    abstract get encoder(): RequestEncoder<TMsg>;
-    abstract get decoder(): ResponseDecoder<TMsg>;
+    abstract get encoder(): RequestEncoder<TMsg, TransportRequest>;
+    abstract get decoder(): ResponseDecoder<TransportEvent, TMsg>;
 
     send(req: TransportRequest): Observable<RequestContext> {
         const len = this.outgoingAdapter?.getContentLength(req);
@@ -116,7 +116,7 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
     // private allocator?: NumberAllocator;
     // private last?: number;
     delimiter: Buffer;
-    headDelimiter?: Buffer | undefined;
+    headDelimiter?: Buffer;
 
     constructor(
         readonly injector: Injector,
@@ -132,30 +132,13 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         readonly options: TransportOpts) {
         super();
 
-        this.delimiter = Buffer.from(options.delimiter || '#');
+        this.delimiter = Buffer.from(options.delimiter ?? '#');
         if (options.headDelimiter) {
             this.headDelimiter = Buffer.from(options.headDelimiter);
         }
     }
 
-
-    // protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {
-    //     const packet = this.getResHeaders(msg) ?? {};
-    //     return {
-    //         session: this,
-    //         req,
-    //         packet,
-    //         raw: data
-    //     }
-    // }
-
-    // protected concat(msg: TMsg): Observable<Buffer> {
-    //     return this.packetBuffer.concat(this, this.getTopic(msg), this.getPayload(msg))
-    // }
-
-    async destroy(): Promise<void> {
-        // this.packetBuffer.clear();
-    }
+    async destroy(): Promise<void> { }
 
     protected abstract getTopic(msg: TMsg): string;
 

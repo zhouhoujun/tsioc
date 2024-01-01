@@ -68,7 +68,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         // it can just be returned directly.
         if (isArrayBuffer(body) || isBuffer(body) || this.adapter.isStream(body) || isBlob(body) || this.adapter.isFormDataLike(body) ||
             isUrlSearchParams(body) || isString(body)) {
-            return body as any;
+            return body;
         }
 
         // Check whether the body is an instance of HttpUrlEncodedParams.
@@ -82,7 +82,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
             return JSON.stringify(body)
         }
         // Fall back on toString() for everything else.
-        return (body as any).toString()
+        return body.toString()
     }
     /**
      * Examine the body and attempt to infer an appropriate MIME type

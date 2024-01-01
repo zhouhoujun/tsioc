@@ -14,11 +14,11 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any, TRequest
     /**
      * request encoder.
      */
-    abstract get encoder(): RequestEncoder<TMsg>;
+    abstract get encoder(): RequestEncoder<TMsg, TRequest>;
     /**
      * response decoder.
      */
-    abstract get decoder(): ResponseDecoder<TMsg>;
+    abstract get decoder(): ResponseDecoder<TransportEvent, TMsg>;
     
     /**
      * response event factory.
