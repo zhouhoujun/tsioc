@@ -1,8 +1,8 @@
-import { Injector } from '@tsdi/ioc';
+import { Injector, isDefined } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     Packet, PacketLengthException, ResponsePacket, TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, BufferTransportSession,
-    StreamAdapter, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, StatusAdapter, ResponseEventFactory, IncomingAdapter, OutgoingAdapter, MimeAdapter
+    StreamAdapter, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, StatusAdapter, ResponseEventFactory, IncomingAdapter, OutgoingAdapter, MimeAdapter, RequestPacket
 } from '@tsdi/common';
 import { Observable, defer, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { RequestContext, RequestEncoder, ResponseContext, ResponseDecoder } from '../transport/codings';
@@ -165,6 +165,22 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         return undefined;
     }
 
+    generatePacket(req: TransportRequest, noPayload?: boolean): Packet<any> {
+        const pkg = {
+            url: req.urlWithParams
+        } as RequestPacket;
+        if (req.method) {
+            pkg.method = req.method;
+        }
+        if (req.headers.size) {
+            pkg.headers = req.headers.getHeaders()
+        }
+        if (!noPayload && isDefined(req.body)) {
+            pkg.payload = req.body;
+        }
+
+        return pkg;
+    }
 
 
 
