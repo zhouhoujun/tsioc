@@ -1,7 +1,7 @@
 import { Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { InternalServerExecption, ev, LOCALHOST } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Server, RequestHandler, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UDP_SERV_OPTS, UdpServerOpts } from './options';
 import { UdpEndpoint } from './endpoint';
@@ -52,8 +52,7 @@ export class UdpServer extends Server {
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         const session = factory.create(this.serv, this.options.transportOpts!);
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
-
+        session.handleRequest(this.endpoint, this.options, this.logger);
 
         const bindOpts = this.options.bindOpts ?? { port: 3000, address: LOCALHOST };
         this.serv.on(ev.LISTENING, () => {

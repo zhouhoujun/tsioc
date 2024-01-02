@@ -1,7 +1,7 @@
 import { ArgumentExecption, Injectable, isString } from '@tsdi/ioc';
 import { GET, IDuplexStream, IncomingPacket, InternalServerExecption, MESSAGE, isBuffer } from '@tsdi/common';
 import { Observable, Subscriber, map, mergeMap, of, throwError } from 'rxjs';
-import { IncomingPacketContext, IncomingPacketDecodeInterceptor, IncomingPacketDecoder, IncomingBackend, IncomingContext, IncomingDecodeInterceptor, IncomingDecoder, IncomingPacketDecodeBackend } from './codings';
+import { IncomingBackend, IncomingContext, IncomingDecodeInterceptor, IncomingDecoder } from './codings';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 
 
@@ -12,9 +12,9 @@ interface CachePacket extends IncomingPacket {
 }
 
 @Injectable()
-export class StringIncomingPacketDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
+export class StringIncomingDecordeInterceptor<T = any> implements IncomingDecodeInterceptor<T> {
 
-    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+    intercept(ctx: IncomingContext<T>, next: IncomingDecoder<T>): Observable<IncomingPacket> {
         if (isString(ctx.msg)) {
             try {
                 ctx.incoming = ctx.session.deserialize(ctx.msg);
@@ -29,9 +29,9 @@ export class StringIncomingPacketDecordeInterceptor<T = any> implements Incoming
 }
 
 @Injectable()
-export class BufferIncomingPacketDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
+export class BufferIncomingDecordeInterceptor<T = any> implements IncomingDecodeInterceptor<T> {
 
-    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+    intercept(ctx: IncomingContext<T>, next: IncomingDecoder<T>): Observable<IncomingPacket> {
         if (isBuffer(ctx.msg)) {
             ctx.raw = ctx.msg;
         }
@@ -40,9 +40,9 @@ export class BufferIncomingPacketDecordeInterceptor<T = any> implements Incoming
 }
 
 @Injectable()
-export class StreamIncomingPacketDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
+export class StreamIncomingDecordeInterceptor<T = any> implements IncomingDecodeInterceptor<T> {
 
-    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+    intercept(ctx: IncomingContext<T>, next: IncomingDecoder<T>): Observable<IncomingPacket> {
         if (ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.msg)) {
             if (ctx.incoming) {
                 ctx.incoming.payload = ctx.msg;
@@ -60,9 +60,9 @@ export class StreamIncomingPacketDecordeInterceptor<T = any> implements Incoming
 
 
 @Injectable()
-export class IncomingPacketMessageDecordeInterceptor<T = any> implements IncomingPacketDecodeInterceptor<T> {
+export class IncomingPacketMessageDecordeInterceptor<T = any> implements IncomingDecodeInterceptor<T> {
 
-    intercept(ctx: IncomingPacketContext<T>, next: IncomingPacketDecoder<T>): Observable<IncomingPacket> {
+    intercept(ctx: IncomingContext<T>, next: IncomingDecoder<T>): Observable<IncomingPacket> {
         const msg = ctx.msg as IncomingPacket;
         if (msg?.req && msg?.res) {
             ctx.incoming = { ...msg };
@@ -76,23 +76,23 @@ export class IncomingPacketMessageDecordeInterceptor<T = any> implements Incomin
 
 
 @Injectable()
-export class BufferIncomingPacketDecordeBackend<T = any> implements IncomingPacketDecodeBackend<T> {
+export class BufferIncomingDecordeBackend<T = any> implements IncomingBackend<T> {
 
     packs: Map<string | number, CachePacket>;
     constructor() {
         this.packs = new Map();
     }
 
-    handle(ctx: IncomingPacketContext<T>): Observable<IncomingPacket> {
+    handle(ctx: IncomingContext<T>): Observable<IncomingPacket> {
 
         return new Observable((subscriber: Subscriber<IncomingPacket>) => {
 
-            if (!ctx.raw || !isBuffer(ctx.raw)) {
+            if (!ctx.msg || !isBuffer(ctx.msg)) {
                 subscriber.error(new ArgumentExecption('asset decoding input is not buffer.'));
                 return;
             }
 
-            let raw = ctx.raw;
+            let raw = ctx.msg;
             let id: string | number;
             if (ctx.incoming?.id) {
                 id = ctx.incoming.id;

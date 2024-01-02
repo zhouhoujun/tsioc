@@ -1,6 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { IReadableStream, IncomingPacket, ResponsePacket } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { ServerTransportSession } from './session';
 import { TransportContext } from '../TransportContext';
@@ -8,85 +7,34 @@ import { ServerOpts } from '../Server';
 
 
 
-/**
- * Outgoing encoder.
- */
-@Abstract()
-export abstract class OutgoingEncoder<T extends ResponsePacket = ResponsePacket> implements Handler<TransportContext, T> {
-    abstract handle(ctx: TransportContext): Observable<T>;
-}
 
 /**
- * Outgoing encode backend.
+ * Outgoing encode context.
  */
-@Abstract()
-export abstract class OutgoingBackend<T extends ResponsePacket = ResponsePacket> implements Backend<TransportContext, T> {
-    abstract handle(ctx: TransportContext): Observable<T>;
-}
-
-
-/**
- * Encode interceptor is a chainable behavior modifier for `Encoders`.
- * 
- * 加密拦截器。
- */
-export interface OutgoingEncodeInterceptor<T extends ResponsePacket = ResponsePacket> extends Interceptor<TransportContext, T> {
-    /**
-     * the method to implemet encode interceptor.
-     * 
-     * 加密拦截处理的方法
-     * @param ctx  transport context.
-     * @param next The next handler in the chain, or the backend
-     * if no interceptors remain in the chain.
-     * @returns An observable of the event stream.
-     */
-    intercept(ctx: TransportContext, next: OutgoingEncoder<T>): Observable<T>;
-}
-
-/**
- * Token of request encoder interceptors.
- */
-export const OUTGOING_ENCODER_INTERCEPTORS = tokenId<OutgoingEncodeInterceptor[]>('OUTGOING_ENCODER_INTERCEPTORS');
-
-@Injectable()
-export class InterceptingOutgoingEncoder<T extends ResponsePacket = ResponsePacket> extends InterceptingHandler<TransportContext, T> implements OutgoingEncoder<T> {
-    constructor(backend: OutgoingBackend<T>, injector: Injector) {
-        super(backend, injector, OUTGOING_ENCODER_INTERCEPTORS);
-    }
-}
-
-
-
-/**
- * Outgoing packet encode context.
- */
-export interface OutgoingPacketContext<TMsg = any> {
+export interface OutgoingContext<TMsg = any> {
     session: ServerTransportSession;
     options: ServerOpts;
     context: TransportContext;
-    outgoing: ResponsePacket;
-    raw?: Buffer | null;
     msg?: TMsg;
-    topic?: string;
 }
 
 /**
  * Outgoing packet encoder.
  */
 @Abstract()
-export abstract class OutgoingPacketEncoder<TMsg = any> implements Handler<OutgoingPacketContext, TMsg> {
+export abstract class OutgoingEncoder<TMsg = any> implements Handler<TransportContext, TMsg> {
     /**
      * packet decode handle.
      * @param ctx 
      */
-    abstract handle(ctx: OutgoingPacketContext<TMsg>): Observable<TMsg>;
+    abstract handle(ctx: TransportContext): Observable<TMsg>;
 }
 /**
- * Outgoing packet decode backend.
+ * Outgoing decode backend.
  */
 @Abstract()
-export abstract class OutgoingPacketEncodeBackend<TMsg = any> implements Backend<OutgoingPacketContext, TMsg> {
-    abstract handle(ctx: OutgoingPacketContext<TMsg>): Observable<TMsg>;
+export abstract class OutgoingBackend<TMsg = any> implements Backend<TransportContext, TMsg> {
+    abstract handle(ctx: TransportContext): Observable<TMsg>;
 }
 
 /**
@@ -94,7 +42,7 @@ export abstract class OutgoingPacketEncodeBackend<TMsg = any> implements Backend
  * 
  * 加密拦截器。
  */
-export interface OutgoingPacketEncodeInterceptor<TMsg = any> extends Interceptor<OutgoingPacketContext, TMsg> {
+export interface OutgoingEncodeInterceptor<TMsg = any> extends Interceptor<TransportContext, TMsg> {
     /**
      * the method to implemet response decode interceptor.
      * 
@@ -104,88 +52,31 @@ export interface OutgoingPacketEncodeInterceptor<TMsg = any> extends Interceptor
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(res: OutgoingPacketContext<TMsg>, next: OutgoingPacketEncoder<TMsg>): Observable<TMsg>;
+    intercept(res: TransportContext, next: OutgoingEncoder<TMsg>): Observable<TMsg>;
 }
 
 /**
- * Token of packet encoder interceptors for server outgoing.
+ * Token of encoder interceptors for server outgoing.
  */
-export const OUTGOING_PACKET_ENCODER_INTERCEPTORS = tokenId<OutgoingPacketEncodeInterceptor[]>('OUTGOING_PACKET_ENCODER_INTERCEPTORS');
+export const OUTGOING_ENCODER_INTERCEPTORS = tokenId<OutgoingEncodeInterceptor[]>('OUTGOING_ENCODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingOutgoingPacketEncoder<TMsg = any> extends InterceptingHandler<OutgoingPacketContext, TMsg> implements OutgoingPacketEncoder<TMsg> {
-    constructor(backend: OutgoingPacketEncodeBackend<TMsg>, injector: Injector) {
-        super(backend, injector, OUTGOING_PACKET_ENCODER_INTERCEPTORS)
+export class InterceptingOutgoingEncoder<TMsg = any> extends InterceptingHandler<TransportContext, TMsg> implements OutgoingEncoder<TMsg> {
+    constructor(backend: OutgoingBackend<TMsg>, injector: Injector) {
+        super(backend, injector, OUTGOING_ENCODER_INTERCEPTORS)
     }
 }
 
-
-
-export interface IncomingPacketContext<TMsg = any> {
-    session: ServerTransportSession;
-    options: ServerOpts;
-    msg: TMsg;
-    incoming?: IncomingPacket;
-    raw?: Buffer | IReadableStream;
-}
-
-
-/**
- * Incoming packet decoder.
- */
-@Abstract()
-export abstract class IncomingPacketDecoder<TMsg = any> implements Handler<IncomingPacketContext, IncomingPacket> {
-    /**
-     * packet decode handle.
-     * @param ctx 
-     */
-    abstract handle(ctx: IncomingPacketContext<TMsg>): Observable<IncomingPacket>;
-}
-
-/**
- * Incoming packet decode backend.
- */
-@Abstract()
-export abstract class IncomingPacketDecodeBackend<TMsg = any> implements Backend<IncomingPacketContext, IncomingPacket> {
-    abstract handle(ctx: IncomingPacketContext<TMsg>): Observable<IncomingPacket>;
-}
-/**
- * Incoming packet Decode interceptor is a chainable behavior modifier for `Decoders`.
- * 
- * 解密拦截器。
- */
-export interface IncomingPacketDecodeInterceptor<TMsg = any> extends Interceptor<IncomingPacketContext, IncomingPacket> {
-    /**
-     * the method to implemet response decode interceptor.
-     * 
-     * 解密拦截处理的方法
-     * @param ctx  response context.
-     * @param next The next handler in the chain, or the backend
-     * if no interceptors remain in the chain.
-     * @returns An observable of the event stream.
-     */
-    intercept(ctx: IncomingPacketContext<TMsg>, next: IncomingPacketDecoder<TMsg>): Observable<IncomingPacket>;
-}
-
-/**
- * Token of packet decoder interceptors for server incoming message.
- */
-export const INCOMING_PACKET_DECODER_INTERCEPTORS = tokenId<IncomingPacketDecodeInterceptor[]>('INCOMING_PACKET_DECODER_INTERCEPTORS');
-
-@Injectable()
-export class InterceptingIncomingPacketDecoder<TMsg = any> extends InterceptingHandler<IncomingPacketContext<TMsg>, IncomingPacket> implements IncomingPacketDecoder<TMsg> {
-    constructor(backend: IncomingPacketDecodeBackend<TMsg>, injector: Injector) {
-        super(backend, injector, INCOMING_PACKET_DECODER_INTERCEPTORS)
-    }
-}
 
 
 
 /**
  * Incoming context.
  */
-export interface IncomingContext extends IncomingPacketContext {
-    incoming: IncomingPacket;
+export interface IncomingContext<TMsg = any> {
+    session: ServerTransportSession;
+    options: ServerOpts;
+    msg: TMsg;
 }
 
 
@@ -194,16 +85,16 @@ export interface IncomingContext extends IncomingPacketContext {
  * Incoming decoder.
  */
 @Abstract()
-export abstract class IncomingDecoder<T extends IncomingContext = IncomingContext> implements Handler<T, TransportContext> {
-    abstract handle(ctx: T): Observable<TransportContext>;
+export abstract class IncomingDecoder<TMsg = any> implements Handler<IncomingContext, TransportContext> {
+    abstract handle(ctx: IncomingContext<TMsg>): Observable<TransportContext>;
 }
 
 /**
  * Incoming decode backend.
  */
 @Abstract()
-export abstract class IncomingBackend<T extends IncomingContext = IncomingContext> implements Backend<T, TransportContext> {
-    abstract handle(ctx: T): Observable<TransportContext>;
+export abstract class IncomingBackend<TMsg = any> implements Backend<IncomingContext, TransportContext> {
+    abstract handle(ctx: IncomingContext<TMsg>): Observable<TransportContext>;
 }
 
 
@@ -212,7 +103,7 @@ export abstract class IncomingBackend<T extends IncomingContext = IncomingContex
  * 
  * 解密拦截器。
  */
-export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingContext> extends Interceptor<T, TransportContext> {
+export interface IncomingDecodeInterceptor<TMsg = any> extends Interceptor<IncomingContext, TransportContext> {
     /**
      * the method to implemet response decode interceptor.
      * 
@@ -222,7 +113,7 @@ export interface IncomingDecodeInterceptor<T extends IncomingContext = IncomingC
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(ctx: T, next: IncomingDecoder<T>): Observable<TransportContext>;
+    intercept(ctx: IncomingContext<TMsg>, next: IncomingDecoder<TMsg>): Observable<TransportContext>;
 }
 
 /**

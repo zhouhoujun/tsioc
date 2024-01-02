@@ -1,17 +1,17 @@
 import { Module } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
 import { TransportTypedRespond } from './typed.respond';
-import { DefaultRequestHandler } from './handler';
-import { RequestHandler } from '../RequestHandler';
 import {
     OutgoingEncoder, InterceptingOutgoingEncoder, InterceptingIncomingDecoder, IncomingDecoder, OutgoingBackend,
-    OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS, INCOMING_PACKET_DECODER_INTERCEPTORS, IncomingPacketDecodeBackend, IncomingPacketDecoder, InterceptingIncomingPacketDecoder
+    OUTGOING_ENCODER_INTERCEPTORS, IncomingBackend, INCOMING_DECODER_INTERCEPTORS
 } from './codings';
 import {
     TransportOutgoingEncodeBackend, OutgoingBufferFinalizeEncodeInterceptor, OutgoingPipeEncodeInterceptor, OutgoingSubpacketBufferEncodeInterceptor,
     JsonOutgoingEncodeInterceptor, PayloadOutgoingEncodeInterceptor, EmptyOutgoingEncodeInterceptor, HeadOutgoingEncodeInterceptor, NoBodyOutgoingEncodeInterceptor
 } from './encoders';
-import { BufferIncomingPacketDecordeBackend, StreamIncomingPacketDecordeInterceptor, IncomingPacketMessageDecordeInterceptor, TransportIncomingDecordeBackend, StringIncomingPacketDecordeInterceptor, BufferIncomingPacketDecordeInterceptor } from './decoders';
+import {
+    IncomingPacketMessageDecordeInterceptor, TransportIncomingDecordeBackend
+} from './decoders';
 
 
 @Module({
@@ -42,19 +42,19 @@ import { BufferIncomingPacketDecordeBackend, StreamIncomingPacketDecordeIntercep
         { provide: OutgoingEncoder, useExisting: InterceptingOutgoingEncoder },
 
         StringIncomingPacketDecordeInterceptor,
-        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StringIncomingPacketDecordeInterceptor, multi: true },
         BufferIncomingPacketDecordeInterceptor,
-        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: BufferIncomingPacketDecordeInterceptor, multi: true },
         StreamIncomingPacketDecordeInterceptor,
-        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StreamIncomingPacketDecordeInterceptor, multi: true },
         IncomingPacketMessageDecordeInterceptor,
-        { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: IncomingPacketMessageDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StreamIncomingPacketDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: BufferIncomingPacketDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StringIncomingPacketDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: IncomingPacketMessageDecordeInterceptor, multi: true },
 
         BufferIncomingPacketDecordeBackend,
-        { provide: IncomingPacketDecodeBackend, useExisting: BufferIncomingPacketDecordeBackend },
-        InterceptingIncomingPacketDecoder,
-        { provide: IncomingPacketDecoder, useExisting: InterceptingIncomingPacketDecoder },
-        
+        // { provide: IncomingPacketDecodeBackend, useExisting: BufferIncomingPacketDecordeBackend },
+        // InterceptingIncomingPacketDecoder,
+        // { provide: IncomingPacketDecoder, useExisting: InterceptingIncomingPacketDecoder },
+
 
         TransportIncomingDecordeBackend,
         { provide: IncomingBackend, useExisting: TransportIncomingDecordeBackend },
@@ -62,10 +62,7 @@ import { BufferIncomingPacketDecordeBackend, StreamIncomingPacketDecordeIntercep
         { provide: IncomingDecoder, useExisting: InterceptingIncomingDecoder },
 
         TransportTypedRespond,
-        { provide: TypedRespond, useExisting: TransportTypedRespond, asDefault: true },
-
-        DefaultRequestHandler,
-        { provide: RequestHandler, useExisting: DefaultRequestHandler, asDefault: true }
+        { provide: TypedRespond, useExisting: TransportTypedRespond, asDefault: true }
 
     ]
 })

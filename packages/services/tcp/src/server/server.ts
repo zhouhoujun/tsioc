@@ -2,7 +2,7 @@ import { ArgumentExecption, Inject, Injectable, ProvdierOf, isFunction, isNumber
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ListenOpts, ListenService, InternalServerExecption, ev, LOCALHOST } from '@tsdi/common';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Subscription, lastValueFrom } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -117,12 +117,12 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+                session.handleRequest(this.endpoint, this.options, this.logger);
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+                session.handleRequest(this.endpoint, this.options, this.logger);
             })
         }
 

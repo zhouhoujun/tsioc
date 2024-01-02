@@ -2,7 +2,7 @@ import { Injectable, Injector, Optional, isString, promisify } from '@tsdi/ioc';
 import { BadRequestExecption, FileAdapter, IReadableStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, Packet, PacketBuffer, ResponsePacket, StatusAdapter, StreamAdapter, TopicClient, TopicMessage, TransportOpts, ev, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { ServerEventTransportSession } from './transport.session';
-import { IncomingDecoder, IncomingPacketDecoder, OutgoingEncoder, OutgoingPacketEncoder } from '../transport/codings';
+import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
 import { TransportContext } from '../TransportContext';
 
@@ -82,9 +82,7 @@ export class TopicTransportSessionFactory implements ServerTransportSessionFacto
         private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
-        private decoder: IncomingDecoder,
-        private packetEncoder: OutgoingPacketEncoder,
-        private packetDecoder: IncomingPacketDecoder) { }
+        private decoder: IncomingDecoder) { }
 
     create(socket: TopicClient, options: TransportOpts): TopicTransportSession {
         return new TopicTransportSession(
@@ -98,8 +96,6 @@ export class TopicTransportSessionFactory implements ServerTransportSessionFacto
             this.streamAdapter,
             this.encoder,
             this.decoder,
-            this.packetEncoder,
-            this.packetDecoder,
             options);
     }
 

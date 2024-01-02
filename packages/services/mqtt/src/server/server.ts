@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { PatternFormatter, ev } from '@tsdi/common';
-import { MircoServRouters, RequestHandler, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { MircoServRouters, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { Subscription } from 'rxjs';
@@ -86,8 +86,8 @@ export class MqttServer extends Server {
         }
         const factory = injector.get(ServerTransportSessionFactory);
         const session = this._session = factory.create(this.mqtt, transportOpts);
-
-        this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+        
+        session.handleRequest(this.endpoint, this.options, this.logger);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

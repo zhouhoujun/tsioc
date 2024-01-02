@@ -31,9 +31,10 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         return defer(async () => {
             // let headers = req.headers;
             const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(req.body);
-            if (!outgoingAdapter.hasContentType(req) && contentType) {
-                req = outgoingAdapter.setContentType(req, contentType);
-            }
+            // if (!outgoingAdapter.hasContentType(req) && contentType) {
+            //     req = outgoingAdapter.setContentType(req, contentType);
+            // }
+            let len: number|undefined;
             if (!outgoingAdapter.hasContentLength(req)) {
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
@@ -48,11 +49,12 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
                     }
                     body = (body as any).getBuffer();
                 }
-                req = outgoingAdapter.setContentLength(req, Buffer.byteLength(body as Buffer))
+                len = Buffer.byteLength(body as Buffer);
+                // req = outgoingAdapter.setContentLength(req, Buffer.byteLength(body as Buffer))
                 // headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer));
             }
 
-            return outgoingAdapter.setContent(req, body);
+            return outgoingAdapter.setContent(req, body, contentType, len);
 
         }).pipe(
             mergeMap(req => next.handle(req))

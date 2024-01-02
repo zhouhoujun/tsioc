@@ -7,7 +7,7 @@ import {
 } from '@tsdi/common';
 import { Observable, filter, first, fromEvent, map, merge, mergeMap, share, throwError } from 'rxjs';
 import { ServerTransportSession } from '../transport/session';
-import { IncomingContext, IncomingDecoder, IncomingPacketContext, IncomingPacketDecoder, OutgoingEncoder, OutgoingPacketContext, OutgoingPacketEncoder } from '../transport/codings';
+import { IncomingContext, IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { TransportContext } from '../TransportContext';
 import { ServerOpts } from '../Server';
 
@@ -15,12 +15,9 @@ import { ServerOpts } from '../Server';
 
 export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extends ServerTransportSession<TSocket, TMsg> {
 
-    abstract get encoder(): OutgoingEncoder;
+    abstract get encoder(): OutgoingEncoder<TMsg>;
 
-    abstract get decoder(): IncomingDecoder;
-
-    abstract get packetEncoder(): OutgoingPacketEncoder<TMsg>;
-    abstract get packetDecoder(): IncomingPacketDecoder<TMsg>;
+    abstract get decoder(): IncomingDecoder<TMsg>;
 
     send(ctx: TransportContext): Observable<any> {
         const len = ctx.length;
@@ -32,12 +29,12 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extend
             }
         }
 
-        return this.mergeClose(this.encode(ctx)
+        return this.mergeClose(this.encode(ctx))
             .pipe(
                 mergeMap(data => {
                     return this.writeMessage(data, ctx);
                 })
-            ))
+            )
     }
 
     receive(options: ServerOpts): Observable<TransportContext> {
@@ -65,40 +62,19 @@ export abstract class AbstractServerTransportSession<TSocket, TMsg = any> extend
 
     protected encode(ctx: TransportContext): Observable<TMsg> {
         return this.encoder.handle(ctx)
-            .pipe(
-                filter(pkg => !!pkg),
-                mergeMap(outgoing => {
-                    return this.packetEncoder.handle(this.createOutgoingContext(ctx, outgoing, this.options));
-                })
-            )
     }
 
     protected decode(msg: TMsg, options: ServerOpts): Observable<TransportContext> {
         const ctx = this.createIncomingContext(msg, options);
-        ctx.session = this;
-        return this.packetDecoder.handle(ctx)
-            .pipe(
-                filter(pkg => !!pkg),
-                mergeMap(pkg => {
-                    ctx.incoming = pkg;
-                    return this.decoder.handle(ctx as IncomingContext)
-                })
-            );
+        return  this.decoder.handle(ctx as IncomingContext)
     }
 
     protected abstract mergeClose(source: Observable<any>): Observable<any>;
     protected abstract message(options: ServerOpts): Observable<TMsg>;
 
-    protected createOutgoingContext(context: TransportContext, outgoing: ResponsePacket, options: ServerOpts): OutgoingPacketContext<TMsg> {
-        return {
-            session: this,
-            options,
-            context,
-            outgoing
-        }
-    }
 
-    protected createIncomingContext(msg: TMsg, options: ServerOpts): IncomingPacketContext<TMsg> {
+
+    protected createIncomingContext(msg: TMsg, options: ServerOpts): IncomingContext<TMsg> {
         return {
             session: this,
             options,
@@ -159,10 +135,8 @@ export abstract class ServerBufferTransportSession<TSocket, TMsg = string | Buff
         readonly mimeAdapter: MimeAdapter | null,
         readonly fileAdapter: FileAdapter,
         readonly streamAdapter: StreamAdapter,
-        readonly encoder: OutgoingEncoder,
-        readonly decoder: IncomingDecoder,
-        readonly packetEncoder: OutgoingPacketEncoder<TMsg>,
-        readonly packetDecoder: IncomingPacketDecoder<TMsg>,
+        readonly encoder: OutgoingEncoder<TMsg>,
+        readonly decoder: IncomingDecoder<TMsg>,
         // protected packetBuffer: PacketBuffer,
         readonly options: TransportOpts) {
         super();

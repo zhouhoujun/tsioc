@@ -1,7 +1,7 @@
 import { Injectable, Injector, Optional, isString, promisify } from '@tsdi/ioc';
 import { FileAdapter, IDuplexStream, IncomingAdapter, MimeAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, TransportOpts, isBuffer } from '@tsdi/common';
 import { ServerEventTransportSession } from './transport.session';
-import { IncomingDecoder, IncomingPacketDecoder, OutgoingEncoder, OutgoingPacketEncoder } from '../transport/codings';
+import { IncomingDecoder, OutgoingEncoder } from '../transport/codings';
 import { ServerTransportSessionFactory } from '../transport/session';
 import { TransportContext } from '../TransportContext';
 
@@ -55,9 +55,7 @@ export class DuplexTransportSessionFactory implements ServerTransportSessionFact
         private fileAdapter: FileAdapter,
         private streamAdapter: StreamAdapter,
         private encoder: OutgoingEncoder,
-        private decoder: IncomingDecoder,
-        private packetEncoder: OutgoingPacketEncoder,
-        private packetDecoder: IncomingPacketDecoder) { }
+        private decoder: IncomingDecoder) { }
 
     create(socket: IDuplexStream, options: TransportOpts): ServerDuplexTransportSession {
         return new ServerDuplexTransportSession(
@@ -71,8 +69,6 @@ export class DuplexTransportSessionFactory implements ServerTransportSessionFact
             this.streamAdapter,
             this.encoder,
             this.decoder,
-            this.packetEncoder,
-            this.packetDecoder,
             options);
     }
 

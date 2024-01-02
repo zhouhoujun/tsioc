@@ -1,6 +1,6 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST, ev } from '@tsdi/common';
-import { MircoServRouters, RequestHandler, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { MircoServRouters, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { RedisEndpoint } from './endpoint';
@@ -112,7 +112,7 @@ export class RedisServer extends Server {
             }
         });
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        session.handleRequest(this.endpoint, this.options, this.logger);
 
         router.matcher.eachPattern((topic, pattern) => {
             if (topic !== pattern) {

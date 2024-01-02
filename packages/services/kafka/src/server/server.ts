@@ -1,7 +1,7 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { PatternFormatter, ServiceUnavailableExecption, ServerTransportSessionFactory } from '@tsdi/common';
-import { Server, MircoServRouters, statusAdapter, RequestHandler } from '@tsdi/endpoints';
+import { Server, MircoServRouters, statusAdapter } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from '../kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
@@ -112,7 +112,7 @@ export class KafkaServer extends Server {
 
         await session.bindTopics(topics);
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        session.handleRequest(this.endpoint, this.options, this.logger);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

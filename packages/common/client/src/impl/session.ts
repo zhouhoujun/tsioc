@@ -27,13 +27,11 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extend
             }
         }
         const ctx = this.createReqContext(req);
-        return this.mergeClose(this.encode(ctx)
+        return this.mergeClose(this.encode(ctx))
             .pipe(
                 mergeMap(data => this.writeMessage(data, req)),
-                map(() => {
-                    return ctx
-                })
-            ))
+                map(() => ctx)
+            )
     }
 
     request(req: TransportRequest): Observable<TransportEvent> {

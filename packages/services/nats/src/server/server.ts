@@ -1,7 +1,7 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
+import { MircoServRouters, Server } from '@tsdi/endpoints';
 import { NatsConnection, connect } from 'nats';
 import { NatsEndpoint } from './endpoint';
 import { NATS_SERV_OPTS, NatsMicroServOpts } from './options';
@@ -52,7 +52,7 @@ export class NatsServer extends Server {
             session.subscribe(sub, this.options.transportOpts?.subscriptionOpts)
         });
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        session.handleRequest(this.endpoint, this.options, this.logger);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

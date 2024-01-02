@@ -139,12 +139,6 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      */
     abstract get streamAdapter(): StreamAdapter;
     /**
-    //  * generate message to packet.
-    //  * @param msg 
-    //  * @param noPayload without payload.
-    //  */
-    // abstract generatePacket(msg: TMessage, noPayload?: boolean): Packet;
-    /**
      * serialize packet to buffer.
      * @param packet 
      */

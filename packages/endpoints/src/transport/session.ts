@@ -1,9 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { FileAdapter, TransportOpts, TransportSession } from '@tsdi/common';
-import { Observable } from 'rxjs';
-import { IncomingPacketDecoder, OutgoingPacketEncoder } from './codings';
+import { Logger } from '@tsdi/logger';
+import { Observable, finalize, mergeMap } from 'rxjs';
+import { IncomingDecoder, OutgoingEncoder } from './codings';
 import { TransportContext } from '../TransportContext';
 import { ServerOpts } from '../Server';
+import { TransportEndpoint } from '../TransportEndpoint';
 
 
 /**
@@ -12,8 +14,8 @@ import { ServerOpts } from '../Server';
 @Abstract()
 export abstract class ServerTransportSession<TSocket = any, TMsg = any, TContext extends TransportContext = TransportContext> extends TransportSession<TSocket, TContext> {
 
-    abstract get packetEncoder(): OutgoingPacketEncoder<TMsg>;
-    abstract get packetDecoder(): IncomingPacketDecoder<TMsg>;
+    abstract get encoder(): OutgoingEncoder<TMsg>;
+    abstract get decoder(): IncomingDecoder<TMsg>;
 
     /**
      * file adapter
@@ -29,6 +31,28 @@ export abstract class ServerTransportSession<TSocket = any, TMsg = any, TContext
      * receive
      */
     abstract receive(options: ServerOpts): Observable<TContext>;
+
+    /**
+     * handle revice request message.
+     */
+    handleRequest(endpoint: TransportEndpoint, options: ServerOpts, logger?: Logger) {
+        return this.receive(options).pipe(
+            mergeMap(context => {
+
+                logger && context.setValue(Logger, logger);
+
+                return endpoint.handle(context)
+                    .pipe(
+                        finalize(() => {
+                            context.destroy();
+                        }))
+            })
+        ).subscribe({
+            error(err) {
+                logger?.error(err);
+            },
+        });
+    }
 
     /**
      * write encode response message.

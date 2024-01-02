@@ -96,11 +96,12 @@ export abstract class OutgoingAdapter<TPacket = any> {
     abstract getContent(packet: TPacket): any;
     /**
      * Set packet content
-     *
-     * @return {Number}
-     * @api public
+     * @param packet 
+     * @param body 
+     * @param contentType 
+     * @param len 
      */
-    abstract setContent(packet: TPacket, body: any): TPacket;
+    abstract setContent(packet: TPacket, body: any, contentType?: string | null, len?: number | null): TPacket;
 
     /**
      * Get packet status code.

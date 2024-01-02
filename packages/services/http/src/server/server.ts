@@ -2,7 +2,7 @@ import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, i
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { HTTP_LISTEN_OPTS, ListenService, InternalServerExecption } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, Server, ServerTransportSessionFactory, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
 import { lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -134,7 +134,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(this._server, transportOpts);
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        session.handleRequest(this.endpoint, this.options, this.logger);
 
         // notify hybrid service to bind http server.
         await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));
