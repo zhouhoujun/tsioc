@@ -8,9 +8,10 @@ import { ClientTransportSession } from './session';
 /**
  * Request context
  */
-export interface RequestContext<TMsg = any> extends RequestPacket {
+export interface RequestContext<TMsg = any> {
     session: ClientTransportSession;
     req: TransportRequest;
+    id?: any;
     msg?: TMsg;
 }
 
@@ -64,8 +65,9 @@ export class InterceptingReuqestEncoder<TMsg = any> extends InterceptingHandler<
     constructor(backend: RequestBackend<TMsg>, injector: Injector) {
         super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
     }
-
 }
+
+
 
 
 

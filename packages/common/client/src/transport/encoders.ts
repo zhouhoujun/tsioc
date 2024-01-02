@@ -87,15 +87,15 @@ export class PayloadRequestEncodeInterceptor implements RequestEncodeInterceptor
     intercept(ctx: RequestContext<Buffer>, next: RequestEncoder<Buffer>): Observable<Buffer> {
         if (ctx.session.headDelimiter || ctx.session.existHeader) {
 
-            let payload = ctx.payload;
+            let payload = ctx.msg;
             if (isString(payload)) {
-                ctx.payload = Buffer.from(payload);
+                ctx.msg = Buffer.from(payload);
             } else if (payload && !ctx.session.streamAdapter.isReadable(payload)) {
                 payload = Buffer.from(JSON.stringify(payload));
                 ctx.session.outgoingAdapter?.setContentType(ctx.req, ctype.APPL_JSON);
                 ctx.session.outgoingAdapter?.setContentLength(ctx.req, Buffer.byteLength(payload));
 
-                ctx.payload = payload;
+                ctx.msg = payload;
             }
         }
         return next.handle(ctx);
@@ -107,7 +107,7 @@ export class PayloadRequestEncodeInterceptor implements RequestEncodeInterceptor
 export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<Buffer> {
 
     intercept(ctx: RequestContext<Buffer>, next: RequestEncoder<Buffer>): Observable<Buffer> {
-        if (ctx.payload) return next.handle(ctx);
+        if (ctx.msg) return next.handle(ctx);
 
         const { session, req } = ctx;
         if (session.streamAdapter.isReadable(req.body)) {
@@ -126,7 +126,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
                             // ctx.payload = chunk;
                             subsr.next({
                                 ...ctx,
-                                payload: chunk
+                                msg: chunk
                             });
                             callback();
                         }
@@ -149,27 +149,29 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
 
 
 
-// @Injectable()
-// export class RequestBufferPacketEncodeBackend implements RequestEncodeBackend<Buffer> {
-//     handle(ctx: RequestContext<Buffer>): Observable<Buffer> {
-//         const session = ctx.session;
-//         if (!session.existHeader) {
-//             const pkg = Buffer.from(session.serialize(ctx));
-//             return of(pkg);
-//         } else {
-//             let rawBody = ctx.payload;
+@Injectable()
+export class RequestBufferPacketEncodeBackend implements RequestBackend<Buffer> {
+    handle(ctx: RequestContext): Observable<Buffer> {
+        const session = ctx.session;
+        if(!ctx.msg) {
+            return throwError(()=> new Execption('no message'))
+        }
 
-//             if (!rawBody) return throwError(() => new BadRequestExecption())
+        if (!session.existHeader) {
+            const pkg = session.serialize(ctx.msg);
+            return of(pkg);
+        } else {
+            let rawBody = ctx.msg;
 
-//             if (!session.existHeader && session.headDelimiter) {
-//                 rawBody = Buffer.concat([session.serialize(generatePacket(ctx.req, true, session.topic)), session.headDelimiter, rawBody]);
-//             }
+            if (!session.existHeader && session.headDelimiter) {
+                rawBody = Buffer.concat([session.serialize(generatePacket(ctx.req, true, session.topic)), session.headDelimiter, rawBody]);
+            }
 
-//             return of(rawBody)
-//         }
-//     }
+            return of(rawBody)
+        }
+    }
 
-// }
+}
 
 
 

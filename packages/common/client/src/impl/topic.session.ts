@@ -5,7 +5,7 @@ import {
 } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
-import { ResponsePacketDecoder, RequestPacketEncoder, RequestEncoder, ResponseDecoder } from '../transport/codings';
+import { RequestEncoder, ResponseDecoder } from '../transport/codings';
 
 
 /**
@@ -70,8 +70,6 @@ export class ClientTopicTransportSessionFactory implements ClientTransportSessio
         @Optional() private mimeAdapter: MimeAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
-        private packetEncoder: RequestPacketEncoder,
-        private packetDecoder: ResponsePacketDecoder,
         private encoder: RequestEncoder,
         private decoder: ResponseDecoder) { }
 
@@ -85,8 +83,6 @@ export class ClientTopicTransportSessionFactory implements ClientTransportSessio
             this.mimeAdapter,
             this.streamAdapter,
             this.eventFactory,
-            this.packetEncoder,
-            this.packetDecoder,
             this.encoder,
             this.decoder,
             options);
