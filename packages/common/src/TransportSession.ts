@@ -100,12 +100,6 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * packet header delimiter.
      */
     abstract readonly headDelimiter?: Buffer;
-
-    abstract readonly topic?: boolean;
-    /**
-     * exist header in Origin message or not.
-     */
-    existHeader?: boolean;
     /**
      * injector.
      */
@@ -138,6 +132,12 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * stream adapter
      */
     abstract get streamAdapter(): StreamAdapter;
+    /**
+     * generate message to packet.
+     * @param msg 
+     * @param noPayload without payload.
+     */
+    abstract generatePacket(msg: TMessage, noPayload?: boolean): Packet;
     /**
      * serialize packet to buffer.
      * @param packet 

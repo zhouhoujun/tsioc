@@ -10,7 +10,8 @@ import {
     JsonOutgoingEncodeInterceptor, PayloadOutgoingEncodeInterceptor, EmptyOutgoingEncodeInterceptor, HeadOutgoingEncodeInterceptor, NoBodyOutgoingEncodeInterceptor
 } from './encoders';
 import {
-    IncomingPacketMessageDecordeInterceptor, TransportIncomingDecordeBackend
+    BufferIncomingDecordeBackend, BufferIncomingDecordeInterceptor, IncomingMessageDecordeInterceptor,
+    StreamIncomingDecordeInterceptor, StringIncomingDecordeInterceptor, TransportIncomingDecordeBackend
 } from './decoders';
 
 
@@ -41,19 +42,19 @@ import {
         InterceptingOutgoingEncoder,
         { provide: OutgoingEncoder, useExisting: InterceptingOutgoingEncoder },
 
-        StringIncomingPacketDecordeInterceptor,
-        BufferIncomingPacketDecordeInterceptor,
-        StreamIncomingPacketDecordeInterceptor,
-        IncomingPacketMessageDecordeInterceptor,
-        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StreamIncomingPacketDecordeInterceptor, multi: true },
-        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: BufferIncomingPacketDecordeInterceptor, multi: true },
-        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StringIncomingPacketDecordeInterceptor, multi: true },
-        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: IncomingPacketMessageDecordeInterceptor, multi: true },
+        StringIncomingDecordeInterceptor,
+        BufferIncomingDecordeInterceptor,
+        StreamIncomingDecordeInterceptor,
+        IncomingMessageDecordeInterceptor,
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StreamIncomingDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: BufferIncomingDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: StringIncomingDecordeInterceptor, multi: true },
+        // { provide: INCOMING_PACKET_DECODER_INTERCEPTORS, useExisting: IncomingMessageDecordeInterceptor, multi: true },
 
-        BufferIncomingPacketDecordeBackend,
-        // { provide: IncomingPacketDecodeBackend, useExisting: BufferIncomingPacketDecordeBackend },
-        // InterceptingIncomingPacketDecoder,
-        // { provide: IncomingPacketDecoder, useExisting: InterceptingIncomingPacketDecoder },
+        BufferIncomingDecordeBackend,
+        // { provide: IncomingDecodeBackend, useExisting: BufferIncomingDecordeBackend },
+        // InterceptingIncomingDecoder,
+        // { provide: IncomingDecoder, useExisting: InterceptingIncomingDecoder },
 
 
         TransportIncomingDecordeBackend,

@@ -39,7 +39,7 @@ export class ObjectPacketDecordeInterceptor<TMsg = any> implements ResponseDecod
 export class StreamPacketDecordeInterceptor<TMsg = any> implements ResponseDecodeInterceptor<TMsg> {
 
     intercept(ctx: ResponseContext<TMsg>, next: ResponseDecoder<TMsg>): Observable<TransportEvent> {
-        if (ctx.session.existHeader && ctx.session.streamAdapter.isReadable(ctx.msg)) {
+        if (ctx.session.streamAdapter.isReadable(ctx.msg)) {
             // return of({
             //     ...ctx.response,
             //     payload: ctx.msg
@@ -56,7 +56,7 @@ export class StreamPacketDecordeInterceptor<TMsg = any> implements ResponseDecod
 export class BufferPacketDecordeInterceptor<TMsg = any> implements ResponseDecodeInterceptor<TMsg> {
 
     intercept(ctx: ResponseContext<TMsg>, next: ResponseDecoder<TMsg>): Observable<TransportEvent> {
-        if (ctx.session.existHeader && isBuffer(ctx.msg)) {
+        if (isBuffer(ctx.msg)) {
             ctx.payload = ctx.msg;
         }
         return next.handle(ctx)

@@ -1,7 +1,7 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isNumber, isString, isUndefined, lang } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import {
-    ENOENT, IReadableStream, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket,
+    ENOENT, IncomingPacket, InternalServerExecption, MessageExecption, OutgoingHeader, OutgoingHeaders, ResponsePacket,
     StatusCode, ctype, encodeUrl, escapeHtml, isBuffer, xmlRegExp
 } from '@tsdi/common';
 import { lastValueFrom } from 'rxjs';

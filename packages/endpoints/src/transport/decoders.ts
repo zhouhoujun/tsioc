@@ -60,7 +60,7 @@ export class StreamIncomingDecordeInterceptor<T = any> implements IncomingDecode
 
 
 @Injectable()
-export class IncomingPacketMessageDecordeInterceptor<T = any> implements IncomingDecodeInterceptor<T> {
+export class IncomingMessageDecordeInterceptor<T = any> implements IncomingDecodeInterceptor<T> {
 
     intercept(ctx: IncomingContext<T>, next: IncomingDecoder<T>): Observable<IncomingPacket> {
         const msg = ctx.msg as IncomingPacket;

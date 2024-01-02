@@ -14,7 +14,7 @@ export class RequestBufferFinalizeEncodeInterceptor implements RequestEncodeInte
                 map(data => {
                     const session = ctx.session;
                     if (!session.delimiter) return data;
-                    if (session.existHeader || !isNumber(ctx.id)) {
+                    if (!isNumber(ctx.id)) {
                         return Buffer.concat([
                             Buffer.from(String(data.length)),
                             session.delimiter,
@@ -51,9 +51,9 @@ export class SubpacketRequestEncodeInterceptor implements RequestEncodeIntercept
                     }
                     if (session.options.maxSize) {
                         let maxSize = session.options.maxSize;
-                        if (!session.existHeader) {
-                            maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (session.delimiter ? Buffer.byteLength(session.delimiter) : 0) - ((session.existHeader) ? 0 : 2) // 2 packet id;
-                        }
+                     
+                        maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (session.delimiter ? Buffer.byteLength(session.delimiter) : 0) - ((session.headDelimiter) ? 2 : 0) // 2 packet id;
+                        
                         if (buf.length <= maxSize) {
                             return of(buf);
                         } else {
@@ -85,7 +85,7 @@ export class SubpacketRequestEncodeInterceptor implements RequestEncodeIntercept
 export class PayloadRequestEncodeInterceptor implements RequestEncodeInterceptor<Buffer> {
 
     intercept(ctx: RequestContext<Buffer>, next: RequestEncoder<Buffer>): Observable<Buffer> {
-        if (ctx.session.headDelimiter || ctx.session.existHeader) {
+        if (ctx.session.headDelimiter) {
 
             let payload = ctx.msg;
             if (isString(payload)) {
@@ -111,7 +111,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
 
         const { session, req } = ctx;
         if (session.streamAdapter.isReadable(req.body)) {
-            if (!session.existHeader) {
+            if (!session.headDelimiter) {
                 return defer(async () => {
                     req.body = new TextDecoder().decode(await toBuffer(req.body));
                     return ctx;
@@ -157,14 +157,14 @@ export class RequestBufferPacketEncodeBackend implements RequestBackend<Buffer> 
             return throwError(()=> new Execption('no message'))
         }
 
-        if (!session.existHeader) {
+        if (!isBuffer(ctx.msg)) {
             const pkg = session.serialize(ctx.msg);
             return of(pkg);
         } else {
             let rawBody = ctx.msg;
 
-            if (!session.existHeader && session.headDelimiter) {
-                rawBody = Buffer.concat([session.serialize(generatePacket(ctx.req, true, session.topic)), session.headDelimiter, rawBody]);
+            if (session.headDelimiter) {
+                rawBody = Buffer.concat([session.serialize(session.generatePacket(ctx.req, true)), session.headDelimiter, rawBody]);
             }
 
             return of(rawBody)
@@ -205,28 +205,28 @@ export class BindPacketIdEncodeInterceptor implements RequestEncodeInterceptor<R
 
 }
 
-function generatePacket(req: TransportRequest, noPayload?: boolean, topic?: boolean): Packet<any> {
-    const pkg = {
-    } as RequestPacket;
-    if (req.method) {
-        pkg.method = req.method;
-    }
-    if (req.headers.size) {
-        pkg.headers = req.headers.getHeaders()
-    }
-    if (!noPayload && isDefined(req.body)) {
-        pkg.payload = req.body;
-    }
-    if (topic) {
-        pkg.topic = req.url;
-        pkg.originalUrl = req.urlWithParams;
-    } else {
-        pkg.url = req.urlWithParams;
-    }
+// function generatePacket(req: TransportRequest, noPayload?: boolean, topic?: boolean): Packet<any> {
+//     const pkg = {
+//     } as RequestPacket;
+//     if (req.method) {
+//         pkg.method = req.method;
+//     }
+//     if (req.headers.size) {
+//         pkg.headers = req.headers.getHeaders()
+//     }
+//     if (!noPayload && isDefined(req.body)) {
+//         pkg.payload = req.body;
+//     }
+//     if (topic) {
+//         pkg.topic = req.url;
+//         pkg.originalUrl = req.urlWithParams;
+//     } else {
+//         pkg.url = req.urlWithParams;
+//     }
 
 
-    return pkg;
-}
+//     return pkg;
+// }
 
 @Injectable()
 export class HeadRequestEncodeInterceptor implements RequestEncodeInterceptor<RequestPacket>{
@@ -236,7 +236,7 @@ export class HeadRequestEncodeInterceptor implements RequestEncodeInterceptor<Re
             //     const length = ctx.length;
             //     if (Number.isInteger(length)) ctx.length = length;
             // }
-            ctx.msg = generatePacket(ctx.req, true, ctx.session.topic);
+            ctx.msg = ctx.session.generatePacket(ctx.req, true);
             return of(ctx.msg)
         }
         return next.handle(ctx);
@@ -248,7 +248,7 @@ export class HeadRequestEncodeInterceptor implements RequestEncodeInterceptor<Re
 export class NoBodyRequestEncodeInterceptor<TMsg = any> implements RequestEncodeInterceptor<TMsg>{
     intercept(ctx: RequestContext, next: RequestEncoder<TMsg>): Observable<TMsg> {
         if (isNil(ctx.req.body)) {
-            ctx.msg = generatePacket(ctx.req, true, ctx.session.topic)
+            ctx.msg = ctx.session.generatePacket(ctx.req, true)
             return of(ctx.msg);
         }
         return next.handle(ctx);
@@ -259,7 +259,7 @@ export class NoBodyRequestEncodeInterceptor<TMsg = any> implements RequestEncode
 export class TransportRequestEncodeBackend implements RequestBackend<RequestPacket> {
     handle(ctx: RequestContext): Observable<RequestPacket> {
         if (!ctx.msg) {
-            ctx.msg = generatePacket(ctx.req, false, ctx.session.topic);
+            ctx.msg = ctx.session.generatePacket(ctx.req, false);
         }
         return of(ctx.msg);
     }
