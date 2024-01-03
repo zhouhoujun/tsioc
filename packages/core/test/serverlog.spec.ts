@@ -1,13 +1,15 @@
 import { isString, lang } from '@tsdi/ioc';
 import { LoggerManagers, LOG_CONFIGURES } from '@tsdi/logger';
 import { After, Before, Suite, Test } from '@tsdi/unit';
-import expect = require('expect');
-import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
-import { logConfig, ServerMainModule } from './demo';
+import { rm } from 'shelljs';
 // import * as log4js from 'log4js';
+import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
-import del = require('del');
+import * as del from 'del';
+import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
+import { logConfig, ServerMainModule } from './demo';
+
 
 const dir = __dirname;
 @Suite()
@@ -28,7 +30,8 @@ export class ServerBootTest {
         });
         console.log(this.ctx.baseURL);
         this.logdir = path.join(this.ctx.baseURL, 'log');
-        await del(this.logdir);
+        rm('-rf', this.logdir);
+        // await del(this.logdir);
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `log/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }
@@ -60,6 +63,7 @@ export class ServerBootTest {
     @After()
     async after() {
         await this.ctx.close();
-        await del(this.logdir);
+        rm('-rf', this.logdir);
+        // await del(this.logdir);
     }
 }
