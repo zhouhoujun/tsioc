@@ -24,17 +24,13 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
             return next.handle(req);
         }
         const session = req.context.get(ClientTransportSession);
-        if(!session.outgoingAdapter) return next.handle(req);
+        if (!session.outgoingAdapter) return next.handle(req);
 
         const outgoingAdapter = session.outgoingAdapter;
 
         return defer(async () => {
-            // let headers = req.headers;
             const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(req.body);
-            // if (!outgoingAdapter.hasContentType(req) && contentType) {
-            //     req = outgoingAdapter.setContentType(req, contentType);
-            // }
-            let len: number|undefined;
+            let contentLength: number | undefined;
             if (!outgoingAdapter.hasContentLength(req)) {
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
@@ -49,12 +45,10 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
                     }
                     body = (body as any).getBuffer();
                 }
-                len = Buffer.byteLength(body as Buffer);
-                // req = outgoingAdapter.setContentLength(req, Buffer.byteLength(body as Buffer))
-                // headers = headers.set(hdr.CONTENT_LENGTH, Buffer.byteLength(body as Buffer));
+                contentLength = Buffer.byteLength(body as Buffer);
             }
 
-            return outgoingAdapter.setContent(req, body, contentType, len);
+            return outgoingAdapter.updateContent(req, body, { contentType, contentLength });
 
         }).pipe(
             mergeMap(req => next.handle(req))
