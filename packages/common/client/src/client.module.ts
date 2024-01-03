@@ -6,7 +6,7 @@ import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { ClientTransportSessionFactory } from './transport/session';
-import { BufferResponseBackend, InterceptingResponseDecoder, InterceptingReuqestEncoder, REQUEST_ENCODER_INTERCEPTORS, RESPONSE_BUFFER_DECODER_INTERCEPTORS, RESPONSE_DECODER_INTERCEPTORS, RequestBackend, RequestEncoder, ResponseBackend, ResponseDecoder } from './transport/codings';
+import { BufferResponseBackend, ResponsePacketDecoder, InterceptingReuqestEncoder, REQUEST_ENCODER_INTERCEPTORS, RESPONSE_BUFFER_DECODER_INTERCEPTORS, RESPONSE_DECODER_INTERCEPTORS, RequestBackend, RequestEncoder, ResponseBackend, ResponseDecoder } from './transport/codings';
 import {
     SubpacketBufferDecordeBackend, CatchErrorResponseDecordeInterceptor, CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor,
     ErrorResponseDecordeInterceptor, RedirectResponseDecordeInterceptor,
@@ -138,8 +138,8 @@ export interface ClientTokenOpts {
         { provide: RESPONSE_DECODER_INTERCEPTORS, useExisting: CompressResponseDecordeInterceptor, multi: true },
         TransportResponseDecordeBackend,
         { provide: ResponseBackend, useExisting: TransportResponseDecordeBackend },
-        InterceptingResponseDecoder,
-        { provide: ResponseDecoder, useExisting: InterceptingResponseDecoder },
+        ResponsePacketDecoder,
+        { provide: ResponseDecoder, useExisting: ResponsePacketDecoder },
 
 
         ClientDuplexTransportSessionFactory,

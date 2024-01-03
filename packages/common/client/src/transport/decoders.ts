@@ -6,7 +6,7 @@ import {
 import { Observable, Subscriber, catchError, defer, filter, mergeMap, of, throwError } from 'rxjs';
 import {
     BufferResponseBackend,
-    BufferResponseDecoder,
+    ResponseBufferDecoder,
     ResponseBackend, ResponseContext, ResponseDecodeInterceptor, ResponseDecoder
 } from './codings';
 
@@ -30,8 +30,6 @@ export class UnpackPacketDecordeInterceptor implements ResponseDecodeInterceptor
 
     }
 }
-
-
 
 interface ResponseCachePacket extends ResponsePacket {
     length: number;
@@ -129,13 +127,6 @@ export class SubpacketBufferDecordeBackend implements BufferResponseBackend {
 }
 
 
-// @Injectable()
-// export class BufferResponseDecoder extends InterceptingHandler<ResponseContext<Buffer>, ResponsePacket> implements ResponseDecoder<ResponsePacket, Buffer> {
-//     constructor(backend: ConnectPacketDecordeBackend, injector: Injector) {
-//         super(backend, injector, RESPONSE_BUFFER_DECODER_INTERCEPTORS)
-//     }
-// }
-
 
 @Injectable()
 export class CatchErrorResponseDecordeInterceptor implements ResponseDecodeInterceptor<TransportEvent> {
@@ -157,7 +148,7 @@ export class CatchErrorResponseDecordeInterceptor implements ResponseDecodeInter
 @Injectable()
 export class PacketifyDecodeInterceptor implements ResponseDecodeInterceptor<TransportEvent, ResponsePacket> {
 
-    constructor(private bufferEncoder: BufferResponseDecoder) { }
+    constructor(private bufferEncoder: ResponseBufferDecoder) { }
 
     intercept(ctx: ResponseContext, next: ResponseDecoder<TransportEvent, ResponsePacket>): Observable<TransportEvent> {
         if (isBuffer(ctx.msg)) {
@@ -279,6 +270,7 @@ export class RequestStauts {
 
 @Injectable()
 export class CompressResponseDecordeInterceptor implements ResponseDecodeInterceptor<TransportEvent, ResponsePacket> {
+
     intercept(ctx: ResponseContext<ResponsePacket>, next: ResponseDecoder<TransportEvent, ResponsePacket>): Observable<TransportEvent> {
         const response = ctx.msg;
         if (ctx.session.incomingAdapter) {
@@ -361,11 +353,9 @@ export class CompressResponseDecordeInterceptor implements ResponseDecodeInterce
 
 
 @Injectable()
-export class TransportResponseDecordeBackend implements ResponseBackend<ResponsePacket> {
+export class TransportResponseDecordeBackend implements ResponseBackend<TransportEvent, ResponsePacket> {
 
-    constructor() { }
-
-    handle(ctx: ResponseContext): Observable<TransportEvent> {
+    handle(ctx: ResponseContext<ResponsePacket>): Observable<TransportEvent> {
         return defer(async () => {
             const { session, req, msg: response } = ctx;
             let responseType = req.responseType;

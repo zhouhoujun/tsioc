@@ -1,5 +1,5 @@
-import { Execption, Injectable, isDefined, isNil, isNumber, isString } from '@tsdi/ioc';
-import { BadRequestExecption, HEAD, Packet, RequestPacket, TransportRequest, ctype, isBuffer, toBuffer } from '@tsdi/common';
+import { Execption, Injectable, isNil, isNumber, isString } from '@tsdi/ioc';
+import { HEAD, RequestPacket, ctype, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, Subscriber, defer, map, mergeMap, of, range, throwError } from 'rxjs';
 import { RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder } from './codings';
 import { NumberAllocator } from 'number-allocator';
@@ -51,9 +51,9 @@ export class SubpacketRequestEncodeInterceptor implements RequestEncodeIntercept
                     }
                     if (session.options.maxSize) {
                         let maxSize = session.options.maxSize;
-                     
+
                         maxSize = maxSize - Buffer.byteLength(maxSize.toString()) - (session.delimiter ? Buffer.byteLength(session.delimiter) : 0) - ((session.headDelimiter) ? 2 : 0) // 2 packet id;
-                        
+
                         if (buf.length <= maxSize) {
                             return of(buf);
                         } else {
@@ -123,7 +123,6 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
                 return new Observable((subsr: Subscriber<RequestContext<Buffer>>) => {
                     session.streamAdapter.pipeTo(req.body, session.streamAdapter.createWritable({
                         write(chunk, encoding, callback) {
-                            // ctx.payload = chunk;
                             subsr.next({
                                 ...ctx,
                                 msg: chunk
@@ -131,7 +130,6 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
                             callback();
                         }
                     })).then(() => {
-                        // ctx.payload = null;
                         subsr.complete();
                     }).catch(err => {
                         subsr.error(err);
@@ -153,8 +151,8 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
 export class RequestBufferPacketEncodeBackend implements RequestBackend<Buffer> {
     handle(ctx: RequestContext): Observable<Buffer> {
         const session = ctx.session;
-        if(!ctx.msg) {
-            return throwError(()=> new Execption('no message'))
+        if (!ctx.msg) {
+            return throwError(() => new Execption('no message'))
         }
 
         if (!isBuffer(ctx.msg)) {
