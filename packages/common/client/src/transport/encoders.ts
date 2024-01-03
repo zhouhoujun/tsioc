@@ -205,37 +205,11 @@ export class BindPacketIdEncodeInterceptor implements RequestEncodeInterceptor<R
 
 }
 
-// function generatePacket(req: TransportRequest, noPayload?: boolean, topic?: boolean): Packet<any> {
-//     const pkg = {
-//     } as RequestPacket;
-//     if (req.method) {
-//         pkg.method = req.method;
-//     }
-//     if (req.headers.size) {
-//         pkg.headers = req.headers.getHeaders()
-//     }
-//     if (!noPayload && isDefined(req.body)) {
-//         pkg.payload = req.body;
-//     }
-//     if (topic) {
-//         pkg.topic = req.url;
-//         pkg.originalUrl = req.urlWithParams;
-//     } else {
-//         pkg.url = req.urlWithParams;
-//     }
-
-
-//     return pkg;
-// }
 
 @Injectable()
 export class HeadRequestEncodeInterceptor implements RequestEncodeInterceptor<RequestPacket>{
     intercept(ctx: RequestContext, next: RequestEncoder<RequestPacket>): Observable<RequestPacket> {
         if (ctx.req.method === HEAD) {
-            // if (!ctx.session.outgoingAdapter?.getContentLength(ctx.req)) {
-            //     const length = ctx.length;
-            //     if (Number.isInteger(length)) ctx.length = length;
-            // }
             ctx.msg = ctx.session.generatePacket(ctx.req, true);
             return of(ctx.msg)
         }

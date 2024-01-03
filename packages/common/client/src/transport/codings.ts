@@ -11,7 +11,7 @@ import { ClientTransportSession } from './session';
 export interface RequestContext<TMsg = any> {
     session: ClientTransportSession;
     req: TransportRequest;
-    id?: any;
+    id?: string | number;
     msg?: TMsg;
 }
 
@@ -75,11 +75,13 @@ export class InterceptingReuqestEncoder<TMsg = any> extends InterceptingHandler<
 /**
  * Response context.
  */
-export interface ResponseContext<TMsg = any> extends ResponsePacket {
+export interface ResponseContext<TMsg = any> {
     session: ClientTransportSession;
     req: TransportRequest;
     reqCtx: RequestContext;
     msg: TMsg;
+    topic?: string;
+    id?: string | number;
     // response?: ResponsePacket;
     // raw?: Buffer;
 }
@@ -88,19 +90,19 @@ export interface ResponseContext<TMsg = any> extends ResponsePacket {
  * Response decoder.
  */
 @Abstract()
-export abstract class ResponseDecoder<TMsg = any> implements Handler<ResponseContext<TMsg>, TransportEvent> {
+export abstract class ResponseDecoder<TOutput = any, TInput = any> implements Handler<ResponseContext<TInput>, TOutput> {
     /**
      * tranport response decode handle.
      * @param res 
      */
-    abstract handle(res: ResponseContext<TMsg>): Observable<TransportEvent>;
+    abstract handle(res: ResponseContext<TInput>): Observable<TOutput>;
 }
 /**
  * Response decode backend.
  */
 @Abstract()
-export abstract class ResponseBackend<TMsg = any> implements Backend<ResponseContext<TMsg>, TransportEvent> {
-    abstract handle(ctx: ResponseContext<TMsg>): Observable<TransportEvent>;
+export abstract class ResponseBackend<TOutput = any, TInput = any> implements Backend<ResponseContext<TInput>, TOutput> {
+    abstract handle(ctx: ResponseContext<TInput>): Observable<TOutput>;
 }
 
 
@@ -109,7 +111,7 @@ export abstract class ResponseBackend<TMsg = any> implements Backend<ResponseCon
  * 
  * 解密拦截器。
  */
-export interface ResponseDecodeInterceptor<TMsg = any> extends Interceptor<ResponseContext<TMsg>, TransportEvent> {
+export interface ResponseDecodeInterceptor<TOutput = any, TInput = any> extends Interceptor<ResponseContext<TInput>, TOutput> {
     /**
      * the method to implemet response decode interceptor.
      * 
@@ -119,7 +121,7 @@ export interface ResponseDecodeInterceptor<TMsg = any> extends Interceptor<Respo
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(res: ResponseContext<TMsg>, next: ResponseDecoder<TMsg>): Observable<TransportEvent>;
+    intercept(res: ResponseContext<TInput>, next: ResponseDecoder<TOutput, TInput>): Observable<TOutput>;
 }
 
 /**
@@ -128,8 +130,8 @@ export interface ResponseDecodeInterceptor<TMsg = any> extends Interceptor<Respo
 export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor[]>('RESPONSE_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingResponseDecoder<TMsg = any> extends InterceptingHandler<ResponseContext<TMsg>, TransportEvent> implements ResponseDecoder<TMsg> {
-    constructor(backend: ResponseBackend<TMsg>, injector: Injector) {
+export class InterceptingResponseDecoder<TOutput = any, TInput = any> extends InterceptingHandler<ResponseContext<TInput>, TOutput> implements ResponseDecoder<TOutput, TInput> {
+    constructor(backend: ResponseBackend<TOutput, TInput>, injector: Injector) {
         super(backend, injector, RESPONSE_DECODER_INTERCEPTORS)
     }
 }
