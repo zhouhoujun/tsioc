@@ -1,7 +1,7 @@
 import { Execption, Injectable, isNil, isNumber, isString } from '@tsdi/ioc';
 import { HEAD, RequestPacket, ctype, isBuffer, toBuffer } from '@tsdi/common';
 import { Observable, Subscriber, defer, map, mergeMap, of, range, throwError } from 'rxjs';
-import { RequestBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder } from './codings';
+import { RequestEncodeBackend, RequestContext, RequestEncodeInterceptor, RequestEncoder } from './codings';
 import { NumberAllocator } from 'number-allocator';
 
 
@@ -148,7 +148,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
 
 
 @Injectable()
-export class RequestBufferPacketEncodeBackend implements RequestBackend<Buffer> {
+export class RequestBufferPacketEncodeBackend implements RequestEncodeBackend<Buffer> {
     handle(ctx: RequestContext): Observable<Buffer> {
         const session = ctx.session;
         if (!ctx.msg) {
@@ -183,10 +183,16 @@ export class BindPacketIdEncodeInterceptor implements RequestEncodeInterceptor<R
     private last?: number;
 
     intercept(ctx: RequestContext, next: RequestEncoder<RequestPacket<any>>): Observable<RequestPacket<any>> {
-        if (ctx.id) {
+        if (!ctx.id) {
             ctx.id = this.getPacketId();
         }
         return next.handle(ctx)
+            .pipe(
+                map(pkg => {
+                    pkg.id = ctx.id;
+                    return pkg;
+                })
+            )
     }
 
     protected getPacketId(): string | number {
@@ -228,7 +234,7 @@ export class NoBodyRequestEncodeInterceptor<TMsg = any> implements RequestEncode
 }
 
 @Injectable()
-export class TransportRequestEncodeBackend implements RequestBackend<RequestPacket> {
+export class RequestPacketDefaultEncodeBackend implements RequestEncodeBackend<RequestPacket> {
     handle(ctx: RequestContext): Observable<RequestPacket> {
         if (!ctx.msg) {
             ctx.msg = ctx.session.generatePacket(ctx.req, false);

@@ -129,7 +129,7 @@ export function deepIn(input: any, fn: (path: string, val: any) => void | false,
     if (isObject(input) == false) return;
     Object.keys(input).forEach(name => {
         const chpth = path ? `${path}.${name}` : name;
-        const val = input[name];
+        const val = (input as any)[name];
         if (isNil(val) || fn(chpth, val) === false) return;
         deepIn(val, fn, chpth);
     })

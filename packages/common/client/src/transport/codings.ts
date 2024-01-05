@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { RequestPacket, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { ClientTransportSession } from './session';
 
@@ -30,8 +30,7 @@ export abstract class RequestEncoder<TOutput = any, TInput = any> implements Han
 /**
  * Request encode backend.
  */
-@Abstract()
-export abstract class RequestBackend<TOutput = any, TInput = any> implements Backend<RequestContext<TInput>, TOutput> {
+export abstract class RequestEncodeBackend<TOutput = any, TInput = any> implements Backend<RequestContext<TInput>, TOutput> {
     abstract handle(ctx: RequestContext<TInput>): Observable<TOutput>;
 }
 
@@ -55,18 +54,35 @@ export interface RequestEncodeInterceptor<TOutput = any, TInput = any> extends I
     intercept(ctx: RequestContext<TInput>, next: RequestEncoder<TOutput, TInput>): Observable<TOutput>;
 }
 
+@Abstract()
+export abstract class RequestPacketEncodeBackend extends RequestEncodeBackend<TransportRequest, RequestPacket> { }
+
 /**
  * Token of request encoder interceptors of client request.
  */
-export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>('REQUEST_ENCODER_INTERCEPTORS');
+export const REQUEST_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor<RequestPacket, TransportRequest>[]>('REQUEST_ENCODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingReuqestEncoder<TOutput = any, TInput = any> extends InterceptingHandler<RequestContext<TInput>, TOutput> implements RequestEncoder<TOutput> {
-    constructor(backend: RequestBackend<TOutput, TInput>, injector: Injector) {
+export class InterceptingReuqestEncoder extends InterceptingHandler<RequestContext<TransportRequest>, RequestPacket> implements RequestEncoder<RequestPacket, TransportRequest> {
+    constructor(backend: RequestPacketEncodeBackend, injector: Injector) {
         super(backend, injector, REQUEST_ENCODER_INTERCEPTORS)
     }
 }
 
+@Abstract()
+export abstract class RequestBufferEncodeBackend extends RequestEncodeBackend<Buffer, RequestPacket> { }
+
+/**
+ * Token of request encoder interceptors of client request.
+ */
+export const REQUEST_BUFFER_ENCODER_INTERCEPTORS = tokenId<RequestEncodeInterceptor[]>('REQUEST_BUFFER_ENCODER_INTERCEPTORS');
+
+@Injectable()
+export class ReuqestBufferEncoder extends InterceptingHandler<RequestContext<RequestPacket>, Buffer> implements RequestEncoder<Buffer, RequestPacket> {
+    constructor(backend: RequestBufferEncodeBackend, injector: Injector) {
+        super(backend, injector, REQUEST_BUFFER_ENCODER_INTERCEPTORS)
+    }
+}
 
 
 
@@ -96,11 +112,11 @@ export abstract class ResponseDecoder<TOutput = any, TInput = any> implements Ha
      */
     abstract handle(res: ResponseContext<TInput>): Observable<TOutput>;
 }
+
 /**
  * Response decode backend.
  */
-@Abstract()
-export abstract class ResponseBackend<TOutput = any, TInput = any> implements Backend<ResponseContext<TInput>, TOutput> {
+export abstract class ResponseDecodeBackend<TOutput = any, TInput = any> implements Backend<ResponseContext<TInput>, TOutput> {
     abstract handle(ctx: ResponseContext<TInput>): Observable<TOutput>;
 }
 
@@ -123,6 +139,9 @@ export interface ResponseDecodeInterceptor<TOutput = any, TInput = any> extends 
     intercept(res: ResponseContext<TInput>, next: ResponseDecoder<TOutput, TInput>): Observable<TOutput>;
 }
 
+@Abstract()
+export abstract class ResponsePacketDecodeBackend extends ResponseDecodeBackend<TransportEvent, ResponsePacket> {}
+
 /**
  * Token for response decoder interceptors of response.
  */
@@ -130,7 +149,7 @@ export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor<T
 
 @Injectable()
 export class ResponsePacketDecoder extends InterceptingHandler<ResponseContext<ResponsePacket>, TransportEvent> implements ResponseDecoder<TransportEvent, ResponsePacket> {
-    constructor(backend: ResponseBackend<TransportEvent, ResponsePacket>, injector: Injector) {
+    constructor(backend: ResponsePacketDecodeBackend, injector: Injector) {
         super(backend, injector, RESPONSE_DECODER_INTERCEPTORS)
     }
 }
@@ -142,11 +161,11 @@ export class ResponsePacketDecoder extends InterceptingHandler<ResponseContext<R
 export const RESPONSE_BUFFER_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor<ResponsePacket, Buffer>[]>('RESPONSE_BUFFER_DECODER_INTERCEPTORS');
 
 @Abstract()
-export abstract class BufferResponseBackend extends ResponseBackend<ResponsePacket, Buffer> { }
+export abstract class ResponseBufferDecodeBackend extends ResponseDecodeBackend<ResponsePacket, Buffer> { }
 
 @Injectable()
 export class ResponseBufferDecoder extends InterceptingHandler<ResponseContext<Buffer>, ResponsePacket> implements ResponseDecoder<ResponsePacket, Buffer> {
-    constructor(backend: BufferResponseBackend, injector: Injector) {
+    constructor(backend: ResponseBufferDecodeBackend, injector: Injector) {
         super(backend, injector, RESPONSE_BUFFER_DECODER_INTERCEPTORS)
     }
 }

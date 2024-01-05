@@ -5,9 +5,8 @@ import {
 } from '@tsdi/common';
 import { Observable, Subscriber, catchError, defer, filter, mergeMap, of, throwError } from 'rxjs';
 import {
-    BufferResponseBackend,
-    ResponseBufferDecoder,
-    ResponseBackend, ResponseContext, ResponseDecodeInterceptor, ResponseDecoder
+    ResponseBufferDecodeBackend, ResponseBufferDecoder,
+    ResponseContext, ResponseDecodeInterceptor, ResponseDecoder, ResponsePacketDecodeBackend
 } from './codings';
 
 
@@ -37,7 +36,7 @@ interface ResponseCachePacket extends ResponsePacket {
 }
 
 @Injectable()
-export class SubpacketBufferDecordeBackend implements BufferResponseBackend {
+export class SubpacketBufferDecordeBackend implements ResponseBufferDecodeBackend {
     packs: Map<string | number, ResponseCachePacket>;
 
     constructor() {
@@ -353,7 +352,7 @@ export class CompressResponseDecordeInterceptor implements ResponseDecodeInterce
 
 
 @Injectable()
-export class TransportResponseDecordeBackend implements ResponseBackend<TransportEvent, ResponsePacket> {
+export class ResponsePacketDefaultDecodeBackend implements ResponsePacketDecodeBackend {
 
     handle(ctx: ResponseContext<ResponsePacket>): Observable<TransportEvent> {
         return defer(async () => {
