@@ -83,8 +83,6 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extend
 
     protected abstract message(ctx?: RequestContext): Observable<TMsg>;
 
-    protected abstract beforeRequest(packet: TransportRequest): Promise<void>;
-
     protected createReqContext(req: TransportRequest): RequestContext {
         return {
             req,
@@ -102,7 +100,6 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extend
     }
 
     protected async requesting(req: TransportRequest): Promise<RequestContext> {
-        await this.beforeRequest(req);
         return await lastValueFrom(this.send(req))
     }
 
@@ -113,8 +110,6 @@ export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extend
  */
 export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buffer | Uint8Array> extends AbstractClientTransportSession<TSocket, TMsg> implements BufferTransportSession<TSocket> {
 
-    // private allocator?: NumberAllocator;
-    // private last?: number;
     delimiter: Buffer;
     headDelimiter?: Buffer;
 
@@ -138,10 +133,6 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         }
     }
 
-    async destroy(): Promise<void> { }
-
-    protected abstract getTopic(msg: TMsg): string;
-
     protected abstract getPayload(msg: TMsg): string | Buffer | Uint8Array;
 
     protected getResHeaders(msg: TMsg): ResponsePacket | undefined {
@@ -164,20 +155,6 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
 
         return pkg;
     }
-
-
-
-    // protected getPacketId(): string | number {
-    //     if (!this.allocator) {
-    //         this.allocator = new NumberAllocator(1, 65536)
-    //     }
-    //     const id = this.allocator.alloc();
-    //     if (!id) {
-    //         throw new Execption('alloc stream id failed');
-    //     }
-    //     this.last = id;
-    //     return id;
-    // }
 
 }
 
@@ -206,17 +183,6 @@ export abstract class ClientEventTransportSession<TSocket extends IEventEmitter,
  */
 export abstract class ClientPayloadTransportSession<TSocket, TMsg = any> extends AbstractClientTransportSession<TSocket, TMsg> {
 
-    // protected createResContext(data: Buffer, msg: TMsg, req: TransportRequest): ResponseContext {
-    //     const packet = this.getResHeaders(msg) ?? {};
-    //     return {
-    //         session: this,
-    //         req,
-    //         packet,
-    //         raw: data
-    //     }
-    // }
-
     protected abstract getResHeaders(msg: TMsg): ResponsePacket | undefined;
-
 }
 

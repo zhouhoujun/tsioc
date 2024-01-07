@@ -12,7 +12,7 @@ import { RequestEncoder, ResponseDecoder } from '../transport/codings';
  * Client topic transport session.
  */
 export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClient> extends ClientEventTransportSession<TSocket, TopicMessage> {
-
+    
     private replys: Set<string> = new Set();
 
     protected getTopic(msg: TopicMessage): string {
@@ -21,18 +21,8 @@ export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClie
     protected getPayload(msg: TopicMessage): string | Buffer | Uint8Array {
         return msg.payload
     }
-    
-    // protected writeHeader(req: TransportRequest<any>): Promise<void> {
-    //     const pkg = this.generatePacket(req);
-    //     if (!pkg.topic) throw new BadRequestExecption();
-    //     return promisify<string, Buffer, void>(this.socket.publish, this.socket)(pkg.topic, this.serialize(pkg));
-    // }
-    // protected pipe(ata: IReadableStream, req: TransportRequest<any>): Promise<void> {
-    //     throw new Error('Method not implemented.');
-    // }
 
     writeMessage(data: TopicMessage, req: TransportRequest): Promise<void> {
-        // const pkg = this.generatePacket(req);
         if (!data.topic || !data.payload) throw new BadRequestExecption();
         const payload = isBuffer(data.payload) ? data.payload : Buffer.from(data.payload);
         return promisify<string, Buffer, void>(this.socket.publish, this.socket)(data.topic, payload)
@@ -68,6 +58,10 @@ export class ClientTopicTransportSession<TSocket extends TopicClient = TopicClie
 
     protected getReply(packet: Packet) {
         return packet.replyTo || packet.topic + '/reply';
+    }
+
+    async destroy(): Promise<void> {
+        this.replys.clear();
     }
 
 }

@@ -21,12 +21,6 @@ export class ClientDuplexTransportSession extends ClientEventTransportSession<ID
         return promisify<Buffer, void>(this.socket.write, this.socket)(Buffer.from(JSON.stringify(data)));
     }
 
-    protected async beforeRequest(packet: TransportRequest<any>): Promise<void> { }
-
-    protected getTopic(msg: string | Buffer | Uint8Array): string {
-        return '__DEFALUT_TOPIC__'
-    }
-
     protected getPayload(msg: string | Buffer | Uint8Array): string | Buffer | Uint8Array {
         return msg;
     }

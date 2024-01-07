@@ -19,7 +19,7 @@ export class UnpackPacketDecordeInterceptor implements ResponseDecodeInterceptor
         if (!this.packetBuffer) {
             this.packetBuffer = new PacketBuffer();
         }
-        return this.packetBuffer.concat(ctx.session as BufferTransportSession, ctx.topic ?? '', ctx.msg)
+        return this.packetBuffer.concat(ctx.session as BufferTransportSession, ctx.reqCtx.topic ?? '', ctx.msg)
             .pipe(
                 mergeMap(buf => {
                     ctx.msg = buf;
@@ -85,7 +85,7 @@ export class SubpacketBufferDecordeBackend implements ResponseBufferDecodeBacken
                 }
 
                 if (packet) {
-                    const len = session.incomingAdapter?.getContentLength(packet) // ~~ (packet.headers?.[hdr.CONTENT_LENGTH] ?? '0');
+                    const len = session.incomingAdapter?.getContentLength(packet)
                     if (!len) {
                         packet.payload = raw;
                         subscriber.next(packet);
@@ -216,6 +216,7 @@ export class RedirectResponseDecordeInterceptor implements ResponseDecodeInterce
 
 @Injectable()
 export class ErrorResponseDecordeInterceptor implements ResponseDecodeInterceptor<TransportEvent, ResponsePacket> {
+
     intercept(ctx: ResponseContext<ResponsePacket>, next: ResponseDecoder<TransportEvent, ResponsePacket>): Observable<TransportEvent> {
         if (ctx.msg.error) {
             return throwError(() => ctx.session.eventFactory.createErrorResponse(ctx.msg))

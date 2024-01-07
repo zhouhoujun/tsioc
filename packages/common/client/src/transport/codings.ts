@@ -12,6 +12,7 @@ export interface RequestContext<TMsg = any> {
     session: ClientTransportSession;
     req: TransportRequest;
     id?: string | number;
+    topic?: string;
     msg?: TMsg;
 }
 
