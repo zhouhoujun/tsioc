@@ -29,15 +29,22 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<T
      * authority base url.
      */
     authority?: string;
+    /**
+     * connect options
+     */
     connectOpts?: TConnOpts;
+    /**
+     * transport options.
+     */
     transportOpts?: TransportOpts;
+    /**
+     * timeout
+     */
     timeout?: number;
-    
     /**
      * client transport packet strategy.
      */
     strategy?: ClientTransportPacketStrategy;
-
     /**
      * response factory.
      */

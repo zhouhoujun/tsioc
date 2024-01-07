@@ -12,9 +12,6 @@ import { Client } from './Client';
 @Injectable()
 export class DefaultRedirector implements Redirector {
 
-    constructor() {
-    }
-
     redirect<T>(req: TransportRequest, status: StatusCode, headers: OutgoingHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             const validator = req.context.get(StatusAdapter);

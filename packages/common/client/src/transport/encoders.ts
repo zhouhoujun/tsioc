@@ -146,7 +146,6 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
 }
 
 
-
 @Injectable()
 export class RequestBufferPacketEncodeBackend implements RequestEncodeBackend<Buffer> {
     handle(ctx: RequestContext): Observable<Buffer> {
@@ -170,9 +169,6 @@ export class RequestBufferPacketEncodeBackend implements RequestEncodeBackend<Bu
     }
 
 }
-
-
-
 
 
 

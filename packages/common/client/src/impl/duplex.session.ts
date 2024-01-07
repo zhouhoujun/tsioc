@@ -12,13 +12,6 @@ import { RequestEncoder, ResponseDecoder } from '../transport/codings';
  * client duplex transport session.
  */
 export class ClientDuplexTransportSession extends ClientEventTransportSession<IDuplexStream> {
-    // protected writeHeader(req: TransportRequest<any>): Promise<void> {
-    //     const headBuff = this.serialize(this.generatePacket(req, true));
-    //     return promisify<Buffer, void>(this.socket.write, this.socket)(headBuff);
-    // }
-    // protected pipe(data: IReadableStream, req: TransportRequest<any>): Promise<void> {
-    //     return this.streamAdapter.pipeTo(data, this.socket)
-    // }
 
     writeMessage(data: any, req: TransportRequest<any>): Promise<void> {
         if(this.streamAdapter.isReadable(data)) return this.streamAdapter.pipeTo(data, this.socket)
