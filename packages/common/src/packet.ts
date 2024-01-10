@@ -24,14 +24,6 @@ export interface Packet<T = any> extends HeaderPacket {
     payload?: T;
 }
 
-export interface SendPacket extends Packet {
-    /**
-     * sent.
-     */
-    __sent?: boolean;
-}
-
-
 
 /**
  * request packet data.

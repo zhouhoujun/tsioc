@@ -10,7 +10,6 @@ import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { TransportExecptionHandlers } from './execption.handlers';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
-import { RequestHandler } from './RequestHandler';
 import { TransportTypedRespond } from './transport/typed.respond';
 import { ServerTransportSessionFactory } from './transport/session';
 import { TransportModule } from './transport/tranport.module';
@@ -170,10 +169,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                                 if (strategy.decoder) {
                                     serverOpts.providers.push(toProvider(IncomingDecoder, strategy.decoder))
-                                }
-
-                                if (strategy.requestHanlder) {
-                                    serverOpts.providers.push(toProvider(RequestHandler, strategy.requestHanlder))
                                 }
                             }
 

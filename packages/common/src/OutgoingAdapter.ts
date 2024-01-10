@@ -172,21 +172,7 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param {String} val
      * @api public
      */
-    abstract setHeader(packet: TPacket, field: string, val: OutgoingHeader): TPacket;
-
-    // /**
-    //  * Set header `field` to `val` or pass
-    //  * an object of header fields.
-    //  *
-    //  * Examples:
-    //  *
-    //  *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
-    //  *
-    //  * @param {OutgoingHeaders} fields
-    //  * @param {String} val
-    //  * @api public
-    //  */
-    // abstract setHeader(packet: TPacket, fields: OutgoingHeaders): TPacket;
+    abstract setHeader(packet: TPacket, field: string, val: OutgoingHeader): this;
 
     /**
      * remove header in packet.

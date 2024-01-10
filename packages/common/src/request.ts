@@ -31,8 +31,8 @@ export class TransportRequest<T = any> {
 
     constructor(pattern: Pattern, options: RequestInitOpts) {
         this.context = options.context;
-        const url = this.url = this.context.get(PatternFormatter).format(pattern);
         this.pattern = pattern;
+        const url = this.url = isString(pattern) ? pattern : this.context.get(PatternFormatter).format(pattern);
         this.method = options.method;
         this.params = new TransportParams(options);
         this.responseType = options.responseType ?? 'json';
