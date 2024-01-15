@@ -1,5 +1,7 @@
 import { isNil } from '@tsdi/ioc';
 import { ResHeaders, ResHeadersLike } from './headers';
+import { Incoming } from './Incoming';
+import { Pattern } from './pattern';
 
 
 /**
@@ -64,43 +66,53 @@ export class TransportHeaderResponse<TStatus = any> {
 
 }
 
-
 /**
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportResponse<T = any, TStatus = any> {
-    readonly url: string;
-    readonly ok: boolean;
-    readonly status: TStatus;
-    get statusText(): string {
-        return this.statusMessage;
-    }
-
-    readonly statusMessage: string;
-    readonly headers: ResHeaders;
-
-    readonly body: T | null;
-
-    constructor(options: {
-        url?: string,
-        ok?: boolean;
-        headers?: ResHeadersLike;
-        status?: TStatus
-        statusText?: string;
-        statusMessage?: string;
-        body?: T;
-        payload?: T;
-    }) {
-        this.url = options.url ?? '';
-        const noRes = isNil(options.payload || options.body || options.headers);
-        this.status = options.status ?? (noRes ? 0 : 200) as TStatus;
-        this.ok = options.ok ?? !noRes;
-        this.body = options.body ?? options.payload ?? null;
-        this.statusMessage = options.statusMessage ?? options.statusText ?? '';
-        this.headers = new ResHeaders(options.headers);
-    }
+export abstract class TransportResponse<T = any, TStatus = any> extends Incoming<T> {
+    abstract get pattern(): Pattern;
+    abstract get ok(): boolean;
+    abstract get status(): TStatus;
+    abstract get statusText(): string;
 }
+
+// /**
+//  * client receive Response.
+//  * response for `TransportClient`.
+//  */
+// export class TransportResponse<T = any, TStatus = any> {
+//     readonly url: string;
+//     readonly ok: boolean;
+//     readonly status: TStatus;
+//     get statusText(): string {
+//         return this.statusMessage;
+//     }
+
+//     readonly statusMessage: string;
+//     readonly headers: ResHeaders;
+
+//     readonly body: T | null;
+
+//     constructor(options: {
+//         url?: string,
+//         ok?: boolean;
+//         headers?: ResHeadersLike;
+//         status?: TStatus
+//         statusText?: string;
+//         statusMessage?: string;
+//         body?: T;
+//         payload?: T;
+//     }) {
+//         this.url = options.url ?? '';
+//         const noRes = isNil(options.payload || options.body || options.headers);
+//         this.status = options.status ?? (noRes ? 0 : 200) as TStatus;
+//         this.ok = options.ok ?? !noRes;
+//         this.body = options.body ?? options.payload ?? null;
+//         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
+//         this.headers = new ResHeaders(options.headers);
+//     }
+// }
 
 /**
  * event response.

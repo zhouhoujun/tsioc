@@ -2,7 +2,7 @@ import { Injector, isDefined } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
     Packet, PacketLengthException, ResponsePacket, TransportEvent, TransportOpts, AssetTransportOpts, TransportRequest, BufferTransportSession,
-    StreamAdapter, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, StatusAdapter, ResponseEventFactory, IncomingAdapter, OutgoingAdapter, MimeAdapter, RequestPacket
+    StreamAdapter, IEventEmitter, ev, XSSI_PREFIX, InvalidJsonException, StatusAdapter, ResponseEventFactory, MimeAdapter, RequestPacket
 } from '@tsdi/common';
 import { Observable, defer, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { RequestContext, RequestEncoder, ResponseContext, ResponseDecoder } from '../transport/codings';
@@ -12,13 +12,10 @@ import { ClientTransportSession } from '../transport/session';
 /**
  * abstract client transport session.
  */
-export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extends ClientTransportSession<TSocket, TMsg, TransportRequest> {
-
-    abstract get encoder(): RequestEncoder<TMsg, TransportRequest>;
-    abstract get decoder(): ResponseDecoder<TransportEvent, TMsg>;
+export abstract class AbstractClientTransportSession<TSocket, TMsg = any> extends ClientTransportSession<TSocket, TMsg> {
 
     send(req: TransportRequest): Observable<RequestContext> {
-        const len = this.outgoingAdapter?.getContentLength(req);
+        const len = req.getContentLength();
         if (len) {
             const opts = this.options as AssetTransportOpts;
             if (opts.payloadMaxSize && len > opts.payloadMaxSize) {
@@ -117,8 +114,6 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
         readonly injector: Injector,
         readonly socket: TSocket,
         readonly statusAdapter: StatusAdapter | null,
-        readonly incomingAdapter: IncomingAdapter | null,
-        readonly outgoingAdapter: OutgoingAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
         readonly streamAdapter: StreamAdapter,
         readonly eventFactory: ResponseEventFactory,
@@ -137,23 +132,6 @@ export abstract class ClientBufferTransportSession<TSocket, TMsg = string | Buff
 
     protected getResHeaders(msg: TMsg): ResponsePacket | undefined {
         return undefined;
-    }
-
-    generatePacket(req: TransportRequest, noPayload?: boolean): Packet<any> {
-        const pkg = {
-            url: req.urlWithParams
-        } as RequestPacket;
-        if (req.method) {
-            pkg.method = req.method;
-        }
-        if (req.headers.size) {
-            pkg.headers = req.headers.getHeaders()
-        }
-        if (!noPayload && isDefined(req.body)) {
-            pkg.payload = req.body;
-        }
-
-        return pkg;
     }
 
 }

@@ -1,5 +1,5 @@
 import { isString, InvocationContext, EMPTY_OBJ } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/common';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -45,7 +45,7 @@ function mightHaveBody(method: string): boolean {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> implements TransportRequest {
+export class HttpRequest<T = any> {
     /**
      * The request body, or `null` if one isn't set.
      *

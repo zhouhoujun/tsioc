@@ -22,8 +22,8 @@ export * from './socket';
 export * from './subscriber';
 export * from './StreamAdapter';
 
-export * from './IncomingAdapter';
-export * from './OutgoingAdapter';
+export * from './Incoming';
+export * from './Outgoing';
 
 export * from './TransportSession';
 

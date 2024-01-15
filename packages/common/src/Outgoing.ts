@@ -4,15 +4,18 @@ import { StatusCode } from './packet';
 
 
 @Abstract()
-export abstract class OutgoingAdapter<TPacket = any> {
+export abstract class Outgoing<T = any, TMsg = any> {
+
+    abstract getMessage(): TMsg;
+
     /**
      * has content type or not.
      */
-    abstract hasContentType(packet: TPacket): boolean;
+    abstract hasContentType(): boolean;
     /**
      * content type.
      */
-    abstract getContentType(packet: TPacket): string;
+    abstract getContentType(): string;
     /**
      * Set Content-Type packet header with `type` through `mime.lookup()`
      * when it does not contain a charset.
@@ -31,34 +34,34 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param {String} type
      * @api public
      */
-    abstract setContentType(packet: TPacket, type: string | null | undefined): this;
+    abstract setContentType(type: string | null | undefined): this;
     /**
      * remove content type.
      * @param packet 
      */
-    abstract removeContentType(packet: TPacket): this;
+    abstract removeContentType(): this;
 
     /**
      * has Content-Encoding or not.
      * @param packet
      */
-    abstract hasContentEncoding(packet: TPacket): boolean;
+    abstract hasContentEncoding(): boolean;
     /**
      * Get Content-Encoding.
      * @param packet
      */
-    abstract getContentEncoding(packet: TPacket): string;
+    abstract getContentEncoding(): string;
     /**
      * Set Content-Encoding.
      * @param packet
      * @param encoding 
      */
-    abstract setContentEncoding(packet: TPacket, encoding: string | null | undefined): this;
+    abstract setContentEncoding(encoding: string | null | undefined): this;
     /**
      * remove content encoding.
      * @param packet 
      */
-    abstract removeContentEncoding(packet: TPacket): this;
+    abstract removeContentEncoding(): this;
 
     /**
      * has packet content length or not.
@@ -66,55 +69,42 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @return {Number}
      * @api public
      */
-    abstract hasContentLength(packet: TPacket): number | undefined;
+    abstract hasContentLength(): number | undefined;
     /**
      * Get packet content length
      *
      * @return {Number}
      * @api public
      */
-    abstract getContentLength(packet: TPacket): number | undefined;
+    abstract getContentLength(): number | undefined;
     /**
      * Set packet content length.
      *
      * @param {Number} n
      * @api public
      */
-    abstract setContentLength(packet: TPacket, n: number | undefined): this;
+    abstract setContentLength(n: number | undefined): this;
     /**
      * remove content length.
      * @param packet 
      */
-    abstract removeContentLength(packet: TPacket): this;
+    abstract removeContentLength(): this;
+
+    abstract get headers(): any;
+
+    abstract set headers(headers: any);
 
     /**
-     * Get packet content
+     * Get packet payload
      *
      * @return {Number}
      * @api public
      */
-    abstract getContent(packet: TPacket): any;
+    abstract get payload(): T;
     /**
-     * Set packet content
-     * @param packet 
-     * @param body 
-     * @param contentType 
-     * @param len 
+     * Set packet payload
      */
-    abstract setContent(packet: TPacket, body: any): this;
-    /**
-     * update context
-     * @param packet 
-     * @param body 
-     * @param contentType 
-     * @param len 
-     */
-    abstract updateContent(packet: TPacket, body: any, options?: {
-        contentType?: string | null;
-        contentLength?: number | null;
-        contentEncoding?: string;
-        contentDisposition?: string
-    }): TPacket;
+    abstract set payload(val: T);
 
     /**
      * Get packet status code.
@@ -122,14 +112,14 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @return {StatusCode}
      * @api public
      */
-    abstract getStatus(packet: TPacket): StatusCode;
+    abstract getStatus(): StatusCode;
     /**
      * Set packet status code.
      *
      * @return {TPacket}
      * @api public
      */
-    abstract setStatus(packet: TPacket, code: StatusCode): this;
+    abstract setStatus(code: StatusCode): this;
 
     /**
      * Get packet status message.
@@ -137,27 +127,27 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @return {String}
      * @api public
      */
-    abstract getStatusText(packet: TPacket): string;
+    abstract getStatusText(): string;
     /**
      * Set packet status message
      *
      * @return {TPacket}
      * @api public
      */
-    abstract setStatusText(packet: TPacket, statusText: string): this;
+    abstract setStatusText(statusText: string): this;
 
     /**
      * has header in packet or not.
      * @param packet 
      * @param field 
      */
-    abstract hasHeader(packet: TPacket, field: string): boolean;
+    abstract hasHeader(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    abstract getHeader(packet: TPacket, field: string): OutgoingHeader;
+    abstract getHeader(field: string): OutgoingHeader;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -172,39 +162,39 @@ export abstract class OutgoingAdapter<TPacket = any> {
      * @param {String} val
      * @api public
      */
-    abstract setHeader(packet: TPacket, field: string, val: OutgoingHeader): this;
+    abstract setHeader(field: string, val: OutgoingHeader): this;
 
     /**
      * remove header in packet.
      * @param packet 
      * @param field 
      */
-    abstract removeHeader(packet: TPacket, field: string): this;
+    abstract removeHeader(field: string): this;
     /**
      * remove all headers.
      * @param packet 
      */
-    abstract removeHeaders(packet: TPacket): this;
+    abstract removeHeaders(): this;
 
     /**
      * is writable or not.
      * @param packet 
      */
-    abstract writable(packet: TPacket): boolean;
+    abstract writable(): boolean;
 
-    abstract getLastModified(packet: TPacket): string;
-    abstract setLastModified(packet: TPacket, control: string): this;
-    abstract removeLastModified(packet: TPacket): this;
+    abstract getLastModified(): string;
+    abstract setLastModified(control: string): this;
+    abstract removeLastModified(): this;
 
-    abstract getCacheControl(packet: TPacket): string;
-    abstract setCacheControl(packet: TPacket, control: string): this;
+    abstract getCacheControl(): string;
+    abstract setCacheControl(control: string): this;
     /**
      * set no cache
      * @param packet 
      */
-    abstract noCache(packet: TPacket): TPacket;
+    abstract noCache(): this;
 
-    abstract setContentDisposition(packet: TPacket, disposition: string): this;
-    abstract setLocation(packet: TPacket, location: string): this;
+    abstract setContentDisposition(disposition: string): this;
+    abstract setLocation(location: string): this;
 
 }

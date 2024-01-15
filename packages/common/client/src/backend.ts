@@ -37,8 +37,7 @@ export class TransportBackend implements Backend<TransportRequest, TransportEven
      */
     handle(req: TransportRequest): Observable<TransportEvent> {
 
-        const context = req.context;
-        const session = context.get(ClientTransportSession);
+        const session = req.session as ClientTransportSession;
 
         let obs$: Observable<TransportEvent>;
         switch (req.observe) {

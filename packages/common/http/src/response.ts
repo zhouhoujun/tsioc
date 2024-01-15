@@ -255,7 +255,7 @@ export class HttpHeaderResponse extends HttpResponseBase implements TransportHea
  *
  * @publicApi
  */
-export class HttpResponse<T = any> extends HttpResponseBase implements TransportResponse {
+export class HttpResponse<T = any> extends HttpResponseBase {
     /**
      * The response body, or `null` if one was not returned.
      */

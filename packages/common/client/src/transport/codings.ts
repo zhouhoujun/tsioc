@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { RequestPacket, ResponsePacket, TransportEvent, TransportRequest } from '@tsdi/common';
+import { RequestPacket, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { ClientTransportSession } from './session';
 
@@ -10,7 +10,7 @@ import { ClientTransportSession } from './session';
  */
 export interface RequestContext<TMsg = any> {
     session: ClientTransportSession;
-    req: TransportRequest;
+    req: TransportRequest<any, TMsg>;
     id?: string | number;
     topic?: string;
     msg?: TMsg;

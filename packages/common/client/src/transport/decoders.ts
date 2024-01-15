@@ -359,8 +359,8 @@ export class ResponsePacketDefaultDecodeBackend implements ResponsePacketDecodeB
         return defer(async () => {
             const { session, req, msg: response } = ctx;
             let responseType = req.responseType;
-            if (session.incomingAdapter && session.mimeAdapter) {
-                const contentType = session.incomingAdapter?.getContentType(response);
+            if (session.mimeAdapter) {
+                const contentType = response.getContentType();
                 if (contentType) {
                     if (responseType === 'json' && !session.mimeAdapter.isJson(contentType)) {
                         if (session.mimeAdapter.isXml(contentType) || session.mimeAdapter.isText(contentType)) {
@@ -412,7 +412,7 @@ export class ResponsePacketDefaultDecodeBackend implements ResponsePacketDecodeB
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: session.incomingAdapter?.getContentType(response)
+                        type: response.getContentType()
                     });
                     break;
 

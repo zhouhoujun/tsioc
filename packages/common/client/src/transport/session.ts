@@ -9,12 +9,12 @@ import { RequestEncoder, ResponseDecoder } from './codings';
  * transport session.
  */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any, TMsg = any, TRequest extends TransportRequest = TransportRequest> extends TransportSession<TSocket, TRequest>  {
+export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends TransportSession<TSocket, TransportRequest<any, TMsg>>  {
     
     /**
      * request encoder.
      */
-    abstract get encoder(): RequestEncoder<TMsg, TRequest>;
+    abstract get encoder(): RequestEncoder<TMsg, TransportRequest<any, TMsg>>;
     /**
      * response decoder.
      */
@@ -28,12 +28,12 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any, TRequest
      * send request message.
      * @param packet 
      */
-    abstract send(req: TRequest): Observable<any>;
+    abstract send(req: TransportRequest): Observable<any>;
     /**
      * request.
      * @param packet 
      */
-    abstract request(req: TRequest): Observable<TransportEvent>;
+    abstract request(req: TransportRequest): Observable<TransportEvent>;
 
 }
 

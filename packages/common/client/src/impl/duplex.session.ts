@@ -1,8 +1,5 @@
 import { Injectable, Injector, Optional, isString, promisify } from '@tsdi/ioc';
-import {
-    IDuplexStream, ResponseEventFactory, TransportOpts, TransportRequest,
-    IncomingAdapter, OutgoingAdapter, StatusAdapter, StreamAdapter, MimeAdapter, isBuffer
-} from '@tsdi/common';
+import {  IDuplexStream, ResponseEventFactory, TransportOpts, TransportRequest, StatusAdapter, StreamAdapter, MimeAdapter, isBuffer } from '@tsdi/common';
 import { ClientEventTransportSession } from './session';
 import { ClientTransportSessionFactory } from '../transport/session';
 import { RequestEncoder, ResponseDecoder } from '../transport/codings';
@@ -39,8 +36,6 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
     constructor(
         readonly injector: Injector,
         @Optional() private statusAdapter: StatusAdapter,
-        @Optional() private incomingAdapter: IncomingAdapter,
-        @Optional() private outgoingAdapter: OutgoingAdapter,
         @Optional() private mimeAdapter: MimeAdapter,
         private streamAdapter: StreamAdapter,
         private eventFactory: ResponseEventFactory,
@@ -52,8 +47,6 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
             this.injector,
             socket,
             this.statusAdapter,
-            this.incomingAdapter,
-            this.outgoingAdapter,
             this.mimeAdapter,
             this.streamAdapter,
             this.eventFactory,

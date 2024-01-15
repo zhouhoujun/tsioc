@@ -8,8 +8,6 @@ import { StreamAdapter } from './StreamAdapter';
 import { PacketLengthException } from './execptions';
 import { StatusAdapter } from './StatusAdapter';
 import { MimeAdapter } from './MimeAdapter';
-import { IncomingAdapter } from './IncomingAdapter';
-import { OutgoingAdapter } from './OutgoingAdapter';
 
 
 // export type OutgoingType = Buffer | IReadableStream | null;
@@ -113,14 +111,6 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      */
     abstract get options(): TransportOpts;
     /**
-     * incoming adapter.
-     */
-    abstract get incomingAdapter(): IncomingAdapter | null;
-    /**
-     * outgoing adapter.
-     */
-    abstract get outgoingAdapter(): OutgoingAdapter | null;
-    /**
      * status adapter.
      */
     abstract get statusAdapter(): StatusAdapter | null;
@@ -132,12 +122,6 @@ export abstract class TransportSession<TSocket = any, TMessage = any>  {
      * stream adapter
      */
     abstract get streamAdapter(): StreamAdapter;
-    /**
-     * generate message to packet.
-     * @param msg 
-     * @param noPayload without payload.
-     */
-    abstract generatePacket(msg: TMessage, noPayload?: boolean): Packet;
     /**
      * serialize packet to buffer.
      * @param packet 

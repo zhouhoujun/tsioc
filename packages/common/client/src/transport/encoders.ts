@@ -92,8 +92,8 @@ export class PayloadRequestEncodeInterceptor implements RequestEncodeInterceptor
                 ctx.msg = Buffer.from(payload);
             } else if (payload && !ctx.session.streamAdapter.isReadable(payload)) {
                 payload = Buffer.from(JSON.stringify(payload));
-                ctx.session.outgoingAdapter?.setContentType(ctx.req, ctype.APPL_JSON);
-                ctx.session.outgoingAdapter?.setContentLength(ctx.req, Buffer.byteLength(payload));
+                ctx.req.setContentType(ctype.APPL_JSON);
+                ctx.req.setContentLength(Buffer.byteLength(payload));
 
                 ctx.msg = payload;
             }
@@ -110,10 +110,10 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
         if (ctx.msg) return next.handle(ctx);
 
         const { session, req } = ctx;
-        if (session.streamAdapter.isReadable(req.body)) {
+        if (session.streamAdapter.isReadable(req.payload)) {
             if (!session.headDelimiter) {
                 return defer(async () => {
-                    req.body = new TextDecoder().decode(await toBuffer(req.body));
+                    req.payload = new TextDecoder().decode(await toBuffer(req.payload));
                     return ctx;
                 }).pipe(
                     mergeMap(ctx => next.handle(ctx))
@@ -121,7 +121,7 @@ export class OutgoingPipeEncodeInterceptor implements RequestEncodeInterceptor<B
             }
             if (session.options.maxSize) {
                 return new Observable((subsr: Subscriber<RequestContext<Buffer>>) => {
-                    session.streamAdapter.pipeTo(req.body, session.streamAdapter.createWritable({
+                    session.streamAdapter.pipeTo(req.payload, session.streamAdapter.createWritable({
                         write(chunk, encoding, callback) {
                             subsr.next({
                                 ...ctx,
@@ -155,13 +155,13 @@ export class RequestBufferPacketEncodeBackend implements RequestEncodeBackend<Bu
         }
 
         if (!isBuffer(ctx.msg)) {
-            const pkg = session.serialize(ctx.msg);
+            const pkg = session.serialize(ctx.req.getMessage());
             return of(pkg);
         } else {
             let rawBody = ctx.msg;
 
             if (session.headDelimiter) {
-                rawBody = Buffer.concat([session.serialize(session.generatePacket(ctx.req, true)), session.headDelimiter, rawBody]);
+                rawBody = Buffer.concat([session.serialize(ctx.req.headers), session.headDelimiter, rawBody]);
             }
 
             return of(rawBody)
@@ -206,34 +206,34 @@ export class BindPacketIdEncodeInterceptor implements RequestEncodeInterceptor<R
 }
 
 
-@Injectable()
-export class HeadRequestEncodeInterceptor implements RequestEncodeInterceptor<RequestPacket>{
-    intercept(ctx: RequestContext, next: RequestEncoder<RequestPacket>): Observable<RequestPacket> {
-        if (ctx.req.method === HEAD) {
-            ctx.msg = ctx.session.generatePacket(ctx.req, true);
-            return of(ctx.msg)
-        }
-        return next.handle(ctx);
-    }
-}
+// @Injectable()
+// export class HeadRequestEncodeInterceptor implements RequestEncodeInterceptor<RequestPacket>{
+//     intercept(ctx: RequestContext, next: RequestEncoder<RequestPacket>): Observable<RequestPacket> {
+//         if (ctx.req.method === HEAD) {
+//             ctx.msg = ctx.req.headers;
+//             return of(ctx.msg)
+//         }
+//         return next.handle(ctx);
+//     }
+// }
 
 
-@Injectable()
-export class NoBodyRequestEncodeInterceptor<TMsg = any> implements RequestEncodeInterceptor<TMsg>{
-    intercept(ctx: RequestContext, next: RequestEncoder<TMsg>): Observable<TMsg> {
-        if (isNil(ctx.req.body)) {
-            ctx.msg = ctx.session.generatePacket(ctx.req, true)
-            return of(ctx.msg);
-        }
-        return next.handle(ctx);
-    }
-}
+// @Injectable()
+// export class NoBodyRequestEncodeInterceptor<TMsg = any> implements RequestEncodeInterceptor<TMsg>{
+//     intercept(ctx: RequestContext, next: RequestEncoder<TMsg>): Observable<TMsg> {
+//         if (isNil(ctx.req.payload)) {
+//             ctx.msg = ctx.req.headers
+//             return of(ctx.msg);
+//         }
+//         return next.handle(ctx);
+//     }
+// }
 
 @Injectable()
 export class RequestPacketDefaultEncodeBackend implements RequestEncodeBackend<RequestPacket> {
     handle(ctx: RequestContext): Observable<RequestPacket> {
         if (!ctx.msg) {
-            ctx.msg = ctx.session.generatePacket(ctx.req, false);
+            ctx.msg = ctx.req.getMessage();
         }
         return of(ctx.msg);
     }

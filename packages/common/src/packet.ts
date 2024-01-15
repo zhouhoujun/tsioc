@@ -39,15 +39,15 @@ export interface RequestPacket<T = any> extends Packet<T> {
  */
 export type StatusCode = string | number;
 
-/**
- * response packet data.
- */
-export interface ResponsePacket<T = any> extends Packet<T> {
-    type?: number | string;
-    headers?: OutgoingHeaders;
-    ok?: boolean;
-    status?: StatusCode;
-    statusText?: string;
-}
+// /**
+//  * response packet data.
+//  */
+// export interface ResponsePacket<T = any> extends Packet<T> {
+//     type?: number | string;
+//     headers?: OutgoingHeaders;
+//     ok?: boolean;
+//     status?: StatusCode;
+//     statusText?: string;
+// }
 
 
