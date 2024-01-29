@@ -1,6 +1,6 @@
-import { isPromise } from '@tsdi/ioc';
+import { Injector, Token, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, mergeMap, of } from 'rxjs';
-import { Handler } from '../Handler';
+import { Backend, Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 
 
@@ -16,6 +16,27 @@ export class InterceptorHandler<TInput = any, TOutput = any> implements Handler<
     }
 }
 
+/**
+ * intercepting hnalder.
+ */
+export class InterceptingHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+
+    private chain?: Handler<TInput, TOutput>;
+
+    constructor(
+        private backend: Backend<TInput, TOutput>,
+        private injector: Injector,
+        private token: Token<Interceptor[]>
+    ) { }
+
+    handle(input: TInput): Observable<TOutput> {
+        if (!this.chain) {
+            this.chain = this.injector.get(this.token, [])
+                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+        }
+        return this.chain.handle(input);
+    }
+}
 
 /**
  * funcation handler.

@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
+import { InterceptingHandler, Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Context, Decoder, Encoder, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
@@ -92,17 +92,10 @@ export interface ResponseDecodeInterceptor<T extends TransportEvent = TransportE
 export const RESPONSE_DECODER_INTERCEPTORS = tokenId<ResponseDecodeInterceptor[]>('RESPONSE_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingResponseDecoder<T extends TransportEvent = TransportEvent> implements ResponseDecoder<T> {
-    private chain!: ResponseDecoder<T>;
+export class InterceptingResponseDecoder<T extends TransportEvent = TransportEvent> extends InterceptingHandler<Context<T>, T> implements ResponseDecoder<T> {
 
-    constructor(private backend: ResponseDecoder, private injector: Injector) { }
-
-    handle(ctx: Context): Observable<T> {
-        if (!this.chain) {
-            this.chain = this.injector.get(RESPONSE_DECODER_INTERCEPTORS, [])
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend) as ResponseDecoder<T>;
-        }
-        return this.chain.handle(ctx)
-    }
+    constructor(backend: ResponseDecoder<T>, injector: Injector) {
+        super(backend, injector, RESPONSE_DECODER_INTERCEPTORS)
+     }
 
 }

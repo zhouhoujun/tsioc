@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Interceptor, InterceptorHandler } from '@tsdi/core';
+import { InterceptingHandler, Interceptor, InterceptorHandler } from '@tsdi/core';
 import { Context, Encoder, Decoder, IncomingPacket, ResponsePacket } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
@@ -82,17 +82,10 @@ export interface IncomingDecodeInterceptor<T extends IncomingPacket = IncomingPa
 export const INCOMING_DECODER_INTERCEPTORS = tokenId<IncomingDecodeInterceptor[]>('INCOMING_DECODER_INTERCEPTORS');
 
 @Injectable()
-export class InterceptingIncomingDecoder<T extends IncomingPacket = IncomingPacket> implements IncomingDecoder<T> {
-    private chain!: IncomingDecoder<T>;
+export class InterceptingIncomingDecoder<T extends IncomingPacket = IncomingPacket> extends InterceptingHandler<Context<T>, T> implements IncomingDecoder<T> {
 
-    constructor(private backend: IncomingDecoder, private injector: Injector) { }
-
-    handle(ctx: Context): Observable<T> {
-        if (!this.chain) {
-            this.chain = this.injector.get(INCOMING_DECODER_INTERCEPTORS, [])
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend) as IncomingDecoder<T>;
-        }
-        return this.chain.handle(ctx)
-    }
+    constructor(backend: IncomingDecoder<T>, injector: Injector) {
+        super(backend, injector, INCOMING_DECODER_INTERCEPTORS)
+     }
 
 }
