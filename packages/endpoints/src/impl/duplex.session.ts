@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { Decoder, Encoder, IDuplexStream, Packet, RequestPacket, StreamAdapter, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, IDuplexStream, Packet, TransportRequest, StreamAdapter, TransportOpts, TransportSessionFactory } from '@tsdi/common';
 import { EventTransportSession } from '../transport.session';
 
 
@@ -13,7 +13,7 @@ export class DuplexTransportSession extends EventTransportSession<IDuplexStream>
         return msg;
     }
 
-    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
+    protected override async beforeRequest(packet: TransportRequest<any>): Promise<void> {
         // do nothing
     }
 

@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
+import { BadRequestExecption, Decoder, Encoder, IEventEmitter, Packet, TransportRequest, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common';
 import { Observable, filter, fromEvent } from 'rxjs';
 import { EventTransportSession } from '../transport.session';
 
@@ -33,7 +33,7 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         await promisify(this.socket.publish, this.socket)(topic, data)
     }
 
-    protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
+    protected override async beforeRequest(packet: TransportRequest<any>): Promise<void> {
         if (!this.options.serverSide) {
             const rtopic = this.getReply(packet);
             if (!this.replys.has(rtopic)) {
@@ -49,11 +49,11 @@ export class TopicTransportSession<TSocket extends TopicClient = TopicClient> ex
         ) as Observable<any>;
     }
 
-    protected override responseFilter(req: RequestPacket<any>, msg: TopicMessage): boolean {
+    protected override responseFilter(req: TransportRequest<any>, msg: TopicMessage): boolean {
         return this.getReply(req) == msg.topic;
     }
 
-    protected override responsePacketFilter(req: RequestPacket<any>, res: ResponsePacket<any>): boolean {
+    protected override responsePacketFilter(req: TransportRequest<any>, res: ResponsePacket<any>): boolean {
         return req.id === res.id;
     }
 

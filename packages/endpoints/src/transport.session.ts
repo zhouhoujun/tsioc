@@ -1,6 +1,6 @@
 import { Execption, Injector, InvokeArguments } from '@tsdi/ioc';
 import { PipeTransform, UuidGenerator } from '@tsdi/core';
-import { AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, InvalidJsonException, Packet, PacketLengthException, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, ev, hdr } from '@tsdi/common';
+import { AssetTransportOpts, Context, Decoder, Encoder, HeaderPacket, IEventEmitter, InvalidJsonException, Packet, PacketLengthException, TransportRequest, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, ev, hdr } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, finalize, first, fromEvent, lastValueFrom, map, merge, mergeMap, share, throwError, timeout } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 
@@ -76,7 +76,7 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
             ))
     }
 
-    request(packet: RequestPacket<any>): Observable<ResponsePacket<any>> {
+    request(packet: TransportRequest<any>): Observable<ResponsePacket<any>> {
         let obs$ = defer(() => this.requesting(packet)).pipe(
             mergeMap(r => this.receive(packet)),
             filter(p => this.responsePacketFilter(packet, p))
@@ -134,7 +134,7 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
 
     protected abstract write(data: Buffer, packet: Packet): Promise<void>;
 
-    protected abstract beforeRequest(packet: RequestPacket<any>): Promise<void>;
+    protected abstract beforeRequest(packet: TransportRequest<any>): Promise<void>;
 
     protected abstract createContext(msgOrPkg: Packet | string | Buffer | Uint8Array, msg?: TMsg, options?: InvokeArguments): Context;
 
@@ -142,21 +142,21 @@ export abstract class AbstractTransportSession<TSocket, TMsg = string | Buffer |
         return packet.length ?? (~~(packet.headers?.[hdr.CONTENT_LENGTH] ?? '0'))
     }
 
-    protected async requesting(packet: RequestPacket<any>): Promise<void> {
+    protected async requesting(packet: TransportRequest<any>): Promise<void> {
         this.bindPacketId(packet);
         await this.beforeRequest(packet);
         await lastValueFrom(this.send(packet))
     }
 
-    protected responseFilter(req: RequestPacket, msg: TMsg) {
+    protected responseFilter(req: TransportRequest, msg: TMsg) {
         return true;
     }
 
-    protected responsePacketFilter(req: RequestPacket, res: ResponsePacket) {
+    protected responsePacketFilter(req: TransportRequest, res: ResponsePacket) {
         return res.id == req.id
     }
 
-    protected bindPacketId(packet: RequestPacket<any>): void {
+    protected bindPacketId(packet: TransportRequest<any>): void {
         if (!packet.id) {
             packet.id = this.getPacketId();
         }

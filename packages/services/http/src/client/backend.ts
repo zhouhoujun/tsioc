@@ -1,6 +1,6 @@
 import { Injectable, getToken, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, RequestPacket, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common';
+import { OutgoingHeaders, TransportRequest, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common';
 import { ResponseTransform } from '@tsdi/common/client';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 import { Observable, catchError, finalize, mergeMap, of, take, throwError } from 'rxjs';
@@ -79,7 +79,7 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
         const pkg = {
             url,
             headers: req.headers.getHeaders()
-        } as RequestPacket;
+        } as TransportRequest;
 
         if (!pkg.headers) {
             pkg.headers = {};

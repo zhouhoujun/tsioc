@@ -1,5 +1,4 @@
 import { IncomingHeaders, OutgoingHeaders } from './headers';
-import { IReadableStream } from './stream';
 
 
 
@@ -38,29 +37,18 @@ export interface SendPacket extends Packet {
 
 
 
-/**
- * request packet data.
- */
-export interface RequestPacket<T = any> extends Packet<T> {
-    headers?: IncomingHeaders;
-    originalUrl?: string;
-}
-
 
 /**
  * status code
  */
 export type StatusCode = string | number;
 
-/**
- * response packet data.
- */
-export interface ResponsePacket<T = any> extends Packet<T> {
-    type?: number | string;
-    headers?: OutgoingHeaders;
-    status?: StatusCode;
-    statusText?: string;
-    stream?: IReadableStream
-}
-
-
+// /**
+//  * response packet data.
+//  */
+// export interface ResponsePacket<T = any> extends Packet<T> {
+//     type?: number | string;
+//     headers?: OutgoingHeaders;
+//     status?: StatusCode;
+//     statusText?: string;
+// }

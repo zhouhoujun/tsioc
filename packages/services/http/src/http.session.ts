@@ -1,5 +1,5 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr, statusMessage } from '@tsdi/common';
+import { Context, Decoder, Encoder, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, Packet, TransportRequest, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr, statusMessage } from '@tsdi/common';
 import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
@@ -45,7 +45,7 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
         return this.encoder.strategy ?? this.decoder.strategy
     }
 
-    send(req: RequestPacket, context?: InvocationContext): Observable<ClientHttp2Stream | ClientRequest> {
+    send(req: TransportRequest, context?: InvocationContext): Observable<ClientHttp2Stream | ClientRequest> {
         let path = req.url ?? '';
         const ac = this.getAbortSignal(context);
         let stream: ClientHttp2Stream | ClientRequest;
@@ -112,7 +112,7 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
         }
     }
 
-    request(req: RequestPacket, context: InvocationContext): Observable<ResponsePacket<any>> {
+    request(req: TransportRequest, context: InvocationContext): Observable<ResponsePacket<any>> {
         return this.send(req, context)
             .pipe(
                 mergeMap(stream => {
@@ -254,7 +254,7 @@ export class HttpServerTransportSession implements TransportSession<Http2Server 
         }
     }
 
-    request(packet: RequestPacket<any>, context?: InvocationContext<any> | undefined): Observable<ResponsePacket<any>> {
+    request(packet: TransportRequest<any>, context?: InvocationContext<any> | undefined): Observable<ResponsePacket<any>> {
         throw new Error('Method not implemented.');
     }
 

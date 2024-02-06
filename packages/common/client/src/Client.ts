@@ -1,6 +1,6 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, hasOwn, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, TransportRequest, Pattern, TransportEvent, TransportResponse, HeaderPacket, RequestPacket, ResponsePacket, patternToPath } from '@tsdi/common';
+import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, Pattern, TransportEvent, TransportResponse, TransportRequest } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { ClientHandler } from './handler';
 
@@ -10,7 +10,7 @@ import { ClientHandler } from './handler';
  * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TStatus = number> {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest> {
 
     /**
      * client handler
@@ -22,7 +22,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
-    send(req: TRequest): Observable<TransportEvent<TStatus>>;
+    send(req: TRequest): Observable<TransportEvent<any>>;
 
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in
@@ -80,7 +80,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'arraybuffer',
-    }): Observable<TransportEvent<ArrayBuffer, TStatus>>;
+    }): Observable<TransportEvent<ArrayBuffer>>;
 
     /**
      * Constructs a request that interprets the body as a `Blob` and returns
@@ -95,7 +95,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'blob',
-    }): Observable<TransportEvent<Blob, TStatus>>;
+    }): Observable<TransportEvent<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text string and returns the full event
@@ -110,7 +110,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'text',
-    }): Observable<TransportEvent<string, TStatus>>;
+    }): Observable<TransportEvent<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -125,7 +125,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<TransportEvent<any, TStatus>>;
+    }): Observable<TransportEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -140,7 +140,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send<R>(url: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<TransportEvent<R, TStatus>>;
+    }): Observable<TransportEvent<R>>;
 
 
     /**
@@ -155,7 +155,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      */
     send(url: Pattern, options: RequestOptions & {
         observe: 'emit',
-    }): Observable<TransportEvent<any, TStatus>>;
+    }): Observable<TransportEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
@@ -169,7 +169,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
-    }): Observable<TransportResponse<ArrayBuffer, TStatus>>;
+    }): Observable<TransportResponse<ArrayBuffer>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `TransportResponse`.
@@ -182,7 +182,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'blob';
-    }): Observable<TransportResponse<Blob, TStatus>>;
+    }): Observable<TransportResponse<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
@@ -196,7 +196,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'text';
-    }): Observable<TransportResponse<string, TStatus>>;
+    }): Observable<TransportResponse<string>>;
 
 
     /**
@@ -211,7 +211,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     send<R = any>(url: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<TransportResponse<R, TStatus>>;
+    }): Observable<TransportResponse<R>>;
 
 
     /**
@@ -294,31 +294,31 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
                     case 'arraybuffer':
                         return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is an ArrayBuffer.
-                            if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
+                            if (res.payload !== null && !(res.payload instanceof ArrayBuffer)) {
                                 throw new Execption('Response is not an ArrayBuffer.')
                             }
-                            return res.body
+                            return res.payload
                         }));
                     case 'blob':
                         return res$.pipe(map((res: TransportResponse) => {
                             // Validate that the body is a Blob.
-                            if (res.body !== null && !(res.body instanceof Blob)) {
+                            if (res.payload !== null && !(res.payload instanceof Blob)) {
                                 throw new Execption('Response is not a Blob.')
                             }
-                            return res.body
+                            return res.payload
                         }));
                     case 'text':
                         return res$.pipe(map((res: TransportResponse) => {
-                            // Validate that the body is a string.
-                            if (res.body !== null && !isString(res.body)) {
+                            // Validate that the payload is a string.
+                            if (res.payload !== null && !isString(res.payload)) {
                                 throw new Execption('Response is not a string.')
                             }
-                            return res.body
+                            return res.payload
                         }));
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: TransportResponse) => res.body))
+                        return res$.pipe(map((res: TransportResponse) => res.payload))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.
@@ -368,12 +368,11 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
             const context = options.context || createContext(this.handler.injector);
             this.initContext(context);
             // Construct the request.
-            req = this.createRequest(first, {
+            req = this.createRequest(first, context, {
                 ...options,
                 headers,
                 params,
-                body: options.body ?? options.payload ?? null,
-                context,
+                payload: options.payload ?? null,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json'
             })
@@ -388,11 +387,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
 
 
     protected isRequest(target: any): target is TRequest {
-        return target instanceof TransportRequest
+        return hasOwn(target, 'context') && target.context instanceof InvocationContext;
     }
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
-        return new TransportRequest(pattern, options) as TRequest;
+    protected createRequest(pattern: Pattern, context: InvocationContext, options: RequestInitOpts): TRequest {
+        // context.get()
+        return { ...options, context, pattern } as TransportRequest<any> as TRequest;
     }
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
