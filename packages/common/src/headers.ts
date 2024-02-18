@@ -7,10 +7,10 @@ export type IncomingHeader = string | readonly string[] | undefined | number;
 /**
  * outgoing header.
  */
-export type OutgoingHeader = IncomingHeader;
+export type OutgoingHeader = string | readonly string[] | undefined | number;
 
 export interface IncomingHeaders {
-    [x: string]: IncomingHeader | number | any;
+    [x: string]: IncomingHeader | null;
     'content-type'?: string;
     'Content-Type'?: string;
     'content-length'?: string | number;
@@ -32,7 +32,7 @@ export interface IncomingStatusHeaders {
 }
 
 export interface OutgoingHeaders {
-    [x: string]: OutgoingHeader | any;
+    [x: string]: OutgoingHeader | null;
     'content-type'?: string;
     'Content-Type'?: string;
     'content-length'?: string | number;
@@ -72,7 +72,7 @@ export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
                 })
             } else if (headers instanceof HeaderSet) {
                 headers.forEach((n, v) => {
-                    this.set(n, v as T);
+                    this.set(n, v);
                 });
             } else {
                 this.setHeaders(headers);

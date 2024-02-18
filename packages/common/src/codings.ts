@@ -1,111 +1,20 @@
 import { Backend, Handler, Interceptor } from '@tsdi/core';
-import { Abstract, DefaultInvocationContext, Injector, InvokeArguments, isFunction, isNil } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { HeaderPacket, Packet, ResponsePacket } from './packet';
-import { HybirdTransport, Transport } from './protocols';
-import { TransportSession } from './TransportSession';
-import { isBuffer } from './utils';
-import { IReadableStream, IWritableStream } from './stream';
-import { Incoming, Outgoing } from './socket';
+import { TransportRequest } from './request';
+import { TransportEvent } from './response';
 
 
 /**
  * coding context.
  */
-export class Context<TPacket extends Packet = Packet> extends DefaultInvocationContext {
+export abstract class Context<T> {
+    /**
+     * message
+     */
+    abstract get message(): T;
 
-    readonly transport: Transport | HybirdTransport;
-    readonly session: TransportSession;
-    public packet?: Packet;
-    public headers?: HeaderPacket;
-    public raw?: Buffer;
-    public readable?: IReadableStream;
-    public writable?: IWritableStream;
-    readonly delimiter?: Buffer;
-    readonly headerDelimiter?: Buffer;
-    readonly serverSide: boolean;
-
-    constructor(
-        injector: Injector,
-        session: TransportSession,
-        packet: TPacket,
-        headers?: HeaderPacket,
-        delimiter?: Buffer,
-        headerDelimiter?: Buffer,
-        options?: InvokeArguments);
-    constructor(
-        injector: Injector,
-        transportOpts: TransportSession,
-        raw: Buffer,
-        headers?: HeaderPacket,
-        delimiter?: Buffer,
-        headerDelimiter?: Buffer,
-        options?: InvokeArguments);
-    constructor(
-        injector: Injector,
-        transportOpts: TransportSession,
-        readable: IReadableStream,
-        headers?: HeaderPacket,
-        delimiter?: Buffer,
-        headerDelimiter?: Buffer,
-        options?: InvokeArguments);
-    constructor(
-        injector: Injector,
-        transportOpts: TransportSession,
-        writable: IWritableStream,
-        headers?: HeaderPacket,
-        delimiter?: Buffer,
-        headerDelimiter?: Buffer,
-        options?: InvokeArguments);
-    constructor(
-        injector: Injector,
-        session: TransportSession,
-        packBuff: TPacket | Buffer | IReadableStream | IWritableStream,
-        headers?: HeaderPacket,
-        delimiter?: Buffer,
-        headerDelimiter?: Buffer,
-        options?: InvokeArguments) {
-        super(injector, options);
-        this.transport = session.options.transport!;
-        this.serverSide = session.options.serverSide == true;
-        this.delimiter = delimiter;
-        this.session = session;
-        this.headers = headers;
-        if (isBuffer(packBuff)) {
-            this.raw = packBuff;
-        } else if (session.streamAdapter.isReadable(packBuff)) {
-            this.readable = packBuff;
-            if (!headers && (packBuff as Incoming).headers) {
-                this.headers = {
-                    id: (packBuff as Incoming).id,
-                    url: (packBuff as Incoming).url,
-                    headers: (packBuff as Incoming).headers
-                }
-            }
-        } else if (session.streamAdapter.isWritable(packBuff)) {
-            this.writable = packBuff;
-            const outgoing = packBuff as any as Outgoing;
-            if (isFunction(outgoing.getHeaders) || outgoing.headers) {
-                if (!headers) {
-                    this.headers = {
-                        headers: outgoing.getHeaders?.() ?? outgoing.headers,
-                        status: outgoing.statusCode,
-                        statusText: outgoing.statusMessage
-                    } as ResponsePacket;
-                }
-                if (!isNil(outgoing.body)) {
-                    this.packet = {
-                        ...this.headers,
-                        payload: outgoing.body
-                    }
-                }
-            }
-        } else {
-            this.packet = packBuff;
-        }
-        this.headerDelimiter = headerDelimiter;
-
-    }
+    abstract getRawbody(): any;
 }
 
 /**
@@ -113,25 +22,37 @@ export class Context<TPacket extends Packet = Packet> extends DefaultInvocationC
  * 
  * 加密拦截器。
  */
-export interface EncodeInterceptor<T extends Packet = Packet> extends Interceptor<Context<T>, Buffer> {}
+export interface EncodeInterceptor<TInput extends TransportRequest = TransportRequest, TOutput = Buffer> extends Interceptor<Context<TInput>, TOutput> {
+    /**
+     * the method to implemet encode interceptor.
+     * 
+     * 加密拦截处理的方法
+     * @param input  request input.
+     * @param next The next handler in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
+     */
+    intercept(input: Context<TInput>, next: Handler<Context<TInput>, TOutput>): Observable<TOutput>;
+}
+
 
 @Abstract()
-export abstract class Encoder<T extends Packet = Packet> implements Handler<Context<T>, Buffer> {
-    strategy?: string;
-    abstract handle(ctx: Context<T>): Observable<Buffer>;
+export abstract class Encoder<TInput extends TransportRequest = TransportRequest, TOutput = Buffer> implements Handler<Context<TInput>, TOutput> {
+    abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class EncoderBackend implements Backend<Context, Buffer> {
-    abstract handle(ctx: Context): Observable<Buffer>;
+export abstract class EncoderBackend<TInput extends TransportRequest = TransportRequest, TOutput = Buffer> implements Backend<Context<TInput>, TOutput> {
+    abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
+
 
 /**
  * Decode interceptor is a chainable behavior modifier for `Decoders`.
  * 
  * 解密拦截器。
  */
-export interface DecodeInterceptor<T extends Packet = Packet> extends Interceptor<Context, T> {
+export interface DecodeInterceptor<TInput = Buffer, TOutput extends TransportEvent = TransportEvent> extends Interceptor<Context<TInput>, TOutput> {
     /**
      * the method to implemet decode interceptor.
      * 
@@ -141,17 +62,16 @@ export interface DecodeInterceptor<T extends Packet = Packet> extends Intercepto
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(input: Context, next: Handler<Context, T>): Observable<T>;
+    intercept(input: Context<TInput>, next: Handler<Context<TInput>, TOutput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class Decoder<T extends Packet = Packet> implements Handler<Context, T> {
-    strategy?: string;
-    abstract handle(ctx: Context<T>): Observable<T>;
+export abstract class Decoder<TInput = Buffer, TOutput extends TransportEvent = TransportEvent> implements Handler<Context<TInput>, TOutput> {
+    abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class DecoderBackend<T extends Packet = Packet> implements Backend<Context, T> {
-    abstract handle(ctx: Context<T>): Observable<T>;
+export abstract class DecoderBackend<TInput = Buffer, TOutput extends TransportEvent = TransportEvent> implements Backend<Context<TInput>, TOutput> {
+    abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 

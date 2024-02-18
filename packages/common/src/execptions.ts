@@ -14,7 +14,7 @@ export class MessageExecption extends Execption {
     headers?: Record<string, any>;
     code?: any;
     constructor(message?: string | string[], public status?: any) {
-        super(isArray(message) ? message.join('\n') : message || '')
+        super(isArray(message) ? message.join('\n') : message ?? '')
     }
 
     get statusCode(): any {

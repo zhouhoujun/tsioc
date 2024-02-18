@@ -1,7 +1,5 @@
-import { tokenId } from '@tsdi/ioc';
-import { IReadableStream, IDuplexStream, IEventEmitter, IEnd } from './stream';
-import { Packet, StatusCode } from './packet';
-import { IncomingHeaders, OutgoingHeader, OutgoingHeaders } from './headers';
+import { IDuplexStream, IEventEmitter } from './stream';
+
 
 /**
  * Socket interface.
@@ -123,167 +121,12 @@ export interface Connection<TSocket extends IEventEmitter = IEventEmitter> exten
 
 
 
-/**
- * server side incoming message.
- */
-export interface Incoming<TSocket = any> extends Packet<Uint8Array>, IReadableStream {
-    /**
-     * packet id.
-     */
-    readonly id?: number;
-    /**
-     * headers
-     */
-    readonly headers: Record<string, any>;
-    /**
-     * Outgoing URL
-     */
-    readonly url?: string;
-
-    readonly originalUrl?: string;
-    /**
-     * Outgoing URL parameters.
-     */
-    readonly params?: Record<string, string | string[] | number | any>;
-    /**
-     * The outgoing request method.
-     */
-    readonly method?: string;
-
-    readonly socket?: TSocket;
-
-    setTimeout?: (msecs: number, callback: () => void) => void;
-
-    body?: any;
-
-    rawBody?: Uint8Array;
-}
-
-
-/**
- * server outgoing message stream.
- */
-export interface Outgoing<TSocket = any> extends IEnd {
-    /**
-     * headers
-     */
-    readonly headers?: Record<string, any>;
-
-    readonly socket?: TSocket;
-    /**
-     * Get response status code.
-     */
-    get statusCode(): StatusCode;
-    /**
-     * Set response status code.
-     */
-    set statusCode(status: StatusCode);
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    statusMessage?: string;
-
-    body?: any;
-
-    /**
-     * headers has sent or not.
-     */
-    readonly headersSent?: boolean;
-    /**
-     * Get all headers.
-     */
-    getHeaders?(): OutgoingHeaders;
-
-    /**
-     * has header field or not.
-     * @param field 
-     */
-    hasHeader(field: string): boolean;
-    /**
-     * Return header.
-     *
-     * Examples:
-     *
-     *     this.getHeader('Content-Type');
-     *     // => "text/plain"
-     *
-     *     this.getHeader('content-type');
-     *     // => "text/plain"
-     *
-     *     this.getHeader('Something');
-     *     // => ''
-     *
-     * @param {String} field
-     * @return {String}
-     * @api public
-     */
-    getHeader(field: string): OutgoingHeader;
-    /**
-     * Set header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.setHeader('Foo', ['bar', 'baz']);
-     *    this.setHeader('Accept', 'application/json');
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    setHeader(field: string, val: any): void;
-    /**
-     * append header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.appendHeader('Foo', ['bar', 'baz']);
-     *    this.appendHeader('Accept', 'application/json');
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    appendHeader?(field: string, val: OutgoingHeader): void;
-    /**
-     * Remove header `field`.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void;
-
-    /**
-     * get header names
-     */
-    getHeaderNames?(): string[];
-
-    // /**
-    //  * write head
-    //  * @param statusCode 
-    //  * @param headers 
-    //  */
-    // writeHead?(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    // /**
-    //  * write head
-    //  * @param statusCode 
-    //  * @param statusMessage 
-    //  * @param headers 
-    //  */
-    // writeHead?(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-
-}
-
-
-/**
- * incoming packet.
- */
-export interface IncomingPacket<T = any> extends Packet<T> {
-    req?: Incoming;
-    res?: Outgoing;
-    headers?: IncomingHeaders;
-    originalUrl?: string;
-}
+// /**
+//  * incoming packet.
+//  */
+// export interface IncomingPacket<T = any> extends Packet<T> {
+//     req?: Incoming;
+//     res?: Outgoing;
+//     headers?: IncomingHeaders;
+//     originalUrl?: string;
+// }

@@ -10,18 +10,18 @@ export interface ListenOpts {
     /**
     * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
     */
-    signal?: AbortSignal | undefined;
-    port?: number | undefined;
-    host?: string | undefined;
-    backlog?: number | undefined;
-    path?: string | undefined;
-    exclusive?: boolean | undefined;
-    readableAll?: boolean | undefined;
-    writableAll?: boolean | undefined;
+    signal?: AbortSignal;
+    port?: number;
+    host?: string;
+    backlog?: number;
+    path?: string;
+    exclusive?: boolean;
+    readableAll?: boolean;
+    writableAll?: boolean;
     /**
      * @default false
      */
-    ipv6Only?: boolean | undefined;
+    ipv6Only?: boolean;
     withCredentials?: boolean;
 }
 

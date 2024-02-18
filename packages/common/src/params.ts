@@ -61,7 +61,7 @@ export class TransportParams {
         } else if (isPlainObject(options.params)) {
             Object.keys(options.params).forEach(key => {
                 const value = (options.params as any)[key];
-                this.map!.set(key, isArray(value) ? value.map(v => parseString(v)) : [parseString(value)])
+                this.map?.set(key, isArray(value) ? value.map(v => parseString(v)) : [parseString(value)])
             })
         }
     }
@@ -183,7 +183,7 @@ export class TransportParams {
                 // `a: ['1']` produces `'a=1'`
                 // `b: []` produces `''`
                 // `c: ['1', '2']` produces `'c=1&c=2'`
-                return this.map!.get(key)!.map(value => eKey + '=' + this.encoder.encodeValue(value))
+                return this.map?.get(key)!.map(value => eKey + '=' + this.encoder.encodeValue(value))
                     .join('&')
             })
             // filter out empty values because `b: []` produces `''`
@@ -201,7 +201,7 @@ export class TransportParams {
                 const [key, val]: string[] = eqIdx == -1 ?
                     [this.encoder.decodeKey(param), ''] :
                     [this.encoder.decodeKey(param.slice(0, eqIdx)), this.encoder.decodeValue(param.slice(eqIdx + 1))];
-                const list = map.get(key) || [];
+                const list = map.get(key) ?? [];
                 list.push(val);
                 map.set(key, list)
             })

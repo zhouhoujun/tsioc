@@ -1,10 +1,11 @@
 import { Abstract, Injector, InvocationContext } from '@tsdi/ioc';
-import { Packet, RequestPacket, ResponsePacket, StatusCode } from './packet';
+import { Packet, StatusCode } from './packet';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportErrorResponse, TransportEvent } from './response';
 import { OutgoingHeaders, ResHeaders } from './headers';
 import { StreamAdapter } from './StreamAdapter';
+import { TransportRequest } from './request';
 
 
 
@@ -91,19 +92,15 @@ export abstract class TransportSession<TSocket = any>  {
      */
     abstract get streamAdapter(): StreamAdapter;
     /**
-     * get packet strategy
+     * send.
+     * @param packet 
      */
-    abstract getPacketStrategy(): string | undefined;
+    abstract send(packet: TransportRequest, context?: InvocationContext): Observable<any>;
     /**
      * send.
      * @param packet 
      */
-    abstract send(packet: RequestPacket, context?: InvocationContext): Observable<any>;
-    /**
-     * send.
-     * @param packet 
-     */
-    abstract send(packet: ResponsePacket): Observable<any>;
+    abstract send(packet: TransportEvent): Observable<any>;
 
     /**
      * serialize packet.
@@ -120,7 +117,7 @@ export abstract class TransportSession<TSocket = any>  {
      * request.
      * @param packet 
      */
-    abstract request(packet: RequestPacket, context?: InvocationContext): Observable<ResponsePacket>;
+    abstract request(packet: TransportRequest, context?: InvocationContext): Observable<TransportEvent>;
 
     /**
      * receive

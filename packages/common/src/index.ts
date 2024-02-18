@@ -16,6 +16,8 @@ export * from './utils';
 export * from './stream';
 export * from './socket';
 export * from './StreamAdapter';
+export * from './incoming';
+export * from './outgoing';
 
 export * from './codings';
 export * from './TransportSession';

@@ -74,14 +74,13 @@ export abstract class StreamAdapter {
             if (this.isStream(request)) {
                 await this.pipeTo(source, request);
                 callback();
+            } else if (this.isStream(source)) {
+                const buffers = await toBuffer(source);
+                request.end(buffers, callback);
             } else {
-                if (this.isStream(source)) {
-                    const buffers = await toBuffer(source);
-                    request.end(buffers, callback);
-                } else {
-                    request.end(source, callback);
-                }
+                request.end(source, callback);
             }
+
         } catch (err) {
             callback(err);
         }
@@ -98,7 +97,7 @@ export abstract class StreamAdapter {
      * @param source 
      * @param destination 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, destination: IWritableStream, callback?: (err: any | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, destination: IWritableStream, callback?: (err: any) => void): T;
     /**
      *  pipe line
      * @param source source stream
@@ -106,7 +105,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, destination: IWritableStream, callback?: (err: any) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -115,7 +114,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: any) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -125,7 +124,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: any | null) => void): T;
+    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: any) => void): T;
 
     /**
      * json streamify
@@ -147,13 +146,13 @@ export abstract class StreamAdapter {
      * @param options 
      */
     abstract createWritable(options?: {
-        emitClose?: boolean | undefined;
-        highWaterMark?: number | undefined;
-        objectMode?: boolean | undefined;
+        emitClose?: boolean;
+        highWaterMark?: number;
+        objectMode?: boolean;
         destroy?(this: IWritableStream, error: Error | null, callback: (error: Error | null) => void): void;
-        autoDestroy?: boolean | undefined;
-        decodeStrings?: boolean | undefined;
-        defaultEncoding?: string | undefined;
+        autoDestroy?: boolean;
+        decodeStrings?: boolean;
+        defaultEncoding?: string;
         write?(this: IWritableStream, chunk: any, encoding: string, callback: (error?: Error | null) => void): void;
         final?(this: IWritableStream, callback: (error?: Error | null) => void): void;
     }): IWritableStream;
@@ -162,12 +161,12 @@ export abstract class StreamAdapter {
      * @param options 
      */
     abstract createPassThrough(options?: {
-        allowHalfOpen?: boolean | undefined;
-        readableObjectMode?: boolean | undefined;
-        writableObjectMode?: boolean | undefined;
-        readableHighWaterMark?: number | undefined;
-        writableHighWaterMark?: number | undefined;
-        writableCorked?: number | undefined;
+        allowHalfOpen?: boolean;
+        readableObjectMode?: boolean;
+        writableObjectMode?: boolean;
+        readableHighWaterMark?: number;
+        writableHighWaterMark?: number;
+        writableCorked?: number;
         construct?(this: ITransformStream, callback: (error?: Error | null) => void): void;
         read?(this: ITransformStream, size: number): void;
         write?(this: ITransformStream, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void;
@@ -286,46 +285,45 @@ export interface ZipOptions {
     /**
      * @default constants.Z_NO_FLUSH
      */
-    flush?: number | undefined;
+    flush?: number;
     /**
      * @default constants.Z_FINISH
      */
-    finishFlush?: number | undefined;
+    finishFlush?: number;
     /**
      * @default 16*1024
      */
-    chunkSize?: number | undefined;
-    windowBits?: number | undefined;
-    level?: number | undefined; // compression only
-    memLevel?: number | undefined; // compression only
-    strategy?: number | undefined; // compression only
-    dictionary?: NodeJS.ArrayBufferView | ArrayBuffer | undefined; // deflate/inflate only, empty dictionary by default
-    info?: boolean | undefined;
-    maxOutputLength?: number | undefined;
+    chunkSize?: number;
+    windowBits?: number;
+    level?: number; // compression only
+    memLevel?: number; // compression only
+    strategy?: number; // compression only
+    dictionary?: NodeJS.ArrayBufferView | ArrayBuffer; // deflate/inflate only, empty dictionary by default
+    info?: boolean;
+    maxOutputLength?: number;
 }
 
 export interface BrotliOptions {
     /**
      * @default constants.BROTLI_OPERATION_PROCESS
      */
-    flush?: number | undefined;
+    flush?: number;
     /**
      * @default constants.BROTLI_OPERATION_FINISH
      */
-    finishFlush?: number | undefined;
+    finishFlush?: number;
     /**
      * @default 16*1024
      */
-    chunkSize?: number | undefined;
+    chunkSize?: number;
     params?:
     | {
         /**
          * Each key is a `constants.BROTLI_*` constant.
          */
         [key: number]: boolean | number;
-    }
-    | undefined;
-    maxOutputLength?: number | undefined;
+    };
+    maxOutputLength?: number;
 }
 
 export interface FormDataHeaders {
@@ -343,7 +341,7 @@ export interface FormData extends IReadableStream {
     } | string): void;
     getHeaders(userHeaders?: FormDataHeaders): FormDataHeaders;
     submit(
-        params: string | any,
+        params: any,
         callback?: (error: Error | null, response: any) => void
     ): any;
     getBuffer(): Uint8Array;
