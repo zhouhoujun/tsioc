@@ -31,10 +31,15 @@ export class Application<T = any, TArg = ApplicationArguments> {
      */
     protected context!: ApplicationContext<T, TArg>;
 
+    protected loader!: ModuleLoader;
 
-    constructor(protected target: CtorType<T> | ApplicationOption<T, TArg>, protected loader?: ModuleLoader) {
+
+    constructor(protected target: CtorType<T> | ApplicationOption<T, TArg>, loader?: ModuleLoader) {
+        if (loader) {
+            this.loader = loader;
+        }
         if (!isFunction(target)) {
-            if (!this.loader) this.loader = target.loader;
+            if (!this.loader && target.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = Scopes.root;
@@ -55,7 +60,10 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected initRoot() {
-        this.root.setValue(Application, this)
+        this.root.setValue(Application, this);
+        if (!this.loader) {
+            this.loader = this.root.get(ModuleLoader);
+        }
     }
 
     /**
@@ -179,7 +187,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
             } else {
                 const modueRef = root.reflectiveFactory.create(root.moduleType, root);
                 if (target.loads) {
-                    this._loads = await this.root.get(ModuleLoader, this.loader).register(this.root, target.loads);
+                    this._loads = await this.loader.register(this.root, target.loads);
                 }
                 this.context = modueRef.resolve(ApplicationFactory).create(root, { ...target, providers: [] });
             }

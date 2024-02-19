@@ -18,7 +18,7 @@ import { MvcModule } from './mvc/mvc.module';
  */
 export class BootApplication<T = any, TArg = ApplicationArguments> extends Application<T, TArg> {
 
-    constructor(protected target: CtorType<T> | BootApplicationOption<T>, protected loader?: ModuleLoader) {
+    constructor(target: CtorType<T> | BootApplicationOption<T>, loader?: ModuleLoader) {
         super(target, loader)
     }
 
@@ -45,7 +45,7 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
         await mgr.load();
         const config = mgr.getConfig();
 
-        const loader = injector.get(ModuleLoader);
+        const loader = this.loader;
         if (config.deps && config.deps.length) {
             await loader.register(injector, config.deps)
         }

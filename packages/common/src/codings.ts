@@ -1,8 +1,6 @@
 import { Backend, Handler, Interceptor } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportRequest } from './request';
-import { TransportEvent } from './response';
 
 
 /**
@@ -22,7 +20,7 @@ export abstract class Context<T> {
  * 
  * 加密拦截器。
  */
-export interface EncodeInterceptor<TInput extends TransportRequest = TransportRequest, TOutput = Buffer> extends Interceptor<Context<TInput>, TOutput> {
+export interface EncodeInterceptor<TInput, TOutput> extends Interceptor<Context<TInput>, TOutput> {
     /**
      * the method to implemet encode interceptor.
      * 
@@ -37,12 +35,12 @@ export interface EncodeInterceptor<TInput extends TransportRequest = TransportRe
 
 
 @Abstract()
-export abstract class Encoder<TInput extends TransportRequest = TransportRequest, TOutput = Buffer> implements Handler<Context<TInput>, TOutput> {
+export abstract class Encoder<TInput, TOutput> implements Handler<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class EncoderBackend<TInput extends TransportRequest = TransportRequest, TOutput = Buffer> implements Backend<Context<TInput>, TOutput> {
+export abstract class EncoderBackend<TInput, TOutput> implements Backend<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
@@ -52,7 +50,7 @@ export abstract class EncoderBackend<TInput extends TransportRequest = Transport
  * 
  * 解密拦截器。
  */
-export interface DecodeInterceptor<TInput = Buffer, TOutput extends TransportEvent = TransportEvent> extends Interceptor<Context<TInput>, TOutput> {
+export interface DecodeInterceptor<TInput, TOutput> extends Interceptor<Context<TInput>, TOutput> {
     /**
      * the method to implemet decode interceptor.
      * 
@@ -66,12 +64,12 @@ export interface DecodeInterceptor<TInput = Buffer, TOutput extends TransportEve
 }
 
 @Abstract()
-export abstract class Decoder<TInput = Buffer, TOutput extends TransportEvent = TransportEvent> implements Handler<Context<TInput>, TOutput> {
+export abstract class Decoder<TInput, TOutput> implements Handler<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class DecoderBackend<TInput = Buffer, TOutput extends TransportEvent = TransportEvent> implements Backend<Context<TInput>, TOutput> {
+export abstract class DecoderBackend<TInput, TOutput> implements Backend<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 

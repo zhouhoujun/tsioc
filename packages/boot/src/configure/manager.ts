@@ -1,5 +1,5 @@
 import { ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
-import { isUndefined, isString, isPlainObject, lang, isMetadataObject, Injector, Injectable } from '@tsdi/ioc';
+import { isUndefined, isString, lang, isMetadataObject, Injectable, Optional, Inject } from '@tsdi/ioc';
 import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger, DEFAULT_CONFIG } from './config';
 
 
@@ -20,22 +20,18 @@ export class DefaultConfigureManager extends ConfigureManager {
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]
      */
-    constructor(readonly injector: Injector) {
+    constructor(
+        @Inject(PROCESS_ROOT, { nullable: true }) private baseURL: string,
+        @Optional() private configLoader: ConfigureLoader,
+        @Optional() private moduleLoader: ModuleLoader,
+        @Optional() private configMerger: ConfigureMerger,
+        @Inject(DEFAULT_CONFIG, { nullable: true }) private defaults: ApplicationConfiguration
+    ) {
         super()
         this.configs = []
     }
 
-    get baseURL() {
-        return this.injector.get(PROCESS_ROOT)
-    }
 
-    private _loader: ConfigureLoader | undefined;
-    get configLoader() {
-        if (this._loader === undefined) {
-            this._loader = this.injector.get(ConfigureLoader) ?? null
-        }
-        return this._loader
-    }
 
     useConfiguration(config?: string | ApplicationConfiguration): this {
         if (isUndefined(config)) {
@@ -44,9 +40,6 @@ export class DefaultConfigureManager extends ConfigureManager {
         if (this.configs.indexOf(config) >= 0) return this;
         // clean cached config.
         this.config = undefined;
-        if (isPlainObject(config) && config.baseURL && !this.injector.has(PROCESS_ROOT)) {
-            this.injector.setValue(PROCESS_ROOT, config.baseURL)
-        }
         this.configs.push(config);
 
         return this
@@ -60,7 +53,7 @@ export class DefaultConfigureManager extends ConfigureManager {
         if (this.config) {
             return
         }
-        let config: ApplicationConfiguration = this.config = { ...this.injector.get(DEFAULT_CONFIG) };
+        let config: ApplicationConfiguration = this.config = { ...this.defaults };
         const exts = await Promise.all(this.configs.map(cfg => {
             if (isString(cfg)) {
                 return this.loadConfig(cfg)
@@ -68,7 +61,7 @@ export class DefaultConfigureManager extends ConfigureManager {
                 return cfg
             }
         }));
-        const merger = this.injector.get(ConfigureMerger);
+        const merger = this.configMerger;
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject((exCfg as any)['default']) ? (exCfg as any)['default'] : exCfg;
@@ -94,7 +87,7 @@ export class DefaultConfigureManager extends ConfigureManager {
         if (this.configLoader) {
             return await this.configLoader.load(src)
         } else if (src) {
-            const cfg = await this.injector.get(ModuleLoader).load([src])
+            const cfg = await this.moduleLoader.load([src])
             return lang.first(cfg) as ApplicationConfiguration
         } else {
             return null!

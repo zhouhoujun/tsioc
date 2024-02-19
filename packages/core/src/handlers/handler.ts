@@ -1,4 +1,4 @@
-import { Injector, Token, isPromise } from '@tsdi/ioc';
+import { isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, mergeMap, of } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
@@ -25,13 +25,12 @@ export class InterceptingHandler<TInput = any, TOutput = any> implements Handler
 
     constructor(
         private backend: Backend<TInput, TOutput>,
-        private injector: Injector,
-        private token: Token<Interceptor[]>
+        private interceptors: Interceptor[] = []
     ) { }
 
     handle(input: TInput): Observable<TOutput> {
         if (!this.chain) {
-            this.chain = this.injector.get(this.token, [])
+            this.chain = this.interceptors
                 .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
         }
         return this.chain.handle(input);

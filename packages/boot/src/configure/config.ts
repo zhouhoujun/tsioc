@@ -152,15 +152,6 @@ export abstract class ConfigureMerger {
 @Abstract()
 export abstract class ConfigureManager {
     /**
-     * configuration injctor.
-     *
-     * @readonly
-     * @abstract
-     * @type {Injector}
-     * @memberof ConfigureManager
-     */
-    abstract get injector(): Injector;
-    /**
      * use configuration.
      *
      * @param {(string | ApplicationConfiguration)} [config] use config src or configuration.
