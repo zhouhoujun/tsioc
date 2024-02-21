@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, hasOwn, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { ReqHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, Pattern, TransportEvent, TransportResponse, TransportRequest } from '@tsdi/common';
+import { TransportHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, Pattern, TransportEvent, TransportResponse, TransportRequest } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { ClientHandler } from './handler';
 
@@ -28,13 +28,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in
      * an `ArrayBuffer`.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      *
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe?: 'body';
         responseType: 'arraybuffer';
     }): Observable<ArrayBuffer>;
@@ -43,12 +43,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request that interprets the body as a blob and returns
      * the response as a blob.
      * 
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the response, with the response body of type `Blob`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe?: 'body';
         responseType: 'blob';
     }): Observable<Blob>;
@@ -57,12 +57,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request that interprets the body as a text string and
      * returns a string value.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the response, with the response body of type string.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
@@ -71,13 +71,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the
      * the full event stream.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
      * @return An `Observable` of the response, with the response body as an array of `TransportEvent`s for
      * the request.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'arraybuffer',
     }): Observable<TransportEvent<ArrayBuffer>>;
@@ -86,13 +86,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request that interprets the body as a `Blob` and returns
      * the full event stream.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `Blob`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'blob',
     }): Observable<TransportEvent<Blob>>;
@@ -101,13 +101,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a text string and returns the full event
      * stream.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type string.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'text',
     }): Observable<TransportEvent<string>>;
@@ -116,13 +116,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a JSON object and returns the full event
      * stream.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the  request.
      *
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
     }): Observable<TransportEvent<any>>;
@@ -131,13 +131,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a JSON object and returns the full event
      * stream.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `R`.
      */
-    send<R>(url: Pattern, options: RequestOptions & {
+    send<R>(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
     }): Observable<TransportEvent<R>>;
@@ -147,13 +147,13 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a JSON object and returns the full event
      * stream.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the  request.
      *
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'emit',
     }): Observable<TransportEvent<any>>;
 
@@ -161,12 +161,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as an `ArrayBuffer`
      * and returns the full `TransportResponse`.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the `TransportResponse`, with the response body as an `ArrayBuffer`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
     }): Observable<TransportResponse<ArrayBuffer>>;
@@ -174,12 +174,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `TransportResponse`.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the `TransportResponse`, with the response body of type `Blob`.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'blob';
     }): Observable<TransportResponse<Blob>>;
@@ -188,12 +188,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a text stream and returns the full
      * `TransportResponse`.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the send response, with the response body of type string.
      */
-    send(url: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'text';
     }): Observable<TransportResponse<string>>;
@@ -203,12 +203,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a JSON object and returns
      * the full `TransportResponse` with the response body in the requested type.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return  An `Observable` of the full `TransportResponse`, with the response body of type `R`.
      */
-    send<R = any>(url: Pattern, options: RequestOptions & {
+    send<R = any>(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType?: 'json';
     }): Observable<TransportResponse<R>>;
@@ -218,12 +218,12 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * Constructs a request which interprets the body as a JSON object
      * with the response body of the requested type.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the `TransportResponse`, with the response body of type `R`.
      */
-    send<R = any>(url: Pattern, options?: RequestOptions & {
+    send<R = any>(pattern: Pattern, options?: RequestOptions & {
         observe?: 'body';
         responseType?: 'json';
     }): Observable<R>;
@@ -233,11 +233,11 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
-    send(url: Pattern, options: RequestOptions & ResponseAs): Observable<TransportEvent>;
+    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<TransportEvent>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
-     * @param url     The endpoint URL.
+     * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
      * @return An `Observable` of the requested response, with body of type `any`.

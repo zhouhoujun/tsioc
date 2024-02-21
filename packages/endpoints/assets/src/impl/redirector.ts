@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { ReqHeaders, HeaderSet, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr, StatusCode, OutgoingHeaders } from '@tsdi/common';
+import { ReqHeaders, TransportHeaders, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr, StatusCode, OutgoingHeaders } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -61,7 +61,7 @@ export class AssetRedirector implements Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqhdrs = req.headers instanceof HeaderSet ? req.headers : new ReqHeaders(req.headers);
+                    let reqhdrs = req.headers instanceof TransportHeaders ? req.headers : new ReqHeaders(req.headers);
                     let method = req.method as RequestMethod;
                     let body = req.body;
 

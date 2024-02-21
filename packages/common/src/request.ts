@@ -1,5 +1,5 @@
 import { InvocationContext } from '@tsdi/ioc';
-import { IncomingHeaders, ReqHeaders } from './headers';
+import { HeadersLike } from './headers';
 import { ParameterCodec, TransportParams } from './params';
 import { Pattern } from './pattern';
 
@@ -22,7 +22,7 @@ export interface RequestOptions<T= any> {
     /**
      * headers of request.
      */
-    headers?: IncomingHeaders | ReqHeaders;
+    headers?: HeadersLike;
     /**
      * request context.
      */
