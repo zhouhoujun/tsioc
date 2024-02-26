@@ -65,9 +65,9 @@ export interface AssetTransportOpts extends TransportOpts {
  */
 @Abstract()
 export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
-    abstract createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TErrorResponse;
-    abstract createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TResponse;
-    abstract createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TResponse;
+    abstract createErrorResponse(options: { url?: string; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; error?: any; statusText?: string; statusMessage?: string; }): TErrorResponse;
+    abstract createHeadResponse(options: { url?: string; ok?: boolean; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; statusText?: string; statusMessage?: string; }): TResponse;
+    abstract createResponse(options: { url?: string; ok?: boolean; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TResponse;
 }
 
 
