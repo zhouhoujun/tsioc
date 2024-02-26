@@ -3,45 +3,25 @@ import { isArray, isNil, isString } from '@tsdi/ioc';
 /**
  * incoming header.
  */
-export type IncomingHeader = string | readonly string[] | undefined | number;
-/**
- * outgoing header.
- */
-export type OutgoingHeader = string | readonly string[] | undefined | number;
+export type Header = string | readonly string[] | number | undefined | null;
 
-export interface IncomingHeaders {
-    [x: string]: IncomingHeader | null;
-    'content-type'?: string;
-    'Content-Type'?: string;
-    'content-length'?: string | number;
-    'Content-Length'?: string | number;
-    'content-encoding'?: string;
-    'Content-Encoding'?: string;
-    ':method'?: string;
-    ':path'?: string;
-    'origin-path'?: string;
-    ':authority'?: string;
-    ':scheme'?: string;
-    ':topic'?: string;
-
-}
-
-export interface IncomingStatusHeaders {
+export interface StatusHeaders {
     status?: number | string;
     ':status'?: number | string;
 }
 
-export interface OutgoingHeaders {
-    [x: string]: OutgoingHeader | null;
+export interface Headers {
+    [x: string]: Header;
     'content-type'?: string;
     'Content-Type'?: string;
     'content-length'?: string | number;
     'Content-Length'?: string | number;
     'content-encoding'?: string;
     'Content-Encoding'?: string;
-    ':authority'?: string;
     ':path'?: string;
     'origin-path'?: string;
+    ':authority'?: string;
+    ':scheme'?: string;
     ':method'?: string;
     ':type'?: string | number;
     ':topic'?: string;
@@ -51,13 +31,13 @@ export interface OutgoingHeaders {
 /**
  * transport headers.
  */
-export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
+export class TransportHeaders<T extends Header = Header> {
 
     private _hdrs: Map<string, T>;
     private _rcd?: Record<string, T>;
     private _normal: Map<string, string>;
 
-    constructor(headers?: string | Record<string, T> | HeaderSet<T>) {
+    constructor(headers?: string | HeadersLike<T>) {
         this._hdrs = new Map();
         this._normal = new Map();
         if (headers) {
@@ -70,12 +50,12 @@ export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
                         this.append(name, value as T);
                     }
                 })
-            } else if (headers instanceof HeaderSet) {
+            } else if (headers instanceof TransportHeaders) {
                 headers.forEach((n, v) => {
                     this.set(n, v);
                 });
             } else {
-                this.setHeaders(headers);
+                this.setHeaders(headers as Record<string, T>);
             }
         }
     }
@@ -169,24 +149,7 @@ export class HeaderSet<T extends IncomingHeader | OutgoingHeader> {
     }
 }
 
-/**
- * client request headers.
- */
-export class ReqHeaders extends HeaderSet<IncomingHeader> {
-    get headers(): IncomingHeaders & IncomingStatusHeaders {
-        return this.getHeaders();
-    }
-}
 
-/**
- * client response headers.
- */
-export class ResHeaders extends HeaderSet<OutgoingHeader>  {
-    get headers(): OutgoingHeaders & IncomingStatusHeaders {
-        return this.getHeaders();
-    }
-}
 
-export type ReqHeadersLike = ReqHeaders | (IncomingHeaders & IncomingStatusHeaders);
-export type ResHeadersLike = ResHeaders | (OutgoingHeaders & IncomingStatusHeaders);
+export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (Headers & StatusHeaders);
 

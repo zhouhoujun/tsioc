@@ -1,9 +1,9 @@
-import { Abstract, Injector, InvocationContext } from '@tsdi/ioc';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { HeaderPacket, Packet, StatusCode } from './packet';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { TransportErrorResponse, TransportEvent } from './response';
-import { OutgoingHeaders, ResHeaders } from './headers';
+import { HeadersLike } from './headers';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportRequest } from './request';
 import { Outgoing } from './outgoing';
@@ -65,9 +65,9 @@ export interface AssetTransportOpts extends TransportOpts {
  */
 @Abstract()
 export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
-    abstract createErrorResponse(options: { url?: string; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; error?: any; statusText?: string; statusMessage?: string; }): TErrorResponse;
-    abstract createHeadResponse(options: { url?: string; ok?: boolean; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; statusText?: string; statusMessage?: string; }): TResponse;
-    abstract createResponse(options: { url?: string; ok?: boolean; headers?: ResHeaders | OutgoingHeaders; status?: StatusCode; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TResponse;
+    abstract createErrorResponse(options: { url?: string; headers?: HeadersLike; status?: StatusCode; error?: any; statusText?: string; statusMessage?: string; }): TErrorResponse;
+    abstract createHeadResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: StatusCode; statusText?: string; statusMessage?: string; }): TResponse;
+    abstract createResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: StatusCode; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TResponse;
 }
 
 
@@ -77,10 +77,6 @@ export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorRes
  */
 @Abstract()
 export abstract class TransportSession<TSocket = any>  {
-    /**
-     * injector.
-     */
-    abstract get injector(): Injector;
     /**
      * socket.
      */
@@ -97,13 +93,7 @@ export abstract class TransportSession<TSocket = any>  {
      * send.
      * @param packet 
      */
-    abstract send(packet: Outgoing, context?: InvocationContext): Observable<any>;
-    /**
-     * send.
-     * @param packet 
-     */
-    abstract send(packet: TransportEvent): Observable<any>;
-
+    abstract send(packet: Packet, context?: InvocationContext): Observable<any>;
     /**
      * serialize packet.
      * @param packet
@@ -114,12 +104,6 @@ export abstract class TransportSession<TSocket = any>  {
      * @param raw 
      */
     abstract deserialize(raw: Buffer): Packet;
-
-    /**
-     * request.
-     * @param packet 
-     */
-    abstract request(packet: TransportRequest, context?: InvocationContext): Observable<TransportEvent>;
 
     /**
      * receive
@@ -133,15 +117,22 @@ export abstract class TransportSession<TSocket = any>  {
 
 }
 
+@Abstract()
+export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket> {
+
+    /**
+     * request.
+     * @param packet 
+     */
+    abstract request(packet: TransportRequest): Observable<TransportEvent>;
+
+}
+
 /**
  * transport session factory.
  */
 @Abstract()
 export abstract class TransportSessionFactory<TSocket = any> {
-    /**
-     * injector.
-     */
-    abstract get injector(): Injector;
     /**
      * create transport session.
      * @param options 

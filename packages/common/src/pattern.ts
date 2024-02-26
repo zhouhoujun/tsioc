@@ -1,24 +1,33 @@
 import { Abstract, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 
-/**
- * Command pattern.
- */
-export interface CommandPattern {
-    [key: string]: string | number;
-    cmd: string;
-}
+
 
 /**
  * Object pattern.
  */
 export interface ObjectPattern {
-    [key: string]: string | number | ObjectPattern;
+    [key: string]: undefined | string | number | ObjectPattern;
 }
+
+/**
+ * Command pattern.
+ */
+export interface CommandPattern {
+    [key: string]: undefined | string | number | ObjectPattern;
+    cmd: string;
+}
+
+export interface TopicPattern {
+    [key: string]: undefined | string | number | ObjectPattern;
+    topic: string;
+    replyTo?: string;
+}
+
 
 /**
  * Request pattern.
  */
-export type Pattern = string | number | CommandPattern | ObjectPattern;
+export type Pattern = string | number | CommandPattern | TopicPattern | ObjectPattern;
 
 /**
  * pattern formatter.
@@ -50,7 +59,9 @@ export abstract class PatternFormatter {
  * @param  {Pattern} pattern - client pattern
  * @returns string
  */
-export function patternToPath(pattern: Pattern, joinby = '/', keyValueJoin = ':'): string {
+export function patternToPath(pattern: Pattern | undefined, joinby = '/', keyValueJoin = ':'): string {
+    if (pattern == undefined) return '';
+
     if (isString(pattern)) {
         return pattern;
     }

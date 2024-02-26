@@ -1,4 +1,4 @@
-import { IncomingHeaders, OutgoingHeaders } from './headers';
+import { HeadersLike } from './headers';
 
 
 
@@ -7,13 +7,13 @@ import { IncomingHeaders, OutgoingHeaders } from './headers';
  */
 export interface HeaderPacket {
     id?: any;
-    url?: string;
-    topic?: string;
-    method?: string;
     type?: number | string;
-    headers?: IncomingHeaders | OutgoingHeaders;
-    error?: any;
-    replyTo?: string;
+    headers?: HeadersLike;
+    // url?: string;
+    // topic?: string;
+    // method?: string;
+    // error?: any;
+    // replyTo?: string;
 
 }
 
@@ -41,7 +41,7 @@ export interface SendPacket extends Packet {
 /**
  * status code
  */
-export type StatusCode = string | number;
+export type StatusCode = string | number | undefined;
 
 // /**
 //  * response packet data.
