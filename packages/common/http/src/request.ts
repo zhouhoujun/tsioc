@@ -1,5 +1,5 @@
 import { isString, InvocationContext, EMPTY_OBJ } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/common';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, TransportRequest, TransportHeaders } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -9,7 +9,7 @@ import { HttpParams } from './params';
  * All values are optional and will override default values if provided.
  */
 export interface HttpRequestInit {
-    headers?: ReqHeaders;
+    headers?: HeadersLike;
     context?: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
@@ -58,7 +58,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     /**
      * Outgoing headers for this request.
      */
-    readonly headers!: ReqHeaders;
+    readonly headers!: TransportHeaders;
 
     /**
      * Whether this request should be made in a way that exposes progress events.
@@ -110,7 +110,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     readonly context: InvocationContext<any>;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
-        headers?: ReqHeaders,
+        headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
@@ -119,7 +119,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         context?: InvocationContext
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
-        headers?: ReqHeaders,
+        headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
@@ -128,7 +128,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         context?: InvocationContext
     });
     constructor(method: string, url: string, body: T | null, init?: {
-        headers?: ReqHeaders,
+        headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
@@ -138,7 +138,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     });
     constructor(
         method: string, readonly url: string, third?: T | {
-            headers?: ReqHeaders,
+            headers?: HeadersLike,
             reportProgress?: boolean,
             params?: HttpParams,
             observe?: 'body' | 'events' | 'response',
@@ -147,7 +147,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             context?: InvocationContext
         } | null,
         fourth?: {
-            headers?: ReqHeaders,
+            headers?: HeadersLike,
             reportProgress?: boolean,
             params?: HttpParams,
             observe?: 'body' | 'events' | 'response',
@@ -186,7 +186,7 @@ export class HttpRequest<T = any> implements TransportRequest {
 
             // Override headers if they're provided.
             if (options.headers) {
-                this.headers = options.headers
+                this.headers = new TransportHeaders(options.headers)
             }
 
             if (options.params) {
@@ -194,9 +194,9 @@ export class HttpRequest<T = any> implements TransportRequest {
             }
         }
 
-        // If no headers have been passed in, construct a new ReqHeaders instance.
+        // If no headers have been passed in, construct a new HeadersLike instance.
         if (!this.headers) {
-            this.headers = new ReqHeaders()
+            this.headers = new TransportHeaders()
         }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -297,7 +297,7 @@ export class HttpRequest<T = any> implements TransportRequest {
 
     clone(): HttpRequest<T>;
     clone(update: {
-        headers?: ReqHeaders,
+        headers?: TransportHeaders,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -310,7 +310,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         setParams?: { [param: string]: string },
     }): HttpRequest<T>;
     clone<V>(update: {
-        headers?: ReqHeaders,
+        headers?: TransportHeaders,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -323,7 +323,7 @@ export class HttpRequest<T = any> implements TransportRequest {
         setParams?: { [param: string]: string },
     }): HttpRequest<V>;
     clone(update: {
-        headers?: ReqHeaders,
+        headers?: TransportHeaders,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,

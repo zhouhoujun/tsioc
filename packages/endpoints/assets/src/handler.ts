@@ -1,6 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
-import { GET, MESSAGE, TransportRequest, TransportSession } from '@tsdi/common';
+import { TransportRequest, GET, MESSAGE } from '@tsdi/common';
+import { TransportSession } from '@tsdi/common/transport';
 import { AssetContextFactory, RequestHandler, ServerOpts, TransportEndpoint } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
 

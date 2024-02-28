@@ -348,11 +348,11 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         } else {
             // const method = first as string;
             // Figure out the headers.
-            let headers: ReqHeaders | undefined = undefined;
-            if (options.headers instanceof ReqHeaders) {
+            let headers: TransportHeaders | undefined = undefined;
+            if (options.headers instanceof TransportHeaders) {
                 headers = options.headers
             } else {
-                headers = new ReqHeaders(options.headers)
+                headers = new TransportHeaders(options.headers)
             }
 
             // Sort out parameters.

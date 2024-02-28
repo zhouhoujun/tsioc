@@ -192,7 +192,7 @@ export interface ExistingProvider<T = any> extends Provide<T>, UseExisting<T> { 
 /**
  * type provider.
  */
-export type TypeProvider<T = any> = Type<T>;
+export type TypeProvider<T = any> = CtorType<T>;
 
 /**
  * use static provider of.
@@ -216,7 +216,7 @@ export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | Value
  * providers for {@link Injector}.
  * 
  */
-export type ProviderType = Type | Modules[] | StaticProvider;
+export type ProviderType = CtorType | Modules[] | StaticProvider;
 
 /**
  * type module with providers.

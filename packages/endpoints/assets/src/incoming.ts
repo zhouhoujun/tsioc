@@ -1,9 +1,10 @@
-import { IncomingHeaders, Packet, hdr, TransportSession, MESSAGE, GET, isBuffer, StreamAdapter, Incoming } from '@tsdi/common';
+import { HeaderRecords, MESSAGE, GET } from '@tsdi/common';
+import { Packet, hdr, TransportSession, Incoming } from '@tsdi/common/transport';
 import { Readable } from 'readable-stream';
 
 export class IncomingMessage<T> extends Readable implements Incoming<T> {
 
-    readonly headers: IncomingHeaders;
+    readonly headers: HeaderRecords;
     body?: any;
     rawBody?: any;
     payload?: any;
@@ -42,7 +43,7 @@ export class IncomingMessage<T> extends Readable implements Incoming<T> {
         let buf: any = null
 
         if (payload != null) {
-            if (isBuffer(payload) && start < payload.length) {
+            if (Buffer.isBuffer(payload) && start < payload.length) {
                 buf = payload.subarray(start, end)
             } else if (this.session.streamAdapter.isReadable(payload)) {
                 buf = payload.read(size)

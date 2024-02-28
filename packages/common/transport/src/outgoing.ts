@@ -1,11 +1,10 @@
-import { OutgoingHeader, OutgoingHeaders } from './headers';
-import { HeaderPacket, StatusCode } from './packet';
-
+import { StatusCode, HeaderRecords } from '@tsdi/common';
+import { IWritableStream } from './stream';
 
 /**
  * server outgoing message stream.
  */
-export interface Outgoing<T = any> extends HeaderPacket {
+export interface Outgoing<T = any> extends IWritableStream {
     /**
     * packet id.
     */
@@ -52,7 +51,7 @@ export interface Outgoing<T = any> extends HeaderPacket {
 
     body?: T;
 
-    rawBody?: Uint8Array | Buffer;
+    rawBody?: any;
 
     /**
      * headers has sent or not.
@@ -61,7 +60,7 @@ export interface Outgoing<T = any> extends HeaderPacket {
     /**
      * Get all headers.
      */
-    getHeaders?(): OutgoingHeaders;
+    getHeaders?(): HeaderRecords;
 
     /**
      * has header field or not.
@@ -86,7 +85,7 @@ export interface Outgoing<T = any> extends HeaderPacket {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): OutgoingHeader;
+    getHeader(field: string): HeaderRecords;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -114,7 +113,7 @@ export interface Outgoing<T = any> extends HeaderPacket {
      * @param {String} val
      * @api public
      */
-    appendHeader?(field: string, val: OutgoingHeader): void;
+    appendHeader?(field: string, val: HeaderRecords): void;
     /**
      * Remove header `field`.
      *

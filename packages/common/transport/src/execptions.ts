@@ -1,5 +1,5 @@
 import { Execption, isArray } from '@tsdi/ioc';
-import { StatusCode } from './packet';
+import { StatusCode } from '@tsdi/common';
 
 
 /**

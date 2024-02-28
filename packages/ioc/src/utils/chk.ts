@@ -1,4 +1,4 @@
-import { AnnotationType, Type } from '../types';
+import { AnnotationType, CtorType, Type } from '../types';
 
 
 declare let process: any;

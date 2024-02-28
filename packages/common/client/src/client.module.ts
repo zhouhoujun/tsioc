@@ -1,10 +1,10 @@
-import { ArgumentExecption, Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, isString, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { Decoder, Encoder, HybirdTransport, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
-import { TransportBackend } from './backend';
-import { ClientOpts, ClientTransportPacketStrategy } from './options';
+import { HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
+import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
+import { TransportBackend } from './backend';
 
 
 export interface ClientModuleConfig {
@@ -20,6 +20,10 @@ export interface ClientModuleConfig {
      * custom provider with module.
      */
     providers?: ProviderType[];
+    /**
+     * trnsport backend.
+     */
+    backend: ProvdierOf<TransportBackend>;
 }
 
 export interface ClientModuleOpts extends ClientModuleConfig {
@@ -62,9 +66,7 @@ export interface ClientTokenOpts {
 
 
 @Module({
-    providers: [
-        TransportBackend
-    ]
+
 })
 export class ClientModule {
 
@@ -109,8 +111,6 @@ export class ClientModule {
  */
 export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 
-export const CLIENT_TRANSPORT_PACKET_STRATEGIES: Record<string, ClientTransportPacketStrategy> = {};
-
 
 function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
     const { client, transport } = options;
@@ -127,7 +127,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             return { ...defts, ...options } as ClientModuleOpts;
         },
         onRegistered: (injector) => {
-            const { clientType, clientProvider, hanlderType, clientOptsToken, defaultOpts } = injector.get(moduleOptsToken);
+            const { clientType, backend, clientProvider, hanlderType, clientOptsToken, defaultOpts } = injector.get(moduleOptsToken);
 
             const providers = [];
             if (clientProvider) {
@@ -150,33 +150,10 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                     init: (clientOpts: ClientOpts) => {
 
                         const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
-                        if (opts.sessionFactory) {
-                            opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
+                        if (opts.backend || backend) {
+                            opts.providers.push(toProvider(TransportBackend, opts.backend || backend))
                         }
 
-                        if (opts.strategy) {
-                            const strategy = isString(opts.strategy) ? CLIENT_TRANSPORT_PACKET_STRATEGIES[opts.strategy] : opts.strategy;
-                            if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
-                            if (strategy.encoder) {
-                                opts.providers.push(toProvider(Encoder, strategy.encoder))
-                            }
-
-                            if (strategy.decoder) {
-                                opts.providers.push(toProvider(Decoder, strategy.decoder))
-                            }
-
-                            if (strategy.providers) {
-                                opts.providers.push(...strategy.providers);
-                            }
-                        }
-
-                        if (opts.timeout) {
-                            if (opts.transportOpts) {
-                                opts.transportOpts.timeout = opts.timeout;
-                            } else {
-                                opts.transportOpts = { timeout: opts.timeout };
-                            }
-                        }
                         return opts;
                     }
                 }))
@@ -192,34 +169,11 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
         providers.push(
             toFactory(token, options.clientOpts!, {
                 init: (clientOpts: ClientOpts, injector: Injector) => {
-                    const { defaultOpts, clientOptsToken } = injector.get(moduleOptsToken);
+                    const { defaultOpts, backend, clientOptsToken } = injector.get(moduleOptsToken);
                     const opts = { ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
 
-                    if (opts.timeout) {
-                        if (opts.transportOpts) {
-                            opts.transportOpts.timeout = opts.timeout;
-                        } else {
-                            opts.transportOpts = { timeout: opts.timeout };
-                        }
-                    }
-                    if (opts.sessionFactory) {
-                        opts.providers.push(toProvider(TransportSessionFactory, opts.sessionFactory))
-                    }
-
-                    if (opts.strategy) {
-                        const strategy = isString(opts.strategy) ? CLIENT_TRANSPORT_PACKET_STRATEGIES[opts.strategy] : opts.strategy;
-                        if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
-                        if (strategy.encoder) {
-                            opts.providers.push(toProvider(Encoder, strategy.encoder))
-                        }
-
-                        if (strategy.decoder) {
-                            opts.providers.push(toProvider(Decoder, strategy.decoder))
-                        }
-
-                        if (strategy.providers) {
-                            opts.providers.push(...strategy.providers);
-                        }
+                    if (opts.backend || backend) {
+                        opts.providers.push(toProvider(TransportBackend, opts.backend || backend))
                     }
 
                     opts.providers.push({ provide: clientOptsToken, useExisting: token });

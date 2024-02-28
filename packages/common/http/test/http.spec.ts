@@ -1,6 +1,6 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { BadRequestExecption } from '@tsdi/common';
+import { BadRequestExecption } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
     Middleware, AssetContext, compose, NEXT, MicroServRouterModule, EndpointsModule
