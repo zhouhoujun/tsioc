@@ -1,4 +1,4 @@
-import { Type, CtorType } from '../types';
+import { Type, ClassType } from '../types';
 import { Class } from '../metadata/type';
 import { isFunction, isPromise } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
@@ -30,7 +30,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         super()
         this._type = _class.type;
         this._typeName = getClassName(this._type);
-        injector.register(this.type as CtorType);
+        injector.register(this.type as ClassType);
         this._isResolve = hasContext(options);
         this._ctx = this.createContext(injector, { isResolve: this._isResolve, ...options });
         this._mthCtx = new Map();

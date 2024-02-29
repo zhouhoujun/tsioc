@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, isArray, isDefined, Type, CtorType, Parameter, OperationInvoker } from '@tsdi/ioc';
+import { Abstract, EMPTY, isArray, isDefined, Type, ClassType, Parameter, OperationInvoker } from '@tsdi/ioc';
 import { ModelArgumentResolver, EndpointContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
@@ -53,7 +53,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             throw new MissingModelFieldExecption(missings, modelType)
         }
 
-        const model = this.createInstance(modelType as CtorType);
+        const model = this.createInstance(modelType as ClassType);
         props.forEach(prop => {
             let val: any;
             if (this.hasModel(prop.provider ?? prop.type)) {
@@ -68,7 +68,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         return model
     }
 
-    protected createInstance(model: CtorType) {
+    protected createInstance(model: ClassType) {
         return new model()
     }
 
@@ -117,7 +117,7 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
     }
 
     protected override createInstance(model: Type) {
-        return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model as CtorType)
+        return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model as ClassType)
     }
 
     get resolvers(): ModelFieldResolver<C>[] {

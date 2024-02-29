@@ -1,15 +1,15 @@
-import { Inject, isString, Token, tokenId, CtorType } from '@tsdi/ioc';
+import { Inject, isString, Token, tokenId, ClassType } from '@tsdi/ioc';
 import { invalidPipeArgument, Pipe, PipeTransform } from '@tsdi/core';
 
 /**
  * ObjectID token for objectId pipe {@link ParseObjectIdPipe}
  */
-export const ObjectIDToken: Token<CtorType> = tokenId<CtorType>('ObjectID');
+export const ObjectIDToken: Token<ClassType> = tokenId<ClassType>('ObjectID');
 
 @Pipe('objectId')
 export class ParseObjectIdPipe implements PipeTransform {
 
-    constructor(@Inject(ObjectIDToken) private type: CtorType) { }
+    constructor(@Inject(ObjectIDToken) private type: ClassType) { }
 
     transform(value: any) {
         if(!this.type) {

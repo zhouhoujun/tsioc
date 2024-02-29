@@ -1,4 +1,4 @@
-import { Type, CtorType, Modules, EMPTY } from '../types';
+import { Type, ClassType, Modules, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -791,7 +791,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         }
         switch (rd.fy) {
             case FnType.Cotr:
-                return new (rd.fn as CtorType)(...deps)
+                return new (rd.fn as ClassType)(...deps)
             case FnType.Fac:
                 if (value === EMPTY) {
                     return rd.value = value = rd.fn?.(...deps)
