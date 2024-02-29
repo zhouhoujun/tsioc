@@ -25,7 +25,7 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
-                strategy: 'asset',
+                // strategy: 'asset',
                 connectOpts: {
                     port: 2000
                 }

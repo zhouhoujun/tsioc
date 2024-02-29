@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common';
+import { LOCALHOST } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';

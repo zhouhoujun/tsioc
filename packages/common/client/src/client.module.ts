@@ -20,10 +20,6 @@ export interface ClientModuleConfig {
      * custom provider with module.
      */
     providers?: ProviderType[];
-    /**
-     * trnsport backend.
-     */
-    backend: ProvdierOf<TransportBackend>;
 }
 
 export interface ClientModuleOpts extends ClientModuleConfig {
@@ -51,6 +47,10 @@ export interface ClientModuleOpts extends ClientModuleConfig {
      * client default options
      */
     defaultOpts?: ClientOpts;
+    /**
+     * trnsport backend.
+     */
+    backend?: ProvdierOf<TransportBackend>;
 }
 
 

@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, hasOwn, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { TransportHeaders, TransportParams, RequestOptions, ResponseAs, RequestInitOpts, Pattern, TransportEvent, TransportResponse, TransportRequest } from '@tsdi/common';
+import { TransportHeaders, TransportParams, RestfulRequestOptions, ResponseAs, Pattern, TransportEvent, TransportResponse, TransportRequest, RequestInitOpts } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { ClientHandler } from './handler';
 
@@ -34,7 +34,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe?: 'body';
         responseType: 'arraybuffer';
     }): Observable<ArrayBuffer>;
@@ -48,7 +48,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the response, with the response body of type `Blob`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe?: 'body';
         responseType: 'blob';
     }): Observable<Blob>;
@@ -62,7 +62,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the response, with the response body of type string.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
@@ -77,7 +77,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of the response, with the response body as an array of `TransportEvent`s for
      * the request.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'events',
         responseType: 'arraybuffer',
     }): Observable<TransportEvent<ArrayBuffer>>;
@@ -92,7 +92,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `Blob`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'events',
         responseType: 'blob',
     }): Observable<TransportEvent<Blob>>;
@@ -107,7 +107,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type string.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'events',
         responseType?: 'text',
     }): Observable<TransportEvent<string>>;
@@ -122,7 +122,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'events',
         responseType?: 'json',
     }): Observable<TransportEvent<any>>;
@@ -137,7 +137,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `R`.
      */
-    send<R>(pattern: Pattern, options: RequestOptions & {
+    send<R>(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'events',
         responseType?: 'json',
     }): Observable<TransportEvent<R>>;
@@ -153,7 +153,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @return An `Observable` of all `TransportEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'emit',
     }): Observable<TransportEvent<any>>;
 
@@ -166,7 +166,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the `TransportResponse`, with the response body as an `ArrayBuffer`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
     }): Observable<TransportResponse<ArrayBuffer>>;
@@ -179,7 +179,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the `TransportResponse`, with the response body of type `Blob`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'response';
         responseType: 'blob';
     }): Observable<TransportResponse<Blob>>;
@@ -193,7 +193,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the send response, with the response body of type string.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'response';
         responseType: 'text';
     }): Observable<TransportResponse<string>>;
@@ -208,7 +208,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return  An `Observable` of the full `TransportResponse`, with the response body of type `R`.
      */
-    send<R = any>(pattern: Pattern, options: RequestOptions & {
+    send<R = any>(pattern: Pattern, options: RestfulRequestOptions & {
         observe: 'response';
         responseType?: 'json';
     }): Observable<TransportResponse<R>>;
@@ -223,7 +223,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the `TransportResponse`, with the response body of type `R`.
      */
-    send<R = any>(pattern: Pattern, options?: RequestOptions & {
+    send<R = any>(pattern: Pattern, options?: RestfulRequestOptions & {
         observe?: 'body';
         responseType?: 'json';
     }): Observable<R>;
@@ -233,7 +233,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
-    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<TransportEvent>;
+    send(pattern: Pattern, options: RestfulRequestOptions & ResponseAs): Observable<TransportEvent>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
@@ -242,7 +242,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      *
      * @return An `Observable` of the requested response, with body of type `any`.
      */
-    send(req: TRequest | Pattern, options?: RequestOptions & ResponseAs): Observable<any> {
+    send(req: TRequest | Pattern, options?: RestfulRequestOptions & ResponseAs): Observable<any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
@@ -258,7 +258,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
             )
     }
 
-    protected request(first: Pattern | TRequest, options: RequestOptions = EMPTY_OBJ as any): Observable<any> {
+    protected request(first: Pattern | TRequest, options: RestfulRequestOptions = EMPTY_OBJ as any): Observable<any> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -338,7 +338,7 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
      * @param first 
      * @param options 
      */
-    protected buildRequest(first: TRequest | Pattern, options: RequestOptions & ResponseAs = {}): TRequest {
+    protected buildRequest(first: TRequest | Pattern, options: RestfulRequestOptions & ResponseAs = {}): TRequest {
         let req: TRequest;
         // First, check whether the primary argument is an instance of `TRequest`.
         if (this.isRequest(first)) {
@@ -368,7 +368,8 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
             const context = options.context || createContext(this.handler.injector);
             this.initContext(context);
             // Construct the request.
-            req = this.createRequest(first, context, {
+            req = this.createRequest(first, {
+                context,
                 ...options,
                 headers,
                 params,
@@ -390,9 +391,8 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         return hasOwn(target, 'context') && target.context instanceof InvocationContext;
     }
 
-    protected createRequest(pattern: Pattern, context: InvocationContext, options: RequestInitOpts): TRequest {
-        // context.get()
-        return { ...options, context, pattern } as TransportRequest<any> as TRequest;
+    protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
+        return new TransportRequest(pattern, { ...options }) as TRequest;
     }
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
