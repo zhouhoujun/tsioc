@@ -6,7 +6,9 @@ import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { TransportBackend } from './backend';
 
-
+/**
+ * Client module config.
+ */
 export interface ClientModuleConfig {
     /**
      * client options.
@@ -22,6 +24,9 @@ export interface ClientModuleConfig {
     providers?: ProviderType[];
 }
 
+/**
+ * Client module options.
+ */
 export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * transport
@@ -53,7 +58,9 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     backend?: ProvdierOf<TransportBackend>;
 }
 
-
+/**
+ * Client token options.
+ */
 export interface ClientTokenOpts {
 
     transport: Transport | HybirdTransport;
@@ -65,8 +72,11 @@ export interface ClientTokenOpts {
 }
 
 
+/**
+ * Client Module.
+ */
 @Module({
-
+    
 })
 export class ClientModule {
 

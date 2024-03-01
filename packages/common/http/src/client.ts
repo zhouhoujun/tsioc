@@ -9,6 +9,8 @@ import { HttpEvent, HttpResponse } from './response';
 
 /**
  * http xml request client.
+ * 
+ * @publicApi
  */
 @Injectable()
 export class HttpClient {
@@ -435,7 +437,7 @@ export class HttpClient {
             req = new HttpRequest(method ?? GET, url!, (options.body !== undefined ? options.body : null), {
                 headers,
                 params,
-                context: options.context,
+                context: options.context!,
                 reportProgress: options.reportProgress,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json',

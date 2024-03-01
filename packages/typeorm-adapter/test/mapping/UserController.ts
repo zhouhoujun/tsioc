@@ -1,6 +1,6 @@
 import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/endpoints';
 import { lang } from '@tsdi/ioc';
-import { InternalServerExecption } from '@tsdi/common';
+import { InternalServerExecption } from '@tsdi/common/transport';
 import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
 import { Repository as TypeormRepository } from 'typeorm';

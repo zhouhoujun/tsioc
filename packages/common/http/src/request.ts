@@ -1,5 +1,5 @@
 import { isString, InvocationContext, EMPTY_OBJ, isUndefined } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, TransportRequest, TransportHeaders, RestfulRequest, Pattern } from '@tsdi/common';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, TransportRequest, TransportHeaders, Pattern } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -45,7 +45,7 @@ function mightHaveBody(method: string): boolean {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> implements RestfulRequest<T> {
+export class HttpRequest<T = any> implements TransportRequest<T> {
     
     get pattern(): Pattern {
         return this.url;

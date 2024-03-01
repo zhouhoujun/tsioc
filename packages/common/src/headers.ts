@@ -150,6 +150,8 @@ export class TransportHeaders<T extends Header = Header> {
 }
 
 
-
+/**
+ * Header like
+ */
 export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (HeaderRecords & StatusHeaders);
 
