@@ -1,4 +1,4 @@
-import { StatusCode, HeaderRecords } from '@tsdi/common';
+import { StatusCode, HeaderRecords, Header } from '@tsdi/common';
 import { IWritableStream } from './stream';
 
 /**
@@ -85,7 +85,7 @@ export interface Outgoing<T = any> extends IWritableStream {
      * @return {String}
      * @api public
      */
-    getHeader(field: string): HeaderRecords;
+    getHeader(field: string): Header;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -113,7 +113,7 @@ export interface Outgoing<T = any> extends IWritableStream {
      * @param {String} val
      * @api public
      */
-    appendHeader?(field: string, val: HeaderRecords): void;
+    appendHeader?(field: string, val: Header): void;
     /**
      * Remove header `field`.
      *

@@ -1,6 +1,7 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { ReqHeaders, TransportHeaders, TransportRequest, RequestMethod, BadRequestExecption, StreamAdapter, hdr, StatusCode, OutgoingHeaders } from '@tsdi/common';
+import { TransportHeaders, TransportRequest, RequestMethod, StatusCode, HeaderRecords } from '@tsdi/common';
+import { BadRequestExecption, StreamAdapter, hdr } from '@tsdi/common/transport';
 import { Client } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -13,7 +14,7 @@ export class AssetRedirector implements Redirector {
     constructor() {
     }
 
-    redirect<T>(req: TransportRequest, status: StatusCode, headers: OutgoingHeaders): Observable<T> {
+    redirect<T>(req: TransportRequest, status: StatusCode, headers: HeaderRecords): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             const validator = req.context.get(StatusVaildator);
             const adapter = req.context.get(StreamAdapter);

@@ -1,5 +1,5 @@
-import { Backend, Handler, Interceptor } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
+import { Backend, Handler, Interceptor } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
 
@@ -11,7 +11,9 @@ export abstract class Context<T> {
      * message
      */
     abstract get message(): T;
-
+    /**
+     * raw body.
+     */
     abstract getRawbody(): any;
 }
 

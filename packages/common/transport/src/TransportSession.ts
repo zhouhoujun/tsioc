@@ -114,6 +114,9 @@ export abstract class TransportSession<TSocket = any>  {
 
 }
 
+/**
+ * client transport session.
+ */
 @Abstract()
 export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket> {
 

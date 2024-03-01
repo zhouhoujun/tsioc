@@ -1,7 +1,7 @@
 import { isArray, isNil, isString } from '@tsdi/ioc';
 
 /**
- * incoming header.
+ * header.
  */
 export type Header = string | readonly string[] | number | undefined | null;
 

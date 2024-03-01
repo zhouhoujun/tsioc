@@ -1,3 +1,4 @@
+import { Socket } from './socket';
 import { IReadableStream } from './stream';
 
 /**
@@ -32,6 +33,10 @@ export interface Incoming<T = any> extends IReadableStream {
      * Outgoing URL parameters.
      */
     readonly params?: Record<string, string | string[] | number | any>;
+    /**
+     * incoming socket
+     */
+    readonly socket?: Socket;
     /**
      * The outgoing request method.
      */

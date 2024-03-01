@@ -1,10 +1,4 @@
 
-export const LOCALHOST = 'localhost';
-
-export const identity = 'identity';
-
-export const streamId = 'streamId';
-
 
 /**
  * events key.
