@@ -1,4 +1,4 @@
-import { Type, CtorType, Annotation, EMPTY } from '../types';
+import { Type, ClassType, Annotation, EMPTY } from '../types';
 import { ModuleWithProviders, ProvdierOf, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
@@ -163,15 +163,15 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
      * imports types.
      */
-    imports?: (CtorType | ModuleWithProviders)[];
+    imports?: (ClassType | ModuleWithProviders)[];
     /**
      * exports.
      */
-    exports?: CtorType[];
+    exports?: ClassType[];
     /**
      *  components, directives, pipes ... of current module.
      */
-    declarations?: CtorType[];
+    declarations?: ClassType[];
     /**
      * the module bootstraps.
      */

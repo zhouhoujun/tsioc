@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, createContext, CtorType, EMPTY, Execption, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, isType, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, createContext, EMPTY, Execption, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, isClassType } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -131,8 +131,8 @@ export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHand
         filtersToken?: Token<Filter<TInput, TOutput>[]>) {
         super(isInjector(context) ? createContext(context) : context, interceptorsToken, guardsToken, filtersToken);
         if (!backend) throw new ArgumentExecption(`Backend token missing of ${getClassName(this)}.`);
-        if (isType(backend) && !this.injector.has(backend, InjectFlags.Self)) {
-            this.injector.inject(backend as CtorType);
+        if (isClassType(backend) && !this.injector.has(backend, InjectFlags.Self)) {
+            this.injector.inject(backend);
         }
     }
 

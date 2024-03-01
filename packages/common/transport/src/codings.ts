@@ -22,7 +22,7 @@ export abstract class Context<T> {
  * 
  * 加密拦截器。
  */
-export interface EncodeInterceptor<TInput, TOutput> extends Interceptor<Context<TInput>, TOutput> {
+export interface EncodeInterceptor<TInput = any, TOutput = any> extends Interceptor<Context<TInput>, TOutput> {
     /**
      * the method to implemet encode interceptor.
      * 
@@ -37,12 +37,12 @@ export interface EncodeInterceptor<TInput, TOutput> extends Interceptor<Context<
 
 
 @Abstract()
-export abstract class Encoder<TInput, TOutput> implements Handler<Context<TInput>, TOutput> {
+export abstract class Encoder<TInput = any, TOutput = any> implements Handler<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class EncoderBackend<TInput, TOutput> implements Backend<Context<TInput>, TOutput> {
+export abstract class EncoderBackend<TInput = any, TOutput = any> implements Backend<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
@@ -52,7 +52,7 @@ export abstract class EncoderBackend<TInput, TOutput> implements Backend<Context
  * 
  * 解密拦截器。
  */
-export interface DecodeInterceptor<TInput, TOutput> extends Interceptor<Context<TInput>, TOutput> {
+export interface DecodeInterceptor<TInput = any, TOutput = any> extends Interceptor<Context<TInput>, TOutput> {
     /**
      * the method to implemet decode interceptor.
      * 
@@ -66,12 +66,12 @@ export interface DecodeInterceptor<TInput, TOutput> extends Interceptor<Context<
 }
 
 @Abstract()
-export abstract class Decoder<TInput, TOutput> implements Handler<Context<TInput>, TOutput> {
+export abstract class Decoder<TInput = any, TOutput = any> implements Handler<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 
 @Abstract()
-export abstract class DecoderBackend<TInput, TOutput> implements Backend<Context<TInput>, TOutput> {
+export abstract class DecoderBackend<TInput = any, TOutput = any> implements Backend<Context<TInput>, TOutput> {
     abstract handle(ctx: Context<TInput>): Observable<TOutput>;
 }
 

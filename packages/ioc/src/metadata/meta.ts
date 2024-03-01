@@ -1,4 +1,4 @@
-import { Type, CtorType, DesignParam, Modules } from '../types';
+import { Type, ClassType, DesignParam, Modules } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import { ArgumentResolver } from '../resolver';
@@ -317,17 +317,17 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Modules[]}
      */
-    imports?: (Modules<CtorType> | ModuleWithProviders)[];
+    imports?: (Modules<ClassType> | ModuleWithProviders)[];
     /**
      * exports modules
      *
      * @type {Modules[]}
      */
-    exports?: Modules<CtorType>[];
+    exports?: Modules<ClassType>[];
     /**
      * declaration the set of components, directives, pipes ... of this module.
      */
-    declarations?: Modules<CtorType>[];
+    declarations?: Modules<ClassType>[];
 }
 
 /**

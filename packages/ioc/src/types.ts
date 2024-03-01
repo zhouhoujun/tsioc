@@ -100,7 +100,7 @@ export interface Type<T = any> extends Function {
  * @extends {Type}
  * @template T
  */
-export interface CtorType<T = any> extends Type<T> {
+export interface ClassType<T = any> extends Type<T> {
     new(...args: any[]): T;
 }
 

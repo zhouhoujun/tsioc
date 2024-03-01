@@ -1,5 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { StatusCode, TransportSession } from '@tsdi/common';
+import { StatusCode } from '@tsdi/common';
+import { TransportSession } from '@tsdi/common/transport';
 import { TransportContext } from './TransportContext';
 import { FileAdapter } from './FileAdapter';
 import { StatusVaildator } from './StatusVaildator';
@@ -417,7 +418,7 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
  * Asset context factory.
  */
 @Abstract()
-export abstract class AssetContextFactory {
+export abstract class AssetContextFactory<TIncoming = any> {
     /**
      * create context factory.
      * @param injector 
@@ -425,5 +426,5 @@ export abstract class AssetContextFactory {
      * @param incoming 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, incoming: IncomingPacket, options: ServerOpts): AssetContext;
+    abstract create(injector: Injector, session: TransportSession, incoming: TIncoming, options: ServerOpts): AssetContext;
 }

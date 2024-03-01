@@ -1,6 +1,6 @@
 import { Injectable, Injector, ProvdierOf, ProviderType, ReflectiveRef, Token, Type, toProvider, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
-import { HybirdTransport, Transport } from '@tsdi/common';
+import { HybirdTransport, Transport } from '@tsdi/common/transport';
 import { Server, ServerOpts } from './Server';
 import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';

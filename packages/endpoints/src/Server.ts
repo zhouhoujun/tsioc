@@ -1,10 +1,9 @@
-import { Abstract, ProvdierOf, ProviderType, StaticProvider, Type } from '@tsdi/ioc';
-import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent, TypedRespond } from '@tsdi/core';
+import { Abstract, ClassType, ProvdierOf, ProviderType, StaticProvider } from '@tsdi/ioc';
+import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
 import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
 import { SessionOptions } from './Session';
-import { RequestHandler } from './RequestHandler';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './send';
 
@@ -27,10 +26,8 @@ export interface TransportPacketStrategy {
      */
     decoder: ProvdierOf<Decoder>;
     /**
-     * request handler for this server.
+     * providers
      */
-    requestHanlder: ProvdierOf<RequestHandler>;
-
     providers?: ProviderType[]
 }
 
@@ -62,7 +59,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     /**
      * execption handlers
      */
-    execptionHandlers?: Type<any> | Type[];
+    execptionHandlers?: ClassType<any> | ClassType[];
     /**
      * micro service transport session factory.
      */

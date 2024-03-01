@@ -1,4 +1,4 @@
-import { Type, CtorType, EMPTY, EMPTY_OBJ } from '../types';
+import { Type, ClassType, EMPTY, EMPTY_OBJ } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName, getClassChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
@@ -432,7 +432,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 const pdr = parameter.provider!;
                 if (parameter.name || parameter.propertyKey) {
                     const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(pdr as CtorType);
+                    injector.register(pdr as ClassType);
                 }
                 return ctx.get(pdr, parameter.flags)
             }
@@ -468,7 +468,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 const ty = parameter.type!;
                 if (parameter.name || parameter.propertyKey) {
                     const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(ty as CtorType);
+                    injector.register(ty as ClassType);
                 }
                 return ctx.get(ty, parameter.flags)
             }

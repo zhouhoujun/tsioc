@@ -1,6 +1,6 @@
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { BadRequestExecption } from '@tsdi/common';
+import { BadRequestExecption } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { LoggerModule } from '@tsdi/logger';
 import { EndpointsModule, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
@@ -76,7 +76,7 @@ export class DeviceController {
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
-                strategy: 'json',
+                // strategy: 'json',
                 connectOpts: {
                     port: 2000
                 }
@@ -85,7 +85,7 @@ export class DeviceController {
         EndpointsModule.register({
             transport: 'tcp',
             serverOpts: {
-                strategy: 'json',
+                // strategy: 'json',
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000

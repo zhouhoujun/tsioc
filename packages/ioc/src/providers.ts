@@ -1,4 +1,4 @@
-import { Type, CtorType, Modules, TypeOf, EMPTY_OBJ } from './types';
+import { Type, ClassType, Modules, TypeOf, EMPTY_OBJ } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
@@ -55,10 +55,10 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
     /**
      * use class for provide.
      *
-     * @type {CtorType}
+     * @type {ClassType}
      * @memberof ClassProvider
      */
-    useClass: CtorType<T>;
+    useClass: ClassType<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      * 
@@ -155,7 +155,7 @@ export interface ConstructorProvider<T = any> {
     /**
      * An injection token. Typically an instance of `CtorType` or `InjectionToken`, but can be `any`.
      */
-    provide: CtorType<T>;
+    provide: ClassType<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      */
@@ -192,7 +192,7 @@ export interface ExistingProvider<T = any> extends Provide<T>, UseExisting<T> { 
 /**
  * type provider.
  */
-export type TypeProvider<T = any> = CtorType<T>;
+export type TypeProvider<T = any> = ClassType<T>;
 
 /**
  * use static provider of.
@@ -216,7 +216,7 @@ export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | Value
  * providers for {@link Injector}.
  * 
  */
-export type ProviderType = CtorType | Modules[] | StaticProvider;
+export type ProviderType = ClassType | Modules[] | StaticProvider;
 
 /**
  * type module with providers.
@@ -225,7 +225,7 @@ export interface ModuleWithProviders<T = any> {
     /**
      * module type
      */
-    module: CtorType<T>;
+    module: ClassType<T>;
     /**
      * providers for the module
      */
@@ -272,7 +272,7 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
     };
 
     if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
-        return { ...options, provide, useClass: useOf as CtorType };
+        return { ...options, provide, useClass: useOf as ClassType };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)

@@ -3,7 +3,9 @@ import { ConfigableHandler, Interceptor } from '@tsdi/core';
 import { TransportRequest, TransportEvent } from '@tsdi/common';
 
 
-
+/**
+ * Client Handler
+ */
 @Abstract()
 export abstract class ClientHandler extends ConfigableHandler<TransportRequest, TransportEvent> {
 

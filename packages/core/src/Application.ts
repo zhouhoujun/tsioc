@@ -1,4 +1,4 @@
-import { isFunction, Type, CtorType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -34,7 +34,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     protected loader!: ModuleLoader;
 
 
-    constructor(protected target: CtorType<T> | ApplicationOption<T, TArg>, loader?: ModuleLoader) {
+    constructor(protected target: ClassType<T> | ApplicationOption<T, TArg>, loader?: ModuleLoader) {
         if (loader) {
             this.loader = loader;
         }
@@ -172,7 +172,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
             ...module,
             module: true,
             imports: module.imports ? getModuleType(module.imports) : [],
-            exports: module.exports ? lang.getTypes<CtorType>(module.exports) : [],
+            exports: module.exports ? lang.getTypes<ClassType>(module.exports) : [],
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
         } as ModuleDef);
     }
