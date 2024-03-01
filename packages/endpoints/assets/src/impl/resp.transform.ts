@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
-import { ResponsePacket, ResponseEventFactory, TransportEvent, StreamAdapter, TransportRequest, toBuffer, isBuffer, hdr, HEAD, ev, ResponseJsonParseError } from '@tsdi/common';
-import { ResponseTransform } from '@tsdi/common/client';
+import { TransportEvent, HEAD, TransportRequest, ResponseJsonParseError } from '@tsdi/common';
+import { StreamAdapter, ResponsePacket, ResponseEventFactory, toBuffer, hdr,  ev } from '@tsdi/common/transport';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, defer, of } from 'rxjs';
 import { Redirector } from '../Redirector';
@@ -9,7 +9,7 @@ import { XSSI_PREFIX } from '../utils';
 
 
 @Injectable()
-export class AssetResponseTransform implements ResponseTransform {
+export class AssetResponseTransform {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -155,7 +155,7 @@ export class AssetResponseTransform implements ResponseTransform {
             switch (responseType) {
                 case 'json':
                     // Save the original body, before attempting XSSI prefix stripping.
-                    if (isBuffer(body)) {
+                    if (Buffer.isBuffer(body)) {
                         body = new TextDecoder().decode(body);
                     }
                     originalBody = body;

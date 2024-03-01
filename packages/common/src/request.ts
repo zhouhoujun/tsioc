@@ -96,6 +96,7 @@ export class TransportRequest<T = any> {
     public payload: T | null;
     readonly reportProgress: boolean;
     readonly withCredentials: boolean;
+    readonly url: string | undefined;
     readonly urlWithParams: string | undefined;
 
     get body(): T | null {
@@ -121,7 +122,7 @@ export class TransportRequest<T = any> {
         this.timeout = options.timeout;
 
         if (isString(pattern)) {
-            const url = pattern;
+            const url = this.url = pattern;
             // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
             if (!this.params.size) {
                 this.urlWithParams = url

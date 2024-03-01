@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
-import { hdr, identity } from '@tsdi/common';
+import { hdr } from '@tsdi/common/transport';
 import { AssetContext } from '@tsdi/endpoints';
 import { Negotiator } from '../Negotiator';
 
@@ -67,13 +67,13 @@ export class TransportNegotiator extends Negotiator {
       const enco = this.matchify(a.trim(), i);
       if (enco) {
         encodings.push(enco);
-        hasIdentity = hasIdentity || this.specify(identity, enco) !== null;
+        hasIdentity = hasIdentity || this.specify('identity', enco) !== null;
         minQuality = Math.min(minQuality, enco.q || 1)
       }
     });
     if (hasIdentity) {
       encodings.push({
-        value: identity,
+        value: 'identity',
         q: minQuality,
         i: accepts.length
       })

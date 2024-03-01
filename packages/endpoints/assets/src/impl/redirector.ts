@@ -4,7 +4,7 @@ import { TransportHeaders, TransportRequest, RequestMethod, StatusCode, HeaderRe
 import { BadRequestExecption, StreamAdapter, hdr } from '@tsdi/common/transport';
 import { Client } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
-import { Observable, Observer, Subscription } from 'rxjs';
+import { Observable, Observer, Subscription, throwError } from 'rxjs';
 import { Redirector } from '../Redirector';
 
 
@@ -16,6 +16,8 @@ export class AssetRedirector implements Redirector {
 
     redirect<T>(req: TransportRequest, status: StatusCode, headers: HeaderRecords): Observable<T> {
         return new Observable((observer: Observer<T>) => {
+            if(!req.url) return observer.error(new BadRequestExecption());
+
             const validator = req.context.get(StatusVaildator);
             const adapter = req.context.get(StreamAdapter);
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
@@ -62,7 +64,7 @@ export class AssetRedirector implements Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqhdrs = req.headers instanceof TransportHeaders ? req.headers : new ReqHeaders(req.headers);
+                    let reqhdrs = req.headers instanceof TransportHeaders ? req.headers : new TransportHeaders(req.headers);
                     let method = req.method as RequestMethod;
                     let body = req.body;
 
@@ -144,7 +146,7 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: OutgoingHeaders) {
+export function parseReferrerPolicyFromHeader(headers: HeaderRecords) {
     const policyTokens = (headers[hdr.REFERRER_POLICY] as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {
