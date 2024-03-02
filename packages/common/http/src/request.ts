@@ -1,5 +1,5 @@
-import { isString, InvocationContext, EMPTY_OBJ } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, ReqHeaders, TransportRequest } from '@tsdi/common';
+import { isString, InvocationContext, EMPTY_OBJ, isUndefined } from '@tsdi/ioc';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, TransportRequest, TransportHeaders, Pattern } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -9,11 +9,11 @@ import { HttpParams } from './params';
  * All values are optional and will override default values if provided.
  */
 export interface HttpRequestInit {
-    headers?: ReqHeaders;
+    headers?: HeadersLike;
     context?: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
-    
+
     observe?: 'body' | 'events' | 'response';
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
     withCredentials?: boolean;
@@ -45,7 +45,15 @@ function mightHaveBody(method: string): boolean {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> implements TransportRequest {
+export class HttpRequest<T = any> implements TransportRequest<T> {
+    
+    get pattern(): Pattern {
+        return this.url;
+    }
+
+    get payload(): T | null {
+        return this.body;
+    }
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -58,7 +66,7 @@ export class HttpRequest<T = any> implements TransportRequest {
     /**
      * Outgoing headers for this request.
      */
-    readonly headers!: ReqHeaders;
+    readonly headers!: TransportHeaders;
 
     /**
      * Whether this request should be made in a way that exposes progress events.
@@ -73,7 +81,7 @@ export class HttpRequest<T = any> implements TransportRequest {
      */
     readonly withCredentials: boolean = false;
 
-    
+
     readonly observe: 'body' | 'events' | 'response' | 'observe' | 'emit';
 
     /**
@@ -110,44 +118,44 @@ export class HttpRequest<T = any> implements TransportRequest {
     readonly context: InvocationContext<any>;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
-        headers?: ReqHeaders,
+        headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-        context?: InvocationContext
+        context: InvocationContext
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
-        headers?: ReqHeaders,
+        headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-        context?: InvocationContext
+        context: InvocationContext
     });
     constructor(method: string, url: string, body: T | null, init?: {
-        headers?: ReqHeaders,
+        headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-        context?: InvocationContext
+        context: InvocationContext
     });
     constructor(
         method: string, readonly url: string, third?: T | {
-            headers?: ReqHeaders,
+            headers?: HeadersLike,
             reportProgress?: boolean,
             params?: HttpParams,
             observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
-            context?: InvocationContext
+            context: InvocationContext
         } | null,
         fourth?: {
-            headers?: ReqHeaders,
+            headers?: HeadersLike,
             reportProgress?: boolean,
             params?: HttpParams,
             observe?: 'body' | 'events' | 'response',
@@ -170,7 +178,7 @@ export class HttpRequest<T = any> implements TransportRequest {
             options = third as HttpRequestInit
         }
 
-        
+
         this.observe = options.observe || 'body';
         this.context = options.context!;
         // If options have been passed, interpret them.
@@ -186,7 +194,7 @@ export class HttpRequest<T = any> implements TransportRequest {
 
             // Override headers if they're provided.
             if (options.headers) {
-                this.headers = options.headers
+                this.headers = new TransportHeaders(options.headers)
             }
 
             if (options.params) {
@@ -194,9 +202,9 @@ export class HttpRequest<T = any> implements TransportRequest {
             }
         }
 
-        // If no headers have been passed in, construct a new ReqHeaders instance.
+        // If no headers have been passed in, construct a new HeadersLike instance.
         if (!this.headers) {
-            this.headers = new ReqHeaders()
+            this.headers = new TransportHeaders()
         }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -297,44 +305,47 @@ export class HttpRequest<T = any> implements TransportRequest {
 
     clone(): HttpRequest<T>;
     clone(update: {
-        headers?: ReqHeaders,
+        headers?: TransportHeaders,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: T | null,
+        payload?: T | null;
         method?: string,
         url?: string,
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string },
     }): HttpRequest<T>;
     clone<V>(update: {
-        headers?: ReqHeaders,
+        headers?: TransportHeaders,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: V | null,
+        payload?: V | null;
         method?: string,
         url?: string,
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string },
     }): HttpRequest<V>;
     clone(update: {
-        headers?: ReqHeaders,
+        headers?: TransportHeaders,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: any | null,
+        payload?: any;
         method?: string,
         url?: string,
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
-    } = {}): HttpRequest<any> {
+    } = {}): HttpRequest {
         // For method, url, and responseType, take the current value unless
         // it is overridden in the update hash.
         const method = update.method || this.method;
@@ -345,7 +356,10 @@ export class HttpRequest<T = any> implements TransportRequest {
         // whatever current body is present is being overridden with an empty
         // body, whereas an `undefined` value in update.body implies no
         // override.
-        const body = (update.body !== undefined) ? update.body : this.body;
+        let body = isUndefined(update.body)?  update.payload: update.body;
+        if(isUndefined(body)) {
+            body = this.body;
+        }
 
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.

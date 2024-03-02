@@ -7,6 +7,7 @@ import { logConfig, ServerMainModule } from './demo';
 // import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { rm } from 'shelljs';
 import del = require('del');
 
 const dir = __dirname;
@@ -28,7 +29,8 @@ export class ServerBootTest {
         });
         console.log(this.ctx.baseURL);
         this.logdir = path.join(this.ctx.baseURL, 'log');
-        await del(this.logdir);
+        // await del(this.logdir);
+        rm('-rf', this.logdir);
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `log/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }
@@ -60,6 +62,7 @@ export class ServerBootTest {
     @After()
     async after() {
         await this.ctx.close();
-        await del(this.logdir);
+        // await del(this.logdir);
+        rm('-rf', this.logdir);
     }
 }

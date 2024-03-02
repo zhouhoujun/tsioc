@@ -27,6 +27,9 @@ export interface ListenOpts {
 
 export const HTTP_LISTEN_OPTS = tokenId<ListenOpts>('HTTP_LISTEN_OPTS');
 
+/**
+ * Bind listenning.
+ */
 export interface BindListenning {
     listen(listeningListener?: () => void): this;
     listen(options: number, listeningListener?: () => void): this;

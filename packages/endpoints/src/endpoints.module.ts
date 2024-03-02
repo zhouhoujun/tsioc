@@ -1,6 +1,6 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common';
+import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common/transport';
 import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -15,7 +15,6 @@ import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
-import { RequestHandler } from './RequestHandler';
 import { TransportTypedRespond } from './transport/typed.respond';
 
 
@@ -164,10 +163,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                                 if (strategy.decoder) {
                                     serverOpts.providers.push(toProvider(Decoder, strategy.decoder))
-                                }
-
-                                if (strategy.requestHanlder) {
-                                    serverOpts.providers.push(toProvider(RequestHandler, strategy.requestHanlder))
                                 }
 
                                 if (strategy.providers) {

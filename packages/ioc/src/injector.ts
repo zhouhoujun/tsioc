@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, CtorType, EMPTY, Modules } from './types';
+import { Type, ClassType, EMPTY, Modules } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -214,16 +214,16 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 注册类
      * 
-     * @param {CtorType<any>[]} types class type array.
+     * @param {ClassType<any>[]} types class type array.
      */
-    abstract register(types: (CtorType | RegisterOption)[]): this;
+    abstract register(types: (ClassType | RegisterOption)[]): this;
     /**
      * register types.
      * 
      * 注册类
      * @param types class type params.
      */
-    abstract register(...types: (CtorType | RegisterOption)[]): this;
+    abstract register(...types: (ClassType | RegisterOption)[]): this;
     /**
      * unregister the token
      *

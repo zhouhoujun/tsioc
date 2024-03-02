@@ -1,137 +1,19 @@
-import { Abstract, Injectable, getToken, isDefined, lang } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { TransportRequest, ResponseEventFactory, StatusCode, TransportErrorResponse, TransportEvent, TransportHeaderResponse, TransportResponse, TransportSession } from '@tsdi/common';
-import { Observable, catchError, mergeMap, of, take, throwError } from 'rxjs';
-
-// @Abstract()
-// export abstract class ResponseTransform<T = TransportEvent> {
-//     /**
-//      * transform response packet to <T = TransportEvent>
-//      * @param packet 
-//      * @param factory 
-//      */
-//     abstract transform(req: TransportRequest, packet: ResponsePacket, factory: ResponseEventFactory<T>): Observable<T>;
-// }
-
-// export const defaultTransform = {
-//     transform(req, packet, factory): Observable<TransportEvent> {
-//         if (packet.error) {
-//             return throwError(() => factory.createErrorResponse(packet));
-//         }
-//         return of(factory.createResponse(packet));
-//     },
-// } as ResponseTransform;
-
-
-// @Injectable()
-// export class TransportResponseEventFactory implements ResponseEventFactory<TransportEvent, TransportErrorResponse> {
-//     createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportErrorResponse {
-//         return new TransportErrorResponse(options);
-//     }
-//     createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-//         return new TransportHeaderResponse(options) as TransportEvent;
-//     }
-//     createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TransportEvent {
-//         return new TransportResponse(options) as TransportEvent;
-//     }
-// }
+import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { Observable } from 'rxjs';
 
 
 /**
  * transport client endpoint backend.
  */
-@Injectable()
-export class TransportBackend implements Backend<TransportRequest, TransportEvent>  {
+@Abstract()
+export abstract class TransportBackend implements Backend<TransportRequest, TransportEvent>  {
 
     /**
      * handle client request
      * @param req 
      */
-    handle(req: TransportRequest): Observable<TransportEvent> {
+    abstract handle(req: TransportRequest): Observable<TransportEvent>;
 
-        // const url = this.getReqUrl(req);
-
-        const pattern = lang.omit(req, 'topic', 'url', 'pattern');
-
-        // const pkg = this.toPacket(url, req);
-        const context = req.context;
-        const session = context.get(TransportSession);
-        // const transform = context.get(getToken(ResponseTransform, session.getPacketStrategy())) ?? defaultTransform;
-
-        let obs$: Observable<TransportEvent>;
-        switch (req.observe) {
-            case 'emit':
-                obs$ = session.send(req, context).pipe(take(1));
-                break;
-            case 'observe':
-                obs$ = session.request(req, context);
-                break;
-            default:
-                obs$ = session.request(req, context).pipe(take(1))
-                break;
-        }
-        return obs$.pipe(
-            catchError((err, caught) => {
-                return throwError(() => ({ ...pattern, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
-            }),
-            // mergeMap(p => transform.transform(req, p, this))
-        );
-
-    }
-
-    // createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportErrorResponse {
-    //     return new TransportErrorResponse(options);
-    // }
-    // createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; }): TransportEvent {
-    //     return new TransportHeaderResponse(options) as TransportEvent;
-    // }
-    // createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: StatusCode; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): TransportEvent {
-    //     return new TransportResponse(options) as TransportEvent;
-    // }
-
-    // protected getReqUrl(req: TransportRequest) {
-    //     return req.urlWithParams;
-    // }
-
-    // protected toPacket(url: string, req: TransportRequest) {
-    //     const pkg = {
-    //         url
-    //     } as TransportRequest;
-    //     if (req.method) {
-    //         pkg.method = req.method;
-    //     }
-    //     if (req.headers.size) {
-    //         pkg.headers = req.headers.getHeaders()
-    //     }
-    //     if (isDefined(req.body)) {
-    //         pkg.payload = req.body;
-    //     }
-
-    //     return pkg;
-    // }
 }
-
-// /**
-//  * transport client endpoint backend.
-//  */
-// @Injectable()
-// export class TopicTransportBackend extends TransportBackend {
-
-//     protected override getReqUrl(req: TransportRequest) {
-//         return req.url;
-//     }
-
-//     protected override toPacket(url: string, req: TransportRequest) {
-//         const pkg = {
-//             topic: url
-//         } as TransportRequest;
-//         if (req.headers.size) {
-//             pkg.headers = req.headers.getHeaders()
-//         }
-//         if (isDefined(req.body)) {
-//             pkg.payload = req.body;
-//         }
-
-//         return pkg;
-//     }
-// }

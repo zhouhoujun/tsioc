@@ -1,4 +1,4 @@
-import { Type, CtorType, EMPTY, EMPTY_OBJ } from '../types';
+import { Type, ClassType, EMPTY, EMPTY_OBJ } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
@@ -63,8 +63,8 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     def.debug = metadata.debug;
                     def.providers = metadata.providers;
                     if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = getTypes<CtorType>(metadata.exports);
-                    if (metadata.declarations) def.declarations = getTypes<CtorType>(metadata.declarations);
+                    if (metadata.exports) def.exports = getTypes<ClassType>(metadata.exports);
+                    if (metadata.declarations) def.declarations = getTypes<ClassType>(metadata.declarations);
                     if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
                     return next()
                 },

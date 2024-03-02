@@ -1,7 +1,7 @@
 import { isArray, isNil, isString } from '@tsdi/ioc';
 
 /**
- * incoming header.
+ * header.
  */
 export type Header = string | readonly string[] | number | undefined | null;
 
@@ -10,7 +10,7 @@ export interface StatusHeaders {
     ':status'?: number | string;
 }
 
-export interface Headers {
+export interface HeaderRecords {
     [x: string]: Header;
     'content-type'?: string;
     'Content-Type'?: string;
@@ -150,6 +150,8 @@ export class TransportHeaders<T extends Header = Header> {
 }
 
 
-
-export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (Headers & StatusHeaders);
+/**
+ * Header like
+ */
+export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (HeaderRecords & StatusHeaders);
 

@@ -1,4 +1,4 @@
-import { ResHeaders, TransportHeaderResponse, TransportResponse, HttpStatusCode, OutgoingHeaders } from '@tsdi/common';
+import { TransportHeaderResponse, TransportResponse, HttpStatusCode, TransportHeaders, HeadersLike } from '@tsdi/common';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -140,7 +140,7 @@ export abstract class HttpResponseBase implements TransportHeaderResponse {
     /**
      * All response headers.
      */
-    readonly headers: ResHeaders;
+    readonly headers: TransportHeaders;
 
     /**
      * Response status code.
@@ -188,7 +188,7 @@ export abstract class HttpResponseBase implements TransportHeaderResponse {
      */
     constructor(
         init: {
-            headers?: ResHeaders | OutgoingHeaders,
+            headers?: HeadersLike,
             status?: number,
             statusText?: string,
             url?: string,
@@ -196,7 +196,7 @@ export abstract class HttpResponseBase implements TransportHeaderResponse {
         defaultStatus: number = HttpStatusCode.Ok, defaultStatusText = 'OK') {
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
-        this.headers = init.headers instanceof ResHeaders ? init.headers : new ResHeaders(init.headers);
+        this.headers = init.headers instanceof TransportHeaders ? init.headers : new TransportHeaders(init.headers);
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
         this.url = init.url || null!
@@ -219,7 +219,7 @@ export class HttpHeaderResponse extends HttpResponseBase implements TransportHea
      * Create a new `HttpHeaderResponse` with the given parameters.
      */
     constructor(init: {
-        headers?: ResHeaders | OutgoingHeaders,
+        headers?: HeadersLike,
         status?: number,
         statusText?: string,
         url?: string,
@@ -233,7 +233,7 @@ export class HttpHeaderResponse extends HttpResponseBase implements TransportHea
      * Copy this `HttpHeaderResponse`, overriding its contents with the
      * given parameter hash.
      */
-    clone(update: { headers?: ResHeaders; status?: number; statusText?: string; url?: string; } = {}):
+    clone(update: { headers?: HeadersLike; status?: number; statusText?: string; url?: string; } = {}):
         HttpHeaderResponse {
         // Perform a straightforward initialization of the new HttpHeaderResponse,
         // overriding the current parameters with new ones if given.
@@ -261,12 +261,16 @@ export class HttpResponse<T = any> extends HttpResponseBase implements Transport
      */
     body: T | null;
 
+    get payload(): T | null {
+        return this.body;
+    }
+
     /**
      * Construct a new `HttpResponse`.
      */
     constructor(init: {
         body?: T | null,
-        headers?: ResHeaders | OutgoingHeaders;
+        headers?: HeadersLike;
         status?: number;
         statusText?: string;
         url?: string;
@@ -278,18 +282,18 @@ export class HttpResponse<T = any> extends HttpResponseBase implements Transport
     override readonly type: HttpEventType.Response = HttpEventType.Response;
 
     clone(): HttpResponse<T>;
-    clone(update: { headers?: ResHeaders; status?: number; statusText?: string; url?: string; }):
+    clone(update: { headers?: HeadersLike; status?: number; statusText?: string; url?: string; }):
         HttpResponse<T>;
     clone<V>(update: {
         body?: V | null,
-        headers?: ResHeaders | OutgoingHeaders;
+        headers?: HeadersLike;
         status?: number;
         statusText?: string;
         url?: string;
     }): HttpResponse<V>;
     clone(update: {
         body?: any | null;
-        headers?: ResHeaders | OutgoingHeaders;
+        headers?: HeadersLike;
         status?: number;
         statusText?: string;
         url?: string;
@@ -325,7 +329,7 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
 
     constructor(init: {
         error?: any;
-        headers?: ResHeaders | OutgoingHeaders;
+        headers?: HeadersLike;
         status?: number;
         statusText?: string;
         url?: string;

@@ -1,9 +1,10 @@
-import { HeaderPacket } from './packet';
+import { Socket } from './socket';
+import { IReadableStream } from './stream';
 
 /**
  * server side incoming message.
  */
-export interface Incoming<T = any> extends HeaderPacket {
+export interface Incoming<T = any> extends IReadableStream {
     /**
      * packet id.
      */
@@ -33,9 +34,13 @@ export interface Incoming<T = any> extends HeaderPacket {
      */
     readonly params?: Record<string, string | string[] | number | any>;
     /**
+     * incoming socket
+     */
+    readonly socket?: Socket;
+    /**
      * The outgoing request method.
      */
-    readonly method?: string;
+    method?: string;
     /**
      * error.
      */
@@ -49,6 +54,6 @@ export interface Incoming<T = any> extends HeaderPacket {
 
     body?: T;
 
-    rawBody?: Uint8Array | Buffer;
+    rawBody?: any;
 }
 

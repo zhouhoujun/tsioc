@@ -23,7 +23,6 @@ export interface TopicPattern {
     replyTo?: string;
 }
 
-
 /**
  * Request pattern.
  */

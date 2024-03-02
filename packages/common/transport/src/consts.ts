@@ -1,10 +1,4 @@
 
-export const LOCALHOST = 'localhost';
-
-export const identity = 'identity';
-
-export const streamId = 'streamId';
-
 
 /**
  * events key.
@@ -222,72 +216,3 @@ export namespace hdr {
 
     export const X_ACCEL_BUFFERING = 'x-accel-buffering';
 }
-
-
-
-//http
-/**
- * HEAD method
- */
-export const HEAD = 'HEAD';
-/**
- * OPTIONS method
- */
-export const OPTIONS = 'OPTIONS';
-/**
- * GET method
- */
-export const GET = 'GET';
-/**
- * DELETE method
- */
-export const DELETE = 'DELETE';
-/**
- * PATCH method
- */
-export const PATCH = 'PATCH';
-/**
- * POST method
- */
-export const POST = 'POST';
-/**
- * PUT method
- */
-export const PUT = 'PUT';
-/**
- * TRACE method
- */
-export const TRACE = 'TRACE';
-/**
- * JSONP method
- */
-export const JSONP = 'JSONP';
-
-//message
-/**
- * EVENT method
- */
-export const EVENT = 'EVENT';
-/**
- * MESSAGE method
- */
-export const MESSAGE = 'MESSAGE';
-
-//grpc
-/**
- * Grpc NO_STREAM method
- */
-export const NO_STREAM = 'NO_STREAM';
-/**
- * Grpc RX_STREAM method
- */
-export const RX_STREAM = 'RX_STREAM';
-/**
- * Grpc PT_STREAM method
- */
-export const PT_STREAM = 'PT_STREAM';
-/**
- * Grpc METHOD method
- */
-export const METHOD = 'METHOD';
-

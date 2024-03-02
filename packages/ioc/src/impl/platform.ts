@@ -1,5 +1,5 @@
 import { Token } from '../tokens';
-import { Type, CtorType } from '../types';
+import { Type, ClassType } from '../types';
 import { Handle } from '../handle';
 import { isFunction } from '../utils/chk';
 import { Action, ActionSetup } from '../action';
@@ -125,7 +125,7 @@ export class DefaultPlatform implements Platform {
 
     protected processAction(type: Type<Action>) {
         if (this._actions.has(type)) return true;
-        const instance = new (type as CtorType)(this) as Action & ActionSetup;
+        const instance = new (type as ClassType)(this) as Action & ActionSetup;
 
         this._actions.set(type, instance);
         if (isFunction(instance.setup)) instance.setup()

@@ -1,20 +1,12 @@
-import { AnnotationType, Type } from '../types';
-
+import { Observable } from 'rxjs';
+import { AnnotationType, ClassType, Type } from '../types';
+export { isObservable } from 'rxjs';
 
 declare let process: any;
 
 export const toString = Object.prototype.toString;
-const _tyfunc = 'function';
-const _tyundef = 'undefined';
-const _tystr = 'string';
-const _tybool = 'boolean';
-const _tynum = 'number';
-const _tysymbol = 'symbol';
-const _tybigint = 'bigint';
-const _tyobj = 'object';
 
 
-export { isObservable } from 'rxjs';
 /**
  * check target is function or not.
  *
@@ -23,7 +15,7 @@ export { isObservable } from 'rxjs';
  * @returns
  */
 export function isFunction(target: any): target is Function {
-    return typeof target === _tyfunc
+    return typeof target === 'function'
 }
 
 /**
@@ -32,7 +24,16 @@ export function isFunction(target: any): target is Function {
  * @returns 
  */
 export function isType(v: any): v is Type<any> {
-    return typeof v === _tyfunc;
+    return isFunction(v) && !isPrimit(v)
+}
+
+/**
+ * is class type or not.
+ * @param v 
+ * @returns 
+ */
+export function isClassType(v: any): v is ClassType<any> {
+    return isType(v)
 }
 
 
@@ -43,10 +44,9 @@ export function isType(v: any): v is Type<any> {
  * @returns {boolean}
  */
 export function isNodejsEnv(): boolean {
-    return (typeof process !== _tyundef) && (typeof process.versions.node !== _tyundef)
+    return (typeof process !== 'undefined') && (typeof process.versions.node !== 'undefined')
 }
 
-const promiseTag = '[object Promise]';
 /**
  * is target promise or not. now check is es6 Promise only.
  *
@@ -55,7 +55,7 @@ const promiseTag = '[object Promise]';
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === _tyfunc && typeof target.catch === _tyfunc)
+    return toString.call(target) === '[object Promise]' || target instanceof Promise || (target && isFunction(target.then) && isFunction(target.catch))
 }
 
 /**
@@ -66,7 +66,7 @@ export function isPromise(target: any): target is Promise<any> {
  * @returns {target is string}
  */
 export function isString(target: any): target is string {
-    return typeof target === _tystr
+    return typeof target === 'string'
 }
 
 
@@ -78,7 +78,7 @@ export function isString(target: any): target is string {
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === _tybool
+    return typeof target === 'boolean'
 }
 
 /**
@@ -89,8 +89,7 @@ export function isBoolean(target: any): target is boolean {
  * @returns {target is number}
  */
 export function isNumber(target: any): target is number {
-    const type = typeof target;
-    return type === _tynum;
+    return typeof target === 'number'
 }
 
 /**
@@ -101,7 +100,7 @@ export function isNumber(target: any): target is number {
  * @returns {target is bigint}
  */
 export function isBigInt(target: any): target is bigint {
-    return typeof target == _tybigint;
+    return typeof target === 'bigint'
 }
 
 
@@ -113,7 +112,7 @@ export function isBigInt(target: any): target is bigint {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === _tyundef
+    return typeof target === 'undefined'
 }
 
 
@@ -176,7 +175,7 @@ export function isArray(target: any): target is Array<any> {
 export function isObject(target: any): target is object {
     if (isNull(target)) return false;
     const type = typeof target;
-    return (type === _tyobj || type === _tyfunc)
+    return (type === 'object' || type === 'function')
 }
 
 
@@ -186,7 +185,7 @@ export function hasOwn(target: any, property: string) {
     return hasOwnProperty.call(target, property)
 }
 
-const dateTag = '[object Date]';
+// const dateTag = '[object Date]';
 /**
  * check target is date or not.
  *
@@ -195,10 +194,9 @@ const dateTag = '[object Date]';
  * @returns {target is Date}
  */
 export function isDate(target: any): target is Date {
-    return toString.call(target) === dateTag
+    return toString.call(target) === '[object Date]'
 }
 
-const symbolTag = '[object Symbol]';
 /**
  * check target is symbol or not.
  *
@@ -207,10 +205,10 @@ const symbolTag = '[object Symbol]';
  * @returns {target is symbol}
  */
 export function isSymbol(target: any): target is symbol {
-    return typeof target === _tysymbol || toString.call(target) === symbolTag
+    return typeof target === 'symbol' || toString.call(target) === '[object Symbol]'
 }
 
-const regTag = '[object RegExp]';
+
 /**
  * check target is regexp or not.
  *
@@ -219,7 +217,7 @@ const regTag = '[object RegExp]';
  * @returns {target is RegExp}
  */
 export function isRegExp(target: any): target is RegExp {
-    return toString.call(target) === regTag
+    return target && (target instanceof RegExp  || toString.call(target) === '[object RegExp]')
 }
 
 
@@ -255,6 +253,7 @@ function isPrimit(target: Function): boolean {
     return isBasicType(target)
         || target === Object
         || target === Promise
+        || target === Observable
 }
 
 /**

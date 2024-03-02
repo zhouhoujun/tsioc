@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import {
-    RequestOptions, ReqHeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
-    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts, ev, TransportSession, TransportSessionFactory
+    RestfulRequestOptions, ReqHeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
+    TransportParams, Pattern, patternToPath, HttpRequestMethod, RestfulRequestInitOpts, ev, TransportSession, TransportSessionFactory
 } from '@tsdi/common';
 import { Client } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
@@ -15,7 +15,7 @@ import { HttpClientOpts, HTTP_CLIENT_OPTS } from './options';
 
 
 
-export interface HttpRequestOpts extends RequestOptions {
+export interface HttpRequestOpts extends RestfulRequestOptions {
     body?: any;
     method?: HttpRequestMethod | undefined;
     headers?: ReqHeadersLike;
@@ -112,7 +112,7 @@ export class Http extends Client<HttpRequest, number> {
         return new HttpParams({ params });
     }
 
-    protected override createRequest(pattern: Pattern, options: RequestInitOpts): HttpRequest {
+    protected override createRequest(pattern: Pattern, options: RestfulRequestInitOpts): HttpRequest {
         return new HttpRequest(options.method ?? GET, patternToPath(pattern), options.body ?? options.payload ?? null, options as HttpRequestInit);
     }
 

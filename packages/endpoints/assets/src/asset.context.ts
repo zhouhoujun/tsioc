@@ -1,6 +1,7 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
 import { EndpointInvokeOpts, PipeTransform } from '@tsdi/core';
-import { Incoming, Outgoing, OutgoingHeader, IncomingHeader, OutgoingHeaders, normalize, StreamAdapter, isBuffer, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException, HEAD, StatusCode, IReadableStream } from '@tsdi/common';
+import {  HEAD, StatusCode, normalize, Header, HeaderRecords } from '@tsdi/common';
+import { Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException, IReadableStream } from '@tsdi/common/transport';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
@@ -320,7 +321,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      */
     getHeader(field: string): string {
         field = this.toHeaderName(field);
-        let h: IncomingHeader;
+        let h: Header;
         switch (field) {
             case 'referer':
             case 'referrer':
@@ -577,7 +578,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
 
         // buffer
-        if (isBuffer(val)) {
+        if (Buffer.isBuffer(val)) {
             if (setType) this.contentType = ctype.OCTET_STREAM;
             this.length = val.length;
             return
@@ -829,20 +830,20 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @param {String} val
      * @api public
      */
-    setHeader(fields: OutgoingHeaders): void;
-    setHeader(field: string | OutgoingHeaders, val?: string | number | string[]) {
+    setHeader(fields: HeaderRecords): void;
+    setHeader(field: string | HeaderRecords, val?: string | number | string[]) {
         if (this.sent) return;
         if (val) {
             this.response.setHeader(field as string, val)
         } else {
-            const fields = field as OutgoingHeaders;
+            const fields = field as HeaderRecords;
             for (const key in fields) {
                 this.response.setHeader(key, fields[key])
             }
         }
     }
 
-    getRespHeader(field: string): OutgoingHeader {
+    getRespHeader(field: string): Header {
         return this.response.getHeader(field)
     }
 
@@ -928,7 +929,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
 
         const body = this.body;
         const res = this.response;
-        if (isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
+        if (Buffer.isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
         if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
 
         if (this.streamAdapter.isReadable(body)) {

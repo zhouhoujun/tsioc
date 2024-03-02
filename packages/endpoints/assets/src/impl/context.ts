@@ -1,5 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector } from '@tsdi/ioc';
-import { Incoming, IncomingPacket, InternalServerExecption, LOCALHOST, Outgoing, ResponsePacket, StatusCode, TransportSession } from '@tsdi/common';
+import { StatusCode, LOCALHOST } from '@tsdi/common';
+import { Incoming, InternalServerExecption, Outgoing, Packet, ResponsePacket, TransportSession } from '@tsdi/common/transport';
 import { AssetContext, AssetContextFactory, ServerOpts } from '@tsdi/endpoints';
 import { AbstractAssetContext, ServerOptions } from '../asset.context';
 import { IncomingMessage } from '../incoming';
@@ -67,7 +68,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class AssetContextFactoryImpl implements AssetContextFactory {
-    create(injector: Injector, session: TransportSession, incoming: IncomingPacket<any>, options: ServerOpts<any>): AssetContext<any, any, ServerOpts<any>> {
+    create(injector: Injector, session: TransportSession, incoming: Packet<any>, options: ServerOpts<any>): AssetContext<any, any, ServerOpts<any>> {
         return new AssetContextImpl(injector, session, incoming.req ?? new IncomingMessage(session, incoming), incoming.res ?? new OutgoingMessage(session, incoming), options);
     }
 

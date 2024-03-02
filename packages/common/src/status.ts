@@ -1,4 +1,10 @@
 
+
+/**
+ * status code
+ */
+export type StatusCode = string | number | undefined;
+
 /**
  * Http status codes.
  * As per https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml

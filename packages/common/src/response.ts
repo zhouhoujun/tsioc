@@ -1,6 +1,6 @@
 import { isNil } from '@tsdi/ioc';
 import { HeadersLike, TransportHeaders } from './headers';
-import { StatusCode } from './packet';
+import { StatusCode } from './status';
 
 
 /**
