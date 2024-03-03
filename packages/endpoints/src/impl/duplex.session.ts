@@ -1,5 +1,6 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { Decoder, Encoder, IDuplexStream, Packet, TransportRequest, StreamAdapter, TransportOpts, TransportSessionFactory } from '@tsdi/common';
+import { TransportRequest } from '@tsdi/common';
+import { Decoder, Encoder, IDuplexStream, Packet, StreamAdapter, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
 import { EventTransportSession } from '../transport.session';
 
 

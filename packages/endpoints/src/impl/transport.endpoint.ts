@@ -1,6 +1,6 @@
 import { Execption, Injector, createContext } from '@tsdi/ioc';
 import { GuardHandler, setHandlerOptions } from '@tsdi/core';
-import { ForbiddenExecption } from '@tsdi/common';
+import { ForbiddenExecption } from '@tsdi/common/transport';
 import { TransportContext } from '../TransportContext';
 import { TransportEndpoint, TransportEndpointOptions } from '../TransportEndpoint';
 

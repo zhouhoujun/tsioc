@@ -1,6 +1,6 @@
 import { ArgumentExecption, Injectable, Injector, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Handler, InterceptorHandler } from '@tsdi/core';
-import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet, SendPacket, isBuffer } from '@tsdi/common';
+import { Context, EncodeInterceptor, Encoder, EncoderBackend, Packet } from '@tsdi/common/transport';
 import { Observable, map, mergeMap, of, range, throwError } from 'rxjs';
 import { Buffer } from 'buffer';
 
@@ -84,7 +84,7 @@ export class BufferifyEncodeInterceptor implements EncodeInterceptor {
         const payload = input.packet?.payload;
         if (isNil(payload)) return next.handle(input);
 
-        if (isBuffer(payload)) {
+        if (Buffer.isBuffer(payload)) {
             input.raw = payload;
             return next.handle(input);
         }

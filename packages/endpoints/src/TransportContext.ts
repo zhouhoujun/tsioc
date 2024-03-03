@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeaderRecords, TransportRequest } from '@tsdi/common';
+import { HeaderRecord, TransportRequest } from '@tsdi/common';
 import { MessageExecption, StreamAdapter, TransportSession, ResponsePacket } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 
@@ -99,7 +99,7 @@ export abstract class TransportContext<TRequest = any, TResponse = any, TSocket 
      * set response headers
      * @param headers 
      */
-    abstract setHeader(headers: HeaderRecords): void;
+    abstract setHeader(headers: HeaderRecord): void;
 
     /**
      * set response with response packet

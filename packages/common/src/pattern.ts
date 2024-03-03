@@ -5,8 +5,7 @@ import { Abstract, isNumber, isPlainObject, isString } from '@tsdi/ioc';
 /**
  * Object pattern.
  */
-export interface ObjectPattern {
-    [key: string]: undefined | string | number | ObjectPattern;
+export interface ObjectPattern extends Record<string, string | number | ObjectPattern> {
 }
 
 /**

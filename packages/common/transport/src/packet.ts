@@ -1,4 +1,4 @@
-import { StatusCode, HeaderRecords, Pattern } from '@tsdi/common';
+import { StatusCode, HeaderRecord, Pattern } from '@tsdi/common';
 
 
 /**
@@ -11,7 +11,7 @@ export interface HeaderPacket {
     url?: string;
     topic?: string;
     method?: string;
-    headers?: HeaderRecords;
+    headers?: HeaderRecord;
 }
 
 /**

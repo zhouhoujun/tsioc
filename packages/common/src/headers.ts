@@ -10,7 +10,7 @@ export interface StatusHeaders {
     ':status'?: number | string;
 }
 
-export interface HeaderRecords {
+export interface HeaderRecord {
     [x: string]: Header;
     'content-type'?: string;
     'Content-Type'?: string;
@@ -153,5 +153,5 @@ export class TransportHeaders<T extends Header = Header> {
 /**
  * Header like
  */
-export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (HeaderRecords & StatusHeaders);
+export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (HeaderRecord & StatusHeaders);
 

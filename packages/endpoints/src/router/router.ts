@@ -1,6 +1,7 @@
 import { Abstract, Token, Type, TypeDef } from '@tsdi/ioc';
 import { Endpoint, EndpointOptions, Interceptor, Backend, Handler } from '@tsdi/core';
-import { Transport, RequestMethod, Pattern } from '@tsdi/common';
+import { RequestMethod, Pattern } from '@tsdi/common';
+import { Transport } from '@tsdi/common/transport';
 import { Observable } from 'rxjs';
 import { TransportContext } from '../TransportContext';
 import { Route } from './route';

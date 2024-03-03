@@ -1,4 +1,4 @@
-import { StatusCode, HeaderRecords, Header } from '@tsdi/common';
+import { StatusCode, HeaderRecord, Header } from '@tsdi/common';
 import { IWritableStream } from './stream';
 
 /**
@@ -60,7 +60,7 @@ export interface Outgoing<T = any> extends IWritableStream {
     /**
      * Get all headers.
      */
-    getHeaders?(): HeaderRecords;
+    getHeaders?(): HeaderRecord;
 
     /**
      * has header field or not.

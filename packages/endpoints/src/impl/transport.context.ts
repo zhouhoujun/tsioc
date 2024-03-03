@@ -1,6 +1,7 @@
-import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { LOCALHOST, MessageExecption, OutgoingHeaders, PacketLengthException, TransportRequest, ResponsePacket, StreamAdapter, TransportSession, isBuffer, toBuffer } from '@tsdi/common';
+import { LOCALHOST, HeaderRecord, TransportRequest } from '@tsdi/common';
+import { MessageExecption, PacketLengthException, ResponsePacket, StreamAdapter, TransportSession, hdr, } from '@tsdi/common/transport';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
@@ -29,15 +30,20 @@ export class TransportContextIml<TRequest extends TransportRequest = TransportRe
         this.setValue(TransportSession, session);
         this.streamAdapter = session.streamAdapter;
         if (!response.id) {
-            response.id = request.id;
+            response.id = request.headers.get(hdr.IDENTITY);
         }
-        if (request.replyTo) {
-            response.replyTo = request.replyTo;
-        }
-        if (request.topic) {
-            response.topic = request.topic;
-        } else if (request.url) {
-            response.url = request.url;
+        if (isString(request.pattern)) {
+            response.url = request.pattern;
+        } else if (isNumber(request.pattern)) {
+            response.type = request.pattern;
+        } else {
+            if (request.pattern.topic) {
+                response.topic = request.pattern.topic;
+                if (request.pattern.replyTo) {
+                    response.replyTo = request.replyTo;
+                }
+            }
+
         }
 
         this._method = request.method ?? '';
@@ -184,7 +190,7 @@ export class TransportContextIml<TRequest extends TransportRequest = TransportRe
 
     async respond(): Promise<any> {
         const res = this.response;
-        if (isNil( this.response)) return;
+        if (isNil(this.response)) return;
 
         const session = this.session;
 

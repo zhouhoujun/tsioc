@@ -17,7 +17,7 @@ export * from './metadata';
 export * from './transport.session';
 export * from './TransportEndpoint';
 export * from './TransportContext';
-export * from './RequestHandler';
+// export * from './RequestHandler';
 export * from './FileAdapter';
 export * from './StatusVaildator';
 export * from './AssetContext';

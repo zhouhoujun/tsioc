@@ -1,12 +1,12 @@
 import { Module, ModuleWithProviders, getToken, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { DecodeInterceptor, Decoder, DecoderBackend, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common';
-import { ResponseTransform, defaultTransform } from '@tsdi/common/client';
+import { DecodeInterceptor, Decoder, DecoderBackend, EncodeInterceptor, Encoder, EncoderBackend } from '@tsdi/common/transport';
+// import { ResponseTransform, defaultTransform } from '@tsdi/common/client';
 import { TransportEncoderBackend, InterceptingEncoder, ENCODER_INTERCEPTORS, FinalizeEncodeInterceptor } from './encoder';
 import { TransportDecoderBackend, InterceptingDecoder, DECODER_INTERCEPTORS } from './decoder';
 import { TransportTypedRespond } from './typed.respond';
-import { DefaultRequestHandler } from './handler';
-import { RequestHandler } from '../RequestHandler';
+// import { DefaultRequestHandler } from './handler';
+// import { RequestHandler } from '../RequestHandler';
 
 
 @Module({
@@ -14,7 +14,7 @@ import { RequestHandler } from '../RequestHandler';
         FinalizeEncodeInterceptor,
         { provide: ENCODER_INTERCEPTORS, useExisting: FinalizeEncodeInterceptor, multi: true, multiOrder: 0 },
 
-        { provide: getToken(ResponseTransform, 'json'), useValue: defaultTransform },
+        // { provide: getToken(ResponseTransform, 'json'), useValue: defaultTransform },
 
         TransportEncoderBackend,
         InterceptingEncoder,
@@ -32,8 +32,8 @@ import { RequestHandler } from '../RequestHandler';
         TransportTypedRespond,
         { provide: TypedRespond, useExisting: TransportTypedRespond, asDefault: true },
 
-        DefaultRequestHandler,
-        { provide: RequestHandler, useExisting: DefaultRequestHandler, asDefault: true }
+        // DefaultRequestHandler,
+        // { provide: RequestHandler, useExisting: DefaultRequestHandler, asDefault: true }
 
     ]
 })

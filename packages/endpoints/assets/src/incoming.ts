@@ -1,10 +1,10 @@
-import { HeaderRecords, MESSAGE, GET } from '@tsdi/common';
+import { HeaderRecord, MESSAGE, GET } from '@tsdi/common';
 import { Packet, hdr, TransportSession, Incoming } from '@tsdi/common/transport';
 import { Readable } from 'readable-stream';
 
 export class IncomingMessage<T> extends Readable implements Incoming<T> {
 
-    readonly headers: HeaderRecords;
+    readonly headers: HeaderRecord;
     body?: any;
     rawBody?: any;
     payload?: any;
