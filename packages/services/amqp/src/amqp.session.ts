@@ -1,5 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
+import { HeaderRecord } from '@tsdi/common';
+import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, Packet, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common/transport';
 import { PayloadTransportSession } from '@tsdi/endpoints';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Observable, first, fromEvent, map, merge, of } from 'rxjs';
@@ -24,7 +25,7 @@ export class QueueTransportSession extends PayloadTransportSession<Channel, Cons
 
     protected override getHeaders(msg: ConsumeMessage): HeaderPacket | undefined {
         const { correlationId, replyTo, contentType, contentEncoding } = msg.properties;
-        const headers = { ...msg.properties.headers, contentType, contentEncoding } as IncomingHeaders;
+        const headers = { ...msg.properties.headers, contentType, contentEncoding } as HeaderRecord;
         headers[hdr.CONTENT_TYPE] = contentType;
         headers[hdr.CONTENT_ENCODING] = contentEncoding;
 

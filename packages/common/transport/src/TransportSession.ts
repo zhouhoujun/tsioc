@@ -1,11 +1,11 @@
 import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { Endpoint } from '@tsdi/core';
 import { TransportRequest, TransportErrorResponse, TransportEvent, HeadersLike, StatusCode } from '@tsdi/common';
 import { HeaderPacket, Packet } from './packet';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { Incoming } from './incoming';
 import { HybirdTransport, Transport } from './protocols';
 import { StreamAdapter } from './StreamAdapter';
-
 
 
 
@@ -126,6 +126,18 @@ export abstract class ClientTransportSession<TSocket = any> extends TransportSes
      */
     abstract request(packet: TransportRequest, context?: InvocationContext): Observable<TransportEvent>;
 
+}
+
+/**
+ * Server side transport session.
+ */
+@Abstract()
+export abstract class ServerTransportSession<TSocket = any, TOption = any> extends TransportSession<TSocket> {
+
+    /**
+     * handle
+     */
+    abstract handle(endpoint: Endpoint, options: TOption): Subscription;
 }
 
 /**

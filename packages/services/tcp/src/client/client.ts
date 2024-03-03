@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest, Pattern, RestfulRequestInitOpts } from '@tsdi/common';
-import { TransportSession, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common/transport';
+import { TransportRequest, Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
+import { TransportSession, ev, TransportSessionFactory } from '@tsdi/common/transport';
 import { Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -83,7 +83,7 @@ export class TcpClient extends Client<TransportRequest> {
         context.setValue(TransportSession, this._session);
     }
 
-    protected override createRequest(pattern: Pattern, options: RestfulRequestInitOpts): TransportRequest<any> {
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {
         options.withCredentials = this.connection instanceof tls.TLSSocket;
         return new TransportRequest(pattern, options);
     }
