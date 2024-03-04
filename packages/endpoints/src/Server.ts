@@ -122,8 +122,9 @@ export abstract class Server<TRequest = any, TResponse = any> implements Endpoin
     }
 
     @Shutdown()
-    close() {
-        return this.onShutdown()
+    async close() {
+        this.endpoint.onDestroy();
+        await this.onShutdown();
     }
 
     protected abstract onStart(): Promise<any>;

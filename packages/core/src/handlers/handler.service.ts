@@ -104,6 +104,8 @@ export abstract class ConfigableHandler<TInput = any, TOutput = any> implements 
     abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 
     abstract useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this;
+
+    abstract onDestroy(): void;
 }
 
 /**

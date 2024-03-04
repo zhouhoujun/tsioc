@@ -140,6 +140,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     clear(): void {
         this.maps.clear();
+        this._handler.onDestroy()
     }
 
 }

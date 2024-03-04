@@ -1,5 +1,5 @@
 import { Abstract, ArgumentExecption, createContext, EMPTY, Execption, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, isClassType } from '@tsdi/ioc';
-import { defer, mergeMap, Observable, throwError } from 'rxjs';
+import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
@@ -20,6 +20,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 
 
     private guards: CanActivate[] | null | undefined;
+    private destroy$ = new Subject<void>();
 
     constructor(
         readonly context: InvocationContext,
@@ -31,7 +32,6 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
             this.guards = null;
         }
     }
-
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
         this.injector.inject(pipes);
@@ -74,7 +74,8 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
             mergeMap(r => {
                 if (r === true) return this.getChain().handle(input);
                 return throwError(() => this.forbiddenError())
-            })
+            }),
+            takeUntil(this.destroy$)
         )
     }
 
@@ -85,6 +86,8 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
+        this.destroy$.next();
+        this.destroy$.complete();
         this._destroyed = true;
         this.clear();
     }

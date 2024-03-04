@@ -182,6 +182,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._destroyed = true;
         this._maps.clear();
         this.multicaster.clear();
+        this._handler.onDestroy();
         this._types = null!;
     }
 

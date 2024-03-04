@@ -180,7 +180,12 @@ export function isObject(target: any): target is object {
 
 
 const hasOwnProperty = Object.hasOwnProperty;
-
+/**
+ * has own property or not.
+ * @param target 
+ * @param property 
+ * @returns 
+ */
 export function hasOwn(target: any, property: string) {
     return hasOwnProperty.call(target, property)
 }
