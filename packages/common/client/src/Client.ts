@@ -382,9 +382,9 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
     }
 
     @Shutdown()
-    async close(): Promise<void> {
-        await this.onShutdown();
+    close(): Promise<void> {
         this.handler.onDestroy();
+        return this.onShutdown();
     }
 
 

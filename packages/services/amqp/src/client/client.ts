@@ -1,11 +1,11 @@
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
+import { TransportRequest } from '@tsdi/common';
 import { TransportSession, TransportSessionFactory, ev } from '@tsdi/common/transport';
 import {  Client } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as amqp from 'amqplib';
 import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
-import { TransportRequest } from '@tsdi/common';
 
 
 
