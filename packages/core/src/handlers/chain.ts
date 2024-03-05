@@ -70,6 +70,15 @@ export class Handlers<TInput = any, TOutput = any> extends AbstractHandler<TInpu
 
 }
 
+export abstract class ResolveHandler<TInput = any, TOutput = any> extends AbstractHandler<TInput, TOutput> {
+    constructor(private resolve: ()=> Interceptor<TInput, TOutput>[]) {
+        super();
+    }
+
+    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
+        return this.resolve();
+    }
+}
 
 /**
  * Dynamic handler. for composing interceptors. Requests will
@@ -80,19 +89,19 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
 
     constructor(
         readonly injector: Injector,
-        protected interceptorToken: Token<Interceptor<TInput, TOutput>[]>) {
+        protected interceptorsToken: Token<Interceptor<TInput, TOutput>[]>) {
         super();
-        if (!interceptorToken) throw new ArgumentExecption(`Interceptor token missing of ${getClassName(this)}.`)
+        if (!interceptorsToken) throw new ArgumentExecption(`Interceptor token missing of ${getClassName(this)}.`)
     }
 
     useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
-        this.regMulti(this.interceptorToken, interceptor, order);
+        this.regMulti(this.interceptorsToken, interceptor, order);
         this.reset();
         return this;
     }
 
     protected getInterceptors(): Interceptor<TInput, TOutput>[] {
-        return this.injector.get(this.interceptorToken, EMPTY);
+        return this.injector.get(this.interceptorsToken, EMPTY);
     }
 
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {

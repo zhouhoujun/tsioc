@@ -34,7 +34,7 @@ export class ConfigableHandlerImpl<TInput = any, TOutput = any> extends GuardHan
     }
 
     protected override getInterceptors(): Interceptor<TInput, TOutput>[] {
-        const itps = this.injector.get(this.interceptorToken, EMPTY);
+        const itps = this.injector.get(this.interceptorsToken, EMPTY);
         return this.options.globalInterceptorsToken ? [...this.injector.get(this.options.globalInterceptorsToken, EMPTY), ...itps] : itps
     }
 

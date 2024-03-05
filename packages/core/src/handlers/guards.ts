@@ -86,15 +86,15 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
+        this._destroyed = true;
         this.destroy$.next();
         this.destroy$.complete();
-        this._destroyed = true;
         this.clear();
     }
 
     protected clear() {
         this.guards = null;
-        this.injector.unregister(this.interceptorToken);
+        this.injector.unregister(this.interceptorsToken);
         if (this.guardsToken) this.injector.unregister(this.guardsToken);
         if (this.filtersToken) this.injector.unregister(this.filtersToken);
         (this as any).injector = null!;
