@@ -11,7 +11,7 @@ import { HandlerService } from './handler.service';
 
 
 /**
- * abstract guards handler.
+ * abstract guards intercepting handler.
  */
 @Abstract()
 export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends InterceptingHandler<TInput, TOutput>
@@ -30,7 +30,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
         protected interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
         protected guardsToken?: Token<CanActivate[]>,
         protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
-        super(()=> this.getBackend(), () => this.getInterceptors());
+        super(() => this.getBackend(), () => this.getInterceptors());
         if (!guardsToken) {
             this.guards = null;
         }
@@ -86,7 +86,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
             this.guards = this.getGuards();
         }
 
-        if (!this.guards || !this.guards.length) return this.getChain().handle(input);
+        if (!this.guards || !this.guards.length) return super.handle(input);
         const guards = this.guards;
         return defer(async () => {
             if (!(await lang.some(
@@ -97,7 +97,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
             return true;
         }).pipe(
             mergeMap(r => {
-                if (r === true) return this.getChain().handle(input);
+                if (r === true) return super.handle(input);
                 return throwError(() => this.forbiddenError())
             }),
             takeUntil(this.destroy$)
@@ -120,6 +120,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     protected clear() {
         this.guards = null;
         this.injector.unregister(this.interceptorsToken);
+        this.reset();
         if (this.guardsToken) this.injector.unregister(this.guardsToken);
         if (this.filtersToken) this.injector.unregister(this.filtersToken);
     }

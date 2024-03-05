@@ -29,7 +29,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
     }
 
     override handle(input: TInput): Observable<TOutput> {
-        if(input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
+        if (input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
             this.limit -= 1;
@@ -68,7 +68,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
             res = await lastValueFrom(res);
         }
         if (res instanceof ResultValue) return await res.sendValue(ctx);
-        return await this.respondAs(ctx, res)
+        return this.respondAs(ctx, res)
     }
 
     /**
@@ -98,9 +98,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
         return res;
     }
 
-    protected defaultRespond(ctx: TInput, res: any): void {
-
-    }
+    protected defaultRespond(ctx: TInput, res: any): void { }
 
 }
 

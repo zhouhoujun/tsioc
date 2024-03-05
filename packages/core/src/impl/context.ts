@@ -109,10 +109,6 @@ export class DefaultApplicationFactory extends ApplicationFactory {
      */
     static ƿNPT = true;
 
-    constructor() {
-        super()
-    }
-
     create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {

@@ -29,14 +29,10 @@ export class InterceptingHandler<TInput = any, TOutput = any> implements Handler
     ) { }
 
     handle(input: TInput): Observable<TOutput> {
-        return this.getChain().handle(input);
-    }
-
-    protected getChain(): Handler<TInput, TOutput> {
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return this.chain;
+        return this.chain.handle(input);
     }
 
     protected reset() {
