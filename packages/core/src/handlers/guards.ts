@@ -26,7 +26,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     }
 
     constructor(
-        readonly context: InvocationContext,
+        protected context: InvocationContext,
         protected interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
         protected guardsToken?: Token<CanActivate[]>,
         protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
@@ -123,6 +123,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
         this.reset();
         if (this.guardsToken) this.injector.unregister(this.guardsToken);
         if (this.filtersToken) this.injector.unregister(this.filtersToken);
+        this.context = null!;
     }
 
 
