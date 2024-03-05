@@ -80,19 +80,19 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
 
     constructor(
         readonly injector: Injector,
-        protected token: Token<Interceptor<TInput, TOutput>[]>) {
+        protected interceptorToken: Token<Interceptor<TInput, TOutput>[]>) {
         super();
-        if (!token) throw new ArgumentExecption(`Interceptor token missing of ${getClassName(this)}.`)
+        if (!interceptorToken) throw new ArgumentExecption(`Interceptor token missing of ${getClassName(this)}.`)
     }
 
     useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
-        this.regMulti(this.token, interceptor, order);
+        this.regMulti(this.interceptorToken, interceptor, order);
         this.reset();
         return this;
     }
 
     protected getInterceptors(): Interceptor<TInput, TOutput>[] {
-        return this.injector.get(this.token, EMPTY)
+        return this.injector.get(this.interceptorToken, EMPTY);
     }
 
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
@@ -100,7 +100,7 @@ export abstract class DynamicHandler<TInput = any, TOutput = any> extends Abstra
         if (isArray(providers)) {
             this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))
         } else {
-            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass}));
+            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass }));
         }
     }
 

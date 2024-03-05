@@ -94,7 +94,7 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 
     protected clear() {
         this.guards = null;
-        this.injector.unregister(this.token);
+        this.injector.unregister(this.interceptorToken);
         if (this.guardsToken) this.injector.unregister(this.guardsToken);
         if (this.filtersToken) this.injector.unregister(this.filtersToken);
         (this as any).injector = null!;
