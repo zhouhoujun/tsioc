@@ -1,4 +1,4 @@
-import { isPromise } from '@tsdi/ioc';
+import { isFunction, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, mergeMap, of } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
@@ -21,19 +21,31 @@ export class InterceptorHandler<TInput = any, TOutput = any> implements Handler<
  */
 export class InterceptingHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
 
-    private chain?: Handler<TInput, TOutput>;
+    private chain?: Handler<TInput, TOutput> | null;
 
     constructor(
-        private backend: Backend<TInput, TOutput>,
-        private interceptors: Interceptor[] = []
+        private backend: Backend<TInput, TOutput> | (() => Backend<TInput, TOutput>),
+        private interceptors: Interceptor[] | (() => Interceptor[]) = []
     ) { }
 
     handle(input: TInput): Observable<TOutput> {
+        return this.getChain().handle(input);
+    }
+
+    protected getChain(): Handler<TInput, TOutput> {
         if (!this.chain) {
-            this.chain = this.interceptors
-                .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), this.backend);
+            this.chain = this.compose();
         }
-        return this.chain.handle(input);
+        return this.chain;
+    }
+
+    protected reset() {
+        this.chain = null;
+    }
+
+    protected compose(): Handler<TInput, TOutput> {
+        return (isFunction(this.interceptors) ? this.interceptors() : this.interceptors)
+            .reduceRight((next, interceptor) => new InterceptorHandler(next, interceptor), isFunction(this.backend) ? this.backend() : this.backend);
     }
 }
 
