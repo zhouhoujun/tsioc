@@ -12,7 +12,7 @@ import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
-import { GuardHandler } from '../handlers/guards';
+import { GuardHandler, createGuardHandler } from '../handlers/guards';
 import { FnHandler } from '../handlers/handler';
 import { runHandlers } from '../handlers/runs';
 import { EndpointOptions } from '../endpoints/endpoint.service';
@@ -47,7 +47,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = new GuardHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._handler = createGuardHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
         this._handler.useFilters(ExecptionHandlerFilter);
     }
 

@@ -7,7 +7,7 @@ import { Handler } from '../Handler';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { runHandlers } from '../handlers/runs';
-import { GuardHandler } from '../handlers/guards';
+import { createGuardHandler, GuardHandler } from '../handlers/guards';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
@@ -37,7 +37,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
-        this._handler = new GuardHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
+        this._handler = createGuardHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
         this._handler.useFilters(ExecptionHandlerFilter)
     }
 

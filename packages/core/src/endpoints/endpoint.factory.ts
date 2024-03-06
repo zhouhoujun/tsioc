@@ -1,6 +1,6 @@
 import {
     Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback,
-    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption, tokenId
+    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption, tokenId, isInjector, createContext
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';
@@ -8,6 +8,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { Endpoint } from './endpoint';
 import { ConfigableEndpointOptions, EndpointOptions, EndpointService } from './endpoint.service';
+import { ConfigableHandler } from '../handlers/configable.handler';
 
 
 /**
@@ -31,19 +32,7 @@ export abstract class ConfigableEndpoint<TInput extends InvocationContext = Invo
     abstract onDestroy(): void;
 }
 
-/**
- * Configable Endpoint factory implement.
- */
-export const CONFIGABLE_ENDPOINT_IMPL = {
-    /**
-     * create invocation context
-     * @param parent parent context or parent injector. 
-     * @param options invocation options.
-     */
-    create<TInput extends InvocationContext, TOutput>(injector: Injector, options: ConfigableEndpointOptions<TInput>): ConfigableEndpoint<TInput, TOutput> {
-        throw new Execption('not implemented.')
-    }
-};
+
 
 /**
  * create configable endpoint.
@@ -51,8 +40,8 @@ export const CONFIGABLE_ENDPOINT_IMPL = {
  * @param options 
  * @returns 
  */
-export function createEndpoint<TInput extends InvocationContext = InvocationContext, TOutput = any>(injector: Injector, options: ConfigableEndpointOptions<TInput>): ConfigableEndpoint<TInput, TOutput> {
-    return CONFIGABLE_ENDPOINT_IMPL.create(injector, options)
+export function createEndpoint<TInput extends InvocationContext = InvocationContext, TOutput = any>(injector: Injector| InvocationContext, options: ConfigableEndpointOptions<TInput>): ConfigableEndpoint<TInput, TOutput> {
+    return new ConfigableHandler(isInjector(injector)? createContext(injector): injector, options);
 }
 
 
@@ -71,7 +60,7 @@ export abstract class OperationEndpoint<TInput extends InvocationContext = Invoc
      */
     abstract get invoker(): OperationInvoker;
 
-    abstract get options(): EndpointOptions;
+    // abstract get options(): EndpointOptions;
 
     /**
      * is this equals to target or not

@@ -6,16 +6,10 @@ import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { DefaultApplicationRunners } from './impl/runners';
 import { DefaultApplicationFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
-import { ConfigableHandlerImpl } from './impl/handler';
 import { EndpointFactoryResolverImpl } from './impl/operation.endpoint';
-import { CONFIGABLE_ENDPOINT_IMPL, EndpointFactoryResolver } from './endpoints/endpoint.factory';
-import { CONFIGABLE_HANDLER_IMPL } from './handlers/handler.service';
-import { ConfigableEndpointImpl } from './impl/endpoint';
+import { EndpointFactoryResolver } from './endpoints/endpoint.factory';
 
 
-CONFIGABLE_HANDLER_IMPL.create = (injector, options) => new ConfigableHandlerImpl(injector, options)
-
-CONFIGABLE_ENDPOINT_IMPL.create = (injector, options)=> new ConfigableEndpointImpl(injector, options)
 
 /**
  * Platform default providers

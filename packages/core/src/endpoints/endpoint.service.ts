@@ -1,5 +1,6 @@
-import { Abstract, Type } from '@tsdi/ioc';
-import { BackendConfigable, ConfigableHandlerOptions, HandlerService, HandlerTokenConfigable } from '../handlers/handler.service';
+import { Abstract, Token, Type } from '@tsdi/ioc';
+import { ConfigableHandlerOptions, HandlerService, } from '../handlers/configable.handler';
+
 
 
 
@@ -8,7 +9,7 @@ import { BackendConfigable, ConfigableHandlerOptions, HandlerService, HandlerTok
  * 
  * 终结点配置
  */
-export interface EndpointOptions<T = any, TArg = any> extends ConfigableHandlerOptions<T, TArg>, HandlerTokenConfigable<T> {
+export interface EndpointOptions<T = any, TArg = any> extends ConfigableHandlerOptions<T, TArg> {
     /**
      * the endpoint run times limit. 
      */
@@ -32,7 +33,7 @@ export interface EndpointOptions<T = any, TArg = any> extends ConfigableHandlerO
  * 
  * 可配置结点配置
  */
-export interface ConfigableEndpointOptions<T = any, TArg = any> extends EndpointOptions<T, TArg>, BackendConfigable { }
+export interface ConfigableEndpointOptions<T = any, TArg = any> extends EndpointOptions<T, TArg> { }
 
 
 /**

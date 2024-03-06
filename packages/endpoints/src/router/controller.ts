@@ -1,5 +1,5 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, tokenId, Type } from '@tsdi/ioc';
-import { Backend, Endpoint, CanActivate, Interceptor, Filter, FnHandler, AbstractGuardHandler, setHandlerOptions } from '@tsdi/core';
+import { Backend, Endpoint, CanActivate, Interceptor, Filter, FnHandler, GuardHandler, setHandlerOptions } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
 
@@ -19,7 +19,7 @@ export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
  * 
  * 控制器路由终端
  */
-export class ControllerRoute<T> extends AbstractGuardHandler implements Middleware<TransportContext>, Endpoint, OnDestroy {
+export class ControllerRoute<T> extends GuardHandler implements Middleware<TransportContext>, Endpoint, OnDestroy {
 
     private routes: Map<string, Endpoint>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[];

@@ -1,5 +1,5 @@
 import { ArgumentExecption, Execption, Injector, ProvdierOf, Token, createContext, getClassName, refl } from '@tsdi/ioc';
-import { Backend, AbstractGuardHandler, setHandlerOptions } from '@tsdi/core';
+import { Backend, GuardHandler, setHandlerOptions } from '@tsdi/core';
 import { ForbiddenExecption } from '@tsdi/common/transport';
 import { TransportContext } from '../TransportContext';
 import { MiddlewareLike } from '../middleware/middleware';
@@ -9,7 +9,7 @@ import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../middleware/mid
 
 
 export class MiddlewareEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any>
-    extends AbstractGuardHandler<TInput, TOutput> implements MiddlewareEndpoint<TInput, TOutput> {
+    extends GuardHandler<TInput, TOutput> implements MiddlewareEndpoint<TInput, TOutput> {
 
     protected midddlesToken: Token<MiddlewareLike<TInput>[]>;
 

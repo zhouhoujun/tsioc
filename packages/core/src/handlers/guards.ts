@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, createContext, EMPTY, Execption, getClassName, InjectFlags, Injector, InvocationContext, isInjector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, isClassType, isArray, toProvider } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, createContext, EMPTY, Execption, Injector, InvocationContext, isInjector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, isArray, toProvider } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -6,15 +6,32 @@ import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { InterceptingHandler, InterceptorHandler } from './handler';
-import { HandlerService } from './handler.service';
+import { HandlerService } from './configable.handler';
 
+export interface BackendOptions<TInput = any> {
+    backend?: Token<Backend<TInput>> | Backend<TInput>
+}
 
+export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput> {
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<Interceptor<TInput>[]>;
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<CanActivate<TInput>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<Filter<TInput>[]>;
+}
 
 /**
- * abstract guards intercepting handler.
+ * guards intercepting handler.
  */
 @Abstract()
-export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends InterceptingHandler<TInput, TOutput>
+export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHandlerOptions = GuardHandlerOptions<TInput>> extends InterceptingHandler<TInput, TOutput>
     implements Handler<TInput, TOutput>, HandlerService, OnDestroy {
 
 
@@ -27,16 +44,17 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 
     constructor(
         protected context: InvocationContext,
-        protected interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
-        protected guardsToken?: Token<CanActivate[]>,
-        protected filtersToken?: Token<Filter<TInput, TOutput>[]>) {
+        protected options: TOptions) {
         super(() => this.getBackend(), () => this.getInterceptors());
-        if (!guardsToken) {
+        if (!options.guardsToken) {
             this.guards = null;
         }
     }
 
-    protected abstract getBackend(): Backend<TInput, TOutput>;
+    protected getBackend(): Backend<TInput, TOutput> {
+        if(!this.options.backend) throw new ArgumentExecption('backend is empty.');
+        return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
+    }
 
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
@@ -45,13 +63,15 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     }
 
     useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
-        this.regMulti(this.interceptorsToken, interceptor, order);
+        if(!this.options.interceptorsToken) return this;
+        this.regMulti(this.options.interceptorsToken, interceptor, order);
         this.reset();
         return this;
     }
 
     protected getInterceptors(): Interceptor<TInput, TOutput>[] {
-        return this.injector.get(this.interceptorsToken, EMPTY);
+        if(!this.options.interceptorsToken) return EMPTY;
+        return this.injector.get(this.options.interceptorsToken, EMPTY);
     }
 
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
@@ -68,15 +88,15 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
      * @param guards 
      */
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
-        if (!this.guardsToken) throw new ArgumentExecption('no guards token');
-        this.regMulti(this.guardsToken, guards, order);
+        if (!this.options.guardsToken) throw new ArgumentExecption('no guards token');
+        this.regMulti(this.options.guardsToken, guards, order);
         this.guards = undefined;
         return this;
     }
 
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
-        if (!this.filtersToken) throw new ArgumentExecption('no filters token');
-        this.regMulti(this.filtersToken, filter, order);
+        if (!this.options.filtersToken) throw new ArgumentExecption('no filters token');
+        this.regMulti(this.options.filtersToken, filter, order);
         this.reset();
         return this;
     }
@@ -119,11 +139,12 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
 
     protected clear() {
         this.guards = null;
-        this.injector.unregister(this.interceptorsToken);
+        if(this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
         this.reset();
-        if (this.guardsToken) this.injector.unregister(this.guardsToken);
-        if (this.filtersToken) this.injector.unregister(this.filtersToken);
+        if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
+        if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
         this.context = null!;
+        this.options = null!;
     }
 
 
@@ -134,41 +155,31 @@ export abstract class AbstractGuardHandler<TInput = any, TOutput = any> extends 
     }
 
     protected getGuards() {
-        return this.guardsToken ? this.injector.get(this.guardsToken, null) : null;
+        return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 
     /**
      *  get filters. 
      */
     protected getFilters(): Filter<TInput, TOutput>[] {
-        return this.filtersToken ? this.injector.get(this.filtersToken, EMPTY) : EMPTY;
+        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
     }
 
 }
 
+export function createGuardHandler<TInput, TOutput>(
+    context: InvocationContext | Injector,
+    backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
+    interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
+    guardsToken?: Token<CanActivate[]>,
+    filtersToken?: Token<Filter<TInput, TOutput>[]>) {
 
-/**
- * Guard handler
- */
-export class GuardHandler<TInput = any, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> {
-    constructor(
-        context: Injector | InvocationContext,
-        protected backendToken: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
-        interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
-        guardsToken?: Token<CanActivate[]>,
-        filtersToken?: Token<Filter<TInput, TOutput>[]>) {
-        super(isInjector(context) ? createContext(context) : context, interceptorsToken, guardsToken, filtersToken);
-        if (!backendToken) throw new ArgumentExecption(`Backend token missing of ${getClassName(this)}.`);
-        if (isClassType(backendToken) && !this.injector.has(backendToken, InjectFlags.Self)) {
-            this.injector.inject(backendToken);
-        }
-    }
+    return new GuardHandler(isInjector(context) ? createContext(context) : context, {
+        backend,
+        interceptorsToken,
+        guardsToken,
+        filtersToken
+    });
 
-    /**
-     *  get backend endpoint. 
-     */
-    protected override getBackend(): Backend<TInput, TOutput> {
-        return isToken(this.backendToken) ? this.injector.get(this.backendToken, this.context) : this.backendToken;
-    }
 }
 

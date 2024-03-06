@@ -10,7 +10,7 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
-import { setHandlerOptions } from '../handlers/handler.service';
+import { setHandlerOptions } from '../handlers/configable.handler';
 
 
 

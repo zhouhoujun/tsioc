@@ -2,8 +2,8 @@ import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, Refle
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
-import { AbstractGuardHandler } from '../handlers/guards';
-import { setHandlerOptions } from '../handlers/handler.service';
+import { GuardHandler } from '../handlers/guards';
+import { setHandlerOptions } from '../handlers/configable.handler';
 import { ResultValue } from '../endpoints/ResultValue';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';
@@ -13,15 +13,17 @@ import { EndpointFactory, EndpointFactoryResolver, OPERA_FILTERS, OPERA_GUARDS, 
 
 
 
-export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends AbstractGuardHandler<TInput, TOutput> implements OperationEndpoint<TInput, TOutput> {
+export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends GuardHandler<TInput, TOutput, EndpointOptions<TInput>> implements OperationEndpoint<TInput, TOutput> {
 
     private limit?: number;
     constructor(
-        public readonly invoker: OperationInvoker, readonly options: EndpointOptions = {}) {
-        super(invoker.context,
-            options.interceptorsToken ?? OPERA_INTERCEPTORS,
-            options.guardsToken ?? OPERA_GUARDS,
-            options.filtersToken ?? OPERA_FILTERS)
+        public readonly invoker: OperationInvoker, options: EndpointOptions = {}) {
+        super(invoker.context, {
+            interceptorsToken: OPERA_INTERCEPTORS,
+            guardsToken: OPERA_GUARDS,
+            filtersToken: OPERA_FILTERS,
+            ...options
+        })
         setHandlerOptions(this, options);
         this.limit = options.limit;
         invoker.context.onDestroy(this);
