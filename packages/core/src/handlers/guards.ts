@@ -61,17 +61,22 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         return options;
     }
 
-    protected getBackend(): Backend<TInput, TOutput> {
-        if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
-        return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
-    }
-
-
+    /**
+     * use pipes
+     * @param pipes 
+     * @returns 
+     */
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
         this.injector.inject(pipes);
         return this;
     }
 
+    /**
+     * use interceptor for the handler.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
     useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
         if (!this.options.interceptorsToken) return this;
         this.regMulti(this.options.interceptorsToken, interceptor, order);
@@ -79,22 +84,9 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         return this;
     }
 
-    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
-        if (!this.options.interceptorsToken) return EMPTY;
-        return this.injector.get(this.options.interceptorsToken, EMPTY);
-    }
-
-    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
-        const multi = true;
-        if (isArray(providers)) {
-            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))
-        } else {
-            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass }));
-        }
-    }
 
     /**
-     * use guards.
+     * use guards for the handler.
      * @param guards 
      */
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
@@ -104,6 +96,12 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         return this;
     }
 
+    /**
+     * use filters for the handler.
+     * @param filter 
+     * @param order 
+     * @returns 
+     */
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
         if (!this.options.filtersToken) throw new ArgumentExecption('no filters token');
         this.regMulti(this.options.filtersToken, filter, order);
@@ -134,10 +132,6 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         )
     }
 
-    protected forbiddenError(): Execption {
-        return new Execption('Forbidden')
-    }
-
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
@@ -145,6 +139,10 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         this.destroy$.next();
         this.destroy$.complete();
         this.clear();
+    }
+
+    protected forbiddenError(): Execption {
+        return new Execption('Forbidden')
     }
 
     protected clear() {
@@ -157,22 +155,56 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         this.options = null!;
     }
 
-
+    /**
+     * compose iterceptors and filters in chain.
+     * @returns 
+     */
     protected override compose(): Handler<TInput, TOutput> {
         const chain = super.compose();
         return this.getFilters().reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), chain);
     }
 
+    /**
+     * get registered iterceptors of the handler.
+     * @returns 
+     */
+    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
+        if (!this.options.interceptorsToken) return EMPTY;
+        return this.injector.get(this.options.interceptorsToken, EMPTY);
+    }
+
+    /**
+     * get registered backend of the handler.
+     * @returns 
+     */
+    protected getBackend(): Backend<TInput, TOutput> {
+        if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
+        return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
+    }
+
+    /**
+     * get registered guards of the handler.
+     * @returns 
+     */
     protected getGuards() {
         return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 
     /**
-     *  get filters. 
+     *  get registered filters of the handler. 
      */
     protected getFilters(): Filter<TInput, TOutput>[] {
         return this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
+    }
+
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
+        const multi = true;
+        if (isArray(providers)) {
+            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))
+        } else {
+            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass }));
+        }
     }
 
 }

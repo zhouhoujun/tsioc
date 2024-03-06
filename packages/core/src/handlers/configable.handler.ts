@@ -103,21 +103,18 @@ export class ConfigableHandler<TInput = any, TOutput = any, TOptions extends Con
      *  get filters. 
      */
     protected override getFilters(): Filter<TInput, TOutput>[] {
-        const { filtersToken, globalFiltersToken } = this.options;
-        const filts = filtersToken ? this.injector.get(filtersToken, EMPTY) : EMPTY;
-        return globalFiltersToken ? ([...this.injector.get(globalFiltersToken, EMPTY), ...filts]) : filts
+        const filts = this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
+        return this.options.globalFiltersToken ? ([...this.injector.get(this.options.globalFiltersToken, EMPTY), ...filts]) : filts
     }
 
     protected override getInterceptors(): Interceptor<TInput, TOutput>[] {
-        const { interceptorsToken, globalInterceptorsToken } = this.options;
-        const itps = this.injector.get(interceptorsToken!, EMPTY);
-        return globalInterceptorsToken ? [...this.injector.get(globalInterceptorsToken, EMPTY), ...itps] : itps
+        const itps = this.injector.get(this.options.interceptorsToken!, EMPTY);
+        return this.options.globalInterceptorsToken ? [...this.injector.get(this.options.globalInterceptorsToken, EMPTY), ...itps] : itps
     }
 
     protected override getGuards(): CanActivate<any>[] | null {
-        const { guardsToken, globalGuardsToken } = this.options;
-        const guards = guardsToken ? this.injector.get(guardsToken, null) : null;
-        return globalGuardsToken ? [...this.injector.get(globalGuardsToken, EMPTY), ...(guards ?? EMPTY)] : guards
+        const guards = this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
+        return this.options.globalGuardsToken ? [...this.injector.get(this.options.globalGuardsToken, EMPTY), ...(guards ?? EMPTY)] : guards
 
     }
 }
