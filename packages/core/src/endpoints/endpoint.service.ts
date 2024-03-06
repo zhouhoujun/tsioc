@@ -1,4 +1,4 @@
-import { Abstract, Token, Type } from '@tsdi/ioc';
+import { Abstract, Type } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService, } from '../handlers/configable.handler';
 
 

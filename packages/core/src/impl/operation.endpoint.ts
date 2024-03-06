@@ -1,9 +1,8 @@
-import { Class, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isNumber, isPromise, isString } from '@tsdi/ioc';
+import { Class, EMPTY_OBJ, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isNumber, isPromise, isString } from '@tsdi/ioc';
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
-import { GuardHandler } from '../handlers/guards';
-import { setHandlerOptions } from '../handlers/configable.handler';
+import { ConfigableHandler } from '../handlers/configable.handler';
 import { ResultValue } from '../endpoints/ResultValue';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';
@@ -13,21 +12,24 @@ import { EndpointFactory, EndpointFactoryResolver, OPERA_FILTERS, OPERA_GUARDS, 
 
 
 
-export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends GuardHandler<TInput, TOutput, EndpointOptions<TInput>> implements OperationEndpoint<TInput, TOutput> {
+export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends ConfigableHandler<TInput, TOutput, EndpointOptions<TInput>> implements OperationEndpoint<TInput, TOutput> {
 
     private limit?: number;
     constructor(
-        public readonly invoker: OperationInvoker, options: EndpointOptions = {}) {
-        super(invoker.context, {
+        public readonly invoker: OperationInvoker, options: EndpointOptions) {
+        super(invoker.context, options)
+        this.limit = options.limit;
+        invoker.context.onDestroy(this);
+
+    }
+
+    protected override initOptions(options: EndpointOptions): EndpointOptions {
+        return {
             interceptorsToken: OPERA_INTERCEPTORS,
             guardsToken: OPERA_GUARDS,
             filtersToken: OPERA_FILTERS,
             ...options
-        })
-        setHandlerOptions(this, options);
-        this.limit = options.limit;
-        invoker.context.onDestroy(this);
-
+        }
     }
 
     override handle(input: TInput): Observable<TOutput> {
@@ -112,7 +114,7 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
     }
 
     create<TArg>(propertyKey: string, options?: EndpointOptions<TArg>): OperationEndpoint {
-        return new OperationEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
+        return new OperationEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ);
     }
 
 }

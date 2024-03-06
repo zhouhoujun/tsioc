@@ -1,4 +1,7 @@
-import { EMPTY, InjectFlags, Injector, InvocationContext, InvokerOptions, ProvdierOf, StaticProvider, Token, createContext, getClassName, isClassType, isInjector, isToken } from '@tsdi/ioc';
+import {
+    EMPTY, InjectFlags, Injector, InvokerOptions, ProvdierOf, StaticProvider,
+    Token, InvocationContext, createContext, isClassType, isInjector
+} from '@tsdi/ioc';
 import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -74,21 +77,26 @@ export interface HandlerService extends FilterService, PipeService, InterceptorS
 /**
  * Configable handler
  */
-export class ConfigableHandler<TInput = any, TOutput = any> extends GuardHandler<TInput, TOutput, ConfigableHandlerOptions> {
+export class ConfigableHandler<TInput = any, TOutput = any, TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>>
+    extends GuardHandler<TInput, TOutput, TOptions> {
     constructor(
         context: Injector | InvocationContext,
-        options: ConfigableHandlerOptions<TInput>) {
-        super(isInjector(context) ? createContext(context) : context, {
-            interceptorsToken: INTERCEPTORS_TOKEN,
-            guardsToken: GUARDS_TOKEN,
-            filtersToken: FILTERS_TOKEN,
-            ...options
-        });
+        options: TOptions) {
+        super(isInjector(context) ? createContext(context) : context, options);
         if (this.options.backend && isClassType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
             this.injector.inject(this.options.backend);
         }
 
-        setHandlerOptions(this, this.options as HandlerOptions);
+        setHandlerOptions(this, this.options);
+    }
+
+    protected override initOptions(options: TOptions): TOptions {
+        return {
+            interceptorsToken: INTERCEPTORS_TOKEN,
+            guardsToken: GUARDS_TOKEN,
+            filtersToken: FILTERS_TOKEN,
+            ...options
+        }
     }
 
     /**

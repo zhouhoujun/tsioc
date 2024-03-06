@@ -1,6 +1,6 @@
 import {
     Abstract, Type, Class, ReflectiveRef, Injector, OnDestroy, Destroyable, DestroyCallback,
-    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, Execption, tokenId, isInjector, createContext
+    InvocationContext, ProvdierOf, StaticProvider, OperationInvoker, tokenId, isInjector, createContext
 } from '@tsdi/ioc';
 import { CanActivate } from '../guard';
 import { Interceptor } from '../Interceptor';

@@ -1,4 +1,7 @@
-import { Abstract, ArgumentExecption, createContext, EMPTY, Execption, Injector, InvocationContext, isInjector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, isArray, toProvider } from '@tsdi/ioc';
+import {
+    Abstract, ArgumentExecption, createContext, EMPTY, Execption, Injector, InvocationContext,
+    isInjector, isToken, lang, OnDestroy, pomiseOf, ProvdierOf, StaticProvider, Token, isArray, toProvider
+} from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -42,17 +45,24 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         return this.context.injector;
     }
 
+    protected options: TOptions;
+
     constructor(
         protected context: InvocationContext,
-        protected options: TOptions) {
+        options: TOptions) {
         super(() => this.getBackend(), () => this.getInterceptors());
-        if (!options.guardsToken) {
+        this.options = this.initOptions(options);
+        if (!this.options.guardsToken) {
             this.guards = null;
         }
     }
 
+    protected initOptions(options: TOptions) {
+        return options;
+    }
+
     protected getBackend(): Backend<TInput, TOutput> {
-        if(!this.options.backend) throw new ArgumentExecption('backend is empty.');
+        if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
         return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
     }
 
@@ -63,14 +73,14 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
     }
 
     useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
-        if(!this.options.interceptorsToken) return this;
+        if (!this.options.interceptorsToken) return this;
         this.regMulti(this.options.interceptorsToken, interceptor, order);
         this.reset();
         return this;
     }
 
     protected getInterceptors(): Interceptor<TInput, TOutput>[] {
-        if(!this.options.interceptorsToken) return EMPTY;
+        if (!this.options.interceptorsToken) return EMPTY;
         return this.injector.get(this.options.interceptorsToken, EMPTY);
     }
 
@@ -139,7 +149,7 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
 
     protected clear() {
         this.guards = null;
-        if(this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
+        if (this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
         this.reset();
         if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
         if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
