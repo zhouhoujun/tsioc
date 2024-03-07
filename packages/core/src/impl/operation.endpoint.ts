@@ -2,7 +2,7 @@ import { Class, EMPTY_OBJ, Injectable, Injector, OperationInvoker, ReflectiveFac
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
-import { ConfigableHandler } from '../handlers/configable.handler';
+import { ConfigableHandler } from '../handlers/configable';
 import { ResultValue } from '../endpoints/ResultValue';
 import { EndpointContext } from '../endpoints/context';
 import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';

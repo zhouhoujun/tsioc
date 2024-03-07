@@ -1,5 +1,5 @@
 import { isFunction, isPromise } from '@tsdi/ioc';
-import { Observable, isObservable, mergeMap, of } from 'rxjs';
+import { Observable, isObservable, of, from } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 
@@ -52,15 +52,12 @@ export class FnHandler<TInput = any, TOutput = any> implements Handler<TInput, T
 
     constructor(private dowork: (ctx: TInput) => TOutput | Observable<TOutput> | Promise<TOutput>) { }
 
-    handle(input: TInput): Observable<TOutput> {
-        return of(input)
-            .pipe(
-                mergeMap(() => {
-                    const $res = this.dowork(input);
-                    if (isPromise($res) || isObservable($res)) return $res;
-                    return of($res);
-                })
-            )
+    handle(input: TInput): Observable<TOutput> {              
+        const $res = this.dowork(input);
+        if(isObservable($res)) {
+            return $res;
+        } 
+        return isPromise($res) ? from($res) : of($res);
     }
 
     equals(target: any): boolean {

@@ -1,5 +1,5 @@
 import { Abstract, Type } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, HandlerService, } from '../handlers/configable.handler';
+import { ConfigableHandlerOptions, HandlerService } from '../handlers/configable';
 
 
 

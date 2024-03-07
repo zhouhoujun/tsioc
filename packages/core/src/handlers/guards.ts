@@ -9,7 +9,7 @@ import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { InterceptingHandler, InterceptorHandler } from './handler';
-import { HandlerService } from './configable.handler';
+import { HandlerService } from './configable';
 
 export interface BackendOptions<TInput = any> {
     backend?: Token<Backend<TInput>> | Backend<TInput>

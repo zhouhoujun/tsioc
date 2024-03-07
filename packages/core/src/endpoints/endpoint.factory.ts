@@ -7,8 +7,8 @@ import { Interceptor } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { Filter } from '../filters/filter';
 import { Endpoint } from './endpoint';
+import { ConfigableHandler } from '../handlers/configable';
 import { ConfigableEndpointOptions, EndpointOptions, EndpointService } from './endpoint.service';
-import { ConfigableHandler } from '../handlers/configable.handler';
 
 
 /**
