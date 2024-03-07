@@ -4,8 +4,6 @@ export { isObservable } from 'rxjs';
 
 declare let process: any;
 
-export const toString = Object.prototype.toString;
-
 
 /**
  * check target is function or not.
@@ -24,7 +22,7 @@ export function isFunction(target: any): target is Function {
  * @returns 
  */
 export function isType(v: any): v is Type<any> {
-    return isFunction(v) && !isPrimit(v)
+    return isFunction(v) // && !isPrimit(v)
 }
 
 /**
@@ -55,7 +53,16 @@ export function isNodejsEnv(): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === '[object Promise]' || target instanceof Promise || (target && isFunction(target.then) && isFunction(target.catch))
+    return target instanceof Promise // || (target && isFunction(target.then) && isFunction(target.catch))
+}
+
+/**
+ * is promise like or not.
+ * @param target 
+ * @returns 
+ */
+export function isPromiseLike(target: any): boolean {
+    return toString.call(target) == '[object Promise]' || (target && isFunction(target.then) && isFunction(target.catch))
 }
 
 /**
@@ -199,7 +206,7 @@ export function hasOwn(target: any, property: string) {
  * @returns {target is Date}
  */
 export function isDate(target: any): target is Date {
-    return toString.call(target) === '[object Date]'
+    return target instanceof Date //|| toString.call(target) === '[object Date]'
 }
 
 /**
@@ -210,7 +217,7 @@ export function isDate(target: any): target is Date {
  * @returns {target is symbol}
  */
 export function isSymbol(target: any): target is symbol {
-    return typeof target === 'symbol' || toString.call(target) === '[object Symbol]'
+    return typeof target === 'symbol' // || toString.call(target) === '[object Symbol]'
 }
 
 
@@ -222,22 +229,9 @@ export function isSymbol(target: any): target is symbol {
  * @returns {target is RegExp}
  */
 export function isRegExp(target: any): target is RegExp {
-    return target && (target instanceof RegExp  || toString.call(target) === '[object RegExp]')
+    return target instanceof RegExp // || toString.call(target) === '[object RegExp]'
 }
 
-
-
-const native = /\[native code\]/;
-/**
- * is native type or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isNative(target: any): boolean {
-    return isFunction(target) ? native.test(target.toString()) : native.test(getClass(target).toString())
-}
 
 /**
  * check target is primitive type or not.
