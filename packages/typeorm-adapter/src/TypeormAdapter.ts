@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction } from '@tsdi/ioc';
-import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, EndpointContext } from '@tsdi/core';
+import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, HandlerContext } from '@tsdi/core';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
 import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
 import { ObjectIDToken } from './objectid.pipe';
@@ -117,7 +117,7 @@ export class TypeormAdapter {
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             hasField: (parameter, ctx) => ctx.args.body,
-            getFields: (parameter: TransportParameter, ctx: EndpointContext) => parameter.field ? ctx.args.body[parameter.field] : ctx.args.body,
+            getFields: (parameter: TransportParameter, ctx: HandlerContext) => parameter.field ? ctx.args.body[parameter.field] : ctx.args.body,
             fieldResolvers: [
                 {
                     canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',

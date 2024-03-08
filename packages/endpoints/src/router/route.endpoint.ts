@@ -1,12 +1,12 @@
 import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
-import { OperationEndpoint, EndpointOptions } from '@tsdi/core';
+import { OperationHandler, EndpointOptions } from '@tsdi/core';
 import { Pattern } from '@tsdi/common';
 
 
 /**
  * Opteration Endpoint
  */
-export abstract class RouteEndpoint extends OperationEndpoint {
+export abstract class RouteEndpoint extends OperationHandler {
 
     abstract get options(): RouteEndpointOptions;
     /**

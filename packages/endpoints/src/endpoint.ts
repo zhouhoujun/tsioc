@@ -1,6 +1,6 @@
 import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Handler } from '../Handler';
+import { Handler } from '@tsdi/core';
 
 /**
  * Endpoint is the fundamental building block of servers.

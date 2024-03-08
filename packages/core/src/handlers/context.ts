@@ -2,22 +2,22 @@ import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, 
 import { getResolversToken } from './resolver';
 
 /**
- * endpoint invoke options.
+ * invoke handler options.
  */
-export interface EndpointInvokeOpts<T = any> extends InvokeArguments<T> {
+export interface InvokeHanlerOpts<T = any> extends InvokeArguments<T> {
     bootstrap?: boolean;
-    isDone?(ctx: EndpointContext<T>): boolean;
+    isDone?(ctx: HandlerContext<T>): boolean;
 }
 
 /**
- * endpoint context.
+ * invoke handler context.
  */
-export class EndpointContext<TInput = any> extends DefaultInvocationContext<TInput> {
-    private doneFn?: (ctx: EndpointContext<TInput>) => boolean;
+export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInput> {
+    private doneFn?: (ctx: HandlerContext<TInput>) => boolean;
     readonly bootstrap: boolean;
     constructor(
         injector: Injector,
-        options: EndpointInvokeOpts<TInput> = EMPTY_OBJ) {
+        options: InvokeHanlerOpts<TInput> = EMPTY_OBJ) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
         this.doneFn = options.isDone;

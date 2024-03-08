@@ -15,23 +15,22 @@ import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { GuardHandler, createGuardHandler } from '../handlers/guards';
 import { FnHandler } from '../handlers/handler';
 import { runHandlers } from '../handlers/runs';
-import { EndpointOptions } from '../endpoints/endpoint.service';
-import { EndpointFactoryResolver } from '../endpoints/endpoint.factory';
-import { EndpointContext } from '../endpoints/context';
+import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
+import { HandlerContext } from '../handlers/context';
 
 
 /**
- *  Appplication runner interceptors multi token
+ *  Application runner interceptors multi token
  */
-export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<EndpointContext>[]>('APP_RUNNERS_INTERCEPTORS');
+export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<HandlerContext>[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
- *  Appplication runner filters multi token
+ *  Application runner filters multi token
  */
 export const APP_RUNNERS_FILTERS = tokenId<Filter[]>('APP_RUNNERS_FILTERS');
 
 /**
- *  Appplication runner guards multi token
+ *  Application runner guards multi token
  */
 export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
 
@@ -79,7 +78,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: EndpointOptions<TArg> = {}): ReflectiveRef<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<TArg> = {}): ReflectiveRef<T> {
         const target = isFunction(type) ? refl.get(type) : type;
 
         let ends = this._maps.get(target.type);
@@ -101,7 +100,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         const runnables = target.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const targetRef = this.injector.get(ReflectiveFactory).create(target, this.injector, options);
-            const facResolver = targetRef.resolve(EndpointFactoryResolver);
+            const facResolver = targetRef.resolve(InvocationFactoryResolver);
             const factory = facResolver.resolve(targetRef);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 return factory.create(runnable.method, options)
@@ -154,13 +153,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     run(type?: Type|Type[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new EndpointContext(this.injector, { args: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new HandlerContext(this.injector, { args: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._handler.handle(new EndpointContext(this.injector, { bootstrap: true, args: { useValue: this._types } }))),
+                    mergeMap(v => this._handler.handle(new HandlerContext(this.injector, { bootstrap: true, args: { useValue: this._types } }))),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -186,7 +185,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = null!;
     }
 
-    handle(context: EndpointContext<any>): Observable<any> {
+    handle(context: HandlerContext<any>): Observable<any> {
         if (isFunction(context.args)) {
             return runHandlers(this._maps.get(context.args), context, v => v.isDone() === true)
         }

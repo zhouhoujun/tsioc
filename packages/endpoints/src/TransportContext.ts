@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
-import { EndpointContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
+import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { HeaderRecord, TransportRequest } from '@tsdi/common';
 import { MessageExecption, StreamAdapter, TransportSession, ResponsePacket } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
@@ -10,7 +10,7 @@ import { ServerOpts } from './Server';
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any, TSocket = any> extends EndpointContext<TRequest> {
+export abstract class TransportContext<TRequest = any, TResponse = any, TSocket = any> extends HandlerContext<TRequest> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];

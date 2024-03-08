@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { EndpointOptions } from './endpoints/endpoint.service';
+import { InvocationOptions } from './invocation';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';
@@ -92,7 +92,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
 /**
  * bootstrap option for {@link RunnableRef}.
  */
-export interface BootstrapOption<T = any> extends EndpointOptions<T> {
+export interface BootstrapOption<T = any> extends InvocationOptions<T> {
 }
 
 
@@ -136,13 +136,13 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArgum
      */
     platformProviders?: ProviderType[];
     /**
-     * Application runners endpoint options.
+     * Application runners invocation options.
      */
-    runnersOptions?: EndpointOptions<TArg>;
+    runnersOptions?: InvocationOptions<TArg>;
     /**
-     * Application events endpoint options.
+     * Application events invocation options.
      */
-    eventsOptions?: EndpointOptions<TArg>;
+    eventsOptions?: InvocationOptions<TArg>;
 }
 
 /**

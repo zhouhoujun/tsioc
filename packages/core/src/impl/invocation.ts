@@ -3,27 +3,27 @@ import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler } from '../handlers/configable';
-import { ResultValue } from '../endpoints/ResultValue';
-import { EndpointContext } from '../endpoints/context';
-import { EndpointOptions, Respond, TypedRespond } from '../endpoints/endpoint.service';
-import { EndpointFactory, EndpointFactoryResolver, OPERA_FILTERS, OPERA_GUARDS, OPERA_INTERCEPTORS, OperationEndpoint } from '../endpoints/endpoint.factory';
+import { ResultValue } from '../handlers/ResultValue';
+import { HandlerContext } from '../handlers/context';
+import {
+    InvocationOptions, Respond, TypedRespond, InvocationFactory, OPERA_FILTERS, OPERA_GUARDS, 
+    InvocationFactoryResolver, OPERA_INTERCEPTORS, InvocationHandler
+} from '../invocation';
 
 
 
-
-
-export class OperationEndpointImpl<TInput extends EndpointContext = EndpointContext, TOutput = any> extends ConfigableHandler<TInput, TOutput, EndpointOptions<TInput>> implements OperationEndpoint<TInput, TOutput> {
+export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContext, TOutput = any> extends ConfigableHandler<TInput, TOutput, InvocationOptions<TInput>> implements InvocationHandler<TInput, TOutput> {
 
     private limit?: number;
     constructor(
-        public readonly invoker: OperationInvoker, options: EndpointOptions) {
+        public readonly invoker: OperationInvoker, options: InvocationOptions) {
         super(invoker.context, options)
         this.limit = options.limit;
         invoker.context.onDestroy(this);
 
     }
 
-    protected override initOptions(options: EndpointOptions): EndpointOptions {
+    protected override initOptions(options: InvocationOptions): InvocationOptions {
         return {
             interceptorsToken: OPERA_INTERCEPTORS,
             guardsToken: OPERA_GUARDS,
@@ -41,7 +41,7 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
         return super.handle(input);
     }
 
-    equals(target: OperationEndpoint): boolean {
+    equals(target: InvocationHandler): boolean {
         if (target === this) return true;
         return this.invoker.equals(target.invoker);
     }
@@ -107,14 +107,14 @@ export class OperationEndpointImpl<TInput extends EndpointContext = EndpointCont
 }
 
 @Injectable()
-export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
+export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
 
     constructor(readonly typeRef: ReflectiveRef<T>) {
         super()
     }
 
-    create<TArg>(propertyKey: string, options?: EndpointOptions<TArg>): OperationEndpoint {
-        return new OperationEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ);
+    create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler {
+        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ);
     }
 
 }
@@ -122,22 +122,22 @@ export class EndpointFactoryImpl<T = any> extends EndpointFactory<T> {
 /**
  * factory resolver implements
  */
-export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
+export class InvocationFactoryResolverImpl extends InvocationFactoryResolver {
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: ReflectiveRef<T>): EndpointFactory<T>;
+    resolve<T>(type: ReflectiveRef<T>): InvocationFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: Type<T> | Class<T>, injector: Injector): EndpointFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any): EndpointFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>, injector: Injector): InvocationFactory<T>;
+    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any): InvocationFactory<T> {
         let tyref: ReflectiveRef<T>;
         if (type instanceof ReflectiveRef) {
             tyref = type;
@@ -145,7 +145,7 @@ export class EndpointFactoryResolverImpl extends EndpointFactoryResolver {
             const injector = arg2 as Injector;
             tyref = injector.get(ReflectiveFactory).create(type, injector);
         }
-        return new EndpointFactoryImpl(tyref);
+        return new InvocationFactorympl(tyref);
     }
 
 }

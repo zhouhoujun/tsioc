@@ -1,12 +1,12 @@
 import { Token } from '@tsdi/ioc';
-import { ConfigableEndpointOptions } from '@tsdi/core';
+import { ConfigableHandlerOptions } from '@tsdi/core';
 import { TransportRequest } from '@tsdi/common';
 import { TransportBackend } from './backend';
 
 /**
  * Client options.
  */
-export interface ClientOpts<TConnOpts = any> extends ConfigableEndpointOptions<TransportRequest> {
+export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<TransportRequest> {
     /**
      * url
      */

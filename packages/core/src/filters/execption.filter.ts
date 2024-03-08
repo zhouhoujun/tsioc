@@ -3,7 +3,7 @@ import { catchError, finalize, isObservable, mergeMap, Observable, of, throwErro
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
 import { runHandlers } from '../handlers/runs';
-import { EndpointContext } from '../endpoints/context';
+import { HandlerContext } from '../handlers/context';
 
 
 /**
@@ -95,7 +95,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
 
     catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any> {
         let injector: Injector;
-        if (input instanceof EndpointContext) {
+        if (input instanceof HandlerContext) {
             injector = input.injector;
             input.execption = err;
         } else {

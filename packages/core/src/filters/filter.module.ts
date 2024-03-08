@@ -1,8 +1,8 @@
 import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, Module, isDefined } from '@tsdi/ioc';
 import { Handler } from '../Handler';
 import { PayloadApplicationEvent } from '../events';
-import { getResolversToken } from '../endpoints/resolver';
-import { createPayloadResolver } from '../endpoints/resolvers';
+import { getResolversToken } from '../handlers/resolver';
+import { createPayloadResolver } from '../handlers/resolvers';
 import { TransformModule } from '../pipes/transform.module';
 import { ExecptionHandlerFilter } from './execption.filter';
 import { FilterHandlerResolver } from './filter';

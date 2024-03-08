@@ -7,14 +7,14 @@ import { CanActivate } from './guard';
 import { Handler } from './Handler';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
-import { EndpointContext } from './endpoints/context';
-import { EndpointService } from './endpoints/endpoint.service';
+import { HandlerContext } from './handlers/context';
+import { HandlerService } from './handlers/configable';
 
 
 /**
  * Application event context.
  */
-export class ApplicationEventContext<T extends ApplicationEvent = ApplicationEvent> extends EndpointContext<T> {
+export class ApplicationEventContext<T extends ApplicationEvent = ApplicationEvent> extends HandlerContext<T> {
 
 }
 
@@ -24,7 +24,7 @@ export class ApplicationEventContext<T extends ApplicationEvent = ApplicationEve
  * 提供基本的事件侦听器注册工具。
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster implements EndpointService, ApplicationEventPublisher {
+export abstract class ApplicationEventMulticaster implements HandlerService, ApplicationEventPublisher {
     /**
      * use pipes.
      * @param guards 

@@ -1,4 +1,7 @@
-import { Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType, Token, Type, getToken, isArray, lang, toFactory, toProvider, tokenId } from '@tsdi/ioc';
+import {
+    Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
+    Type,  Token, getToken, isArray, lang, toFactory, toProvider, tokenId
+} from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
@@ -76,7 +79,7 @@ export interface ClientTokenOpts {
  * Client Module.
  */
 @Module({
-    
+
 })
 export class ClientModule {
 

@@ -17,7 +17,7 @@ export * from './pipes';
 // export * from './impl/context';
 export * from './impl/loader'
 export { DefaultApplicationContext } from './impl/context';
-export { OperationEndpointImpl } from './impl/operation.endpoint';
+export { InvocationHandlerImpl } from './impl/invocation';
 
 export { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 export * from './Application';
@@ -32,6 +32,7 @@ export * from './filters';
 
 export * from './handlers';
 
-export * from './endpoints';
+export * from './invocation';
+
 
 

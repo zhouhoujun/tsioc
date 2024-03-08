@@ -6,8 +6,8 @@ import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { DefaultApplicationRunners } from './impl/runners';
 import { DefaultApplicationFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
-import { EndpointFactoryResolverImpl } from './impl/operation.endpoint';
-import { EndpointFactoryResolver } from './endpoints/endpoint.factory';
+import { InvocationFactoryResolverImpl } from './impl/invocation';
+import { InvocationFactoryResolver } from './invocation';
 
 
 
@@ -15,7 +15,7 @@ import { EndpointFactoryResolver } from './endpoints/endpoint.factory';
  * Platform default providers
  */
 export const DEFAULTA_PROVIDERS: ProviderType[] = [
-    { provide: EndpointFactoryResolver, useClass: EndpointFactoryResolverImpl, static: true },
+    { provide: InvocationFactoryResolver, useClass: InvocationFactoryResolverImpl, static: true },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
 ]

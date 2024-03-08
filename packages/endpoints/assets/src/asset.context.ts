@@ -1,5 +1,5 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
-import { EndpointInvokeOpts, PipeTransform } from '@tsdi/core';
+import { InvokeHanlerOpts, PipeTransform } from '@tsdi/core';
 import {  HEAD, StatusCode, normalize, Header, HeaderRecord } from '@tsdi/common';
 import { Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, ENOENT, AssetTransportOpts, PacketLengthException, IReadableStream } from '@tsdi/common/transport';
 import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/endpoints';
@@ -40,7 +40,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly mimeAdapter: MimeAdapter;
 
 
-    constructor(injector: Injector, readonly session: TransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: EndpointInvokeOpts<TRequest>) {
+    constructor(injector: Injector, readonly session: TransportSession, readonly request: TRequest, readonly response: TResponse, readonly serverOptions: TServOpts, options?: InvokeHanlerOpts<TRequest>) {
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
         this.streamAdapter = session.streamAdapter;

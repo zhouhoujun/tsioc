@@ -9,12 +9,11 @@ import {
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterHandlerResolver } from './filters/filter';
-import { EndpointOptions } from './endpoints/endpoint.service';
-import { EndpointFactoryResolver } from './endpoints/endpoint.factory';
+import { InvocationOptions, InvocationFactoryResolver } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
-import { TransportParameter, TransportParameterOptions } from './endpoints/resolver';
+import { TransportParameter, TransportParameterOptions } from './handlers/resolver';
 
 
 /**
@@ -22,7 +21,7 @@ import { TransportParameter, TransportParameterOptions } from './endpoints/resol
  * 
  * 运行接口配置
  */
-export interface RunnerOption<TArg> extends EndpointOptions<TArg> {
+export interface RunnerOption<TArg> extends InvocationOptions<TArg> {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
@@ -50,7 +49,7 @@ export interface Runner {
      * 运行接口修饰器， 用于声明该方法为应用程序的运行接口。
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
-    <TArg>(args?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(args?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -217,14 +216,14 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
     /**
      * `EventHandler` dectorator, event message handle. use to handle event message of {@link  ApplicationEventPublisher}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg>(event: Type<ApplicationEvent>, option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(event: Type<ApplicationEvent>, option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string, runtime?: boolean) {
@@ -237,7 +236,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
-                const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+                const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
                 const multicaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
                     const { filter, order, ...options } = decor.metadata;
@@ -263,7 +262,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
 
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
-                const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+                const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
                 const multicaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
                     const { filter, order, ...options } = decor.metadata;
@@ -291,7 +290,7 @@ export const EventHandler: EventHandler = createEventHandler(PayloadApplicationE
 /**
  * event handler metadata.
  */
-export interface EventHandlerMetadata<TArg> extends EndpointOptions<TArg> {
+export interface EventHandlerMetadata<TArg> extends InvocationOptions<TArg> {
     /**
      * execption type.
      */
@@ -308,9 +307,9 @@ export interface StartupEventHandler {
     /**
      * Application Startup event handle.
      * rasie after `ApplicationContextRefreshEvent`
-     * @param {EndpointOptions} option message match option.
+     * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -330,9 +329,9 @@ export interface StartEventHandler {
     /**
      * Application start event handle.
      * rasie after `ApplicationStartupEvent`
-     * @param {EndpointOptions} option message match option.
+     * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -352,9 +351,9 @@ export interface StartedEventHandler {
     /**
      * Application started event handle.
      * rasie after `ApplicationStartEvent`
-     * @param {EndpointOptions} option message match option.
+     * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -375,9 +374,9 @@ export interface ShutdownEventHandler {
     /**
      * Application Shutdown event handle.
      * rasie after Application close invoked.
-     * @param {EndpointOptions} option message match option.
+     * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -398,9 +397,9 @@ export interface DisposeEventHandler {
     /**
      * Application Dispose event handle.
      * rasie after `ApplicationShutdownEvent`
-     * @param {EndpointOptions} option message match option.
+     * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -414,7 +413,7 @@ export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDispos
 /**
  * Endpoint handler metadata.
  */
-export interface EndpointHandlerMetadata<TArg> extends EndpointOptions<TArg> {
+export interface EndpointHandlerMetadata<TArg> extends InvocationOptions<TArg> {
     /**
      * execption type.
      */
@@ -436,7 +435,7 @@ export interface EndpointHanlder {
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg = any>(filter: Type | string, option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg = any>(filter: Type | string, option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -452,7 +451,7 @@ export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder
             const typeRef = ctx.class;
             const decors = typeRef.getDecorDefines<EndpointHandlerMetadata<any>>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
-            const factory = injector.get(EndpointFactoryResolver).resolve(typeRef, injector);
+            const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
             const handlerResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
                 const { filter, order, ...options } = decor.metadata;
@@ -480,7 +479,7 @@ export interface ExecptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg = any>(execption: Type<Error>, option?: EndpointOptions<TArg>): MethodDecorator;
+    <TArg = any>(execption: Type<Error>, option?: InvocationOptions<TArg>): MethodDecorator;
 }
 
 /**

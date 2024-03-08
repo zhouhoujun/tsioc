@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, isArray, isDefined, Type, ClassType, Parameter, OperationInvoker } from '@tsdi/ioc';
-import { ModelArgumentResolver, EndpointContext } from '@tsdi/core';
+import { ModelArgumentResolver, HandlerContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
@@ -12,11 +12,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 
     abstract get resolvers(): ModelFieldResolver[];
 
-    canResolve(parameter: Parameter, ctx: EndpointContext): boolean {
+    canResolve(parameter: Parameter, ctx: HandlerContext): boolean {
         return this.hasModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: EndpointContext): T {
+    resolve<T>(parameter: Parameter<T>, ctx: HandlerContext): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
@@ -28,7 +28,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         return this.resolveModel(classType, ctx, fields)
     }
 
-    canResolveModel(modelType: Type, ctx: EndpointContext, args: Record<string, any>, nullable?: boolean): boolean {
+    canResolveModel(modelType: Type, ctx: HandlerContext, args: Record<string, any>, nullable?: boolean): boolean {
         return nullable || !this.getPropertyMeta(modelType).some(p => {
             if (this.hasModel(p.provider ?? p.type)) {
                 return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
@@ -37,7 +37,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         })
     }
 
-    resolveModel(modelType: Type, ctx: EndpointContext, fields: Record<string, any>, nullable?: boolean): any {
+    resolveModel(modelType: Type, ctx: HandlerContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
             return null
         }
@@ -98,11 +98,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     /**
      * has model fields in context or not.
      */
-    protected abstract hasFields(parameter: Parameter, ctx: EndpointContext): boolean;
+    protected abstract hasFields(parameter: Parameter, ctx: HandlerContext): boolean;
     /**
      * get model fields in context.
      */
-    protected abstract getFields(parameter: Parameter, ctx: EndpointContext): Record<string, any>;
+    protected abstract getFields(parameter: Parameter, ctx: HandlerContext): Record<string, any>;
 }
 
 
@@ -130,11 +130,11 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
         return this.option.getPropertyMeta(type)
     }
 
-    protected hasFields(parameter: Parameter<any>, ctx: EndpointContext): boolean {
+    protected hasFields(parameter: Parameter<any>, ctx: HandlerContext): boolean {
         return this.option.hasField ? this.option.hasField(parameter, ctx) : !!this.getFields(parameter, ctx)
     }
 
-    protected getFields(parameter: Parameter<any>, ctx: EndpointContext): Record<string, any> {
+    protected getFields(parameter: Parameter<any>, ctx: HandlerContext): Record<string, any> {
         return this.option.getFields(parameter, ctx)
     }
 }
@@ -160,11 +160,11 @@ export interface ModelResolveOption<C> {
     /**
      * has model fields in context or not.
      */
-    hasField?: (parameter: Parameter<any>, ctx: EndpointContext) => boolean;
+    hasField?: (parameter: Parameter<any>, ctx: HandlerContext) => boolean;
     /**
      * get model fields in context.
      */
-    getFields: (parameter: Parameter<any>, ctx: EndpointContext) => Record<string, any>;
+    getFields: (parameter: Parameter<any>, ctx: HandlerContext) => Record<string, any>;
     /**
      * custom field resolvers.
      */

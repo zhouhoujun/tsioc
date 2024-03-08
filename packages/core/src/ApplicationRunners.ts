@@ -1,9 +1,10 @@
 import { Abstract, Class, InvocationContext, ModuleRef, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
-import { Filter } from './filters/filter';
 import { PipeTransform } from './pipes/pipe';
-import { EndpointOptions, EndpointService } from './endpoints/endpoint.service';
+import { HandlerService } from './handlers/configable';
+import { Filter } from './filters/filter';
+import { InvocationOptions } from './invocation';
 
 /**
  * Application runners.
@@ -11,7 +12,7 @@ import { EndpointOptions, EndpointService } from './endpoints/endpoint.service';
  * 应用程序运行集合
  */
 @Abstract()
-export abstract class ApplicationRunners implements EndpointService, OnDestroy {
+export abstract class ApplicationRunners implements HandlerService, OnDestroy {
 
   /**
    * runner types size.
@@ -22,7 +23,7 @@ export abstract class ApplicationRunners implements EndpointService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: EndpointOptions<TArg>): ReflectiveRef<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvocationOptions<TArg>): ReflectiveRef<T>;
 
   /**
    * detach runner

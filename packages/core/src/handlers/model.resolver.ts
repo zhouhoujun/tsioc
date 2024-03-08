@@ -1,5 +1,5 @@
 import { Parameter, tokenId, OperationInvoker, Type, PropertyMetadata } from '@tsdi/ioc';
-import { EndpointContext } from './context';
+import { HandlerContext } from './context';
 
 
 /**
@@ -11,13 +11,13 @@ import { EndpointContext } from './context';
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: Parameter, ctx: EndpointContext<TInput>): boolean;
+    canResolve(parameter: Parameter, ctx: HandlerContext<TInput>): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: Parameter<T>, ctx: EndpointContext<TInput>): T;
+    resolve<T>(parameter: Parameter<T>, ctx: HandlerContext<TInput>): T;
 
     /**
      * has the model type or not.

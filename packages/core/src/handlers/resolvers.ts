@@ -1,13 +1,13 @@
 import { ArgumentExecption, Type, composeResolver, EMPTY, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter } from '@tsdi/ioc';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
-import { EndpointContext } from './context';
+import { HandlerContext } from './context';
 
 
 export function missingPipeExecption(parameter: Parameter, type?: Type, method?: string) {
     return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
 }
 
-export function createPayloadResolver<T extends EndpointContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: (param: TransportParameter, payload: any, ctx: T) => boolean): TransportArgumentResolver[] {
+export function createPayloadResolver<T extends HandlerContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: (param: TransportParameter, payload: any, ctx: T) => boolean): TransportArgumentResolver[] {
     return [
         composeResolver<TransportArgumentResolver, TransportParameter, T>(
             (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),

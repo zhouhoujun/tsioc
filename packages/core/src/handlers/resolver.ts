@@ -1,6 +1,6 @@
 import { OperationArgumentResolver, Parameter, OperationInvoker, TypeOf, Token, getTokenOf, isToken, getClassName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { EndpointContext } from './context';
+import { HandlerContext } from './context';
 
 /**
  * transport parameter options.
@@ -44,13 +44,13 @@ export interface TransportArgumentResolver<T = any> extends OperationArgumentRes
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve(parameter: TransportParameter, ctx: EndpointContext): boolean;
+    canResolve(parameter: TransportParameter, ctx: HandlerContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: TransportParameter<T>, ctx: EndpointContext): T;
+    resolve<T>(parameter: TransportParameter<T>, ctx: HandlerContext): T;
 }
 
 
@@ -70,7 +70,7 @@ export function getResolversToken(type: TypeOf<any>, propertyKey?: string): Toke
  * @param ctx 
  * @returns 
  */
-export function getPipe(parameter: TransportParameter, ctx: EndpointContext, isPrimitive?: boolean): PipeTransform | null {
+export function getPipe(parameter: TransportParameter, ctx: HandlerContext, isPrimitive?: boolean): PipeTransform | null {
     if (parameter.pipe) {
         if (isToken(parameter.pipe)) return ctx.get<PipeTransform>(parameter.pipe);
         return parameter.pipe;
