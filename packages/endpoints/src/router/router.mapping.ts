@@ -3,13 +3,14 @@ import {
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import {
-    Handler, GuardHandler, Endpoint, CanActivate, getGuardsToken, getInterceptorsToken,
+    Handler, GuardHandler, CanActivate, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 
+import { Endpoint } from '../endpoint';
 import { Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';

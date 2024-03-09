@@ -1,16 +1,19 @@
-import { Abstract, Execption, Injector, Token } from '@tsdi/ioc';
-import { EndpointOptions, EndpointService, ConfigableEndpoint } from '@tsdi/core';
+import { Execption, Injector, InvocationContext, Token } from '@tsdi/ioc';
+import { ConfigableHandler, ConfigableHandlerOptions, HandlerService } from '@tsdi/core';
 import { TransportContext } from './TransportContext';
 import { Router } from './router/router';
+import { ForbiddenExecption } from '@tsdi/common/transport';
 
 /**
  * Transport endpoint.
  * 
  * 传输节点
  */
-@Abstract()
-export abstract class TransportEndpoint<TInput extends TransportContext = TransportContext, TOutput = any> extends ConfigableEndpoint<TInput, TOutput> implements EndpointService {
+export class TransportEndpoint<TInput extends TransportContext = TransportContext, TOutput = any> extends ConfigableHandler<TInput, TOutput> implements HandlerService {
 
+    protected override forbiddenError(): Execption {
+        return new ForbiddenExecption()
+    }
 }
 
 /**
@@ -18,7 +21,7 @@ export abstract class TransportEndpoint<TInput extends TransportContext = Transp
  * 
  * 传输节点配置
  */
-export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends EndpointOptions<T> {
+export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends ConfigableHandlerOptions<T> {
 
     /**
      * backend of endpoint. defaut `Router`
@@ -34,12 +37,7 @@ export interface TransportEndpointOptions<T extends TransportContext = Transport
  * @param options 
  * @returns 
  */
-export function createTransportEndpoint<TCtx extends TransportContext, TOutput>(injector: Injector, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
-    return TRANSPORT_ENDPOINT_IMPL.create(injector, options)
+export function createTransportEndpoint<TCtx extends TransportContext, TOutput>(injector: Injector | InvocationContext, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
+    return new TransportEndpoint(injector, options)
 }
 
-export const TRANSPORT_ENDPOINT_IMPL = {
-    create<TCtx extends TransportContext, TOutput>(injector: Injector, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
-        throw new Execption('not implemented.')
-    }
-}

@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { LOCALHOST, HeaderRecord, TransportRequest } from '@tsdi/common';
+import { HeaderRecord, LOCALHOST, TransportRequest } from '@tsdi/common';
 import { MessageExecption, PacketLengthException, ResponsePacket, StreamAdapter, TransportSession, hdr, } from '@tsdi/common/transport';
 import { TransportContext, TransportContextFactory } from '../TransportContext';
 import { ServerOpts } from '../Server';
@@ -121,7 +121,7 @@ export class TransportContextIml<TRequest extends TransportRequest = TransportRe
         }
     }
 
-    setHeader(headers: OutgoingHeaders): void {
+    setHeader(headers: HeaderRecord): void {
         if (this.response.headers) {
             Object.assign(this.response.headers, headers)
         } else {

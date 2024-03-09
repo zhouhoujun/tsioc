@@ -8,10 +8,10 @@ import { ExecptionHandlerFilter } from './execption.filter';
 import { FilterHandlerResolver } from './filter';
 
 /**
- * endpoint hanlders resolver.
+ * filter hanlders resolver.
  */
 @Injectable()
-export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver {
+export class DefaultFiterHandlerMethodResolver extends FilterHandlerResolver {
 
     private maps = new Map<Type | string, Handler[]>();
 
@@ -47,7 +47,7 @@ export class DefaultEndpointHandlerMethodResolver extends FilterHandlerResolver 
  * filter providers.
  */
 export const FILTER_PROVIDERS: ProviderType[] = [
-    { provide: FilterHandlerResolver, useClass: DefaultEndpointHandlerMethodResolver, static: true },
+    { provide: FilterHandlerResolver, useClass: DefaultFiterHandlerMethodResolver, static: true },
     ExecptionHandlerFilter,
     {
         provide: getResolversToken(PayloadApplicationEvent),

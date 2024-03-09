@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Endpoint } from '@tsdi/core';
+import { Endpoint } from '../endpoint';
 import { Router } from './router';
 import { Middleware, MiddlewareLike } from '../middleware/middleware';
 import { TransportContext } from '../TransportContext';

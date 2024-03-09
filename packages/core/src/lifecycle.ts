@@ -31,5 +31,7 @@ export interface OnApplicationShutdown {
     onApplicationShutdown(): void;
 }
 
-
+/**
+ * Application Hooks
+ */
 export type Hooks = OnApplicationStart & OnApplicationShutdown & OnDispose & OnDestroy;

@@ -8,7 +8,7 @@ import {
     NotFoundExecption, UnauthorizedExecption, UnsupportedMediaTypeExecption, InvalidJsonException, MessageExecption
 } from '@tsdi/common/transport';
 import { MissingModelFieldExecption } from '@tsdi/repository';
-import { TransportContext } from './TransportContext';
+import { TransportContext } from '@tsdi/endpoints';
 
 
 export const SHOW_DETAIL_ERROR = tokenId<boolean>('SHOW_DETAIL_ERROR');

@@ -2,9 +2,9 @@ import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, 
 import { getResolversToken } from './resolver';
 
 /**
- * invoke handler options.
+ * handler context options.
  */
-export interface InvokeHanlerOpts<T = any> extends InvokeArguments<T> {
+export interface HanlerContextOpts<T = any> extends InvokeArguments<T> {
     bootstrap?: boolean;
     isDone?(ctx: HandlerContext<T>): boolean;
 }
@@ -17,7 +17,7 @@ export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInpu
     readonly bootstrap: boolean;
     constructor(
         injector: Injector,
-        options: InvokeHanlerOpts<TInput> = EMPTY_OBJ) {
+        options: HanlerContextOpts<TInput> = EMPTY_OBJ) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
         this.doneFn = options.isDone;

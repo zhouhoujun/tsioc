@@ -1,5 +1,5 @@
 import { Injectable, Injector, ProvdierOf, ProviderType, ReflectiveRef, Token, Type, toProvider, tokenId } from '@tsdi/ioc';
-import { ApplicationContext, EndpointOptions, Startup } from '@tsdi/core';
+import { ApplicationContext, InvocationOptions, Startup } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common/transport';
 import { Server, ServerOpts } from './Server';
 import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
@@ -20,7 +20,10 @@ export interface ServerConfig {
      * server provdier.
      */
     server?: ProvdierOf<Server>;
-    start?: EndpointOptions
+    /**
+     * start.
+     */
+    start?: InvocationOptions
     /**
      * server endpoint provider
      */

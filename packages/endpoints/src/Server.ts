@@ -1,5 +1,5 @@
 import { Abstract, ClassType, ProvdierOf, ProviderType, StaticProvider } from '@tsdi/ioc';
-import { CanActivate, Interceptor, PipeTransform, Filter, EndpointService, Runner, Shutdown, ApplicationEvent } from '@tsdi/core';
+import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
 import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
 import { TransportContext } from './TransportContext';
@@ -89,7 +89,7 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest = any, TResponse = any> implements EndpointService {
+export abstract class Server<TRequest = any, TResponse = any> implements HandlerService {
 
     /**
      * micro service endpoint.

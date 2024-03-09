@@ -4,7 +4,6 @@ import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionF
 import { TransportContext, TransportContextFactory } from './TransportContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
-import { SHOW_DETAIL_ERROR, TransportExecptionHandlers } from './execption.handlers';
 import { LogInterceptor } from './logger/log';
 import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
@@ -135,18 +134,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                                 }
                             }
 
-                            if (serverOpts.detailError) {
-                                serverOpts.providers.push({
-                                    provide: SHOW_DETAIL_ERROR,
-                                    useValue: true
-                                });
-                            }
-
 
                             if (isArray(serverOpts.execptionHandlers)) {
                                 serverOpts.providers.push(...serverOpts.execptionHandlers)
-                            } else {
-                                serverOpts.providers.push(serverOpts.execptionHandlers ?? TransportExecptionHandlers)
                             }
 
                             if (serverOpts.sessionFactory) {
