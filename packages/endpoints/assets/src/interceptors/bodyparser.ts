@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { BadRequestExecption, UnsupportedMediaTypeExecption, identity, IReadableStream, hdr, InvalidJsonException  } from '@tsdi/common';
+import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, hdr, InvalidJsonException  } from '@tsdi/common/transport';
 import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -224,6 +224,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
     }
 }
 
+const identity = 'identity';
 const strictJSONReg = /^[\x20\x09\x0a\x0d]*(\[|\{)/;
 
 const defaults = {

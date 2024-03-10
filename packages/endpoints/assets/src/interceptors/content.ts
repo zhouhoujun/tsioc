@@ -1,6 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD, MESSAGE, NotFoundExecption } from '@tsdi/common';
+import { GET, HEAD, MESSAGE } from '@tsdi/common';
+import { NotFoundExecption } from '@tsdi/common/transport';
 import { AssetContext, Middleware, ContentSendAdapter, ContentOptions } from '@tsdi/endpoints';
 import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
 

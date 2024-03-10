@@ -116,7 +116,7 @@ export interface ResponseEvent {
 
 /**
  * transport event.
- * response for `TransportClient`.
+ * response for `Client`.
  */
 export type TransportEvent<T = any> = TransportHeaderResponse | TransportResponse<T> | ResponseEvent;
 

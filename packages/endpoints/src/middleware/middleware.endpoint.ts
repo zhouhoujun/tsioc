@@ -1,20 +1,10 @@
-import { Abstract, Execption, Injector, ProvdierOf, Token } from '@tsdi/ioc';
-import { EndpointOptions, EndpointService } from '@tsdi/core';
+import { Abstract, Execption, Injector, ProvdierOf, Token, refl } from '@tsdi/ioc';
+import { InvocationOptions, HandlerService } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { TransportContext } from '../TransportContext';
 import { TransportEndpoint } from '../TransportEndpoint';
 
-/**
- * transport middleware endpoint.
- * 
- * 含中间件的传输节点
- */
-@Abstract()
-export abstract class MiddlewareEndpoint<TInput extends TransportContext = any, TOutput = any> extends TransportEndpoint<TInput, TOutput> implements EndpointService, MiddlewareService {
-
-    abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
-}
 
 /**
  * middleware options.
@@ -29,8 +19,25 @@ export interface MiddlewareOpts<T extends TransportContext = any> {
  * 
  * 含中间件的传输节点配置
  */
-export interface MiddlewareEndpointOptions<T extends TransportContext = any, TArg = any> extends EndpointOptions<T, TArg>, MiddlewareOpts<T> {
+export interface MiddlewareEndpointOptions<T extends TransportContext = any, TArg = any> extends InvocationOptions<T, TArg>, MiddlewareOpts<T> {
     
+}
+
+
+
+/**
+ * transport middleware endpoint.
+ * 
+ * 含中间件的传输节点
+ */
+
+export class MiddlewareEndpoint<TInput extends TransportContext = any, TOutput = any> extends TransportEndpoint<TInput, TOutput, MiddlewareEndpointOptions<TInput>> implements HandlerService, MiddlewareService {
+
+    use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
+        this.regMulti(this.options.midddlesToken, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
+        this.reset();
+        return this;
+    }
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { hdr, isArrayBuffer, isBlob, isBuffer, isFormData, IStream, isUrlSearchParams, StreamAdapter, TransportEvent, TransportParams, TransportRequest, TransportSession } from '@tsdi/common';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, TransportEvent, TransportParams, TransportRequest } from '@tsdi/common';
+import { hdr, IStream, StreamAdapter } from '@tsdi/common/transport';
 
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
@@ -15,7 +16,6 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
     constructor(private adapter: StreamAdapter) { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
-        if(req.context.get(TransportSession).getPacketStrategy() !== 'asset') return next.handle(req);
         
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
         if (body == null) {
@@ -62,7 +62,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         }
         // Check whether the body is already in a serialized form. If so,
         // it can just be returned directly.
-        if (isArrayBuffer(body) || isBuffer(body) || this.adapter.isStream(body) || isBlob(body) || this.adapter.isFormDataLike(body) ||
+        if (isArrayBuffer(body) || Buffer.isBuffer(body) || this.adapter.isStream(body) || isBlob(body) || this.adapter.isFormDataLike(body) ||
             isUrlSearchParams(body) || isString(body)) {
             return body as any;
         }

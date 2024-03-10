@@ -1,5 +1,5 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
-import { hdr } from '@tsdi/common';
+import { hdr } from '@tsdi/common/transport';
 import { AssetContext, Middleware } from '@tsdi/endpoints';
 
 

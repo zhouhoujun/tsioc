@@ -1,15 +1,16 @@
 import { Execption, Injector, InvocationContext, Token } from '@tsdi/ioc';
-import { ConfigableHandler, ConfigableHandlerOptions, HandlerService } from '@tsdi/core';
+import { ConfigableHandler, HandlerService, InvocationOptions } from '@tsdi/core';
+import { ForbiddenExecption } from '@tsdi/common/transport';
 import { TransportContext } from './TransportContext';
 import { Router } from './router/router';
-import { ForbiddenExecption } from '@tsdi/common/transport';
 
 /**
  * Transport endpoint.
  * 
  * 传输节点
  */
-export class TransportEndpoint<TInput extends TransportContext = TransportContext, TOutput = any> extends ConfigableHandler<TInput, TOutput> implements HandlerService {
+export class TransportEndpoint<TInput extends TransportContext = TransportContext, TOutput = any, TOptions extends TransportEndpointOptions<TInput> = TransportEndpointOptions<TInput>> 
+    extends ConfigableHandler<TInput, TOutput, TOptions> implements HandlerService {
 
     protected override forbiddenError(): Execption {
         return new ForbiddenExecption()
@@ -21,7 +22,7 @@ export class TransportEndpoint<TInput extends TransportContext = TransportContex
  * 
  * 传输节点配置
  */
-export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends ConfigableHandlerOptions<T> {
+export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends InvocationOptions<T> {
 
     /**
      * backend of endpoint. defaut `Router`

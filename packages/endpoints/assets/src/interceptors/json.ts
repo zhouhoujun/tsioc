@@ -1,6 +1,6 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { hdr } from '@tsdi/common';
+import { hdr } from '@tsdi/common/transport';
 import { AssetContext, Middleware } from '@tsdi/endpoints';
 import { Observable, map } from 'rxjs';
 import { ctype } from '../consts';

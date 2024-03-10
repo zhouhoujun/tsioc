@@ -1,6 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
-import { IStream } from '@tsdi/common';
+import { IStream } from '@tsdi/common/transport';
 import { AssetContext } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 

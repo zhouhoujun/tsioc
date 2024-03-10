@@ -11,13 +11,13 @@ import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
 import { RouteEndpointFactoryResolver } from './route.endpoint';
 import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
-import { TransportEndpointImpl } from '../impl/transport.endpoint';
+// import { TransportEndpointImpl } from '../impl/transport.endpoint';
 import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
 
 
 
-TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
+// TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
 
 
 MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointImpl(injector, options);

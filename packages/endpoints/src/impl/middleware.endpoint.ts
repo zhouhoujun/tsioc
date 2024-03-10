@@ -9,22 +9,19 @@ import { MiddlewareEndpoint, MiddlewareEndpointOptions } from '../middleware/mid
 
 
 export class MiddlewareEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any>
-    extends GuardHandler<TInput, TOutput> implements MiddlewareEndpoint<TInput, TOutput> {
+    extends GuardHandler<TInput, TOutput, MiddlewareEndpointOptions> implements MiddlewareEndpoint<TInput, TOutput> {
 
     protected midddlesToken: Token<MiddlewareLike<TInput>[]>;
 
     constructor(
         injector: Injector,
         options: MiddlewareEndpointOptions<TInput>) {
-        super(createContext(injector, options),
-            options.interceptorsToken!,
-            options.guardsToken,
-            options.filtersToken);
+        super(createContext(injector, options), options);
 
         if (!options.middlewaresToken) throw new ArgumentExecption(`Middleware token missing of ${getClassName(this)}.`)
         this.midddlesToken = options.middlewaresToken;
         
-        setHandlerOptions(this, options);
+        // setHandlerOptions(this, options);
         options.middlewares && this.use(options.middlewares)
 
     }

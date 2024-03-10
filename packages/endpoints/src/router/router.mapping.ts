@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import {
     Handler, GuardHandler, CanActivate, getGuardsToken, getInterceptorsToken,
-    getFiltersToken, setHandlerOptions
+    getFiltersToken, setHandlerOptions, createHandler, createGuardHandler
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
@@ -455,7 +455,7 @@ export class MappingRoute implements Middleware, Endpoint {
 
         if (this.route.interceptors || this.route.guards || this.route.filters) {
             const route = joinPath(this.route.path);
-            const gendpt = new GuardHandler(this.injector, endpoint, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
+            const gendpt = createGuardHandler(this.injector, endpoint, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
             setHandlerOptions(gendpt, this.route);
             endpoint = gendpt;
         }

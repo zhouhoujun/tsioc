@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { IStream, hdr } from '@tsdi/common';
+import { IStream, hdr } from '@tsdi/common/transport';
 import { AssetContext } from '@tsdi/endpoints';
 
 /**
