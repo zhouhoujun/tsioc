@@ -5,12 +5,12 @@ import { MessageExecption, StreamAdapter, TransportSession, ResponsePacket } fro
 import { ServerOpts } from './Server';
 
 /**
- * abstract transport context.
+ * abstract request context.
  * 
  * 传输节点上下文
  */
 @Abstract()
-export abstract class TransportContext<TRequest = any, TResponse = any, TSocket = any> extends HandlerContext<TRequest> {
+export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = any> extends HandlerContext<TRequest> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -134,7 +134,7 @@ export abstract class TransportContextFactory {
      * @param response 
      * @param options 
      */
-    abstract create<TSocket, TInput extends TransportRequest, TOutput extends ResponsePacket>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts): TransportContext<TInput, TOutput, TSocket>
+    abstract create<TSocket, TInput extends TransportRequest, TOutput extends ResponsePacket>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts): RequestContext<TInput, TOutput, TSocket>
 }
 
 

@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Endpoint } from '../endpoint';
+import { RequestHandler } from '../RequestHandler';
 import { Transport } from '@tsdi/common/transport';
 import { Router } from './router';
 
@@ -9,7 +9,7 @@ import { Router } from './router';
  * public api for microserivce router
  */
 @Abstract()
-export abstract class MircoServRouter<T = Endpoint> extends Router<T> {
+export abstract class MircoServRouter<T = RequestHandler> extends Router<T> {
     /**
      * protocol
      */
@@ -33,5 +33,5 @@ export abstract class MircoServRouters {
     /**
      * get microserivce router
      */
-    abstract get<T = Endpoint>(protocol?: Transport): MircoServRouter<T>;
+    abstract get<T = RequestHandler>(protocol?: Transport): MircoServRouter<T>;
 }

@@ -1,15 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
-import { Handler, HandlerContext } from '@tsdi/core';
+import { Handler } from '@tsdi/core';
 import { Observable } from 'rxjs';
+import { RequestContext } from './RequestContext';
 
-
-/**
- * Request context.
- */
-export interface RequestContext<TReq = any, TRes = any> extends HandlerContext<TReq> {
-    req: TReq;
-    res: TRes;
-}
 
 /**
  * Request handler, the fundamental building block of servers.
@@ -21,4 +14,10 @@ export abstract class RequestHandler<TContext extends RequestContext = RequestCo
      * @param input 
      */
     abstract handle(input: TContext): Observable<any>;
+
+    /**
+     * is this equals to target or not
+     * @param target 
+     */
+    abstract equals?(target: any): boolean;
 }

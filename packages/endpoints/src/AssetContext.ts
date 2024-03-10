@@ -1,7 +1,7 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { StatusCode } from '@tsdi/common';
 import { TransportSession } from '@tsdi/common/transport';
-import { TransportContext } from './TransportContext';
+import { RequestContext } from './RequestContext';
 import { FileAdapter } from './FileAdapter';
 import { StatusVaildator } from './StatusVaildator';
 import { ServerOpts } from './Server';
@@ -12,7 +12,7 @@ import { ServerOpts } from './Server';
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends TransportContext<TRequest, TResponse> {
+export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends RequestContext<TRequest, TResponse> {
 
     abstract get serverOptions(): TServOpts;
     /**

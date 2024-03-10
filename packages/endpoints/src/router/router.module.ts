@@ -3,16 +3,16 @@ import { PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { Transport } from '@tsdi/common/transport';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
-import { TRANSPORT_ENDPOINT_IMPL } from '../TransportEndpoint';
-import { MIDDLEEARE_ENDPOINT_IMPL } from '../middleware/middleware.endpoint';
+// import { TRANSPORT_ENDPOINT_IMPL } from '../TransportEndpoint';
+// import { MIDDLEEARE_ENDPOINT_IMPL } from '../middleware/middleware.handler';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteReolver } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
-import { RouteEndpointFactoryResolver } from './route.endpoint';
-import { RouteEndpointFactoryResolverImpl } from '../impl/route.endpoint';
-// import { TransportEndpointImpl } from '../impl/transport.endpoint';
-import { MiddlewareEndpointImpl } from '../impl/middleware.endpoint';
+import { RouteHandlerFactoryResolver } from './route.handler';
+import { RouteEndpointFactoryResolverImpl } from '../impl/route.handler';
+// import { TransportEndpointImpl } from '../impl/transport.handler';
+// import { MiddlewareEndpointImpl } from '../impl/middleware.handler';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
 
 
@@ -20,7 +20,7 @@ import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router'
 // TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
 
 
-MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointImpl(injector, options);
+// MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointImpl(injector, options);
 
 
 /**
@@ -36,7 +36,7 @@ const factoryResolver = new RouteEndpointFactoryResolverImpl();
 
 @Module({
     providers: [
-        { provide: RouteEndpointFactoryResolver, useValue: factoryResolver },
+        { provide: RouteHandlerFactoryResolver, useValue: factoryResolver },
         { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true }
     ]
 })

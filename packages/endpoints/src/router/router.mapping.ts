@@ -10,15 +10,15 @@ import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 
-import { Endpoint } from '../endpoint';
+import { RequestHandler } from '../RequestHandler';
 import { Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';
 import { RouteMatcher, Router } from './router';
 import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteReolver } from './controller';
-import { TransportContext } from '../TransportContext';
-import { RouteEndpoint } from './route.endpoint';
+import { RequestContext } from '../RequestContext';
+import { RouteHandler } from './route.handler';
 import { AssetContext } from '../AssetContext';
 
 
@@ -53,22 +53,22 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 
     use(route: Route): this;
     use(route: Pattern, middleware: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this;
-    use(route: Route | Pattern, endpoint?: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this {
-        if (endpoint) {
-            this.addEndpoint(route as Pattern, endpoint, callback);
+    use(route: Route | Pattern, handler?: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this {
+        if (handler) {
+            this.addHandler(route as Pattern, handler, callback);
             return this;
         } else {
-            this.addEndpoint((route as Route).path, new MappingRoute(this.injector, route as Route));
+            this.addHandler((route as Route).path, new MappingRoute(this.injector, route as Route));
         }
         return this
     }
 
-    unuse(route: Pattern, endpoint?: Endpoint | MiddlewareLike): this {
+    unuse(route: Pattern, handler?: RequestHandler | MiddlewareLike): this {
         route = this.formatter.format(route);
-        if (endpoint) {
+        if (handler) {
             const handles = this.routes.get(route);
             if (isArray(handles)) {
-                const idx = handles.findIndex(i => i === endpoint || (isFunction((i as Endpoint).equals) && (i as Endpoint).equals?.(endpoint)))
+                const idx = handles.findIndex(i => i === handler || (isFunction((i as RequestHandler).equals) && (i as RequestHandler).equals?.(handler)))
                 if (idx >= 0) handles.splice(idx, 1);
             } else {
                 this.routes.delete(route);
@@ -81,14 +81,14 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         return this
     }
 
-    handle(ctx: TransportContext, noFound?: () => Observable<any>): Observable<any> {
+    handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
         if (ctx.isDone()) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
                 return runHybirds(route, ctx);
-            } else if ((route as Endpoint).handle) {
-                return (route as Endpoint).handle(ctx)
+            } else if ((route as RequestHandler).handle) {
+                return (route as RequestHandler).handle(ctx)
             } else {
                 return defer(async () => {
                     await (isFunction(route) ? route(ctx, NEXT) : (route as Middleware).invoke(ctx, NEXT));
@@ -101,18 +101,18 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         }
     }
 
-    intercept(ctx: TransportContext, next: Handler<any, any>): Observable<any> {
+    intercept(ctx: RequestContext, next: Handler<any, any>): Observable<any> {
         return this.handle(ctx, () => next.handle(ctx))
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         if (ctx.isDone()) return next()
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
                 return lastValueFrom(runHybirds(route, ctx));
-            } else if ((route as Endpoint).handle) {
-                await lastValueFrom((route as Endpoint).handle(ctx))
+            } else if ((route as RequestHandler).handle) {
+                await lastValueFrom((route as RequestHandler).handle(ctx))
             } else {
                 await (isFunction(route) ? route(ctx, NEXT) : (route as Middleware).invoke(ctx, NEXT));
             }
@@ -126,7 +126,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
 
-    protected getRoute(ctx: TransportContext): HybridRoute | undefined {
+    protected getRoute(ctx: RequestContext): HybridRoute | undefined {
         let url: string;
         if (this.prefix) {
             if (!ctx.url.startsWith(this.prefix)) return;
@@ -150,9 +150,9 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         return route;
     }
 
-    protected addEndpoint(route: Pattern, endpoint: HybridRoute, callback?: (route: string) => void) {
+    protected addHandler(route: Pattern, handler: HybridRoute, callback?: (route: string) => void) {
         route = this.formatter.format(route);
-        const redpt = endpoint as RouteEndpoint;
+        const redpt = handler as RouteHandler;
         if (redpt.injector && redpt.options && redpt.options.paths) {
             const params: Record<string, any> = {};
             const paths = redpt.options.paths;
@@ -171,16 +171,16 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
             const handles = this.routes.get(route)!;
             if (handles instanceof ControllerRoute) throw new Execption(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
             if (isArray(handles)) {
-                if (isArray(endpoint)) {
-                    handles.push(...endpoint);
+                if (isArray(handler)) {
+                    handles.push(...handler);
                 } else {
-                    handles.push(endpoint);
+                    handles.push(handler);
                 }
             } else {
-                this.routes.set(route, [handles, ...isArray(endpoint) ? endpoint : [endpoint]]);
+                this.routes.set(route, [handles, ...isArray(handler) ? handler : [handler]]);
             }
         } else {
-            this.routes.set(route, endpoint)
+            this.routes.set(route, handler)
         }
         callback && callback(route)
     }
@@ -343,7 +343,7 @@ const anyval = '.*';
  * @param isDone 
  * @returns 
  */
-export function runHybirds<TInput extends TransportContext>(endpoints: (Endpoint | MiddlewareLike)[] | undefined, input: TInput, isDone?: (input: TInput) => boolean): Observable<any> {
+export function runHybirds<TInput extends RequestContext>(endpoints: (RequestHandler | MiddlewareLike)[] | undefined, input: TInput, isDone?: (input: TInput) => boolean): Observable<any> {
     let $obs: Observable<any> = of(input);
     if (!endpoints || !endpoints.length) {
         return $obs;
@@ -353,7 +353,7 @@ export function runHybirds<TInput extends TransportContext>(endpoints: (Endpoint
         $obs = $obs.pipe(
             mergeMap(() => {
                 if (isDone && isDone(input)) return of(input);
-                const $res = isFunction(i) ? (i as MiddlewareFn)(input, NEXT) : (isFunction((i as Endpoint).handle) ? (i as Endpoint).handle(input) : (i as Middleware).invoke(input, NEXT));
+                const $res = isFunction(i) ? (i as MiddlewareFn)(input, NEXT) : (isFunction((i as RequestHandler).handle) ? (i as RequestHandler).handle(input) : (i as Middleware).invoke(input, NEXT));
                 if (isPromise($res) || isObservable($res)) return $res;
                 return of($res);
             }));
@@ -366,9 +366,9 @@ export function runHybirds<TInput extends TransportContext>(endpoints: (Endpoint
 /**
  * Mapping route.
  */
-export class MappingRoute implements Middleware, Endpoint {
+export class MappingRoute implements Middleware, RequestHandler {
 
-    private endpoint?: Endpoint;
+    private handler?: RequestHandler;
     private _guards?: CanActivate[];
 
     constructor(
@@ -381,27 +381,27 @@ export class MappingRoute implements Middleware, Endpoint {
         return this.route.path
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    handle(ctx: TransportContext): Observable<any> {
+    handle(ctx: RequestContext): Observable<any> {
         return of(ctx)
             .pipe(
                 mergeMap(async ctx => {
-                    if (!this.endpoint) {
-                        this.endpoint = await this.buildEndpoint(this.route);
+                    if (!this.handler) {
+                        this.handler = await this.buildEndpoint(this.route);
                     }
-                    return this.endpoint;
+                    return this.handler;
                 }),
-                mergeMap((endpoint) => {
-                    return endpoint.handle(ctx);
+                mergeMap((handler) => {
+                    return handler.handle(ctx);
                 })
             );
     }
 
-    protected canActive(ctx: TransportContext) {
+    protected canActive(ctx: RequestContext) {
         if (!this._guards) {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
@@ -443,27 +443,27 @@ export class MappingRoute implements Middleware, Endpoint {
     }
 
     protected async buildEndpoint(route: Route & { router?: Router }) {
-        let endpoint: Endpoint;
-        if (route.endpoint) {
-            endpoint = isFunction(route.endpoint) ? this.injector.get(route.endpoint) : route.endpoint
+        let handler: RequestHandler;
+        if (route.handler) {
+            handler = isFunction(route.handler) ? this.injector.get(route.handler) : route.handler
         } else if (route.controller) {
-            endpoint = this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
+            handler = this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
         } else {
             const middleware = await this.parse(route);
-            endpoint = new MiddlewareBackend([middleware])
+            handler = new MiddlewareBackend([middleware])
         }
 
         if (this.route.interceptors || this.route.guards || this.route.filters) {
             const route = joinPath(this.route.path);
-            const gendpt = createGuardHandler(this.injector, endpoint, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
+            const gendpt = createGuardHandler(this.injector, handler, getInterceptorsToken(route), getGuardsToken(route), getFiltersToken(route));
             setHandlerOptions(gendpt, this.route);
-            endpoint = gendpt;
+            handler = gendpt;
         }
 
-        return endpoint;
+        return handler;
     }
 
-    protected async redirect(ctx: TransportContext, url: string, alt?: string): Promise<void> {
+    protected async redirect(ctx: RequestContext, url: string, alt?: string): Promise<void> {
         if (!isFunction((ctx as AssetContext).redirect)) {
             throw new BadRequestExecption();
         }

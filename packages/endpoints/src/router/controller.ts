@@ -1,13 +1,14 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, Token, tokenId, Type } from '@tsdi/ioc';
-import { Backend, Endpoint, CanActivate, Interceptor, Filter, FnHandler, GuardHandler, setHandlerOptions } from '@tsdi/core';
+import { Backend, Handler, CanActivate, Interceptor, Filter, FnHandler, GuardHandler, setHandlerOptions, GuardHandlerOptions } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
 
 import { lastValueFrom, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
-import { RouteEndpointFactory, RouteEndpointFactoryResolver } from './route.endpoint';
+import { RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHandlerOptions } from './route.handler';
 import { MappingDef, RouteMappingMetadata } from './router';
-import { TransportContext } from '../TransportContext';
+import { RequestContext } from '../RequestContext';
+import { RequestHandler } from '../RequestHandler';
 
 
 export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');
@@ -19,22 +20,18 @@ export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
  * 
  * 控制器路由终端
  */
-export class ControllerRoute<T> extends GuardHandler implements Middleware<TransportContext>, Endpoint, OnDestroy {
+export class ControllerRoute<T> extends GuardHandler<RequestContext, any, RouteHandlerOptions> implements Middleware<RequestContext>, OnDestroy {
 
-    private routes: Map<string, Endpoint>;
+    private routes: Map<string, Handler>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[];
     readonly prefix: string;
 
-    constructor(readonly factory: RouteEndpointFactory<T>,
-        prefix?: string,
-        interceptorsToken: Token<Interceptor[]> = CTRL_INTERCEPTORS,
-        guardsToken: Token<CanActivate[]> = CTRL_GUARDS,
-        filtersToken: Token<Filter[]> = CTRL_FILTERS) {
-        super(factory.typeRef.getContext(), interceptorsToken, guardsToken, filtersToken);
+    constructor(readonly factory: RouteHandlerFactory<any>, options: RouteHandlerOptions) {
+        super(factory.typeRef.getContext(), options);
         this.routes = new Map();
 
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
-        this.prefix = joinPath(prefix, mapping.prefix, mapping.version, mapping.route);
+        this.prefix = joinPath(options.prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
         this.sortRoutes = factory.typeRef.class.defs
             .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
@@ -42,17 +39,26 @@ export class ControllerRoute<T> extends GuardHandler implements Middleware<Trans
 
         factory.onDestroy(this);
     }
+    
+    protected override initOptions(options: GuardHandlerOptions<any>): GuardHandlerOptions<any> {
+        return {
+            interceptorsToken: CTRL_INTERCEPTORS,
+            guardsToken: CTRL_GUARDS,
+            filtersToken: CTRL_FILTERS,
+            ...options
+        }
+    }
 
     get ctrlRef() {
         return this.factory?.typeRef;
     }
 
-    async invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         await lastValueFrom(this.handle(ctx));
         if (next) await next();
     }
 
-    protected getBackend(): Backend<TransportContext, any> {
+    protected getBackend(): Backend<RequestContext, any> {
         return new FnHandler((ctx) => {
             if (ctx.sent) return throwError(() => new PushDisabledExecption());
 
@@ -61,16 +67,16 @@ export class ControllerRoute<T> extends GuardHandler implements Middleware<Trans
                 return throwError(() => new NotFoundExecption());
             }
 
-            let endpoint = this.routes.get(method.propertyKey);
-            if (!endpoint) {
+            let handler = this.routes.get(method.propertyKey);
+            if (!handler) {
                 const prefix = this.prefix;
 
                 const metadata = method.metadata as RouteMappingMetadata;
-                endpoint = this.factory.create(method.propertyKey, { ...metadata, prefix });
-                this.routes.set(method.propertyKey, endpoint);
+                handler = this.factory.create(method.propertyKey, { ...metadata, prefix });
+                this.routes.set(method.propertyKey, handler);
 
             }
-            return endpoint.handle(ctx);
+            return handler.handle(ctx);
         })
     }
 
@@ -81,7 +87,7 @@ export class ControllerRoute<T> extends GuardHandler implements Middleware<Trans
         (this as any).factory = null!;
     }
 
-    protected getRouteMetaData(ctx: TransportContext) {
+    protected getRouteMetaData(ctx: RequestContext) {
         const subRoute = normalize(ctx.url, this.prefix, true);
 
         return this.sortRoutes.find(m => m
@@ -93,14 +99,14 @@ export class ControllerRoute<T> extends GuardHandler implements Middleware<Trans
 @Injectable()
 export class ControllerRouteReolver {
     /**
-    * resolve endpoint factory.
+    * resolve handler factory.
     * @param type ReflectiveRef
     * @param injector injector
     * @param prefix extenal prefix
     */
     resolve<T>(type: ReflectiveRef<T>, prefix?: string): ControllerRoute<T>;
     /**
-     * resolve endpoint factory.
+     * resolve handler factory.
      * @param type factory type
      * @param injector injector
     * @param prefix extenal prefix
@@ -109,13 +115,13 @@ export class ControllerRouteReolver {
     resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any, prefix?: string): ControllerRoute<T> {
 
         let injector: Injector;
-        let factory: RouteEndpointFactory<T>;
+        let factory: RouteHandlerFactory<T>;
         if (type instanceof ReflectiveRef) {
             injector = type.injector;
-            factory = injector.get(RouteEndpointFactoryResolver).resolve(type);
+            factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
         } else {
             injector = arg2;
-            factory = injector.get(RouteEndpointFactoryResolver).resolve(type, injector);
+            factory = injector.get(RouteHandlerFactoryResolver).resolve(type, injector);
         }
 
         return new ControllerRoute(factory, prefix);

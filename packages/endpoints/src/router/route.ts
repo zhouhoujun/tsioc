@@ -40,9 +40,9 @@ export interface Route<TArg = any> extends InvocationOptions<TArg> {
     controller?: Type;
 
     /**
-     * ednpoint.
+     * handler.
      */
-    endpoint?: TypeOf<Handler>;
+    handler?: TypeOf<Handler>;
     /**
      * The middlewarable to instantiate when the path matches.
      * Can be empty if child routes specify middlewarable.

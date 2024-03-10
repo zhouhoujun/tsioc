@@ -1,7 +1,7 @@
 import { Execption, Injector, InvocationContext, Token } from '@tsdi/ioc';
 import { ConfigableHandler, HandlerService, InvocationOptions } from '@tsdi/core';
 import { ForbiddenExecption } from '@tsdi/common/transport';
-import { TransportContext } from './TransportContext';
+import { RequestContext } from './RequestContext';
 import { Router } from './router/router';
 
 /**
@@ -9,7 +9,7 @@ import { Router } from './router/router';
  * 
  * 传输节点
  */
-export class TransportEndpoint<TInput extends TransportContext = TransportContext, TOutput = any, TOptions extends TransportEndpointOptions<TInput> = TransportEndpointOptions<TInput>> 
+export class TransportEndpoint<TInput extends RequestContext = RequestContext, TOutput = any, TOptions extends TransportEndpointOptions<TInput> = TransportEndpointOptions<TInput>> 
     extends ConfigableHandler<TInput, TOutput, TOptions> implements HandlerService {
 
     protected override forbiddenError(): Execption {
@@ -22,7 +22,7 @@ export class TransportEndpoint<TInput extends TransportContext = TransportContex
  * 
  * 传输节点配置
  */
-export interface TransportEndpointOptions<T extends TransportContext = TransportContext> extends InvocationOptions<T> {
+export interface TransportEndpointOptions<T extends RequestContext = RequestContext, TArg = any> extends InvocationOptions<T, TArg> {
 
     /**
      * backend of endpoint. defaut `Router`
@@ -38,7 +38,7 @@ export interface TransportEndpointOptions<T extends TransportContext = Transport
  * @param options 
  * @returns 
  */
-export function createTransportEndpoint<TCtx extends TransportContext, TOutput>(injector: Injector | InvocationContext, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
+export function createTransportEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector | InvocationContext, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
     return new TransportEndpoint(injector, options)
 }
 

@@ -1,7 +1,7 @@
 import { Abstract, Inject, isNumber } from '@tsdi/ioc';
 import { BytesFormatPipe, TimeFormatPipe } from '@tsdi/core';
 import { Logger } from '@tsdi/logger';
-import { TransportContext } from '../TransportContext';
+import { RequestContext } from '../RequestContext';
 
 
 /**
@@ -24,7 +24,7 @@ export abstract class ResponseStatusFormater {
 
     abstract hrtime(time?: [number, number]): [number, number];
 
-    abstract format(logger: Logger, ctx: TransportContext, hrtime?: [number, number]): string[];
+    abstract format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[];
 
     protected formatSize(size?: number, precise = 2) {
         if (!isNumber(size)) return ''

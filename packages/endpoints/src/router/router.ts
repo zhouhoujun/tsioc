@@ -1,10 +1,11 @@
 import { Abstract, Token, Type, TypeDef } from '@tsdi/ioc';
-import { Endpoint, EndpointOptions, Interceptor, Backend, Handler } from '@tsdi/core';
+import { Interceptor, Backend, Handler, InvocationOptions } from '@tsdi/core';
 import { RequestMethod, Pattern } from '@tsdi/common';
 import { Transport } from '@tsdi/common/transport';
 import { Observable } from 'rxjs';
-import { TransportContext } from '../TransportContext';
+import { RequestContext } from '../RequestContext';
 import { Route } from './route';
+import { RequestHandler } from '../RequestHandler';
 
 /**
  * router
@@ -12,9 +13,9 @@ import { Route } from './route';
  * public api for global router
  */
 @Abstract()
-export abstract class Router<T = Endpoint> implements Backend<TransportContext>, Interceptor<TransportContext> {
+export abstract class Router<T = RequestHandler> implements Backend<RequestContext>, Interceptor<RequestContext> {
     
-    abstract handle(input: TransportContext): Observable<any>;
+    abstract handle(input: RequestContext): Observable<any>;
     /**
      * route prefix.
      */
@@ -53,7 +54,7 @@ export abstract class Router<T = Endpoint> implements Backend<TransportContext>,
      * @param input 
      * @param next 
      */
-    abstract intercept(input: TransportContext, next: Handler): Observable<any>;
+    abstract intercept(input: RequestContext, next: Handler): Observable<any>;
 
 }
 
@@ -138,7 +139,7 @@ export abstract class RouteMatcher {
 /**
  * route options
  */
-export interface RouteOptions<TArg = any> extends EndpointOptions<TArg> {
+export interface RouteOptions<TArg = any> extends InvocationOptions<TArg> {
     /**
      * pipe extends args.
      */

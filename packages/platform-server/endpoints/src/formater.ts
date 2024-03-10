@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
 import { StatusCode } from '@tsdi/common';
-import { TransportContext, AssetContext, ResponseStatusFormater } from '@tsdi/endpoints';
+import { RequestContext, AssetContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
 import { hrtime } from 'process';
 
@@ -18,11 +18,11 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         return hrtime(time);
     }
 
-    format(logger: Logger, ctx: TransportContext, hrtime?: [number, number]): string[] {
+    format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[] {
         return this.formatWithColor(logger instanceof ConsoleLog, ctx, hrtime);
     }
 
-    protected formatWithColor(withColor: boolean, ctx: TransportContext, hrtime?: [number, number]) {
+    protected formatWithColor(withColor: boolean, ctx: RequestContext, hrtime?: [number, number]) {
         if (hrtime) {
             const [status, message] = ctx instanceof AssetContext ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
             const hrtimeStr = this.formatHrtime(hrtime);
@@ -45,7 +45,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         }
     }
 
-    private formatState(ctx: TransportContext, withColor: boolean): [StatusCode, string] {
+    private formatState(ctx: RequestContext, withColor: boolean): [StatusCode, string] {
         const status = ctx.response?.error ? 'failed' : 'ok';
         const statusMessage = ctx.response?.error?.message ?? '';
 

@@ -7,7 +7,7 @@ import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, Requ
 import { Transport } from '@tsdi/common/transport';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
-import { RouteEndpointFactoryResolver } from './router/route.endpoint';
+import { RouteHandlerFactoryResolver } from './router/route.handler';
 import { ControllerRouteReolver } from './router/controller';
 import { MircoServRouters } from './router/router.micro';
 
@@ -61,7 +61,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             if (!routers) throw new Execption('has no router!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
-            const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
+            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class, injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
@@ -141,7 +141,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             if (!routers) throw new Execption(lang.getClassName(parent) + 'has not registered!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
-            const factory = injector.get(RouteEndpointFactoryResolver).resolve(ctx.class, injector);
+            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class, injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;

@@ -3,7 +3,7 @@ import { Interceptor, Handler, Filter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
 import { ResponseStatusFormater } from './status.formater';
-import { TransportContext } from '../TransportContext';
+import { RequestContext } from '../RequestContext';
 
 
 
@@ -32,7 +32,7 @@ export class LogInterceptor implements Interceptor, Filter {
         this.options = { ...defopts, ...options } as LogInterceptorOptions;
     }
 
-    intercept(ctx: TransportContext, next: Handler): Observable<any> {
+    intercept(ctx: RequestContext, next: Handler): Observable<any> {
         const logger = ctx.get(Logger, InjectFlags.Self) ?? this.logger;
 
         const level = this.options.level;

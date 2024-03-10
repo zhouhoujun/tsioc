@@ -1,6 +1,6 @@
 import {
-    tokenId, Injector, Token, IocContext, InvocationContext, DefaultInvocationContext,
-    ParameterMetadata, lang, Type, DecorDefine, Defer, InvocationOption, ProvdierOf, isArray, CONTEXT_ARGUMENTS
+    tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, Type,
+    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_ARGUMENTS
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -9,7 +9,7 @@ import { Advicer } from '../advices/Advicer';
 /**
  * joinpoint option.
  */
-export interface JoinpointOption extends InvocationOption {
+export interface JoinpointOption extends TargetInvokeArguments {
     targetType: Type;
     methodName: string;
     fullName?: string;

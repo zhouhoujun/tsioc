@@ -1,15 +1,16 @@
 import { Abstract, Execption, Injector, ProvdierOf, Token, refl } from '@tsdi/ioc';
-import { InvocationOptions, HandlerService } from '@tsdi/core';
+import { InvocationOptions, HandlerService, Backend } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
-import { TransportContext } from '../TransportContext';
-import { TransportEndpoint } from '../TransportEndpoint';
+import { RequestContext } from '../RequestContext';
+import { TransportEndpoint, TransportEndpointOptions } from '../TransportEndpoint';
+import { MiddlewareBackend } from './middleware.compose';
 
 
 /**
  * middleware options.
  */
-export interface MiddlewareOpts<T extends TransportContext = any> {
+export interface MiddlewareOpts<T extends RequestContext = any> {
     middlewaresToken?: Token<MiddlewareLike<T>[]>;
     middlewares?: ProvdierOf<MiddlewareLike<T>>[];
 }
@@ -19,7 +20,7 @@ export interface MiddlewareOpts<T extends TransportContext = any> {
  * 
  * 含中间件的传输节点配置
  */
-export interface MiddlewareEndpointOptions<T extends TransportContext = any, TArg = any> extends InvocationOptions<T, TArg>, MiddlewareOpts<T> {
+export interface MiddlewareEndpointOptions<T extends RequestContext = any, TArg = any> extends TransportEndpointOptions<T, TArg>, MiddlewareOpts<T> {
     
 }
 
@@ -31,12 +32,20 @@ export interface MiddlewareEndpointOptions<T extends TransportContext = any, TAr
  * 含中间件的传输节点
  */
 
-export class MiddlewareEndpoint<TInput extends TransportContext = any, TOutput = any> extends TransportEndpoint<TInput, TOutput, MiddlewareEndpointOptions<TInput>> implements HandlerService, MiddlewareService {
+export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = any> extends TransportEndpoint<TInput, TOutput, MiddlewareEndpointOptions<TInput>> implements HandlerService, MiddlewareService {
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
-        this.regMulti(this.options.midddlesToken, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
+        this.regMulti(this.options.middlewaresToken!, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
         this.reset();
         return this;
+    }
+
+    protected override getBackend(): Backend<TInput, TOutput> {
+        return new MiddlewareBackend(this.getMiddlewares());
+    }
+
+    protected getMiddlewares() {
+        return this.injector.get(this.options.middlewaresToken!, []);
     }
 }
 
@@ -48,12 +57,12 @@ export class MiddlewareEndpoint<TInput extends TransportContext = any, TOutput =
  * @param options 
  * @returns 
  */
-export function createMiddlewareEndpoint<TCtx extends TransportContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
-    return MIDDLEEARE_ENDPOINT_IMPL.create(injector, options)
+export function createMiddlewareEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
+    return new MiddlewareEndpoint(injector, options)
 }
 
-export const MIDDLEEARE_ENDPOINT_IMPL = {
-    create<TCtx extends TransportContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
-        throw new Execption('not implemented.')
-    }
-}
+// export const MIDDLEEARE_ENDPOINT_IMPL = {
+//     create<TCtx extends RequestContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
+//         throw new Execption('not implemented.')
+//     }
+// }

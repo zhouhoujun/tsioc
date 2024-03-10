@@ -9,13 +9,11 @@ import { ConfigableHandler, ConfigableHandlerOptions } from './handlers/configab
  * Invocation handler
  */
 @Abstract()
-export abstract class InvocationHandler<TInput extends InvocationContext = InvocationContext, TOutput = any> extends ConfigableHandler<TInput, TOutput> {
+export abstract class InvocationHandler<TInput extends InvocationContext = InvocationContext, TOutput = any, TOptions extends InvocationOptions = InvocationOptions> extends ConfigableHandler<TInput, TOutput, TOptions> {
     /**
      * opteration invoker.
      */
     abstract get invoker(): OperationInvoker;
-
-    // abstract get options(): EndpointOptions;
 
     /**
      * is this equals to target or not

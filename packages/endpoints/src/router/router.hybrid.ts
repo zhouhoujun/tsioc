@@ -1,13 +1,13 @@
 import { Abstract } from '@tsdi/ioc';
-import { Endpoint } from '../endpoint';
 import { Router } from './router';
+import { RequestContext } from '../RequestContext';
+import { RequestHandler } from '../RequestHandler';
 import { Middleware, MiddlewareLike } from '../middleware/middleware';
-import { TransportContext } from '../TransportContext';
 
 /**
  * Hybird route.
  */
-export type HybridRoute = Endpoint | MiddlewareLike | Array<Endpoint | MiddlewareLike>;
+export type HybridRoute = RequestHandler | MiddlewareLike | Array<RequestHandler | MiddlewareLike>;
 
 /**
  * Hybrid router.
@@ -19,10 +19,10 @@ export abstract class HybridRouter extends Router<HybridRoute> implements Middle
     /**
      * invoke middleware.
      *
-     * @param {TransportContext} ctx context.
+     * @param {RequestContext} ctx context.
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */
-    abstract invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void>;
+    abstract invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void>;
 
 }

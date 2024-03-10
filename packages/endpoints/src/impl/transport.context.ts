@@ -2,13 +2,13 @@ import { EMPTY_OBJ, Injectable, Injector, isNil, isNumber, isString } from '@tsd
 import { PipeTransform } from '@tsdi/core';
 import { HeaderRecord, LOCALHOST, TransportRequest } from '@tsdi/common';
 import { MessageExecption, PacketLengthException, ResponsePacket, StreamAdapter, TransportSession, hdr, } from '@tsdi/common/transport';
-import { TransportContext, TransportContextFactory } from '../TransportContext';
+import { RequestContext, TransportContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
 
 
 
-export class TransportContextIml<TRequest extends TransportRequest = TransportRequest, TResponse extends ResponsePacket = ResponsePacket, TSocket = any> extends TransportContext<TRequest, TResponse, TSocket> {
+export class TransportContextIml<TRequest extends TransportRequest = TransportRequest, TResponse extends ResponsePacket = ResponsePacket, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
 
     private _url: string;
@@ -229,7 +229,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class TransportContextFactoryImpl implements TransportContextFactory {
-    create<TSocket, TInput extends TransportRequest<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): TransportContext<TInput, TOutput, TSocket> {
+    create<TSocket, TInput extends TransportRequest<any>, TOutput extends ResponsePacket<any>>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts<any> | undefined): RequestContext<TInput, TOutput, TSocket> {
         return new TransportContextIml(injector, session, request, response, options);
     }
 

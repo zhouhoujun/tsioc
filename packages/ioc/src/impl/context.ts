@@ -3,7 +3,7 @@ import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName, getClassChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
-import { InvocationContext, InvocationOption, INVOCATION_CONTEXT_IMPL } from '../context';
+import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { Injector, isInjector, Scopes } from '../injector';
@@ -46,7 +46,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     constructor(
         injector: Injector,
-        options: InvocationOption<T> = EMPTY_OBJ,
+        options: TargetInvokeArguments<T> = EMPTY_OBJ,
         ) {
         super();
         this._refs = [];
@@ -402,7 +402,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: InvocationOption<TArg>) => {
+INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>) => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options)
     } else {

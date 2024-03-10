@@ -1,5 +1,5 @@
 import { Handle } from '@tsdi/ioc';
-import { TransportContext } from '../TransportContext';
+import { RequestContext } from '../RequestContext';
 
 
 /**
@@ -7,7 +7,7 @@ import { TransportContext } from '../TransportContext';
  * 
  * 中间件, 可以可链接上下文的行为修饰符。
  */
-export interface Middleware<Tx extends TransportContext = TransportContext> {
+export interface Middleware<Tx extends RequestContext = RequestContext> {
     /**
      * invoke the middleware.
      * @param ctx  context with request and response.
@@ -23,11 +23,11 @@ export interface Middleware<Tx extends TransportContext = TransportContext> {
  * 
  * 中间件函数
  */
-export type MiddlewareFn<T extends TransportContext = TransportContext> = Handle<T, Promise<void>>;
+export type MiddlewareFn<T extends RequestContext = RequestContext> = Handle<T, Promise<void>>;
 /**
  * middleware like. instance of middleware or middleware function.
  * 
  * 类中间件，中间件或中间件函数。
  */
-export type MiddlewareLike<T extends TransportContext = TransportContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends RequestContext = RequestContext> = Middleware<T> | MiddlewareFn<T>;
 

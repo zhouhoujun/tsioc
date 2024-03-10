@@ -2,7 +2,7 @@ import { Abstract, ClassType, ProvdierOf, ProviderType, StaticProvider } from '@
 import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
 import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
 import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
-import { TransportContext } from './TransportContext';
+import { RequestContext } from './RequestContext';
 import { SessionOptions } from './Session';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './send';
@@ -94,14 +94,14 @@ export abstract class Server<TRequest = any, TResponse = any> implements Handler
     /**
      * micro service endpoint.
      */
-    abstract get endpoint(): TransportEndpoint<TransportContext<TRequest, TResponse>, TResponse>;
+    abstract get endpoint(): TransportEndpoint<RequestContext<TRequest, TResponse>, TResponse>;
 
-    useGuards(guards: ProvdierOf<CanActivate<TransportContext<TRequest, TResponse>>> | ProvdierOf<CanActivate<TransportContext<TRequest, TResponse>>>[], order?: number | undefined): this {
+    useGuards(guards: ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>> | ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>>[], order?: number | undefined): this {
         this.endpoint.useGuards(guards, order);
         return this;
     }
 
-    useFilters(filter: ProvdierOf<Filter<TransportContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Filter<TransportContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
+    useFilters(filter: ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
         this.endpoint.useFilters(filter, order);
         return this;
     }
@@ -111,7 +111,7 @@ export abstract class Server<TRequest = any, TResponse = any> implements Handler
         return this;
     }
 
-    useInterceptors(interceptor: ProvdierOf<Interceptor<TransportContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Interceptor<TransportContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
+    useInterceptors(interceptor: ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
         this.endpoint.useInterceptors(interceptor, order);
         return this;
     }

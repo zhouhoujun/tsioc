@@ -1,18 +1,18 @@
 import { Class, Execption, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
-import { OperationEndpointImpl } from '@tsdi/core';
+import { InvocationHandlerImpl } from '@tsdi/core';
 import { normalize, patternToPath } from '@tsdi/common';
 import { ForbiddenExecption } from '@tsdi/common/transport';
-import { TransportContext } from '../TransportContext';
-import { RouteEndpoint, RouteEndpointFactory, RouteEndpointFactoryResolver, RouteEndpointOptions } from '../router/route.endpoint';
+import { RequestContext } from '../RequestContext';
+import { RouteHandler, RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHandlerOptions } from '../router/route.handler';
 
 
 
 
-export class RouteEndpointImpl<TInput extends TransportContext = TransportContext, TOutput = any> extends OperationEndpointImpl<TInput, TOutput> implements RouteEndpoint {
+export class RouteEndpointImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends InvocationHandlerImpl<TInput, TOutput> implements RouteHandler {
 
     private _prefix: string;
     readonly route: string;
-    constructor(invoker: OperationInvoker, readonly options: RouteEndpointOptions = {}) {
+    constructor(invoker: OperationInvoker, readonly options: RouteHandlerOptions = {}) {
         super(invoker, options);
         this._prefix = options.prefix || '';
         this.route = patternToPath(options.route || '');
@@ -43,7 +43,7 @@ export class RouteEndpointImpl<TInput extends TransportContext = TransportContex
     }
 
     protected override defaultRespond(ctx: TInput, res: any): void {
-        if (ctx instanceof TransportContext) {
+        if (ctx instanceof RequestContext) {
             ctx.body = res;
         }
     }
@@ -58,13 +58,13 @@ const restParms = /^:\w+/;
 
 
 @Injectable()
-export class RouteEndpointFactoryImpl<T = any> extends RouteEndpointFactory<T> {
+export class RouteEndpointFactoryImpl<T = any> extends RouteHandlerFactory<T> {
 
     constructor(readonly typeRef: ReflectiveRef<T>) {
         super()
     }
 
-    create<TArg>(propertyKey: string, options?: RouteEndpointOptions<TArg>): RouteEndpoint {
+    create<TArg>(propertyKey: string, options?: RouteHandlerOptions<TArg>): RouteHandler {
         const endpoint = new RouteEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
 
         return endpoint;
@@ -75,22 +75,22 @@ export class RouteEndpointFactoryImpl<T = any> extends RouteEndpointFactory<T> {
 /**
  * Route factory resolver implements
  */
-export class RouteEndpointFactoryResolverImpl extends RouteEndpointFactoryResolver {
+export class RouteEndpointFactoryResolverImpl extends RouteHandlerFactoryResolver {
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: ReflectiveRef<T>): RouteEndpointFactory<T>;
+    resolve<T>(type: ReflectiveRef<T>): RouteHandlerFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: Type<T> | Class<T>, injector: Injector): RouteEndpointFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any): RouteEndpointFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>, injector: Injector): RouteHandlerFactory<T>;
+    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any): RouteHandlerFactory<T> {
         let tyref: ReflectiveRef<T>;
         if (type instanceof ReflectiveRef) {
             tyref = type;

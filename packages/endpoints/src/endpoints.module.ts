@@ -1,7 +1,7 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
 import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common/transport';
-import { TransportContext, TransportContextFactory } from './TransportContext';
+import { RequestContext, TransportContextFactory } from './RequestContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { LogInterceptor } from './logger/log';
@@ -79,15 +79,15 @@ export class EndpointsModule {
 /**
  * Global filters for all server
  */
-export const GLOBAL_SERVER_FILTERS = tokenId<Filter<TransportContext>[]>('GLOBAL_SERVER_FILTERS');
+export const GLOBAL_SERVER_FILTERS = tokenId<Filter<RequestContext>[]>('GLOBAL_SERVER_FILTERS');
 /**
  * Global guards for all server
  */
-export const GLOBAL_SERVER_GRAUDS = tokenId<CanActivate<TransportContext>>('GLOBAL_SERVER_GRAUDS');
+export const GLOBAL_SERVER_GRAUDS = tokenId<CanActivate<RequestContext>>('GLOBAL_SERVER_GRAUDS');
 /**
  * Global interceptors for all server
  */
-export const GLOBAL_SERVER_INTERCEPTORS = tokenId<Filter<TransportContext>[]>('GLOBAL_SERVER_INTERCEPTORS');
+export const GLOBAL_SERVER_INTERCEPTORS = tokenId<Filter<RequestContext>[]>('GLOBAL_SERVER_INTERCEPTORS');
 
 function createServiceProviders(options: ServiceOpts, idx: number) {
     const { transport, microservice } = options;
