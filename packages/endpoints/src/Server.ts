@@ -5,7 +5,7 @@ import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint
 import { RequestContext } from './RequestContext';
 import { SessionOptions } from './Session';
 import { RouteOpts } from './router/router.module';
-import { ContentOptions } from './send';
+import { ContentOptions } from './ContentSendAdapter';
 
 
 export interface ProxyOpts {

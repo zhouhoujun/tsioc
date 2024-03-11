@@ -2,7 +2,7 @@
 import { Injectable, isArray, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/common/transport';
 import { AssetContext } from '@tsdi/endpoints';
-import { Negotiator } from '../Negotiator';
+import { Negotiator } from '../../../src/Negotiator';
 
 
 

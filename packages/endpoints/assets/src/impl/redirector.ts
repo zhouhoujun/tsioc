@@ -5,7 +5,7 @@ import { BadRequestExecption, StreamAdapter, hdr } from '@tsdi/common/transport'
 import { Client } from '@tsdi/common/client';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, Observer, Subscription, throwError } from 'rxjs';
-import { Redirector } from '../Redirector';
+import { Redirector } from '../../../../common/client/src/Redirector';
 
 
 @Injectable()

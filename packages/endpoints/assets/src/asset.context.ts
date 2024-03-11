@@ -6,8 +6,8 @@ import { AssetContext, FileAdapter, ServerOpts, StatusVaildator } from '@tsdi/en
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-import { MimeAdapter } from './MimeAdapter';
-import { Negotiator } from './Negotiator';
+import { MimeAdapter } from '../../src/MimeAdapter';
+import { Negotiator } from '../../src/Negotiator';
 import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
 
 

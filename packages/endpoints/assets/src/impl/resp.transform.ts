@@ -3,8 +3,8 @@ import { TransportEvent, HEAD, TransportRequest, ResponseJsonParseError } from '
 import { StreamAdapter, ResponsePacket, ResponseEventFactory, toBuffer, hdr,  ev } from '@tsdi/common/transport';
 import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, defer, of } from 'rxjs';
-import { Redirector } from '../Redirector';
-import { MimeAdapter, MimeTypes } from '../MimeAdapter';
+import { Redirector } from '../../../../common/client/src/Redirector';
+import { MimeAdapter, MimeTypes } from '../../../src/MimeAdapter';
 import { XSSI_PREFIX } from '../utils';
 
 

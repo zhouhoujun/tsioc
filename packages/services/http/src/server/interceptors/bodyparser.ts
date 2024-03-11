@@ -2,10 +2,9 @@
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, hdr, InvalidJsonException  } from '@tsdi/common/transport';
-import { AssetContext, Middleware } from '@tsdi/endpoints';
+import { AssetContext, Middleware, MimeTypes } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
-import { MimeTypes } from '../../../src/MimeAdapter';
 
 
 @Abstract()
