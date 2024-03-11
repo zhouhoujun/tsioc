@@ -1,5 +1,5 @@
-import { Abstract, Execption, Injector, ProvdierOf, Token, refl } from '@tsdi/ioc';
-import { InvocationOptions, HandlerService, Backend } from '@tsdi/core';
+import { Injector, ProvdierOf, Token, refl } from '@tsdi/ioc';
+import { HandlerService, Backend } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { RequestContext } from '../RequestContext';
@@ -60,9 +60,3 @@ export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = a
 export function createMiddlewareEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
     return new MiddlewareEndpoint(injector, options)
 }
-
-// export const MIDDLEEARE_ENDPOINT_IMPL = {
-//     create<TCtx extends RequestContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
-//         throw new Execption('not implemented.')
-//     }
-// }

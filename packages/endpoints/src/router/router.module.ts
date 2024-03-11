@@ -10,7 +10,7 @@ import { ControllerRouteReolver } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
 import { RouteHandlerFactoryResolver } from './route.handler';
-import { RouteEndpointFactoryResolverImpl } from '../impl/route.handler';
+import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
 // import { TransportEndpointImpl } from '../impl/transport.handler';
 // import { MiddlewareEndpointImpl } from '../impl/middleware.handler';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
@@ -32,7 +32,7 @@ const defaultFormatter: PatternFormatter = {
     format: (pattern) => normalize(patternToPath(pattern))
 }
 
-const factoryResolver = new RouteEndpointFactoryResolverImpl();
+const factoryResolver = new RouteHandlerFactoryResolverImpl();
 
 @Module({
     providers: [

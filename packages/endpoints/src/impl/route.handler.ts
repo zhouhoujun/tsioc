@@ -58,7 +58,7 @@ const restParms = /^:\w+/;
 
 
 @Injectable()
-export class RouteEndpointFactoryImpl<T = any> extends RouteHandlerFactory<T> {
+export class RoutehandlerFactoryImpl<T = any> extends RouteHandlerFactory<T> {
 
     constructor(readonly typeRef: ReflectiveRef<T>) {
         super()
@@ -75,7 +75,7 @@ export class RouteEndpointFactoryImpl<T = any> extends RouteHandlerFactory<T> {
 /**
  * Route factory resolver implements
  */
-export class RouteEndpointFactoryResolverImpl extends RouteHandlerFactoryResolver {
+export class RouteHandlerFactoryResolverImpl extends RouteHandlerFactoryResolver {
     /**
      * resolve endpoint factory.
      * @param type factory type
@@ -98,7 +98,7 @@ export class RouteEndpointFactoryResolverImpl extends RouteHandlerFactoryResolve
             const injector = arg2 as Injector;
             tyref = injector.get(ReflectiveFactory).create(type, injector);
         }
-        return new RouteEndpointFactoryImpl(tyref);
+        return new RoutehandlerFactoryImpl(tyref);
     }
 
 }

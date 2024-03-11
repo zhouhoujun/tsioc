@@ -11,7 +11,7 @@ import { Session } from './Session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
-import { TransportContextFactoryImpl } from './impl/transport.context';
+// import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { TransportTypedRespond } from './transport/typed.respond';
 
@@ -31,8 +31,8 @@ import { TransportTypedRespond } from './transport/typed.respond';
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
 
-        TransportContextFactoryImpl,
-        { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },
+        // TransportContextFactoryImpl,
+        // { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },
 
         TransportTypedRespond,
         { provide: TypedRespond, useExisting: TransportTypedRespond },

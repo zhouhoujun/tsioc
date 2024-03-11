@@ -12,18 +12,18 @@ import {
 
 
 
-export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContext, TOutput = any> extends ConfigableHandler<TInput, TOutput, InvocationOptions<TInput>> implements InvocationHandler<TInput, TOutput> {
+export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContext, TOutput = any, TOptions extends InvocationOptions<TInput>= InvocationOptions<TInput>> extends ConfigableHandler<TInput, TOutput, TOptions> implements InvocationHandler<TInput, TOutput, TOptions> {
 
     private limit?: number;
     constructor(
-        public readonly invoker: OperationInvoker, options: InvocationOptions) {
+        public readonly invoker: OperationInvoker, options: TOptions) {
         super(invoker.context, options)
         this.limit = options.limit;
         invoker.context.onDestroy(this);
 
     }
 
-    protected override initOptions(options: InvocationOptions): InvocationOptions {
+    protected override initOptions(options: TOptions): TOptions {
         return {
             interceptorsToken: OPERA_INTERCEPTORS,
             guardsToken: OPERA_GUARDS,
@@ -114,7 +114,7 @@ export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
     }
 
     create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler {
-        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ);
+        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ as InvocationOptions);
     }
 
 }
