@@ -1,9 +1,10 @@
-import { Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD, MESSAGE } from '@tsdi/common';
 import { NotFoundExecption } from '@tsdi/common/transport';
-import { AssetContext, Middleware, ContentSendAdapter, ContentOptions } from '@tsdi/endpoints';
-import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
+import { Observable, from, mergeMap, of, throwError } from 'rxjs';
+import { Middleware } from '../middleware/middleware';
+import { RequestContext } from '../RequestContext';
 
 
 
@@ -11,13 +12,13 @@ import { Observable, catchError, from, mergeMap, of, throwError } from 'rxjs';
  * static content resources.
  */
 @Injectable()
-export class Content implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class ContentInterceptor implements Middleware<RequestContext>, Interceptor<RequestContext> {
 
     options?: ContentOptions;
 
     constructor() { }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         if (!(ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE)
             || !ctx.getRequestFilePath()) {
             return next();
@@ -41,7 +42,7 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         }
     }
 
-    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
         if (!(input.method === HEAD || input.method === GET || input.method === MESSAGE)
             || !input.getRequestFilePath()) {
             return next.handle(input);
@@ -51,14 +52,6 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         if (options.defer) {
             return next.handle(input)
                 .pipe(
-                    catchError((err, caught) => {
-                        if (err instanceof NotFoundExecption) {
-                            input.status = input.vaildator.notFound;
-                            return of(input)
-                        } else {
-                            return throwError(() => err);
-                        }
-                    }),
                     mergeMap(async res => {
                         const file = await this.send(input, options)
                         if (!file) {
@@ -77,23 +70,58 @@ export class Content implements Middleware<AssetContext>, Interceptor<AssetConte
         }
     }
 
-    protected async send(ctx: AssetContext, options: ContentOptions) {
+    protected async send(ctx: RequestContext, options: ContentOptions) {
         let file = '';
-        if (!ctx.vaildator.isNotFound(ctx.status)) return file;
 
         const sender = ctx.injector.get(ContentSendAdapter);
+        if (!sender.canSend(ctx)) return file;
+
         file = await sender.send(ctx, options);
 
         return file;
     }
 
-    static create(options?: ContentOptions): Content {
-        const ct = new Content();
+    static create(options?: ContentOptions): ContentInterceptor {
+        const ct = new ContentInterceptor();
         ct.options = options;
         return ct;
     }
 
 }
+
+export interface SendOptions<TStats = any> {
+    root: string | string[];
+    prefix?: string;
+    baseUrl?: string | boolean;
+    index?: string | boolean;
+    maxAge?: number;
+    immutable?: boolean;
+    hidden?: boolean;
+    format?: boolean;
+    extensions?: string[] | false;
+    brotli?: boolean;
+    gzip?: boolean;
+    setHeaders?: (ctx: RequestContext, path: string, stats: TStats) => void;
+}
+
+
+/**
+ * Static Content options.
+ */
+
+export interface ContentOptions extends SendOptions {
+    defer?: boolean;
+}
+
+/**
+ * Content send adapter.
+ */
+@Abstract()
+export abstract class ContentSendAdapter<TStats = any> {
+    abstract canSend(ctx: RequestContext): boolean;
+    abstract send(ctx: RequestContext, options: SendOptions<TStats>): Promise<string>;
+}
+
 
 export const defOpts: ContentOptions = {
     root: 'public',

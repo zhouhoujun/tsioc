@@ -9,7 +9,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { DeviceController } from './demo';
-import { AssetTransportModule, Bodyparser, Content, Json } from '../src';
+import { AssetTransportModule, Bodyparser, ContentInterceptor, JsonInterceptor } from '../src';
 import { JsonTransportModule } from '@tsdi/endpoints/json';
 
 
@@ -41,8 +41,8 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
                         port: 2000
                     },
                     interceptors: [
-                        Content,
-                        Json,
+                        ContentInterceptor,
+                        JsonInterceptor,
                         Bodyparser,
                         { useExisting: MicroServRouterModule.getToken('tcp') }
                     ]

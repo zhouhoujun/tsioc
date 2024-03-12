@@ -1,6 +1,6 @@
 import { PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, isBoolean, isNil, isString, TypeExecption } from '@tsdi/ioc';
-import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, hdr, InternalServerExecption, NotFoundExecption } from '@tsdi/common';
+import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, hdr, InternalServerExecption, NotFoundExecption } from '@tsdi/common/transport';
 import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';

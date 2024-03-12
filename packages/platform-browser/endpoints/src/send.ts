@@ -1,8 +1,8 @@
 import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
-import { BadRequestExecption, joinPath } from '@tsdi/common';
 import { PROCESS_ROOT } from '@tsdi/core';
+import { joinPath } from '@tsdi/common';
+import { BadRequestExecption } from '@tsdi/common/transport';
 import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
-
 
 @Injectable({ static: true })
 export class BrowserContentSendAdapter extends ContentSendAdapter {

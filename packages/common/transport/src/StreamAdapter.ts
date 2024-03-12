@@ -8,6 +8,11 @@ import { UnsupportedMediaTypeExecption } from './execptions';
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
 
 
+export function isBuffer(target: any): target is Buffer {
+    return Buffer.isBuffer(target);
+}
+
+
 export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
     const data = [];
     let bytes = 0;

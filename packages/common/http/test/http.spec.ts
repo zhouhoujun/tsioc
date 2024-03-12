@@ -13,7 +13,7 @@ import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { HttpClient, HttpClientModule } from '..';
-import { AssetTransportModule, Bodyparser, Content, Json, RedirectResult } from '@tsdi/endpoints/assets';
+import { AssetTransportModule, Bodyparser, ContentInterceptor, JsonInterceptor, RedirectResult } from '@tsdi/endpoints/assets';
 
 
 @RouteMapping('/device')
@@ -206,8 +206,8 @@ class DeviceAModule {
             transport: 'http',
             serverOpts: {
                 interceptors:[
-                    Content,
-                    Json,
+                    ContentInterceptor,
+                    JsonInterceptor,
                     Bodyparser
                 ]
             }

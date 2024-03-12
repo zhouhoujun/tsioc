@@ -1,5 +1,6 @@
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
-import { global, isFormData, StreamAdapter, BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common';
+import { global, isFormData  } from '@tsdi/common';
+import { StreamAdapter, BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common/transport'
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import * as pumpify from 'pumpify';
 import * as FormData from 'form-data';
@@ -157,8 +158,8 @@ export class BrowserStreamAdapter extends StreamAdapter {
             limit?: number | string | null;
         }) | string
     ): Promise<Buffer>
-    rawbody(stream: Readable, options: string | { length?: string | number | null | undefined; limit?: string | number | null | undefined; encoding?: string | null | undefined; }): Promise<string | Buffer> {
-        return rawBody(stream, options);
+    rawbody(stream: IReadableStream, options: string | { length?: string | number | null | undefined; limit?: string | number | null | undefined; encoding?: string | null | undefined; }): Promise<string | Buffer> {
+        return rawBody(stream as any, options);
     }
 
     isDuplex(target: any): target is IDuplexStream {

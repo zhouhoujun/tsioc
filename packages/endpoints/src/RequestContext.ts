@@ -16,6 +16,8 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
 
+    abstract get serverOptions(): ServerOpts;
+
     /**
      * transport session
      */
@@ -96,10 +98,77 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
     abstract get method(): string;
 
     /**
-     * set response headers
-     * @param headers 
+     * Return request header.
+     *
+     * The `Referrer` header field is special-cased,
+     * both `Referrer` and `Referer` are interchangeable.
+     *
+     * Examples:
+     *
+     *     this.get('Content-Type');
+     *     // => "text/plain"
+     *
+     *     this.get('content-type');
+     *     // => "text/plain"
+     *
+     *     this.get('Something');
+     *     // => ''
+     *
+     * @param {String} field
+     * @return {String}
+     * @api public
      */
-    abstract setHeader(headers: HeaderRecord): void;
+    abstract getHeader(field: string): string | string[] | undefined;
+
+    /**
+     * has response header field or not.
+     * @param field 
+     */
+    abstract hasHeader(field: string): boolean;
+
+    /**
+     * Set response header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(field: string, val: string | number | string[]): void;
+    /**
+     * Set response header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {Record<string, string | number | string[]>} fields
+     * @param {String} val
+     * @api public
+     */
+    abstract setHeader(fields: Record<string, string | number | string[]>): void;
+
+    /**
+    * Remove response header `field`.
+    *
+    * @param {String} name
+    * @api public
+    */
+    abstract removeHeader(field: string): void;
+
+    /**
+     * Remove all response headers
+     *
+     * @api public
+     */
+    abstract removeHeaders(): void;
 
     /**
      * set response with response packet

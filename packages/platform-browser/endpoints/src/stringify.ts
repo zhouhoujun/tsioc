@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 /* eslint-disable no-misleading-character-class */
 import { Execption, isNumber, isPromise, isString } from '@tsdi/ioc';
-import { ev } from '@tsdi/common';
+import { ev } from '@tsdi/common/transport';
 import { Readable } from 'readable-stream';
 
 export class JsonStreamStringify extends Readable {

@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import {
-    Bodyparser, Content, Json,
+    Bodyparser,
     Cors, Csrf, HelmetMiddleware
 } from './interceptors';
 
@@ -8,8 +8,6 @@ import {
 @Module({
     providers: [
         Bodyparser,
-        Content,
-        Json,
 
         Cors,
         Csrf,

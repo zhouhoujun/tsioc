@@ -5,7 +5,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointsModule } from '@tsdi/endpoints';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { AssetTransportModule, Bodyparser, ContentInterceptor, JsonInterceptor } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -37,8 +37,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
+                        ContentInterceptor,
+                        JsonInterceptor,
                         Bodyparser
                     ]
                 }
@@ -49,8 +49,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
+                        ContentInterceptor,
+                        JsonInterceptor,
                         Bodyparser
                     ]
                 }

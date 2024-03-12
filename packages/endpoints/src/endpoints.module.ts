@@ -1,19 +1,18 @@
 import { Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token, tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
 import { Decoder, Encoder, NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common/transport';
-import { RequestContext, TransportContextFactory } from './RequestContext';
+import { RequestContext } from './RequestContext';
 import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
-import { LogInterceptor } from './logger/log';
 import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { Session } from './Session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
-// import { TransportContextFactoryImpl } from './impl/transport.context';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { TransportTypedRespond } from './transport/typed.respond';
+import { LoggerInterceptor, JsonInterceptor, ContentInterceptor } from './interceptors';
 
 
 
@@ -37,8 +36,10 @@ import { TransportTypedRespond } from './transport/typed.respond';
         TransportTypedRespond,
         { provide: TypedRespond, useExisting: TransportTypedRespond },
 
-        LogInterceptor,
-        // TransportExecptionHandlers,
+        LoggerInterceptor,
+        JsonInterceptor,
+        ContentInterceptor,
+        
         FinalizeFilter,
         ExecptionFinalizeFilter,
         Session
