@@ -2,10 +2,9 @@
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, hdr, InvalidJsonException  } from '@tsdi/common/transport';
-import { AssetContext, Middleware } from '@tsdi/endpoints';
+import { RequestContext, Middleware, MimeTypes } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
-import { MimeTypes } from '../../../src/MimeAdapter';
 
 
 @Abstract()
@@ -30,7 +29,7 @@ export class PayloadOptions {
 }
 
 @Injectable()
-export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class BodyparserInterceptor implements Middleware<RequestContext>, Interceptor<RequestContext> {
 
     private options: {
         json: {
@@ -70,7 +69,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         this.enableXml = this.enableType('xml');
     }
 
-    intercept(input: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
         if (!isUndefined(input.args.body)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
@@ -82,7 +81,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
             )
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         if (!isUndefined(ctx.args.body)) return await next();
         const res = await this.parseBody(ctx);
         ctx.args.payload = ctx.args.body = res.body ?? {};
@@ -90,7 +89,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         await next()
     }
 
-    parseBody(context: AssetContext): Promise<{ raw?: any, body?: any }> {
+    parseBody(context: RequestContext): Promise<{ raw?: any, body?: any }> {
         const types = context.get(MimeTypes);
         if (this.enableJson && context.is(types.json)) {
             return this.parseJson(context)
@@ -108,7 +107,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         return Promise.resolve(EMPTY_OBJ)
     }
 
-    protected async parseJson(context: AssetContext): Promise<{ raw?: any, body?: any }> {
+    protected async parseJson(context: RequestContext): Promise<{ raw?: any, body?: any }> {
         const len = context.getHeader(hdr.CONTENT_LENGTH);
         const hdrcode = context.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
@@ -133,11 +132,11 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         }
     }
 
-    private getStream(ctx: AssetContext, encoding: string): IReadableStream {
+    private getStream(ctx: RequestContext, encoding: string): IReadableStream {
         return this.unzipify(ctx, encoding);
     }
 
-    protected unzipify(ctx: AssetContext, encoding: string) {
+    protected unzipify(ctx: RequestContext, encoding: string) {
         switch (encoding) {
             case 'gzip':
             case 'deflate':
@@ -169,7 +168,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         return JSON.parse(str)
     }
 
-    protected async parseForm(ctx: AssetContext): Promise<{ raw?: any, body?: any }> {
+    protected async parseForm(ctx: RequestContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;
@@ -200,7 +199,7 @@ export class Bodyparser implements Middleware<AssetContext>, Interceptor<AssetCo
         }
     }
 
-    protected async parseText(ctx: AssetContext): Promise<{ raw?: any, body?: any }> {
+    protected async parseText(ctx: RequestContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getHeader(hdr.CONTENT_LENGTH);
         const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
         let length: number | undefined;

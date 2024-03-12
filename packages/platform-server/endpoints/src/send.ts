@@ -1,7 +1,7 @@
 import { PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, isBoolean, isNil, isString, TypeExecption } from '@tsdi/ioc';
 import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, hdr, InternalServerExecption, NotFoundExecption } from '@tsdi/common/transport';
-import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
+import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
 import { promisify } from 'util';
@@ -10,7 +10,7 @@ const statify = promisify(stat);
 
 @Injectable({ static: true })
 export class ContentSendAdapterImpl extends ContentSendAdapter {
-    async send(ctx: AssetContext, path: string, opts: SendOptions): Promise<string> {
+    async send(ctx: RequestContext, path: string, opts: SendOptions): Promise<string> {
         if (isNil(path) || !isString(path)) return '';
 
         if (path.startsWith('/')) {

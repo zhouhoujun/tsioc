@@ -2,12 +2,12 @@ import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc
 import { PROCESS_ROOT } from '@tsdi/core';
 import { joinPath } from '@tsdi/common';
 import { BadRequestExecption } from '@tsdi/common/transport';
-import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
+import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 
 @Injectable({ static: true })
 export class BrowserContentSendAdapter extends ContentSendAdapter {
 
-    async send(ctx: AssetContext, path: string, opts: SendOptions<any>): Promise<string> {
+    async send(ctx: RequestContext, path: string, opts: SendOptions<any>): Promise<string> {
 
         if (isNil(path) || !isString(path)) return '';
 

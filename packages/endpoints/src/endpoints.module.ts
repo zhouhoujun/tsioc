@@ -12,7 +12,7 @@ import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { TransportTypedRespond } from './transport/typed.respond';
-import { LoggerInterceptor, JsonInterceptor, ContentInterceptor } from './interceptors';
+import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
 
 
 
@@ -39,6 +39,7 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor } from './interc
         LoggerInterceptor,
         JsonInterceptor,
         ContentInterceptor,
+        BodyparserInterceptor,
         
         FinalizeFilter,
         ExecptionFinalizeFilter,
