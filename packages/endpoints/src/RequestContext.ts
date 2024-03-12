@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeaderRecord, TransportRequest } from '@tsdi/common';
+import { TransportRequest } from '@tsdi/common';
 import { MessageExecption, StreamAdapter, TransportSession, ResponsePacket } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 

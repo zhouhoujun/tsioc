@@ -8,13 +8,13 @@ import { RequestContext } from '../RequestContext';
 
 
 @Abstract()
-export abstract class LogInterceptorOptions {
+export abstract class LoggerOptions {
     abstract get level(): Level;
 }
 
 const defopts = {
     level: 'debug'
-} as LogInterceptorOptions;
+} as LoggerOptions;
 
 /**
  * Logger interceptor, filter.
@@ -22,13 +22,13 @@ const defopts = {
 @Injectable()
 export class LoggerInterceptor implements Interceptor, Filter {
 
-    private options: LogInterceptorOptions;
+    private options: LoggerOptions;
 
     @InjectLog()
     private logger!: Logger;
 
-    constructor(private formatter: ResponseStatusFormater, @Nullable() options: LogInterceptorOptions) {
-        this.options = { ...defopts, ...options } as LogInterceptorOptions;
+    constructor(private formatter: ResponseStatusFormater, @Nullable() options: LoggerOptions) {
+        this.options = { ...defopts, ...options } as LoggerOptions;
     }
 
     intercept(ctx: RequestContext, next: Handler): Observable<any> {

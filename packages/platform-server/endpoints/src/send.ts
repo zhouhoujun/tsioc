@@ -10,8 +10,7 @@ const statify = promisify(stat);
 
 @Injectable({ static: true })
 export class ContentSendAdapterImpl extends ContentSendAdapter {
-    async send(ctx: AssetContext, opts: SendOptions): Promise<string> {
-        let path = ctx.getRequestFilePath();
+    async send(ctx: AssetContext, path: string, opts: SendOptions): Promise<string> {
         if (isNil(path) || !isString(path)) return '';
 
         if (path.startsWith('/')) {

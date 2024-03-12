@@ -7,7 +7,7 @@ import { RequestContext } from '../RequestContext';
 
 
 @Abstract()
-export abstract class JsonMiddlewareOption {
+export abstract class JsonOptions {
     pretty?: boolean;
     param?: string;
     spaces?: number;
@@ -20,7 +20,7 @@ export class JsonInterceptor implements Middleware<RequestContext>, Interceptor<
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
-    constructor(@Nullable() option: JsonMiddlewareOption) {
+    constructor(@Nullable() option: JsonOptions) {
 
         this.pretty = option?.pretty ?? true;
         this.spaces = option?.spaces ?? 2;

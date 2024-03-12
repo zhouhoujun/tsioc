@@ -19,8 +19,9 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
     constructor() { }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+        const vaildator = ctx.get(ContentVaildator);
         if (!(ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE)
-            || !ctx.getRequestFilePath()) {
+            || !vaildator.getFilePath(ctx)) {
             return next();
         }
 
@@ -30,21 +31,22 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
                 await next()
             } catch (err: any) {
                 if (err instanceof NotFoundExecption) {
-                    await this.send(ctx, options);
+                    await this.send(vaildator, ctx, options);
                     return;
                 }
                 throw err;
             }
         }
-        const file = await this.send(ctx, options);
+        const file = await this.send(vaildator, ctx, options);
         if (!options.defer && !file) {
             await next()
         }
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
+        const vaildator = input.get(ContentVaildator);
         if (!(input.method === HEAD || input.method === GET || input.method === MESSAGE)
-            || !input.getRequestFilePath()) {
+            || !vaildator.getFilePath(input)) {
             return next.handle(input);
         }
 
@@ -53,14 +55,14 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
             return next.handle(input)
                 .pipe(
                     mergeMap(async res => {
-                        const file = await this.send(input, options)
+                        const file = await this.send(vaildator, input, options)
                         if (!file) {
                             return throwError(() => new NotFoundExecption())
                         }
                     })
                 )
         } else {
-            return from(this.send(input, options))
+            return from(this.send(vaildator, input, options))
                 .pipe(
                     mergeMap(file => {
                         if (!file) return next.handle(input)
@@ -70,13 +72,13 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
         }
     }
 
-    protected async send(ctx: RequestContext, options: ContentOptions) {
+    protected async send(vaildator: ContentVaildator, ctx: RequestContext, options: ContentOptions) {
         let file = '';
+        if (!vaildator.vaild(ctx)) return file;
 
         const sender = ctx.injector.get(ContentSendAdapter);
-        if (!sender.canSend(ctx)) return file;
 
-        file = await sender.send(ctx, options);
+        file = await sender.send(ctx, vaildator.getFilePath(ctx), options);
 
         return file;
     }
@@ -113,13 +115,31 @@ export interface ContentOptions extends SendOptions {
     defer?: boolean;
 }
 
+export abstract class ContentVaildator {
+    /**
+     * vaild context can send content or not.
+     * @param ctx 
+     */
+    abstract vaild(ctx: RequestContext): boolean;
+    /**
+     * get file path from request context.
+     * @param ctx 
+     */
+    abstract getFilePath(ctx: RequestContext): string;
+}
+
 /**
  * Content send adapter.
  */
 @Abstract()
-export abstract class ContentSendAdapter<TStats = any> {
-    abstract canSend(ctx: RequestContext): boolean;
-    abstract send(ctx: RequestContext, options: SendOptions<TStats>): Promise<string>;
+export abstract class ContentSendAdapter {
+    /**
+     * send file by request context
+     * @param ctx RequestContext
+     * @param path file path
+     * @param options send options
+     */
+    abstract send(ctx: RequestContext, path: string, options: SendOptions): Promise<string>;
 }
 
 

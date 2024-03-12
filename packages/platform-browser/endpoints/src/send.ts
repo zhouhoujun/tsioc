@@ -7,8 +7,8 @@ import { AssetContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 @Injectable({ static: true })
 export class BrowserContentSendAdapter extends ContentSendAdapter {
 
-    async send(ctx: AssetContext, opts: SendOptions<any>): Promise<string> {
-        let path = ctx.getRequestFilePath();
+    async send(ctx: AssetContext, path: string, opts: SendOptions<any>): Promise<string> {
+
         if (isNil(path) || !isString(path)) return '';
 
         if (path.startsWith('/')) {
