@@ -8,7 +8,7 @@ import { Transport } from '@tsdi/common/transport';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
-import { ControllerRouteReolver } from './router/controller';
+import { ControllerRouteFactory } from './router/controller';
 import { MircoServRouters } from './router/router.micro';
 
 
@@ -273,7 +273,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 
-                const endpoint = injector.get(ControllerRouteReolver).resolve(ctx.class, injector);
+                const endpoint = injector.get(ControllerRouteFactory).create(ctx.class, injector);
                 const route = `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
 

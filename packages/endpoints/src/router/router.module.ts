@@ -6,7 +6,7 @@ import { RouteMatcher, Router } from './router';
 // import { TRANSPORT_ENDPOINT_IMPL } from '../TransportEndpoint';
 // import { MIDDLEEARE_ENDPOINT_IMPL } from '../middleware/middleware.handler';
 import { HybridRouter } from './router.hybrid';
-import { ControllerRouteReolver } from './controller';
+import { ControllerRouteFactory } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
 import { RouteHandlerFactoryResolver } from './route.handler';
@@ -67,7 +67,7 @@ export class RouteEndpointModule {
             asDefault: true
         },
         { provide: Router, useExisting: HybridRouter },
-        ControllerRouteReolver
+        ControllerRouteFactory
     ]
 })
 export class RouterModule {

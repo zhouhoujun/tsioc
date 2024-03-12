@@ -39,7 +39,7 @@ export class ControllerRoute<T> extends GuardHandler<RequestContext, any, RouteH
 
         factory.onDestroy(this);
     }
-    
+
     protected override initOptions(options: GuardHandlerOptions<any>): GuardHandlerOptions<any> {
         return {
             interceptorsToken: CTRL_INTERCEPTORS,
@@ -97,22 +97,22 @@ export class ControllerRoute<T> extends GuardHandler<RequestContext, any, RouteH
 }
 
 @Injectable()
-export class ControllerRouteReolver {
+export class ControllerRouteFactory {
     /**
-    * resolve handler factory.
+    * create controller route handler.
     * @param type ReflectiveRef
     * @param injector injector
     * @param prefix extenal prefix
     */
-    resolve<T>(type: ReflectiveRef<T>, prefix?: string): ControllerRoute<T>;
+    create<T>(type: ReflectiveRef<T>, options?: RouteHandlerOptions): ControllerRoute<T>;
     /**
-     * resolve handler factory.
+     * create ontroller route handler.
      * @param type factory type
      * @param injector injector
     * @param prefix extenal prefix
      */
-    resolve<T>(type: Type<T> | Class<T>, injector: Injector, prefix?: string): ControllerRoute<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any, prefix?: string): ControllerRoute<T> {
+    create<T>(type: Type<T> | Class<T>, injector: Injector, options?: RouteHandlerOptions): ControllerRoute<T>;
+    create<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any, options?: RouteHandlerOptions): ControllerRoute<T> {
 
         let injector: Injector;
         let factory: RouteHandlerFactory<T>;
@@ -124,6 +124,6 @@ export class ControllerRouteReolver {
             factory = injector.get(RouteHandlerFactoryResolver).resolve(type, injector);
         }
 
-        return new ControllerRoute(factory, prefix);
+        return new ControllerRoute(factory, options ?? {});
     }
 }

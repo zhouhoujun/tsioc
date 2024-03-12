@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common/transport';
+import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS } from './client/options';
 import { TcpHandler } from './client/handler';
@@ -63,7 +63,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     guardsToken: TCP_SERV_GUARDS,
                     sessionFactory: { useExisting: DuplexTransportSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
@@ -95,7 +95,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     middlewaresToken: TCP_MIDDLEWARES,
                     sessionFactory: { useExisting: DuplexTransportSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter

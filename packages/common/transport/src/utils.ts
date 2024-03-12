@@ -1,5 +1,6 @@
 import { ArgumentExecption } from '@tsdi/ioc';
-import { Outgoing, hdr } from '@tsdi/common';
+import { Outgoing } from './outgoing';
+import { hdr } from './consts';
 
 
 /**

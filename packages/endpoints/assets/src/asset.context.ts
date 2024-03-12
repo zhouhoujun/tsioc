@@ -8,7 +8,7 @@ import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { MimeAdapter } from '../../src/MimeAdapter';
 import { Negotiator } from '../../src/Negotiator';
-import { encodeUrl, escapeHtml, vary, xmlRegExp } from './utils';
+import { encodeUrl, escapeHtml, vary, xmlRegExp } from '../../../common/transport/src/utils';
 
 
 

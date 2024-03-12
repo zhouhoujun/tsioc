@@ -16,7 +16,7 @@ import { Middleware, MiddlewareFn, MiddlewareLike } from '../middleware/middlewa
 import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';
 import { RouteMatcher, Router } from './router';
 import { HybridRoute, HybridRouter } from './router.hybrid';
-import { ControllerRoute, ControllerRouteReolver } from './controller';
+import { ControllerRoute, ControllerRouteFactory } from './controller';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler } from './route.handler';
 import { AssetContext } from '../AssetContext';
@@ -420,7 +420,7 @@ export class MappingRoute implements Middleware, RequestHandler {
             const to = route.redirectTo
             return (c, n) => this.redirect(c, to)
         } else if (route.controller) {
-            return this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
+            return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else if (route.children) {
             const router = new MappingRouter(this.injector, new DefaultRouteMatcher(), this.injector.get(PatternFormatter), route.path);
             route.children.forEach(route => router.use(route));
@@ -447,7 +447,7 @@ export class MappingRoute implements Middleware, RequestHandler {
         if (route.handler) {
             handler = isFunction(route.handler) ? this.injector.get(route.handler) : route.handler
         } else if (route.controller) {
-            handler = this.injector.get(ControllerRouteReolver).resolve(route.controller, this.injector, route.path);
+            handler = this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else {
             const middleware = await this.parse(route);
             handler = new MiddlewareBackend([middleware])

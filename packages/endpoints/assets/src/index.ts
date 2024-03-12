@@ -4,7 +4,7 @@ export * from './consts';
 export * from './content';
 
 
-export * from './utils';
+export * from '../../../common/transport/src/utils';
 
 export * from './asset.pdr';
 

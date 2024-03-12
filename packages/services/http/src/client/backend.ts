@@ -1,19 +1,20 @@
 import { Injectable, getToken, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { OutgoingHeaders, TransportRequest, ResHeaders, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common';
-import { ResponseTransform } from '@tsdi/common/client';
+import { Packet, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common/transport';
+// import { ResponseTransform } from '@tsdi/common/client';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 import { Observable, catchError, finalize, mergeMap, of, take, throwError } from 'rxjs';
+import { HeadersLike, TransportRequest } from '@tsdi/common';
 
 
-const defaultTransform = {
-    transform(req, packet, factory): Observable<HttpEvent> {
-        if (packet.error) {
-            return throwError(() => factory.createErrorResponse(packet));
-        }
-        return of(factory.createResponse(packet));
-    },
-} as ResponseTransform<HttpEvent>;
+// const defaultTransform = {
+//     transform(req, packet, factory): Observable<HttpEvent> {
+//         if (packet.error) {
+//             return throwError(() => factory.createErrorResponse(packet));
+//         }
+//         return of(factory.createResponse(packet));
+//     },
+// } as ResponseTransform<HttpEvent>;
 
 
 
@@ -61,13 +62,13 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
 
     }
 
-    createErrorResponse(options: { url?: string | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: number; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): HttpErrorResponse {
+    createErrorResponse(options: { url?: string; headers?: HeadersLike; status?: number; error?: any; statusText?: string; statusMessage?: string; }): HttpErrorResponse {
         return new HttpErrorResponse(options);
     }
-    createHeadResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: number; statusText?: string | undefined; statusMessage?: string | undefined; }): HttpEvent {
+    createHeadResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: number; statusText?: string; statusMessage?: string; }): HttpEvent {
         return new HttpHeaderResponse(options);
     }
-    createResponse(options: { url?: string | undefined; ok?: boolean | undefined; headers?: ResHeaders | OutgoingHeaders | undefined; status?: number; statusText?: string | undefined; statusMessage?: string | undefined; body?: any; payload?: any; }): HttpEvent {
+    createResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: number; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): HttpEvent {
         return new HttpResponse(options);
     }
 
@@ -79,7 +80,7 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
         const pkg = {
             url,
             headers: req.headers.getHeaders()
-        } as TransportRequest;
+        } as Packet;
 
         if (!pkg.headers) {
             pkg.headers = {};

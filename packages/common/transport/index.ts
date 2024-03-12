@@ -6,7 +6,7 @@ export * from './src/stream';
 export * from './src/socket';
 
 export * from './src/consts';
-export * from './src/listen';
+export * from './src/utils';
 
 export * from './src/execptions';
 export * from './src/StreamAdapter';

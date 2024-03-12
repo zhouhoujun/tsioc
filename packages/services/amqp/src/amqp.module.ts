@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { AmqpClient } from './client/client';
 import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS } from './client/options';
 import { AmqpHandler } from './client/handler';
@@ -76,7 +76,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     guardsToken: AMQP_SERV_GUARDS,
                     sessionFactory: { useExisting: AmqpTransportSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter

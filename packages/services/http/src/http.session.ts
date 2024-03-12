@@ -1,5 +1,8 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Context, Decoder, Encoder, HttpStatusCode, IReadableStream, IncomingPacket, InvalidJsonException, Packet, TransportRequest, ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr, statusMessage } from '@tsdi/common';
+import {
+    Context, Decoder, Encoder, IReadableStream, InvalidJsonException, Packet,
+    ResponsePacket, StreamAdapter, TransportOpts, TransportSession, TransportSessionFactory, ev, hdr
+} from '@tsdi/common/transport';
 import { ctype } from '@tsdi/endpoints/assets';
 import { Server, request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { Server as HttpsServer, request as httpsRequest } from 'https';
@@ -7,6 +10,7 @@ import { Http2Server, ClientHttp2Session, ClientHttp2Stream, constants, Incoming
 import { Observable, defer, fromEvent, map, mergeMap, share } from 'rxjs';
 import { HttpServRequest, HttpServResponse } from './server/context';
 import { HttpClientOpts } from './client/options';
+import { HttpStatusCode, TransportRequest, statusMessage } from '@tsdi/common';
 
 
 
@@ -52,7 +56,7 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
         if (this.clientOpts.authority && this.socket && (!httptl.test(path) || path.startsWith(this.clientOpts.authority))) {
             path = path.replace(this.clientOpts.authority, '');
 
-            const reqHeaders = req.headers ?? {};
+            const reqHeaders = req.headers.getHeaders() ?? {};
 
             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
@@ -164,7 +168,7 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
                     const ctx = new Context(this.injector, this, stream, headPkg);
                     return this.decoder.handle(ctx)
                         .pipe(
-                            map((pkg: ResponsePacket)=> {
+                            map((pkg: ResponsePacket) => {
                                 pkg.stream = stream;
                                 return pkg;
                             })

@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, PatternFormatter } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { NatsClient } from './client/client';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS } from './client/options';
 import { NatsHandler } from './client/handler';
@@ -70,7 +70,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                     guardsToken: NATS_SERV_GUARDS,
                     sessionFactory: { useExisting: NatsTransportSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter

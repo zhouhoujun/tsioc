@@ -5,7 +5,7 @@ import { StatusVaildator } from '@tsdi/endpoints';
 import { Observable, defer, of } from 'rxjs';
 import { Redirector } from '../../../../common/client/src/Redirector';
 import { MimeAdapter, MimeTypes } from '../../../src/MimeAdapter';
-import { XSSI_PREFIX } from '../utils';
+import { XSSI_PREFIX } from '../../../../common/transport/src/utils';
 
 
 @Injectable()

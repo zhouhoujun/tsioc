@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { UdpClient } from './client/client';
 import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS, UDP_CLIENT_OPTS } from './client/options';
 import { UdpHandler } from './client/handler';
@@ -62,7 +62,7 @@ import { UdpTransportSessionFactory } from './udp.session';
                     guardsToken: UDP_SERV_GUARDS,
                     sessionFactory: { useExisting: UdpTransportSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter

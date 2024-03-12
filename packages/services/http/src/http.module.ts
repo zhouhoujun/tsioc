@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LogInterceptor, SERVER_MODULES, ServerModuleOpts, StatusVaildator, TransportContextFactory } from '@tsdi/endpoints';
+import { AssetContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, StatusVaildator, TransportContextFactory } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -78,7 +78,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                     guardsToken: HTTP_SERV_GUARDS,
                     sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
@@ -114,7 +114,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                     middlewaresToken: HTTP_MIDDLEWARES,
                     sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
-                        LogInterceptor,
+                        LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter

@@ -31,7 +31,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
                 withColor ? chalk.gray(this.outgoing) : this.outgoing,
                 withColor ? chalk.cyan(ctx.method) : ctx.method,
                 ctx.url,
-                status?.toString(),
+                status?.toString() ?? '',
                 withColor ? chalk.gray(hrtimeStr) : hrtimeStr,
                 withColor ? chalk.gray(sizeStr) : sizeStr,
                 message
