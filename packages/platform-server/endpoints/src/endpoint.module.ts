@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { StreamAdapter } from '@tsdi/common';
+import { StreamAdapter } from '@tsdi/common/transport';
 import { ContentSendAdapter, FileAdapter, ResponseStatusFormater } from '@tsdi/endpoints';
 import { CsrfTokensFactory } from '@tsdi/endpoints/assets'
 import { NodeResponseStatusFormater } from './formater';

@@ -8,7 +8,7 @@ import { RouteHandler, RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHa
 
 
 
-export class RouteEndpointImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends InvocationHandlerImpl<TInput, TOutput> implements RouteHandler {
+export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends InvocationHandlerImpl<TInput, TOutput> implements RouteHandler {
 
     private _prefix: string;
     readonly route: string;
@@ -58,14 +58,14 @@ const restParms = /^:\w+/;
 
 
 @Injectable()
-export class RoutehandlerFactoryImpl<T = any> extends RouteHandlerFactory<T> {
+export class RouteHandlerFactoryImpl<T = any> extends RouteHandlerFactory<T> {
 
     constructor(readonly typeRef: ReflectiveRef<T>) {
         super()
     }
 
     create<TArg>(propertyKey: string, options?: RouteHandlerOptions<TArg>): RouteHandler {
-        const endpoint = new RouteEndpointImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
+        const endpoint = new RouteHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
 
         return endpoint;
     }
@@ -98,7 +98,7 @@ export class RouteHandlerFactoryResolverImpl extends RouteHandlerFactoryResolver
             const injector = arg2 as Injector;
             tyref = injector.get(ReflectiveFactory).create(type, injector);
         }
-        return new RoutehandlerFactoryImpl(tyref);
+        return new RouteHandlerFactoryImpl(tyref);
     }
 
 }

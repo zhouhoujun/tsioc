@@ -3,6 +3,7 @@ import { ConfigableHandler, HandlerService, InvocationOptions } from '@tsdi/core
 import { ForbiddenExecption } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { Router } from './router/router';
+import { RequestHandler } from './RequestHandler';
 
 /**
  * Transport endpoint.
@@ -10,7 +11,7 @@ import { Router } from './router/router';
  * 传输节点
  */
 export class TransportEndpoint<TInput extends RequestContext = RequestContext, TOutput = any, TOptions extends TransportEndpointOptions<TInput> = TransportEndpointOptions<TInput>>
-    extends ConfigableHandler<TInput, TOutput, TOptions> implements HandlerService {
+    extends ConfigableHandler<TInput, TOutput, TOptions> implements RequestHandler<TInput>, HandlerService {
 
     protected override forbiddenError(): Execption {
         return new ForbiddenExecption()
