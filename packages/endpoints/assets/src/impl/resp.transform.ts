@@ -1,12 +1,9 @@
 import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
 import { TransportEvent, HEAD, TransportRequest, ResponseJsonParseError } from '@tsdi/common';
-import { StreamAdapter, ResponsePacket, ResponseEventFactory, toBuffer, hdr,  ev } from '@tsdi/common/transport';
-import { StatusVaildator } from '@tsdi/endpoints';
+import { XSSI_PREFIX } from '@tsdi/common/transport';
+import { StreamAdapter, StatusVaildator, Redirector, ResponsePacket, ResponseEventFactory, toBuffer, hdr,  ev } from '@tsdi/common/transport';
 import { Observable, defer, of } from 'rxjs';
-import { Redirector } from '../../../../common/client/src/Redirector';
-import { MimeAdapter, MimeTypes } from '../../../src/MimeAdapter';
-import { XSSI_PREFIX } from '../../../../common/transport/src/utils';
-
+import { MimeAdapter, MimeTypes } from '@tsdi/endpoints';
 
 @Injectable()
 export class AssetResponseTransform {
@@ -185,7 +182,7 @@ export class AssetResponseTransform {
                     break;
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: headers.get(hdr.CONTENT_TYPE) as string
+                        type: headers?.get(hdr.CONTENT_TYPE) as string
                     });
                     break;
                 case 'stream':

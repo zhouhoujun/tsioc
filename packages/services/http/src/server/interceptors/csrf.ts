@@ -1,9 +1,10 @@
-import { Abstract, Injectable, Nullable, tokenId } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
-import { ForbiddenExecption, hdr } from '@tsdi/common/transport';
+import { ForbiddenExecption } from '@tsdi/common/transport';
 import { AssetContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, throwError } from 'rxjs';
+import * as CSRFTokens from 'csrf';
 
 
 
@@ -64,13 +65,11 @@ export interface Tokens {
 /**
  * csrf tokens factory.
  */
-@Abstract()
-export abstract class CsrfTokensFactory {
-    /**
-     * create csrf tokens via options.
-     * @param options 
-     */
-    abstract create(options: CsrfOptions): Tokens;
+@Injectable()
+export class CsrfTokensFactory {
+    create(options: CsrfOptions): Tokens {
+        return new CSRFTokens(options);
+    }
 }
 
 @Injectable()
@@ -78,7 +77,7 @@ export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext>
 
     private options: CsrfOptions;
     private tokens: Tokens;
-    constructor(factory: CsrfTokensFactory, @Nullable() options: CsrfOptions) {
+    constructor(@Inject() factory: CsrfTokensFactory, @Nullable() options: CsrfOptions) {
         this.options = { ...defOpts, ...options };
         this.tokens = factory.create(this.options);
     }
@@ -110,10 +109,10 @@ export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext>
 
         const bodyToken = ctx.request.body && typeof ctx.request.body._csrf === 'string' ? ctx.request.body._csrf : false;
         const token = bodyToken || !this.options.disableQuery && ctx.query && ctx.query._csrf
-            || ctx.getHeader(hdr.CSRF_TOKEN)
-            || ctx.getHeader(hdr.XSRF_TOKEN)
-            || ctx.getHeader(hdr.X_CSRF_TOKEN)
-            || ctx.getHeader(hdr.X_XSRF_TOKEN);
+            || ctx.getHeader(CSRF_TOKEN)
+            || ctx.getHeader(XSRF_TOKEN)
+            || ctx.getHeader(X_CSRF_TOKEN)
+            || ctx.getHeader(X_XSRF_TOKEN);
 
         if (!token) {
             return throwError(()=> new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage))
@@ -154,10 +153,10 @@ export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext>
 
         const bodyToken = ctx.request.body && typeof ctx.request.body._csrf === 'string' ? ctx.request.body._csrf : false;
         const token = bodyToken || !this.options.disableQuery && ctx.query && ctx.query._csrf
-            || ctx.getHeader(hdr.CSRF_TOKEN)
-            || ctx.getHeader(hdr.XSRF_TOKEN)
-            || ctx.getHeader(hdr.X_CSRF_TOKEN)
-            || ctx.getHeader(hdr.X_XSRF_TOKEN);
+            || ctx.getHeader(CSRF_TOKEN)
+            || ctx.getHeader(XSRF_TOKEN)
+            || ctx.getHeader(X_CSRF_TOKEN)
+            || ctx.getHeader(X_XSRF_TOKEN);
 
         if (!token) {
             throw new ForbiddenExecption(typeof this.options.invalidTokenMessage === 'function' ? this.options.invalidTokenMessage(ctx) : this.options.invalidTokenMessage)
@@ -171,3 +170,8 @@ export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext>
     }
 
 }
+
+const CSRF_TOKEN = 'csrf-token';
+const XSRF_TOKEN = 'xsrf-token';
+const X_CSRF_TOKEN = 'x-csrf-token';
+const X_XSRF_TOKEN = 'x-xsrf-token';

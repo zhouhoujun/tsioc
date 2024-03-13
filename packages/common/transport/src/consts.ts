@@ -88,15 +88,6 @@ export namespace hdr {
     export const ACCEPT_CHARSET = 'accept-charset';
     export const ACCEPT_ENCODING = 'accept-encoding';
 
-    export const ACCESS_CONTROL_ALLOW_CREDENTIALS = 'access-control-allow-credentials';
-    export const ACCESS_CONTROL_ALLOW_HEADERS = 'access-control-allow-headers';
-    export const ACCESS_CONTROL_ALLOW_METHODS = 'access-control-allow-methods';
-    export const ACCESS_CONTROL_ALLOW_ORIGIN = 'access-control-allow-origin';
-
-    export const ACCESS_CONTROL_EXPOSE_HEADERS = 'access-control-expose-headers';
-    export const ACCESS_CONTROL_MAX_AGE = 'access-control-max-age';
-    export const ACCESS_CONTROL_REQUEST_HEADERS = 'access-control-request-headers';
-    export const ACCESS_CONTROL_REQUEST_METHOD = 'access-control-request-method';
 
     export const AGE = 'age';
     export const ALLOW = 'allow';
@@ -180,7 +171,6 @@ export namespace hdr {
     export const SEC_WEBSOCKET_PROTOCOL = 'sec-websocket-protocol';
     export const SEC_WEBSOCKET_VERSION = 'sec-websocket-version';
     export const SET_COOKIE = 'set-cookie';
-    export const STRICT_TRANSPORT_SECURITY = 'strict-transport-security';
     export const TK = 'tk';
     export const TRAILER = 'trailer';
     /**
@@ -188,33 +178,19 @@ export namespace hdr {
      */
     export const TRANSFER_ENCODING = 'transfer-encoding';
     export const UPGRADE = 'upgrade';
-    export const USER_AGENT = 'user-agent';
     export const VARY = 'vary';
     export const VIA = 'via';
     export const WARNING = 'warning';
     export const WWW_AUTHENTICATE = 'www-authenticate';
 
-
-    export const X_REQUEST_URL = 'x-request-url';
-    export const X_FORWARDED_PROTO = 'x-forwarded-proto';
-    /**
-     * header x-forwarded-host
-     */
-    export const X_FORWARDED_HOST = 'x-forwarded-host';
-    export const X_DNS_PREFETCH_CONTROL = 'x-dns-prefetch-control';
-    export const X_DOWNLOAD_OPTIONS = 'x-download-options';
-    export const X_FRAME_OPTIONS = 'x-frame-options';
-    export const X_POWERED_BY = 'x-powered-by';
-    export const X_CONTENT_TYPE_OPTIONS = 'x-content-type-options';
-    export const X_XSS_PROTECTION = 'x-xss-protection';
-
-    export const CSRF_TOKEN = 'csrf-token';
-    export const XSRF_TOKEN = 'xsrf-token';
-    export const X_CSRF_TOKEN = 'x-csrf-token';
-    export const X_XSRF_TOKEN = 'x-xsrf-token';
-
-
-    export const X_ACCEL_BUFFERING = 'x-accel-buffering';
+    // const X_REQUEST_URL = 'x-request-url';
+    // const X_FORWARDED_PROTO = 'x-forwarded-proto';
+    // /**
+    //  * header x-forwarded-host
+    //  */
+    // const X_FORWARDED_HOST = 'x-forwarded-host';
+    // const X_ACCEL_BUFFERING = 'x-accel-buffering';
+   
 }
 
 

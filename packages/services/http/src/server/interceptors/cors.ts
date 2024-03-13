@@ -3,7 +3,7 @@ import { RequestMethod } from '@tsdi/common';
 import { InternalServerExecption, hdr, append, vary } from '@tsdi/common/transport';
 import { Middleware, AssetContext } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
-import { defer, from, lastValueFrom, map, mergeMap, Observable, of, Subscriber } from 'rxjs';
+import { defer, lastValueFrom, Observable } from 'rxjs';
 
 
 
@@ -132,13 +132,13 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
             };
 
             if (ctx.method !== 'OPTIONS') {
-                set(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                set(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
                 if (options.credentials === true) {
-                    set(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
+                    set(ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
                 }
 
                 if (options.exposeHeaders) {
-                    set(hdr.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders)
+                    set(ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders)
                 }
 
                 if (!options.keepHeadersOnError) {
@@ -166,33 +166,33 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
                     }
                 }
             } else {
-                if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
+                if (!ctx.getHeader(ACCESS_CONTROL_REQUEST_METHOD)) {
                     // this not preflight request, ignore it
                     return await lastValueFrom(next.handle(ctx));
                 }
 
                 options = this.options;
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                ctx.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
 
                 if (options.credentials === true) {
-                    ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
+                    ctx.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
                 }
 
                 const maxAge = String(options.maxAge);
                 if (maxAge) {
-                    ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge)
+                    ctx.setHeader(ACCESS_CONTROL_MAX_AGE, maxAge)
                 }
 
                 if (options.allowMethods) {
-                    ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods)
+                    ctx.setHeader(ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods)
                 }
 
                 let allowHeaders = options.allowHeaders;
                 if (!allowHeaders) {
-                    allowHeaders = ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_HEADERS) as string
+                    allowHeaders = ctx.getHeader(ACCESS_CONTROL_REQUEST_HEADERS) as string
                 }
                 if (allowHeaders) {
-                    ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
+                    ctx.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
                 }
                 ctx.status = ctx.vaildator.noContent;
             }
@@ -229,13 +229,13 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
         };
 
         if (ctx.method !== 'OPTIONS') {
-            set(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+            set(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             if (options.credentials === true) {
-                set(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
+                set(ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
             }
 
             if (options.exposeHeaders) {
-                set(hdr.ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders)
+                set(ACCESS_CONTROL_EXPOSE_HEADERS, options.exposeHeaders)
             }
 
             if (!options.keepHeadersOnError) {
@@ -263,39 +263,48 @@ export class Cors implements Middleware<AssetContext>, Interceptor<AssetContext>
                 }
             }
         } else {
-            if (!ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_METHOD)) {
+            if (!ctx.getHeader(ACCESS_CONTROL_REQUEST_METHOD)) {
                 // this not preflight request, ignore it
                 return await next()
             }
 
             options = this.options;
-            ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+            ctx.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
 
             if (options.credentials === true) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
+                ctx.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS, 'true')
             }
 
             const maxAge = String(options.maxAge);
             if (maxAge) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_MAX_AGE, maxAge)
+                ctx.setHeader(ACCESS_CONTROL_MAX_AGE, maxAge)
             }
 
             if (options.allowMethods) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods)
+                ctx.setHeader(ACCESS_CONTROL_ALLOW_METHODS, options.allowMethods)
             }
 
             let allowHeaders = options.allowHeaders;
             if (!allowHeaders) {
-                allowHeaders = ctx.getHeader(hdr.ACCESS_CONTROL_REQUEST_HEADERS) as string
+                allowHeaders = ctx.getHeader(ACCESS_CONTROL_REQUEST_HEADERS) as string
             }
             if (allowHeaders) {
-                ctx.setHeader(hdr.ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
+                ctx.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
             ctx.status = ctx.vaildator.noContent;
         }
     }
 }
 
+const ACCESS_CONTROL_ALLOW_CREDENTIALS = 'access-control-allow-credentials';
+const ACCESS_CONTROL_ALLOW_HEADERS = 'access-control-allow-headers';
+const ACCESS_CONTROL_ALLOW_METHODS = 'access-control-allow-methods';
+const ACCESS_CONTROL_ALLOW_ORIGIN = 'access-control-allow-origin';
+
+const ACCESS_CONTROL_EXPOSE_HEADERS = 'access-control-expose-headers';
+const ACCESS_CONTROL_MAX_AGE = 'access-control-max-age';
+const ACCESS_CONTROL_REQUEST_HEADERS = 'access-control-request-headers';
+const ACCESS_CONTROL_REQUEST_METHOD = 'access-control-request-method';
 /**
  * default cors all methods.
  */

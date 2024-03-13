@@ -32,5 +32,6 @@ export interface ResponsePacket<T = any> extends Packet<T> {
     type?: number | string;
     status?: StatusCode;
     statusText?: string;
+    error?: any;
 }
 

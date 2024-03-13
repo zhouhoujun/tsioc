@@ -18,11 +18,8 @@ export * from './transport.session';
 export * from './TransportEndpoint';
 export * from './RequestContext';
 export * from './RequestHandler';
-export * from './FileAdapter';
-export * from './StatusVaildator';
 export * from './AssetContext';
 
-export * from './MimeAdapter';
 export * from './Negotiator';
 
 

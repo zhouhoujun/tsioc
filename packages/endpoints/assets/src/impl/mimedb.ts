@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { MimeDb, MimeSource } from '../../../src/MimeAdapter';
+import { MimeDb, MimeSource } from '@tsdi/common/transport';
 
 
 

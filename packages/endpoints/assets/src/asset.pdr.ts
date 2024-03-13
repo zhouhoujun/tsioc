@@ -1,11 +1,10 @@
 import { ProviderType } from '@tsdi/ioc';
-import { MimeAdapter, MimeDb, MimeTypes } from '@tsdi/endpoints';
-import { Negotiator } from '../../src/Negotiator';
+import { Redirector, MimeAdapter, MimeDb, MimeTypes } from '@tsdi/common/transport';
+import { Negotiator } from '@tsdi/endpoints';
 import { BasicMimeDb } from './impl/mimedb';
 import { MimeTypesImpl, TrasportMimeAdapter } from './impl/mime';
 import { TransportNegotiator } from './impl/negotiator';
 import { AssetRedirector } from './impl/redirector';
-import { Redirector } from '../../../common/client/src/Redirector';
 
 
 export const MIME_PROVIDERS: ProviderType[] = [
