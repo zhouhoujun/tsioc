@@ -1,11 +1,8 @@
-import { Abstract, InvocationContext, ProvdierOf } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
-import { TransportRequest, TransportErrorResponse, TransportEvent, HeadersLike, StatusCode, Encoder, Decoder, TransportResponse } from '@tsdi/common';
-import { HeaderPacket, Packet } from './packet';
-import { Observable, Subscription } from 'rxjs';
-import { Incoming } from './incoming';
+import { Abstract, Injector, InvocationContext, Token } from '@tsdi/ioc';
+import { TransportErrorResponse, TransportEvent, HeadersLike, StatusCode, Encoder, Decoder, TransportResponse } from '@tsdi/common';
+import { HeaderPacket } from './packet';
+import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
-import { StreamAdapter } from './StreamAdapter';
 
 
 
@@ -18,13 +15,13 @@ export interface TransportOpts {
      */
     transport?: Transport | HybirdTransport;
     /**
-     * encoder.
+     * encodings.
      */
-    encoder?: ProvdierOf<Encoder>;
+    encodings?: Token<Encoder[]>;
     /**
-     * decoder.
+     * decodings.
      */
-    decoder?: ProvdierOf<Decoder>;
+    decodings?: Token<Decoder[]>;
     /**
      * server side or not.
      */
@@ -81,7 +78,7 @@ export abstract class ResponseEventFactory {
  * transport session.
  */
 @Abstract()
-export abstract class TransportSession<TSocket = any>  {
+export abstract class TransportSession<TIncoming = any, TOutgoing = any, TSocket = any>  {
     /**
      * socket.
      */
@@ -90,30 +87,17 @@ export abstract class TransportSession<TSocket = any>  {
      * transport options.
      */
     abstract get options(): TransportOpts;
-    /**
-     * stream adapter.
-     */
-    abstract get streamAdapter(): StreamAdapter;
+
     /**
      * send.
      * @param packet 
      */
-    abstract send(packet: Packet, context?: InvocationContext): Observable<any>;
-    /**
-     * serialize packet.
-     * @param packet
-     */
-    abstract serialize(packet: Packet, withPayload?: boolean): Buffer;
-    /**
-     * deserialize packet.
-     * @param raw 
-     */
-    abstract deserialize(raw: Buffer): Packet;
+    abstract send(packet: TOutgoing, context?: InvocationContext): Observable<any>;
 
     /**
      * receive
      */
-    abstract receive(packet?: HeaderPacket): Observable<Incoming>;
+    abstract receive(packet?: HeaderPacket): Observable<TIncoming>;
 
     /**
      * destroy.
@@ -122,40 +106,42 @@ export abstract class TransportSession<TSocket = any>  {
 
 }
 
-/**
- * client transport session.
- */
-@Abstract()
-export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket> {
-
-    /**
-     * request.
-     * @param packet 
-     */
-    abstract request(packet: TransportRequest, context?: InvocationContext): Observable<TransportEvent>;
-
-}
-
-/**
- * Server side transport session.
- */
-@Abstract()
-export abstract class ServerTransportSession<TSocket = any, TOption = any> extends TransportSession<TSocket> {
-
-    /**
-     * handle
-     */
-    abstract handle(handler: Handler, options: TOption): Subscription;
-}
 
 /**
  * transport session factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any> {
+export abstract class TransportSessionFactory<TIncoming = any, TOutgoing = any, TSocket = any> {
     /**
      * create transport session.
      * @param options 
      */
-    abstract create(socket: TSocket, options: TransportOpts): TransportSession<TSocket>;
+    abstract create(injector: Injector, socket: TSocket, options: TransportOpts): TransportSession<TIncoming, TOutgoing, TSocket>;
 }
+
+
+// /**
+//  * client transport session.
+//  */
+// @Abstract()
+// export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket> {
+
+//     /**
+//      * request.
+//      * @param packet 
+//      */
+//     abstract request(packet: TransportRequest, context?: InvocationContext): Observable<TransportEvent>;
+
+// }
+
+// /**
+//  * Server side transport session.
+//  */
+// @Abstract()
+// export abstract class ServerTransportSession<TSocket = any, TOption = any> extends TransportSession<TSocket> {
+
+//     /**
+//      * handle
+//      */
+//     abstract handle(handler: Handler, options: TOption): Subscription;
+// }
