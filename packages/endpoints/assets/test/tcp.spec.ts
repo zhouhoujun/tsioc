@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
-import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
+import { EndpointModule, MicroServRouterModule } from '@tsdi/endpoints';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
@@ -31,7 +31,7 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
                 }
             }
         }),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 transport: 'tcp',
                 serverOpts: {

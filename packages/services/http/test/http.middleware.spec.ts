@@ -2,7 +2,7 @@ import { Module, isString } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, SetupServices } from '@tsdi/endpoints';
+import { EndpointModule, SetupServices } from '@tsdi/endpoints';
 import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -50,7 +50,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 }
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 microservice: true,
                 bootstrap: false,

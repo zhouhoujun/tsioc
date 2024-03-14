@@ -5,12 +5,12 @@ import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
 
 /**
- * abstract mime asset transport context.
+ * abstract request context with status.
  * 
- * 类型资源传输节点上下文
+ * 支持状态的请求上下文
  */
 @Abstract()
-export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends RequestContext<TRequest, TResponse> {
+export abstract class RequestStatusContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends RequestContext<TRequest, TResponse> {
 
     abstract get serverOptions(): TServOpts;
     /**
@@ -115,17 +115,17 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
 }
 
 /**
- * Asset context factory.
+ * request status context factory.
  */
 @Abstract()
-export abstract class AssetContextFactory<TRequest = any, TResponse = any>{
+export abstract class RequestStatusContextFactory<TRequest = any, TResponse = any>{
     /**
-     * create asset context factory.
+     * create request status context.
      * @param injector 
      * @param session 
      * @param request 
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): AssetContext<TRequest, TResponse>;
+    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): RequestStatusContext<TRequest, TResponse>;
 }

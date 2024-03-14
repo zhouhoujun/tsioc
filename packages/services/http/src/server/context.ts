@@ -6,7 +6,7 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { AssetContextFactory, ServerOpts, Throwable } from '@tsdi/endpoints';
+import { RequestStatusContextFactory, ServerOpts, Throwable } from '@tsdi/endpoints';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -307,7 +307,7 @@ export class HttpContext extends AbstractAssetContext<HttpServRequest, HttpServR
 }
 
 @Injectable()
-export class HttpAssetContextFactory implements AssetContextFactory {
+export class HttpAssetContextFactory implements RequestStatusContextFactory {
 
     create(injector: Injector, session: TransportSession, incoming: IncomingPacket<any>, options: HttpServerOpts): HttpContext {
         return new HttpContext(injector, session, incoming.req as HttpServRequest, incoming.res as HttpServResponse, options);

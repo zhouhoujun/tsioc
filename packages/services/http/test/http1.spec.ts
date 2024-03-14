@@ -2,7 +2,7 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { EndpointModule } from '@tsdi/endpoints';
 import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -41,7 +41,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 microservice: true,
                 transport: 'ws',

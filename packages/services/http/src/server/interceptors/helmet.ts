@@ -1,5 +1,5 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
-import { AssetContext, Middleware } from '@tsdi/endpoints';
+import { RequestStatusContext, Middleware } from '@tsdi/endpoints';
 
 
 export type XFrameAction = 'DENY' | 'ALLOW-FROM' | 'SAMEORIGIN';
@@ -32,7 +32,7 @@ const defOpts = {
 } as HelmentOptions;
 
 @Injectable()
-export class HelmetMiddleware implements Middleware<AssetContext> {
+export class HelmetMiddleware implements Middleware<RequestStatusContext> {
 
     private options: HelmentOptions;
     
@@ -40,7 +40,7 @@ export class HelmetMiddleware implements Middleware<AssetContext> {
         this.options = { ...defOpts, ...options };
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
         ctx.setHeader(X_DNS_PREFETCH_CONTROL, this.options.dnsPrefetch!);
 
         this.setXFormOptions(ctx);
@@ -57,7 +57,7 @@ export class HelmetMiddleware implements Middleware<AssetContext> {
         await next();
     }
 
-    protected setXFormOptions(ctx: AssetContext) {
+    protected setXFormOptions(ctx: RequestStatusContext) {
         const xFrame = this.options.xFrame ?? EMPTY_OBJ;
         let action = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
@@ -69,12 +69,12 @@ export class HelmetMiddleware implements Middleware<AssetContext> {
         ctx.setHeader(X_FRAME_OPTIONS, action);
     }
 
-    protected setPoweredBy(ctx: AssetContext) {
+    protected setPoweredBy(ctx: RequestStatusContext) {
         const poweredby = this.options.xPoweredBy;
         poweredby ? ctx.setHeader(X_POWERED_BY, poweredby) : ctx.removeHeader(X_POWERED_BY);
     }
 
-    protected setMaxAge(ctx: AssetContext) {
+    protected setMaxAge(ctx: RequestStatusContext) {
         const maxAge = this.options.maxAge!;
         if (maxAge > 0) {
             let age = `max-age=${Math.round(maxAge)}`;
@@ -88,7 +88,7 @@ export class HelmetMiddleware implements Middleware<AssetContext> {
         }
     }
 
-    protected setXssProtection(ctx: AssetContext, xssProt: {
+    protected setXssProtection(ctx: RequestStatusContext, xssProt: {
         oldIE?: boolean;
         mode?: 'block';
         reportUri?: string;

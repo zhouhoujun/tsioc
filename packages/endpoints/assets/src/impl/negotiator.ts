@@ -1,14 +1,14 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
 import { hdr } from '@tsdi/common/transport';
-import { AssetContext, Negotiator } from '@tsdi/endpoints';
+import { RequestStatusContext, Negotiator } from '@tsdi/endpoints';
 
 
 
 @Injectable({ static: true })
 export class TransportNegotiator extends Negotiator {
 
-  charsets(ctx: AssetContext, ...accepts: string[]): string[] {
+  charsets(ctx: RequestStatusContext, ...accepts: string[]): string[] {
     const accepted = this.parseCharset(ctx.getHeader(hdr.ACCEPT_CHARSET) ?? '*');
     if (!accepts) {
       return this.getValues(accepted)
@@ -18,7 +18,7 @@ export class TransportNegotiator extends Negotiator {
     return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
-  encodings(ctx: AssetContext, ...accepts: string[]): string[] {
+  encodings(ctx: RequestStatusContext, ...accepts: string[]): string[] {
     const accepted = this.parseEncoding(ctx.getHeader(hdr.ACCEPT_ENCODING) ?? '');
     if (!accepts.length) {
       return this.getValues(accepted)
@@ -27,7 +27,7 @@ export class TransportNegotiator extends Negotiator {
     return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
-  languages(ctx: AssetContext, ...accepts: string[]): string[] {
+  languages(ctx: RequestStatusContext, ...accepts: string[]): string[] {
     const accepted = this.parseLanguage(ctx.getHeader(hdr.ACCEPT_LANGUAGE) ?? '*');
     if (!accepts.length) {
       return this.getValues(accepted)
@@ -36,7 +36,7 @@ export class TransportNegotiator extends Negotiator {
     return this.sortSpecify(pri).map(p => accepts[pri.indexOf(p)])
   }
 
-  mediaTypes(ctx: AssetContext, ...accepts: string[]): string[] {
+  mediaTypes(ctx: RequestStatusContext, ...accepts: string[]): string[] {
     const accepted = this.parseMedia(ctx.getHeader(hdr.ACCEPT) ?? '*');
     if (!accepts.length) {
       return this.getValues(accepted)

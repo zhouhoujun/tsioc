@@ -1,6 +1,6 @@
 import { ResultValue } from '@tsdi/core';
 import { IStream, hdr } from '@tsdi/common/transport';
-import { AssetContext } from '@tsdi/endpoints';
+import { RequestStatusContext } from '@tsdi/endpoints';
 
 /**
  * EventStream Result
@@ -13,7 +13,7 @@ export class EventStreamResult extends ResultValue {
     constructor(private message: string | Buffer | IStream) {
         super('text/event-stream')
     }
-    async sendValue(ctx: AssetContext) {
+    async sendValue(ctx: RequestStatusContext) {
         ctx.contentType = this.contentType;
         ctx.setHeader(hdr.CACHE_CONTROL, "no-cache");
         ctx.setHeader(hdr.CONNECTION, "keep-alive");

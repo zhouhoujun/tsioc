@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { AssetContext } from '@tsdi/endpoints';
+import { RequestStatusContext } from '@tsdi/endpoints';
 
 
 /**
@@ -13,7 +13,7 @@ export class JsonResult extends ResultValue {
     constructor(private data: object) {
         super('application/json')
     }
-    async sendValue(ctx: AssetContext) {
+    async sendValue(ctx: RequestStatusContext) {
         ctx.contentType = this.contentType;
         ctx.body = this.data || {}
     }

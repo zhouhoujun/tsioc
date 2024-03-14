@@ -1,5 +1,5 @@
 import { Abstract, InvocationContext } from '@tsdi/ioc';
-import { Endpoint } from '@tsdi/core';
+import { Handler } from '@tsdi/core';
 import { TransportRequest, TransportErrorResponse, TransportEvent, HeadersLike, StatusCode } from '@tsdi/common';
 import { HeaderPacket, Packet } from './packet';
 import { Observable, Subscription } from 'rxjs';
@@ -137,7 +137,7 @@ export abstract class ServerTransportSession<TSocket = any, TOption = any> exten
     /**
      * handle
      */
-    abstract handle(endpoint: Endpoint, options: TOption): Subscription;
+    abstract handle(handler: Handler, options: TOption): Subscription;
 }
 
 /**

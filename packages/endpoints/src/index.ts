@@ -18,7 +18,7 @@ export * from './transport.session';
 export * from './EndpointHandler';
 export * from './RequestContext';
 export * from './RequestHandler';
-export * from './AssetContext';
+export * from './RequestStatusContext';
 
 export * from './Negotiator';
 
@@ -34,19 +34,16 @@ export * from './interceptors';
 export * from './finalize.filter';
 
 export * from './execption.filter';
-// export * from './execption.handlers';
 
 
 export * from './impl/micro.router';
-// export * from './impl/middleware.handler';
 export * from './impl/route.handler';
 // export * from './impl/transport.context';
-// export * from './impl/transport.endpoint';
 
 export * from './impl/duplex.session';
 export * from './impl/topic.session';
 
 export * from './SetupServices';
-export * from './endpoints.module';
+export * from './endpoint.module';
 
 

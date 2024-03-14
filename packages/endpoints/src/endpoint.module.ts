@@ -30,9 +30,6 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInter
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
 
-        // TransportContextFactoryImpl,
-        // { provide: TransportContextFactory, useExisting: TransportContextFactoryImpl },
-
         TransportTypedRespond,
         { provide: TypedRespond, useExisting: TransportTypedRespond },
 
@@ -46,21 +43,21 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInter
         Session
     ]
 })
-export class EndpointsModule {
+export class EndpointModule {
 
     /**
      * register service.
      * @param options 
      * @param autoBootstrap default true 
      */
-    static register(options: ServiceOpts): ModuleWithProviders<EndpointsModule>;
+    static register(options: ServiceOpts): ModuleWithProviders<EndpointModule>;
     /**
      * register service.
      * @param options
      * @param autoBootstrap default true 
      */
-    static register(options: Array<ServiceOpts>): ModuleWithProviders<EndpointsModule>;
-    static register(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointsModule> {
+    static register(options: Array<ServiceOpts>): ModuleWithProviders<EndpointModule>;
+    static register(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointModule> {
 
         const providers: ProviderType[] = [];
         if (isArray(options)) {
@@ -73,7 +70,7 @@ export class EndpointsModule {
 
         return {
             providers,
-            module: EndpointsModule
+            module: EndpointModule
         }
     }
 }

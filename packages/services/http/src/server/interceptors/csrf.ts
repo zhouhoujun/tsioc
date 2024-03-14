@@ -1,7 +1,7 @@
 import { Abstract, Inject, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
 import { ForbiddenExecption } from '@tsdi/common/transport';
-import { AssetContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
+import { RequestStatusContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, throwError } from 'rxjs';
 import * as CSRFTokens from 'csrf';
@@ -10,7 +10,7 @@ import * as CSRFTokens from 'csrf';
 
 @Abstract()
 export abstract class CsrfOptions {
-    invalidTokenMessage?: string | ((ctx: AssetContext) => string);
+    invalidTokenMessage?: string | ((ctx: RequestStatusContext) => string);
     excludedMethods?: string[];
     disableQuery?: boolean;
     /**
@@ -73,7 +73,7 @@ export class CsrfTokensFactory {
 }
 
 @Injectable()
-export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext> {
+export class Csrf implements Middleware<RequestStatusContext>, Interceptor<RequestStatusContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;
@@ -82,7 +82,7 @@ export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext>
         this.tokens = factory.create(this.options);
     }
 
-    intercept(ctx: AssetContext, next: Handler<AssetContext, any>): Observable<any> {
+    intercept(ctx: RequestStatusContext, next: Handler<RequestStatusContext, any>): Observable<any> {
         ctx.injector.inject({
             provide: CSRF,
             useFactory: () => {
@@ -125,7 +125,7 @@ export class Csrf implements Middleware<AssetContext>, Interceptor<AssetContext>
         return next.handle(ctx)
     }
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
 
         ctx.injector.inject({
             provide: CSRF,

@@ -5,7 +5,7 @@ import {
     Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
     ENOENT, AssetTransportOpts, PacketLengthException, StatusVaildator, encodeUrl, escapeHtml, vary, xmlRegExp
 } from '@tsdi/common/transport';
-import { AssetContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
+import { RequestStatusContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
@@ -27,7 +27,7 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends AssetContext<TRequest, TResponse, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends RequestStatusContext<TRequest, TResponse, TServOpts> {
     protected _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;

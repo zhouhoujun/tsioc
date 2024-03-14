@@ -34,7 +34,7 @@ export interface EndpointOptions<T extends RequestContext = RequestContext, TArg
 /**
  * create endpoint handler.
  * 
- * 创建传输节点实例化对象
+ * 创建传输节点处理器实例化对象
  * @param injector 
  * @param options 
  * @returns 

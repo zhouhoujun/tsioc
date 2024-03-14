@@ -2,7 +2,7 @@ import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { BadRequestExecption } from '@tsdi/common';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, AssetContext, compose, NEXT, Get, Payload
+    Middleware, RequestStatusContext, compose, NEXT, Get, Payload
 } from '@tsdi/endpoints';
 import { of } from 'rxjs'; 
 import { RedirectResult } from '../src';
@@ -101,7 +101,7 @@ export class DeviceController {
 })
 export class DeviceQueue implements Middleware {
 
-    async invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -131,7 +131,7 @@ export class DeviceQueue implements Middleware {
 @Injectable()
 export class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.body.type)
         if (ctx.args.body.type === 'startup') {
@@ -146,7 +146,7 @@ export class DeviceStartupHandle implements Middleware {
 @Injectable()
 export class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: AssetContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.body.type)
         if (ctx.args.body.type === 'startup') {
             // todo sth.

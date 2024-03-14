@@ -6,7 +6,7 @@ import { ServerOpts } from './Server';
 /**
  * abstract request context.
  * 
- * 传输节点上下文
+ * 请求上下文
  */
 @Abstract()
 export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = any> extends HandlerContext<TRequest> {

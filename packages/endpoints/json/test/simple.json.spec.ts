@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { LoggerModule } from '@tsdi/logger';
-import { EndpointsModule, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
+import { EndpointModule, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
 import { AssetTransportModule } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -82,7 +82,7 @@ export class DeviceController {
                 }
             }
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'tcp',
             serverOpts: {
                 // strategy: 'json',
