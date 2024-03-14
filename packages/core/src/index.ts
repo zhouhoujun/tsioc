@@ -13,8 +13,6 @@ export * from './metadata';
 
 export * from './pipes';
 
-// export * from './impl/runnable';
-// export * from './impl/context';
 export * from './impl/loader'
 export { DefaultApplicationContext } from './impl/context';
 export { InvocationHandlerImpl } from './impl/invocation';

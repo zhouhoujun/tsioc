@@ -165,14 +165,6 @@ export namespace hdr {
     export const REFERRER = 'referrer';
     export const REFERRER_POLICY = 'referrer-policy';
     export const RETRY_AFTER = 'retry-after';
-    export const SEC_WEBSOCKET_ACCEPT = 'sec-websocket-accept';
-    export const SEC_WEBSOCKET_EXTENSIONS = 'sec-websocket-extensions';
-    export const SEC_WEBSOCKET_KEY = 'sec-websocket-key';
-    export const SEC_WEBSOCKET_PROTOCOL = 'sec-websocket-protocol';
-    export const SEC_WEBSOCKET_VERSION = 'sec-websocket-version';
-    export const SET_COOKIE = 'set-cookie';
-    export const TK = 'tk';
-    export const TRAILER = 'trailer';
     /**
      * transfer encoding.
      */
@@ -182,6 +174,15 @@ export namespace hdr {
     export const VIA = 'via';
     export const WARNING = 'warning';
     export const WWW_AUTHENTICATE = 'www-authenticate';
+    
+    // export const SEC_WEBSOCKET_ACCEPT = 'sec-websocket-accept';
+    // export const SEC_WEBSOCKET_EXTENSIONS = 'sec-websocket-extensions';
+    // export const SEC_WEBSOCKET_KEY = 'sec-websocket-key';
+    // export const SEC_WEBSOCKET_PROTOCOL = 'sec-websocket-protocol';
+    // export const SEC_WEBSOCKET_VERSION = 'sec-websocket-version';
+    // export const SET_COOKIE = 'set-cookie';
+    // export const TK = 'tk';
+    // export const TRAILER = 'trailer';
 
     // const X_REQUEST_URL = 'x-request-url';
     // const X_FORWARDED_PROTO = 'x-forwarded-proto';

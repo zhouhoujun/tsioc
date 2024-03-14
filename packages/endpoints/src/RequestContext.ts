@@ -117,7 +117,19 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @return {String}
      * @api public
      */
-    abstract getHeader(field: string): string | string[] | undefined;
+    abstract getHeader(field: string): string | undefined;
+
+    /**
+     * get response header.
+     * @param field 
+     */
+    abstract getResponseHeader(field: string): string | undefined;
+
+    /**
+     * the protocol support the header or not.
+     * @param field 
+     */
+    abstract supportHeader(field: string): boolean;
 
     /**
      * has response header field or not.

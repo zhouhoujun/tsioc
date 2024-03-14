@@ -3,11 +3,10 @@ import { HanlerContextOpts, PipeTransform } from '@tsdi/core';
 import { HEAD, StatusCode, normalize, Header, HeaderRecord } from '@tsdi/common';
 import {
     Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
-    ENOENT, AssetTransportOpts, PacketLengthException, StatusVaildator, encodeUrl, escapeHtml, vary, xmlRegExp
+    ENOENT, AssetTransportOpts, PacketLengthException, StatusVaildator, encodeUrl, escapeHtml, vary, xmlRegExp, ctype
 } from '@tsdi/common/transport';
 import { RequestStatusContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
-import { ctype } from './consts';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 
 
@@ -496,7 +495,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * content type.
      */
     get contentType(): string {
-        const ctype = this.getRespHeader(hdr.CONTENT_TYPE);
+        const ctype = this.getResponseHeader(hdr.CONTENT_TYPE);
         return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
     }
 
@@ -641,7 +640,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      */
     get length(): number | undefined {
         if (this.hasHeader(hdr.CONTENT_LENGTH)) {
-            return ~~(this.getRespHeader(hdr.CONTENT_LENGTH) || 0)
+            return ~~(this.getResponseHeader(hdr.CONTENT_LENGTH) || 0)
         }
 
         const { body } = this;
@@ -843,8 +842,9 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         }
     }
 
-    getRespHeader(field: string): Header {
-        return this.response.getHeader(field)
+    getResponseHeader(field: string): string | undefined {
+        const header = this.response.getHeader(field);
+        return isArray(header)? header[0]: header;
     }
 
     /**

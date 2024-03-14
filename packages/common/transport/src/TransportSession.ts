@@ -1,6 +1,6 @@
-import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { Abstract, InvocationContext, ProvdierOf } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
-import { TransportRequest, TransportErrorResponse, TransportEvent, HeadersLike, StatusCode } from '@tsdi/common';
+import { TransportRequest, TransportErrorResponse, TransportEvent, HeadersLike, StatusCode, Encoder, Decoder, TransportResponse } from '@tsdi/common';
 import { HeaderPacket, Packet } from './packet';
 import { Observable, Subscription } from 'rxjs';
 import { Incoming } from './incoming';
@@ -17,6 +17,14 @@ export interface TransportOpts {
      * transport type.
      */
     transport?: Transport | HybirdTransport;
+    /**
+     * encoder.
+     */
+    encoder?: ProvdierOf<Encoder>;
+    /**
+     * decoder.
+     */
+    decoder?: ProvdierOf<Decoder>;
     /**
      * server side or not.
      */
@@ -61,10 +69,10 @@ export interface AssetTransportOpts extends TransportOpts {
  * response factory.
  */
 @Abstract()
-export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorResponse = TransportErrorResponse> {
-    abstract createErrorResponse(options: { url?: string; headers?: HeadersLike; status?: StatusCode; error?: any; statusText?: string; statusMessage?: string; }): TErrorResponse;
-    abstract createHeadResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: StatusCode; statusText?: string; statusMessage?: string; }): TResponse;
-    abstract createResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: StatusCode; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TResponse;
+export abstract class ResponseEventFactory {
+    abstract createErrorResponse(options: { url?: string; headers?: HeadersLike; status?: StatusCode; error?: any; statusText?: string; statusMessage?: string; }): TransportErrorResponse;
+    abstract createHeadResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: StatusCode; statusText?: string; statusMessage?: string; }): TransportEvent;
+    abstract createResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: StatusCode; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TransportResponse;
 }
 
 
