@@ -3,7 +3,7 @@ import { HandlerService, Backend } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { RequestContext } from '../RequestContext';
-import { TransportEndpoint, TransportEndpointOptions } from '../TransportEndpoint';
+import { EndpointHandler, EndpointOptions } from '../EndpointHandler';
 import { MiddlewareBackend } from './middleware.compose';
 import { RequestHandler } from '../RequestHandler';
 
@@ -21,7 +21,7 @@ export interface MiddlewareOpts<T extends RequestContext = any> {
  * 
  * 含中间件的传输节点配置
  */
-export interface MiddlewareEndpointOptions<T extends RequestContext = any, TArg = any> extends TransportEndpointOptions<T, TArg>, MiddlewareOpts<T> {
+export interface MiddlewareEndpointOptions<T extends RequestContext = any, TArg = any> extends EndpointOptions<T, TArg>, MiddlewareOpts<T> {
 
 }
 
@@ -34,7 +34,7 @@ export interface MiddlewareEndpointOptions<T extends RequestContext = any, TArg 
  */
 
 export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = any>
-    extends TransportEndpoint<TInput, TOutput, MiddlewareEndpointOptions<TInput>> implements RequestHandler<TInput>, HandlerService, MiddlewareService {
+    extends EndpointHandler<TInput, TOutput, MiddlewareEndpointOptions<TInput>> implements RequestHandler<TInput>, HandlerService, MiddlewareService {
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
         this.regMulti(this.options.middlewaresToken!, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);

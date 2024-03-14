@@ -1,7 +1,6 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { TransportRequest } from '@tsdi/common';
-import { MessageExecption, StreamAdapter, TransportSession, ResponsePacket } from '@tsdi/common/transport';
+import { MessageExecption, StreamAdapter, TransportSession } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 
 /**
@@ -366,19 +365,19 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
 
 
 /**
- * transport context factory.
+ * request context factory.
  */
 @Abstract()
-export abstract class TransportContextFactory {
+export abstract class RequestContextFactory<TRequest = any, TResponse = any> {
     /**
-     * create transport context.
+     * create request context.
      * @param injector 
      * @param session 
      * @param request 
      * @param response 
      * @param options 
      */
-    abstract create<TSocket, TInput extends TransportRequest, TOutput extends ResponsePacket>(injector: Injector, session: TransportSession, request: TInput, response: TOutput, options?: ServerOpts): RequestContext<TInput, TOutput, TSocket>
+    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options?: ServerOpts): RequestContext<TRequest, TResponse>
 }
 
 

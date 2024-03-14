@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { TransportEndpoint, RequestContext } from '@tsdi/endpoints';
+import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
 
 
 @Abstract()
-export abstract class TcpEndpoint extends TransportEndpoint<RequestContext> {
+export abstract class TcpEndpoint extends EndpointHandler<RequestContext> {
 
 }
 

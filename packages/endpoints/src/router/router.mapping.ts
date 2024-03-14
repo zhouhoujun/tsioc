@@ -3,8 +3,8 @@ import {
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import {
-    Handler, GuardHandler, CanActivate, getGuardsToken, getInterceptorsToken,
-    getFiltersToken, setHandlerOptions, createHandler, createGuardHandler
+    Handler, CanActivate, getGuardsToken, getInterceptorsToken,
+    getFiltersToken, setHandlerOptions, createGuardHandler
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';

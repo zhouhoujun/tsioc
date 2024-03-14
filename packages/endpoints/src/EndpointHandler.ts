@@ -6,11 +6,11 @@ import { Router } from './router/router';
 import { RequestHandler } from './RequestHandler';
 
 /**
- * Transport endpoint.
+ * Endpoint handler.
  * 
  * 传输节点
  */
-export class TransportEndpoint<TInput extends RequestContext = RequestContext, TOutput = any, TOptions extends TransportEndpointOptions<TInput> = TransportEndpointOptions<TInput>>
+export class EndpointHandler<TInput extends RequestContext = RequestContext, TOutput = any, TOptions extends EndpointOptions<TInput> = EndpointOptions<TInput>>
     extends ConfigableHandler<TInput, TOutput, TOptions> implements RequestHandler<TInput>, HandlerService {
 
     protected override forbiddenError(): Execption {
@@ -19,11 +19,11 @@ export class TransportEndpoint<TInput extends RequestContext = RequestContext, T
 }
 
 /**
- * Transport endpoint options.
+ * Endpoint handler options.
  * 
  * 传输节点配置
  */
-export interface TransportEndpointOptions<T extends RequestContext = RequestContext, TArg = any> extends InvocationOptions<T, TArg> {
+export interface EndpointOptions<T extends RequestContext = RequestContext, TArg = any> extends InvocationOptions<T, TArg> {
 
     /**
      * backend of endpoint. defaut `Router`
@@ -32,14 +32,14 @@ export interface TransportEndpointOptions<T extends RequestContext = RequestCont
 }
 
 /**
- * create transport endpoint.
+ * create endpoint handler.
  * 
  * 创建传输节点实例化对象
  * @param injector 
  * @param options 
  * @returns 
  */
-export function createTransportEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector | InvocationContext, options: TransportEndpointOptions<TCtx>): TransportEndpoint<TCtx, TOutput> {
-    return new TransportEndpoint(isInjector(injector) ? injector : createContext(injector, options), options)
+export function createEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector | InvocationContext, options: EndpointOptions<TCtx>): EndpointHandler<TCtx, TOutput> {
+    return new EndpointHandler(isInjector(injector) ? injector : createContext(injector, options), options)
 }
 

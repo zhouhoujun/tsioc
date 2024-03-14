@@ -8,7 +8,6 @@ import { Middleware } from '../middleware/middleware';
 import { RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHandlerOptions } from './route.handler';
 import { MappingDef, RouteMappingMetadata } from './router';
 import { RequestContext } from '../RequestContext';
-import { RequestHandler } from '../RequestHandler';
 
 
 export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');
@@ -112,10 +111,18 @@ export class ControllerRouteFactory {
     * @param prefix extenal prefix
      */
     create<T>(type: Type<T> | Class<T>, injector: Injector, options?: RouteHandlerOptions): ControllerRoute<T>;
-    create<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any, options?: RouteHandlerOptions): ControllerRoute<T> {
+    /**
+     * create ontroller route handler.
+     * @param type factory type
+     * @param injector injector
+    * @param prefix extenal prefix
+     */
+    create<T>(type: Type<T> | Class<T>, injector: Injector, prefix?: string): ControllerRoute<T>;
+    create<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any, arg3?: RouteHandlerOptions | string): ControllerRoute<T> {
 
         let injector: Injector;
         let factory: RouteHandlerFactory<T>;
+        let options = isString(arg3) ? { prefix: arg3 } : { ...arg3 };
         if (type instanceof ReflectiveRef) {
             injector = type.injector;
             factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
@@ -124,6 +131,6 @@ export class ControllerRouteFactory {
             factory = injector.get(RouteHandlerFactoryResolver).resolve(type, injector);
         }
 
-        return new ControllerRoute(factory, options ?? {});
+        return new ControllerRoute(factory, options);
     }
 }

@@ -15,7 +15,7 @@ export * from './router/router.module';
 
 export * from './metadata';
 export * from './transport.session';
-export * from './TransportEndpoint';
+export * from './EndpointHandler';
 export * from './RequestContext';
 export * from './RequestHandler';
 export * from './AssetContext';

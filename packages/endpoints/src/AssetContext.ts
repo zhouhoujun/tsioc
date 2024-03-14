@@ -118,13 +118,14 @@ export abstract class AssetContext<TRequest = any, TResponse = any, TServOpts ex
  * Asset context factory.
  */
 @Abstract()
-export abstract class AssetContextFactory<TIncoming = any> {
+export abstract class AssetContextFactory<TRequest = any, TResponse = any>{
     /**
-     * create context factory.
+     * create asset context factory.
      * @param injector 
      * @param session 
-     * @param incoming 
+     * @param request 
+     * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, incoming: TIncoming, options: ServerOpts): AssetContext;
+    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): AssetContext<TRequest, TResponse>;
 }

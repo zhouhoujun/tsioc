@@ -1,14 +1,13 @@
 import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider, getToken } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { Context, Decoder, Encoder, Packet } from '@tsdi/common/transport';
+import { Context, Decoder, Encoder, Packet, StatusVaildator } from '@tsdi/common/transport';
 // import { CLIENT_TRANSPORT_PACKET_STRATEGIES, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
-import { AssetContextFactory, RequestHandler, StatusVaildator, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
+import { AssetContextFactory, RequestHandler, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, FinalizeAssetEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
 import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInterceptingDecoder, SimpleAssetDecoderBackend } from './decoder';
 import { HttpStatusVaildator } from './impl/status';
 import { AssetRequestHandler } from './handler';
-import { InterceptorsModule } from './interceptors.module';
 import { AssetResponseTransform } from './impl/resp.transform';
 import { AssetContextFactoryImpl } from './impl/context';
 import { BodyContentInterceptor } from './interceptors/body';
@@ -74,8 +73,7 @@ export class AssetModule {
         { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true }
     ],
     exports: [
-        AssetModule,
-        InterceptorsModule
+        AssetModule
     ]
 })
 export class AssetTransportModule {

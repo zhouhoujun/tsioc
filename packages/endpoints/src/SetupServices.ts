@@ -2,7 +2,7 @@ import { Injectable, Injector, ProvdierOf, ProviderType, ReflectiveRef, Token, T
 import { ApplicationContext, InvocationOptions, Startup } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common/transport';
 import { Server, ServerOpts } from './Server';
-import { TransportEndpoint, createTransportEndpoint } from './TransportEndpoint';
+import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 
 
@@ -27,7 +27,7 @@ export interface ServerConfig {
     /**
      * server endpoint provider
      */
-    endpoint?: ProvdierOf<TransportEndpoint>;
+    endpoint?: ProvdierOf<EndpointHandler>;
     /**
      * server options
      */
@@ -101,7 +101,7 @@ export interface ServerModuleOpts extends ServerConfig {
     /**
      * server endpoint type
      */
-    endpointType: Type<TransportEndpoint>;
+    endpointType: Type<EndpointHandler>;
     /**
      * server default options.
      */
@@ -152,7 +152,7 @@ export class SetupServices {
                 providers.push({
                     provide: endpointType,
                     useFactory: (injector: Injector, serverOpts: ServerOpts & MiddlewareOpts) => {
-                        return (!microservice && serverOpts.middlewaresToken && serverOpts.middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createTransportEndpoint(injector, serverOpts)
+                        return (!microservice && serverOpts.middlewaresToken && serverOpts.middlewares) ? createMiddlewareEndpoint(injector, serverOpts) : createEndpoint(injector, serverOpts)
                     },
                     asDefault: true,
                     deps: [Injector, registerAs]

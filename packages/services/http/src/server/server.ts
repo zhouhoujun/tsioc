@@ -24,7 +24,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
 
     @InjectLog() logger!: Logger;
 
-    constructor(readonly endpoint: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
+    constructor(readonly handler: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
     }
@@ -38,7 +38,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
     _server?: http2.Http2Server | http.Server | https.Server | null;
 
     use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.endpoint as MiddlewareEndpoint;
+        const endpoint = this.handler as MiddlewareEndpoint;
         if (isFunction(endpoint.use)) {
             endpoint.use(middlewares, order);
         } else {
@@ -54,7 +54,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         if (!this._server) throw new InternalServerExecption();
         const isSecure = this.isSecure;
 
-        const moduleRef = this.endpoint.injector.get(ModuleRef);
+        const moduleRef = this.handler.injector.get(ModuleRef);
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -94,7 +94,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
 
     async onStartup(): Promise<http2.Http2Server | http.Server | https.Server> {
         const opts = this.options;
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
 
         injector.setValue(HttpServer, this);
         const loader = injector.get(ModuleLoader);
@@ -130,13 +130,13 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         if (!this._server) throw new InternalServerExecption();
         const opts = this.options;
 
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(this._server, transportOpts);
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
 
         // notify hybrid service to bind http server.
         await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));

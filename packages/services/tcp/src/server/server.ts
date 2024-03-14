@@ -27,7 +27,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
     private subs: Subscription;
 
     constructor(
-        readonly endpoint: TcpEndpoint,
+        readonly handler: TcpEndpoint,
         @Inject(TCP_SERV_OPTS) private options: TcpServerOpts,
     ) {
         super();
@@ -37,7 +37,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.endpoint as MiddlewareEndpoint;
+        const endpoint = this.handler as MiddlewareEndpoint;
         if (isFunction(endpoint.use)) {
             endpoint.use(middlewares, order);
         } else {
@@ -109,7 +109,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
 
         this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
@@ -118,12 +118,12 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+                this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+                this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
             })
         }
 

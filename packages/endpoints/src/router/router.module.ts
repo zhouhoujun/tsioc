@@ -3,24 +3,14 @@ import { PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { Transport } from '@tsdi/common/transport';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
-// import { TRANSPORT_ENDPOINT_IMPL } from '../TransportEndpoint';
-// import { MIDDLEEARE_ENDPOINT_IMPL } from '../middleware/middleware.handler';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteFactory } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
 import { RouteHandlerFactoryResolver } from './route.handler';
 import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
-// import { TransportEndpointImpl } from '../impl/transport.handler';
-// import { MiddlewareEndpointImpl } from '../impl/middleware.handler';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
 
-
-
-// TRANSPORT_ENDPOINT_IMPL.create = (injector, options) => new TransportEndpointImpl(injector, options);
-
-
-// MIDDLEEARE_ENDPOINT_IMPL.create = (injector, options) => new MiddlewareEndpointImpl(injector, options);
 
 
 /**

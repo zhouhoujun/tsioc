@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { TransportRequest, GET, MESSAGE } from '@tsdi/common';
 import { TransportSession } from '@tsdi/common/transport';
-import { AssetContextFactory, RequestHandler, ServerOpts, TransportEndpoint } from '@tsdi/endpoints';
+import { AssetContextFactory, RequestHandler, ServerOpts, EndpointHandler } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
 
 
@@ -12,7 +12,7 @@ import { finalize, mergeMap } from 'rxjs';
 @Injectable()
 export class AssetRequestHandler implements RequestHandler<TransportRequest> {
 
-    handle(endpoint: TransportEndpoint, session: TransportSession, logger: Logger, options: ServerOpts) {
+    handle(endpoint: EndpointHandler, session: TransportSession, logger: Logger, options: ServerOpts) {
 
         return session.receive().pipe(
             mergeMap(incoming => {

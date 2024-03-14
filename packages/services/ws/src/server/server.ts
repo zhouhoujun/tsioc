@@ -24,7 +24,7 @@ export class WsServer extends Server {
     private subs: Subscription;
 
     constructor(
-        readonly endpoint: WsEndpoint,
+        readonly handler: WsEndpoint,
         @Inject(WS_SERV_OPTS) private options: WsServerOpts) {
         super();
 
@@ -62,7 +62,7 @@ export class WsServer extends Server {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
         const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
         const isSecure = server instanceof tls.Server;
@@ -76,7 +76,7 @@ export class WsServer extends Server {
             if (!transportOpts.transport) transportOpts.transport = 'ws';
             if (!transportOpts.serverSide) transportOpts.serverSide = true;
             const session = factory.create(stream, transportOpts!);
-            this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+            this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
         })
 
 

@@ -20,4 +20,9 @@ export abstract class RequestHandler<TContext extends RequestContext = RequestCo
      * @param target 
      */
     abstract equals?(target: any): boolean;
+
+    /**
+     * destroy hooks.
+     */
+    abstract onDestroy?(): void;
 }

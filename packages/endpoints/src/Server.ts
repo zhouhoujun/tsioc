@@ -1,11 +1,12 @@
 import { Abstract, ClassType, ProvdierOf, ProviderType, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
 import { Decoder, Encoder, HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
-import { TransportEndpoint, TransportEndpointOptions } from './TransportEndpoint';
+import { EndpointHandler, EndpointOptions } from './EndpointHandler';
 import { RequestContext } from './RequestContext';
 import { SessionOptions } from './Session';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './interceptors/content';
+import { RequestHandler } from './RequestHandler';
 
 
 export interface ProxyOpts {
@@ -38,7 +39,7 @@ export const TRANSPORT_PACKET_STRATEGIES: Record<string, TransportPacketStrategy
 /**
  * server options
  */
-export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any> {
+export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
     /**
      * socket timeout.
      */
@@ -82,39 +83,16 @@ export interface ServerOpts<TSerOpts = any> extends TransportEndpointOptions<any
     secure?: boolean;
 }
 
-
 /**
- * abstract server.
- * 
- * 微服务
+ * microservice.
  */
 @Abstract()
-export abstract class Server<TRequest = any, TResponse = any> implements HandlerService {
+export abstract class MicroService<TRequest = any, TResponse = any> {
 
     /**
-     * micro service endpoint.
+     * micro service handler
      */
-    abstract get endpoint(): TransportEndpoint<RequestContext<TRequest, TResponse>, TResponse>;
-
-    useGuards(guards: ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>> | ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>>[], order?: number | undefined): this {
-        this.endpoint.useGuards(guards, order);
-        return this;
-    }
-
-    useFilters(filter: ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
-        this.endpoint.useFilters(filter, order);
-        return this;
-    }
-
-    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this.endpoint.usePipes(pipes);
-        return this;
-    }
-
-    useInterceptors(interceptor: ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
-        this.endpoint.useInterceptors(interceptor, order);
-        return this;
-    }
+    abstract get handler(): RequestHandler<RequestContext<TRequest, TResponse>>;
 
     @Runner()
     start() {
@@ -123,13 +101,49 @@ export abstract class Server<TRequest = any, TResponse = any> implements Handler
 
     @Shutdown()
     close() {
-        this.endpoint.onDestroy();
+        this.handler.onDestroy?.();
         return this.onShutdown();
     }
 
     protected abstract onStart(): Promise<any>;
 
     protected abstract onShutdown(): Promise<any>;
+
+}
+
+
+/**
+ * abstract server.
+ * 
+ * 微服务
+ */
+@Abstract()
+export abstract class Server<TRequest = any, TResponse = any> extends MicroService<TRequest, TResponse> implements HandlerService {
+
+    /**
+     * service endpoint handler.
+     */
+    abstract get handler(): EndpointHandler<RequestContext<TRequest, TResponse>, TResponse>;
+
+    useGuards(guards: ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>> | ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>>[], order?: number | undefined): this {
+        this.handler.useGuards(guards, order);
+        return this;
+    }
+
+    useFilters(filter: ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
+        this.handler.useFilters(filter, order);
+        return this;
+    }
+
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
+        this.handler.usePipes(pipes);
+        return this;
+    }
+
+    useInterceptors(interceptor: ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
+        this.handler.useInterceptors(interceptor, order);
+        return this;
+    }
 
 }
 
