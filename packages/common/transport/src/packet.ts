@@ -1,4 +1,5 @@
 import { StatusCode, HeaderRecord, Pattern } from '@tsdi/common';
+import { IReadableStream } from './stream';
 
 
 /**
@@ -18,12 +19,27 @@ export interface HeaderPacket {
  * packet data.
  */
 export interface Packet<T = any> extends HeaderPacket {
+    payload?: T;
+}
+
+export interface PacketData<T = any> extends Packet<T> {
+    headerBuffer?: Buffer;
+    headerLength?: number;
     /**
      * payload length.
      */
-    length?: number;
-    payload?: T;
+    payloadLength?: number;
 }
+
+export interface Message {
+    id?: any;
+    type?: number | string;
+    header?: Buffer;
+    headerLength: number;
+    payload?: Buffer | IReadableStream;
+    payloadLenght: number;
+}
+
 
 /**
  * response packet data.
