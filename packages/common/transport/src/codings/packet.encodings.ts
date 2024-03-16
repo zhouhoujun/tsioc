@@ -144,8 +144,8 @@ export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Bu
     ) { }
 
     intercept(input: PacketData, next: Handler<PacketData, Buffer>): Observable<Buffer> {
-        let packetSize = (input.payloadLength ?? 0) + (input.headerLength ?? 0);
-        let sizeLimit = this.options.maxSize! - (this.options.delimiter ? Buffer.byteLength(this.options.delimiter) : 0)
+        const packetSize = (input.payloadLength ?? 0) + (input.headerLength ?? 0);
+        const sizeLimit = this.options.maxSize! - (this.options.delimiter ? Buffer.byteLength(this.options.delimiter) : 0)
             - ((this.options.headDelimiter) ? Buffer.byteLength(this.options.headDelimiter) : 0)
             - (isString(input.id) ? Buffer.byteLength(input.id) : 2)
             - 1; // message type.
@@ -169,9 +169,9 @@ export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Bu
                                     first = false;
                                     const idx = chunk.length - (size - maxSize);
                                     buffers.push(chunk.subarray(0, idx))
-                                    let sub = chunk.subarray(idx + 1);
+                                    const sub = chunk.subarray(idx + 1);
 
-                                    let payload = Buffer.concat(buffers);
+                                    const payload = Buffer.concat(buffers);
                                     if (sub.length) {
                                         buffers = [sub];
                                         size = sub.length;
