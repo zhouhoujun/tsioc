@@ -12,7 +12,7 @@ import * as http2 from 'http2';
 import * as assert from 'assert';
 import { HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
-import { HttpEndpoint } from './endpoint';
+import { HttpEndpointHandler } from './handler';
 import { InternalServerExecption, TransportSessionFactory } from '@tsdi/common/transport';
 
 
@@ -24,7 +24,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
 
     @InjectLog() logger!: Logger;
 
-    constructor(readonly handler: HttpEndpoint, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
+    constructor(readonly handler: HttpEndpointHandler, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
         this.validOptions(options);
     }

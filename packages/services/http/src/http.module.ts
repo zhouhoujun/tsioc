@@ -10,7 +10,7 @@ import { HttpHandler } from './client/handler';
 import { HttpPathInterceptor } from './client/path';
 import { HttpTransportBackend } from './client/backend';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS, HTTP_SERV_OPTS } from './server/options';
-import { HttpEndpoint } from './server/endpoint';
+import { HttpEndpointHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
 import { HttpAssetContextFactory } from './server/context';
@@ -62,7 +62,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                 microservice: true,
                 serverType: HttpServer,
                 serverOptsToken: HTTP_SERV_OPTS,
-                endpointType: HttpEndpoint,
+                handlerType: HttpEndpointHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
@@ -98,7 +98,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                 transport: 'http',
                 serverType: HttpServer,
                 serverOptsToken: HTTP_SERV_OPTS,
-                endpointType: HttpEndpoint,
+                handlerType: HttpEndpointHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {

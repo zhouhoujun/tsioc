@@ -8,7 +8,7 @@ import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KAFKA_CLIENT_OPTS } fr
 import { KafkaHandler } from './client/handler';
 import { KafkaServer } from './server/server';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS } from './server/options';
-import { KafkaEndpoint } from './server/endpoint';
+import { KafkaEndpointHandler } from './server/handler';
 import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
 import { KafkaTransportSessionFactory } from './kafka.session';
 
@@ -51,7 +51,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                 microservice: true,
                 serverType: KafkaServer,
                 serverOptsToken: KAFKA_SERV_OPTS,
-                endpointType: KafkaEndpoint,
+                endpointType: KafkaEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {

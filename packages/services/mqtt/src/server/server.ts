@@ -5,7 +5,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { Subscription } from 'rxjs';
 import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
-import { MqttEndpoint } from './endpoint';
+import { MqttEndpointHandler } from './handler';
 
 
 /**
@@ -23,7 +23,7 @@ export class MqttServer extends Server {
     private _session?: TransportSession<Client>;
 
     constructor(
-        readonly endpoint: MqttEndpoint,
+        readonly endpoint: MqttEndpointHandler,
         @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
     ) {
         super();

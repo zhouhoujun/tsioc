@@ -8,7 +8,7 @@ import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS } from 
 import { NatsHandler } from './client/handler';
 import { NatsServer } from './server/server';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NATS_SERV_OPTS } from './server/options';
-import { NatsEndpoint } from './server/endpoint';
+import { NatsEndpointHandler } from './server/handler';
 import { NatsPatternFormatter } from './pattern';
 import { NatsTransportSessionFactory } from './nats.session';
 
@@ -52,7 +52,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 microservice: true,
                 serverType: NatsServer,
                 serverOptsToken: NATS_SERV_OPTS,
-                endpointType: NatsEndpoint,
+                endpointType: NatsEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {

@@ -99,9 +99,9 @@ export interface ServerModuleOpts extends ServerConfig {
      */
     serverOptsToken: Token<ServerOpts>;
     /**
-     * server endpoint type
+     * server endpoint handler type
      */
-    endpointType: Type<EndpointHandler>;
+    handlerType: Type<EndpointHandler>;
     /**
      * server default options.
      */
@@ -138,7 +138,7 @@ export class SetupServices {
         services.forEach(s => {
 
             const opts = s as ServiceModuleOpts & { registerAs: Token<ServerOpts> };
-            const { registerAs, bootstrap, serverType, serverOptsToken, server, endpointType, endpoint, microservice } = opts;
+            const { registerAs, bootstrap, serverType, serverOptsToken, server, handlerType: endpointType, endpoint, microservice } = opts;
             const providers: ProviderType[] = [
                 { provide: serverOptsToken, useExisting: registerAs }
             ];

@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { Server, RequestHandler } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UDP_SERV_OPTS, UdpServerOpts } from './options';
-import { UdpEndpoint } from './endpoint';
+import { UdpEndpointHandler } from './handler';
 import { defaultMaxSize } from '../consts';
 
 
@@ -18,7 +18,7 @@ export class UdpServer extends Server {
 
 
     constructor(
-        readonly endpoint: UdpEndpoint,
+        readonly endpoint: UdpEndpointHandler,
         @Inject(UDP_SERV_OPTS) private options: UdpServerOpts) {
         super();
     }

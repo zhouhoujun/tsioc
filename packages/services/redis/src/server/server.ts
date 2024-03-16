@@ -3,7 +3,7 @@ import { PatternFormatter, LOCALHOST, ev } from '@tsdi/common';
 import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
-import { RedisEndpoint } from './endpoint';
+import { RedisEndpointHandler } from './handler';
 import { REDIS_SERV_OPTS, RedisServerOpts } from './options';
 import { RedisTransportSession, RedisTransportSessionFactory } from '../redis.session';
 
@@ -22,7 +22,7 @@ export class RedisServer extends Server {
     private publisher: Redis | null = null;
 
     constructor(
-        readonly endpoint: RedisEndpoint,
+        readonly endpoint: RedisEndpointHandler,
         @Inject(REDIS_SERV_OPTS) private options: RedisServerOpts
     ) {
         super();

@@ -3,7 +3,6 @@ import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
 
 
 @Abstract()
-export abstract class TcpEndpoint extends EndpointHandler<RequestContext> {
+export abstract class UdpEndpointHandler extends EndpointHandler<RequestContext> {
 
 }
-

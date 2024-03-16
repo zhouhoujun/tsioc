@@ -4,7 +4,7 @@ import { TransportSession, TransportSessionFactory, ev } from '@tsdi/common/tran
 import { Server, RequestHandler } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
-import { AmqpEndpoint } from './endpoint';
+import { AmqpEndpointHandler } from './handler';
 
 
 
@@ -21,7 +21,7 @@ export class AmqpServer extends Server {
     private _session?: TransportSession<amqp.Channel>;
 
     constructor(
-        readonly endpoint: AmqpEndpoint,
+        readonly endpoint: AmqpEndpointHandler,
         @Inject(AMQP_SERV_OPTS) private options: AmqpMicroServiceOpts) {
         super();
     }

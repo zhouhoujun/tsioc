@@ -3,6 +3,6 @@ import { EndpointHandler } from '@tsdi/endpoints';
 import { HttpContext, HttpServResponse } from './context';
 
 @Abstract()
-export abstract class HttpEndpoint extends EndpointHandler<HttpContext, HttpServResponse> {
+export abstract class HttpEndpointHandler extends EndpointHandler<HttpContext, HttpServResponse> {
     
 }

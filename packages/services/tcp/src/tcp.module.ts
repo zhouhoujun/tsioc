@@ -8,7 +8,7 @@ import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS } from './
 import { TcpHandler } from './client/handler';
 import { TcpServer } from './server/server';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS, TCP_SERV_OPTS } from './server/options';
-import { TcpEndpoint } from './server/endpoint';
+import { TcpEndpointHandler } from './server/handler';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -46,7 +46,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 microservice: true,
                 serverType: TcpServer,
                 serverOptsToken: TCP_SERV_OPTS,
-                endpointType: TcpEndpoint,
+                handlerType: TcpEndpointHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
@@ -78,7 +78,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'tcp',
                 serverType: TcpServer,
                 serverOptsToken: TCP_SERV_OPTS,
-                endpointType: TcpEndpoint,
+                handlerType: TcpEndpointHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {

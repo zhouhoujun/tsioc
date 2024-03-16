@@ -7,7 +7,7 @@ import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS } from './cli
 import { WsHandler } from './client/handler';
 import { WsServer } from './server/server';
 import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS } from './server/options';
-import { WsEndpoint } from './server/endpoint';
+import { WsEndpointHandler } from './server/handler';
 
 
 // const defaultMaxSize = 65515; //1024 * 64 - 20;
@@ -45,7 +45,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 microservice: true,
                 serverType: WsServer,
                 serverOptsToken: WS_SERV_OPTS,
-                endpointType: WsEndpoint,
+                handlerType: WsEndpointHandler,
                 defaultOpts: {
                     transportOpts: {
                         delimiter: '#',

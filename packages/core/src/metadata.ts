@@ -411,9 +411,9 @@ export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDispos
 
 
 /**
- * Endpoint handler metadata.
+ * Filter handler metadata.
  */
-export interface EndpointHandlerMetadata<TArg> extends InvocationOptions<TArg> {
+export interface FilterHandlerMetadata<TArg> extends InvocationOptions<TArg> {
     /**
      * execption type.
      */
@@ -423,12 +423,12 @@ export interface EndpointHandlerMetadata<TArg> extends InvocationOptions<TArg> {
 
 
 /**
- * EndpointHanlder decorator, for class. use to define the class as response handle register in global Endpoint filter.
+ * FilterHandler decorator, for class. use to define the class as response handle register in global filter.
  *
  * @export
- * @interface EndpointHanlder
+ * @interface EndpointHandler
  */
-export interface EndpointHanlder {
+export interface FilterHandler {
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
@@ -439,17 +439,17 @@ export interface EndpointHanlder {
 }
 
 /**
- * EndpointHanlder decorator, for class. use to define the class as Endpoint handle register in global Endpoint filter.
- * @EndpointHanlder
+ * FilterHandler decorator, for class. use to define the class as Endpoint handle register in global filter.
+ * @FilterHandler
  * 
- * @exports {@link EndpointHanlder}
+ * @exports {@link FilterHandler}
  */
-export const EndpointHanlder: EndpointHanlder = createDecorator('EndpointHanlder', {
+export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
     props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<EndpointHandlerMetadata<any>>(ctx.currDecor, Decors.method);
+            const decors = typeRef.getDecorDefines<FilterHandlerMetadata<any>>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
             const handlerResolver = injector.get(FilterHandlerResolver);
@@ -488,7 +488,7 @@ export interface ExecptionHandler {
  * 
  * @exports {@link ExecptionHandler}
  */
-export const ExecptionHandler: ExecptionHandler = EndpointHanlder;
+export const ExecptionHandler: ExecptionHandler = FilterHandler;
 
 
 /**

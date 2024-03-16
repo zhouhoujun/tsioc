@@ -8,7 +8,7 @@ import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS, REDIS_CLIENT_OPTS } fr
 import { RedisHandler } from './client/handler';
 import { RedisServer } from './server/server';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS, REDIS_SERV_OPTS } from './server/options';
-import { RedisEndpoint } from './server/endpoint';
+import { RedisEndpointHandler } from './server/handler';
 import { RedisPatternFormatter } from './pattern';
 import { RedisTransportSessionFactory } from './redis.session';
 
@@ -50,7 +50,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 microservice: true,
                 serverType: RedisServer,
                 serverOptsToken: REDIS_SERV_OPTS,
-                endpointType: RedisEndpoint,
+                endpointType: RedisEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {

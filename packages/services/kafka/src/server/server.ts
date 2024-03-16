@@ -1,12 +1,12 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { PatternFormatter, ServiceUnavailableExecption, TransportSessionFactory } from '@tsdi/common';
-import { Server, MircoServRouters, StatusVaildator, RequestHandler } from '@tsdi/endpoints';
+import { Server, MircoServRouters, RequestHandler } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from '../kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
-import { KafkaEndpoint } from './endpoint';
+import { KafkaEndpointHandler } from './handler';
 
 
 
@@ -24,7 +24,7 @@ export class KafkaServer extends Server {
     protected producer?: Producer | null;
     private _session?: KafkaTransportSession;
 
-    constructor(readonly endpoint: KafkaEndpoint, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
+    constructor(readonly endpoint: KafkaEndpointHandler, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
     }
 
@@ -107,7 +107,6 @@ export class KafkaServer extends Server {
             serverSide: true
         } as KafkaTransportOpts;
 
-        const vaildator = injector.get(StatusVaildator, null);
         const session = this._session = injector.get(TransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts) as KafkaTransportSession;
 
         await session.bindTopics(topics);

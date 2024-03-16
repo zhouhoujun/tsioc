@@ -1,13 +1,14 @@
 import { EMPTY_OBJ, Inject, Injectable, getClassName, isString, lang, promisify } from '@tsdi/ioc';
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { InternalServerExecption, ev, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
+import { LOCALHOST } from '@tsdi/common';
+import { InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common/transport';
 import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription } from 'rxjs';
 import * as tls from 'tls';
 import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WS_SERV_OPTS, WsServerOpts } from './options';
-import { WsEndpoint } from './endpoint';
+import { WsEndpointHandler } from './handler';
 
 
 /**
@@ -24,7 +25,7 @@ export class WsServer extends Server {
     private subs: Subscription;
 
     constructor(
-        readonly handler: WsEndpoint,
+        readonly handler: WsEndpointHandler,
         @Inject(WS_SERV_OPTS) private options: WsServerOpts) {
         super();
 

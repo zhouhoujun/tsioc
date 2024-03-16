@@ -7,7 +7,7 @@ import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS, UDP_CLIENT_OPTS } from './
 import { UdpHandler } from './client/handler';
 import { UdpServer } from './server/server';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS, UDP_SERV_OPTS } from './server/options';
-import { UdpEndpoint } from './server/endpoint';
+import { UdpEndpointHandler } from './server/handler';
 import { defaultMaxSize } from './consts';
 import { UdpTransportSessionFactory } from './udp.session';
 
@@ -46,7 +46,7 @@ import { UdpTransportSessionFactory } from './udp.session';
                 microservice: true,
                 serverType: UdpServer,
                 serverOptsToken: UDP_SERV_OPTS,
-                endpointType: UdpEndpoint,
+                handlerType: UdpEndpointHandler,
                 defaultOpts: {
                     transportOpts: {
                         delimiter: '#',

@@ -8,7 +8,7 @@ import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, COAP_CLIENT_OPTS } from 
 import { CoapHandler } from './client/handler';
 import { CoapServer } from './server/server';
 import { COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_OPTS } from './server/options';
-import { CoapEndpoint } from './server/endpoint';
+import { CoapEndpointHandler } from './server/handler';
 import { CoapStatusVaildator } from './status';
 import { CoapTransportSessionFactory } from './coap.session';
 import { CoapExecptionHandlers } from './server/execption.handles';
@@ -53,7 +53,7 @@ const defaultMaxSize = 1024 * 256;
                 microservice: true,
                 serverType: CoapServer,
                 serverOptsToken: COAP_SERV_OPTS,
-                endpointType: CoapEndpoint,
+                handlerType: CoapEndpointHandler,
                 
                 defaultOpts: {
                     autoListen: true,
@@ -91,7 +91,7 @@ const defaultMaxSize = 1024 * 256;
                 transport: 'coap',
                 serverType: CoapServer,
                 serverOptsToken: COAP_SERV_OPTS,
-                endpointType: CoapEndpoint,
+                endpointType: CoapEndpointHandler,
                 defaultOpts: {
                     autoListen: true,
                     listenOpts: { port: 5683, host: LOCALHOST },
