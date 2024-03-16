@@ -5,6 +5,7 @@ import { Observable, Subscriber, defer, from, isObservable, map, mergeMap, of, r
 import { NumberAllocator } from 'number-allocator';
 import { PacketData, Packet } from '../packet';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
+import { Transport } from '../protocols';
 
 
 @Injectable()
@@ -12,9 +13,7 @@ export class PacketEncodeBackend implements Handler<PacketData, Buffer> {
 
     constructor(
         private streamAdapter: StreamAdapter,
-        @Inject(ENCOD_PACKET_OPTIONS) private options: PacketOptions) {
-
-    }
+        @Inject(PACKET_CODING_OPTIONS) private options: PacketOptions) { }
 
     handle(input: PacketData): Observable<Buffer> {
         return of(Buffer.concat([
@@ -140,7 +139,7 @@ export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Bu
 
     constructor(
         private streamAdapter: StreamAdapter,
-        @Inject(ENCOD_PACKET_OPTIONS) private options: PacketOptions
+        @Inject(PACKET_CODING_OPTIONS) private options: PacketOptions
     ) { }
 
     intercept(input: PacketData, next: Handler<PacketData, Buffer>): Observable<Buffer> {
@@ -257,6 +256,8 @@ export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Bu
 @Abstract()
 export abstract class PacketIdGenerator {
     abstract getPacketId(): string | number;
+    abstract readId(raw: Buffer): string | number;
+    abstract get idLenght(): number;
 }
 
 @Injectable()
@@ -264,6 +265,8 @@ export class PacketNumberIdGenerator implements PacketIdGenerator {
 
     private allocator?: NumberAllocator;
     private last?: number;
+
+    readonly idLenght = 2;
 
     getPacketId(): string | number {
         if (!this.allocator) {
@@ -276,16 +279,28 @@ export class PacketNumberIdGenerator implements PacketIdGenerator {
         this.last = id;
         return id;
     }
+
+    readId(raw: Buffer): string | number {
+        return raw.readInt16BE(0);
+    }
+
+
 }
 
 @Injectable()
 export class PacketUUIdGenerator implements PacketIdGenerator {
 
+    readonly idLenght = 36;
     constructor(private uuid: UuidGenerator) { }
 
     getPacketId(): string | number {
         return this.uuid.generate();
     }
+
+    readId(raw: Buffer): string | number {
+        return new TextDecoder().decode(raw.subarray(0, this.idLenght));
+    }
+
 }
 
 
@@ -298,6 +313,8 @@ export class PacketEncoder extends Encoder<PacketData, Buffer> {
 }
 
 export interface PacketOptions {
+
+    transport?: Transport;
 
     packetId: 'uuid' | 'number';
     /**
@@ -314,7 +331,7 @@ export interface PacketOptions {
     maxSize?: number;
 }
 
-export const ENCOD_PACKET_OPTIONS = tokenId<PacketOptions>('ENCOD_PACKET_OPTIONS');
+export const PACKET_CODING_OPTIONS = tokenId<PacketOptions>('PACKET_CODING_OPTIONS');
 
 @Module({
     providers: [
@@ -332,7 +349,7 @@ export class PacketEncodingsModule {
     static withOptions(options: PacketOptions): ModuleWithProviders<PacketEncodingsModule> {
         const providers: ProviderType[] = [
             { provide: PacketIdGenerator, useClass: options.packetId == 'uuid' ? PacketUUIdGenerator : PacketNumberIdGenerator },
-            { provide: ENCOD_PACKET_OPTIONS, useValue: options }
+            { provide: PACKET_CODING_OPTIONS, useValue: options }
         ];
 
         return {
