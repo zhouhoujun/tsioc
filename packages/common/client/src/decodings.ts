@@ -1,6 +1,6 @@
 
 import { Decoder, HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
-import { Packet, ResponsePacket, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
+import { MimeAdapter, Packet, ResponsePacket, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, lang, tokenId } from '@tsdi/ioc';
 import { Observable, defer, mergeMap } from 'rxjs';
@@ -15,18 +15,21 @@ export interface ResponseContext {
 @Injectable()
 export class ResponseBackend implements Backend<ResponseContext, TransportEvent> {
 
-    constructor(private streamAdapter: StreamAdapter){ }
+    constructor(
+        private streamAdapter: StreamAdapter,
+        private mimeAdapter: MimeAdapter
+    ) { }
 
     handle(input: ResponseContext): Observable<TransportEvent> {
-        
+        const streamAdapter = this.streamAdapter;
         return defer(async () => {
             const { req, response } = input;
             let responseType = req.responseType;
-            if (session.mimeAdapter) {
+            if (this.mimeAdapter) {
                 const contentType = response.getContentType();
                 if (contentType) {
-                    if (responseType === 'json' && !session.mimeAdapter.isJson(contentType)) {
-                        if (session.mimeAdapter.isXml(contentType) || session.mimeAdapter.isText(contentType)) {
+                    if (responseType === 'json' && !this.mimeAdapter.isJson(contentType)) {
+                        if (this.mimeAdapter.isXml(contentType) || this.mimeAdapter.isText(contentType)) {
                             responseType = 'text';
                         } else {
                             responseType = 'blob';
@@ -34,7 +37,6 @@ export class ResponseBackend implements Backend<ResponseContext, TransportEvent>
                     }
                 }
             }
-            const streamAdapter = this.streamAdapter;
             if (responseType !== 'stream' && streamAdapter.isReadable(response.payload)) {
                 response.payload = await toBuffer(response.payload);
             }
@@ -122,12 +124,12 @@ export class ResponseDecodeInterceptingHandler extends InterceptingHandler<Respo
 @Injectable()
 export class CompressResponseDecordeInterceptor implements Interceptor<ResponseContext, TransportEvent> {
 
-    constructor(private streamAdapter: StreamAdapter){ }
+    constructor(private streamAdapter: StreamAdapter) { }
 
     intercept(ctx: ResponseContext, next: Handler<ResponseContext, TransportEvent>): Observable<TransportEvent> {
         const response = ctx.response;
-        if (ctx.session.incomingAdapter) {
-            const codings = ctx.session.incomingAdapter.getContentEncoding(ctx);
+        if (response instanceof Outgoing) {
+            const codings = response.getContentEncoding();
             const req = ctx.req;
             const streamAdapter = this.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
@@ -239,8 +241,8 @@ export class ResponseDecoder extends Decoder<ResponseContext, TransportEvent> {
 
 @Module({
     providers: [
-        {provide: RESPONSE_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
-        {provide: ResponseDecodeHandler, useClass: ResponseDecodeInterceptingHandler },
+        { provide: RESPONSE_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
+        { provide: ResponseDecodeHandler, useClass: ResponseDecodeInterceptingHandler },
         ResponseDecoder
     ]
 })

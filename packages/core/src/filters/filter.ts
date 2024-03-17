@@ -12,7 +12,7 @@ import { Interceptor } from '../Interceptor';
 @Abstract()
 export abstract class Filter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
     /**
-     * the method to implemet interceptor filter.
+     * the method to implement interceptor filter.
      * @param input request input data.
      * @param next The next interceptor in the chain, or the backend
      * if no interceptors remain in the chain.
