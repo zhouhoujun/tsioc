@@ -1,11 +1,11 @@
 import { Abstract, Injectable, Injector, Module, isPromise, tokenId } from '@tsdi/ioc';
-import { Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
+import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Encoder } from '@tsdi/common';
 import { Observable, from, isObservable, mergeMap, of, throwError } from 'rxjs';
 
 
 @Injectable()
-export class JsonEncodeBackend implements Handler<any, Buffer> {
+export class JsonEncodeBackend implements Backend<any, Buffer> {
     handle(input: any): Observable<Buffer> {
         try {
             const jsonStr = JSON.stringify(input);

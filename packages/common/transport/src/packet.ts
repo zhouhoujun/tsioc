@@ -48,6 +48,7 @@ export interface ResponsePacket<T = any> extends Packet<T> {
     type?: number | string;
     status?: StatusCode;
     statusText?: string;
+    ok?: boolean;
     error?: any;
 }
 

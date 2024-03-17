@@ -1,7 +1,7 @@
-import { Abstract, ArgumentExecption, Inject, Injectable, Injector, Module, Optional, isString, tokenId } from '@tsdi/ioc';
-import { Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Inject, Injectable, Injector, Module, Optional, tokenId } from '@tsdi/ioc';
+import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Decoder } from '@tsdi/common';
-import { Observable, Subscriber, mergeMap, of, throwError } from 'rxjs';
+import { Observable, Subscriber, mergeMap, throwError } from 'rxjs';
 import { Packet, PacketData } from '../packet';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { PACKET_CODING_OPTIONS, PacketIdGenerator, PacketOptions } from './packet.encodings';
@@ -22,7 +22,7 @@ export abstract class PayloadDeserialization {
 
 
 @Injectable()
-export class PacketDecodeBackend implements Handler<Buffer, Packet> {
+export class PacketDecodeBackend implements Backend<Buffer, Packet> {
     packs: Map<string | number, PacketData & { cacheSize: number }>;
 
     constructor(
