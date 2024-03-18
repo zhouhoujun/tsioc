@@ -1,7 +1,7 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { IStream } from '@tsdi/common/transport';
-import { RequestStatusContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 
 /**
@@ -52,7 +52,7 @@ export class FileResult extends ResultValue {
         super(options?.contentType || 'application/octet-stream');
     }
 
-    async sendValue(ctx: RequestStatusContext) {
+    async sendValue(ctx: RestfulRequestContext) {
         const file = this.file;
         const contentType = this.contentType;
         if (this.options && this.options.filename) {

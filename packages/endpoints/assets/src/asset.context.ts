@@ -5,7 +5,7 @@ import {
     Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
     ENOENT, AssetTransportOpts, PacketLengthException, StatusAdapter, encodeUrl, escapeHtml, vary, xmlRegExp, ctype
 } from '@tsdi/common/transport';
-import { RequestStatusContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
+import { RestfulRequestContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
 import { CONTENT_DISPOSITION_TOKEN } from '../../src/content';
 
@@ -26,7 +26,7 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends RequestStatusContext<TRequest, TResponse, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends RestfulRequestContext<TRequest, TResponse, TServOpts> {
     protected _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
@@ -773,16 +773,6 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         // text
         this.type = ctype.TEXT_PLAIN_UTF8;
         this.body = `Redirecting to ${url}.`
-    }
-
-    /**
-     * Check if a header has been written to the socket.
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    get sent() {
-        return this.response.headersSent!
     }
 
     /**

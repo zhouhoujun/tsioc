@@ -1,20 +1,23 @@
 import { Abstract } from '@tsdi/ioc';
-import { Pattern, StatusCode } from '@tsdi/common';
+import { Pattern } from '@tsdi/common';
 
 
 
 @Abstract()
-export abstract class Incoming<T = any, TMsg = any> {
+export abstract class Incoming<TMsg = any, T = any, TStatus= any> {
 
     abstract get id(): any;
 
     abstract get url(): string;
+    abstract set url(val: string);
 
     abstract get method(): string;
 
     abstract get originalUrl(): string;
 
     abstract get pattern(): Pattern;
+
+    abstract get headers(): Record<string, string | string[] | number | undefined>;
 
     abstract get message(): TMsg;
 
@@ -56,10 +59,10 @@ export abstract class Incoming<T = any, TMsg = any> {
     /**
      * Get packet status code.
      *
-     * @return {StatusCode}
+     * @return {TStatus}
      * @api public
      */
-    abstract get status(): StatusCode;
+    abstract get status(): TStatus;
     /**
      * Get packet status message.
      *
@@ -88,6 +91,15 @@ export abstract class Incoming<T = any, TMsg = any> {
 
     abstract get rawBody(): Buffer;
     abstract set rawBody(value: Buffer);
+
+    /**
+     * requery query params.
+     */
+    query?: Record<string, any>;
+    /**
+     * request path params.
+     */
+    path?: Record<string, any>;
 
     /**
      * error message

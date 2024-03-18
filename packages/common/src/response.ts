@@ -1,16 +1,15 @@
 import { isNil } from '@tsdi/ioc';
 import { HeadersLike, TransportHeaders } from './headers';
-import { StatusCode } from './status';
 
 
 /**
  * Transport error response.
  * response for `TransportClient`.
  */
-export class TransportErrorResponse {
+export class TransportErrorResponse<TStatus = any> {
     readonly error: any;
     readonly url: string;
-    readonly status: StatusCode;
+    readonly status: any;
     get statusText(): string {
         return this.statusMessage;
     }
@@ -20,7 +19,7 @@ export class TransportErrorResponse {
     constructor(options: {
         url?: string,
         headers?: HeadersLike;
-        status?: StatusCode;
+        status?: TStatus;
         error?: any;
         statusText?: string;
         statusMessage?: string;
@@ -37,10 +36,10 @@ export class TransportErrorResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportHeaderResponse {
+export class TransportHeaderResponse<TStatus = any> {
     readonly url: string;
     readonly ok: boolean;
-    readonly status: StatusCode;
+    readonly status: TStatus;
     get statusText(): string {
         return this.statusMessage;
     }
@@ -52,14 +51,14 @@ export class TransportHeaderResponse {
         url?: string,
         ok?: boolean;
         headers?: HeadersLike;
-        status?: StatusCode;
+        status?: TStatus;
         statusText?: string;
         statusMessage?: string;
     }) {
         this.url = options.url ?? '';
         this.ok = options.ok ?? true;
         this.headers = new TransportHeaders(options.headers);
-        this.status = options.status;
+        this.status = options.status!;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
     }
 
@@ -69,10 +68,10 @@ export class TransportHeaderResponse {
  * client receive Response.
  * response for `TransportClient`.
  */
-export class TransportResponse<T = any> {
+export class TransportResponse<T = any, TStatus = any> {
     readonly url: string;
     readonly ok: boolean;
-    readonly status: StatusCode;
+    readonly status: TStatus;
 
     get statusText(): string {
         return this.statusMessage;
@@ -91,7 +90,7 @@ export class TransportResponse<T = any> {
         url?: string,
         ok?: boolean;
         headers?: HeadersLike;
-        status?: StatusCode
+        status?: TStatus
         statusText?: string;
         statusMessage?: string;
         body?: T;
@@ -100,7 +99,7 @@ export class TransportResponse<T = any> {
         this.url = options.url ?? '';
         const noRes = isNil(options.payload || options.body || options.headers);
         this.headers = new TransportHeaders(options.headers);
-        this.status = options.status;
+        this.status = options.status!;
         this.ok = options.ok ?? !noRes;
         this.payload = options.body ?? options.payload ?? null;
         this.statusMessage = options.statusMessage ?? options.statusText ?? '';
@@ -118,7 +117,7 @@ export interface ResponseEvent {
  * transport event.
  * response for `Client`.
  */
-export type TransportEvent<T = any> = TransportHeaderResponse | TransportResponse<T> | ResponseEvent;
+export type TransportEvent<T = any, TStatus = any> = TransportHeaderResponse<TStatus> | TransportResponse<T, TStatus> | ResponseEvent;
 
 /**
  * An error that represents a failed attempt to JSON.parse text coming back

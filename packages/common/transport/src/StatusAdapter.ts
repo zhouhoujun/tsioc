@@ -1,53 +1,52 @@
 import { Abstract } from '@tsdi/ioc';
-import { StatusCode } from '@tsdi/common';
 
 @Abstract()
-export abstract class StatusAdapter {
+export abstract class StatusAdapter<TStatus = any> {
     
     /**
      * no content.
      * server responsed.
      */
-    abstract get noContent(): StatusCode;
+    abstract get noContent(): TStatus;
     /**
      * not found.
      * server responsed.
      */
-    abstract get notFound(): StatusCode;
+    abstract get notFound(): TStatus;
     /**
      * found.
      * server responsed.
      */
-    abstract get found(): StatusCode;
+    abstract get found(): TStatus;
     /**
      * ok status.
      */
-    abstract get ok(): StatusCode;
+    abstract get ok(): TStatus;
     /**
      * no status.
      */
-    abstract get none(): StatusCode;
+    abstract get none(): TStatus;
     /**
      * Internal Server Error
      * server responsed.
      */
-    abstract get serverError(): StatusCode;
+    abstract get serverError(): TStatus;
     /**
      * gateway timeout status.
      */
-    abstract get gatewayTimeout(): StatusCode;
+    abstract get gatewayTimeout(): TStatus;
 
-    abstract isStatus(status: StatusCode): boolean;
+    abstract isStatus(status: TStatus): boolean;
 
-    abstract isOk(status: StatusCode): boolean;
-    abstract isNotFound(status: StatusCode): boolean;
-    abstract isEmpty(status: StatusCode): boolean;
-    abstract isEmptyExecption(status: StatusCode): boolean;
-    abstract isRedirect(status: StatusCode): boolean;
-    abstract isRequestFailed(status: StatusCode): boolean;
-    abstract isServerError(status: StatusCode): boolean;
-    abstract isRetry(status: StatusCode): boolean;
+    abstract isOk(status: TStatus): boolean;
+    abstract isNotFound(status: TStatus): boolean;
+    abstract isEmpty(status: TStatus): boolean;
+    abstract isEmptyExecption(status: TStatus): boolean;
+    abstract isRedirect(status: TStatus): boolean;
+    abstract isRequestFailed(status: TStatus): boolean;
+    abstract isServerError(status: TStatus): boolean;
+    abstract isRetry(status: TStatus): boolean;
 
-    abstract redirectBodify(status: StatusCode, method?: string): boolean;
+    abstract redirectBodify(status: TStatus, method?: string): boolean;
     abstract redirectDefaultMethod(): string;
 }

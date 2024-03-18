@@ -19,7 +19,7 @@ import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteFactory } from './controller';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler } from './route.handler';
-import { RequestStatusContext } from '../RequestStatusContext';
+import { RestfulRequestContext } from '../RestfulRequestContext';
 
 
 
@@ -464,10 +464,10 @@ export class MappingRoute implements Middleware, RequestHandler {
     }
 
     protected async redirect(ctx: RequestContext, url: string, alt?: string): Promise<void> {
-        if (!isFunction((ctx as RequestStatusContext).redirect)) {
+        if (!isFunction((ctx as RestfulRequestContext).redirect)) {
             throw new BadRequestExecption();
         }
-        (ctx as RequestStatusContext).redirect(url, alt)
+        (ctx as RestfulRequestContext).redirect(url, alt)
     }
 
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
 import { StatusCode } from '@tsdi/common';
-import { RequestContext, RequestStatusContext, ResponseStatusFormater } from '@tsdi/endpoints';
+import { RequestContext, RestfulRequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
 import { hrtime } from 'process';
 
@@ -24,7 +24,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
 
     protected formatWithColor(withColor: boolean, ctx: RequestContext, hrtime?: [number, number]) {
         if (hrtime) {
-            const [status, message] = ctx instanceof RequestStatusContext ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
+            const [status, message] = ctx instanceof RestfulRequestContext ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
             const hrtimeStr = this.formatHrtime(hrtime);
             const sizeStr = this.formatSize(ctx.length ?? 0);
             return [
@@ -57,7 +57,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
     }
 
-    private formatStatus(ctx: RequestStatusContext, withColor: boolean): [StatusCode, string] {
+    private formatStatus(ctx: RestfulRequestContext, withColor: boolean): [StatusCode, string] {
         const { status, statusMessage } = ctx;
         if (!withColor) return [status, statusMessage ?? ''];
 

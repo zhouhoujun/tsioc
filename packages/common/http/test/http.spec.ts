@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, RequestStatusContext, compose, NEXT, MicroServRouterModule, EndpointModule
+    Middleware, RestfulRequestContext, compose, NEXT, MicroServRouterModule, EndpointModule
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -104,7 +104,7 @@ class DeviceController {
 })
 class DeviceQueue implements Middleware {
 
-    async invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -134,7 +134,7 @@ class DeviceQueue implements Middleware {
 @Injectable()
 class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
         if (ctx.args.body.type === 'startup') {
@@ -149,7 +149,7 @@ class DeviceStartupHandle implements Middleware {
 @Injectable()
 class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
         if (ctx.args.body.type === 'startup') {
             // todo sth.

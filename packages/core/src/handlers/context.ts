@@ -38,8 +38,6 @@ export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInpu
 
     protected onExecption(err: any) { }
 
-    sent?: boolean;
-
     isDone() {
         return this.doneFn ? this.doneFn(this) : false;
     }

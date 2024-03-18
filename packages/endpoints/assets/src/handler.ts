@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { TransportRequest, GET, MESSAGE } from '@tsdi/common';
 import { TransportSession } from '@tsdi/common/transport';
-import { RequestStatusContextFactory, RequestHandler, ServerOpts, EndpointHandler } from '@tsdi/endpoints';
+import { RestfulRequestContextFactory, RequestHandler, ServerOpts, EndpointHandler } from '@tsdi/endpoints';
 import { finalize, mergeMap } from 'rxjs';
 
 
@@ -21,7 +21,7 @@ export class AssetRequestHandler implements RequestHandler<TransportRequest> {
                 }
                 
                 const injector = endpoint.injector;
-                const ctx = injector.get(RequestStatusContextFactory).create(injector, session, incoming, options);
+                const ctx = injector.get(RestfulRequestContextFactory).create(injector, session, incoming, options);
                 ctx.setValue(Logger, logger);
 
                 return endpoint.handle(ctx)

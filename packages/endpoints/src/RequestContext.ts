@@ -1,7 +1,10 @@
-import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isNumber, isString, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeaderRecord, StatusCode } from '@tsdi/common';
-import { FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket, StatusAdapter, StreamAdapter, TransportSession, ctype, isBuffer, xmlRegExp } from '@tsdi/common/transport';
+import { HeaderRecord } from '@tsdi/common';
+import {
+    FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket,
+    StatusAdapter, StreamAdapter, TransportSession, ctype, isBuffer, xmlRegExp
+} from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 
@@ -11,7 +14,7 @@ import { CONTENT_DISPOSITION_TOKEN } from './content';
  * 请求上下文
  */
 @Abstract()
-export abstract class RequestContext<TSocket = any> extends HandlerContext<Incoming> {
+export abstract class RequestContext<TSocket = any, TStatus = any> extends HandlerContext<Incoming> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -32,7 +35,7 @@ export abstract class RequestContext<TSocket = any> extends HandlerContext<Incom
     /**
      * status adapter.
      */
-    abstract get statusAdapter(): StatusAdapter | null;
+    abstract get statusAdapter(): StatusAdapter<TStatus> | null;
     /**
      * stream adapter
      */
@@ -87,18 +90,26 @@ export abstract class RequestContext<TSocket = any> extends HandlerContext<Incom
     /**
      * Get response status.
      */
-    get status(): StatusCode {
+    get status(): TStatus {
         return this.response.status;
     }
     /**
      * Set response status, defaults to OK.
      */
-    set status(code: StatusCode) {
+    set status(code: TStatus) {
         if (this.sent) return;
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
         this.response.status = code;
-        if (this.body && this.statusAdapter?.isEmpty(code)) this.body = null;
+        if (!isNil(this.body) && this.statusAdapter?.isEmpty(code)) this.body = null;
+    }
+
+    get statusMessage() {
+        return this.response.statusText
+    }
+
+    set statusMessage(msg: string) {
+        this.response.statusText = msg
     }
 
     private _ok = true;
@@ -218,16 +229,22 @@ export abstract class RequestContext<TSocket = any> extends HandlerContext<Incom
     /**
      * Get request rul
      */
-    abstract get url(): string;
+    get url(): string {
+        return this.request.url
+    }
     /**
      * Set request url
      */
-    abstract set url(value: string);
+    set url(value: string) {
+        this.request.url = value;
+    }
 
     /**
      * original url
      */
-    abstract get originalUrl(): string;
+    get originalUrl(): string {
+        return this.request.originalUrl
+    }
 
     /**
      * request query parameters.
@@ -489,6 +506,16 @@ export abstract class RequestContext<TSocket = any> extends HandlerContext<Incom
                 this.response.removeContentLength();
             }
         }
+    }
+
+    /**
+     * Check if a header has been written to the socket.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    get sent() {
+        return this.response.sent;
     }
 
     /**

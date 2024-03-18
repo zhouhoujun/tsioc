@@ -2,7 +2,7 @@ import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider, getT
 import { Interceptor } from '@tsdi/core';
 import { Packet, StatusAdapter } from '@tsdi/common/transport';
 // import { CLIENT_TRANSPORT_PACKET_STRATEGIES, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
-import { RequestStatusContextFactory, RequestHandler, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
+import { RestfulRequestContextFactory, RequestHandler, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
 import { ASSET_ENCODER_INTERCEPTORS, AssetEncoder, AssetEncoderBackend, AssetInterceptingEncoder, BufferifyEncodeInterceptor, FinalizeAssetEncodeInterceptor, SimpleAssetEncoderBackend, SubpacketBufferEncodeInterceptor } from './encoder';
 import { ASSET_DECODER_INTERCEPTORS, AssetDecoder, AssetDecoderBackend, AssetInterceptingDecoder, SimpleAssetDecoderBackend } from './decoder';
@@ -66,7 +66,7 @@ export class AssetModule {
         { provide: Decoder, useExisting: AssetDecoder, asDefault: true },
 
         AssetContextFactoryImpl,
-        { provide: RequestStatusContextFactory, useExisting: AssetContextFactoryImpl, asDefault: true },
+        { provide: RestfulRequestContextFactory, useExisting: AssetContextFactoryImpl, asDefault: true },
 
         AssetRequestHandler,
         { provide: RequestHandler, useExisting: AssetRequestHandler, asDefault: true },

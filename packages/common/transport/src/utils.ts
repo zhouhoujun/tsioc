@@ -1,6 +1,5 @@
 import { ArgumentExecption } from '@tsdi/ioc';
-import { Outgoing } from './outgoing';
-import { hdr } from './consts';
+import { Outgoing } from './Outgoing';
 
 
 /**
@@ -139,7 +138,7 @@ export function parseTokenList(str: string) {
   return list
 }
 
-
+const VARY = 'vary';
 const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 /**
 * Mark that a request is varied on a header field.
@@ -148,17 +147,16 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 * @param {String|Array} field
 * @public
 */
-
 export function vary(res: Outgoing, field: string) {
   // get existing header
-  let val = res.getHeader(hdr.VARY) || '';
+  let val = res.getHeader(VARY) || '';
   const header = Array.isArray(val)
     ? val.join(', ')
     : String(val);
 
   // set new header
   if ((val = append(header, field))) {
-    res.setHeader(hdr.VARY, val)
+    res.setHeader(VARY, val)
   }
 }
 

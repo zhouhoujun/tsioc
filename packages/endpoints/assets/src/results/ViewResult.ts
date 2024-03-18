@@ -1,10 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
-import { RequestStatusContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/endpoints';
 
 @Abstract()
 export abstract class ViewRenderer {
-    abstract render(ctx: RequestStatusContext, name: string, model?: any): any;
+    abstract render(ctx: RestfulRequestContext, name: string, model?: any): any;
 }
 
 /**
@@ -19,7 +19,7 @@ export class ViewResult extends ResultValue {
         super('text/html')
     }
 
-    async sendValue(ctx: RequestStatusContext) {
+    async sendValue(ctx: RestfulRequestContext) {
         const renderer = ctx.get(ViewRenderer);
         if (!renderer) {
             return Promise.reject('view engin middleware no configed!')

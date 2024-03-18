@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Execption, Inject, Injectable, Injector, Module, ModuleWithProviders, Optional, ProviderType, isPromise, isString, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor, UuidGenerator } from '@tsdi/core';
 import { Encoder } from '@tsdi/common';
-import { Observable, Subscriber, defer, from, isObservable, map, mergeMap, of, range, throwError } from 'rxjs';
+import { Observable, Subscriber, from, isObservable, map, mergeMap, of, range, throwError } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
 import { PacketData, Packet } from '../packet';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';

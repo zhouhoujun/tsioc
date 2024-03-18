@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { RequestStatusContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/endpoints';
 
 
 /**
@@ -13,7 +13,7 @@ export class JsonResult extends ResultValue {
     constructor(private data: object) {
         super('application/json')
     }
-    async sendValue(ctx: RequestStatusContext) {
+    async sendValue(ctx: RestfulRequestContext) {
         ctx.contentType = this.contentType;
         ctx.body = this.data || {}
     }

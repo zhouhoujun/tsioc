@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { Header, Pattern, StatusCode } from '@tsdi/common';
+import { Header, Pattern } from '@tsdi/common';
 
 
 @Abstract()
-export abstract class Outgoing<T = any, TMsg = any> {
+export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
 
     abstract get id(): any;
 
@@ -127,17 +127,16 @@ export abstract class Outgoing<T = any, TMsg = any> {
     /**
      * Get packet status code.
      *
-     * @return {StatusCode}
+     * @return {TStatus}
      * @api public
      */
-    abstract get status(): StatusCode;
+    abstract get status(): TStatus;
     /**
      * Set packet status code.
      *
-     * @return {TPacket}
      * @api public
      */
-    abstract set status(code: StatusCode);
+    abstract set status(code: TStatus);
 
     /**
      * Get packet status message.
@@ -153,6 +152,15 @@ export abstract class Outgoing<T = any, TMsg = any> {
      * @api public
      */
     abstract set statusText(statusText: string);
+
+
+    /**
+     * Check if a header has been written to the socket.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    abstract get sent(): boolean;
 
     /**
      * has header in packet or not.
@@ -198,7 +206,7 @@ export abstract class Outgoing<T = any, TMsg = any> {
      * is writable or not.
      * @param packet 
      */
-    abstract writable(): boolean;
+    abstract get writable(): boolean;
 
     abstract getLastModified?(): string;
     abstract setLastModified?(control: string): this;

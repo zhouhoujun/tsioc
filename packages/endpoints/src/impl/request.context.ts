@@ -14,9 +14,6 @@ import { lastValueFrom } from 'rxjs';
 export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
 
 
-    private _url: string;
-    private _originalUrl: string;
-    private _method: string;
     private _URL?: URL;
 
 
@@ -37,47 +34,13 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
         if (!response.id) {
             response.id = request.id
         }
-        // if (isString(request.pattern)) {
-        //     response.url = request.pattern;
-        // } else if (isNumber(request.pattern)) {
-        //     response.type = request.pattern;
-        // } else {
-        //     if (request.pattern.topic) {
-        //         response.topic = request.pattern.topic;
-        //         if (request.pattern.replyTo) {
-        //             response.replyTo = request.replyTo;
-        //         }
-        //     }
 
-        // }
-
-        this._method = request.method ?? '';
-
-        this._url = request.url ?? '';
-        this._originalUrl = request.originalUrl;
-        const searhIdx = this._url.indexOf('?');
+        const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
             (this.request as any)['query'] = this.query;
         }
     }
-
-
-    /**
-     * Get request rul
-     */
-    get url(): string {
-        return this._url;
-    }
-    /**
-     * Set request url
-     */
-    set url(value: string) {
-        this._url = value;
-    }
-
-    get originalUrl(): string {
-        return this._originalUrl;
-    }
+    
 
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
@@ -132,13 +95,6 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
         Object.assign(this.response, pkg);
         if (headers) this.setHeader(headers);
         this.body = payload;
-    }
-
-    /**
-     * The request method.
-     */
-    get method(): string {
-        return this._method;
     }
 
     async respond(): Promise<any> {

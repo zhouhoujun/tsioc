@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { RequestStatusContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/endpoints';
 
 
 /**
@@ -13,7 +13,7 @@ export class RedirectResult extends ResultValue {
     constructor(private url: string, private alt?: string) {
         super('text/html')
     }
-    async sendValue(ctx: RequestStatusContext) {
+    async sendValue(ctx: RestfulRequestContext) {
         return ctx.redirect(this.url, this.alt)
     }
 }

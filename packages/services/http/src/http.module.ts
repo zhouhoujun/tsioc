@@ -3,7 +3,7 @@ import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { StatusAdapter } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { RequestStatusContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, RequestContextFactory } from '@tsdi/endpoints';
+import { RestfulRequestContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, RequestContextFactory } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HTTP_CLIENT_OPTS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -86,7 +86,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                     ],
                     providers: [
                         { provide: RequestContextFactory, useExisting: HttpAssetContextFactory },
-                        { provide: RequestStatusContextFactory, useExisting: HttpAssetContextFactory }
+                        { provide: RestfulRequestContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,
@@ -122,7 +122,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
                     ],
                     providers: [
                         { provide: RequestContextFactory, useExisting: HttpAssetContextFactory },
-                        { provide: RequestStatusContextFactory, useExisting: HttpAssetContextFactory }
+                        { provide: RestfulRequestContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,

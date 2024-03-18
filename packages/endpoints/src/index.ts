@@ -19,7 +19,7 @@ export * from './transport.session';
 export * from './EndpointHandler';
 export * from './RequestContext';
 export * from './RequestHandler';
-export * from './RequestStatusContext';
+export * from './RestfulRequestContext';
 
 export * from './Negotiator';
 

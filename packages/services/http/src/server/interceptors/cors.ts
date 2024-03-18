@@ -1,7 +1,7 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { RequestMethod } from '@tsdi/common';
 import { InternalServerExecption, hdr, append, vary } from '@tsdi/common/transport';
-import { Middleware, RequestStatusContext } from '@tsdi/endpoints';
+import { Middleware, RestfulRequestContext } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 
@@ -18,7 +18,7 @@ export abstract class CorsOptions {
      *
      * @memberof CorsOptions
      */
-    origin?: string | ((ctx: RequestStatusContext) => string | Promise<string>);
+    origin?: string | ((ctx: RestfulRequestContext) => string | Promise<string>);
     /**
      * enable Access-Control-Allow-Credentials
      *
@@ -65,7 +65,7 @@ export abstract class CorsOptions {
 
 
 @Injectable()
-export class Cors implements Middleware<RequestStatusContext>, Interceptor<RequestStatusContext> {
+export class Cors implements Middleware<RestfulRequestContext>, Interceptor<RestfulRequestContext> {
 
     private options: Options;
 
@@ -99,7 +99,7 @@ export class Cors implements Middleware<RequestStatusContext>, Interceptor<Reque
         return options as Options
     }
 
-    intercept(ctx: RequestStatusContext, next: Handler<RequestStatusContext, any>): Observable<any> {
+    intercept(ctx: RestfulRequestContext, next: Handler<RestfulRequestContext, any>): Observable<any> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
@@ -200,7 +200,7 @@ export class Cors implements Middleware<RequestStatusContext>, Interceptor<Reque
 
     }
 
-    async invoke(ctx: RequestStatusContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
         const requestOrigin = ctx.getHeader(hdr.ORIGIN);
         !ctx.sent && vary(ctx.response, hdr.ORIGIN);
         if (!requestOrigin) {
@@ -314,7 +314,7 @@ interface Options {
     /**
      * origin `Access-Control-Allow-Origin`, default is request Origin header
      */
-    origin?: string | ((ctx: RequestStatusContext) => any);
+    origin?: string | ((ctx: RestfulRequestContext) => any);
     /**
      * allowMethods `Access-Control-Allow-Methods`, default is 'GET,HEAD,PUT,POST,DELETE,PATCH'
      */
