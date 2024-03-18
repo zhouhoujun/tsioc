@@ -1,6 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { StatusCode } from '@tsdi/common';
-import { TransportSession, StatusVaildator, FileAdapter } from '@tsdi/common/transport';
+import { TransportSession, StatusAdapter, FileAdapter, Incoming, Outgoing } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
 
@@ -10,36 +10,10 @@ import { ServerOpts } from './Server';
  * 支持状态的请求上下文
  */
 @Abstract()
-export abstract class RequestStatusContext<TRequest = any, TResponse = any, TServOpts extends ServerOpts = ServerOpts> extends RequestContext<TRequest, TResponse> {
+export abstract class RequestStatusContext<TServOpts extends ServerOpts = ServerOpts> extends RequestContext {
 
     abstract get serverOptions(): TServOpts;
-    /**
-     * file adapter
-     */
-    abstract get fileAdapter(): FileAdapter;
-    /**
-     * status vaildator
-     */
-    abstract get vaildator(): StatusVaildator;
 
-    /**
-     * Get request rul
-     */
-    abstract get url(): string;
-    /**
-     * Set request url
-     */
-    abstract set url(value: string);
-
-    /**
-     * original url
-     */
-    abstract get originalUrl(): string;
-
-    /**
-     * The request method.
-     */
-    abstract get method(): string;
     /**
      * protocol name
      */
@@ -48,23 +22,6 @@ export abstract class RequestStatusContext<TRequest = any, TResponse = any, TSer
      * has sent or not.
      */
     abstract readonly sent: boolean;
-    /**
-     * Get response status.
-     */
-    abstract get status(): StatusCode;
-    /**
-     * Set response status, defaults to OK.
-     */
-    abstract set status(status: StatusCode);
-
-    /**
-     * Get response status message.
-     */
-    abstract get statusMessage(): string;
-    /**
-     * Set response status message.
-     */
-    abstract set statusMessage(message: string);
 
     /**
      * is secure protocol or not.
@@ -118,7 +75,7 @@ export abstract class RequestStatusContext<TRequest = any, TResponse = any, TSer
  * request status context factory.
  */
 @Abstract()
-export abstract class RequestStatusContextFactory<TRequest = any, TResponse = any>{
+export abstract class RequestStatusContextFactory{
     /**
      * create request status context.
      * @param injector 
@@ -127,5 +84,5 @@ export abstract class RequestStatusContextFactory<TRequest = any, TResponse = an
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): RequestStatusContext<TRequest, TResponse>;
+    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options: ServerOpts): RequestStatusContext;
 }

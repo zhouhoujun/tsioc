@@ -1,6 +1,6 @@
 import { PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, isBoolean, isNil, isString, TypeExecption } from '@tsdi/ioc';
-import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, hdr, InternalServerExecption, NotFoundExecption } from '@tsdi/common/transport';
+import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption } from '@tsdi/common/transport';
 import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
@@ -49,13 +49,11 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
                 filename = rpath + '.br';
                 encodingExt = '.br';
-                ctx.setHeader(hdr.CONTENT_ENCODING, 'br');
-                ctx.removeHeader(hdr.CONTENT_LENGTH)
+                ctx.contentEncoding = 'br';
             } else if (ctx.acceptsEncodings('gzip', 'identity') === 'gzip' && opts.gzip && existsSync(rpath + '.gz')) {
                 filename = rpath + '.gz';
                 encodingExt = '.gz';
-                ctx.setHeader(hdr.CONTENT_ENCODING, 'gzip');
-                ctx.removeHeader(hdr.CONTENT_LENGTH)
+                ctx.contentEncoding = 'gzip';
             } else if (existsSync(rpath)) {
                 filename = rpath
             } else if (opts.extensions && !/\./.exec(basename(rpath))) {
@@ -99,15 +97,15 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
 
-        ctx.setHeader(hdr.CONTENT_LENGTH, stats.size);
-        if (ctx.supportHeader(hdr.LAST_MODIFIED) && !ctx.hasHeader(hdr.LAST_MODIFIED)) ctx.setHeader(hdr.LAST_MODIFIED, stats.mtime.toUTCString())
-        if (ctx.supportHeader(hdr.CACHE_CONTROL) && !ctx.hasHeader(hdr.CACHE_CONTROL)) {
+        ctx.length = stats.size;
+        if (ctx.response.getLastModified && ctx.response.setLastModified && !ctx.response.getLastModified()) ctx.response.setLastModified(stats.mtime.toUTCString())
+        if (ctx.response.getCacheControl && ctx.response.setCacheControl && !ctx.response.getCacheControl()) {
             const maxAge = opts.maxAge ?? 0;
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (opts.immutable) {
                 directives.push('immutable')
             }
-            ctx.setHeader(hdr.CACHE_CONTROL, directives.join(','))
+            ctx.response.setCacheControl(directives.join(','))
         }
         if (!ctx.type) ctx.type = this.getExtname(filename, encodingExt);
         ctx.body = createReadStream(filename);

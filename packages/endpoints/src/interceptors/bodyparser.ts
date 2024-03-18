@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, InvalidJsonException, MimeTypes, hdr } from '@tsdi/common/transport';
+import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, InvalidJsonException, MimeTypes } from '@tsdi/common/transport';
 import { RequestContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -70,11 +70,11 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        if (!isUndefined(input.args.body)) return next.handle(input);
+        if (!isUndefined(input.args.payload)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.args.payload = input.args.body = res.body ?? {};
+                    input.args.payload = res.body ?? {};
                     if (isUndefined(input.args.rawBody)) input.args.rawBody = res.raw;
                     return next.handle(input)
                 })
@@ -82,9 +82,9 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!isUndefined(ctx.args.body)) return await next();
+        if (!isUndefined(ctx.args.payload)) return await next();
         const res = await this.parseBody(ctx);
-        ctx.args.payload = ctx.args.body = res.body ?? {};
+        ctx.args.payload = res.body ?? {};
         if (isUndefined(ctx.args.rawBody)) ctx.args.rawBody = res.raw;
         await next()
     }
@@ -108,8 +108,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     protected async parseJson(context: RequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = context.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = context.getHeader(hdr.CONTENT_ENCODING) as string || identity;
+        const len = context.request.getContentLength();
+        const hdrcode = context.request.getContentEncoding() as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -169,8 +169,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     protected async parseForm(ctx: RequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
+        const len = ctx.request.getContentLength();
+        const hdrcode = ctx.request.getContentEncoding() as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -200,8 +200,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     protected async parseText(ctx: RequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.getHeader(hdr.CONTENT_LENGTH);
-        const hdrcode = ctx.getHeader(hdr.CONTENT_ENCODING) as string || identity;
+        const len = ctx.request.getContentLength();
+        const hdrcode = ctx.request.getContentEncoding() as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len

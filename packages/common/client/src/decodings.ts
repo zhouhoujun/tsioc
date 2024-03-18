@@ -1,14 +1,15 @@
 
 import { Decoder, HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
-import { MimeAdapter, Packet, ResponsePacket, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
+import { Incoming, MimeAdapter, Packet, ResponseEventFactory, ResponsePacket, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, lang, tokenId } from '@tsdi/ioc';
 import { Observable, defer, mergeMap } from 'rxjs';
 
 
 export interface ResponseContext {
-    response: ResponsePacket;
+    res: Incoming;
     req: TransportRequest;
+    eventFactory: ResponseEventFactory;
 }
 
 
@@ -23,10 +24,10 @@ export class ResponseBackend implements Backend<ResponseContext, TransportEvent>
     handle(input: ResponseContext): Observable<TransportEvent> {
         const streamAdapter = this.streamAdapter;
         return defer(async () => {
-            const { req, response } = input;
+            const { req, res, eventFactory } = input;
             let responseType = req.responseType;
             if (this.mimeAdapter) {
-                const contentType = response.getContentType();
+                const contentType = res.getContentType();
                 if (contentType) {
                     if (responseType === 'json' && !this.mimeAdapter.isJson(contentType)) {
                         if (this.mimeAdapter.isXml(contentType) || this.mimeAdapter.isText(contentType)) {
@@ -37,12 +38,12 @@ export class ResponseBackend implements Backend<ResponseContext, TransportEvent>
                     }
                 }
             }
-            if (responseType !== 'stream' && streamAdapter.isReadable(response.payload)) {
-                response.payload = await toBuffer(response.payload);
+            if (responseType !== 'stream' && streamAdapter.isReadable(res.payload)) {
+                res.payload = await toBuffer(res.payload);
             }
             let body, originalBody;
-            body = originalBody = response.payload;
-            let ok = response.ok ?? !!response.error;
+            body = originalBody = res.payload;
+            let ok = res.ok ?? !!res.error;
             switch (responseType) {
                 case 'json':
                     // Save the original body, before attempting XSSI prefix stripping.
@@ -66,7 +67,7 @@ export class ResponseBackend implements Backend<ResponseContext, TransportEvent>
                             // Even though the response status was 2xx, this is still an error.
                             ok = false;
                             // The parse error contains the text of the body that failed to parse.
-                            response.error = { error: err, text: body } as ResponseJsonParseError
+                            res.error = { error: err, text: body } as ResponseJsonParseError
                         }
                     }
                     break;
@@ -77,7 +78,7 @@ export class ResponseBackend implements Backend<ResponseContext, TransportEvent>
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: response.getContentType()
+                        type: res.getContentType()
                     });
                     break;
 
@@ -93,12 +94,12 @@ export class ResponseBackend implements Backend<ResponseContext, TransportEvent>
                     break;
 
             }
-            response.payload = body;
+            res.payload = body;
 
             if (ok) {
-                return session.eventFactory.createResponse(response);
+                return eventFactory.createResponse(res);
             } else {
-                throw session.eventFactory.createErrorResponse(response);
+                throw eventFactory.createErrorResponse(res);
             }
 
         })
@@ -127,10 +128,10 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ResponseC
     constructor(private streamAdapter: StreamAdapter) { }
 
     intercept(ctx: ResponseContext, next: Handler<ResponseContext, TransportEvent>): Observable<TransportEvent> {
-        const response = ctx.response;
-        if (response instanceof Outgoing) {
+        const response = ctx.res;
+        if (response instanceof Incoming) {
             const codings = response.getContentEncoding();
-            const req = ctx.req;
+            const { req, eventFactory } = ctx;
             const streamAdapter = this.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
             // HTTP-network fetch step 12.1.1.4: handle content codings
@@ -193,7 +194,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ResponseC
                         response.payload = body;
 
                     } catch (err) {
-                        throw ctx.session.eventFactory.createErrorResponse({ url: req.urlWithParams, error: err })
+                        throw eventFactory.createErrorResponse({ url: req.urlWithParams, error: err })
                     }
                 }).pipe(
                     mergeMap(() => {

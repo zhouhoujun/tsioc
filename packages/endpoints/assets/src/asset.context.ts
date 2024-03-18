@@ -3,11 +3,11 @@ import { HanlerContextOpts, PipeTransform } from '@tsdi/core';
 import { HEAD, StatusCode, normalize, Header, HeaderRecord } from '@tsdi/common';
 import {
     Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
-    ENOENT, AssetTransportOpts, PacketLengthException, StatusVaildator, encodeUrl, escapeHtml, vary, xmlRegExp, ctype
+    ENOENT, AssetTransportOpts, PacketLengthException, StatusAdapter, encodeUrl, escapeHtml, vary, xmlRegExp, ctype
 } from '@tsdi/common/transport';
 import { RequestStatusContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
-import { CONTENT_DISPOSITION_TOKEN } from './content';
+import { CONTENT_DISPOSITION_TOKEN } from '../../src/content';
 
 
 
@@ -32,7 +32,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
     readonly originalUrl: string;
     private _url?: string;
 
-    readonly vaildator: StatusVaildator;
+    readonly vaildator: StatusAdapter;
     readonly streamAdapter: StreamAdapter;
     readonly fileAdapter: FileAdapter;
     readonly negotiator: Negotiator;
@@ -43,7 +43,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         super(injector, { isDone: (ctx: AbstractAssetContext<TRequest>) => !ctx.vaildator.isNotFound(ctx.status), ...options, args: request });
         this.setValue(TransportSession, session);
         this.streamAdapter = session.streamAdapter;
-        this.vaildator = injector.get(StatusVaildator);
+        this.vaildator = injector.get(StatusAdapter);
         this.fileAdapter = injector.get(FileAdapter);
         this.negotiator = injector.get(Negotiator);
         this.mimeAdapter = injector.get(MimeAdapter);

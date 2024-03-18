@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, Injectable, lang } from '@tsdi/ioc';
 import { TransportEvent, HEAD, TransportRequest, ResponseJsonParseError } from '@tsdi/common';
 import { XSSI_PREFIX } from '@tsdi/common/transport';
-import { StreamAdapter, StatusVaildator, Redirector, ResponsePacket, ResponseEventFactory, toBuffer, hdr,  ev } from '@tsdi/common/transport';
+import { StreamAdapter, StatusAdapter, Redirector, ResponsePacket, ResponseEventFactory, toBuffer, hdr,  ev } from '@tsdi/common/transport';
 import { Observable, defer, of } from 'rxjs';
 import { MimeAdapter, MimeTypes } from '@tsdi/endpoints';
 
@@ -20,7 +20,7 @@ export class AssetResponseTransform {
             packet.headers = {};
         }
         const context = req.context;
-        const vaildator = context.get(StatusVaildator);
+        const vaildator = context.get(StatusAdapter);
         if(!packet.status) {
             packet.status = packet.error? vaildator.serverError : vaildator.ok;
         }

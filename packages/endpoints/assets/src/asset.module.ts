@@ -1,6 +1,6 @@
 import { Module, ProviderType, ModuleWithProviders, ProvdierOf, toProvider, getToken } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { Packet, StatusVaildator } from '@tsdi/common/transport';
+import { Packet, StatusAdapter } from '@tsdi/common/transport';
 // import { CLIENT_TRANSPORT_PACKET_STRATEGIES, GLOBAL_CLIENT_INTERCEPTORS, ResponseTransform } from '@tsdi/common/client';
 import { RequestStatusContextFactory, RequestHandler, TRANSPORT_PACKET_STRATEGIES } from '@tsdi/endpoints';
 import { ASSET_ENDPOINT_PROVIDERS } from './asset.pdr';
@@ -71,7 +71,7 @@ export class AssetModule {
         AssetRequestHandler,
         { provide: RequestHandler, useExisting: AssetRequestHandler, asDefault: true },
 
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator, asDefault: true }
+        { provide: StatusAdapter, useExisting: HttpStatusVaildator, asDefault: true }
     ],
     exports: [
         AssetModule

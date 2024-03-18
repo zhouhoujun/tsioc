@@ -1,6 +1,6 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { hdr, ctype } from '@tsdi/common/transport';
+import { ctype } from '@tsdi/common/transport';
 import { Observable, map } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
@@ -54,10 +54,10 @@ export class JsonInterceptor implements Middleware<RequestContext>, Interceptor<
         const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
         if (strm) {
-            ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON);
+            ctx.contentType = ctype.APPL_JSON;
             ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
-            ctx.setHeader(hdr.CONTENT_TYPE, ctype.APPL_JSON_UTF8);
+            ctx.contentType  = ctype.APPL_JSON_UTF8;
             ctx.body = JSON.stringify(body, null, this.spaces);
         }
     }

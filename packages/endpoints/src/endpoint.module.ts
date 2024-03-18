@@ -15,7 +15,7 @@ import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
 import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
-import { TransportTypedRespond } from './transport/typed.respond';
+import { EndpointTypedRespond } from './typed.respond';
 import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
 
 
@@ -33,8 +33,7 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInter
         DuplexTransportSessionFactory,
         TopicTransportSessionFactory,
 
-        TransportTypedRespond,
-        { provide: TypedRespond, useExisting: TransportTypedRespond },
+        { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
 
         LoggerInterceptor,
         JsonInterceptor,

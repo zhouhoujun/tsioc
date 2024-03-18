@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { RequestContext } from '../RequestContext';
+import { RequestContext } from './RequestContext';
 
 @Injectable()
-export class TransportTypedRespond extends TypedRespond {
+export class EndpointTypedRespond extends TypedRespond {
     respond(ctx: RequestContext, value: any, response: 'body' | 'header' | 'response'): void {
         if (response === 'body') {
             ctx.body = value

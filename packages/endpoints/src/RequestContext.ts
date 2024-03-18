@@ -1,7 +1,9 @@
-import { Abstract, EMPTY, Injector, OperationArgumentResolver, isDefined } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isNumber, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { MessageExecption, StreamAdapter, TransportSession } from '@tsdi/common/transport';
+import { HeaderRecord, StatusCode } from '@tsdi/common';
+import { FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket, StatusAdapter, StreamAdapter, TransportSession, ctype, isBuffer, xmlRegExp } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
+import { CONTENT_DISPOSITION_TOKEN } from './content';
 
 /**
  * abstract request context.
@@ -9,7 +11,7 @@ import { ServerOpts } from './Server';
  * 请求上下文
  */
 @Abstract()
-export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = any> extends HandlerContext<TRequest> {
+export abstract class RequestContext<TSocket = any> extends HandlerContext<Incoming> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -23,54 +25,195 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
     abstract get session(): TransportSession<TSocket>;
 
     /**
+     * mime adapter.
+     */
+    abstract get mimeAdapter(): MimeAdapter | null;
+
+    /**
+     * status adapter.
+     */
+    abstract get statusAdapter(): StatusAdapter | null;
+    /**
      * stream adapter
      */
     abstract get streamAdapter(): StreamAdapter;
+    /**
+     * file adapter
+     */
+    abstract get fileAdapter(): FileAdapter;
 
     /**
      * transport response.
      */
-    abstract get request(): TRequest;
+    abstract get request(): Incoming;
 
     /**
      * transport response.
      */
-    abstract get response(): TResponse;
-    /**
-     * transport response.
-     */
-    abstract set response(val: TResponse);
+    abstract get response(): Outgoing;
 
     /**
-     * Set Content-Length field to `n`.
+     * Set response content length.
      *
      * @param {Number} n
      * @api public
      */
-    abstract set length(n: number | undefined);
+    set length(n: number | undefined) {
+        if (!this.response.hasContentEncoding()) {
+            this.response.setContentLength(n)
+        } else {
+            this.response.removeContentLength()
+        }
+    }
     /**
-     * Return parsed response Content-Length when present.
+     * Get response content length
      *
      * @return {Number}
      * @api public
      */
-    abstract get length(): number | undefined;
+    get length(): number | undefined {
+        if (this.response.hasContentLength()) {
+            return this.response.getContentLength()
+        }
+
+        if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return undefined
+        if (isString(this.body)) return Buffer.byteLength(this.body)
+        if (Buffer.isBuffer(this.body)) return this.body.length
+        return Buffer.byteLength(JSON.stringify(this.body))
+    }
+
+
+    private _explicitStatus?: boolean;
+    /**
+     * Get response status.
+     */
+    get status(): StatusCode {
+        return this.response.status;
+    }
+    /**
+     * Set response status, defaults to OK.
+     */
+    set status(code: StatusCode) {
+        if (this.sent) return;
+        if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
+        this._explicitStatus = true;
+        this.response.status = code;
+        if (this.body && this.statusAdapter?.isEmpty(code)) this.body = null;
+    }
+
+    private _ok = true;
+    /**
+     * Whether the status code is ok
+     */
+    get ok(): boolean {
+        return this.statusAdapter?.isOk(this.status) ?? this._ok;
+    }
 
     /**
-     * The request body, or `null` if one isn't set.
-     *
-     * Bodies are not enforced to be immutable, as they can include a reference to any
-     * user-defined data type. However, middlewares should take care to preserve
-     * idempotence by treating them as such.
+     * Whether the status code is ok
      */
-    abstract get body(): any;
+    set ok(ok: boolean) {
+        this._ok = ok;
+        if (!this.statusAdapter) {
+            if (!ok) {
+                this.body = null;
+            }
+            return;
+        }
+        this.status = ok ? this.statusAdapter.ok : this.statusAdapter.notFound
+    }
+
+    private _body: any;
+    private _explicitNullBody?: boolean;
+
+    get explicitNullBody() {
+        return this._explicitNullBody;
+    }
+    /**
+     * Get response body.
+     *
+     * @return {Mixed}
+     * @api public
+     */
+    get body() {
+        return this._body
+    }
+
     /**
      * Set response body.
      *
-     * @param {any} value
+     * @param {String|Buffer|Object|Stream} val
      * @api public
      */
-    abstract set body(value: any);
+    set body(val) {
+        const original = this._body;
+        this._body = val;
+        if (original !== val) {
+            this.onBodyChanged(val, original);
+        }
+
+        // no content
+        if (null == val) {
+            if (this.statusAdapter && !this.statusAdapter.isEmpty(this.status)) {
+                this.status = this.statusAdapter.noContent;
+            }
+            if (val === null) this.onNullBody();
+            this.response.removeContentEncoding();
+            this.response.removeContentLength();
+            this.response.removeContentType();
+            return
+        }
+
+        // set the status
+        if (!this._explicitStatus || this.statusAdapter?.isNotFound(this.status)) this.ok = true;
+
+
+        // set the content-type only if not yet set
+        const setType = !this.response.hasContentType();
+
+        // string
+        if (isString(val)) {
+            if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
+            this.length = Buffer.byteLength(val);
+            return
+        }
+
+        // buffer
+        if (isBuffer(val)) {
+            if (setType) this.contentType = ctype.OCTET_STREAM;
+            this.length = val.length;
+            return
+        }
+
+        // stream
+        if (this.streamAdapter.isStream(val)) {
+            if (original != val) {
+                // overwriting
+                if (null != original) this.response.removeContentLength()
+            }
+
+            if (setType) this.contentType = ctype.OCTET_STREAM;
+            return
+        }
+
+        // json
+        this.response.removeContentLength();
+        this.contentType = ctype.APPL_JSON;
+    }
+
+    /**
+     * on body changed. default do nothing.
+     * @param newVal 
+     * @param oldVal 
+     */
+    protected onBodyChanged(newVal: any, oldVal: any) { }
+
+    /**
+     * on body set null.
+     */
+    protected onNullBody() {
+        this._explicitNullBody = true;
+    }
 
     /**
      * Get request rul
@@ -94,7 +237,9 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
     /**
      * The request method.
      */
-    abstract get method(): string;
+    get method(): string {
+        return this.request.method
+    }
 
     /**
      * Return request header.
@@ -117,25 +262,18 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @return {String}
      * @api public
      */
-    abstract getHeader(field: string): string | undefined;
+    getHeader(field: string): string | undefined {
+        return this.request.getHeader(field);
+    }
 
-    /**
-     * get response header.
-     * @param field 
-     */
-    abstract getResponseHeader(field: string): string | undefined;
-
-    /**
-     * the protocol support the header or not.
-     * @param field 
-     */
-    abstract supportHeader(field: string): boolean;
 
     /**
      * has response header field or not.
      * @param field 
      */
-    abstract hasHeader(field: string): boolean;
+    hasHeader(field: string): boolean {
+        return this.response.hasHeader(field)
+    }
 
     /**
      * Set response header `field` to `val` or pass
@@ -151,7 +289,7 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @param {String} val
      * @api public
      */
-    abstract setHeader(field: string, val: string | number | string[]): void;
+    setHeader(field: string, val: string | number | string[]): void;
     /**
      * Set response header `field` to `val` or pass
      * an object of header fields.
@@ -164,7 +302,45 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @param {String} val
      * @api public
      */
-    abstract setHeader(fields: Record<string, string | number | string[]>): void;
+    setHeader(fields: Record<string, string | number | string[]> | HeaderRecord): void;
+    setHeader(field: string | Record<string, string | number | string[]> | HeaderRecord, val?: string | number | string[]) {
+        if (this.sent) return;
+        if (val) {
+            this.response.setHeader(field as string, val)
+        } else {
+            const fields = field as Record<string, string | number | string[]>;
+            for (const key in fields) {
+                this.response.setHeader(key, fields[key])
+            }
+        }
+    }
+
+    /**
+     * Append additional header `field` with value `val`.
+     *
+     * Examples:
+     *
+     * ```
+     * this.append('Link', ['<http://localhost/>', '<http://localhost:3000/>']);
+     * this.append('Set-Cookie', 'foo=bar; Path=/; HttpOnly');
+     * this.append('Warning', '199 Miscellaneous warning');
+     * ```
+     *
+     * @param {String} field
+     * @param {String|Array} val
+     * @api public
+     */
+    appendHeader(field: string, val: string | number | string[]) {
+        if (this.sent) return;
+        const prev = this.response.getHeader(field);
+        if (prev) {
+            val = Array.isArray(prev)
+                ? prev.concat(Array.isArray(val) ? val : String(val))
+                : [String(prev)].concat(Array.isArray(val) ? val : String(val))
+        }
+
+        return this.setHeader(field, val)
+    }
 
     /**
     * Remove response header `field`.
@@ -172,14 +348,20 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
     * @param {String} name
     * @api public
     */
-    abstract removeHeader(field: string): void;
+    removeHeader(field: string): void {
+        if (this.sent) return;
+        this.response.removeHeader(field);
+    }
 
     /**
      * Remove all response headers
      *
      * @api public
      */
-    abstract removeHeaders(): void;
+    removeHeaders(): void {
+        if (this.sent) return;
+        this.response.removeHeaders()
+    }
 
     /**
      * Check if the incoming request contains the "Content-Type"
@@ -202,12 +384,33 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      *
      *     this.is('html'); // => false
      */
-    abstract is(type: string | string[]): string | null | false;
+    is(type: string | string[]): string | null | false {
+        const adapter = this.mimeAdapter;
+        if (!adapter) return null;
+
+        //no body
+        const encoding = this.request.getContentEncoding();
+        const len = this.request.getContentLength();
+
+        if (encoding && !len) {
+            return null
+        }
+        const ctype = this.request.getContentType();
+        if (!ctype) return false;
+        const normaled = adapter.normalize(ctype);
+        if (!normaled) return false;
+
+        const types = isArray(type) ? type : [type];
+        return adapter.match(types, normaled)
+    }
 
     /**
      * content type.
      */
-    abstract get contentType(): string;
+    get contentType(): string {
+        const ctype = this.response.getContentType();
+        return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
+    }
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
      * when it does not contain a charset.
@@ -226,7 +429,9 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @param {String} type
      * @api public
      */
-    abstract set contentType(type: string);
+    set contentType(type: string) {
+        this.response.setContentType(type);
+    }
 
     /**
      * Set Content-Type response header with `type` through `mime.lookup()`
@@ -243,7 +448,12 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @param {String} type
      * @api public
      */
-    abstract set type(type: string);
+    set type(type: string) {
+        const contentType = this.mimeAdapter?.contentType(type) ?? type;
+        if (contentType) {
+            this.contentType = contentType
+        }
+    }
 
     /**
      * Return the response mime type void of
@@ -252,7 +462,34 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @return {String}
      * @api public
      */
-    abstract get type(): string;
+    get type(): string {
+        const type = this.contentType;
+        if (!type) return '';
+        return type.split(';', 1)[0]
+    }
+
+    /**
+     * Get Content-Encoding or not.
+     * @param packet
+     */
+    get contentEncoding(): string {
+        return this.response.getContentEncoding()
+    }
+    /**
+     * Set Content-Encoding.
+     */
+    set contentEncoding(encoding: string | null | undefined) {
+        if (this.sent) return;
+        if (isNil(encoding)) {
+            this.response.removeContentEncoding()
+        } else {
+            const old = this.response.getContentEncoding();
+            this.response.setContentEncoding(encoding);
+            if (old != encoding) {
+                this.response.removeContentLength();
+            }
+        }
+    }
 
     /**
      * Check if the given `type(s)` is acceptable, returning
@@ -294,7 +531,15 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @api public
      */
 
-    abstract accepts(...args: string[]): string | string[] | false;
+    accepts(...args: string[]): string | string[] | false {
+        if (!this.request.getAcceptType) return '*';
+        if (!args.length) {
+            return this.request.getAcceptType()
+        }
+
+        const medias = args.map(a => a.indexOf('/') === -1 ? this.mimeAdapter?.lookup(a) ?? a : a).filter(a => isString(a)) as string[];
+        return lang.first(this.request.getAcceptType(...medias)) ?? false
+    }
     /**
     * Return accepted encodings or best fit based on `encodings`.
     *
@@ -307,7 +552,13 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
     * @return {String|Array}
     * @api public
     */
-    abstract acceptsEncodings(...encodings: string[]): string | string[] | false;
+    acceptsEncodings(...encodings: string[]): string | string[] | false {
+        if (!this.request.getAcceptEncoding) return '*';
+        if (!encodings.length) {
+            return this.request.getAcceptEncoding()
+        }
+        return lang.first(this.request.getAcceptEncoding(...encodings)) ?? false
+    }
     /**
      * Return accepted charsets or best fit based on `charsets`.
      *
@@ -320,7 +571,13 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @return {String|Array}
      * @api public
      */
-    abstract acceptsCharsets(...charsets: string[]): string | string[] | false;
+    acceptsCharsets(...charsets: string[]): string | string[] | false {
+        if (!this.request.getAcceptCharset) return '*';
+        if (!charsets.length) {
+            return this.request.getAcceptCharset()
+        }
+        return lang.first(this.request.getAcceptCharset(...charsets)) ?? false
+    }
 
     /**
      * Return accepted languages or best fit based on `langs`.
@@ -334,7 +591,13 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
      * @return {Array|String}
      * @api public
      */
-    abstract acceptsLanguages(...langs: string[]): string | string[];
+    acceptsLanguages(...langs: string[]): string | string[] {
+        if (!this.request.getAcceptLanguage) return '*';
+        if (!langs.length) {
+            return this.request.getAcceptLanguage()
+        }
+        return lang.first(this.request.getAcceptLanguage(...langs)) ?? false
+    }
 
     /**
     * Set Content-Disposition header to "attachment" with optional `filename`.
@@ -343,7 +606,7 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
     * @param options content disposition.
     * @api public
     */
-    abstract attachment(filename: string, options?: {
+    attachment(filename: string, options?: {
         contentType?: string;
         /**
         * Specifies the disposition type.
@@ -360,12 +623,26 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
          * @default true
          */
         fallback?: string | boolean | undefined;
-    }): void;
+    }): void {
+        if (options?.contentType) {
+            this.contentType = options.contentType;
+        } else if (filename) {
+            this.type = this.fileAdapter.extname(filename);
+        }
+        const func = this.get(CONTENT_DISPOSITION_TOKEN);
+        this.response.setContentDisposition(func(filename, options))
+    }
 
     /**
      * send response to client.
      */
     abstract respond(): Promise<any>;
+
+    /**
+     * set response with response packet
+     * @param headers 
+     */
+    abstract setResponse(packet: ResponsePacket): void;
 
     /**
      * throw execption to client.
@@ -380,7 +657,7 @@ export abstract class RequestContext<TRequest = any, TResponse = any, TSocket = 
  * request context factory.
  */
 @Abstract()
-export abstract class RequestContextFactory<TRequest = any, TResponse = any> {
+export abstract class RequestContextFactory<TSocket = any> {
     /**
      * create request context.
      * @param injector 
@@ -389,7 +666,7 @@ export abstract class RequestContextFactory<TRequest = any, TResponse = any> {
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options?: ServerOpts): RequestContext<TRequest, TResponse>
+    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
 }
 
 

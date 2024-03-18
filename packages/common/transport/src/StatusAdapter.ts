@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { StatusCode } from '@tsdi/common';
 
 @Abstract()
-export abstract class StatusVaildator {
+export abstract class StatusAdapter {
     
     /**
      * no content.

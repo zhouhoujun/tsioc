@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { StatusVaildator } from '@tsdi/common/transport';
+import { StatusAdapter } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { RequestStatusContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, RequestContextFactory } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
@@ -28,7 +28,7 @@ import { AssetModule, HttpStatusVaildator } from '@tsdi/endpoints/assets';
     providers: [
         Http,
         HttpServer,
-        { provide: StatusVaildator, useExisting: HttpStatusVaildator },
+        { provide: StatusAdapter, useExisting: HttpStatusVaildator },
         HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,

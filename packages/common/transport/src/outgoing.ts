@@ -1,144 +1,218 @@
-import { StatusCode, HeaderRecord, Header } from '@tsdi/common';
-import { IWritableStream } from './stream';
+import { Abstract } from '@tsdi/ioc';
+import { Header, Pattern, StatusCode } from '@tsdi/common';
 
-/**
- * server outgoing message stream.
- */
-export interface Outgoing<T = any> extends IWritableStream {
-    /**
-    * packet id.
-    */
-    readonly id?: number;
-    /**
-     * topic.
-     */
-    readonly topic?: string;
-    /**
-     * message type.
-     */
-    readonly type?: number | string;
-    /**
-     * headers
-     */
-    readonly headers?: Record<string, any>;
-    /**
-     * incoming URL
-     */
-    readonly url?: string;
-    /**
-     * original url.
-     */
-    readonly originalUrl?: string;
-    /**
-     * error.
-     */
-    readonly error?: any;
-    /**
-     * replyTo
-     */
-    readonly replyTo?: string;
+
+@Abstract()
+export abstract class Outgoing<T = any, TMsg = any> {
+
+    abstract get id(): any;
+
+    abstract set id(val: any);
+
+    abstract get type(): string | number;
+    abstract set type(val: string | number);
+
+    abstract get pattern(): Pattern;
+
+    abstract get message(): TMsg;
 
     /**
-     * response status code
+     * has content type or not.
      */
-    statusCode?: StatusCode;
+    abstract hasContentType(): boolean;
     /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
+     * content type.
      */
-    statusMessage?: string;
-
-    body?: T;
-
-    rawBody?: any;
-
+    abstract getContentType(): string;
     /**
-     * headers has sent or not.
-     */
-    readonly headersSent?: boolean;
-    /**
-     * Get all headers.
-     */
-    getHeaders?(): HeaderRecord;
-
-    /**
-     * has header field or not.
-     * @param field 
-     */
-    hasHeader(field: string): boolean;
-    /**
-     * Return header.
+     * Set Content-Type packet header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
      *
      * Examples:
      *
-     *     this.getHeader('Content-Type');
-     *     // => "text/plain"
+     *     this.contentType = 'application/json';
+     *     this.contentType = 'application/octet-stream';  // buffer stream
+     *     this.contentType = 'image/png';      // png
+     *     this.contentType = 'image/pjpeg';   //jpeg
+     *     this.contentType = 'text/plain';    // text, txt
+     *     this.contentType = 'text/html';    // html, htm, shtml
+     *     this.contextType = 'text/javascript'; // javascript text
+     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
      *
-     *     this.getHeader('content-type');
-     *     // => "text/plain"
+     * @param {String} type
+     * @api public
+     */
+    abstract setContentType(type: string | null | undefined): this;
+    /**
+     * remove content type.
+     * @param packet 
+     */
+    abstract removeContentType(): this;
+
+    /**
+     * has Content-Encoding or not.
+     * @param packet
+     */
+    abstract hasContentEncoding(): boolean;
+    /**
+     * Get Content-Encoding.
+     * @param packet
+     */
+    abstract getContentEncoding(): string;
+    /**
+     * Set Content-Encoding.
+     * @param packet
+     * @param encoding 
+     */
+    abstract setContentEncoding(encoding: string | null | undefined): this;
+    /**
+     * remove content encoding.
+     * @param packet 
+     */
+    abstract removeContentEncoding(): this;
+
+    /**
+     * has packet content length or not.
      *
-     *     this.getHeader('Something');
-     *     // => ''
+     * @return {Number}
+     * @api public
+     */
+    abstract hasContentLength(): number | undefined;
+    /**
+     * Get packet content length
      *
-     * @param {String} field
+     * @return {Number}
+     * @api public
+     */
+    abstract getContentLength(): number | undefined;
+    /**
+     * Set packet content length.
+     *
+     * @param {Number} n
+     * @api public
+     */
+    abstract setContentLength(n: number | undefined): this;
+    /**
+     * remove content length.
+     * @param packet 
+     */
+    abstract removeContentLength(): this;
+
+    abstract get headers(): any;
+
+    abstract set headers(headers: any);
+
+    /**
+     * Get packet payload
+     *
+     * @return {Number}
+     * @api public
+     */
+    abstract get payload(): T;
+    /**
+     * Set packet payload
+     */
+    abstract set payload(val: T);
+
+    /**
+     * Get error message
+     */
+    abstract get error(): any;
+
+    /**
+     * Set error message
+     */
+    abstract set error(err: any);
+
+    /**
+     * Get packet status code.
+     *
+     * @return {StatusCode}
+     * @api public
+     */
+    abstract get status(): StatusCode;
+    /**
+     * Set packet status code.
+     *
+     * @return {TPacket}
+     * @api public
+     */
+    abstract set status(code: StatusCode);
+
+    /**
+     * Get packet status message.
+     *
      * @return {String}
      * @api public
      */
-    getHeader(field: string): Header;
+    abstract get statusText(): string;
+    /**
+     * Set packet status message
+     *
+     * @return {TPacket}
+     * @api public
+     */
+    abstract set statusText(statusText: string);
+
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    abstract hasHeader(field: string): boolean;
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    abstract getHeader(field: string): string;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
      *
      * Examples:
      *
-     *    this.setHeader('Foo', ['bar', 'baz']);
-     *    this.setHeader('Accept', 'application/json');
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
      *
      * @param {String|Object|Array} field
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: any): void;
-    /**
-     * append header `field` to `val` or pass
-     * an object of header fields.
-     *
-     * Examples:
-     *
-     *    this.appendHeader('Foo', ['bar', 'baz']);
-     *    this.appendHeader('Accept', 'application/json');
-     *
-     * @param {String|Object|Array} field
-     * @param {String} val
-     * @api public
-     */
-    appendHeader?(field: string, val: Header): void;
-    /**
-     * Remove header `field`.
-     *
-     * @param {String} name
-     * @api public
-     */
-    removeHeader(field: string): void;
+    abstract setHeader(field: string, val: Header): this;
 
     /**
-     * get header names
+     * remove header in packet.
+     * @param packet 
+     * @param field 
      */
-    getHeaderNames?(): string[];
+    abstract removeHeader(field: string): this;
+    /**
+     * remove all headers.
+     * @param packet 
+     */
+    abstract removeHeaders(): this;
 
-    // /**
-    //  * write head
-    //  * @param statusCode 
-    //  * @param headers 
-    //  */
-    // writeHead?(statusCode: number, headers?: OutgoingHeaders | OutgoingHeader[]): this;
-    // /**
-    //  * write head
-    //  * @param statusCode 
-    //  * @param statusMessage 
-    //  * @param headers 
-    //  */
-    // writeHead?(statusCode: number, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[]): this;
+    /**
+     * is writable or not.
+     * @param packet 
+     */
+    abstract writable(): boolean;
+
+    abstract getLastModified?(): string;
+    abstract setLastModified?(control: string): this;
+    abstract removeLastModified?(): this;
+
+    abstract getCacheControl?(): string;
+    abstract setCacheControl?(control: string): this;
+    /**
+     * set no cache
+     * @param packet 
+     */
+    abstract noCache(): this;
+
+    abstract setContentDisposition(disposition: string): this;
+    abstract setLocation(location: string): this;
 
 }
