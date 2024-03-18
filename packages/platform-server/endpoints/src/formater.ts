@@ -1,7 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
-import { StatusCode } from '@tsdi/common';
-import { RequestContext, RestfulRequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
+import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
 import { hrtime } from 'process';
 
@@ -24,7 +23,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
 
     protected formatWithColor(withColor: boolean, ctx: RequestContext, hrtime?: [number, number]) {
         if (hrtime) {
-            const [status, message] = ctx instanceof RestfulRequestContext ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
+            const [status, message] = ctx.statusAdapter ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
             const hrtimeStr = this.formatHrtime(hrtime);
             const sizeStr = this.formatSize(ctx.length ?? 0);
             return [
@@ -45,7 +44,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         }
     }
 
-    private formatState(ctx: RequestContext, withColor: boolean): [StatusCode, string] {
+    private formatState(ctx: RequestContext, withColor: boolean): [string, string] {
         const status = ctx.response?.error ? 'failed' : 'ok';
         const statusMessage = ctx.response?.error?.message ?? '';
 
@@ -57,29 +56,29 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
     }
 
-    private formatStatus(ctx: RestfulRequestContext, withColor: boolean): [StatusCode, string] {
+    private formatStatus(ctx: RequestContext, withColor: boolean): [string, string] {
         const { status, statusMessage } = ctx;
         if (!withColor) return [status, statusMessage ?? ''];
 
-        const vaildator = ctx.vaildator;
+        const adapter = ctx.statusAdapter!;
 
-        if (vaildator.isOk(status)) {
+        if (adapter.isOk(status)) {
             return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
         }
 
-        if (vaildator.isRedirect(status)) {
+        if (adapter.isRedirect(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        if (vaildator.isRequestFailed(status)) {
+        if (adapter.isRequestFailed(status)) {
             return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (vaildator.isServerError(status)) {
+        if (adapter.isServerError(status)) {
             return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
 
-        if (vaildator.isRetry(status)) {
+        if (adapter.isRetry(status)) {
             return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 

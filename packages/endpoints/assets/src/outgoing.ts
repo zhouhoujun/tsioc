@@ -1,5 +1,5 @@
 import { ArgumentExecption, isArray, isFunction, isString, nextTick } from '@tsdi/ioc';
-import { Outgoing, OutgoingHeader, OutgoingHeaders, Packet, ResHeaders, ResponsePacket, StatusCode, TransportSession, hdr } from '@tsdi/common';
+import { Outgoing, Packet, ResponsePacket, TransportSession } from '@tsdi/common/transport';
 import { Writable } from 'readable-stream';
 
 
@@ -48,11 +48,11 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
         return this._hdr.getHeaderNames();
     }
 
-    get statusCode(): StatusCode {
-        return this.getHeader(hdr.STATUS) as StatusCode;
+    get statusCode(): any {
+        return this.getHeader(hdr.STATUS);
     }
 
-    set statusCode(val: StatusCode) {
+    set statusCode(val: any) {
         this.setHeader(hdr.STATUS, val as string);
     }
 
@@ -142,9 +142,9 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
         return pkg;
     }
 
-    writeHead(statusCode: StatusCode, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
-    writeHead(statusCode: StatusCode, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
-    writeHead(statusCode: StatusCode, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
+    writeHead(statusCode: any, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: any, statusMessage: string, headers?: OutgoingHeaders | OutgoingHeader[], callback?: (err?: any) => void): this;
+    writeHead(statusCode: any, statusMessage?: string | OutgoingHeaders | OutgoingHeader[], headers?: any, callback?: (err?: any) => void): this {
         if (this.headersSent) return this;
         if (isString(statusMessage)) {
             this.setHeader(hdr.STATUS_MESSAGE, statusMessage)

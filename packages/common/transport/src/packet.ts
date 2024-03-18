@@ -1,4 +1,4 @@
-import { StatusCode, HeaderRecord, Pattern } from '@tsdi/common';
+import { HeaderRecord, Pattern } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -44,9 +44,9 @@ export interface Message {
 /**
  * response packet data.
  */
-export interface ResponsePacket<T = any> extends Packet<T> {
+export interface ResponsePacket<T = any, TStatus= any> extends Packet<T> {
     type?: number | string;
-    status?: StatusCode;
+    status?: TStatus;
     statusText?: string;
     ok?: boolean;
     error?: any;

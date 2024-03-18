@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { TransportHeaders, TransportRequest, RequestMethod, StatusCode, HeaderRecord } from '@tsdi/common';
-import { BadRequestExecption, StreamAdapter, StatusAdapter, hdr, Redirector } from '@tsdi/common/transport';
+import { TransportHeaders, TransportRequest, RequestMethod, HeaderRecord } from '@tsdi/common';
+import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
 import { Client } from '@tsdi/common/client';
 import { Observable, Observer, Subscription, throwError } from 'rxjs';
 
@@ -12,7 +12,7 @@ export class AssetRedirector implements Redirector {
     constructor() {
     }
 
-    redirect<T>(req: TransportRequest, status: StatusCode, headers: HeaderRecord): Observable<T> {
+    redirect<T>(req: TransportRequest, status: any, headers: HeaderRecord): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if(!req.url) return observer.error(new BadRequestExecption());
 
@@ -20,7 +20,7 @@ export class AssetRedirector implements Redirector {
             const adapter = req.context.get(StreamAdapter);
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
-            const location = headers[hdr.LOCATION] as string;
+            const location = headers['location'] as string;
 
 
             // HTTP fetch step 5.3

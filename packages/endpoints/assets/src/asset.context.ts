@@ -1,13 +1,12 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
 import { HanlerContextOpts, PipeTransform } from '@tsdi/core';
-import { HEAD, StatusCode, normalize, Header, HeaderRecord } from '@tsdi/common';
+import { HEAD, normalize, Header, HeaderRecord } from '@tsdi/common';
 import {
-    Incoming, Outgoing, StreamAdapter, hdr, InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
+    Incoming, Outgoing, StreamAdapter,  InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
     ENOENT, AssetTransportOpts, PacketLengthException, StatusAdapter, encodeUrl, escapeHtml, vary, xmlRegExp, ctype
 } from '@tsdi/common/transport';
-import { RestfulRequestContext, ServerOpts, Negotiator } from '@tsdi/endpoints';
+import { RestfulRequestContext, ServerOpts, Negotiator, CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
-import { CONTENT_DISPOSITION_TOKEN } from '../../src/content';
 
 
 
@@ -26,7 +25,7 @@ export interface ServerOptions extends ServerOpts {
  * 类型资源传输节点上下文
  */
 @Abstract()
-export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends RestfulRequestContext<TRequest, TResponse, TServOpts> {
+export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TServOpts extends ServerOptions = any> extends RestfulRequestContext<TServOpts> {
     protected _explicitNullBody?: boolean;
     private _URL?: URL;
     readonly originalUrl: string;
@@ -969,7 +968,7 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
         return res
     }
 
-    protected getStatusMessage(status: StatusCode): string {
+    protected getStatusMessage(status: any): string {
         return this.statusMessage ?? String(status);
     }
 

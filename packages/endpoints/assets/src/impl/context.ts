@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector } from '@tsdi/ioc';
-import { StatusCode, LOCALHOST } from '@tsdi/common';
+import { LOCALHOST } from '@tsdi/common';
 import { Incoming, InternalServerExecption, Outgoing, Packet, ResponsePacket, TransportSession } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts } from '@tsdi/endpoints';
 import { AbstractAssetContext, ServerOptions } from '../asset.context';
@@ -31,10 +31,10 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
         return (this.response as any).writable === true;
     }
 
-    get status(): StatusCode {
+    get status(): any {
         return this.response.statusCode;
     }
-    set status(code: StatusCode) {
+    set status(code: any) {
         if (this.sent) return;
 
         if (!this.vaildator.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
