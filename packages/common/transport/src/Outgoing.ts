@@ -1,11 +1,20 @@
 import { Abstract } from '@tsdi/ioc';
-import { Header, StatusCode } from '@tsdi/common';
+import { Header, Pattern, StatusCode } from '@tsdi/common';
 
 
 @Abstract()
 export abstract class Outgoing<T = any, TMsg = any> {
 
-    abstract getMessage(): TMsg;
+    abstract get id(): any;
+
+    abstract set id(val: any);
+
+    abstract get type(): string | number;
+    abstract set type(val: string | number);
+
+    abstract get pattern(): Pattern;
+
+    abstract get message(): TMsg;
 
     /**
      * has content type or not.
@@ -106,19 +115,29 @@ export abstract class Outgoing<T = any, TMsg = any> {
     abstract set payload(val: T);
 
     /**
+     * Get error message
+     */
+    abstract get error(): any;
+
+    /**
+     * Set error message
+     */
+    abstract set error(err: any);
+
+    /**
      * Get packet status code.
      *
      * @return {StatusCode}
      * @api public
      */
-    abstract getStatus(): StatusCode;
+    abstract get status(): StatusCode;
     /**
      * Set packet status code.
      *
      * @return {TPacket}
      * @api public
      */
-    abstract setStatus(code: StatusCode): this;
+    abstract set status(code: StatusCode);
 
     /**
      * Get packet status message.
@@ -126,14 +145,14 @@ export abstract class Outgoing<T = any, TMsg = any> {
      * @return {String}
      * @api public
      */
-    abstract getStatusText(): string;
+    abstract get statusText(): string;
     /**
      * Set packet status message
      *
      * @return {TPacket}
      * @api public
      */
-    abstract setStatusText(statusText: string): this;
+    abstract set statusText(statusText: string);
 
     /**
      * has header in packet or not.
@@ -181,12 +200,12 @@ export abstract class Outgoing<T = any, TMsg = any> {
      */
     abstract writable(): boolean;
 
-    abstract getLastModified(): string;
-    abstract setLastModified(control: string): this;
-    abstract removeLastModified(): this;
+    abstract getLastModified?(): string;
+    abstract setLastModified?(control: string): this;
+    abstract removeLastModified?(): this;
 
-    abstract getCacheControl(): string;
-    abstract setCacheControl(control: string): this;
+    abstract getCacheControl?(): string;
+    abstract setCacheControl?(control: string): this;
     /**
      * set no cache
      * @param packet 

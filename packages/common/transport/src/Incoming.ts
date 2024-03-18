@@ -1,10 +1,20 @@
 import { Abstract } from '@tsdi/ioc';
-import { StatusCode } from '@tsdi/common';
+import { Pattern, StatusCode } from '@tsdi/common';
 
 
 
 @Abstract()
 export abstract class Incoming<T = any, TMsg = any> {
+
+    abstract get id(): any;
+
+    abstract get url(): string;
+
+    abstract get method(): string;
+
+    abstract get originalUrl(): string;
+
+    abstract get pattern(): Pattern;
 
     abstract get message(): TMsg;
 
@@ -49,14 +59,14 @@ export abstract class Incoming<T = any, TMsg = any> {
      * @return {StatusCode}
      * @api public
      */
-    abstract getStatus(): StatusCode;
+    abstract get status(): StatusCode;
     /**
      * Get packet status message.
      *
      * @return {String}
      * @api public
      */
-    abstract getStatusText(): string;
+    abstract get statusText(): string;
     /**
      * Get message payload
      *
@@ -64,16 +74,43 @@ export abstract class Incoming<T = any, TMsg = any> {
      * @api public
      */
     abstract get payload(): T;
+    /**
+     * Set message payload
+     *
+     * @return {Number}
+     * @api public
+     */
+    abstract set payload(value: T);
 
-    abstract getAcceptType(...contentTypes: string[]): string[];
+    get body() {
+        return this.payload;
+    }
 
-    abstract getAcceptCharset(...charsets: string[]): string[];
+    abstract get rawBody(): Buffer;
+    abstract set rawBody(value: Buffer);
 
-    abstract getAcceptEncoding(...encodings: string[]): string[];
+    /**
+     * error message
+     */
+    abstract get error(): any;
+    /**
+     * error message
+     */
+    abstract set error(err: any);
 
-    abstract getAcceptLanguage(...languages: string[]): string[];
+
+    abstract get ok(): boolean;
+
+
+    abstract getAcceptType?(...contentTypes: string[]): string[];
+
+    abstract getAcceptCharset?(...charsets: string[]): string[];
+
+    abstract getAcceptEncoding?(...encodings: string[]): string[];
+
+    abstract getAcceptLanguage?(...languages: string[]): string[];
 
     abstract getReferrer?(): string;
-    abstract getLocation(): string;
+    abstract getLocation?(): string;
 
 }
