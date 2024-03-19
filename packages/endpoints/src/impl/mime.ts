@@ -5,7 +5,7 @@ import { FileAdapter, MimeAdapter, MimeDb, MimeTypes, SplitType } from '@tsdi/co
 
 
 @Injectable({ static: true })
-export class TrasportMimeAdapter extends MimeAdapter {
+export class MimeAdapterImpl extends MimeAdapter {
     constructor(
         readonly mimeTypes: MimeTypes,
         private db: MimeDb, 

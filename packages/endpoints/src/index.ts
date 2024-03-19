@@ -21,7 +21,7 @@ export * from './RequestContext';
 export * from './RequestHandler';
 export * from './RestfulRequestContext';
 
-export * from './Negotiator';
+export * from './accepts';
 
 
 export * from './Publisher';

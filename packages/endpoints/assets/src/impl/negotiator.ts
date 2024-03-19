@@ -1,15 +1,14 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
-import { hdr } from '@tsdi/common/transport';
-import { RestfulRequestContext, Negotiator } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/endpoints';
 
 
 
 @Injectable({ static: true })
-export class TransportNegotiator extends Negotiator {
+export class TransportNegotiator {
 
   charsets(ctx: RestfulRequestContext, ...accepts: string[]): string[] {
-    const accepted = this.parseCharset(ctx.getHeader(hdr.ACCEPT_CHARSET) ?? '*');
+    const accepted = this.parseCharset(ctx.getHeader('accept-charset') ?? '*');
     if (!accepts) {
       return this.getValues(accepted)
     }
@@ -19,7 +18,7 @@ export class TransportNegotiator extends Negotiator {
   }
 
   encodings(ctx: RestfulRequestContext, ...accepts: string[]): string[] {
-    const accepted = this.parseEncoding(ctx.getHeader(hdr.ACCEPT_ENCODING) ?? '');
+    const accepted = this.parseEncoding(ctx.getHeader('accept-encoding') ?? '');
     if (!accepts.length) {
       return this.getValues(accepted)
     }
@@ -28,7 +27,7 @@ export class TransportNegotiator extends Negotiator {
   }
 
   languages(ctx: RestfulRequestContext, ...accepts: string[]): string[] {
-    const accepted = this.parseLanguage(ctx.getHeader(hdr.ACCEPT_LANGUAGE) ?? '*');
+    const accepted = this.parseLanguage(ctx.getHeader('accept-language') ?? '*');
     if (!accepts.length) {
       return this.getValues(accepted)
     }
@@ -37,7 +36,7 @@ export class TransportNegotiator extends Negotiator {
   }
 
   mediaTypes(ctx: RestfulRequestContext, ...accepts: string[]): string[] {
-    const accepted = this.parseMedia(ctx.getHeader(hdr.ACCEPT) ?? '*');
+    const accepted = this.parseMedia(ctx.getHeader('accept') ?? '*');
     if (!accepts.length) {
       return this.getValues(accepted)
     }

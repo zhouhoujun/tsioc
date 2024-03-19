@@ -1,10 +1,9 @@
 import { Injectable, getToken, isDefined } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { Packet, ResponseEventFactory, ResponsePacket, TransportSession, hdr } from '@tsdi/common/transport';
-// import { ResponseTransform } from '@tsdi/common/client';
+import { HeadersLike } from '@tsdi/common';
+import { Packet, ResponseEventFactory, ResponsePacket, TransportSession } from '@tsdi/common/transport';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpRequest, HttpResponse } from '@tsdi/common/http';
 import { Observable, catchError, finalize, mergeMap, of, take, throwError } from 'rxjs';
-import { HeadersLike, TransportRequest } from '@tsdi/common';
 
 
 // const defaultTransform = {
@@ -22,7 +21,7 @@ import { HeadersLike, TransportRequest } from '@tsdi/common';
  * transport http client endpoint backend.
  */
 @Injectable()
-export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, ResponseEventFactory<HttpEvent>  {
+export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, ResponseEventFactory<HttpEvent, HttpErrorResponse, number>  {
 
     /**
      * handle client request
@@ -95,7 +94,7 @@ export class HttpTransportBackend implements Backend<HttpRequest, HttpEvent>, Re
             pkg.payload = req.body;
         }
 
-        if (!pkg.headers[hdr.CONTENT_TYPE]) pkg.headers[hdr.CONTENT_TYPE] = req.detectContentTypeHeader()!;
+        if (!pkg.headers['content-type']) pkg.headers['content-type'] = req.detectContentTypeHeader()!;
 
         return pkg;
     }
