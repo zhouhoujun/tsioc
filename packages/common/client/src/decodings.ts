@@ -14,7 +14,7 @@ export interface ResponseContext {
 
 
 @Injectable()
-export class ResponseBackend implements Backend<ResponseContext, TransportEvent> {
+export class ResponseDecodeBackend implements Backend<ResponseContext, TransportEvent> {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -116,7 +116,7 @@ export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<ResponseContext,
 
 @Injectable()
 export class ResponseDecodeInterceptingHandler extends InterceptingHandler<ResponseContext, TransportEvent>  {
-    constructor(backend: ResponseBackend, injector: Injector) {
+    constructor(backend: ResponseDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS))
     }
 }

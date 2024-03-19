@@ -8,7 +8,7 @@ import { Observable, of } from 'rxjs';
 
 
 @Injectable()
-export class RequestBackend implements Backend<TransportRequest, PacketData> {
+export class RequestEncodeBackend implements Backend<TransportRequest, PacketData> {
 
     handle(input: TransportRequest<any>): Observable<PacketData> {
         return of({
@@ -29,7 +29,7 @@ export const REQUEST_ENCODE_INTERCEPTORS = tokenId<Interceptor<TransportRequest,
 
 @Injectable()
 export class RequestEncodeInterceptingHandler extends InterceptingHandler<TransportRequest, PacketData>  {
-    constructor(backend: RequestBackend, injector: Injector) {
+    constructor(backend: RequestEncodeBackend, injector: Injector) {
         super(backend, () => injector.get(REQUEST_ENCODE_INTERCEPTORS))
     }
 }
