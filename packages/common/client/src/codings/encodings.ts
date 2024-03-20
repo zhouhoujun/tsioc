@@ -1,7 +1,7 @@
 import { Abstract, Injectable, Injector, Module, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Encoder, TransportRequest } from '@tsdi/common';
-import { Packet, PacketData } from '@tsdi/common/transport';
+import { PacketData } from '@tsdi/common/transport';
 import { Observable, of } from 'rxjs';
 
 

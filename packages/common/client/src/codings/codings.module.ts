@@ -12,6 +12,6 @@ import { TransportCodingsBackend } from './codings.backend';
         TransportCodingsBackend
     ]
 })
-export class CodingsModule {
+export class ClientCodingsModule {
 
 }

@@ -2,15 +2,12 @@
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { TransportHeaders, TransportRequest, RequestMethod, HeaderRecord } from '@tsdi/common';
 import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
-import { Client } from '@tsdi/common/client';
 import { Observable, Observer, Subscription } from 'rxjs';
+import { Client } from './Client';
 
 
 @Injectable()
-export class AssetRedirector implements Redirector {
-
-    constructor() {
-    }
+export class RestfulRedirector implements Redirector {
 
     redirect<T>(req: TransportRequest, status: any, headers: HeaderRecord): Observable<T> {
         return new Observable((observer: Observer<T>) => {

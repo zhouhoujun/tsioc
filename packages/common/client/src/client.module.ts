@@ -9,6 +9,7 @@ import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { TransportBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
+import { RestfulRedirector } from './redirector';
 
 /**
  * Client module config.
@@ -81,7 +82,8 @@ export interface ClientTokenOpts {
  */
 @Module({
     providers: [
-        BodyContentInterceptor
+        BodyContentInterceptor,
+        RestfulRedirector
     ]
 })
 export class ClientModule {
