@@ -73,10 +73,10 @@ export class AssetRedirector implements Redirector {
                     // For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
                     // will forward the sensitive headers, but a redirect to "bar.com" will not.
                     if (absUrl.test(req.url) && !isDomainOrSubdomain(req.url, locationURL)) {
-                        reqhdrs.delete(hdr.AUTHORIZATION)
-                            .delete(hdr.WWW_AUTHENTICATE)
-                            .delete(hdr.COOKIE)
-                            .delete(hdr.COOKIE2);
+                        reqhdrs.delete('authorization')
+                            .delete('www-authenticate')
+                            .delete('cookie')
+                            .delete('cookie2');
                     }
 
                     // HTTP-redirect fetch step 9
@@ -89,13 +89,13 @@ export class AssetRedirector implements Redirector {
                     if (!validator.redirectBodify(status, req.method)) {
                         method = validator.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
-                        reqhdrs = reqhdrs.delete(hdr.CONTENT_LENGTH);
+                        reqhdrs = reqhdrs.removeContentLength();
                     }
 
                     // HTTP-redirect fetch step 14
                     const responseReferrerPolicy = parseReferrerPolicyFromHeader(headers);
                     if (responseReferrerPolicy) {
-                        reqhdrs = reqhdrs.set(hdr.REFERRER_POLICY, responseReferrerPolicy);
+                        reqhdrs = reqhdrs.set('referrer-policy', responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
                     sub = req.context.get(Client).send(locationURL, {
@@ -145,7 +145,7 @@ export const referPolicys = new Set([
 const splitReg = /[,\s]+/;
 
 export function parseReferrerPolicyFromHeader(headers: HeaderRecord) {
-    const policyTokens = (headers[hdr.REFERRER_POLICY] as string || '').split(splitReg);
+    const policyTokens = (headers['referrer-policy'] as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {
         if (token && referPolicys.has(token)) {

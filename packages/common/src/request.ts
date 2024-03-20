@@ -1,4 +1,4 @@
-import { InvocationContext, isArray, isString, isUndefined } from '@tsdi/ioc';
+import { InvocationContext, isString, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, TransportHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
 import { Pattern } from './pattern';
@@ -76,6 +76,7 @@ export interface RequestInitOpts<T = any> extends RequestOptions<T>, ResponseAs 
      * request context.
      */
     context: InvocationContext;
+    createHeader?: (options?: HeadersLike) => TransportHeaders;
 }
 
 
@@ -112,7 +113,7 @@ export class TransportRequest<T = any> {
         this.pattern = pattern;
         this.context = options.context;
         this.payload = options.payload ?? options.body ?? null;
-        this.headers = new TransportHeaders(options.headers);
+        this.headers = options.createHeader ? options.createHeader(options.headers) : new TransportHeaders(options.headers);
         this.params = new TransportParams(options);
         this.responseType = options.responseType ?? 'json';
         this.observe = options.observe ?? 'body';
@@ -148,97 +149,6 @@ export class TransportRequest<T = any> {
             }
         }
     }
-
-    /**
-     * has content type or not.
-     */
-    hasContentType(): boolean {
-        return this.headers.has('content-type')
-    }
-    /**
-     * content type.
-     */
-    getContentType(): string {
-        const ty = this.headers.get('content-type');
-        return isArray(ty) ? ty[0] : ty;
-    }
-    /**
-     * Set Content-Type packet header with `type` through `mime.lookup()`
-     * when it does not contain a charset.
-     *
-     * Examples:
-     *
-     *     this.contentType = 'application/json';
-     *     this.contentType = 'application/octet-stream';  // buffer stream
-     *     this.contentType = 'image/png';      // png
-     *     this.contentType = 'image/pjpeg';   //jpeg
-     *     this.contentType = 'text/plain';    // text, txt
-     *     this.contentType = 'text/html';    // html, htm, shtml
-     *     this.contextType = 'text/javascript'; // javascript text
-     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
-     *
-     * @param {String} type
-     * @api public
-     */
-    setContentType(type: string | null | undefined): this {
-        this.headers.set('content-type', type);
-        return this;
-    }
-    /**
-     * remove content type.
-     * @param packet 
-     */
-    removeContentType(): this {
-        this.headers.delete('content-type');
-        return this;
-    }
-
-    /**
-     * has Content-Encoding or not.
-     * @param packet
-     */
-    hasContentEncoding(): boolean {
-        return this.headers.has('content-encoding')
-    }
-    /**
-     * Get Content-Encoding.
-     * @param packet
-     */
-    getContentEncoding(): string {
-        let encoding = this.headers.get('content-encoding');
-        return isArray(encoding) ? encoding[0] : encoding
-    }
-    /**
-     * Set Content-Encoding.
-     * @param packet
-     * @param encoding 
-     */
-    setContentEncoding(encoding: string | null | undefined): this {
-        this.headers.set('content-encoding', encoding);
-        return this
-    }
-    /**
-     * remove content encoding.
-     * @param packet 
-     */
-    removeContentEncoding(): this {
-        this.headers.delete('content-encoding');
-        return this
-    }
-
-    hasContentLength() {
-        return this.headers.has('content-length')
-    }
-
-    setContentLenght(len: number) {
-        this.headers.set('content-length', len);
-    }
-
-    getContentLength() {
-        const len = this.headers.get('content-length') ?? '0';
-        return ~~len
-    }
-
 
     clone(): TransportRequest<T>;
     clone(update: {

@@ -1,6 +1,6 @@
 import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
-    Type,  Token, getToken, isArray, lang, toFactory, toProvider, tokenId
+    Type, Token, getToken, isArray, lang, toFactory, toProvider, tokenId
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
@@ -8,6 +8,7 @@ import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
 import { TransportBackend } from './backend';
+import { BodyContentInterceptor } from './interceptors/body';
 
 /**
  * Client module config.
@@ -79,7 +80,9 @@ export interface ClientTokenOpts {
  * Client Module.
  */
 @Module({
-
+    providers: [
+        BodyContentInterceptor
+    ]
 })
 export class ClientModule {
 

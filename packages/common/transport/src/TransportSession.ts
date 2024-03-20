@@ -3,6 +3,7 @@ import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, 
 import { HeaderPacket } from './packet';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
+import { Incoming } from './Incoming';
 
 
 
@@ -78,7 +79,7 @@ export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorRes
  * transport session.
  */
 @Abstract()
-export abstract class TransportSession<TIncoming = any, TOutgoing = any, TSocket = any>  {
+export abstract class TransportSession<TData = any, TMsg = any, TSocket = any>  {
     /**
      * socket.
      */
@@ -87,17 +88,17 @@ export abstract class TransportSession<TIncoming = any, TOutgoing = any, TSocket
      * transport options.
      */
     abstract get options(): TransportOpts;
-
     /**
      * send.
      * @param packet 
      */
-    abstract send(packet: TOutgoing, context?: InvocationContext): Observable<any>;
+    abstract send(packet: TData, context?: InvocationContext): Observable<any>;
 
     /**
      * receive
+     * @param sent
      */
-    abstract receive(packet?: HeaderPacket): Observable<TIncoming>;
+    abstract receive(sent?: TMsg): Observable<Incoming<TMsg>>;
 
     /**
      * destroy.

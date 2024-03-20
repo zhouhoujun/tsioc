@@ -5,26 +5,26 @@ import { isArray, isNil, isString } from '@tsdi/ioc';
  */
 export type Header = string | readonly string[] | number | undefined | null;
 
-export interface StatusHeaders {
-    status?: number | string;
-    ':status'?: number | string;
-}
+// export interface StatusHeaders {
+//     status?: number | string;
+//     ':status'?: number | string;
+// }
 
 export interface HeaderRecord {
     [x: string]: Header;
-    'content-type'?: string;
-    'Content-Type'?: string;
-    'content-length'?: string | number;
-    'Content-Length'?: string | number;
-    'content-encoding'?: string;
-    'Content-Encoding'?: string;
-    ':path'?: string;
-    'origin-path'?: string;
-    ':authority'?: string;
-    ':scheme'?: string;
-    ':method'?: string;
-    ':type'?: string | number;
-    ':topic'?: string;
+    // 'content-type'?: string;
+    // 'Content-Type'?: string;
+    // 'content-length'?: string | number;
+    // 'Content-Length'?: string | number;
+    // 'content-encoding'?: string;
+    // 'Content-Encoding'?: string;
+    // ':path'?: string;
+    // 'origin-path'?: string;
+    // ':authority'?: string;
+    // ':scheme'?: string;
+    // ':method'?: string;
+    // ':type'?: string | number;
+    // ':topic'?: string;
 }
 
 
@@ -142,6 +142,110 @@ export class TransportHeaders<T extends Header = Header> {
             .forEach(key => fn(this._normal.get(key)!, this._hdrs.get(key)!))
     }
 
+    protected contentType = 'content-type';
+    /**
+     * has content type or not.
+     */
+    hasContentType(): boolean {
+        return this.has(this.contentType)
+    }
+    /**
+     * content type.
+     */
+    getContentType(): string {
+        const ty = this.get(this.contentType);
+        return isArray(ty) ? ty[0] : ty;
+    }
+    /**
+     * Set Content-Type packet header with `type` through `mime.lookup()`
+     * when it does not contain a charset.
+     *
+     * Examples:
+     *
+     *     this.contentType = 'application/json';
+     *     this.contentType = 'application/octet-stream';  // buffer stream
+     *     this.contentType = 'image/png';      // png
+     *     this.contentType = 'image/pjpeg';   //jpeg
+     *     this.contentType = 'text/plain';    // text, txt
+     *     this.contentType = 'text/html';    // html, htm, shtml
+     *     this.contextType = 'text/javascript'; // javascript text
+     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
+     *
+     * @param {String} type
+     * @api public
+     */
+    setContentType(type: T): this {
+        if (isNil(type)) {
+            this.delete(this.contentType);
+        } else {
+            this.set(this.contentType, type);
+        }
+        return this;
+    }
+    /**
+     * remove content type.
+     * @param packet 
+     */
+    removeContentType(): this {
+        this.delete(this.contentType);
+        return this;
+    }
+
+
+    protected contentEncoding = 'content-encoding';
+    /**
+     * has Content-Encoding or not.
+     * @param packet
+     */
+    hasContentEncoding(): boolean {
+        return this.has(this.contentEncoding)
+    }
+    /**
+     * Get Content-Encoding.
+     * @param packet
+     */
+    getContentEncoding(): string {
+        let encoding = this.get(this.contentEncoding);
+        return isArray(encoding) ? encoding[0] : encoding
+    }
+    /**
+     * Set Content-Encoding.
+     * @param packet
+     * @param encoding 
+     */
+    setContentEncoding(encoding: T): this {
+        this.set(this.contentEncoding, encoding);
+        return this
+    }
+    /**
+     * remove content encoding.
+     * @param packet 
+     */
+    removeContentEncoding(): this {
+        this.delete(this.contentEncoding);
+        return this
+    }
+
+    protected contentLength = 'content-length';
+    hasContentLength() {
+        return this.has(this.contentLength)
+    }
+
+    setContentLenght(len: number) {
+        this.set(this.contentLength, len as T);
+        return this
+    }
+
+    getContentLength() {
+        const len = this.get(this.contentLength) ?? '0';
+        return ~~len
+    }
+
+    removeContentLength() {
+        this.delete(this.contentLength);
+        return this;
+    }
+
     private setNormalizedName(name: string, lcName: string): void {
         if (!this._normal.has(lcName)) {
             this._normal.set(lcName, name)
@@ -153,5 +257,5 @@ export class TransportHeaders<T extends Header = Header> {
 /**
  * Header like
  */
-export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | (HeaderRecord & StatusHeaders);
+export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | HeaderRecord;
 
