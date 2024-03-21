@@ -3,6 +3,26 @@ import { Handler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
 
+export class InputContext {
+
+    readonly inputs: any[];
+
+    constructor() {
+        this.inputs = [];
+    }
+
+    next<TInput>(input: TInput): this {
+        if (this.inputs[0] != input) {
+            this.inputs.unshift(input);
+        }
+        return this;
+    }
+
+    last<TInput>(): TInput {
+        return this.inputs[0];
+    }
+}
+
 
 /**
  * Encoder
@@ -38,7 +58,7 @@ export abstract class Decoder<TInput = any, TOutput = any> {
      * @param input 
      */
     decode(input: TInput): Observable<TOutput> {
-        return this.handler.handle(input)
+        return this.handler.handle(input);
     }
 }
 

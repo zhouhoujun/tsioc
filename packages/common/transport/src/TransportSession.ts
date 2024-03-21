@@ -1,5 +1,5 @@
-import { Abstract, Injector, InvocationContext, Token } from '@tsdi/ioc';
-import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder } from '@tsdi/common';
+import { Abstract, Injector, Token } from '@tsdi/ioc';
+import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, InputContext } from '@tsdi/common';
 import { Observable, mergeMap, of, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 
@@ -102,13 +102,14 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
      * @param data 
      */
     send(data: TInput): Observable<TMsg> {
+        const context = new InputContext();
         return this.encodings.reduceRight((obs$, curr) => {
             return obs$.pipe(
-                mergeMap(input => curr.encode(input))
+                mergeMap(input => curr.encode(input, context))
             );
-        }, of(data))
+        }, of(data as any))
             .pipe(
-                mergeMap(msg => this.sendMessage(data, msg as any as TMsg)),
+                mergeMap(msg => this.sendMessage(data, msg as TMsg)),
                 share()
             )
     }
@@ -117,16 +118,17 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
 
     /**
      * receive
-     * @param sent
+     * @param req the message response for.
      */
-    receive(sent?: TMsg): Observable<TOutput> {
+    receive(req?: TMsg): Observable<TOutput> {
+        const context = new InputContext();
         return this.handMessage()
             .pipe(
                 mergeMap(msg => this.decodings.reduceRight((obs$, curr) => {
                     return obs$.pipe(
-                        mergeMap(input => curr.decode(input))
+                        mergeMap(input => curr.decode(input, context))
                     );
-                }, of(msg))),
+                }, of(msg as any))),
                 share()
             )
     }
@@ -152,30 +154,3 @@ export abstract class TransportSessionFactory<TData = any, TMsg = any, TSocket =
      */
     abstract create(injector: Injector, socket: TSocket, options: TransportOpts): TransportSession<TData, TMsg, TSocket>;
 }
-
-
-// /**
-//  * client transport session.
-//  */
-// @Abstract()
-// export abstract class ClientTransportSession<TSocket = any> extends TransportSession<TSocket> {
-
-//     /**
-//      * request.
-//      * @param packet 
-//      */
-//     abstract request(packet: TransportRequest, context?: InvocationContext): Observable<TransportEvent>;
-
-// }
-
-// /**
-//  * Server side transport session.
-//  */
-// @Abstract()
-// export abstract class ServerTransportSession<TSocket = any, TOption = any> extends TransportSession<TSocket> {
-
-//     /**
-//      * handle
-//      */
-//     abstract handle(handler: Handler, options: TOption): Subscription;
-// }
