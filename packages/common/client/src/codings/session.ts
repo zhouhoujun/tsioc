@@ -1,15 +1,17 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { InputContext, TransportEvent, TransportRequest } from '@tsdi/common';
 import { TransportOpts, TransportSession } from '@tsdi/common/transport';
-import { Observable, filter, mergeMap } from 'rxjs';
+import { Observable, filter, finalize, mergeMap } from 'rxjs';
 
 @Abstract()
 export abstract class ClientTransportSession<TMsg = any, TSocket = any> extends TransportSession<TransportRequest, TransportEvent, TMsg, TSocket> {
 
     request(req: TransportRequest): Observable<TransportEvent> {
-        return this.send(req)
+        const context = new InputContext();
+        return this.send(req, context)
             .pipe(
-                mergeMap(msg => this.receive(msg).pipe(filter(res => this.filter(req, msg, res)))),
+                mergeMap(msg => this.receive(context.next(msg)).pipe(filter(res => this.filter(req, msg, res)))),
+                finalize(() => context.onDestroy())
             )
     }
 

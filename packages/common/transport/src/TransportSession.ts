@@ -1,6 +1,6 @@
 import { Abstract, Injector, Token } from '@tsdi/ioc';
 import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, InputContext } from '@tsdi/common';
-import { Observable, mergeMap, of, share } from 'rxjs';
+import { Observable, finalize, mergeMap, of, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 
 
@@ -101,15 +101,16 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
      * send.
      * @param data 
      */
-    send(data: TInput): Observable<TMsg> {
-        const context = new InputContext();
+    send(data: TInput, context?: InputContext): Observable<TMsg> {
+        const ctx = context ?? new InputContext();
         return this.encodings.reduceRight((obs$, curr) => {
             return obs$.pipe(
-                mergeMap(input => curr.encode(input, context.next(input)))
+                mergeMap(input => curr.encode(input, ctx.next(input)))
             );
         }, of(data as any))
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg as TMsg)),
+                finalize(() => !context && ctx.onDestroy()),
                 share()
             )
     }
@@ -120,15 +121,21 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
      * receive
      * @param req the message response for.
      */
-    receive(req?: TMsg): Observable<TOutput> {
-        const context = new InputContext();
+    receive(context?: InputContext): Observable<TOutput> {
         return this.handMessage()
             .pipe(
-                mergeMap(msg => this.decodings.reduceRight((obs$, curr) => {
-                    return obs$.pipe(
-                        mergeMap(input => curr.decode(input, context.next(input)))
-                    );
-                }, of(msg as any))),
+                mergeMap(msg => {
+                    const ctx = context ?? new InputContext();
+
+                    return this.decodings.reduceRight((obs$, curr) => {
+                        return obs$.pipe(
+                            mergeMap(input => curr.decode(input, ctx.next(input)))
+                        );
+                    }, of(msg as any))
+                        .pipe(
+                            finalize(() => !context && ctx.onDestroy())
+                        )
+                }),
                 share()
             )
     }
