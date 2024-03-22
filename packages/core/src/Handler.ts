@@ -1,20 +1,19 @@
-import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 /**
- * `Handler` is the fundamental building block of servers and clients.
+ * `Handler` is the fundamental building block of handle.
  * 
- * 处理器，是服务端和客户端的基本构建块。
+ * 处理器基本构建块。
  */
-@Abstract()
-export abstract class Handler<TInput = any, TOutput = any> {
+export interface Handler<TInput = any, TOutput = any, TContext = any> {
     /**
      * handle.
      * 
      * 处理句柄
-     * @param input request input.
+     * @param input handle input.
+     * @param context handle with context.
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    handle(input: TInput, context?: TContext): Observable<TOutput>;
 
     /**
      * is this equals to target or not
@@ -22,20 +21,21 @@ export abstract class Handler<TInput = any, TOutput = any> {
      * 该实例等于目标与否？
      * @param target 
      */
-    abstract equals?(target: any): boolean;
+    equals?(target: any): boolean;
 }
 
 
+
 /**
- * Backend is backend handler of servers and clients.
+ * `Backend` is backend handler of services.
  * 
- * 后段处理器，是服务端和客户端的最终处理器。
+ * 后段处理器，是服务的最终处理器
  */
-@Abstract()
-export abstract class Backend<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export interface Backend<TInput = any, TOutput = any, TContext = any> extends Handler<TInput, TOutput, TContext> {
     /**
-     * transport endpoint handle.
-     * @param input request input.
+     * backend handle.
+     * @param input handle input.
+     * @param context handle context
      */
-    abstract handle(input: TInput): Observable<TOutput>;
+    handle(input: TInput, context: TContext): Observable<TOutput>;
 }

@@ -105,7 +105,7 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
         const context = new InputContext();
         return this.encodings.reduceRight((obs$, curr) => {
             return obs$.pipe(
-                mergeMap(input => curr.encode(input, context))
+                mergeMap(input => curr.encode(input, context.next(input)))
             );
         }, of(data as any))
             .pipe(
@@ -126,7 +126,7 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
             .pipe(
                 mergeMap(msg => this.decodings.reduceRight((obs$, curr) => {
                     return obs$.pipe(
-                        mergeMap(input => curr.decode(input, context))
+                        mergeMap(input => curr.decode(input, context.next(input)))
                     );
                 }, of(msg as any))),
                 share()

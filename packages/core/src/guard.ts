@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
  * 
  * 处理器守卫
  */
-export interface CanActivate<T = any> {
+export interface CanActivate<T = any, TContext = any> {
     /**
      * handler guard. can invoke handler or not.
      * 
@@ -15,7 +15,7 @@ export interface CanActivate<T = any> {
      * @param input input data.
      * @returns can activate or not. type of boolean, Promise<boolean> or Observable<boolean>.
      */
-    canActivate(input: T): boolean | Promise<boolean> | Observable<boolean>;
+    canActivate(input: T, context?: TContext): boolean | Promise<boolean> | Observable<boolean>;
 }
 
 

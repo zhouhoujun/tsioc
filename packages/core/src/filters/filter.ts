@@ -10,7 +10,7 @@ import { Interceptor } from '../Interceptor';
  * 处理器过滤器。
  */
 @Abstract()
-export abstract class Filter<TInput = any, TOutput = any> implements Interceptor<TInput, TOutput> {
+export abstract class Filter<TInput = any, TOutput = any, TContext = any> implements Interceptor<TInput, TOutput, TContext> {
     /**
      * the method to implement interceptor filter.
      * @param input request input data.
@@ -18,7 +18,7 @@ export abstract class Filter<TInput = any, TOutput = any> implements Interceptor
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<TOutput>;
+    abstract intercept(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<TOutput>;
 }
 
 /**

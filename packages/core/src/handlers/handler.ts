@@ -7,32 +7,32 @@ import { Interceptor } from '../Interceptor';
 /**
  * Interceptor Handler.
  */
-export class InterceptorHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export class InterceptorHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
 
-    constructor(private next: Handler<TInput, TOutput>, private interceptor: Interceptor<TInput, TOutput>) { }
+    constructor(private next: Handler<TInput, TOutput, TContext>, private interceptor: Interceptor<TInput, TOutput, TContext>) { }
 
-    handle(context: TInput): Observable<TOutput> {
-        return this.interceptor.intercept(context, this.next)
+    handle(input: TInput, context?: TContext): Observable<TOutput> {
+        return this.interceptor.intercept(input, this.next, context)
     }
 }
 
 /**
  * intercepting hnalder.
  */
-export class InterceptingHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
 
-    private chain?: Handler<TInput, TOutput> | null;
+    private chain?: Handler<TInput, TOutput, TContext> | null;
 
     constructor(
-        private backend: Backend<TInput, TOutput> | (() => Backend<TInput, TOutput>),
+        private backend: Backend<TInput, TOutput, TContext> | (() => Backend<TInput, TOutput, TContext>),
         private interceptors: Interceptor[] | (() => Interceptor[]) = []
     ) { }
 
-    handle(input: TInput): Observable<TOutput> {
+    handle(input: TInput, context?: TContext): Observable<TOutput> {
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return this.chain.handle(input);
+        return this.chain.handle(input, context);
     }
 
     protected reset() {
@@ -48,15 +48,15 @@ export class InterceptingHandler<TInput = any, TOutput = any> implements Handler
 /**
  * funcation handler.
  */
-export class FnHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput> {
+export class FnHandler<TInput = any, TOutput = any, TContext= any> implements Handler<TInput, TOutput, TContext> {
 
-    constructor(private dowork: (ctx: TInput) => TOutput | Observable<TOutput> | Promise<TOutput>) { }
+    constructor(private dowork: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) { }
 
-    handle(input: TInput): Observable<TOutput> {              
-        const $res = this.dowork(input);
-        if(isObservable($res)) {
+    handle(input: TInput, context?: TContext): Observable<TOutput> {
+        const $res = this.dowork(input, context);
+        if (isObservable($res)) {
             return $res;
-        } 
+        }
         return isPromise($res) ? from($res) : of($res);
     }
 

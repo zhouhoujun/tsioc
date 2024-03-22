@@ -77,8 +77,8 @@ export interface HandlerService extends FilterService, PipeService, InterceptorS
 /**
  * Configable handler
  */
-export class ConfigableHandler<TInput = any, TOutput = any, TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>>
-    extends GuardHandler<TInput, TOutput, TOptions> {
+export class ConfigableHandler<TInput = any, TOutput = any, TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>, TContext = any>
+    extends GuardHandler<TInput, TOutput, TOptions, TContext> {
     constructor(
         context: Injector | InvocationContext,
         options: TOptions) {

@@ -34,15 +34,15 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
  * 异常处理过滤器
  */
 @Abstract()
-export abstract class ExecptionFilter<TInput = any, TOutput = any> extends Filter<TInput, TOutput> {
+export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = any> extends Filter<TInput, TOutput, TContext> {
     /**
      * execption filter.
      * @param context execption context.
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    intercept(input: TInput, next: Handler<TInput, TOutput>): Observable<any> {
-        return next.handle(input)
+    intercept(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<any> {
+        return next.handle(input, context)
             .pipe(
                 catchError((err, caught) => {
                     let res: any;

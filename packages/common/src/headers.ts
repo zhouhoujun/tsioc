@@ -5,26 +5,9 @@ import { isArray, isNil, isString } from '@tsdi/ioc';
  */
 export type Header = string | readonly string[] | number | undefined | null;
 
-// export interface StatusHeaders {
-//     status?: number | string;
-//     ':status'?: number | string;
-// }
 
 export interface HeaderRecord {
     [x: string]: Header;
-    // 'content-type'?: string;
-    // 'Content-Type'?: string;
-    // 'content-length'?: string | number;
-    // 'Content-Length'?: string | number;
-    // 'content-encoding'?: string;
-    // 'Content-Encoding'?: string;
-    // ':path'?: string;
-    // 'origin-path'?: string;
-    // ':authority'?: string;
-    // ':scheme'?: string;
-    // ':method'?: string;
-    // ':type'?: string | number;
-    // ':topic'?: string;
 }
 
 

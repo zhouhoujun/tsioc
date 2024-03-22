@@ -34,7 +34,7 @@ export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput
  * guards intercepting handler.
  */
 @Abstract()
-export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHandlerOptions = GuardHandlerOptions<TInput>> extends InterceptingHandler<TInput, TOutput>
+export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHandlerOptions = GuardHandlerOptions<TInput>, TContext = any> extends InterceptingHandler<TInput, TOutput, TContext>
     implements Handler<TInput, TOutput>, HandlerService, OnDestroy {
 
 
@@ -109,23 +109,23 @@ export class GuardHandler<TInput = any, TOutput = any, TOptions extends GuardHan
         return this;
     }
 
-    override handle(input: TInput): Observable<TOutput> {
+    override handle(input: TInput, context?: TContext): Observable<TOutput> {
         if (this.guards === undefined) {
             this.guards = this.getGuards();
         }
 
-        if (!this.guards || !this.guards.length) return super.handle(input);
+        if (!this.guards || !this.guards.length) return super.handle(input, context);
         const guards = this.guards;
         return defer(async () => {
             if (!(await lang.some(
-                guards.map(gd => () => pomiseOf(gd.canActivate(input))),
+                guards.map(gd => () => pomiseOf(gd.canActivate(input, context))),
                 vaild => vaild === false))) {
                 return false;
             }
             return true;
         }).pipe(
             mergeMap(r => {
-                if (r === true) return super.handle(input);
+                if (r === true) return super.handle(input, context);
                 return throwError(() => this.forbiddenError())
             }),
             takeUntil(this.destroy$)
