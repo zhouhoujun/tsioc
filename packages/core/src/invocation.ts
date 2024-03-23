@@ -9,7 +9,11 @@ import { ConfigableHandler, ConfigableHandlerOptions } from './handlers/configab
  * Invocation handler
  */
 @Abstract()
-export abstract class InvocationHandler<TInput extends InvocationContext = InvocationContext, TOutput = any, TOptions extends InvocationOptions = InvocationOptions> extends ConfigableHandler<TInput, TOutput, TOptions> {
+export abstract class InvocationHandler<
+    TInput extends InvocationContext = InvocationContext,
+    TOutput = any,
+    TOptions extends InvocationOptions = InvocationOptions,
+    TContext = any> extends ConfigableHandler<TInput, TOutput, TOptions, TContext> {
     /**
      * opteration invoker.
      */

@@ -6,13 +6,18 @@ import { ConfigableHandler } from '../handlers/configable';
 import { ResultValue } from '../handlers/ResultValue';
 import { HandlerContext } from '../handlers/context';
 import {
-    InvocationOptions, Respond, TypedRespond, InvocationFactory, OPERA_FILTERS, OPERA_GUARDS, 
+    InvocationOptions, Respond, TypedRespond, InvocationFactory, OPERA_FILTERS, OPERA_GUARDS,
     InvocationFactoryResolver, OPERA_INTERCEPTORS, InvocationHandler
 } from '../invocation';
 
 
 
-export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContext, TOutput = any, TOptions extends InvocationOptions<TInput>= InvocationOptions<TInput>> extends ConfigableHandler<TInput, TOutput, TOptions> implements InvocationHandler<TInput, TOutput, TOptions> {
+export class InvocationHandlerImpl<
+    TInput extends HandlerContext = HandlerContext,
+    TOutput = any,
+    TOptions extends InvocationOptions<TInput> = InvocationOptions<TInput>,
+    TContext = any
+> extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements InvocationHandler<TInput, TOutput, TOptions, TContext> {
 
     private limit?: number;
     constructor(
@@ -32,13 +37,13 @@ export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContex
         }
     }
 
-    override handle(input: TInput): Observable<TOutput> {
+    override handle(input: TInput, context?: TContext): Observable<TOutput> {
         if (input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
             this.limit -= 1;
         }
-        return super.handle(input);
+        return super.handle(input, context);
     }
 
     equals(target: InvocationHandler): boolean {
@@ -58,12 +63,12 @@ export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContex
 
     /**
      * respond.
-     * @param ctx 
+     * @param input 
      * @returns 
      */
-    protected async respond(ctx: TInput) {
-        await this.beforeInvoke(ctx);
-        let res = await this.invoker.invoke(ctx);
+    protected async respond(input: TInput, context?: TContext) {
+        await this.beforeInvoke(input);
+        let res = await this.invoker.invoke(input);
 
         if (isPromise(res)) {
             res = await res;
@@ -71,8 +76,8 @@ export class InvocationHandlerImpl<TInput extends HandlerContext = HandlerContex
         if (isObservable(res)) {
             res = await lastValueFrom(res);
         }
-        if (res instanceof ResultValue) return await res.sendValue(ctx);
-        return this.respondAs(ctx, res)
+        if (res instanceof ResultValue) return await res.sendValue(input);
+        return this.respondAs(input, res)
     }
 
     /**

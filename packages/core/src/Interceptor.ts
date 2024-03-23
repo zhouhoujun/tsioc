@@ -22,7 +22,6 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
 }
 
 
-
 /**
  * interceptor service.
  * 
@@ -46,12 +45,12 @@ export interface InterceptorService {
  */
 export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
 
-const INTERCEPTORS = 'INTERCEPTORS';
+
 /**
  * get target filters token.
  * @param request 
  * @returns 
  */
 export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
-    return getTokenOf(type, INTERCEPTORS, propertyKey);
+    return getTokenOf(type, 'INTERCEPTORS', propertyKey);
 }

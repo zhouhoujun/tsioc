@@ -37,5 +37,5 @@ export interface Backend<TInput = any, TOutput = any, TContext = any> extends Ha
      * @param input handle input.
      * @param context handle context
      */
-    handle(input: TInput, context: TContext): Observable<TOutput>;
+    handle(input: TInput, context?: TContext): Observable<TOutput>;
 }

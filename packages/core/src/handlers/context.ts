@@ -53,7 +53,7 @@ export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInpu
 
     protected override clear(): void {
         super.clear();
-        this.execption = null;
+        this.execption = null
     }
 
 }

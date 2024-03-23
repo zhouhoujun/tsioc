@@ -38,19 +38,19 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     abstract get methodName(): string | undefined;
     /**
      * add reference resolver.
-     * @param resolvers the list instance of {@link InvocationContext}.
+     * @param contexts the list instance of {@link InvocationContext}.
      */
-    abstract addRef(...resolvers: InvocationContext[]): void;
+    abstract addRef(...contexts: InvocationContext[]): void;
     /**
      * remove reference resolver.
-     * @param resolver instance of {@link InvocationContext}.
+     * @param context instance of {@link InvocationContext}.
      */
-    abstract removeRef(resolver: InvocationContext): void;
+    abstract removeRef(context: InvocationContext): void;
     /**
      * has ref or not.
-     * @param ctx 
+     * @param context 
      */
-    abstract hasRef(ctx: InvocationContext): boolean;
+    abstract hasRef(context: InvocationContext): boolean;
     /**
      * the invocation arguments.
      */

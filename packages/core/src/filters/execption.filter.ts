@@ -47,7 +47,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
                 catchError((err, caught) => {
                     let res: any;
                     try {
-                        res = this.catchError(input, err, caught);
+                        res = this.catchError(input, err, caught, context);
                     } catch (err) {
                         return throwError(() => res);
                     }
@@ -81,19 +81,19 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
      * @param err 
      * @param caught 
      */
-    abstract catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any> | Promise<any> | any;
+    abstract catchError(input: TInput, err: any, caught: Observable<TOutput>, context?: TContext): Observable<any> | Promise<any> | any;
 }
 
 /**
  * execption handler filter.
  */
 @Injectable({ static: true })
-export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilter<TInput, TOutput> {
+export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> extends ExecptionFilter<TInput, TOutput, TContext> {
     constructor(private injector: Injector) {
         super()
     }
 
-    catchError(input: TInput, err: any, caught: Observable<TOutput>): Observable<any> {
+    catchError(input: TInput, err: any, caught: Observable<TOutput>, context?: TContext): Observable<any> {
         let injector: Injector;
         if (input instanceof HandlerContext) {
             injector = input.injector;
@@ -106,8 +106,8 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
             return throwError(() => err);
         }
 
-        const context = new ExecptionContext(err, input, injector);
-        return runHandlers(handlers, context)
+        const expcption = new ExecptionContext(err, input, injector);
+        return runHandlers(handlers, expcption, null, context)
             .pipe(
                 catchError((err1, caugh) => {
                     err1.originExecption = err;
@@ -115,7 +115,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any> extends ExecptionFilt
                     return throwError(() => err1)
                 }),
                 finalize(() => {
-                    context.destroy();
+                    expcption.destroy();
                 })
             );
     }

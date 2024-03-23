@@ -6,11 +6,11 @@ import { FilterHandlerResolver } from './filter';
 
 /**
  * run handlers.
- * @param ctx 
+ * @param input 
  * @param filter 
  * @returns 
  */
-export function runFilters(ctx: HandlerContext, filter: Type | string): Observable<any> {
-    const handles = ctx.injector.get(FilterHandlerResolver).resolve(filter);
-    return runHandlers(handles, ctx, c => c.isDone?.())
+export function runFilters<TInput extends HandlerContext, TContext = any>(input: TInput, filter: Type | string, context?: TContext): Observable<any> {
+    const handles = input.injector.get(FilterHandlerResolver).resolve(filter);
+    return runHandlers(handles, input, c => c.isDone?.(), context)
 }
