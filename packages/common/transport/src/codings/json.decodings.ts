@@ -20,13 +20,13 @@ export class JsonDecodeBackend implements Backend<Buffer | string, any, InputCon
 }
 
 @Abstract()
-export abstract class JsonDecodeHandler implements Handler<Buffer | string, any> {
-    abstract handle(input: Buffer): Observable<any>
+export abstract class JsonDecodeHandler implements Handler<Buffer | string, any, InputContext> {
+    abstract handle(input: Buffer, context: InputContext): Observable<any>
 }
 
 @Injectable()
-export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, any> {
-    intercept(input: string | Buffer, next: Handler<string | Buffer, any>): Observable<any> {
+export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, any, InputContext> {
+    intercept(input: string | Buffer, next: Handler<string | Buffer, any>, context: InputContext): Observable<any> {
         const data = isString(input) ? input : (input.length ? new TextDecoder().decode(input) : '');
         if (!data) return of({});
         return next.handle(data);
@@ -37,7 +37,7 @@ export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, 
 export const JSON_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer | string, any>[]>('JSON_DECODE_INTERCEPTORS');
 
 @Injectable()
-export class JsonDecodeInterceptingHandler extends InterceptingHandler<Buffer, any>  {
+export class JsonDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
     constructor(backend: JsonDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(JSON_DECODE_INTERCEPTORS))
     }
