@@ -13,6 +13,7 @@ export class InputContext implements OnDestroy {
     constructor() {
         this._inputs = [];
     }
+    
     next<TInput>(input: TInput): this {
         if (this._inputs[0] != input) {
             this._inputs.unshift(input);

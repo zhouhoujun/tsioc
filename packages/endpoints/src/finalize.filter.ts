@@ -8,11 +8,11 @@ import { RequestContext } from './RequestContext';
 @Injectable({ static: true })
 export class FinalizeFilter extends Filter {
 
-    intercept(context: RequestContext, next: Handler): Observable<any> {
-        return next.handle(context)
+    intercept(request: RequestContext, next: Handler, context?: any): Observable<any> {
+        return next.handle(request, context)
             .pipe(
                 mergeMap(res => {
-                    return context.respond()
+                    return request.respond()
                 })
             )
     }

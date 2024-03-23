@@ -6,12 +6,12 @@ import { RequestContext } from './RequestContext';
 
 
 @Injectable({ static: true })
-export class ExecptionFinalizeFilter<TCtx extends RequestContext> extends ExecptionFilter<TCtx> {
+export class ExecptionFinalizeFilter<TInput extends RequestContext, TContext = any> extends ExecptionFilter<TInput, any, TContext> {
 
-    catchError(context: TCtx, err: any, caught: Observable<any>) {
-        const logger = context.get(Logger)?? console;
+    catchError(reqCtx: TInput, err: any, caught: Observable<any>, context?: TContext) {
+        const logger = reqCtx.get(Logger)?? console;
         logger.error(err);
-        return context.throwExecption(err);
+        return reqCtx.throwExecption(err);
     }
 
 }

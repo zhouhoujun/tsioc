@@ -1,14 +1,14 @@
 import { Abstract, Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Decoder } from '@tsdi/common';
+import { Decoder, InputContext } from '@tsdi/common';
 import { Observable, of, throwError } from 'rxjs';
 import { InvalidJsonException } from '../execptions';
 
 
 
 @Injectable()
-export class JsonDecodeBackend implements Backend<Buffer | string, any> {
-    handle(input: Buffer | string): Observable<any> {
+export class JsonDecodeBackend implements Backend<Buffer | string, any, InputContext> {
+    handle(input: Buffer | string, context: InputContext): Observable<any> {
         const jsonStr = isString(input) ? input : new TextDecoder().decode(input);
         try {
             const buff = JSON.parse(jsonStr);
