@@ -21,15 +21,18 @@ export class AcceptsPriorityImpl implements AcceptsPriority {
                 accepted = this.parseMedia(accept);
                 specifyFn = (value, spec, index) => this.mediaSpecify(value, spec as MediaAccepted, index);
                 specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
+                break;
             case 'charsets':
                 accepted = this.parseCharset(accept);
                 specifyFn = (value, spec, index) => this.specify(value, spec, index);
                 specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
+                break;
 
             case 'encodings':
                 accepted = this.parseEncoding(accept);
                 specifyFn = (value, spec, index) => this.specify(value, spec as MediaAccepted, index);
                 specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
+                break;
         }
         if (!specify || !specify.length) return [];
         return this.sortSpecify(specify).map(p => accepts[specify!.indexOf(p)])
