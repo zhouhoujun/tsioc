@@ -122,7 +122,7 @@ export class ControllerRouteFactory {
 
         let injector: Injector;
         let factory: RouteHandlerFactory<T>;
-        let options = isString(arg3) ? { prefix: arg3 } : { ...arg3 };
+        const options = isString(arg3) ? { prefix: arg3 } : { ...arg3 };
         if (type instanceof ReflectiveRef) {
             injector = type.injector;
             factory = injector.get(RouteHandlerFactoryResolver).resolve(type);

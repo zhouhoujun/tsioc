@@ -1,10 +1,10 @@
 import { ArgumentExecption, Inject, Injectable, ProvdierOf, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenService } from '@tsdi/common';
+import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common/transport';
 import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
-import { Subscription, lastValueFrom } from 'rxjs';
+import { Subject, lastValueFrom, mergeMap, takeUntil } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
@@ -24,7 +24,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
 
     protected isSecure: boolean;
 
-    private subs: Subscription;
+    private destroy$: Subject<void>;
 
     constructor(
         readonly handler: TcpEndpointHandler,
@@ -32,7 +32,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
     ) {
         super();
 
-        this.subs = new Subscription();
+        this.destroy$ = new Subject();
         this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
     }
 
@@ -118,12 +118,20 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
+                session.receive().pipe(
+                    takeUntil(this.destroy$),
+                    mergeMap(request => this.handler.handle(request))
+                ).subscribe()
+                // this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
+                session.receive().pipe(
+                    takeUntil(this.destroy$),
+                    mergeMap(request => this.handler.handle(request))
+                ).subscribe()
+                // this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
             })
         }
 
@@ -139,7 +147,8 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
 
     protected async onShutdown(): Promise<any> {
         if (!this.serv) return;
-        this.subs?.unsubscribe();
+        this.destroy$.next();
+        this.destroy$.complete();
         // if (!this.micro) this.endpoint.injector.get(ModuleRef).unregister(HYBRID_HOST);
         await promisify(this.serv.close, this.serv)()
             .finally(() => {

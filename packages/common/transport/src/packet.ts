@@ -1,4 +1,4 @@
-import { HeaderRecord, Pattern } from '@tsdi/common';
+import { Pattern, TransportHeaders } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -12,7 +12,7 @@ export interface HeaderPacket {
     url?: string;
     topic?: string;
     method?: string;
-    headers?: HeaderRecord;
+    headers?: TransportHeaders;
 }
 
 /**

@@ -159,5 +159,5 @@ export abstract class TransportSessionFactory<TData = any, TMsg = any, TSocket =
      * create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: TransportOpts): TransportSession<TData, TMsg, TSocket>;
+    abstract create(socket: TSocket, options: TransportOpts): TransportSession<TData, TMsg, TSocket>;
 }

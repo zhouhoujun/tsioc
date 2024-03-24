@@ -12,9 +12,9 @@ export class RequestEncodeBackend implements Backend<TransportRequest, PacketDat
 
     handle(input: TransportRequest<any>): Observable<PacketData> {
         return of({
-            // type: input.responseType,
-            headers: input.headers.getHeaders(),
-            payload: input.body
+            headers: input.headers,
+            payload: input.payload,
+            payloadLength: input.headers.getContentLength()
         })
     }
 }

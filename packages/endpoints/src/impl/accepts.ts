@@ -8,32 +8,27 @@ import { AcceptsPriority } from '../accepts';
 export class AcceptsPriorityImpl implements AcceptsPriority {
 
     priority(accept: string | string[], accepts: string[], type: 'lang' | 'media' | 'charsets' | 'encodings'): string[] {
-        let specify: Specify[] | undefined;
         let accepted: Accepted[];
         let specifyFn: (value: string, spec: Accepted, index?: number) => Specify | null;
         switch (type) {
             case 'lang':
                 accepted = this.parseLanguage(accept);
                 specifyFn = (value, spec, index) => this.langSpecify(value, spec as LangAccepted, index);
-                specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
                 break;
             case 'media':
                 accepted = this.parseMedia(accept);
                 specifyFn = (value, spec, index) => this.mediaSpecify(value, spec as MediaAccepted, index);
-                specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
                 break;
             case 'charsets':
                 accepted = this.parseCharset(accept);
                 specifyFn = (value, spec, index) => this.specify(value, spec, index);
-                specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
                 break;
-
             case 'encodings':
                 accepted = this.parseEncoding(accept);
                 specifyFn = (value, spec, index) => this.specify(value, spec as MediaAccepted, index);
-                specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
                 break;
         }
+        const specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
         if (!specify || !specify.length) return [];
         return this.sortSpecify(specify).map(p => accepts[specify!.indexOf(p)])
     }

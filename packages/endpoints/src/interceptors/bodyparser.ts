@@ -89,7 +89,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         await next()
     }
 
-    parseBody(context: RequestContext): Promise<{ raw?: any, body?: any }> {
+    private parseBody(context: RequestContext): Promise<{ raw?: any, body?: any }> {
         const types = context.get(MimeTypes);
         if (this.enableJson && context.is(types.json)) {
             return this.parseJson(context)

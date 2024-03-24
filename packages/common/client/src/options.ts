@@ -2,6 +2,7 @@ import { Token } from '@tsdi/ioc';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { TransportRequest } from '@tsdi/common';
 import { TransportBackend } from './backend';
+import { TransportOpts } from '@tsdi/common/transport';
 
 /**
  * Client options.
@@ -23,6 +24,10 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Tr
      * timeout
      */
     timeout?: number;
+    /**
+     * transport options.
+     */
+    transportOpts?: TransportOpts;
     /**
      * transport backend.
      */
