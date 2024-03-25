@@ -13,6 +13,7 @@ export interface CanActivate<T = any, TContext = any> {
      * 
      * 处理器守卫, 验证可以调用处理器与否。
      * @param input input data.
+     * @param context guard with context.
      * @returns can activate or not. type of boolean, Promise<boolean> or Observable<boolean>.
      */
     canActivate(input: T, context?: TContext): boolean | Promise<boolean> | Observable<boolean>;

@@ -12,8 +12,8 @@ import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
-import { GuardHandler, createGuardHandler } from '../handlers/guards';
 import { FnHandler } from '../handlers/handler';
+import { ConfigableHandler, createHandler } from '../handlers/configable';
 import { runHandlers } from '../handlers/runs';
 import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
 import { HandlerContext } from '../handlers/context';
@@ -40,13 +40,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     private _types: Type[];
     private _maps: Map<Type, Handler[]>;
     private _refs: Map<Type, ReflectiveRef[]>;
-    private _handler: GuardHandler;
+    private _handler: ConfigableHandler;
     constructor(private injector: Injector, protected readonly multicaster: ApplicationEventMulticaster) {
         super()
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = createGuardHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._handler = createHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
         this._handler.useFilters(ExecptionHandlerFilter);
     }
 

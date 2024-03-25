@@ -1,12 +1,188 @@
 import {
     EMPTY, InjectFlags, Injector, InvokerOptions, ProvdierOf, StaticProvider,
-    Token, InvocationContext, createContext, isClassType, isInjector
+    Token, InvocationContext, createContext, isClassType, isInjector, ArgumentExecption, isToken, isArray, toProvider
 } from '@tsdi/ioc';
 import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterService } from '../filters/filter';
-import { BackendOptions, GuardHandler, GuardHandlerOptions } from './guards';
+import { GuardHandler } from './guards';
+import { Backend } from '../Handler';
+
+
+
+/**
+ * Configable handler
+ */
+export class ConfigableHandler<
+    TInput = any,
+    TOutput = any,
+    TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
+    TContext = any> extends GuardHandler<TInput, TOutput, TContext> {
+
+
+    protected options: TOptions;
+
+    get injector() {
+        return this.context.injector;
+    }
+
+    constructor(
+        protected context: InvocationContext,
+        options: TOptions) {
+        super(
+            () => this.getBackend(),
+            () => this.getInterceptors(),
+            () => this.getGuards(),
+            () => this.getFilters()
+        );
+
+        this.options = this.initOptions(options);
+        if (this.options.backend && isClassType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
+            this.injector.inject(this.options.backend);
+        }
+
+        setHandlerOptions(this, this.options);
+    }
+
+    protected initOptions(options: TOptions): TOptions {
+        return {
+            interceptorsToken: INTERCEPTORS_TOKEN,
+            guardsToken: GUARDS_TOKEN,
+            filtersToken: FILTERS_TOKEN,
+            ...options
+        }
+    }
+
+
+    /**
+     * use pipes
+     * @param pipes 
+     * @returns 
+     */
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
+        this.injector.inject(pipes);
+        return this;
+    }
+
+    /**
+     * use interceptor for the handler.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
+        if (!this.options.interceptorsToken) return this;
+        this.regMulti(this.options.interceptorsToken, interceptor, order);
+        this.reset();
+        return this;
+    }
+
+
+    /**
+     * use guards for the handler.
+     * @param guards 
+     */
+    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+        if (!this.options.guardsToken) throw new ArgumentExecption('no guards token');
+        this.regMulti(this.options.guardsToken, guards, order);
+        this._cacheGuards = null;
+        return this;
+    }
+
+    /**
+     * use filters for the handler.
+     * @param filter 
+     * @param order 
+     * @returns 
+     */
+    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
+        if (!this.options.filtersToken) throw new ArgumentExecption('no filters token');
+        this.regMulti(this.options.filtersToken, filter, order);
+        this.reset();
+        return this;
+    }
+
+    /**
+     * get registered backend of the handler.
+     * @returns 
+     */
+    protected getBackend(): Backend<TInput, TOutput> {
+        if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
+        return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
+    }
+
+    /**
+     *  get filters. 
+     */
+    protected getFilters(): Filter<TInput, TOutput>[] {
+        const filts = this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
+        return this.options.globalFiltersToken ? ([...this.injector.get(this.options.globalFiltersToken, EMPTY), ...filts]) : filts
+    }
+
+    /**
+     * get registered iterceptors of the handler.
+     * @returns 
+     */
+    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
+        const itps = this.injector.get(this.options.interceptorsToken!, EMPTY);
+        return this.options.globalInterceptorsToken ? [...this.injector.get(this.options.globalInterceptorsToken, EMPTY), ...itps] : itps
+    }
+
+    private _cacheGuards?: CanActivate[] | null;
+    /**
+     * get registered guards of the handler.
+     * @returns 
+     */
+    protected getGuards(): CanActivate[] {
+        if (!this._cacheGuards) {
+            const guards = this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
+            this._cacheGuards = this.options.globalGuardsToken ? [...this.injector.get(this.options.globalGuardsToken, EMPTY), ...(guards ?? EMPTY)] : guards
+        }
+        return this._cacheGuards || EMPTY;
+
+    }
+
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
+        const multi = true;
+        if (isArray(providers)) {
+            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))
+        } else {
+            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass }));
+        }
+    }
+
+    protected clear() {
+        super.clear();
+        this._cacheGuards = null;
+        if (this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
+        if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
+        if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
+        this.context = null!;
+        this.options = null!;
+    }
+}
+
+
+
+export interface BackendOptions<TInput = any> {
+    backend?: Token<Backend<TInput>> | Backend<TInput>
+}
+
+export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput> {
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<Interceptor<TInput>[]>;
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<CanActivate<TInput>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<Filter<TInput>[]>;
+}
 
 
 /**
@@ -51,10 +227,6 @@ export interface HandlerTokenConfigable<TInput = any> extends GuardHandlerOption
      * global guards tokens.
      */
     globalGuardsToken?: Token<CanActivate<TInput>[]>;
-    /**
-     * guards tokens.
-     */
-    guardsToken?: Token<CanActivate<TInput>[]>;
 }
 
 /**
@@ -73,58 +245,49 @@ export interface HandlerService extends FilterService, PipeService, InterceptorS
 
 }
 
-
 /**
- * Configable handler
+ * create configable hanlder with options
  */
-export class ConfigableHandler<TInput = any, TOutput = any, TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>, TContext = any>
-    extends GuardHandler<TInput, TOutput, TOptions, TContext> {
-    constructor(
-        context: Injector | InvocationContext,
-        options: TOptions) {
-        super(isInjector(context) ? createContext(context) : context, options);
-        if (this.options.backend && isClassType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
-            this.injector.inject(this.options.backend);
-        }
-
-        setHandlerOptions(this, this.options);
-    }
-
-    protected override initOptions(options: TOptions): TOptions {
-        return {
-            interceptorsToken: INTERCEPTORS_TOKEN,
-            guardsToken: GUARDS_TOKEN,
-            filtersToken: FILTERS_TOKEN,
-            ...options
-        }
-    }
-
-    /**
-     *  get filters. 
-     */
-    protected override getFilters(): Filter<TInput, TOutput>[] {
-        const filts = this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
-        return this.options.globalFiltersToken ? ([...this.injector.get(this.options.globalFiltersToken, EMPTY), ...filts]) : filts
-    }
-
-    protected override getInterceptors(): Interceptor<TInput, TOutput>[] {
-        const itps = this.injector.get(this.options.interceptorsToken!, EMPTY);
-        return this.options.globalInterceptorsToken ? [...this.injector.get(this.options.globalInterceptorsToken, EMPTY), ...itps] : itps
-    }
-
-    protected override getGuards(): CanActivate<any>[] | null {
-        const guards = this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
-        return this.options.globalGuardsToken ? [...this.injector.get(this.options.globalGuardsToken, EMPTY), ...(guards ?? EMPTY)] : guards
-
-    }
-}
-
-
+export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput>;
 /**
- * create configable hanlder
+ * create configable hanlder with param options
+ * @param context 
+ * @param backend 
+ * @param interceptorsToken 
+ * @param guardsToken 
+ * @param filtersToken 
  */
-export function createHandler<TInput, TOutput>(injector: Injector | InvocationContext, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput> {
-    return new ConfigableHandler(injector, options)
+export function createHandler<TInput, TOutput>(context: Injector | InvocationContext,
+    backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
+    interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
+    guardsToken?: Token<CanActivate[]>,
+    filtersToken?: Token<Filter<TInput, TOutput>[]>,
+    globalInterceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
+    globalGuardsToken?: Token<CanActivate<TInput>[]>,
+    globalFiltersToken?: Token<Filter<TInput>[]>
+): ConfigableHandler<TInput, TOutput>;
+export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
+    interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
+    guardsToken?: Token<CanActivate[]>,
+    filtersToken?: Token<Filter<TInput, TOutput>[]>,
+    globalInterceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
+    globalGuardsToken?: Token<CanActivate<TInput>[]>,
+    globalFiltersToken?: Token<Filter<TInput>[]>): ConfigableHandler<TInput, TOutput> {
+    let options: ConfigableHandlerOptions<TInput>;
+    if (interceptorsToken) {
+        options = {
+            backend: arg as (Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>),
+            interceptorsToken,
+            guardsToken,
+            filtersToken,
+            globalInterceptorsToken,
+            globalGuardsToken,
+            globalFiltersToken
+        }
+    } else {
+        options = arg as ConfigableHandlerOptions<TInput>;
+    }
+    return new ConfigableHandler(isInjector(context) ? createContext(context) : context, options)
 }
 
 
