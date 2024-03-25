@@ -34,18 +34,18 @@ export const NEXT = () => Promise.resolve();
 /**
  * middleware backend.
  */
-export class MiddlewareBackend<Tx extends RequestContext, TResponse> implements Backend<Tx, TResponse> {
+export class MiddlewareBackend<Tx extends RequestContext> implements Backend<Tx> {
 
     private _middleware?: MiddlewareFn<Tx>;
     constructor(private middlewares: MiddlewareLike<Tx>[]) { }
 
-    handle(context: Tx): Observable<TResponse> {
+    handle(context: Tx): Observable<any> {
         return defer(async () => {
             if (!this._middleware) {
                 this._middleware = compose(this.middlewares)
             }
             await this._middleware(context, NEXT);
-            return context.response
+            return context.response.payload
         })
     }
 

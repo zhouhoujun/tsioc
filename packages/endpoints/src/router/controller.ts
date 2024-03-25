@@ -1,5 +1,5 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
-import { Backend, Handler, CanActivate, Interceptor, Filter, FnHandler, setHandlerOptions, GuardHandlerOptions, ConfigableHandler } from '@tsdi/core';
+import { Backend, Handler, CanActivate, Interceptor, Filter, FnHandler, setHandlerOptions, ConfigableHandler } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
 
@@ -39,7 +39,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
         factory.onDestroy(this);
     }
 
-    protected override initOptions(options: GuardHandlerOptions<any>): GuardHandlerOptions<any> {
+    protected override initOptions(options: RouteHandlerOptions): RouteHandlerOptions {
         return {
             interceptorsToken: CTRL_INTERCEPTORS,
             guardsToken: CTRL_GUARDS,
