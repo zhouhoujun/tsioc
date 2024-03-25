@@ -11,9 +11,9 @@ import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createR
 import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { Session } from './Session';
-import { DuplexTransportSessionFactory } from './impl/duplex.session';
+// import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
-import { TopicTransportSessionFactory } from './impl/topic.session';
+// import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { EndpointTypedRespond } from './typed.respond';
 import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
@@ -30,8 +30,8 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInter
     ],
     providers: [
         SetupServices,
-        DuplexTransportSessionFactory,
-        TopicTransportSessionFactory,
+        // DuplexTransportSessionFactory,
+        // TopicTransportSessionFactory,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
 

@@ -35,11 +35,11 @@ export interface EndpointOptions<T extends RequestContext = RequestContext, TArg
  * create endpoint handler.
  * 
  * 创建传输节点处理器实例化对象
- * @param injector 
+ * @param context 
  * @param options 
  * @returns 
  */
-export function createEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector | InvocationContext, options: EndpointOptions<TCtx>): EndpointHandler<TCtx, TOutput> {
-    return new EndpointHandler(isInjector(injector) ? injector : createContext(injector, options), options)
+export function createEndpoint<TCtx extends RequestContext, TOutput>(context: Injector | InvocationContext, options: EndpointOptions<TCtx>): EndpointHandler<TCtx, TOutput> {
+    return new EndpointHandler(isInjector(context) ? createContext(context, options) : context, options)
 }
 
