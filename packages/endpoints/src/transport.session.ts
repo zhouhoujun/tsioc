@@ -1,3 +1,41 @@
+import { Abstract } from '@tsdi/ioc';
+import { TransportOpts, TransportSession } from '@tsdi/common/transport';
+import { Observable, Subject, Subscription, mergeMap, takeUntil } from 'rxjs';
+import { RequestHandler } from './RequestHandler';
+import { RequestContext } from './RequestContext';
+
+@Abstract()
+export abstract class ServerTransportSession<TMsg = any, TSocket = any> extends TransportSession<RequestContext, any, TMsg, TSocket> {
+
+    protected destroy$ = new Subject<void>;
+
+    listen(handler: RequestHandler, destroy$?: Observable<any>): Subscription {
+        return this.receive().pipe(
+            takeUntil(destroy$ ?? this.destroy$),
+            mergeMap(request => handler.handle(request))
+        ).subscribe()
+    }
+
+    override async destroy(): Promise<void> {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+}
+
+/**
+ * transport session factory.
+ */
+@Abstract()
+export abstract class ServerTransportSessionFactory<TMsg = any, TSocket = any> {
+    /**
+     * create transport session.
+     * @param options 
+     */
+    abstract create(socket: TSocket, options: TransportOpts): ServerTransportSession<TMsg, TSocket>;
+}
+
+
 // import { Execption, Injector, InvokeArguments } from '@tsdi/ioc';
 // import { PipeTransform, UuidGenerator } from '@tsdi/core';
 // import { TransportRequest, Decoder, Encoder } from '@tsdi/common';

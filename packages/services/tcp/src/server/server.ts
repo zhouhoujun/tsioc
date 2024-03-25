@@ -3,8 +3,8 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
-import { Subject, lastValueFrom, mergeMap, takeUntil } from 'rxjs';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { Subject, first, fromEvent, lastValueFrom, merge, mergeMap, take, takeUntil } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
@@ -110,7 +110,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.handler.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'tcp';
@@ -118,20 +118,16 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                session.receive().pipe(
-                    takeUntil(this.destroy$),
-                    mergeMap(request => this.handler.handle(request))
-                ).subscribe()
-                // this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
+                session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
                 const session = factory.create(socket, transportOpts);
-                session.receive().pipe(
-                    takeUntil(this.destroy$),
-                    mergeMap(request => this.handler.handle(request))
-                ).subscribe()
-                // this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
+                session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+                // session.receive().pipe(
+                //     takeUntil(this.destroy$),
+                //     mergeMap(request => this.handler.handle(request))
+                // ).subscribe()
             })
         }
 

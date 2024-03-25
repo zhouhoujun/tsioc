@@ -1,11 +1,13 @@
 import { Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { InternalServerExecption, ev, LOCALHOST, TransportSessionFactory } from '@tsdi/common';
+import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Server, RequestHandler } from '@tsdi/endpoints';
+import { Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UDP_SERV_OPTS, UdpServerOpts } from './options';
 import { UdpEndpointHandler } from './handler';
 import { defaultMaxSize } from '../consts';
+import { LOCALHOST } from '@tsdi/common';
+import { Subject, first, fromEvent, merge } from 'rxjs';
 
 
 @Injectable()
@@ -16,11 +18,13 @@ export class UdpServer extends Server {
     @InjectLog()
     private logger!: Logger;
 
+    private destroy$: Subject<void>;
 
     constructor(
-        readonly endpoint: UdpEndpointHandler,
+        readonly handler: UdpEndpointHandler,
         @Inject(UDP_SERV_OPTS) private options: UdpServerOpts) {
         super();
+        this.destroy$ = new Subject();
     }
 
     protected async onStartup(): Promise<any> {
@@ -40,8 +44,8 @@ export class UdpServer extends Server {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const injector = this.endpoint.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const injector = this.handler.injector;
+        const factory = injector.get(ServerTransportSessionFactory);
 
         const isSecure = false;
         if (!this.options.protocol) {
@@ -52,8 +56,8 @@ export class UdpServer extends Server {
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         const session = factory.create(this.serv, this.options.transportOpts!);
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
-
+        session.listen(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));
+        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
 
         const bindOpts = this.options.bindOpts ?? { port: 3000, address: LOCALHOST };
         this.serv.on(ev.LISTENING, () => {
@@ -66,6 +70,8 @@ export class UdpServer extends Server {
 
     protected async onShutdown(): Promise<any> {
         if (!this.serv) return;
+        this.destroy$.next();
+        this.destroy$.complete();
 
         await promisify(this.serv.close, this.serv)()
             .catch(err => {

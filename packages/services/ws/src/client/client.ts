@@ -1,16 +1,16 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportRequest, ServiceUnavailableExecption, ev, TransportSessionFactory, TransportSession } from '@tsdi/common';
+import { TransportRequest } from '@tsdi/common';
+import { ServiceUnavailableExecption, ev, TransportSessionFactory, TransportSession } from '@tsdi/common/transport';
 import { Client } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
 import { WS_CLIENT_OPTS, WsClientOpts } from './options';
-
 /**
  * ws client.
  */
 @Injectable()
-export class WsClient extends Client<TransportRequest, number> {
+export class WsClient extends Client<TransportRequest> {
     private socket?: WebSocket | null;
     private session?: TransportSession | null;
 

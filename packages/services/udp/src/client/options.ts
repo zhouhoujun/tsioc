@@ -1,6 +1,7 @@
 import { Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { TransportRequest, TransportEvent, TransportOpts } from '@tsdi/common';
+import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { TransportOpts } from '@tsdi/common/transport';
 import { ClientOpts } from '@tsdi/common/client';
 import { SocketOptions } from 'dgram';
 

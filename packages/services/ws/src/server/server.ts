@@ -3,9 +3,9 @@ import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common/transport';
-import { BindServerEvent, RequestHandler, Server } from '@tsdi/endpoints';
+import { BindServerEvent, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
-import { Subscription } from 'rxjs';
+import { Subscription, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
 import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WS_SERV_OPTS, WsServerOpts } from './options';
 import { WsEndpointHandler } from './handler';
@@ -64,7 +64,7 @@ export class WsServer extends Server {
             this.logger.error(err);
         });
         const injector = this.handler.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
         const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
         const isSecure = server instanceof tls.Server;
         if (this.options.protocol) {
@@ -76,8 +76,9 @@ export class WsServer extends Server {
             const transportOpts = this.options.transportOpts!;
             if (!transportOpts.transport) transportOpts.transport = 'ws';
             if (!transportOpts.serverSide) transportOpts.serverSide = true;
-            const session = factory.create(stream, transportOpts!);
-            this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
+            const session = factory.create(stream, transportOpts!);            
+            session.listen(this.handler, merge(fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+            // this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
         })
 
 
