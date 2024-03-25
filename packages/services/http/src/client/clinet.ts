@@ -3,8 +3,8 @@ import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
     TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/common';
-import { ev, TransportSession, TransportSessionFactory } from '@tsdi/common/transport';
-import { Client } from '@tsdi/common/client';
+import { ev, TransportSession } from '@tsdi/common/transport';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
 import * as http from 'http';
@@ -38,7 +38,7 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 export class Http extends Client<HttpRequest> {
 
-    private session?: TransportSession<http2.ClientHttp2Session | null> | null;
+    private session?: ClientTransportSession<http2.ClientHttp2Session | null> | null;
     constructor(
         readonly handler: HttpHandler,
         @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
@@ -50,7 +50,7 @@ export class Http extends Client<HttpRequest> {
         if (this.session) return of(this.session);
         const injector = this.handler.injector;
         if (!this.option.authority) {
-            this.session = injector.get(TransportSessionFactory).create(null, this.option);
+            this.session = injector.get(ClientTransportSessionFactory).create(null, this.option);
             return of(this.session);
         } else {
 
@@ -65,7 +65,7 @@ export class Http extends Client<HttpRequest> {
                 }
                 const onConnect = () => {
 
-                    this.session = injector.get(TransportSessionFactory).create(conn, this.option);
+                    this.session = injector.get(ClientTransportSessionFactory).create(conn, this.option);
                     observer.next(this.session);
                     observer.complete();
                 };
@@ -114,7 +114,7 @@ export class Http extends Client<HttpRequest> {
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): HttpRequest {
-        return new HttpRequest(options.method ?? GET, patternToPath(pattern), options.body ?? options.payload ?? null, options as HttpRequestInit);
+        return new HttpRequest(options.method ?? GET, patternToPath(pattern), options.body ?? options.payload ?? null, options as any);
     }
 
     /**

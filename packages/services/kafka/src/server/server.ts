@@ -1,12 +1,14 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { PatternFormatter, ServiceUnavailableExecption, TransportSessionFactory } from '@tsdi/common';
-import { Server, MircoServRouters, RequestHandler } from '@tsdi/endpoints';
+import { PatternFormatter } from '@tsdi/common';
+import { Server, MircoServRouters, RequestHandler, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from '../kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpointHandler } from './handler';
+import { ServiceUnavailableExecption } from '@tsdi/common/transport';
+import { Subject, fromEvent, merge } from 'rxjs';
 
 
 
@@ -24,8 +26,11 @@ export class KafkaServer extends Server {
     protected producer?: Producer | null;
     private _session?: KafkaTransportSession;
 
+    private destroy$: Subject<void>;
+
     constructor(readonly endpoint: KafkaEndpointHandler, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
+        this.destroy$ = new Subject();
     }
 
     protected async connnect(): Promise<any> {
@@ -107,11 +112,12 @@ export class KafkaServer extends Server {
             serverSide: true
         } as KafkaTransportOpts;
 
-        const session = this._session = injector.get(TransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts) as KafkaTransportSession;
+        const session = this._session = injector.get(ServerTransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts) as KafkaTransportSession;
 
         await session.bindTopics(topics);
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        session.listen(this.handler, this.destroy$);
+        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
@@ -127,6 +133,8 @@ export class KafkaServer extends Server {
 
     protected async onShutdown(): Promise<any> {
         this._session?.destroy();
+        this.destroy$.next();
+        this.destroy$.complete();
         if (this.consumer) {
             await this.consumer.disconnect()
         }

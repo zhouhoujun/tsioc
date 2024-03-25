@@ -1,10 +1,10 @@
 import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { HTTP_LISTEN_OPTS, ListenService } from '@tsdi/common';
+import { InternalServerExecption } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server } from '@tsdi/endpoints';
-import { CONTENT_DISPOSITION_TOKEN } from '@tsdi/endpoints/assets';
-import { lastValueFrom } from 'rxjs';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
@@ -13,7 +13,6 @@ import * as assert from 'assert';
 import { HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
 import { HttpEndpointHandler } from './handler';
-import { InternalServerExecption, TransportSessionFactory } from '@tsdi/common/transport';
 
 
 /**
@@ -23,9 +22,11 @@ import { InternalServerExecption, TransportSessionFactory } from '@tsdi/common/t
 export class HttpServer extends Server<HttpServRequest, HttpServResponse> implements ListenService<ListenOptions>, MiddlewareService {
 
     @InjectLog() logger!: Logger;
+    private destroy$: Subject<void>;
 
     constructor(readonly handler: HttpEndpointHandler, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
         super()
+        this.destroy$ = new Subject();
         this.validOptions(options);
     }
 
@@ -131,12 +132,13 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         const opts = this.options;
 
         const injector = this.handler.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(this._server, transportOpts);
-        injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
+        session.listen(this.handler, this.destroy$);
+        // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
 
         // notify hybrid service to bind http server.
         await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));
@@ -148,6 +150,8 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
 
     protected override async onShutdown(): Promise<void> {
         if (!this._server) return;
+        this.destroy$.next();
+        this.destroy$.complete();
         await promisify(this._server.close, this._server)()
             .then(() => {
                 this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');

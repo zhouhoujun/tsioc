@@ -2,8 +2,8 @@ import { EMPTY_OBJ, Inject, Injectable, getClassName, isString, lang, promisify 
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
-import { InternalServerExecption, ev, TransportSessionFactory } from '@tsdi/common/transport';
-import { BindServerEvent, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { InternalServerExecption, ev } from '@tsdi/common/transport';
+import { BindServerEvent, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';

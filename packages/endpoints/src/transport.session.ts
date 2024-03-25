@@ -5,7 +5,7 @@ import { RequestHandler } from './RequestHandler';
 import { RequestContext } from './RequestContext';
 
 @Abstract()
-export abstract class ServerTransportSession<TMsg = any, TSocket = any> extends TransportSession<RequestContext, any, TMsg, TSocket> {
+export abstract class ServerTransportSession<TSocket = any, TMsg = any> extends TransportSession<RequestContext, any, TMsg, TSocket> {
 
     protected destroy$ = new Subject<void>;
 
@@ -27,12 +27,12 @@ export abstract class ServerTransportSession<TMsg = any, TSocket = any> extends 
  * transport session factory.
  */
 @Abstract()
-export abstract class ServerTransportSessionFactory<TMsg = any, TSocket = any> {
+export abstract class ServerTransportSessionFactory<TSocket = any, TMsg = any> {
     /**
      * create transport session.
      * @param options 
      */
-    abstract create(socket: TSocket, options: TransportOpts): ServerTransportSession<TMsg, TSocket>;
+    abstract create(socket: TSocket, options: TransportOpts): ServerTransportSession<TSocket, TMsg>;
 }
 
 

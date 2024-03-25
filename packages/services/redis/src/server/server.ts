@@ -1,12 +1,13 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST } from '@tsdi/common';
 import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
+import { ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { RedisEndpointHandler } from './handler';
 import { REDIS_SERV_OPTS, RedisServerOpts } from './options';
 import { RedisTransportSession, RedisTransportSessionFactory } from '../redis.session';
-import { ev } from '@tsdi/common/transport';
+import { Subject, first, fromEvent, merge } from 'rxjs';
 
 /**
  * Redis Server.
@@ -16,17 +17,18 @@ export class RedisServer extends Server {
 
     @InjectLog() logger!: Logger;
 
-
+    private destroy$: Subject<void>;
     private _session?: RedisTransportSession;
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
 
     constructor(
-        readonly endpoint: RedisEndpointHandler,
+        readonly handler: RedisEndpointHandler,
         @Inject(REDIS_SERV_OPTS) private options: RedisServerOpts
     ) {
         super();
+        this.destroy$ = new Subject();
     }
 
     protected async connect(): Promise<any> {
@@ -60,7 +62,7 @@ export class RedisServer extends Server {
         const subscriber = this.subscriber;
         const publisher = this.publisher;
 
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
 
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) {
@@ -114,7 +116,8 @@ export class RedisServer extends Server {
             }
         });
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        session.listen(this.handler, merge(this.destroy$, fromEvent(this.subscriber, ev.ERROR)).pipe(first()))
+        // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
 
         router.matcher.eachPattern((topic, pattern) => {
             if (topic !== pattern) {
@@ -125,6 +128,8 @@ export class RedisServer extends Server {
 
     protected async onShutdown(): Promise<any> {
         await this._session?.destroy();
+        this.destroy$.next();
+        this.destroy$.complete();
         this.publisher = this.subscriber = null;
         this.logger.info(`Redis microservice closed!`);
     }

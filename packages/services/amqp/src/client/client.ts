@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { TransportRequest } from '@tsdi/common';
-import { TransportSession, TransportSessionFactory, ev } from '@tsdi/common/transport';
-import {  Client } from '@tsdi/common/client';
+import { ev } from '@tsdi/common/transport';
+import {  Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as amqp from 'amqplib';
 import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
@@ -16,7 +16,7 @@ export class AmqpClient extends Client<TransportRequest> {
     private logger!: Logger;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
-    private _session?: TransportSession<amqp.Channel>;
+    private _session?: ClientTransportSession<amqp.Channel>;
 
     constructor(
         readonly handler: AmqpHandler,
@@ -78,7 +78,7 @@ export class AmqpClient extends Client<TransportRequest> {
             ...transportOpts.consumeOpts
         });
 
-        this._session = this.handler.injector.get(TransportSessionFactory).create(this._channel, transportOpts);
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this._channel, transportOpts);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
@@ -96,7 +96,7 @@ export class AmqpClient extends Client<TransportRequest> {
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(TransportSession, this._session);
+        context.setValue(ClientTransportSession, this._session);
     }
 
     protected async onShutdown(): Promise<void> {

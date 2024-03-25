@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
 import { TransportRequest } from '@tsdi/common';
-import { ServiceUnavailableExecption, ev, TransportSessionFactory, TransportSession } from '@tsdi/common/transport';
-import { Client } from '@tsdi/common/client';
+import { ServiceUnavailableExecption, ev, TransportSession } from '@tsdi/common/transport';
+import { Client, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
@@ -31,7 +31,7 @@ export class WsClient extends Client<TransportRequest> {
             const onOpen = () => {
                 if (!this.session) {
                     const socket = createWebSocketStream(this.socket!);
-                    const factory = this.handler.injector.get(TransportSessionFactory);
+                    const factory = this.handler.injector.get(ClientTransportSessionFactory);
                     const transportOpts = this.options.transportOpts!;
                     if(!transportOpts.transport) transportOpts.transport = 'ws';
                     this.session = factory.create(socket, transportOpts);

@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
-import { TransportSession, ev, TransportSessionFactory } from '@tsdi/common/transport';
-import { Client } from '@tsdi/common/client';
+import { TransportSession, ev } from '@tsdi/common/transport';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'net';
@@ -20,7 +20,7 @@ export class TcpClient extends Client<TransportRequest> {
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private _session?: TransportSession<tls.TLSSocket | net.Socket>;
+    private _session?: ClientTransportSession<any, tls.TLSSocket | net.Socket>;
 
     constructor(
         readonly handler: TcpHandler,
@@ -109,7 +109,7 @@ export class TcpClient extends Client<TransportRequest> {
         }
         const transportOpts = opts.transportOpts!;
         if(!transportOpts.transport) transportOpts.transport = 'tcp';
-        this._session = this.handler.injector.get(TransportSessionFactory).create(socket, transportOpts);
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(socket, transportOpts);
         return socket
     }
 

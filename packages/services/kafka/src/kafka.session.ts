@@ -1,13 +1,13 @@
 import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, IncomingHeaders, NotFoundExecption, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, isBuffer } from '@tsdi/common';
-import { PayloadTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, HeaderPacket, NotFoundExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
+import { ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Observable, filter, first, fromEvent, merge, of } from 'rxjs';
 import { AssignerProtocol, Cluster, EachMessagePayload, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
 import { KafkaHeaders, KafkaTransport, KafkaTransportOpts } from './const';
 
 
-export class KafkaTransportSession extends PayloadTransportSession<KafkaTransport, EachMessagePayload> {
+export class KafkaTransportSession extends ServerTransportSession<KafkaTransport, EachMessagePayload> {
 
 
     private regTopics?: RegExp[];
@@ -179,13 +179,11 @@ export class KafkaTransportSession extends PayloadTransportSession<KafkaTranspor
 }
 
 @Injectable()
-export class KafkaTransportSessionFactory implements TransportSessionFactory<KafkaTransport> {
+export class KafkaTransportSessionFactory implements ServerTransportSessionFactory<KafkaTransport> {
 
     constructor(
         readonly injector: Injector,
-        private streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder) { }
+        private streamAdapter: StreamAdapter) { }
 
     create(socket: KafkaTransport, options: TransportOpts): KafkaTransportSession {
         return new KafkaTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);

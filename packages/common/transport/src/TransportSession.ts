@@ -148,16 +148,3 @@ export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, 
     abstract destroy(): Promise<void>;
 
 }
-
-
-/**
- * transport session factory.
- */
-@Abstract()
-export abstract class TransportSessionFactory<TData = any, TMsg = any, TSocket = any> {
-    /**
-     * create transport session.
-     * @param options 
-     */
-    abstract create(socket: TSocket, options: TransportOpts): TransportSession<TData, TMsg, TSocket>;
-}
