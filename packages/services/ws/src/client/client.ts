@@ -34,7 +34,7 @@ export class WsClient extends Client<TransportRequest> {
                     const factory = this.handler.injector.get(ClientTransportSessionFactory);
                     const transportOpts = this.options.transportOpts!;
                     if(!transportOpts.transport) transportOpts.transport = 'ws';
-                    this.session = factory.create(socket, transportOpts);
+                    this.session = factory.create(this.handler.injector, socket, transportOpts);
                 }
                 observer.next(this.session);
                 observer.complete();

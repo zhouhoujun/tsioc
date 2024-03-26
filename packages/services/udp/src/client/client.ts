@@ -31,7 +31,8 @@ export class UdpClient extends Client<TransportRequest> {
             if (!transportOpts.host) {
                 transportOpts.host = new URL(this.options.url!).host;
             }
-            this.session = this.handler.injector.get(ClientTransportSessionFactory).create(this.socket, this.options.transportOpts!);
+            const injector = this.handler.injector;
+            this.session = injector.get(ClientTransportSessionFactory).create(injector, this.socket, this.options.transportOpts!);
         }
     }
 

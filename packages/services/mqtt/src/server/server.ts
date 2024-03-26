@@ -1,6 +1,7 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { PatternFormatter, TransportSessionFactory, TransportSession, ev } from '@tsdi/common';
-import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
+import { PatternFormatter } from '@tsdi/common';
+import { ev } from '@tsdi/common/transport';
+import { MircoServRouters, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { Subscription } from 'rxjs';
@@ -20,10 +21,10 @@ export class MqttServer extends Server {
 
     private subscribes?: string[];
     private mqtt?: Client | null;
-    private _session?: TransportSession<Client>;
+    private _session?: ServerTransportSession<Client>;
 
     constructor(
-        readonly endpoint: MqttEndpointHandler,
+        readonly handler: MqttEndpointHandler,
         @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
     ) {
         super();
@@ -62,7 +63,7 @@ export class MqttServer extends Server {
         await this.connect();
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
         const router = injector.get(MircoServRouters).get('mqtt');
         if (this.options.content?.prefix) {
             const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}/#`);
@@ -84,10 +85,10 @@ export class MqttServer extends Server {
         if (!transportOpts.transport) {
             transportOpts.transport = 'mqtt';
         }
-        const factory = injector.get(TransportSessionFactory);
-        const session = this._session = factory.create(this.mqtt, transportOpts);
-
-        this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
+        const factory = injector.get(ServerTransportSessionFactory);
+        const session = this._session = factory.create(injector, this.mqtt, transportOpts);
+        session.listen(this.handler);
+        // this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

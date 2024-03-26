@@ -54,7 +54,7 @@ export class UdpServer extends Server {
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.transport) transportOpts.transport = 'udp';
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
-        const session = factory.create(this.serv, this.options.transportOpts!);
+        const session = factory.create(injector, this.serv, this.options.transportOpts!);
 
         session.listen(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));
         // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
