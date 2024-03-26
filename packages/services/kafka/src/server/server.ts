@@ -1,7 +1,7 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { PatternFormatter } from '@tsdi/common';
-import { Server, MircoServRouters, RequestHandler, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { Server, MircoServRouters, RequestHandler, ServerTransportSessionFactory, RequestContext, EndpointHandler, ServerOpts } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from '../kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
@@ -16,7 +16,7 @@ import { Subject, fromEvent, merge } from 'rxjs';
  * Kafka server.
  */
 @Injectable()
-export class KafkaServer extends Server {
+export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
 
     @InjectLog()
     private logger!: Logger;
@@ -28,7 +28,7 @@ export class KafkaServer extends Server {
 
     private destroy$: Subject<void>;
 
-    constructor(readonly endpoint: KafkaEndpointHandler, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
+    constructor(readonly handler: KafkaEndpointHandler, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
         super();
         this.destroy$ = new Subject();
     }
@@ -98,7 +98,7 @@ export class KafkaServer extends Server {
         if (!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
         const consumer = this.consumer;
         const producer = this.producer;
-        const injector = this.endpoint.injector;
+        const injector = this.handler.injector;
         const router = injector.get(MircoServRouters).get('kafka');
         if (this.options.content?.prefix) {
             const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}-**`);
@@ -112,7 +112,7 @@ export class KafkaServer extends Server {
             serverSide: true
         } as KafkaTransportOpts;
 
-        const session = this._session = injector.get(ServerTransportSessionFactory).create({ consumer, vaildator, producer }, transportOpts) as KafkaTransportSession;
+        const session = this._session = injector.get(ServerTransportSessionFactory).create(injector, { consumer, producer }, transportOpts) as KafkaTransportSession;
 
         await session.bindTopics(topics);
 

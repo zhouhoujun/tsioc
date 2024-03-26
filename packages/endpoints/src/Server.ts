@@ -63,12 +63,12 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
  * microservice.
  */
 @Abstract()
-export abstract class MicroService {
+export abstract class MicroService<TRequest extends RequestContext = RequestContext> {
 
     /**
      * micro service handler
      */
-    abstract get handler(): RequestHandler<RequestContext>;
+    abstract get handler(): RequestHandler<TRequest>;
 
     @Runner()
     start() {
@@ -94,12 +94,12 @@ export abstract class MicroService {
  * 微服务
  */
 @Abstract()
-export abstract class Server extends MicroService implements HandlerService {
+export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends MicroService implements HandlerService {
 
     /**
      * service endpoint handler.
      */
-    abstract get handler(): EndpointHandler
+    abstract get handler(): EndpointHandler<TRequest, TOptions>
 
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
         this.handler.useGuards(guards, order);

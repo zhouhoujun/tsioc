@@ -1,11 +1,12 @@
 
 import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { InternalServerExecption, BindListenning, LOCALHOST, ev, TransportSessionFactory } from '@tsdi/common';
-import { RequestHandler, Server } from '@tsdi/endpoints';
+import { BindListenning, LOCALHOST } from '@tsdi/common';
+import { RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
 import { COAP_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapEndpointHandler } from './handler';
+import { InternalServerExecption, ev } from '@tsdi/common/transport';
 
 /**
  * CoAP server.
@@ -16,7 +17,7 @@ export class CoapServer extends Server implements BindListenning {
     @InjectLog() logger!: Logger;
     protected isSecure = false;
     constructor(
-        readonly endpoint: CoapEndpointHandler,
+        readonly handler: CoapEndpointHandler,
         @Inject(COAP_SERV_OPTS) protected options: CoapServerOpts) {
         super()
     }
@@ -58,8 +59,8 @@ export class CoapServer extends Server implements BindListenning {
         });
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
 
-        const injector = this.endpoint.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const injector = this.handler.injector;
+        const factory = injector.get(ServerTransportSessionFactory);
 
         const isSecure = false;
         if (!this.options.protocol) {
@@ -68,9 +69,9 @@ export class CoapServer extends Server implements BindListenning {
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.transport) transportOpts.transport = 'udp';
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
-        const session = factory.create(this._server, this.options.transportOpts!);
-
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        const session = factory.create(injector, this._server, this.options.transportOpts!);
+        session.listen(this.handler);
+        // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
 
         this.listen(this.options.listenOpts as any);
 

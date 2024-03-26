@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareHandler, MiddlewareLike, MiddlewareService, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -37,7 +37,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.handler as MiddlewareEndpoint;
+        const endpoint = this.handler as MiddlewareHandler;
         if (isFunction(endpoint.use)) {
             endpoint.use(middlewares, order);
         } else {

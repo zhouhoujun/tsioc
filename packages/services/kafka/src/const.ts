@@ -1,5 +1,5 @@
-import { TransportOpts } from '@tsdi/common';
-import { StatusVaildator } from '@tsdi/endpoints';
+import { TransportOpts } from '@tsdi/common/transport';
+
 import { Consumer, ConsumerRunConfig, ConsumerSubscribeTopics, Producer, ProducerRecord } from 'kafkajs';
 
 export interface KafkaTransportOpts extends TransportOpts, ConsumerRunConfig {
@@ -12,7 +12,6 @@ export interface KafkaTransportOpts extends TransportOpts, ConsumerRunConfig {
 
 export interface KafkaTransport {
     consumer: Consumer;
-    vaildator?: StatusVaildator|null;
     producer: Producer;
 }
 

@@ -1,8 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointHandler } from '@tsdi/endpoints';
+import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
+import { CoapServerOpts } from './options';
 
 
 @Abstract()
-export abstract class CoapEndpointHandler extends EndpointHandler {
+export abstract class CoapEndpointHandler extends EndpointHandler<RequestContext, CoapServerOpts> {
 
 }

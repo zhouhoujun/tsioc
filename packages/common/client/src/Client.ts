@@ -10,19 +10,19 @@ import { ClientHandler } from './handler';
  * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest> {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportEvent = TransportEvent> {
 
     /**
      * client handler
      */
-    abstract get handler(): ClientHandler;
+    abstract get handler(): ClientHandler<TRequest, TResponse>;
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.
      *
      * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
      */
-    send(req: TRequest): Observable<TransportEvent<any>>;
+    send(req: TRequest): Observable<TResponse>;
 
     /**
      * Constructs a request that interprets the body as an `ArrayBuffer` and returns the response in

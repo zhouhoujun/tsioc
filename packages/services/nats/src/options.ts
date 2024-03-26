@@ -1,4 +1,4 @@
-import { TransportOpts } from '@tsdi/common';
+import { TransportOpts } from '@tsdi/common/transport';
 import { PublishOptions, SubscriptionOptions } from 'nats';
 
 

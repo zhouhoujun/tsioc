@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { MircoServRouters, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { MircoServRouters, RequestContext, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { Subscription } from 'rxjs';
@@ -13,7 +13,7 @@ import { MqttEndpointHandler } from './handler';
  * Mqtt Server
  */
 @Injectable()
-export class MqttServer extends Server {
+export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     @InjectLog()
     private logger!: Logger;

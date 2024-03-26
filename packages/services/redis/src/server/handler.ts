@@ -1,7 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointHandler } from '@tsdi/endpoints';
+import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
+import { RedisServerOpts } from './options';
 
 @Abstract()
-export abstract class RedisEndpointHandler extends EndpointHandler {
+export abstract class RedisEndpointHandler extends EndpointHandler<RequestContext, RedisServerOpts> {
 
 }

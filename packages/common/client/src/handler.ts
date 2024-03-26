@@ -7,7 +7,7 @@ import { TransportRequest, TransportEvent } from '@tsdi/common';
  * Client Handler
  */
 @Abstract()
-export abstract class ClientHandler extends ConfigableHandler<TransportRequest, TransportEvent> {
+export abstract class ClientHandler<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportEvent = TransportEvent> extends ConfigableHandler<TRequest, TResponse> {
 
 }
 

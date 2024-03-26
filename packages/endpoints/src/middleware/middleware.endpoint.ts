@@ -17,24 +17,24 @@ export interface MiddlewareOpts<T extends RequestContext = any> {
 }
 
 /**
- * transport middleware endpoint options.
+ * transport middleware handler options.
  * 
  * 含中间件的传输节点配置
  */
-export interface MiddlewareEndpointOptions<T extends RequestContext = any, TArg = any> extends EndpointOptions<T, TArg>, MiddlewareOpts<T> {
+export interface MiddlewareHandlerOptions<T extends RequestContext = any, TArg = any> extends EndpointOptions<T, TArg>, MiddlewareOpts<T> {
 
 }
 
 
 
 /**
- * transport middleware endpoint.
+ * middleware hanlder.
  * 
  * 含中间件的传输节点
  */
 
-export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = any>
-    extends EndpointHandler<TInput, TOutput, MiddlewareEndpointOptions<TInput>> implements RequestHandler<TInput>, HandlerService, MiddlewareService {
+export class MiddlewareHandler<TInput extends RequestContext = any, TOptions extends MiddlewareHandlerOptions = MiddlewareHandlerOptions>
+    extends EndpointHandler<TInput, TOptions> implements RequestHandler<TInput>, HandlerService, MiddlewareService {
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
         this.regMulti(this.options.middlewaresToken!, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
@@ -42,7 +42,7 @@ export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = a
         return this;
     }
 
-    protected override getBackend(): Backend<TInput, TOutput> {
+    protected override getBackend(): Backend<TInput> {
         return new MiddlewareBackend(this.getMiddlewares());
     }
 
@@ -52,13 +52,13 @@ export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = a
 }
 
 /**
- * create transport endpoint.
+ * create middleware hanlder.
  * 
  * 创建含中间件的传输节点实例化对象
  * @param context 
  * @param options 
  * @returns 
  */
-export function createMiddlewareEndpoint<TCtx extends RequestContext, TOutput>(context: Injector | InvocationContext, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
-    return new MiddlewareEndpoint(isInjector(context) ? createContext(context) : context, options)
+export function createMiddlewareEndpoint<TInput extends RequestContext>(context: Injector | InvocationContext, options: MiddlewareHandlerOptions<TInput>): MiddlewareHandler<TInput> {
+    return new MiddlewareHandler(isInjector(context) ? createContext(context) : context, options)
 }

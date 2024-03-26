@@ -10,8 +10,12 @@ import { RequestHandler } from './RequestHandler';
  * 
  * 传输节点
  */
-export class EndpointHandler<TInput extends RequestContext = RequestContext, TOutput = any, TOptions extends EndpointOptions<TInput> = EndpointOptions<TInput>>
-    extends ConfigableHandler<TInput, TOutput, TOptions> implements RequestHandler<TInput>, HandlerService {
+export class EndpointHandler<TInput extends RequestContext = RequestContext, TOptions extends EndpointOptions<TInput> = EndpointOptions<TInput>>
+    extends ConfigableHandler<TInput, any, TOptions> implements RequestHandler<TInput>, HandlerService {
+    
+    getOptions(): TOptions {
+        return this.options;
+    }
 
     protected override forbiddenError(): Execption {
         return new ForbiddenExecption()
@@ -39,7 +43,7 @@ export interface EndpointOptions<T extends RequestContext = RequestContext, TArg
  * @param options 
  * @returns 
  */
-export function createEndpoint<TCtx extends RequestContext, TOutput>(context: Injector | InvocationContext, options: EndpointOptions<TCtx>): EndpointHandler<TCtx, TOutput> {
+export function createEndpoint<TInput extends RequestContext>(context: Injector | InvocationContext, options: EndpointOptions<TInput>): EndpointHandler<TInput> {
     return new EndpointHandler(isInjector(context) ? createContext(context, options) : context, options)
 }
 

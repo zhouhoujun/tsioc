@@ -1,7 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointHandler } from '@tsdi/endpoints';
+import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
+import { AmqpMicroServiceOpts } from './options';
 
 @Abstract()
-export abstract class AmqpEndpointHandler extends EndpointHandler {
+export abstract class AmqpEndpointHandler extends EndpointHandler<RequestContext, AmqpMicroServiceOpts> {
 
 }
